@@ -1,3 +1,32 @@
+"""Read a worker's manifest through a declared schema, not by scanning lines.
+
+A worker writes its manifest as ``key: value`` text, commonly with prose around
+it and Markdown decoration on the ``key:`` lines. That text form is YAML's own
+shape — a ``|`` block scalar, a quoted scalar, an indented body, a ``- `` list —
+so the reader declares a schema of fields and parses each field's body with a
+real parser, :func:`yaml.compose`. Seven point repairs to the previous line
+scanner did not generalise, because the scanner inferred a field's *type* from
+how it happened to join and split a string: a comma in a manifest body then
+applies to the wrong things. Measured cases the schema removes: a comma inside a
+commit subject manufactured a fourth revision; a nested mapping arrived as the
+empty string; a quoted item in a flow list was cut on the comma it had quoted
+to protect; and a nested key was read out of its parent.
+
+``yaml.compose`` rather than ``yaml.safe_load``: ``compose`` decodes the
+structure — a sequence is a list, an indented body is a mapping, a quoted scalar
+loses its quotes — while leaving every scalar's literal *text* alone, so an
+identifier that happens to look numeric is never re-typed. ``compose`` is what
+keeps the reader's two fixed defects fixed: ``1e5`` is an object id, not a
+float, and a value's type comes from the schema rather than from splitting.
+
+Tolerance is preserved deliberately. A body whose composed shape the field
+accepts is that shape; a body that is not well-formed YAML, or whose shape the
+field does not declare, falls back to the text the worker wrote whenever the
+field accepts text. A field that accepts neither the composed shape nor text is
+refused, naming the field and the shapes the schema declares, because a wrong
+value carried forward as a plausible one is worse than an honest refusal.
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,6 +35,8 @@ import re
 import tempfile
 from collections.abc import Iterator
 from typing import Any, TypedDict
+
+import yaml
 
 from reckon import ledger
 from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, CrewError, TaskNode
@@ -61,24 +92,44 @@ def manifest_status_is_template(value: Any) -> bool:
     return "|" in status and choices == set(TERMINAL_MANIFEST_STATUSES)
 
 
-# The manifest field vocabulary. A text body whose parsed top-level fields are
-# all outside this set is incidental prose wearing a ``key: value`` shape — the
-# body carries no field a manifest carries, so its status cannot be determined.
-_MANIFEST_FIELD_KEYS = frozenset(_MANIFEST_LIST_KEYS) | frozenset(
-    {
-        "node",
-        "status",
-        "tests",
-        "needs_help",
-        "derived",
-        "baseline_suite",
-        "after_suite",
-        "failure_attribution",
-        "orientation_worktree",
-        "orientation_base_sha",
-        "orientation_write_paths",
-    }
-)
+# The declared schema: every manifest field and the shapes it accepts, as the
+# single statement of what each field's value *is*. The parser is driven by this
+# mapping rather than by the spelling of a line, so a field's type is what the
+# schema says and not whatever joining-and-splitting a string happened to
+# produce. ``text`` is one literal scalar; ``list`` is an ordered set of literal
+# items; ``mapping`` is a nested key/value body. A field that carries more than
+# one shape in the manifests on disk declares all of them — ``tests`` is commonly
+# a sentence and sometimes a nested result map, and ``evidence_inputs`` is a list
+# in the text form and a mapping in the JSON form.
+_TEXT_SHAPE = frozenset({"text"})
+_LIST_SHAPE = frozenset({"list"})
+_MAPPING_SHAPE = frozenset({"mapping"})
+_MANIFEST_SCHEMA: dict[str, frozenset[str]] = {
+    **dict.fromkeys((*_MANIFEST_LIST_KEYS, "orientation_write_paths"), _LIST_SHAPE),
+    "evidence_inputs": frozenset({"list", "mapping"}),
+    "tests": frozenset({"text", "mapping"}),
+    "failure_attribution": frozenset({"text", "mapping"}),
+    "baseline_suite": frozenset({"text", "mapping"}),
+    "after_suite": frozenset({"text", "mapping"}),
+    "node": _TEXT_SHAPE,
+    "status": _TEXT_SHAPE,
+    "needs_help": _TEXT_SHAPE,
+    "derived": _TEXT_SHAPE,
+    "orientation_worktree": _TEXT_SHAPE,
+    "orientation_base_sha": _TEXT_SHAPE,
+}
+
+# A text body whose parsed top-level fields are all outside the schema is
+# incidental prose wearing a ``key: value`` shape — the body carries no field a
+# manifest carries, so its status cannot be determined.
+_MANIFEST_FIELD_KEYS = frozenset(_MANIFEST_SCHEMA)
+
+# Fields whose items are identifiers a later command resolves, so their
+# spelling must survive the parse. YAML's implicit typing would rewrite an
+# identifier that resembles a number, and the reader has twice had to undo that
+# (``1e5`` written as ``100000.0``); composing their flow sequences as literal
+# text also keeps a quoted item whole, comma and all.
+_IDENTIFIER_FIELDS = frozenset({"commits"})
 
 # A manifest field whose presence alongside a missing status key still leaves
 # the outcome undetermined. The list-attribute fields are exempt from this: a
@@ -119,6 +170,11 @@ def _strip_matching_quotes(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in _QUOTE_CHARS:
         return value[1:-1]
     return value
+
+
+def _is_quoted_scalar(value: str) -> bool:
+    """Whether a value is one scalar the worker surrounded with a quote pair."""
+    return len(value) >= 2 and value[0] == value[-1] and value[0] in _QUOTE_CHARS
 
 
 # A manifest field key appearing later on the same line as another key's value.
@@ -270,9 +326,9 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
     wrote. ``path`` names the file in the refusal.
     """
     fields: dict[str, Any] = {}
-    key = None
-    block_key: str | None = None
-    block_lines: list[str] = []
+    key: str | None = None
+    body_lines: list[str] = []
+    body_is_block = False
     manifest_indent = min(
         (
             _line_indent(raw)
@@ -282,12 +338,13 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         default=0,
     )
 
-    def flush_block() -> None:
-        nonlocal block_key, block_lines
-        if block_key is not None:
-            fields[block_key] = "\n".join(block_lines).strip()
-        block_key = None
-        block_lines = []
+    def flush() -> None:
+        nonlocal key, body_lines, body_is_block
+        if key is not None:
+            fields[key] = _read_field_body(key, body_lines, body_is_block, path=path)
+        key = None
+        body_lines = []
+        body_is_block = False
 
     def read_field(raw: str, line: str) -> re.Match[str] | None:
         # Workers commonly present manifest fields as Markdown list items or
@@ -307,39 +364,223 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
 
     for line_no, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
-        if block_key is not None:
-            # A blank line continues the block, and so does any line indented
-            # past the column the manifest's own fields occupy. A block scalar's
-            # body is written deeper than its key, which in a wholly indented
-            # manifest is a column well right of zero; ending the block only at
-            # column zero folds every following field into this value. A line at
-            # or left of the field column is where the next field begins.
-            if line == "" or _line_indent(raw) > manifest_indent:
-                block_lines.append(line)
-                continue
-            flush_block()
         match = read_field(raw, line)
+        if key is not None and match is None:
+            # The body of the field just opened. It continues over blank lines,
+            # over lines indented past the column the manifest's own fields
+            # occupy, and over ``- item`` lines at the column itself; a field
+            # line at that column ends it and is read below. The block ends at
+            # the field column rather than at column zero because a manifest is
+            # commonly presented wholly indented, where a trailing block would
+            # otherwise swallow every field after it — the field that quietly
+            # empties there is the commit list a promotion reads. The body is
+            # parsed as a whole when the field closes, so its inner commas and
+            # its nesting follow the declared shape rather than a join-and-split
+            # of the lines.
+            if (
+                line == ""
+                or _line_indent(raw) > manifest_indent
+                or line.startswith(("-", "*"))
+            ):
+                body_lines.append(line)
+            # A prose line inside the body belongs to no field and is dropped,
+            # but it does not close the field it sits in: the old reader kept
+            # the key open, so a list item written after a stray prose line
+            # still reached its key.
+            continue
+        flush()
         if match:
             key = match.group("key").lower().replace("-", "_")
-            value = _strip_matching_quotes(match.group("value").strip())
-            if key == "status" and re.fullmatch(r"`[^`]+`", value):
-                value = value[1:-1].strip()
-            embedded = _embedded_manifest_key(key, value)
+            raw_value = match.group("value").strip()
+            embedded = _embedded_manifest_key(key, _strip_matching_quotes(raw_value))
             if embedded:
                 raise ManifestParseError(
-                    _two_keys_on_one_line_message(path, line_no, line, key, embedded)
+                    _two_keys_on_one_line_message(
+                        path, line_no=line_no, line=line, first=key, second=embedded
+                    )
                 )
-            if _is_block_indicator(value):
+            if key == "status" and re.fullmatch(r"`[^`]+`", raw_value):
+                raw_value = raw_value[1:-1].strip()
+            if raw_value == "":
                 fields.setdefault(key, "")
-                block_key = key
-                block_lines = []
-            else:
-                fields[key] = value
-        elif key and line.startswith(("-", "*")):
-            addition = line.lstrip("-* ").strip()
-            fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
-    flush_block()
+                continue
+            if _is_block_indicator(_strip_matching_quotes(raw_value)):
+                fields.setdefault(key, "")
+                body_is_block = True
+                continue
+            fields[key] = _read_inline_value(key, raw_value)
+            key = None
+    flush()
     return fields
+
+
+def _shape_of(value: Any) -> str:
+    """The composed shape of a field value, for comparison with the schema."""
+    if isinstance(value, list):
+        return "list"
+    if isinstance(value, dict):
+        return "mapping"
+    return "text"
+
+
+def _decode_yaml_node(node: Any) -> Any:
+    """Decode a composed YAML node, keeping every scalar's literal text.
+
+    A sequence becomes a list, a mapping becomes a dict, and a scalar becomes
+    ``node.value`` — the text the worker wrote, after YAML removes the quoting it
+    applied. Reading ``node.value`` rather than the resolved Python object is
+    what stops an object identifier that resembles a number (``1e5``) being
+    written as one (``100000.0``): the schema, not YAML's implicit typing,
+    decides a field's type.
+    """
+    if isinstance(node, yaml.SequenceNode):
+        return [_decode_yaml_node(child) for child in node.value]
+    if isinstance(node, yaml.MappingNode):
+        return {_decode_yaml_node(k): _decode_yaml_node(v) for k, v in node.value}
+    return node.value
+
+
+def _compose_node(text: str) -> Any:
+    """The composed node for a manifest body, or None if it will not compose.
+
+    A body that will not compose returns None rather than raising: a worker
+    writes prose around its manifest, and the caller falls back to the text as
+    written wherever the field's schema accepts text.
+    """
+    try:
+        return yaml.compose(text)
+    except yaml.YAMLError:
+        return None
+
+
+def _compose_document(text: str) -> Any:
+    """Parse a manifest body, returning None when it is not well-formed YAML.
+
+    ``yaml.compose`` is used rather than ``safe_load`` so the parse yields the
+    structure while leaving implicit scalar typing alone.
+    """
+    node = _compose_node(text)
+    if node is None:
+        return None
+    return _decode_yaml_node(node)
+
+
+def _literal_list_items(text: str) -> list[str] | None:
+    """A sequence's items as the worker wrote them, each one literal text.
+
+    An item that YAML types as a mapping is not the writer's intent for a field
+    whose items are identifiers: a commit subject carrying a colon composes as a
+    one-key mapping, and reading that as a dict hands a later command a mapping
+    where an object id belongs. The item's own span of the source stands in for
+    it instead, which is what keeps a subject whole however it is punctuated.
+    """
+    node = _compose_node(text)
+    if not isinstance(node, yaml.SequenceNode):
+        return None
+    items = []
+    for child in node.value:
+        if isinstance(child, yaml.ScalarNode):
+            items.append(child.value)
+        else:
+            span = text[child.start_mark.index : child.end_mark.index]
+            items.append(" ".join(span.split()))
+    return items
+
+
+def _body_document(lines: list[str]) -> str:
+    """Dedent a field's body into a document the parser can read.
+
+    The body is collected at the column the worker wrote it at, which for a
+    wholly indented or tab-indented manifest is not column zero. Tabs are
+    expanded first because YAML forbids them for indentation, and the common
+    indent is then removed so the body stands as its own document.
+    """
+    expanded = [line.expandtabs(8) for line in lines]
+    indents = [len(line) - len(line.lstrip()) for line in expanded if line.strip()]
+    floor = min(indents, default=0)
+    dedented = [line[floor:] if line.strip() else "" for line in expanded]
+    return "\n".join(dedented).strip("\n")
+
+
+def _joined_body_text(lines: list[str]) -> str:
+    """Join a body written as list items into prose, dropping the bullets."""
+    parts = [line.lstrip("-* ").strip() for line in lines if line.strip()]
+    return ", ".join(parts)
+
+
+def _schema_shape_message(
+    path: str | None = None,
+    field: str = "",
+    shape: str = "",
+    allowed: frozenset[str] = frozenset(),
+) -> str:
+    where = f" at {path}" if path else ""
+    accepts = " or ".join(sorted(allowed))
+    return (
+        f"cannot read manifest{where}: field '{field}' carries a {shape} where "
+        f"the manifest schema accepts {accepts}; the field is refused rather "
+        "than carried forward as a plausible value"
+    )
+
+
+def _read_field_body(
+    name: str, lines: list[str], is_block: bool, *, path: str | None
+) -> Any:
+    """Build a field's value from the body written beneath its key."""
+    allowed = _MANIFEST_SCHEMA.get(name)
+    if is_block:
+        # ``|`` or ``>``: the body is the value's text, which is what a worker
+        # writes for a prose field whatever shape the schema declares.
+        return "\n".join(lines).strip()
+    if not any(line.strip() for line in lines):
+        return ""
+    body = _body_document(lines)
+    if name in _IDENTIFIER_FIELDS or allowed == _LIST_SHAPE:
+        # A list field's items are the text the worker wrote, not whatever YAML
+        # types that text to be: an item carrying a colon composes as a mapping,
+        # and an object id or a path is not a dict. A mapping written under a
+        # list-only field is refused below instead.
+        items = _literal_list_items(body)
+        if items is not None:
+            return items
+    value = _compose_document(body)
+    if value is None:
+        # Not well-formed YAML: prose, kept as written.
+        return (
+            _joined_body_text(lines)
+            if allowed == _LIST_SHAPE
+            else "\n".join(lines).strip()
+        )
+    shape = _shape_of(value)
+    if allowed is None or shape in allowed:
+        return value
+    if shape == "mapping":
+        # A nested mapping under a field whose schema accepts a simpler shape is
+        # the malformed pair this reader refuses, rather than flattening it into
+        # a comma list or emptying it to a blank — either of which reads as a
+        # protection the worker never wrote.
+        raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
+    return _joined_body_text(lines) if shape == "list" else "\n".join(lines).strip()
+
+
+def _read_inline_value(name: str, raw_value: str) -> Any:
+    """Build a field's value from the text written after its key on one line.
+
+    An inline value is one scalar in this format, so it is returned as the
+    worker's literal text with one matching quote pair removed; a ``list``
+    field's comma-separated items are split downstream by :func:`_as_list`. The
+    exception is a flow sequence in a field whose schema declares its items to
+    be identifiers rather than data: there the sequence is composed through the
+    parser as literal text, so a quoted item keeps the comma it quoted to
+    protect instead of being cut on it, while every other field's flow list keeps
+    the numeric decoding it has always had, where ``[1e5]`` is the number it
+    names.
+    """
+    if name in _IDENTIFIER_FIELDS and raw_value.startswith("["):
+        items = _literal_list_items(raw_value)
+        if items is not None:
+            return items
+    return _strip_matching_quotes(raw_value)
 
 
 def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:

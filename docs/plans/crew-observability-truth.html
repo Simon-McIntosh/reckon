@@ -698,6 +698,33 @@
       <code>1f519333</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#a-refusal-at-admission-is-named">&#167;12 refused-at-admission evidence</a>.</p>
 
+    <p class="landed-summary">A manifest field&rsquo;s type now comes from a declared schema rather
+      than from how a line happened to be split. Seven point repairs to the tolerant scanner did
+      not generalise &mdash; each left the next shape standing &mdash; so the reader is driven by
+      one table naming the shapes each field accepts, and a field&rsquo;s body is composed with a
+      real parser. Four measured defects fail at the base reader and pass here: a three-item block
+      list whose last subject carries a comma read as <strong>four items</strong>, the last being
+      the prose fragment <code>its measurement and the correction it forced</code>; a nested
+      mapping under <code>tests</code> read as <strong>the empty string</strong>; a flow
+      list&rsquo;s quoted second item read as <strong>three items with the quotes stripped</strong>;
+      and a nested key under its parent left <code>failure_attribution</code>
+      <strong><code>None</code></strong>. The negative half is asserted: a mapping body under a
+      list-only field raises <code>ManifestParseError</code> naming the field &mdash; a
+      <code>CrewError</code>, so it lands on the CLI surface &mdash; while the identical body
+      under a field that declares a mapping is accepted, so the refusal is about the declared
+      shape and not about the body. The parser is <code>yaml.compose</code> rather than
+      <code>yaml.safe_load</code>, because a composed scalar keeps its literal text and an
+      identifier resembling a number is not retyped; the two landed literal-identifier markers
+      still pass. Tolerance is kept for prose and pipe blocks, comma-separated scalars, bracketed
+      number lists and inline evidence blocks, and a list field&rsquo;s items are the text the
+      worker wrote rather than whatever the parser types that text to be &mdash; a commit subject
+      carrying a colon composes as a mapping, and reading it as one puts a dict where an object
+      id belongs. That last case was found by reading this node&rsquo;s own finished manifest
+      through the changed reader, and it is guarded by three cases in the test file. The
+      prescribed five-file gate reads 7 failed, 173 passed with the base reader and 180 passed at
+      the commit, and the section adds no lint findings. Landed under commits
+      <code>eb74752d</code> and <code>2a94b12c</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-is-read-through-a-declared-schema">&#167;12 declared-schema evidence</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by

@@ -1399,6 +1399,106 @@ reading taken as an authority it was not.</p>
     <p><strong>Positive control, asserted rather than assumed.</strong> A live process carrying the marks, an in-harness run carrying them, a worked turn whose result carries the blocking-limit shape without the synthetic model, and a synthetic-message run whose terminal reason is <code>api_error</code> instead of <code>blocking_limit</code> each keep their prior classification; the recorded <code>claude-failed-turn.jsonl</code> fixture stays <code>abandoned</code> and the <code>tests/fixtures/backends/codex-usage-limit.jsonl</code> fixture stays <code>blocked</code>, so no existing bucket was widened to cover the new case.</p>
   </section>
 
+<section id="manifest-is-read-through-a-declared-schema">
+    <h3>§12 — A manifest is read through a declared schema by a real parser</h3>
+    <p>Run <code>r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema</code>.
+      Commits <code>eb74752d</code> and <code>2a94b12c</code> changed <code>reckon/crew/reports.py</code> by 247 insertions
+      and 52 deletions, and added <code>tests/test_manifest_declared_schema.py</code> with eleven
+      cases across four defects, their negative half, and three guards against the shape the
+      composed parse itself can mis-type. The base reading was taken in a detached
+      worktree at the base revision <code>a880113f</code>, so the working tree was never reverted
+      and the same environment served both readings.</p>
+    <p><strong>Why a schema and not an eighth repair.</strong> Each of the four defects below was
+      repaired once already, one line-scope rule at a time, and each repair left the next one
+      standing: the reader decided a field&rsquo;s type by how a line happened to be split, so its
+      answer moved whenever the text form did. Declaring the shapes a field accepts moves that
+      decision into one table and lets a parser that understands structure make it.</p>
+    <p><strong>Reproduction, quoted from both revisions.</strong> Four bodies, each read with the
+      base reader and with the declared schema:</p>
+    <table>
+      <thead><tr><th>Written shape</th><th>Reading at base <code>a880113f</code></th><th>Reading at the commit</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>a three-item block list whose last subject carries a comma</td>
+          <td><strong><code>4</code> items</strong>, the last being the prose fragment
+            <code>'its measurement and the correction it forced'</code></td>
+          <td><code>3</code> items, the subject whole</td>
+        </tr>
+        <tr>
+          <td>a nested mapping under <code>tests</code></td>
+          <td><strong><code>''</code></strong> (the body was collected by no field)</td>
+          <td><code>{'passed': '41', 'failed': '0'}</code></td>
+        </tr>
+        <tr>
+          <td>a flow list whose second item is quoted: <code>commits: [29937e892, "5a1b2c3d4 record the measurement, its measurement and the correction it forced"]</code></td>
+          <td><strong><code>['29937e892', '5a1b2c3d4 record the measurement', 'its measurement and the correction it forced']</code></strong>
+            &mdash; three items where two were written, the quoted pair stripped. The assertion
+            reads <code>Left contains one more item</code></td>
+          <td><code>['29937e892', '5a1b2c3d4 record the measurement, its measurement and the correction it forced']</code></td>
+        </tr>
+        <tr>
+          <td>a nested key under its parent: <code>failure_attribution:</code> with two indented
+            <code>test_</code> rows</td>
+          <td><strong><code>failure_attribution is None</code></strong></td>
+          <td>the mapping, with no nested key leaking to the top level</td>
+        </tr>
+        <tr>
+          <td>a mapping body under <code>changed_paths</code>, whose schema is a list alone</td>
+          <td><strong><code>Failed: DID NOT RAISE ManifestParseError</code></strong></td>
+          <td><code>ManifestParseError</code> naming <code>changed_paths</code>, which is a
+            <code>CrewError</code> and so lands on the CLI surface</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The last row is the negative half. A change that made a malformed manifest parse to
+      something plausible would be a failure, so the refusal is asserted directly and the same
+      mapping body is asserted the other way round as a positive control: under <code>tests</code>,
+      whose schema admits a mapping, the identical body reads whole rather than being refused.</p>
+    <figure>
+      <img src="/reckon/figures/manifest-schema/declared-schema-vs-line-scanner.png"
+           alt="One manifest body read twice. Left: the body as written, three block-list commit items whose third subject carries a comma, then changed_paths with one item. Top right, the line scanner: it joins the items with commas and splits the join on commas, producing four entries whose last is the prose fragment 'its measurement and the correction ' and an empty changed_paths. Bottom right, the declared schema and parser: the schema names the field a list, yaml.compose decodes the body into three scalars read from node.value, so the third entry keeps its comma and changed_paths keeps its item."
+           style="max-width:900px;width:100%">
+      <figcaption>The same bytes read two ways. The line scanner&rsquo;s join-then-split turns one
+      subject&rsquo;s comma into a fourth revision out of prose, and the body it took for that
+      fragment is the one the following field lost.</figcaption>
+    </figure>
+    <p><strong>Mechanism.</strong> <code>_MANIFEST_SCHEMA</code> maps every manifest field to the
+      shapes it accepts (<code>text</code>, <code>list</code>, <code>mapping</code>), and a field
+      body is composed with <code>yaml.compose</code> rather than <code>yaml.safe_load</code>:
+      compose decodes structure &mdash; a sequence becomes a list, a mapping a dict, quotes and
+      block scalars decoded &mdash; while each scalar&rsquo;s literal text survives as
+      <code>node.value</code>, so an identifier that resembles a number is not retyped. That
+      matters here because this reader has twice had to undo <code>1e5</code> read as
+      <code>100000.0</code>, and it is why the two landed literal-identifier markers still pass
+      unchanged. A body whose composed shape the field&rsquo;s schema does not accept raises
+      <code>ManifestParseError</code> naming the field rather than half-succeeding.</p>
+    <p><strong>Tolerance kept:</strong> a prose line or a <code>|</code> block under a list-only
+      field, a comma-separated scalar (<code>commits: abc123, def456</code>), a bracketed number
+      list for a non-identifier field (<code>artifacts: [1e5]</code> decoding as before), an
+      inline JSON evidence block, and a prose line inside a field body &mdash; which is why the
+      body-continuation branch drops the line without closing the field, the behaviour the landed
+      block-scalar fix depends on.</p>
+    <p><strong>Measure.</strong> The prescribed five-file gate reads <strong>7 failed, 173
+      passed</strong> with the base revision&rsquo;s <code>reports.py</code> and <strong>180
+      passed, 0 failed</strong> at the commit; the seven removed failures are exactly the new
+      file&rsquo;s defect cases, and four cases in it pass at base (the control that the failure
+      is about the commas rather than about the reader losing the list, and the three colon
+      guards below, which the line scanner satisfied by never composing a structure at all).
+      Ruff finds two pre-existing findings in the touched source file
+      (<code>SIM102</code>, <code>FURB167</code>) at both revisions and none in the added file,
+      and the formatter check is clean on both, so the section adds no findings.</p>
+    <p><strong>Found by dogfooding.</strong> Reading this node&rsquo;s own finished manifest through
+      the changed reader showed a commit entry written as a sha followed by a subject containing a
+      colon, composing as a one-key mapping, so
+      <code>commits</code> held a dict where an object id belongs and a promotion would render it
+      into a command. The line scanner never composed a structure, so this shape read as text at
+      base; the schema-reading version had to be told that an item under a field whose schema is a
+      list of values is the text written, which <code>_literal_list_items</code> takes back from
+      the item&rsquo;s own span of the source. This is the same failure mode the section exists
+      for (a wrong value carried forward as a plausible one) arriving through the new mechanism,
+      and it is why the three colon guards are cases in the file rather than a note.</p>
+  </section>
+
 </main>
 </body>
 </html>
