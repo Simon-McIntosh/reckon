@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-is-bound-by-its-inbox-landed">
+  <meta name="plan-title" content="Actionable counter age — landed evidence">
+  <meta name="plan-summary" content="Measured evidence that the blocked and unpromoted cells carry the age of their oldest member, and the work-in-progress cells do not.">
+  <meta name="plan-evidence-for" content="an-orchestrator-is-bound-by-its-inbox">
+  <meta name="plan-verifies" content="an-orchestrator-is-bound-by-its-inbox#s4">
+  <meta name="plan-recorded-at" content="2026-09-18">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="df99ec0a">
+  <title>Actionable counter age — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>Actionable counter age — landed evidence</h1>
+      <p class="plan-summary">The blocked and unpromoted cells now print the age of
+      their oldest member beside the count, so a deferred backlog being worked reads
+      differently from one standing still. The working and queued cells print no age,
+      because those need nothing from the reader.</p>
+    </header>
+
+    <section id="counter-age">
+      <h2>Two fleets, one figure</h2>
+      <p>The measure the rule asks for is that a total cannot separate the two
+      situations, and the test asserts it by rendering a fixture where the counts are
+      identical and only the arrival time of the oldest member differs.</p>
+
+      <table>
+        <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Blocked cell, oldest member arrived 2 minutes ago</td><td><code> 1b</code></td><td><code> 1b 2mb</code></td><td>pass</td></tr>
+          <tr><td>Blocked cell, same count, oldest member arrived 7 hours ago</td><td><code> 1b</code></td><td><code> 1b 7hb</code></td><td>pass</td></tr>
+          <tr><td>Rows above differ (the fixture that fails if the cell is still a total)</td><td>identical</td><td>distinct</td><td>pass</td></tr>
+          <tr><td>Bucket holding nobody (<code>blocked=0</code>)</td><td><code> 0b</code></td><td><code> 0b</code>, no age field</td><td>pass</td></tr>
+          <tr><td>Working and queued cells</td><td>no age</td><td>no age</td><td>pass</td></tr>
+          <tr><td>Counter-block letter column across rows with and without an age</td><td>one column</td><td>one column</td><td>pass</td></tr>
+          <tr><td>Rendered line length at 180 and 208 columns</td><td>equals width</td><td>equals width</td><td>pass</td></tr>
+          <tr><td>Focused gate (<code>test_crew_ticker.py</code>, <code>test_crew_ticker_layout.py</code>, <code>test_counter_carries_age.py</code>)</td><td>91 passed, 0 failed</td><td>100 passed, 0 failed</td><td>pass</td></tr>
+          <tr><td>Six-file crew gate at the base revision</td><td>1 failed, 210 passed</td><td>1 failed, 219 passed</td><td>pass, 0 added failures</td></tr>
+          <tr><td>Ruff findings on the changed paths</td><td>1</td><td>1</td><td>pass, none added</td></tr>
+        </tbody>
+      </table>
+
+      <p>Commit <code>df99ec0a</code> adds <code>ACTIONABLE_CELLS</code>,
+      <code>AGE</code>, <code>_epoch</code>, <code>_age_span</code>,
+      <code>_bucket_of</code>, <code>Ticker._register</code> and
+      <code>Ticker._oldest_age</code> to <code>reckon/crew/ticker.py</code>, and
+      renders the ages in fixed columns immediately after the measure cells.</p>
+
+      <h3>Where the age comes from</h3>
+      <p>The transition record carries counts, not per-item ages, so the age of a
+      bucket's oldest member is derived in the renderer from the transitions the pane
+      has itself observed, using each event's own <code>observed_at</code> as the
+      clock. A run already in its bucket keeps the stamp it arrived with, so an
+      unrelated transition cannot reset the reading, and a run that leaves every
+      bucket is dropped because it is no longer a member of anything the row counts.
+      The bucketing is read from <code>reckon.crew.recovery</code>'s fleet partition at
+      call time rather than restated, so the counter and the age that qualifies it
+      always describe the same population; a held run counts as queued as the
+      partition reads it.</p>
+
+      <p>The age is a reading within one pane's own view. A re-attach restamps every
+      live run, because an age nobody observed cannot be reported honestly; a baseline
+      row therefore carries the attach time rather than a history. The clean fix is for
+      the producer to carry the age on the event, which is outside this node's write
+      scope and is recorded as a follow-on.</p>
+
+      <h3>Why the ages are paid for out of the margin</h3>
+      <p>A reserved fixed-width age block was measured first and refuted: the reason
+      text starts at screen column 132 for both widths, leaving the age budget at
+      effectively one column, because <code>test_crew_ticker_layout.py</code> requires
+      the clipped reason to keep the 47-character predicate clause at 180 columns and
+      at least 75 columns at 208. Widening the counter block by 12 columns broke six
+      layout tests and shortened the reason onto a row a reader cannot act on.</p>
+
+      <p>So the ages take fixed columns ahead of the reason only where the clipped
+      clause does not need them, and blank when a clause claims the margin whole. What
+      is present holds its room and what is absent holds none. A clause that fills the
+      margin wins, because it is the actionable text and the age is a reading of it.
+      The row's right edge never moves and no line ever wraps: an age that widened the
+      block would shunt every column to its right and cost the reader a second line of
+      an eight-line pane.</p>
+
+      <p>Receipts, in this node's run directory: the base-revision gate at
+      <code>baseline-suite.log</code>, the head gate at <code>after-suite.log</code>, and
+      the focused ticker gate at <code>focused-gate.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
