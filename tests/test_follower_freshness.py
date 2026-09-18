@@ -278,3 +278,93 @@ def test_delivering_registration_is_reported_whatever_its_age(isolated_home) -> 
 
     assert [row["session"] for row in payload["followers"]] == ["long-lived"]
     assert payload["followers_released"] == 3
+
+
+def test_sweep_removes_released_registrations_older_than_the_threshold(
+    isolated_home,
+) -> None:
+    """A released registration past the threshold is removed and counted.
+
+    Releasing a registration drops its lock and leaves its file, so the
+    directory holds one entry per session name that has ever followed the
+    project. The sweep is the only thing that removes one, and it reports what it
+    removed rather than leaving the caller to re-list the directory.
+    """
+    released_at = 1_600_000_000.0
+    for number in range(3):
+        path = _released_registration("proj", f"departed-{number}")
+        os.utime(path, (released_at, released_at))
+
+    removed = runs.sweep_released_followers(
+        "proj",
+        stale_after_seconds=7 * 24 * 3600,
+        now=released_at + 30 * 24 * 3600,
+    )
+
+    assert len(removed) == 3, "the removed entries come back from the sweep"
+    assert {entry["session"] for entry in removed} == {
+        "departed-0",
+        "departed-1",
+        "departed-2",
+    }
+    assert list(runs.follower_dir("proj").glob("*.lock")) == [], "the files are gone"
+
+
+def test_sweep_keeps_a_delivering_registration_whatever_its_age(
+    isolated_home,
+) -> None:
+    """The held lock decides, not the timestamp, so a live follower survives.
+
+    Every released entry here would be swept at this reference time; the
+    delivering one is older still, and the sweep must leave it, because a
+    follower armed in the morning is still delivering at night.
+    """
+    armed_at = 1_600_000_000.0
+    with runs.follower_claim("proj", "long-lived", delivery="stream"):
+        os.utime(runs.follower_lock_path("proj", "long-lived"), (armed_at, armed_at))
+        removed = runs.sweep_released_followers(
+            "proj",
+            stale_after_seconds=7 * 24 * 3600,
+            now=armed_at + 30 * 24 * 3600,
+        )
+        state = runs.follower_state("proj", "long-lived")
+
+    assert removed == [], "a delivering registration is not the sweep's to remove"
+    assert state["live"] is True, "the swept directory still reports it delivering"
+    assert runs.follower_lock_path("proj", "long-lived").exists()
+
+
+def test_sweep_keeps_a_registration_released_moments_ago(isolated_home) -> None:
+    """A session restarting is not swept out from under itself."""
+    released_at = 2_000_000_000.0
+    path = _released_registration("proj", "restarting")
+    os.utime(path, (released_at, released_at))
+
+    removed = runs.sweep_released_followers(
+        "proj",
+        stale_after_seconds=7 * 24 * 3600,
+        now=released_at + 60,
+    )
+
+    assert removed == [], "a recent release is inside the restart window"
+    assert path.exists(), "the file is still there for the session to reclaim"
+
+
+def test_no_read_path_sweeps_a_registration(isolated_home, monkeypatch) -> None:
+    """Reading the registry reports; it never removes."""
+    for number in range(2):
+        _released_registration("proj", f"departed-{number}")
+    calls: list[tuple] = []
+
+    def refuse(*args, **kwargs):
+        calls.append(args)
+        raise AssertionError("a read path removed a registration")
+
+    monkeypatch.setattr(runs, "sweep_released_followers", refuse)
+
+    with runs.follower_claim("proj", "delivering", delivery="stream"):
+        payload = runs.project_watch_visibility("proj")
+
+    assert calls == [], "no read path calls the sweep"
+    assert payload["followers_released"] == 2
+    assert len(list(runs.follower_dir("proj").glob("*.lock"))) == 3
