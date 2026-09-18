@@ -1399,6 +1399,123 @@ reading taken as an authority it was not.</p>
     <p><strong>Positive control, asserted rather than assumed.</strong> A live process carrying the marks, an in-harness run carrying them, a worked turn whose result carries the blocking-limit shape without the synthetic model, and a synthetic-message run whose terminal reason is <code>api_error</code> instead of <code>blocking_limit</code> each keep their prior classification; the recorded <code>claude-failed-turn.jsonl</code> fixture stays <code>abandoned</code> and the <code>tests/fixtures/backends/codex-usage-limit.jsonl</code> fixture stays <code>blocked</code>, so no existing bucket was widened to cover the new case.</p>
   </section>
 
+  <section id="an-orientation-stub-declares-no-wait">
+    <h2>&#167;12 &mdash; A manifest with nothing to wait on yet declares no wait</h2>
+    <p><strong>The defect.</strong> The delivery contract asks every worker to write its manifest
+    before beginning any long output, so the first write lands at orientation &mdash; before
+    there is anything to wait on. Offered a <code>waiting</code> status and four wait fields at
+    that moment, healthy workers filled the fields with a note about where they were. The
+    classifier read the <em>presence</em> of those fields as a declared wait, so a working run
+    sat in the waiting column, aged into <code>wait-aged</code>, and reached the resume sweep as
+    a candidate. A sweep probe of <code>["true"]</code> prints nothing, so
+    <code>resumption._run_condition_probe</code> falls back to <code>f"exit:{returncode]"}
+    and an unknown worker on a probe that can only succeed matched its own declared
+    <code>exit:0</code> terminal. Live ledger evidence: run
+    <code>r-20260916T091207300606-ddout-narrow-floor</code> in
+    <code>~/.config/reckon/crew/recovery/imas-efit.jsonl</code> (line 196) was resumed by
+    the sweep it reached: <code>{"checked": 2, "resumed": 1}</code>, on a condition reading
+    <code>no external resource is awaited - this first write records orientation before the
+    first edit; the wait ends when the harness is rewritten to complete at the end of this
+    turn</code>, observed as <code>exit:0</code>. A coordinator reading
+    <code>wait-aged</code> for that run would have found, on a second reading, a worker editing
+    its worktree.</p>
+    <p><strong>The falsifier's input domain, quoted committed content.</strong> Six field sets
+    taken verbatim from live workers, every one of which was healthy with a stream seconds old
+    when it wrote them:</p>
+    <ol>
+      <li><code>wait_condition: none - this is an interim checkpoint, not a held
+      wait</code></li>
+      <li><code>wait_condition: none &mdash; this is an interim checkpoint, not a held
+      wait</code> &mdash; the same condition with an em dash, as the ledger recorded it</li>
+      <li><code>wait_condition: exploring; not yet set</code>, with a <code>checkpoint</code>
+      line beside it</li>
+      <li><code>wait_condition: deferred write block - see checkpoint</code> with
+      <code>wait_probe: ["true"]</code>, <code>wait_terminal: exit:0</code> and a
+      <code>resume_brief</code> forwarding to a checkpoint that does not exist</li>
+      <li><code>wait_condition: reading the plan and reader now</code> with the same
+      <code>["true"]</code>/<code>exit:0</code> pair</li>
+      <li><code>wait_condition: initial orientation; reading source</code> with the same
+      pair</li>
+      <li><code>wait_condition: no external condition is awaited; this is an interim
+      progress record written before the report is composed</code> &mdash; written
+      <em>deliberately</em>, as a durable checkpoint before a long compose step, which is why
+      removing the fields from the orientation stub cannot reach it and the classifier half is
+      the primary one</li>
+      <li><code>wait_condition: no external resource is awaited - this first write records
+      orientation before the first edit; the wait ends when the harness is rewritten to complete
+      at the end of this turn</code> &mdash; quoted from the recovery ledger row the sweep wrote
+      when it resumed that worker above</li>
+    </ol>
+    <p><strong>The repair, in two halves.</strong> In <code>reckon/crew/recovery.py</code>,
+    <code>_manifest_wait</code> returns <code>None</code> — the manifest holds no wait — when the
+    condition&rsquo;s own prose declares no wait (a sentence opening with <em>none</em>, the
+    phrase <em>not yet set</em>, or a clause naming no <em>external</em> thing that is
+    <em>awaited</em>). The <em>none</em> reading is anchored at the start of the condition,
+    exactly as the changed-paths prose-none rule reads that word, so a real condition that
+    merely mentions it later is left alone. A probe whose first word is a null command
+    (<code>true</code>, <code>:</code>, <code>exit</code>) is also no declaration, because it
+    cannot report a pending state: it prints nothing, so the reader falls back to
+    <code>exit:0</code> and every sweep reads it terminal. In <code>reckon/crew/prompts.py</code>
+    the orientation write is named as such and carries a <code>checkpoint</code>; each wait field
+    is scoped to <em>only when an external condition is actually awaited</em>.</p>
+    <p><strong>The second reading: a clock, not only a reader.</strong> Removing the fields from
+    the stub cannot reach a worker that wrote them on purpose, and it cannot reach a run that
+    declared a wait correctly and then went on producing output. Measured: the age was read from
+    <code>wait_started_at</code> alone and never compared against the run&rsquo;s own output, so
+    a coordinator had to take a second measurement before believing a <code>wait-aged</code>
+    row. The age is now measured from the later of the declaration and the last write to the
+    run&rsquo;s stream, so a run that is demonstrably producing never ages; the same declaration
+    over a stream quiet for its horizon still ages on schedule.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/manifest-wait-read-and-aged.svg"
+           alt="Top: wait declarations as recorded, each beside its repaired reading. A condition opening none, a note that the wait is not yet set, a condition stating that no external condition is awaited, and a probe of true with terminal exit:0 all read as working with no wait held, while a real condition naming a scheduler job with an squeue probe reads as waiting. Bottom: that real declaration aged from itself alone is 1804 seconds, thirty times past the 60 second horizon, and aged against a five second old stream it is five seconds."
+           style="max-width:760px;width:100%">
+      <figcaption>The reading comes from what the declaration says rather than from the
+      fields existing, and the age comes from the later of the declaration and the run&rsquo;s
+      own last stream write.</figcaption>
+    </figure>
+    <p><strong>Falsifier and its range.</strong> The gate is
+    <code>tests/test_wait_marker_is_not_a_stub.py</code> (37 cases) beside
+    <code>tests/test_crew_recovery.py</code>, <code>tests/test_a_met_wait_is_ready_not_abandoned.py</code>,
+    <code>tests/test_paused_is_not_blocked.py</code> and
+    <code>tests/test_blocked_names_both_reasons.py</code>. Against base
+    <code>4df01b36</code> the new file reads <strong>30 failed, 7 passed</strong> of 37; at the
+    head it reads <strong>37 passed</strong>. The declared cohort moves from <strong>1 failed,
+    125 passed</strong> at base to <strong>1 failed, 162 passed</strong>, the same single
+    pre-existing failure, <code>test_refusal_recovery_remedy_survives_promotion</code>, at both
+    &mdash; therefore <strong>zero added</strong>. The seven that pass at base are the negative
+    half, the two overshoot controls, the checkpoint-scope guard and the quiet-stream contrast
+    case; that they pass at base is the point: a case that already passes measures nothing, so
+    they are recorded as the shape that shows the repair does not overshoot.</p>
+    <p><strong>Negative half, asserted rather than assumed.</strong> A genuine wait &mdash;
+    condition <code>scheduler job 42 has left the queue</code>, probe
+    <code>["squeue","-h","-j","42","-o","%T"]</code>, terminal <code>["COMPLETED","FAILED"]</code>
+    &mdash; still classifies <code>waiting</code> with its lifting condition named, still ages to
+    <code>wait-aged</code> when its <em>1m</em> horizon passes while its probe reports
+    <code>RUNNING</code>, and is still the one row a resume sweep acts on when its probe returns
+    <code>terminal: true</code>. Two controls guard the readings: a real condition that merely
+    <em>mentions</em> the word <em>none</em> later in the sentence is kept, and a real probe is
+    kept. Three cases assert the orientation stub itself &mdash; the header names the first three
+    lines as an orientation write carrying a <code>checkpoint</code> and tells the worker to
+    leave the wait fields alone; each of the four wait field lines carries the scope clause; and
+    the status vocabulary still offers <code>waiting</code> beside <code>in-progress</code>,
+    <code>complete</code>, <code>blocked</code> and <code>failed</code>.</p>
+    <p><strong>Commits.</strong> The reading and the prompt scope and the age
+    (<code>de8b5e8d</code>), the deliberate-checkpoint set and the stream comparison
+    (<code>750bc474</code>), and the <em>no external resource</em> wording the ledger recorded
+    (<code>0d734fb8</code>). Test logs: the new file at base and at head, and the declared
+    cohort at base and at head, under the run directory beside this record&mdash;<code>base-new.log</code>,
+    <code>head-new.log</code>, <code>base-cohort.log</code>, <code>head-cohort.log</code>.</p>
+    <p><strong>Left undone, reported rather than repaired.</strong> Two defects were seen and reported
+    here instead of folded into this landing, because neither is about wait markers and both
+    predate this record. The first is structural: <code>reckon audit-doc</code> reports four
+    unclosed <code>&lt;section&gt;</code> elements in this evidence file, an identical list at the
+    base revision. The second is a stale cross-reference in another project: the conformance
+    suite reports one failure, <code>test_schema.py</code>&rsquo;s
+    <code>test_cross_project_conformance</code> for an imas-ambix evidence doc whose commit
+    reference resolves to no object, so the document names a revision that does not exist.</p>
+  </section>
+
 </main>
 </body>
 </html>

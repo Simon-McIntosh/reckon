@@ -698,6 +698,61 @@
       <code>1f519333</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#a-refusal-at-admission-is-named">&#167;12 refused-at-admission evidence</a>.</p>
 
+    <p class="landed-summary">A manifest that carries the wait fields with nothing to wait
+      in them is now read as holding no wait, so a healthy worker stops being escalated on
+      the presence of a field alone. The classifier read the fields&rsquo; existence as a
+      declared wait, which put working runs in the waiting column and offered them to the
+      resume sweep: a sweep probe of <code>["true"]</code> prints nothing, so the observation
+      falls back to <code>["exit:0"]</code>, matches the declared terminal <code>exit:0</code>,
+      and resumes a live worker. Seven recorded field sets from live runs are the falsifier, all
+      written by workers that were healthy with streams seconds old &mdash; a condition opening
+      <code>none</code>, a note that the wait is <em>not yet set</em>, a condition stating in
+      plain English that <em>no external condition is awaited</em> (written deliberately as a
+      durable checkpoint before a long compose step, which removing the fields from the stub
+      cannot reach), the ledger&rsquo;s own <em>no external resource is awaited &hellip;</em> (the
+      condition the sweep actually acted on, resuming a worker that was editing its worktree),
+      and two <code>["true"]</code>/<code>exit:0</code> pairs around notes about
+      where the worker was. The condition&rsquo;s own prose and a probe that cannot report a
+      pending state each end the declaration. The second correction is a clock: a declared wait
+      no longer ages while the run is producing output, because one run was escalated waiting
+      &rarr; wait-aged at 1804 s while its newest stream file was zero minutes old and still
+      growing, which is why a coordinator had to take a second reading before believing a
+      wait-aged row. The age is now measured from the later of the declaration and the last
+      write to the run&rsquo;s stream, so a run that is demonstrably producing output never ages,
+      while the same declaration over a stream quiet for its declared horizon still ages on
+      schedule &mdash; the negative half is asserted rather than assumed. The orientation write
+      is the other half: the prompt names its first three lines as an orientation write carrying
+      a <code>checkpoint</code>, scoped to not-waiting, and each wait field is offered
+      <em>only when an external condition is actually awaited</em>, so the invitation is
+      withdrawn while the fields stay available for a wait actually held. The falsifier is
+      <code>tests/test_wait_marker_is_not_a_stub.py</code>: at base <strong>30 failed, 7
+      passed</strong> of 37, and the seven are the negative half, the two overshoot controls, the
+      checkpoint-scope guard, and the contrast case in which the same declaration over a quiet
+      stream still ages &mdash; which is the shape that shows the repair neither overshoots nor
+      switches the clock off. The declared cohort of five files moves from <strong>1 failed, 125
+      passed</strong> at base to <strong>1 failed, 162 passed</strong>, the same single
+      <code>test_refusal_recovery_remedy_survives_promotion</code> at both, so
+      <strong>zero added</strong>. Landed across commits <code>de8b5e8d</code> and
+      <code>750bc474</code> and <code>0d734fb8</code>.</p>
+    <p class="landed-summary">The declared-wait ledger row for the resumed worker is worth its own
+      sentence: <code>{"checked": 2, "resumed": 1}</code> in
+      <code>~/.config/reckon/crew/recovery/imas-efit.jsonl</code>, on a condition reading
+      <em>no external resource is awaited</em>, observed <code>exit:0</code>, while the worker
+      held its worktree and was editing it, so a reader who took the pane&rsquo;s
+      <code>wait-aged</code> at face value was reading a run that was working.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/manifest-wait-read-and-aged.svg"
+           alt="Top: five wait declarations as recorded on live healthy workers, each beside its repaired reading — a condition opening none, a condition saying the wait is not yet set, a condition saying no external condition is awaited, and a probe of true with terminal exit:0 all read as working with no wait held, while a real condition naming a scheduler job reads as waiting. Bottom: a real declaration aged from itself alone is 1804 seconds, thirty times past the 60 second horizon, and the same declaration measured against a five second old stream is five seconds."
+           style="max-width:760px;width:100%">
+      <figcaption>The reading is taken from what the declaration says rather than from the
+      field&rsquo;s existence, and the age is taken from the later of the declaration and the
+      run&rsquo;s own last stream write — above, a live stream holds a wait at five seconds
+      while the same declaration over a quiet stream still crosses the horizon and ages.</figcaption>
+    </figure>
+    <p>The recorded field sets and both readings of them are recorded in full, with the
+      commits and the gate logs, at
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#an-orientation-stub-declares-no-wait">&#167;12 the interim wait fields</a>.</p>
+
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
