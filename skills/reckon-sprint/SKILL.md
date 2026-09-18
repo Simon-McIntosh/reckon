@@ -44,6 +44,25 @@ It returns `source_format`, `resource_versions`, and the active sprint derived
 from the unique sprint whose status is `active`. Never write the aggregate
 index after distributed activation.
 
+### One pushed sprint: `open` versus `active`
+
+Sprint status is `planned | open | active | done | shipped`. **`active` means
+pushed**, and exactly one sprint per project may carry it — that sprint is the
+work the project is scheduling now. **`open`** means work remains and this is
+not the pushed sprint, so a project with several live sprints has one `active`
+and the rest `open`. `planned` is for work not yet started. The roadmap reports
+the pushed sprint as `active_sprint_id`, lists the other live sprints in
+`open_sprints`, and derives a sprint's state from its members: one whose members
+have started is `derived_state: "in-progress"` — member progress describes the
+work inside a sprint, not the sprint's own scheduling status.
+
+Use the **push op** to change which sprint is active; never set `status` to
+`active` directly. A bare `set` promotes one sprint and leaves the previous one
+active too, which the audit reports as `multiple-active-sprints` at error
+severity and which makes the derived `active_sprint_id` ambiguous. `push`
+promotes and demotes in one versioned write, so the invariant cannot be broken
+by a two-step edit.
+
 Check `summary["state"]["source_format"]` before writing. In
 `distributed` mode, read and edit the named resource. In `legacy-index` mode,
 typed raw reads are projections carrying the aggregate version, but named
@@ -103,15 +122,19 @@ edit_plan(
 )
 ```
 
-## Start sprint (set active)
+## Push a sprint (make it the active one)
 
 ```python
 edit_plan(
   project="imas-ambix", slug="S5", doc_type="sprint",
-  ops=[{"op": "set", "path": "status", "value": "active"}],
+  ops=[{"op": "push"}],
   expected_version=1
 )
 ```
+
+`push` marks `S5` active and demotes whichever sprint was active to `open`, in
+one versioned write. A stale `expected_version` or an unknown sprint id changes
+neither sprint.
 
 ## Add item to sprint
 
@@ -164,7 +187,10 @@ edit_plan(
 6. Partition into sprints; each item carries `why_now` and `done_when`. Every
    actionable plan must either belong to exactly one sprint with matching
    `plan-sprint`, or carry an explicit backlog decision.
-7. Keep **one active sprint** at a time. Future sprints start as `planned`.
+7. Keep **one active sprint** at a time: push it with the `push` op, and leave
+   every other sprint that still holds work `open`. Reserve `planned` for a
+   sprint whose work has not started. Closing a sprint and opening a future one
+   is not a membership change, so nothing moves between sprints.
 8. Treat any legacy `tier` value as compatibility input only, never as runtime
    model guidance. The current user prompt and coordinator own worker routing.
 9. If the user requested a roadmap change, write it without a redundant
