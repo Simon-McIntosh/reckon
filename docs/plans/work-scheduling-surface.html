@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="work-scheduling-surface">
+  <meta name="plan-title"     content="Work scheduling surface — the pushed sprint, the covered critical path, and plans that move when work lands">
+  <meta name="plan-summary"   content="One pushed sprint, critical-path coverage that dispatch can see, followup classes, impl that moves on landing, and a portfolio flight.">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S18">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <title>Work scheduling surface | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The problem, measured on one project in one day</h2>
+    <p>On 2026-09-18 the nova roadmap ranked <code>cut-cell-current-attribution</code> first in
+    <code>ready_now</code>: it heads the sprint's critical path (45 worker-hours into
+    <code>uniform-cell-clip-and-coupling</code>) and unlocks two further plans. It had no worker for the
+    whole of sprint S19. In the same hours twelve runs were live, every one of them closing a plan already
+    at 85 to 99 percent implementation, most of them record repairs raised by reviews. Six nova sprints were
+    marked <code>active</code>, so the derived active sprint was S10, a one-plan sprint opened in August.
+    Two S19 plans read 0 percent implementation after five landed nodes each, because nothing in the
+    landing path advances a plan's <code>impl</code>. Reckon's own project shows the same shape: two active
+    sprints, and four runs merged into <code>main</code> whose plans do not know it.</p>
+    <p>The ranking exists. Nothing downstream of it has teeth: dispatch never reads the critical path,
+    nothing measures how many workers a path has, a record-repair followup competes equally with a
+    capability followup for width, and a promotion does not require the plan to move. This plan gives the
+    ranking consequences at each of those four points and puts the result on one screen per workstation.</p>
+    <figure>
+      <svg viewBox="0 0 720 150" width="720" height="150" role="img" aria-label="Four stages from roadmap ranking to ledger, with the three stages that ignore the ranking marked">
+        <style>text{font-family:system-ui,sans-serif;font-size:13px;fill:#111}.t{font-size:14px;font-weight:600}</style>
+        <rect x="10" y="40" width="150" height="50" fill="#fff" stroke="#111"/>
+        <text class="t" x="85" y="60" text-anchor="middle">roadmap</text>
+        <text x="85" y="78" text-anchor="middle">ranks critical path first</text>
+        <line x1="160" y1="65" x2="195" y2="65" stroke="#111"/><polygon points="195,61 203,65 195,69" fill="#111"/>
+        <rect x="205" y="40" width="150" height="50" fill="#fff" stroke="#b3261e" stroke-dasharray="4 3"/>
+        <text class="t" x="280" y="60" text-anchor="middle">coordinator</text>
+        <text x="280" y="78" text-anchor="middle">drains followups by age</text>
+        <line x1="355" y1="65" x2="390" y2="65" stroke="#111"/><polygon points="390,61 398,65 390,69" fill="#111"/>
+        <rect x="400" y="40" width="150" height="50" fill="#fff" stroke="#b3261e" stroke-dasharray="4 3"/>
+        <text class="t" x="475" y="60" text-anchor="middle">crew dispatch</text>
+        <text x="475" y="78" text-anchor="middle">never reads the path</text>
+        <line x1="550" y1="65" x2="585" y2="65" stroke="#111"/><polygon points="585,61 593,65 585,69" fill="#111"/>
+        <rect x="595" y="40" width="115" height="50" fill="#fff" stroke="#b3261e" stroke-dasharray="4 3"/>
+        <text class="t" x="652" y="60" text-anchor="middle">complete</text>
+        <text x="652" y="78" text-anchor="middle">impl stays put</text>
+        <text x="360" y="125" text-anchor="middle" fill="#b3261e">dashed: stages where the ranking is lost today; this plan adds a check at each</text>
+      </svg>
+      <figcaption>Where the critical-path ranking is lost between the roadmap and the ledger. The roadmap already
+      sorts critical-path members first; the three dashed stages have no view of that order.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — One pushed sprint</h2>
+    <p>The sprint status enum gains <code>open</code>: work remains and the sprint is not the one being
+    pushed. <code>active</code> is reserved for exactly one sprint per project and means pushed. A new
+    <code>edit_plan</code> op on the project resource, <code>push</code> with a sprint id, sets that sprint
+    <code>active</code> and demotes the previously active sprint to <code>open</code> in the same write, so
+    the invariant cannot be broken by a two-step edit. The roadmap derives <code>active_sprint_id</code>
+    from the unique active row and reports <code>open</code> sprints in their own bucket.
+    <code>_derived_sprint_state</code> stops returning <code>active</code> from member progress and returns
+    <code>in-progress</code>, so an open sprint with shipped members no longer reads as state drift. The
+    audit promotes <code>multiple-active-sprints</code> from warn to error and adds
+    <code>pushed-sprint-has-no-ready-work</code> (warn) so a push onto a drained sprint is visible. Nothing
+    moves between sprints: nova's S10, S12, S15, S16 and S18 keep every member and become
+    <code>open</code>; reckon's S16 and S18 likewise once the lead names the push.</p>
+    <p>Done when: the enum, the derived state, the push op, the roadmap bucket, the audit codes and the
+    <code>reckon-sprint</code> skill text all carry <code>open</code>; a test shows a push demoting the prior
+    active sprint in one write; a test shows two active sprints failing the audit at error severity; nova's
+    five sprints accept <code>open</code> through <code>edit_plan</code>.</p>
+
+    <h2 id="s3">§3 — Critical-path coverage</h2>
+    <p>The roadmap emits <code>coverage</code>: for each open path, the plans on it, the live runs on those
+    plans (from the project's live pointers), and whether the path's head is dispatchable. A finding
+    <code>critical-path-uncovered</code> fires when the pushed sprint's critical path has zero live runs
+    while its head plan is dispatchable; it is a warning whenever the project's live width is zero and an
+    error when width is above zero, because then the lane is busy and the path is starved by choice.
+    <code>crew(view="flight")</code> and the dispatch summary print coverage per open path. The follower's
+    fleet counter gains a <code>cp:N</code> cell, delivered as its own node to the session that holds
+    <code>ticker.py</code>.</p>
+    <p>The refusal is deliberately not in this plan's first landing. Five coordinators dispatch on this
+    workstation, and a fence that refuses an off-path dispatch would bind all of them on one project's
+    evidence; a coordinator mid-recovery would reach for the override reflexively and the finding would
+    then measure nothing. The decision below locks the sequence: land the figure and the finding, read them
+    across every mounted project for one day, then decide whether <code>crew dispatch</code> refuses
+    off-path while the path is uncovered (with <code>--off-path REASON</code> recorded on the ledger row) or
+    keeps reporting only.</p>
+
+    <h2 id="s4">§4 — Followup classes</h2>
+    <p>A followup carries <code>kind</code> in {<code>capability</code>, <code>measurement</code>,
+    <code>record</code>, <code>repair</code>}. Capability work changes what the code can do; measurement
+    produces a receipt that decides something; record repairs correct prose, captions, receipts and
+    anchors; repair fixes a defect a review or a gate found. The ready ordering ranks capability and
+    measurement above record and repair within a plan; the drain ledger and the follower's counters report
+    the four kinds separately; <code>reckon-ship</code> gains the rule that record repairs occupy at most one
+    slot per plan while capability or measurement work on the pushed sprint is dispatchable. Existing
+    followups are classified once by a migration that infers the kind from the title and body words
+    (restore, correct, caption, receipt, anchor and the like read as record; measure, census, receipt-of
+    read as measurement) and the audit reports unclassified followups at info severity so a project can
+    finish the classification by hand.</p>
+
+    <h2 id="s5">§5 — Implementation must move when work lands</h2>
+    <p><code>crew complete</code> on an implement or test run with a passing gate compares the plan's
+    <code>impl</code> at promotion against the value recorded on the run at dispatch. If unchanged, the
+    promotion is refused with the two figures and the plan's remaining sections, unless
+    <code>--no-impl-change REASON</code> is passed; the reason lands on the ledger row. The dispatch record
+    therefore stores <code>plan_impl_at_dispatch</code>. Review, investigate and cleanup runs are exempt,
+    as is a run whose failure classification is a negative result or correct refusal. This converts a
+    coordinator habit into a check: two nova plans sat at 0 percent with five landed nodes each, and four
+    reckon runs are merged with their plans unaware.</p>
+
+    <h2 id="s6">§6 — Portfolio flight</h2>
+    <p><code>reckon flight --portfolio</code> and <code>crew(view="portfolio")</code> list every mounted
+    project on one screen: pushed sprint and its theme, critical path and its length, coverage of that path,
+    live width by role, unreconciled runs, lane headroom and the newest lane reading. Rows sort by the
+    pushed sprint's uncovered critical hours descending, so the project whose longest path is most starved
+    reads first. The view reuses the roadmap and flight readers and adds no state file.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="off-path-refusal-timing" data-choice="report-first" data-by="nova lead via nova S19 coordinator, agreed with the reckon coordinator" data-when="2026-09-18">
+        <p class="r-dec-q">When does crew dispatch start refusing an off-path dispatch while the pushed sprint's critical path is uncovered?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="report-first">report-first: land coverage and the finding, read one day across all mounted projects, then decide the refusal</button>
+          <button class="r-opt" data-value="refuse-now">refuse-now: refuse from the first landing with an --off-path REASON escape</button>
+        </p>
+        <p class="r-dec-rat">A workstation-wide fence on one project's evidence teaches every coordinator to reach for the override, after which the finding measures nothing. The figure and the finding first; the refusal only if the figure shows starvation is general.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wss-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §2">
+        <h4 class="r-fu-title">One pushed sprint: the open status, the push op, the derived state and the audit errors</h4>
+        <div class="r-fu-body"><p>Deliver §2 in full. Files: <code>reckon/_schema.py</code> (enum), <code>reckon/project_state.py</code> (validation and the push op), <code>reckon/roadmap.py</code> (active derivation, open bucket, derived state), <code>reckon/mcp.py</code> (audit codes and the op surface), <code>skills/reckon-sprint/SKILL.md</code>, tests. Do not touch <code>reckon/crew/</code>.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §2</pre>
+      </article>
+      <article class="r-fu" data-id="f-wss-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §3">
+        <h4 class="r-fu-title">Critical-path coverage in the roadmap, the flight view and the dispatch summary, reporting only</h4>
+        <div class="r-fu-body"><p>Deliver §3 without the refusal, per the locked decision. Runs after f-wss-001 because both edit <code>reckon/roadmap.py</code>. The <code>cp:N</code> ticker cell is a separate node for the session holding <code>reckon/crew/ticker.py</code>.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §3</pre>
+      </article>
+      <article class="r-fu" data-id="f-wss-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §4">
+        <h4 class="r-fu-title">Followup kinds: schema, parser, ordering, migration and the ship rule</h4>
+        <div class="r-fu-body"><p>Deliver §4. Runs after f-wss-001 because both edit <code>reckon/_schema.py</code>. Files: <code>reckon/_schema.py</code>, <code>reckon/plan_html.py</code>, <code>reckon/roadmap.py</code> (ordering), <code>reckon/doccheck.py</code>, the migration script, <code>skills/reckon-ship/SKILL.md</code> and <code>skills/reckon-edit/SKILL.md</code>, tests.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §4</pre>
+      </article>
+      <article class="r-fu" data-id="f-wss-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §5">
+        <h4 class="r-fu-title">Promotion refuses when the plan's impl did not move</h4>
+        <div class="r-fu-body"><p>Deliver §5. Files: <code>reckon/crew/promotion.py</code>, <code>reckon/crew/dispatch.py</code> (record impl at dispatch), <code>reckon/crew/node.py</code> if the run record schema lives there, <code>reckon/cli.py</code> for the flag, tests. Do not touch <code>reports.py</code>, <code>recovery.py</code>, <code>prompts.py</code>, <code>ticker.py</code>, <code>routing.py</code>, <code>query.py</code> or <code>reckon/ledger.py</code>, which another session holds.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §5</pre>
+      </article>
+      <article class="r-fu" data-id="f-wss-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §6">
+        <h4 class="r-fu-title">Portfolio flight across every mounted project</h4>
+        <div class="r-fu-body"><p>Deliver §6. Files: <code>reckon/flight.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/cli.py</code>, tests. Reads coverage from the roadmap when f-wss-002 has landed and prints the column as unavailable before then.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §6</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
