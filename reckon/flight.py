@@ -1219,6 +1219,7 @@ def _path_coverage(
 
 def _portfolio_live_rows(
     pointers: Iterable[Mapping[str, Any]],
+    classifier: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Classify the live pointers and group the rows by project.
 
@@ -1230,6 +1231,7 @@ def _portfolio_live_rows(
     """
     from reckon.crew import recovery as recovery_module
 
+    classify = classifier or recovery_module.classify_pointer
     grouped: dict[str, list[dict[str, Any]]] = {}
     for pointer in pointers:
         if not isinstance(pointer, Mapping):
@@ -1237,7 +1239,7 @@ def _portfolio_live_rows(
         project = str(pointer.get("project") or "")
         if not project:
             continue
-        classified = recovery_module.classify_pointer(pointer)
+        classified = classify(pointer)
         recorded = pointer.get("closure_disposition")
         disposition = (
             str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
@@ -1250,10 +1252,17 @@ def _portfolio_live_rows(
                 "role": str(pointer.get("role") or ""),
                 "classification": classification,
                 "process_alive": classified.get("process_alive"),
-                # Second half of the reconciliation contract: a disposition
-                # excuses a pointer only while it holds its own classification,
-                # so a run that has since stopped is unreconciled again.
-                "unreconciled": not recovery_module.closure_disposition_valid(
+                # A run whose turn is still open is not awaiting anyone's
+                # reconciliation, so it is not counted here; anything else that
+                # carries no disposition excusing it — including a run that
+                # declared ``still-working`` and has since stopped — is the
+                # forgotten work this column exists to surface. The closure
+                # drain narrows the same predicate to pointers past their grace
+                # window and already finished with; the portfolio reports the
+                # whole population, so a pointer still inside its grace window
+                # is visible here before the drain would name it.
+                "unreconciled": classification != "running"
+                and not recovery_module.closure_disposition_valid(
                     disposition, classification
                 ),
             }
@@ -1328,6 +1337,7 @@ def portfolio_report(
     live_pointers: Iterable[Mapping[str, Any]] | None = None,
     roadmap_reader: Callable[[str, Path], Mapping[str, Any]] | None = None,
     lane_reader: Callable[[str, Path], Mapping[str, Any]] | None = None,
+    classifier: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compose one row per mounted project, ranked by uncovered critical hours.
 
@@ -1344,7 +1354,7 @@ def portfolio_report(
         live_pointers = list_live()
     read_roadmap = roadmap_reader or _project_roadmap
     read_lane = lane_reader or _project_lane_reading
-    grouped = _portfolio_live_rows(live_pointers)
+    grouped = _portfolio_live_rows(live_pointers, classifier=classifier)
     rows: list[dict[str, Any]] = []
     errors: list[str] = []
     for project in sorted(mounted):
@@ -1388,3 +1398,33 @@ def portfolio_report(
         ),
         "rows": rows,
     }
+
+
+def parse_overrides(pairs: Iterable[str]) -> dict[str, Any]:
+    """Turn ``dotted.key=value`` strings into a nested override layer.
+
+    Values are parsed as YAML scalars so that ``session_reuse=true`` is a
+    boolean rather than a string the schema would reject.
+    """
+    yaml = _require_yaml()
+    overrides: dict[str, Any] = {}
+    for pair in pairs:
+        key, sep, raw = pair.partition("=")
+        if not sep or not key.strip():
+            raise FlightConfigError(
+                "<override>", pair, "must be written as dotted.key=value"
+            )
+        try:
+            value = yaml.safe_load(raw)
+        except yaml.YAMLError as exc:
+            raise FlightConfigError("<override>", key, f"unparsable value — {exc}")
+        cursor = overrides
+        parts = [part for part in key.strip().split(".") if part]
+        for part in parts[:-1]:
+            nxt = cursor.get(part)
+            if not isinstance(nxt, dict):
+                nxt = {}
+                cursor[part] = nxt
+            cursor = nxt
+        cursor[parts[-1]] = value
+    return overrides
