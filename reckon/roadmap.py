@@ -955,11 +955,12 @@ def _derived_sprint_state(members: list[dict[str, Any]]) -> str:
     return "planned"
 
 
-# A sprint's own status is a scheduling fact (open, active/pushed, planned);
-# "in-progress" describes the work inside it. Comparing the two reported drift
-# on every open sprint whose members had started, so the member-derived label
-# is treated as compatible with any non-terminal stored status.
-_DRIFT_MEMBER_PROGRESS_STORED = frozenset({"planned", "open", "active"})
+# A sprint's status is a scheduling fact, and "in-progress" describes the work
+# inside it, so a sprint whose members have started does not contradict a status
+# of "open" (work remains, not the pushed sprint) or "active" (pushed). It does
+# contradict "planned" — that status says the work has not started, and a
+# started member is precisely what reports drift for.
+_DRIFT_MEMBER_PROGRESS_STORED = frozenset({"open", "active"})
 
 
 def _drift_is_member_progress(stored: str, derived: str) -> bool:
@@ -1959,7 +1960,7 @@ def build_roadmap(
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
         "active_sprint_id": active_sprint_id,
-        "open_sprints": open_sprint_ids,
+        "open_sprint_ids": open_sprint_ids,
         "completion": {
             "plans": len(plan_values),
             "completed": completed_count,

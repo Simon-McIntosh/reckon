@@ -41,9 +41,10 @@
     so an interrupted push restores both files rather than leaving two active sprints or none. The
     <code>push</code> op routes to it through <code>apply_resource_ops</code>.
     <code>reckon/roadmap.py</code> derives <code>active_sprint_id</code> from the unique active row,
-    reports the remaining live sprints in a top-level <code>open_sprints</code> bucket, and labels
-    member progress <code>in-progress</code> rather than <code>active</code> so an open sprint whose
-    members have started carries no <code>state_drift</code>. <code>reckon/mcp.py</code> raises
+    reports the remaining live sprints in a top-level <code>open_sprint_ids</code> bucket, and labels
+    member progress <code>in-progress</code> rather than <code>active</code> so a sprint stored
+    <code>open</code> or <code>active</code> whose members have started carries no
+    <code>state_drift</code>. <code>reckon/mcp.py</code> raises
     <code>multiple-active-sprints</code> to error severity and adds
     <code>pushed-sprint-has-no-ready-work</code> at warn. The sprint skill documents the status
     meanings and the op.</p>
@@ -106,15 +107,18 @@
 
   <section id="measure">
     <h2>Measured against a stated base</h2>
-    <p>Base revision <code>acb5d608</code>. No baseline failure log was captured before the change,
-    so the gate below is an absolute green rather than a delta, and the honest delta measurement is
-    the sibling file recorded under the caveats.</p>
+    <p>Base revision <code>acb5d608</code>. The gate selects every file this change holds, because a gate
+    that cannot reach the file it broke is the defect that let the second failure past once. No
+    baseline log was captured before the code change, so the first row is an absolute green; the
+    parity failure is a measured delta, green 11 of 11 at the base and red at this head, and the
+    repair is what the second row records.</p>
     <table>
       <thead><tr><th>Run</th><th>Result</th><th>Exit</th></tr></thead>
       <tbody>
-        <tr><td><code>tests/test_sprint_push_status.py tests/test_mcp_roadmap.py</code></td><td>24 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_sprint_push_status.py tests/test_mcp_roadmap.py tests/test_roadmap_sprint_derivation.py tests/test_surface_parity.py</code></td><td>38 passed</td><td>0</td></tr>
         <tr><td><code>tests/test_schema.py::test_byte_identity_on_real_reckon_plans</code></td><td>1 passed</td><td>0</td></tr>
-        <tr><td><code>tests/test_roadmap_sprint_derivation.py</code></td><td>1 failed, 1 passed</td><td>1</td></tr>
+        <tr><td><code>tests/test_roadmap_sprint_derivation.py</code>, before the literal repair</td><td>1 failed, 1 passed</td><td>1</td></tr>
+        <tr><td><code>tests/test_surface_parity.py</code> at this head, before the drift-rule repair</td><td>1 failed (11 of 11 at base)</td><td>1</td></tr>
       </tbody>
     </table>
     <p>The new test file carries ten cases: the enum and the resource accept <code>open</code>; a
@@ -128,16 +132,52 @@
     landing record's own structure.</p>
   </section>
 
+  <section id="second-failure">
+    <h2>The failure a two-file gate could not see</h2>
+    <p>The first gate named two files, which was itself the defect: a gate that selects only the
+    files the author thought of cannot reach a file the change broke. The coordinator measured
+    <code>tests/test_surface_parity.py</code> green 11 of 11 at the base revision and red at this
+    head, so the failure was added rather than pre-existing. It is
+    <code>test_a_single_patched_value_on_one_side_makes_the_comparison_fail[sprint-drift-returned]</code>,
+    and it is not the same class as the label literals. The mutation patches the returned side's
+    <code>state_drift</code> for a sprint stored <code>planned</code> whose members have started, and
+    at this head that row carried no <code>state_drift</code> at all, so the mutation raised
+    <code>KeyError: 'state_drift'</code> before any comparison ran. The parity harness was right, and
+    the drift-suppression rule was wrong.</p>
+    <p>The rule treated a member-derived <code>in-progress</code> as compatible with any non-terminal
+    stored status, including <code>planned</code>. That collapses a real contradiction:
+    <code>planned</code> says the work has not begun and a started member says it has. The rule is
+    narrowed to <code>open</code> and <code>active</code> — the two statuses a started member
+    genuinely does not contradict — and the contract is pinned by
+    <code>test_planned_sprint_with_started_members_reports_drift</code>. Measured across the three
+    stored statuses with one started member: <code>planned</code> &rarr; drift
+    <code>{stored: planned, derived: in-progress}</code>; <code>open</code> and <code>active</code>
+    &rarr; no drift.</p>
+  </section>
+
+  <section id="key-collision">
+    <h2>One name, two sets</h2>
+    <p>The top-level open-sprint bucket was first named <code>open_sprints</code>, the name the
+    payload already uses for a different set: <code>schedule.open_sprints</code> is the
+    schedule-horizon list of sprints holding open work, ordered and bounded by the configured
+    window, while the top-level bucket is the sprints whose stored status is <code>open</code>. The
+    two are not the same set, and one name made them indistinguishable to a reader. The top-level
+    key is renamed <code>open_sprint_ids</code>, beside <code>active_sprint_id</code>; the horizon
+    key and its consumers are untouched. Measured: no consumer outside this change reads the
+    top-level key, and the three tests that assert <code>open_sprints</code> read the nested
+    <code>schedule</code> object.</p>
+  </section>
+
   <section id="caveats">
     <h2>Recorded rather than smoothed over</h2>
     <ul>
-      <li><strong>An out-of-fence sibling test carries the superseded label.</strong>
-        <code>tests/test_roadmap_sprint_derivation.py:66</code> asserts the derived sprint label the
-        spec changes to <code>in-progress</code>, and reds by exactly that one literal
-        (<code>1 failed, 1 passed</code>). The adjacent assertion at line 67 that an agreeing sprint
-        carries no <code>state_drift</code> still passes. That file sits outside this node's write
-        scope and was not edited; the repair is the two string literals in that one test. It is the
-        measured cost of the label change, not a defect in it.</li>
+      <li><strong>The sibling test that carried the superseded label is updated.</strong>
+        <code>tests/test_roadmap_sprint_derivation.py</code> asserted the member-derived sprint label
+        as <code>active</code>; the two literals now read <code>in-progress</code>, which is what the
+        member-derived label became. The adjacent assertion that a sprint stored <code>active</code>
+        with a started member carries no <code>state_drift</code> is unchanged. The file was outside
+        this node's write scope when the failure was measured and was added to the scope by the
+        coordinator before the edit.</li>
       <li><strong>The push op is placed on the sprint resource being pushed, not literally on the
         project resource.</strong> The plan text names the op on the project resource, but
         <code>project.json</code> is forbidden by <code>PROJECT_DERIVED_FIELDS</code> from carrying

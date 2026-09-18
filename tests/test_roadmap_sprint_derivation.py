@@ -63,10 +63,10 @@ def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
 
     assert shipped["derived_state"] == "shipped"
     assert shipped["state_drift"] == {"stored": "planned", "derived": "shipped"}
-    assert agreeing["derived_state"] == "active"
+    assert agreeing["derived_state"] == "in-progress"
     assert "state_drift" not in agreeing
     assert empty["derived_state"] == "empty"
-    assert started["derived_state"] == "active"
+    assert started["derived_state"] == "in-progress"
 
 
 def test_sprint_surface_reads_state_and_drift_from_roadmap_payload(

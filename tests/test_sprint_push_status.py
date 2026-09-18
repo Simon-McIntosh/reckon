@@ -108,7 +108,7 @@ def test_roadmap_derives_the_unique_active_sprint_and_buckets_open() -> None:
         ],
     )
     assert report["active_sprint_id"] == "S2"
-    assert report["open_sprints"] == ["S1", "S3"]
+    assert report["open_sprint_ids"] == ["S1", "S3"]
 
 
 def test_member_progress_derives_in_progress_without_open_sprint_drift() -> None:
@@ -120,6 +120,21 @@ def test_member_progress_derives_in_progress_without_open_sprint_drift() -> None
     row = report["sprints"][0]
     assert row["derived_state"] == "in-progress"
     assert "state_drift" not in row
+
+
+def test_planned_sprint_with_started_members_reports_drift() -> None:
+    """A stored `planned` sprint whose members have started is a real
+    contradiction: the status says the work has not begun and the members say it
+    has. Only `open` and `active` describe a scheduling state that a started
+    member does not contradict."""
+    report = build_roadmap(
+        "sample",
+        [_plan("moved", "active", 0.3)],
+        [{"id": "S1", "status": "planned", "items": ["moved"]}],
+    )
+    row = report["sprints"][0]
+    assert row["derived_state"] == "in-progress"
+    assert row["state_drift"] == {"stored": "planned", "derived": "in-progress"}
 
 
 def test_audit_raises_two_active_sprints_at_error_severity() -> None:

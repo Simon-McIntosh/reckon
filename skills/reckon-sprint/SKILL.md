@@ -52,9 +52,11 @@ work the project is scheduling now. **`open`** means work remains and this is
 not the pushed sprint, so a project with several live sprints has one `active`
 and the rest `open`. `planned` is for work not yet started. The roadmap reports
 the pushed sprint as `active_sprint_id`, lists the other live sprints in
-`open_sprints`, and derives a sprint's state from its members: one whose members
-have started is `derived_state: "in-progress"` — member progress describes the
-work inside a sprint, not the sprint's own scheduling status.
+`open_sprint_ids`, and derives a sprint's state from its members: one whose
+members have started is `derived_state: "in-progress"` — member progress
+describes the work inside a sprint, not the sprint's own scheduling status, so a
+started member is not drift against a stored `open` or `active` status. It *is*
+drift against `planned`, because that status says the work has not begun.
 
 Use the **push op** to change which sprint is active; never set `status` to
 `active` directly. A bare `set` promotes one sprint and leaves the previous one
