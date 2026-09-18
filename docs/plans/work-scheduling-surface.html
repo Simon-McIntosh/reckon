@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-18">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -195,6 +195,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-wss-handover-pointers" data-who="" data-when="">
     <div class="r-comment-body"><p>Both resolved 2026-09-18 by handover to the reckon S18 coordinator, and the resolution text the resolve op was given did not survive the write, so the pointers are stated here. f-wss-006 (the recovery sweep dispatching the review it already composes, <code>recovery.py</code> near line 145) is section 2 of <code>an-orchestrator-is-bound-by-its-inbox</code>. f-wss-007 (the follower's critical-path coverage cell) is section 10 of <code>monitor-renders-what-it-is-given</code>, gated by <code>g-coverage-figure-exists</code> on section 3 of this plan landing its coverage derivation as a callable outside the HTTP handler; the cell consumes that derivation and never re-derives it in the renderer.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260918T085656170170-wss-portfolio-flight" data-who="reckon-ship" data-when="2026-09-18T12:19:16.335Z">
+    <div class="r-comment-body"><p>portfolio flight view ranking mounted projects by uncovered critical hours; 86 passed against 80 at base acb5d608, zero added failures. Reconciled by a later coordinator after its own session ended. Independent review 83 with four findings, two material and carried as follow-ons rather than fixed here: portfolio_view has no caller and crew(view=portfolio) is refused by the literal view set, so the promised surface is unreachable at this head; and intermediate commit d4b58174 removes parse_overrides while cli.py and two test modules import it, so that tree fails at import while the run head restores it</p></div>
 </div>
 </section>
 </main>
