@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import queue
 import shutil
@@ -194,3 +195,86 @@ def test_failed_reexec_reports_once_and_keeps_the_registration(
     assert output.getvalue().count("could not reload itself") == 1
     assert "cycle it with:" in output.getvalue()
     assert cli_module._FOLLOWER_CHECKPOINT_ENV not in os.environ
+
+
+def _released_registration(project: str, session: str) -> Path:
+    """Write a registration whose lock is free and whose process is gone.
+
+    The file is what a released registration leaves behind: nothing unlinks it
+    when the lock is released, so the directory grows one entry per session
+    name that has ever followed the project.
+    """
+    path = runs.follower_lock_path(project, session)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": project,
+                "session": session,
+                "pid": 999_999_999,
+                "pid_start_time": "1",
+                "delivery": "stream",
+                "started_at": "2026-09-01T09:00:00Z",
+            }
+        )
+    )
+    return path
+
+
+def test_payload_lists_delivering_followers_and_counts_released(isolated_home) -> None:
+    """One delivering registration among twenty-seven is one row and a 26.
+
+    The registry is append-only: releasing the lock never unlinks the file, so
+    a reader was handed one row per session name that had ever followed the
+    project. The row count answered "how many names" instead of that question.
+    """
+    for number in range(26):
+        _released_registration("proj", f"released-{number}")
+
+    with runs.follower_claim("proj", "delivering", delivery="stream"):
+        payload = runs.project_watch_visibility("proj")
+
+        sessions = [row["session"] for row in payload["followers"]]
+        assert sessions == ["delivering"], "only delivering registrations are rows"
+        assert payload["followers_released"] == 26
+        assert payload["followers_live"] == 1
+        assert payload["delivering_sessions"] == ["delivering"]
+        assert "not_live_because" not in payload["followers"][0]
+
+    # Reading the payload repairs nothing: a released registration stays on
+    # disk, because unlinking it here would race a fresh inode against a stable
+    # one and hand two processes the same session's lock.
+    remaining = sorted(runs.follower_dir("proj").glob("*.lock"))
+    assert len(remaining) == 27, "no registration file is unlinked on a read path"
+
+
+def test_released_count_is_zero_rather_than_omitted(isolated_home) -> None:
+    """A directory with nothing released reports a zero, not a missing key."""
+    with runs.follower_claim("proj", "only", delivery="stream"):
+        payload = runs.project_watch_visibility("proj")
+
+    assert "followers_released" in payload, "the figure is stated, never omitted"
+    assert payload["followers_released"] == 0
+    assert payload["followers_live"] == 1
+
+
+def test_delivering_registration_is_reported_whatever_its_age(isolated_home) -> None:
+    """Delivery is decided by the held lock, not by the file's age.
+
+    Every released row here is newer on disk than the delivering one, so a
+    payload that ranked rows by mtime would drop the only registration that
+    delivers. A follower armed in the morning and still delivering at night
+    must survive rows half its age.
+    """
+    long_lived = 1_600_000_000  # 2020-09-13, older than any released row
+    for number in range(3):
+        _released_registration("proj", f"released-{number}")
+
+    with runs.follower_claim("proj", "long-lived", delivery="stream"):
+        os.utime(
+            runs.follower_lock_path("proj", "long-lived"), (long_lived, long_lived)
+        )
+        payload = runs.project_watch_visibility("proj")
+
+    assert [row["session"] for row in payload["followers"]] == ["long-lived"]
+    assert payload["followers_released"] == 3

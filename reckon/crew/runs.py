@@ -1821,6 +1821,7 @@ def project_watch_visibility(
         registering_process_alive is True and observer_alive is not False
     )
     followers = list_followers(project)
+    delivering = [row for row in followers if row["live"]]
     delivery = follower_state(project, session) if session is not None else None
     watcher_required = pointer_count > 0
     unwatched = watcher_required and not watcher_live
@@ -1850,27 +1851,30 @@ def project_watch_visibility(
         # after confirming it was not theirs, and it belonged to a live session
         # reading it. A follower's owner is whatever consumes its stdout, and
         # `consumer_pid` names that process.
+        # A registration file is never unlinked when its lock is released, so
+        # the directory holds one entry per session name that has ever followed
+        # the project. Only the registrations that deliver are rows: a released
+        # registration is not a reader, and listing it handed a reader a row to
+        # add and a `not_live_because` sentence to decode before it could ask
+        # whether the project is covered. The released remainder is stated as a
+        # count instead, which is the fact without the rows.
         "followers": [
             {
                 "session": row["session"],
-                "live": row["live"],
                 "delivery": row["delivery"],
                 "pid": row["follower"].get("pid"),
                 "consumer_pid": row["follower"].get("parent_pid"),
                 "since": row["follower"].get("started_at"),
-                **(
-                    {} if row["live"] else {"not_live_because": row["not_live_because"]}
-                ),
             }
-            for row in followers
+            for row in delivering
         ],
-        # The array is lossless because a stale registration is worth seeing,
-        # so the count that answers "is this project covered" is stated rather
-        # than left to be derived from the array's length.
-        "followers_live": sum(1 for row in followers if row["live"]),
-        "delivering_sessions": sorted(
-            row["session"] for row in followers if row["live"]
-        ),
+        # Both counts are stated rather than left to be derived from the array's
+        # length: the array holds nothing but delivering rows, so its length is
+        # already followers_live, and the released figure has no row to live in.
+        # A released count of zero is a measurement, so the key is always present.
+        "followers_live": len(delivering),
+        "followers_released": len(followers) - len(delivering),
+        "delivering_sessions": sorted(row["session"] for row in delivering),
         "session": session,
         "session_attached": None if delivery is None else bool(delivery["live"]),
         "arming_line": arming_line,
