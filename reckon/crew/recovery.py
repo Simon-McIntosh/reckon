@@ -1122,19 +1122,132 @@ def _wait_expected_seconds(
     return seconds, ""
 
 
+def _wait_condition_declares_no_wait(condition: str) -> bool:
+    """True when the condition's own prose says there is nothing to wait on.
+
+    A worker told to write its manifest before starting long output writes its
+    first one at orientation, and a healthy worker offered wait fields at that
+    moment fills them with a note about where it is rather than what is awaited.
+    The same happens later and on purpose: a worker recording a durable
+    checkpoint before a long compose step writes the fields deliberately and
+    says so in the condition. Recorded notes read: a condition opening with the
+    word ``none`` ("none - this is an interim checkpoint, not a held wait"),
+    read here exactly as the changed-paths prose-none rule reads that word — the
+    sentence must *open* with it, so a real condition that merely mentions
+    ``none`` later is left alone; the phrase written while the condition is
+    still unestablished ("exploring; not yet set"); and a sentence stating in
+    plain English that nothing is being awaited, in either wording a worker
+    reached for: "no external condition is awaited; this is an interim progress
+    record written before the report is composed", and the ledger's own
+    "no external resource is awaited - this first write records orientation
+    before the first edit". Every one of those declared its own absence, and
+    each was escalated anyway on the presence of the field alone.
+    """
+    text = condition.strip()
+    if re.match(r"none(?:\s|$)", text, re.IGNORECASE):
+        return True
+    if re.search(r"\bnot yet set\b", text, re.IGNORECASE):
+        return True
+    if re.search(r"\bno\s+external\b[^.;]{0,60}\bawaited\b", text, re.IGNORECASE):
+        return True
+    return bool(
+        re.search(r"\bnothing\s+(?:is\s+|to\s+be\s+)?awaited\b", text, re.IGNORECASE)
+    )
+
+
+# A probe that cannot report a pending state is not a probe: the null command
+# succeeds whatever is happening and prints nothing, so a declaration resting on
+# it reads terminal on every sweep, however completely the other fields are
+# filled in.
+_WAIT_PROBE_NO_OP_COMMANDS = frozenset({"true", ":", "exit"})
+
+
+def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
+    """True when a present probe can report nothing but success.
+
+    Only a probe that is actually present is read this way: an absent one is
+    the incomplete-declaration case the reader already reports, so the two
+    outcomes stay distinguishable.
+    """
+    if not probe:
+        return False
+    return Path(str(probe[0])).name in _WAIT_PROBE_NO_OP_COMMANDS
+
+
+def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
+    """The newest write to the run's stream, or None when there is none.
+
+    The stream is where an engine's own output lands, so its mtime is the one
+    fact about a run that says it is producing something right now. Absent or
+    unreadable is None rather than a zero: a run with no stream has taken no
+    measurement, and a missing file must not read as infinitely stale.
+    """
+    stream = Path(str(record.get("log_path") or ""))
+    try:
+        if stream.is_file():
+            return stream.stat().st_mtime
+    except OSError:
+        return None
+    return None
+
+
+def _declared_wait_age_seconds(
+    *,
+    started_seconds: float,
+    stream_mtime: float | None,
+    now_seconds: float,
+) -> int:
+    """Age a declared wait, without counting time the run was writing output.
+
+    A worker that is producing output is not parked, whatever its manifest
+    declares. Measured 2026-09-18: a run was escalated from waiting to
+    wait-aged at 1804 seconds while its newest stream file was zero minutes
+    old and still growing, because the age was read from the declaration and
+    nothing compared it against the run's own output. The clock that matters
+    is therefore the later of the two, so a declaration sitting above a live
+    stream stays young until the output actually stops — which is what makes
+    wait-aged usable as a recovery trigger rather than a reading a coordinator
+    has to take a second measurement to disbelieve.
+    """
+    latest = started_seconds
+    if stream_mtime is not None and stream_mtime > latest:
+        latest = stream_mtime
+    return max(0, int(now_seconds - latest))
+
+
 def _manifest_wait(
     manifest_data: Mapping[str, Any],
     manifest: Path,
     *,
     now_seconds: float,
     stale_after_seconds: int,
+    stream_mtime: float | None = None,
 ) -> dict[str, Any] | None:
-    """Return the complete external-wait declaration carried by a manifest."""
+    """Return the external-wait declaration a manifest actually holds.
+
+    None means the manifest holds no wait — either it is not waiting at all, or
+    it carries the four wait fields without a wait in them. A worker recording
+    where it stands at orientation is not a parked run during an orientation:
+    reading the mere presence of the fields as a declaration put healthy
+    workers in the waiting column, aged them into wait-aged, and offered them
+    to the resume sweep, which resumed them on a probe that was trivially
+    true. A declaration whose condition names no wait, or whose probe cannot
+    report a pending state, is therefore no declaration at all.
+
+    A declaration that survives both readings still ages against the run's own
+    output: a worker whose stream is still being written is producing, not
+    parked, so the age of its wait is measured from the newer of the wait's
+    declaration and the last stream write.
+    """
     if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
         return None
     condition = str(manifest_data.get("wait_condition") or "").strip()
     probe = _wait_probe(manifest_data.get("wait_probe"))
     terminal = _wait_terminal_values(manifest_data.get("wait_terminal"))
+    if _wait_condition_declares_no_wait(condition):
+        return None
+    if _wait_probe_is_a_no_op(probe):
+        return None
     resume_brief = str(manifest_data.get("resume_brief") or "").strip()
     missing = [
         name
@@ -1164,7 +1277,11 @@ def _manifest_wait(
             started_seconds = now_seconds
     else:
         started_seconds = started.timestamp()
-    age_seconds = max(0, int(now_seconds - started_seconds))
+    age_seconds = _declared_wait_age_seconds(
+        started_seconds=started_seconds,
+        stream_mtime=stream_mtime,
+        now_seconds=now_seconds,
+    )
     expected_seconds, expected_error = _wait_expected_seconds(
         manifest_data, default_seconds=stale_after_seconds
     )
@@ -1209,6 +1326,7 @@ def external_wait(
         manifest,
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
+        stream_mtime=_run_stream_mtime(record),
     )
 
 
@@ -1424,6 +1542,7 @@ def classify_pointer(
         manifest,
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
+        stream_mtime=_run_stream_mtime(record),
     )
     if wait is not None and not wait["valid"]:
         # An incomplete wait declaration is a reading failure carried on the

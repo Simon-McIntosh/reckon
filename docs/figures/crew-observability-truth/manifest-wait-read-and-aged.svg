@@ -1,0 +1,72 @@
+<svg viewBox="0 0 760 392" width="100%" style="max-width:760px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="Two panels. Top: five wait declarations as recorded on live healthy workers, each beside its repaired reading. A condition opening with none, a condition saying the wait is not yet set, a condition saying no external condition is awaited, and a probe of true with terminal exit:0 all read as working with no wait held, while a real condition naming a scheduler job with an squeue probe reads as waiting. Bottom: the age of a real declaration measured two ways. Aged from the declaration alone it is 1804 seconds, thirty times past the 60 second horizon, which raised wait-aged on a run whose stream was five seconds old. Aged from the later of the declaration and the last stream write it is five seconds, below the horizon, while the same declaration over a stream quiet 1804 seconds still ages.">
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #3a3a38; }
+    .h { font-size: 14px; font-weight: 600; fill: #1a1a19; }
+    .lbl { font-size: 11px; }
+    .code { font-family: system-ui; font-size: 10.5px; }
+    .note { font-size: 10.5px; fill: #6b6a63; }
+    .colhead { font-size: 10.5px; fill: #6b6a63; letter-spacing: 0.04em; }
+  </style>
+
+  <text x="16" y="24" class="h">What a manifest wait declares, and what ages it</text>
+
+  <!-- ── Panel A: the reading ladder ─────────────────────────────────── -->
+  <text x="16" y="48" class="colhead">THE DECLARATION AS A WORKER WROTE IT</text>
+  <text x="512" y="48" class="colhead">READ AS</text>
+
+  <g class="lbl">
+    <rect x="16" y="56" width="484" height="26" rx="4" fill="#f4f4f0" stroke="#d6d5cb"/>
+    <text x="26" y="73" class="code">wait_condition: none — this is an interim checkpoint</text>
+    <rect x="512" y="56" width="232" height="26" rx="4" fill="#eef7ee" stroke="#7fa07f"/>
+    <text x="522" y="73">working — no wait held</text>
+
+    <rect x="16" y="88" width="484" height="26" rx="4" fill="#f4f4f0" stroke="#d6d5cb"/>
+    <text x="26" y="105" class="code">wait_condition: exploring; not yet set</text>
+    <rect x="512" y="88" width="232" height="26" rx="4" fill="#eef7ee" stroke="#7fa07f"/>
+    <text x="522" y="105">working — no wait held</text>
+
+    <rect x="16" y="120" width="484" height="26" rx="4" fill="#f4f4f0" stroke="#d6d5cb"/>
+    <text x="26" y="137" class="code">wait_condition: no external condition is awaited</text>
+    <text x="270" y="137" class="note">(written on purpose, before a long compose step)</text>
+    <rect x="512" y="120" width="232" height="26" rx="4" fill="#eef7ee" stroke="#7fa07f"/>
+    <text x="522" y="137">working — no wait held</text>
+
+    <rect x="16" y="152" width="484" height="26" rx="4" fill="#f4f4f0" stroke="#d6d5cb"/>
+    <text x="26" y="169" class="code">wait_probe: ["true"]   wait_terminal: exit:0</text>
+    <rect x="512" y="152" width="232" height="26" rx="4" fill="#eef7ee" stroke="#7fa07f"/>
+    <text x="522" y="169">working — the probe can only succeed</text>
+
+    <rect x="16" y="184" width="484" height="26" rx="4" fill="#f4f4f0" stroke="#d6d5cb"/>
+    <text x="26" y="201" class="code">wait_condition: scheduler job ﻿42 has left the queue</text>
+    <rect x="512" y="184" width="232" height="26" rx="4" fill="#fff4d6" stroke="#d8a33a"/>
+    <text x="522" y="201">waiting — and ages</text>
+  </g>
+
+  <!-- ── Panel B: how a real declaration is aged ─────────────────────── -->
+  <text x="16" y="242" class="h" font-size="12">A real declaration's age, measured two ways — the run's stream was 5 s old</text>
+
+  <!-- axis 0..1800 s over x=130..700 -->
+  <line x1="130" y1="266" x2="130" y2="352"/>
+
+  <line x1="130" y1="266" x2="700" y2="266" stroke="#c3c2b7"/>
+  <text x="130" y="278" class="note" text-anchor="middle">0 s</text>
+  <text x="415" y="278" class="note" text-anchor="middle">900 s</text>
+  <text x="700" y="278" class="note" text-anchor="middle">1804 s</text>
+
+  <!-- horizon at 60 s -->
+  <line x1="149" y1="262" x2="149" y2="352" stroke="#c0504d" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <text x="149" y="366" class="note" text-anchor="middle" fill="#c0504d">60 s horizon</text>
+
+  <!-- bar 1: declaration alone -->
+  <rect x="130" y="292" width="571" height="18" rx="3" fill="#f2dede" stroke="#c0504d"/>
+  <text x="130" y="288" class="lbl">aged from the declaration alone → 1804 s, 30× past the horizon</text>
+  <text x="712" y="305" class="note" fill="#c0504d">wait-aged</text>
+
+  <!-- bar 2: declaration vs the run's own output -->
+  <rect x="130" y="326" width="8" height="18" rx="3" fill="#eef7ee" stroke="#7fa07f"/>
+  <text x="130" y="322" class="lbl">aged from the later of the declaration and the last stream write → 5 s</text>
+  <text x="150" y="339" class="note" fill="#2f6b34">waiting — the run is producing output, so it is not parked</text>
+
+  <path d="M 701 301 C 640 301, 300 330, 138 335" fill="none" stroke="#b9b8ad" stroke-width="1"/>
+</svg>
