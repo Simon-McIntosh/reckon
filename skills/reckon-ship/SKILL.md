@@ -106,6 +106,7 @@ resolve target
 read task requirements + apply explicit runtime routing + applicable skill
 → audit plan currency against the code + dispatch the prior-art scout (reuse map)
 → check every node against the eight-property contract (§3b)
+→ arm ONE bare `crew follow --project P --session S` as the session's wake-up — never a shell, never a poll loop (rule 18)
 → reckon crew preflight — a spent backend holds its nodes, the rest still run
 → reckon crew dispatch each ready node — branch only on the returned launch kind
 → emit the dispatch summary, naming the gate that closes the wave
@@ -264,6 +265,29 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
     the nodes cite; a node that authors new machinery states why each named
     reuse candidate fails. Trivial mechanical edits are exempt; "the scout
     would slow us down" is not.
+18. **The follower is the wake-up; a shell is not.** Arm exactly one
+    `reckon crew follow --project P --session S` per session, bare, through the
+    harness's per-line notification primitive (§One producer, and
+    `references/orchestrator-harness/<harness>.md`). It delivers every
+    transition to this session as it happens. With it armed you do not need a
+    shell to find out what your fleet is doing, and **a shell must never be used
+    as a wake-up**: no `sleep`, no poll loop, no backgrounded command whose
+    purpose is to wait, and nothing re-run on a timer to see whether a run
+    finished. A command that reports only on exit delivers nothing here, because
+    what you are waiting on does not exit — the follower does not exit either,
+    which is why it is armed as a stream and not awaited.
+
+    Three costs make this binding rather than stylistic. A poll loop burns a
+    full turn per check and reads a pointer the follower already pushed. It
+    reads *stale* state between checks, so a run that finished is unnoticed
+    until the next tick, which is the measured cause of finished runs sitting
+    for hours. And every shell started to wait is a process on a shared login
+    node, aimed at nothing.
+
+    What a shell IS for: a one-shot read that answers a question the follower
+    does not carry — a diff, a git check, a gate log. Read fleet state through
+    `crew(project, view="live")` at turn time rather than by shelling out, and
+    let the follower decide when that turn happens.
 
 ## §Prerequisite blocking — STOP and ask for authorization
 

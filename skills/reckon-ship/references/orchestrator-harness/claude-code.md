@@ -162,7 +162,17 @@ caller hears nothing. `session_attached` is the field that answers it.
 A wave held on a reset timestamp knows *when* it can reopen —
 `reckon crew preflight` reports `resume_after_seconds` and `resume_at`. Turning
 that into an actual resumption is the harness-local part, and this host offers
-three forms, in increasing order of what they cost and commit to:
+three forms, in increasing order of what they cost and commit to.
+
+**Read this section as the narrow exception it is.** These forms exist because a
+quota reset is a *time*, and no fleet transition will ever fire for it, so the
+follower cannot deliver it. Everything the follower CAN deliver — a run
+finishing, blocking, dying, changing state at all — is delivered by the follower
+and must never be waited on with a shell. Never background a command to find out
+what a worker is doing, never re-run a check on a timer, and never sleep to let a
+run progress: the follower already pushes that transition, and a poll spends a
+whole turn to read state it pushed. SKILL.md rule 18 is the rule; this list is
+only for the case the follower structurally cannot cover.
 
 1. **A detached wait, then the check.** Background a command that sleeps until the
    reset and then re-runs the pre-flight; the harness re-invokes the session when
