@@ -638,18 +638,23 @@
       <code>reckon/crew/query.py</code> classifies every row as an arrival, a state change or
       re-inventory, keyed on first appearance per node rather than on event class, and both of the
       filters fleets wrote by hand are wrong against the live corpus &mdash; keeping only
-      <code>event == "transition"</code> drops 2,317 of 2,931 nodes whose first row is a baseline
-      with a null <code>from_state</code>, and keeping every baseline row invents 170 arrivals out
-      of that same baseline population because a re-attaching follower re-inventories the fleet in one
-      instant. The burst test that separates those from a genuine same-second wave is explicit,
+      <code>event == "transition"</code> re-dates 2,417 of the 3,031 nodes whose first row is a
+      baseline with a null <code>from_state</code> and loses 23 outright, and keeping every baseline
+      row invents 204 arrivals out of that same baseline population because a re-attaching follower
+      re-inventories the fleet in one instant (figures re-derived from the function's own output at
+      2026-09-18T09:26Z, over 12,446 rows; the earlier 2,317 conflated the re-dated population with
+      the lost one). The burst test that separates those from a genuine same-second wave is explicit,
       since a node whose only row is a re-inventory has no earlier row to fail a node-level rule.
-      Stamps are the other half and are never assumed: JSON rows return UTC, and 1,658 rendered
+      Stamps are the other half and are never assumed: JSON rows return UTC, and 2,314 rendered
       ticker rows return <code>observed_at_zone: unknown</code> rather than a local wall clock
-      read as UTC. No command is wired, because <code>reckon/cli.py</code> is outside this node;
-      the entry point the caller should add is recorded in the manifest follow-ons. Landed under
-      commit <code>d9e18423</code>; 8 new tests pass and the three prescribed sibling suites are
-      unchanged at 21, with zero added failures against base <code>ee356a93</code>, where the new
-      file fails collection with <code>ImportError</code>. Full record and figure:
+      read as UTC. Rendered arrivals entered the extraction's range after review found the function
+      dropped the row it exists to find: a rendered row whose only token left of the arrow is the
+      node carries no source state, and 656 such rows are on disk, 614 of them a node's first row.
+      No command is wired, and the fixture shapes are the corpus's own: the only rendered shapes on
+      disk are an arrow with one token to its left and an arrow with two. Landed under
+      commit <code>d9e18423</code>, fix under <code>f17ab71c</code>; 9 new tests pass and the three
+      prescribed sibling suites are unchanged at 21, with zero added failures against base
+      <code>ee356a93</code>, where the new file fails collection with <code>ImportError</code>. Full record and figure:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#one-extraction-answers-which-watch-rows-are-arrivals">arrivals extraction landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
