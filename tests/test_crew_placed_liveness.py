@@ -25,7 +25,8 @@ EXEC = "/opt/backends/bin/codex"
 def _runner(state: str | None):
     """A scheduler query answering one fixed state, or None when unread."""
 
-    def run(argv: list[str]) -> str | None:  # noqa: ARG001 - the state is fixed
+    def run(argv: list[str]) -> str | None:
+        del argv  # the state is fixed
         return state
 
     return run

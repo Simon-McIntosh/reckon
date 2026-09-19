@@ -2619,7 +2619,7 @@ def _run_scheduler_query(argv: list[str]) -> str | None:
     executable = shutil.which(argv[0])
     if executable is None:
         return None
-    completed = subprocess.run(  # noqa: S603 - argv is a fixed, non-shell vector
+    completed = subprocess.run(
         [executable, *argv[1:]],
         capture_output=True,
         text=True,

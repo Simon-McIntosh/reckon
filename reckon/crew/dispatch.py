@@ -3629,12 +3629,11 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     if not run_id:
         return
     placement, job_id = _placed_record_identity(run_id)
-    if placement:
-        # The pid that finished is the scheduler client, not the worker, so a
-        # job still in the system means the worker has not ended and there is no
-        # failure to record yet. Only a job that has left the queue is judged.
-        if _placement_job_alive(placement, job_id) is True:
-            return
+    # The pid that finished is the scheduler client, not the worker, so a job
+    # still in the system means the worker has not ended and there is no failure
+    # to record yet. Only a job that has left the queue is judged.
+    if placement and _placement_job_alive(placement, job_id) is True:
+        return
     record = _launch_failure_record(
         launched,
         exit_status=exit_status,
