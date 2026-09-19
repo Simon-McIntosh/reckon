@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T20:05:47",
+  "updated": "2026-09-19T20:14:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -193472,6 +193472,219 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T180615506949-crpc-skills-point-at-the-ensure-command",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a75",
+        "node": "crpc-skills-point-at-the-ensure-command",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 716,
+                "cached_input_tokens": 700776,
+                "input_tokens": 701494,
+                "output_tokens": 192,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 701686,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read section 5 of docs/plans/crew-runtime-positive-controls.html and the followup f-crpc-skills-point-at-the-ensure-command. The recovery prose in skills/reckon-ship that tells a coordinator to export the backend directory and restart watcher units by hand is replaced by one line naming reckon crew watch --ensure, with a sentence saying that a dispatch refused as unwatched is repaired by running it and that it is safe against a watcher already up. Any instruction the runtime now enforces is removed rather than restated, and the manifest names which file inside the skill was edited, since the section names a directory. Nothing outside skills/reckon-ship and the two record files is touched. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_doccheck.py plus any test file whose name mentions skill, on the login node, captured once with the exit status; if no test covers skill prose the manifest says so rather than implying coverage. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 1.0,
+          "goal": "Replace the manual watcher-recovery recipe in the ship skill with the ensure command the runtime now provides.",
+          "id": "crpc-skills-point-at-the-ensure-command",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T18:06:16Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T180615506949-crpc-skills-point-at-the-ensure-command/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-ship",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-skills-point-at-the-ensure-command"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-skill-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T18:06:20Z",
+        "completed_at": "2026-09-19T18:12:51.013Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 383,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 391,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "52724ac96633e66ee78a405d3cff442c4f383017",
+        "commits": [
+          "74f3c13ab81f136c4d0edd2682850cc3fa3224f1",
+          "64451d1310548a6994ad3fa58332977eefcf89d1"
+        ],
+        "changed_lines": {
+          "added": 68,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_doccheck.py tests/test_skill_contracts.py tests/test_skill_contract_parity.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-skills-point-at-the-ensure-command/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T180615506949-crpc-skills-point-at-the-ensure-command/manifest.md",
+        "scope_changed": false,
+        "session_id": "36aabd24-f998-4b29-8a11-1fe308e72747",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6757317,
+            "input_tokens_cumulative": 6757317,
+            "output_tokens": 31934,
+            "output_tokens_cumulative": 31934,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T18:12:51.013Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6757317,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 387.954,
+          "generated_tokens": 31934,
+          "generation_seconds": 354.628,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.8,
+          "machine_seconds": 33.326,
+          "peak_input_tokens": 138147,
+          "tokens_per_second": 90.05,
+          "wall_tokens_per_second": 82.31
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-skills-point-at-the-ensure-command",
+          "session_id": "36aabd24-f998-4b29-8a11-1fe308e72747",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T18:12:51.013Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.82,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.82,
+          "at_complete": 0.86,
+          "verdict": "moved"
+        },
+        "tool_steps": 62.0,
+        "orientation_input_tokens": 3401585.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -193756,6 +193969,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1722
+    "_version": 1723
   }
 }
