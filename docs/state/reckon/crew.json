@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T14:37:17",
+  "updated": "2026-09-19T14:40:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -189116,6 +189116,246 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T114226411288-scci-wiring-asserted-at-creation",
+        "plan": "section-contract-and-computed-impl",
+        "section": "\u00a77",
+        "node": "scci-wiring-asserted-at-creation",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 740,
+                "cached_input_tokens": 848259,
+                "input_tokens": 849031,
+                "output_tokens": 3701,
+                "reasoning_output_tokens": 361,
+                "total_tokens": 852732,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "sections 6 and 7 of the plan: (a) reckon/doccheck.py gains a finding unwired-plan that fires when an implementable plan (status not shipped, done, superseded, abandoned, archived, historical or reference; reckon-type plan) declares no plan-depends-on, no plan-blocks, no plan-informs and no gate, unless it carries a plan-standalone meta whose content is a one-sentence reason; the finding is a warning for plans whose plan-modified predates the landing date of this section and an error otherwise, and the message carries the three-question checklist (does my first section wait on it, does it consume my evidence, does one section of mine wait on one section of it); (b) reckon/mcp.py edit_plan with create=True refuses the same condition with the same message, and the PlanState schema in reckon/_schema.py carries standalone as an optional string so read_plan round-trips it; (c) reckon/roadmap.py emits the same finding into wiring_findings at the same severities so the sprint view shows it; (d) skills/reckon-create/SKILL.md Step 1.5 and skills/reckon-edit/SKILL.md carry the checklist as a table the author fills from the sprint's plan list, and the existing sentence in reckon-create about depends_on grammar gains the [project:]slug[#section] form with one worked example of a section gate; (e) tests in tests/test_doccheck_unwired_plan.py cover the four paths (wired plan silent, unwired new plan error, unwired old plan warning, standalone declaration silent) and a roadmap test covers the finding; (f) run the audit over nova (mount at /home/ITER/mcintos/Code/nova/docs) read-only and record in the evidence anchor how many of its live plans the finding names, which the plan text predicts as nine of sixteen; gate is uv run --no-sync pytest on the new tests plus tests/test_doccheck*.py and tests/test_roadmap*.py with zero added failures against base; the evidence record docs/evidence/archive/section-contract-and-computed-impl-landed.html does not exist yet, create it with reckon-type evidence and plan-evidence-for section-contract-and-computed-impl and one anchor each for sections 6 and 7; every uv command carries --no-sync; py_compile with /home/ITER/mcintos/Code/reckon/.venv/bin/python before each commit; manifest at the first commit; status words complete, waiting or blocked only; a wait, if declared, carries wait_condition, wait_probe as a JSON list command, wait_terminal and a filled resume_brief",
+          "estimated_hours": null,
+          "goal": "refuse an unwired implementable plan at creation and audit unless it declares itself standalone, and put the wiring checklist in the create and edit skills",
+          "id": "scci-wiring-asserted-at-creation",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T11:42:26Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114226411288-scci-wiring-asserted-at-creation/manifest.md",
+          "plan": "section-contract-and-computed-impl",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/doccheck.py",
+            "reckon/mcp.py",
+            "reckon/_schema.py",
+            "reckon/roadmap.py",
+            "skills/reckon-create/SKILL.md",
+            "skills/reckon-edit/SKILL.md",
+            "tests/test_doccheck_unwired_plan.py",
+            "tests/test_roadmap_unwired_plan.py",
+            "docs/plans/section-contract-and-computed-impl.html",
+            "docs/evidence/archive/section-contract-and-computed-impl-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/scci-wiring"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-scci-wiring-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T11:42:34Z",
+        "completed_at": "2026-09-19T12:08:30.455Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1546,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1556,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "568f92ddfed031eeedfa06fee133e9fdfb81bc77",
+        "commits": [
+          "5ded9147b7b24344b10789449a069d3a097a801a",
+          "e87e5e3ac16007fc52fe62f2dc396eda6bf08601",
+          "033cd1f2f99a6ae03057266a797255b1864f5de0"
+        ],
+        "changed_lines": {
+          "added": 937,
+          "removed": 19,
+          "files": 11
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest over the doccheck and roadmap test files (133 passed, zero added against base 568f92dd)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/scci-wiring/gate-pytest.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114226411288-scci-wiring-asserted-at-creation/manifest.md",
+        "scope_changed": false,
+        "session_id": "d9a23147-cf94-4152-8b77-16ea783c81b2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 18488960,
+            "input_tokens_cumulative": 18488960,
+            "output_tokens": 89870,
+            "output_tokens_cumulative": 89870,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T12:08:30.455Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 15,
+            "evidence": 17,
+            "fit": 16,
+            "goal_fidelity": 17,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 83
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18656024,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1553.274,
+          "generated_tokens": 99159,
+          "generation_seconds": 1444.627,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 108.647,
+          "peak_input_tokens": 165764,
+          "tokens_per_second": 68.64,
+          "wall_tokens_per_second": 63.84
+        },
+        "follow_on_paths": [
+          "reckon/_plan_html.py",
+          "reckon/_store.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest on",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/figures/unwired-plan-rule/decision-flow.png",
+            "reason": "the decision-flow figure the evidence anchor embeds; a figure home the brief omitted from the write scope"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/scci-wiring-asserted-at-creation",
+          "session_id": "d9a23147-cf94-4152-8b77-16ea783c81b2",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T12:08:30.455Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "section-contract-and-computed-impl",
+          "at_dispatch": null,
+          "at_complete": 0.22,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "tool_steps": 176.0,
+        "orientation_input_tokens": 3891343.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -189400,6 +189640,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1686
+    "_version": 1687
   }
 }
