@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T22:55:40",
+  "updated": "2026-09-19T23:38:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -195075,6 +195075,256 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T203706841041-awcj-one-worker-under-one-allocation",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a71",
+        "node": "awcj-one-worker-under-one-allocation",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 307,
+                "cached_input_tokens": 878562,
+                "input_tokens": 878871,
+                "output_tokens": 1254,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 880125,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read section 1 of docs/plans/a-worker-is-charged-to-a-job.html, including its Files paragraph, which names the four modules and fixes what optional means. A backend may declare a placement; when it does, the launch plan built in reckon/crew/dispatch.py prefixes the already-resolved argv with the scheduler invocation rather than replacing it, so the absolute executable, the environment and the stdin, stdout and stderr paths are carried through unchanged, and absence of the field means today login-node launch so no declaring backend changes behaviour. The schema field joins the backend definition in reckon/flight.py. The run record gains the job id beside the pid in whichever of reckon/crew/runs.py or reckon/crew/promotion.py you choose, and the manifest says which and why. Then prove it on one real node rather than by test alone: dispatch one throwaway local-lane node with the placement declared, let it run to completion on a compute node, and record from that run the partition and job id, the worker measured cores and peak memory, the queue wait between dispatch and first stream record, and whether a queued allocation was distinguishable from a slow worker in the surfaces a coordinator watches. The three failure shapes are not this node subject. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py plus any new file, on the login node, captured once with the exit status; base 49f36920, state the delta as a set difference. Commits carry a body and name the mechanism in the subject scope. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 5.0,
+          "goal": "Run one local-lane worker under a scheduler allocation and record what that one run measures.",
+          "id": "awcj-one-worker-under-one-allocation",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T20:37:07Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T203706841041-awcj-one-worker-under-one-allocation/manifest.md",
+          "negative_control": "remove the placement prefix so the launch plan builds the bare argv again; the case asserting a placed plan carries the scheduler invocation must redden",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/flight.py",
+            "reckon/crew/runs.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_placement.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/awcj-one-worker-under-one-allocation"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-proto-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T20:37:11Z",
+        "completed_at": "2026-09-19T21:16:56.333Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2378,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2385,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "b82dcbe5bc3d411454e5b310cce4c231b4ddddcb",
+        "commits": [
+          "740e4065a3288df8cbf2876bc60df5831b68cd73",
+          "029ab7885d87d021304b683eedfb9d2bb73309cf",
+          "09e27b83923e822a825cd5f31218eb4e0a83b1da",
+          "b029c66a9208e0d9526fe0e9a7de4e706153b9a6"
+        ],
+        "changed_lines": {
+          "added": 569,
+          "removed": 3,
+          "files": 9
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py tests/test_crew_placement.py",
+          "exit_status": 0,
+          "log_path": "/tmp/awcj/gate_final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T203706841041-awcj-one-worker-under-one-allocation/manifest.md",
+        "scope_changed": false,
+        "session_id": "a518a7aa-bc03-4cc9-882f-0126382f8084",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 874055,
+            "input_tokens_cumulative": 874055,
+            "output_tokens": 2900,
+            "output_tokens_cumulative": 2900,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T21:16:56.333Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 17847110,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 43.196,
+          "generated_tokens": 87304,
+          "generation_seconds": 29.624,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 23.2,
+          "machine_seconds": 13.572,
+          "peak_input_tokens": 111253,
+          "tokens_per_second": 2947.07,
+          "wall_tokens_per_second": 2021.11
+        },
+        "follow_on_paths": [
+          "placement.options",
+          "stream.jsonl",
+          "tests/test_schema.py::test_committed_schema_matches_generated",
+          "docs/_shared/plan.schema.json",
+          "reckon/_schema.py",
+          "reckon/_schema.py."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/_shared/flight.schema.json",
+            "reason": "generated output of the schema source, regenerated rather than hand-edited"
+          },
+          {
+            "path": "reckon/_flight_schema.py",
+            "reason": "generated output of the schema source, regenerated rather than hand-edited"
+          },
+          {
+            "path": "reckon/schema/flight.yaml",
+            "reason": "the schema is generated from this source, which my Files paragraph did not name; scope extended explicitly during the run"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-one-worker-under-one-allocation",
+          "session_id": "a518a7aa-bc03-4cc9-882f-0126382f8084",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T21:16:56.333Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": null,
+          "at_complete": 0.2,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_placement.py"
+          ],
+          "declaration": "remove the placement prefix so the launch plan builds the bare argv again; the case asserting a placed plan carries the scheduler invocation must redden",
+          "log": "/tmp/awcj/negative_control.log",
+          "resolved_log": "/tmp/awcj/negative_control.log"
+        },
+        "tool_steps": 88.0,
+        "orientation_input_tokens": 2983006.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -195359,6 +195609,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1736
+    "_version": 1737
   }
 }
