@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.995">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 </head>
 <body>
   <main class="plan-doc">
@@ -422,6 +422,11 @@
     <div class="r-fu-body">Promotion compares the red log's content against the declared mutation, so a genuine red run that does not name it is refused as a failure for some other reason. Three nodes produced three answers: one wrote a MUTATION header, one wrote MUTATION DECLARED, and one wrote no header and was refused until it was resumed to add one. The requirement is real and the convention is nowhere a worker reads. State it in the manifest template gloss in reckon/crew/prompts.py beside the negative_control_log field, in one sentence saying the log's first line repeats the declared mutation verbatim, and make the promotion refusal say the same thing rather than only that the log does not name it. Scope is reckon/crew/prompts.py, reckon/crew/promotion.py and a test.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     <p class="r-fu-outcome">Landed at d90879aa and eec3c838 (merged 663b7d85), verified live in both served modules. The manifest template says the red log's first line repeats the declared mutation verbatim, and the promotion refusal says the same, so a worker meeting the refusal learns the remedy from it rather than from another worker's practice. Two cases, each red under its own removal, and the node followed the convention it documents: its own red log leads with the declared text.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-the-log-field-is-a-path-and-the-refusal-should-say-so" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The negative-control log field is read as a path, and a worker cannot tell that from the template</h4>
+    <div class="r-fu-body">Second instance of the same shape as the red-log header, found in ordinary use on 2026-09-19. A worker wrote negative_control_log as the path followed by a prose clause explaining what the log shows, which is a reasonable reading of a field the template glosses in a sentence, and promotion refused it because the guard resolves the field as a path. The refusal named the value but not the constraint. Two repairs, both small: the template gloss in reckon/crew/prompts.py says the field is a path and nothing else, with the explanation belonging in tests or artifacts; and the promotion refusal in reckon/crew/promotion.py says the field must be a bare path rather than only reporting that the one given does not resolve. Pin both with a case whose declared mutation is the removal of each sentence. This is the third time a field this plan introduced has been correct in the runtime and unlearnable from the contract, so the section's own lesson is that a new field ships with its gloss and its refusal wording in the same change.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
