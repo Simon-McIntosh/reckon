@@ -161,7 +161,11 @@ body/outcome, author **HTML, never markdown**:
 - **Keep relationship metadata current.** If a plan now clearly depends on,
   blocks, or is informed by another live doc, update `plan-depends-on`,
   `plan-blocks`, and/or `plan-informs` in the same edit. Use slug lists, not
-  file paths.
+  file paths. The relation grammar is `[project:]slug[#section]` — a section
+  anchor names one section rather than a whole plan, which is what a gate
+  needs. If the plan is implementable and now declares no wire at all, fill the
+  checklist below before finishing; `reckon audit` reports `unwired-plan` if
+  you do not.
 - **Run `roadmap(project)` after every relationship, sprint, status, or
   relocation edit.** Clear cycles, missing/non-executable prerequisites,
   sprint-order inversions, and plan/sprint membership disagreement before
@@ -175,6 +179,34 @@ body/outcome, author **HTML, never markdown**:
 - **Use an environment that can import `reckon`.** If the project venv cannot,
   run the module form from the reckon checkout (or with `PYTHONPATH` pointing
   at it) rather than skipping validation.
+
+### Wiring checklist — a live plan is wired, or says why not
+
+An implementable plan (any status other than shipped, done, superseded,
+abandoned, archived, historical or reference) must declare `plan-depends-on`,
+`plan-blocks`, `plan-informs` or a gate. Work down the sprint's plan list and
+fill a row per candidate; "it" is the slug in the first column:
+
+| Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Relation to write |
+|---|---|---|---|---|
+| `…` | | | | |
+| `…` | | | | |
+
+- **question 1 yes** → `depends_on` (it blocks the whole plan, and the roadmap
+  reports this plan blocked until it ships — author it only when that is true).
+- **question 2 yes** → `blocks` (this plan unlocks it).
+- **question 3 yes** → a **gate** on that section, not a plan-level wire:
+  `{"op":"gate","id":"g-<slug>-<n>","section":"s5","gated_sections":["s5"],
+  "measure":"<what the section needs>","required_evidence":"<its evidence
+  anchor, e.g. other-project:slug#s3>"}`. A plan-level `depends_on` here reports
+  the plan blocked from its first section onward, which is false and misleads readers.
+- **no to all three and it is research or reference this plan reads** →
+  `informs`.
+- **no to all three for every candidate and nothing downstream waits on this
+  plan** → it genuinely stands alone. Declare it in the document, not in your
+  head: `{"op":"set","path":"standalone","value":"<one-sentence reason>"}`. The
+  sentence is the reason a later reader checks the plan against; an empty
+  declaration is not a declaration, and the audit will still report it.
 
 ## State write pattern — `edit_plan`
 

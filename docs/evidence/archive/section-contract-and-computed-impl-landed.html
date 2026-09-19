@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="section-contract-and-computed-impl-landed">
+  <meta name="plan-title" content="Wiring is asserted at creation — landed evidence">
+  <meta name="plan-summary" content="An implementable plan that declares no depends_on, no blocks, no informs and no gate is refused at the write boundary and reported by the audit and the roadmap, unless it declares plan-standalone with a one-sentence reason. One predicate serves all three readers; the create and edit skills carry the three-question checklist the author fills from the sprint's plan list.">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s6,reckon:section-contract-and-computed-impl#s7">
+  <meta name="plan-recorded-at" content="2026-09-19">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; assertions run with the main checkout's interpreter and PYTHONPATH pointed at the worktree, --no-sync throughout; the nova measurement is a read-only pass over /home/ITER/mcintos/Code/nova/docs.">
+  <meta name="plan-commits" content="5ded9147b7b24344b10789449a069d3a097a801a,e87e5e3ac16007fc52fe62f2dc396eda6bf08601">
+  <meta name="plan-artifacts" content="reckon/_schema.py,reckon/doccheck.py,reckon/mcp.py,reckon/roadmap.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,tests/test_doccheck_unwired_plan.py,tests/test_roadmap_unwired_plan.py,docs/figures/unwired-plan-rule/decision-flow.png">
+  <title>Wiring is asserted at creation — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Wiring is asserted at creation — landed evidence</h1>
+    <p class="plan-summary">The roadmap can only follow wires that were drawn. This landing
+    makes drawing them a condition of creating a plan: one predicate, reached from the
+    write boundary, the audit and the sprint view, refuses an implementable plan that
+    waits on nothing, feeds nothing and gates nothing &mdash; unless the plan says in its
+    own document why it genuinely stands alone.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Two commits. The implementation and its tests; the skills; the measurement; the figure below.</p>
+    <figure>
+      <img src="/reckon/figures/unwired-plan-rule/decision-flow.png"
+           alt="Decision flow: a document takes the rule only when it declares reckon-type=plan; terminal statuses and plans that declare depends_on, blocks, informs, a gate or a plan-standalone reason are silent; everything else yields a finding whose severity is taken from plan-modified.">
+      <figcaption>One predicate, three readers. <code>unwired_plan_finding()</code> in
+      <code>reckon/doccheck.py</code> holds the decision; the audit, the create boundary and
+      the roadmap all call it, so a plan cannot be refused at one door and admitted at
+      another.</figcaption>
+    </figure>
+  </section>
+
+  <section id="s6-grammar">
+    <h2>&sect;6 &mdash; the skills carry the relation grammar (partially landed)</h2>
+    <p><strong>What this landing covers.</strong> The first clause of &sect;6's done-when.
+    <code>skills/reckon-create/SKILL.md</code> now states the grammar its relationship
+    fields accept, <code>[project:]slug[#section]</code>, with a worked example of a
+    <em>section gate</em> &mdash; a gate whose <code>required_evidence</code> names one
+    section of another plan (<code>nova:cut-cell-refactor#s3</code>) rather than the plan.
+    The example is written against the defect it prevents: a plan-level
+    <code>plan-depends-on</code> for a need that only one section has reports the whole
+    plan blocked from its first section onward, which is false and misleads every reader
+    that consumes the critical path.</p>
+    <p><strong>What remains.</strong> &sect;6's other two clauses are untouched here and
+    belong to a follow-on node: the audit warning for a plan-level <code>depends_on</code>
+    that could have been a section ref, and the roadmap raw view reporting a section edge
+    for the two nova gates authored on 2026-09-19. Neither was in this node's evidence
+    fence, and neither is claimed.</p>
+  </section>
+
+  <section id="s7-refusal">
+    <h2>&sect;7 &mdash; Wiring is asserted at creation</h2>
+    <p>Commit <code>5ded914</code> (implementation and tests), <code>e87e5e3</code>
+    (skills).</p>
+
+    <h3>The rule, and where it is reached</h3>
+    <p>One predicate, <code>unwired_plan_finding()</code>, decides. A document is held to
+    the rule only when it declares <code>reckon-type=plan</code>; a plan whose
+    <code>plan-status</code> is terminal is exempt; a plan that declares any of
+    <code>plan-depends-on</code>, <code>plan-blocks</code>, <code>plan-informs</code>, a
+    gate, or a non-empty <code>plan-standalone</code> reason is silent. Everything else
+    yields the finding, whose severity is taken from <code>plan-modified</code>: a warning
+    for a plan that predates the rule, an error for a plan authored after it.</p>
+    <p>The three readers call the same function. The audit
+    (<code>reckon/doccheck.py</code>) emits it as <code>unwired-plan</code>;
+    <code>edit_plan(create=True)</code> (<code>reckon/mcp.py</code>) refuses with the same
+    message and deletes the file it had begun to write, so a refused create leaves no
+    trace; the sprint view (<code>reckon/roadmap.py</code>) folds it into
+    <code>wiring_findings</code> at the same severity. A plan that declares
+    <code>standalone</code> round-trips it through a read.</p>
+
+    <h3>The positive control was exercised, not asserted</h3>
+    <p><strong>The refusal, shown.</strong> A create with no wire and no declaration
+    returns <code>{"ok": false, "error": "unwired_plan"}</code> and the message names the
+    three questions; the target file does not exist afterwards. The test asserts both,
+    because a refusal that leaves half a plan behind is not a refusal.</p>
+    <p><strong>The measure.</strong> The gate
+    <code>pytest tests/test_doccheck_unwired_plan.py tests/test_roadmap_unwired_plan.py
+    tests/test_doccheck*.py tests/test_roadmap*.py tests/test_mcp_roadmap.py
+    tests/test_review_roadmap.py</code> &mdash; <strong>133 passed in 14.50&nbsp;s</strong>,
+    exit 0, zero added failures against the base revision. The four audit paths are covered
+    as the fence required: wired plan silent, unwired new plan error, unwired old plan
+    warning, standalone declaration silent. The roadmap test asserts its message is
+    <em>equal</em> to the predicate's, so the two readers cannot drift into two spellings
+    of one rule.</p>
+
+    <h3>The measurement over nova, and a prediction that did not hold</h3>
+    <p>The fence asked for a read-only audit of <code>/home/ITER/mcintos/Code/nova/docs</code>
+    recording how many of its live plans the finding names, which &sect;7's text predicts as
+    <em>nine of sixteen</em>. Measured 2026-09-19, read-only:</p>
+    <table>
+      <thead><tr><th>Quantity</th><th>Predicted</th><th>Measured</th></tr></thead>
+      <tbody>
+        <tr><td>Live implementable plans (non-terminal, not archived, <code>reckon-type=plan</code>)</td><td>16</td><td><strong>27</strong></td></tr>
+        <tr><td>Named by <code>unwired-plan</code></td><td>9</td><td><strong>1</strong></td></tr>
+        <tr><td>&mdash; of those, at warning severity</td><td>&mdash;</td><td>1</td></tr>
+        <tr><td>&mdash; of those, at error severity</td><td>&mdash;</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>The single plan named is <code>forward-profile-validator-set</code>
+    (<code>plan-modified 2026-08-26</code>, draft, no wires, no gate, no declaration) &mdash;
+    reported as a warning, which is the severity the rule prescribes for a plan predating
+    it.</p>
+    <p><strong>Why the two numbers differ, and why the instrument is not the suspect.</strong>
+    The prediction is stale rather than the reader being blind, and the evidence for that is
+    a positive control: the reader <em>does</em> fire on the one plan that qualifies, at the
+    prescribed severity, while staying silent on 26 that declare wires. The population also
+    moved &mdash; nova carries 27 live plans today against the 16 the plan text counted when
+    the estimate was written. The plausible reading is that the wiring the prediction
+    complained about has largely been drawn since, not that nine wired plans are being
+    passed over; but the honest statement of this measurement is the table above, not that
+    conclusion. A reader who wants the conclusion verified should re-run the probe and
+    inspect the wires on the 26 silent plans.</p>
+    <p><strong>A caveat that cost a reading.</strong> The first run of the probe reported
+    zero, and the cause was not the code: <code>/tmp/reckon/</code> is a ten-day-old copy of
+    the package (mtime 2026-09-09), and a probe run as a <em>script</em> puts its own
+    directory first on <code>sys.path</code> &mdash; so <code>import reckon.doccheck</code>
+    resolved to that stale copy and the finding was absent from it. The same probe run
+    through a stdin heredoc (working directory first) resolved to the worktree and reported
+    one. Any measurement taken by running a script out of <code>/tmp</code> in this
+    repository is measuring that copy. The scratch tree is not this node's to remove and was
+    left in place.</p>
+
+    <h3>The checklist moved into the author's path</h3>
+    <p>A refusal that arrives after the plan is written is a tax on the author; the decision
+    belongs where the plan is authored. <code>skills/reckon-create/SKILL.md</code> Step&nbsp;1.5
+    and <code>skills/reckon-edit/SKILL.md</code> now carry the three questions as a table the
+    author fills from the sprint's plan list &mdash; one row per candidate,
+    <em>does my first section wait on it</em>, <em>does it consume my evidence</em>,
+    <em>does one section of mine wait on one section of it</em> &mdash; and each answer maps
+    to exactly one relation to write: <code>depends_on</code>, <code>blocks</code>, or a gate
+    on the section. A no to all three is recorded in the document as a
+    <code>plan-standalone</code> declaration carrying its reason, because a declaration a
+    later reader can check against is the whole point of the escape hatch.</p>
+
+    <h3>Follow-ons this landing creates</h3>
+    <ul>
+      <li><strong>The <code>standalone</code> meta is not registered in the round-trip
+      tables.</strong> The plan-state scalars that <code>read_state</code>/<code>write_state</code>
+      round-trip live in <code>reckon/_plan_html.py</code>, and the write-path allow-list in
+      <code>reckon/_store.py</code>; neither file was inside this node's write scope. The
+      declaration is therefore read and written by a shared reader in
+      <code>reckon/_schema.py</code> plus an explicit meta write at the create boundary, which
+      meets every surface the fence named but leaves the generic text-mode path unable to
+      set the declaration. Registering <code>standalone</code> in both places is the
+      follow-on, and it makes the text-mode route work as well as the op route.</li>
+      <li><strong>&sect;6's remaining clauses</strong> &mdash; the audit warning for a
+      section-shaped need wired as a plan-level <code>depends_on</code>, and section edges in
+      the roadmap raw view &mdash; are not claimed here.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

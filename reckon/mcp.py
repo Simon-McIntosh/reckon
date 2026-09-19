@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import shlex
 from collections import Counter
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from types import UnionType
@@ -43,21 +44,34 @@ except ImportError:
     _HAS_MCP = False
     FastMCP = None  # type: ignore[assignment,misc]
 
+import reckon.crew.resumption as resumption_module
 from reckon import (
     _plan_html,
-    budget as budget_module,
-    capabilities as capabilities_module,
-    crew as crew_module,
-    flight as flight_module,
-    ledger as ledger_module,
     roadmap,
 )
+from reckon import (
+    budget as budget_module,
+)
+from reckon import (
+    capabilities as capabilities_module,
+)
+from reckon import (
+    crew as crew_module,
+)
+from reckon import (
+    flight as flight_module,
+)
+from reckon import (
+    ledger as ledger_module,
+)
 from reckon._schema import (
+    PLAN_STANDALONE_META,
     TYPE_ENUM,
     IndexData,
     PlanState,
     gen_json_schema,
     parse_plan_ref,
+    standalone_reason,
 )
 from reckon._store import (
     OpError,
@@ -84,9 +98,10 @@ from reckon.capability import (
     map_legacy_capabilities,
     validate_capability,
 )
-import reckon.crew.resumption as resumption_module
-from reckon.crew.directory import DirectoryError, directory as crew_directory
-from reckon.crew.query import RunQueryError, runs_view as crew_runs_view
+from reckon.crew.directory import DirectoryError
+from reckon.crew.directory import directory as crew_directory
+from reckon.crew.query import RunQueryError
+from reckon.crew.query import runs_view as crew_runs_view
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_views import (
@@ -104,6 +119,8 @@ from reckon.mcp_views import (
 )
 from reckon.project_state import (
     RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+)
+from reckon.project_state import (
     LegacyIndexReadOnly,
     ProjectStateConflict,
     ProjectStateError,
@@ -394,6 +411,16 @@ def _read_plan(
             "doc_type": doc_type,
             "detail": str(exc),
         }
+    if data and canonical_type(data.get("type")) == "plan":
+        # The standalone declaration is authored markup the state engine
+        # leaves untouched, so it is read from the plan's own header: a plan
+        # that declares itself standalone round-trips its reason through read.
+        reason = standalone_reason(
+            _plan_html_text(project, slug, checkout_path, doc_type)
+        )
+        if reason:
+            data["standalone"] = reason
+
     if slug in ("index", "project") and doc_type is None:
         index_warnings: list[str] = []
         normalised_sprints: list[Any] = []
@@ -984,6 +1011,86 @@ def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
             }
         )
     return {**discovered, "inventory": inventory}
+
+
+#: Op path carrying a plan's standalone declaration. It is authored markup
+#: rather than a state field, so it is applied to the header directly instead
+#: of through ``apply_ops``, which owns only the fields it can round-trip.
+_STANDALONE_SET_PATH = "standalone"
+
+
+def _extract_standalone_declaration(
+    ops: list[dict[str, Any]] | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Split a ``set standalone`` op out of ``ops``.
+
+    Returns ``(remaining_ops, declaration)`` where ``declaration`` is ``None``
+    when the op is absent, ``""`` when it clears the meta, and the reason text
+    otherwise — so "not mentioned" is never confused with "declared empty".
+    """
+
+    remaining: list[dict[str, Any]] = []
+    declaration: str | None = None
+    for op in ops or []:
+        if (
+            isinstance(op, dict)
+            and op.get("op") == "set"
+            and op.get("path") == _STANDALONE_SET_PATH
+        ):
+            value = op.get("value")
+            declaration = str(value).strip() if value is not None else ""
+            continue
+        remaining.append(op)
+    return remaining, declaration
+
+
+def _apply_standalone_meta(html_text: str, reason: str) -> str:
+    """Set or clear the ``plan-standalone`` meta in a plan's header."""
+
+    if reason.strip():
+        return _plan_html._set_meta(html_text, PLAN_STANDALONE_META, reason.strip())
+    return _plan_html._remove_meta(html_text, PLAN_STANDALONE_META)
+
+
+def _unwired_plan_refusal(slug: str, working: Mapping[str, Any]) -> str | None:
+    """The refusal message for a new plan that declares no wire at all."""
+
+    from reckon.doccheck import unwired_plan_finding
+
+    finding = unwired_plan_finding(
+        doc_type="plan",
+        status=str(working.get("status") or "").strip().lower(),
+        modified=str(working.get("modified") or ""),
+        links=(
+            list(working.get("depends_on") or [])
+            + list(working.get("blocks") or [])
+            + list(working.get("informs") or [])
+        ),
+        gate_count=len(working.get("gates") or []),
+        standalone=working.get("standalone"),
+        slug=slug,
+    )
+    return finding.message if finding is not None else None
+
+
+def _plan_html_text(
+    project: str,
+    slug: str,
+    checkout_path: str | None,
+    doc_type: str | None,
+) -> str:
+    """Read a plan's own HTML, for declarations the state read does not carry."""
+
+    try:
+        path = _resolve_html_file(project, slug, checkout_path, doc_type or "plan")
+    except Exception:  # noqa: BLE001 — an unresolvable plan carries no declaration
+        return ""
+    if path is None or not path.exists():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
 
 
 def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
@@ -2498,8 +2605,9 @@ def _edit_plan(
     import copy
 
     working = copy.deepcopy(cur_data)
+    state_ops, standalone_declaration = _extract_standalone_declaration(ops)
     try:
-        warnings = apply_ops(working, ops or [], is_index)
+        warnings = apply_ops(working, state_ops, is_index)
     except OpError as e:
         # A failed create must leave NO trace — drop the just-written stub so the
         # contract clause "on failure → no write" holds and a retry is unblocked.
@@ -2524,6 +2632,30 @@ def _edit_plan(
         if created_file is not None:
             created_file.unlink(missing_ok=True)
         return {"ok": False, "error": "schema_validation", "details": errors}
+
+    # ── standalone declaration (authored markup, written to the header) ──
+    if (
+        standalone_declaration is not None
+        and canonical_type(working.get("type")) == "plan"
+    ):
+        working["standalone"] = standalone_declaration or None
+        header = _resolve_html_file(project, slug, root, selected_type or "plan")
+        if header is not None and header.exists():
+            header.write_text(
+                _apply_standalone_meta(
+                    header.read_text(encoding="utf-8", errors="replace"),
+                    standalone_declaration,
+                ),
+                encoding="utf-8",
+            )
+
+    # ── positive control: a plan is born wired or declared standalone ──
+    if create and canonical_type(working.get("type")) == "plan":
+        refusal = _unwired_plan_refusal(slug, working)
+        if refusal:
+            if created_file is not None:
+                created_file.unlink(missing_ok=True)
+            return {"ok": False, "error": "unwired_plan", "detail": refusal}
 
     # ── persist the working DICT via the version-checked atomic write ──
     try:

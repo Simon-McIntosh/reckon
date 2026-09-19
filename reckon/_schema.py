@@ -227,6 +227,12 @@ _PLAN_REF_RE = re.compile(
     rf"(?:#(?P<stage>{_REF_SEGMENT}))?$"
 )
 
+# ``<meta>`` readers for declarations that are authored markup rather than
+# state-engine fields, so the attribute order never has to be assumed.
+_META_TAG_RE = re.compile(r"<meta\b[^>]*>", re.IGNORECASE)
+_META_NAME_RE = re.compile(r"""name\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+_META_CONTENT_RE = re.compile(r"""content\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+
 #: The link-list fields whose entries are plan refs (local or external).
 LINK_LIST_FIELDS = (
     "depends_on",
@@ -266,6 +272,71 @@ def parse_plan_ref(ref: str) -> PlanRef | None:
     if m is None:
         return None
     return PlanRef(m.group("project"), m.group("slug"), m.group("stage"))
+
+
+# ── Plan wiring ──────────────────────────────────────────────────────────────
+#
+# The roadmap can only follow wires that were drawn, so a plan that is still
+# implementable must either declare the plans it waits on / feeds
+# (``depends_on``, ``blocks``, ``informs``) or a gate, or say in words that it
+# genuinely stands alone. The declaration is the ``plan-standalone`` meta; its
+# content is the one-sentence reason, and an empty content is no declaration.
+
+#: Meta carrying the standalone declaration: ``<meta name="plan-standalone"
+#: content="<one-sentence reason>">``.
+PLAN_STANDALONE_META = "plan-standalone"
+
+#: Plans last modified on or after this date are held to the wiring rule with
+#: an error; earlier ones warn, so a rule landing today does not stop the fleet
+#: on plans authored before it existed.
+UNWIRED_PLAN_ENFORCED_FROM = "2026-09-19"
+
+#: The three questions an author answers against the sprint's plan list. Kept
+#: here so the create skill, the write-boundary refusal, the audit and the
+#: roadmap all carry one wording.
+UNWIRED_PLAN_CHECKLIST = (
+    "does my first section wait on it, does it consume my evidence, "
+    "does one section of mine wait on one section of it"
+)
+
+
+def unwired_plan_message(*, slug: str) -> str:
+    """The one refusal/audit message for a plan with no wires, checklist included."""
+
+    return (
+        f"plan {slug!r} is still implementable and declares no plan-depends-on, "
+        f"no plan-blocks, no plan-informs and no gate — author the wiring from "
+        f"the sprint's plan list ({UNWIRED_PLAN_CHECKLIST}), or declare "
+        f'<meta name="{PLAN_STANDALONE_META}" content="<one-sentence reason">> '
+        f"if it genuinely stands alone"
+    )
+
+
+def unwired_plan_severity(modified: str | None) -> str:
+    """``error`` for a plan modified since the rule landed, ``warn`` before it."""
+
+    stamp = (modified or "").strip()
+    if stamp and stamp >= UNWIRED_PLAN_ENFORCED_FROM:
+        return "error"
+    return "warn"
+
+
+def standalone_reason(html_text: str) -> str | None:
+    """Return a plan's ``plan-standalone`` reason, or ``None`` when it declares none.
+
+    Reads the meta directly rather than through the parsed state, because the
+    declaration is authored markup the state engine leaves untouched: it is
+    never rewritten by a state write, so the meta is the authority for it.
+    """
+
+    for tag in _META_TAG_RE.findall(html_text or ""):
+        name = _META_NAME_RE.search(tag)
+        if name is None or name.group(1).strip().lower() != PLAN_STANDALONE_META:
+            continue
+        content = _META_CONTENT_RE.search(tag)
+        reason = content.group(1).strip() if content else ""
+        return reason or None
+    return None
 
 
 def resolve_plan_ref(
@@ -701,6 +772,17 @@ class PlanState(BaseModel):
         description="Canonical topical identities carried by this resource",
     )
 
+    # ── Plan-only declarations ──
+    standalone: str | None = Field(
+        default=None,
+        description=(
+            "One-sentence reason this plan genuinely stands alone — it waits on "
+            "no other plan and feeds none. Persisted as <meta name="
+            '"plan-standalone">. Absent means the plan must declare '
+            "depends_on, blocks, informs or a gate."
+        ),
+    )
+
     # ── Server-owned (never authored) ──
     modified: str = ""  # ISO date, server-written on each POST
     impl: float = 0.0  # progress fraction, server-written
@@ -801,6 +883,7 @@ class PlanState(BaseModel):
                 "blocks",
                 "impl",
                 "section_declarations",
+                "standalone",
             ):
                 data.pop(field, None)
         return data
@@ -901,6 +984,7 @@ class PlanState(BaseModel):
                 "depends_on": ([],),
                 "blocks": ([],),
                 "section_declarations": ({},),
+                "standalone": ("", None),
             }
             for field, allowed in neutral.items():
                 value = getattr(self, field)

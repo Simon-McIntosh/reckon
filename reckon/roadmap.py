@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from reckon._schema import (
@@ -20,8 +21,14 @@ from reckon._schema import (
     parse_plan_ref,
     plan_section_anchors,
     resolve_plan_ref,
+    standalone_reason,
 )
-from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
+from reckon.doccheck import (
+    _load_mounts,
+    authorisation_staleness,
+    derived_plan_age,
+    unwired_plan_finding,
+)
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -29,7 +36,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 from reckon.mcp_views import compose_review, in_flight_by_plan, load_composed_review
-from reckon.resources import read_plan_record, read_sprint_record
+from reckon.resources import read_plan_record, read_sprint_record, resolve_resource
 from reckon.schedule import derive_schedule
 
 _EFFORT_UNIT = "worker-hours"
@@ -295,6 +302,70 @@ def _finding(
     if extra:
         result["extra"] = extra
     return result
+
+
+def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | None:
+    """Read a plan's standalone declaration from its own file, if it has one."""
+
+    if docs_dir is None:
+        return None
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "no declaration"
+        return None
+    if resource is None or getattr(resource, "path", None) is None:
+        return None
+    try:
+        text = resource.path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return standalone_reason(text)
+
+
+def _unwired_plan_findings(
+    project: str, plans: Mapping[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Report in-scope implementable plans that declare no wire at all.
+
+    The same condition, message and severities the audit emits, so a plan the
+    audit refuses is also visible on the sprint view rather than only in a
+    separate command.
+    """
+
+    docs_dir = _load_mounts().get(project)
+    out: list[dict[str, Any]] = []
+    for slug, plan in sorted(plans.items()):
+        if str(plan.get("type") or "plan") != "plan":
+            continue
+        links = (
+            list(plan.get("depends_on") or [])
+            + list(plan.get("blocks") or [])
+            + list(plan.get("informs") or [])
+        )
+        gates = list(plan.get("gates") or [])
+        if links or gates:
+            continue
+        finding = unwired_plan_finding(
+            doc_type="plan",
+            status=str(plan.get("status") or "").strip().lower(),
+            modified=str(plan.get("modified") or ""),
+            links=links,
+            gate_count=len(gates),
+            standalone=_standalone_reason(docs_dir, project, slug),
+            slug=slug,
+        )
+        if finding is not None:
+            out.append(
+                _finding(
+                    finding.code,
+                    finding.severity,
+                    finding.message,
+                    slug=slug,
+                )
+            )
+    return out
 
 
 def _review_health(
@@ -1948,6 +2019,7 @@ def build_roadmap(
     else:
         review_block = None
     review_findings = _review_health(project, review_block, local_graph)
+    findings.extend(_unwired_plan_findings(project, plans))
     if review_block is not None:
         review_block = dict(review_block)
         review_block["findings"] = [
