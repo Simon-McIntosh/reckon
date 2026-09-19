@@ -181,6 +181,35 @@ def test_a_dispatch_plan_carries_an_absolute_executable(
     assert Path(executable).name == "codex"
 
 
+def test_a_launcher_reached_through_a_symlink_keeps_its_own_name(
+    project: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Absolute, not canonical: the name is how the command's dialect is read.
+
+    A launcher installed as ``bin/codex`` symlinked to ``codex.js`` was recorded
+    under the target's name once the path was canonicalised, and the recorded
+    command then matched no dialect, so the run's own stream could no longer be
+    read back. The absolute path has to keep the name the launch was configured
+    with.
+    """
+    _config_home, repo = project
+    bin_dir = tmp_path / "backend-bin"
+    bin_dir.mkdir()
+    target = bin_dir / "codex.js"
+    target.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    target.chmod(0o755)
+    (bin_dir / "codex").symlink_to(target)
+
+    seen = _dispatch(repo, _config(_backend_environment(str(bin_dir))), monkeypatch)
+
+    executable = Path(seen["plan"].argv[0])
+    assert executable.is_absolute()
+    assert executable == bin_dir / "codex"
+    assert executable.name == "codex"
+
+
 def test_a_dispatch_refuses_an_unresolvable_backend_before_writing_anything(
     project: tuple[Path, Path],
     monkeypatch: pytest.MonkeyPatch,

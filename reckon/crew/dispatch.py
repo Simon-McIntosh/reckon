@@ -3422,9 +3422,7 @@ def _launch_failure_record(
     }
 
 
-def _record_launch_failure(
-    launched: Mapping[str, Any], *, exit_status: int
-) -> None:
+def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
     """Record one launch failure on its run, and stop its lift loop.
 
     A worker that exited with an empty stream is not a worker turn: no model
@@ -3563,7 +3561,11 @@ def _export_launched_workers_for_reexec() -> None:
     """
     with _LAUNCHED_WORKERS_LOCK:
         outstanding = sorted(_LAUNCHED_WORKERS)
-        carried = {str(pid): dict(_LAUNCHED_WORKER_RUNS[pid]) for pid in outstanding if pid in _LAUNCHED_WORKER_RUNS}
+        carried = {
+            str(pid): dict(_LAUNCHED_WORKER_RUNS[pid])
+            for pid in outstanding
+            if pid in _LAUNCHED_WORKER_RUNS
+        }
     if outstanding:
         os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(
             {"pids": outstanding, "runs": carried}
@@ -3656,7 +3658,10 @@ def resolve_launch_executable(
     ``environment`` is the overlay the launch will run with; absent, the plan's
     own environment is used, which is what every construction site passes.
     """
-    merged = {**os.environ, **(plan.environment if environment is None else environment)}
+    merged = {
+        **os.environ,
+        **(plan.environment if environment is None else environment),
+    }
     searched = str(merged.get("PATH") or os.defpath)
     binary = str(plan.argv[0]) if plan.argv else ""
     resolved = shutil.which(binary, path=searched) if binary else None
@@ -3666,7 +3671,11 @@ def resolve_launch_executable(
             f"launch would search: {searched} — install it or add its directory "
             "to PATH, then retry; nothing has been launched"
         )
-    resolved = str(Path(resolved).resolve())
+    # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
+    # to ``codex.js`` must still be exec'd under the name the launch was
+    # configured with, because that name is how the command's dialect is
+    # selected and how the run records what it ran.
+    resolved = os.path.abspath(resolved)
     return dataclasses.replace(plan, argv=[resolved, *plan.argv[1:]])
 
 
@@ -3700,7 +3709,13 @@ def assert_routable_backends_resolvable(
                 f"search: {path} — install it or add its directory to PATH, "
                 "then arm the watcher again; it is not armed"
             )
-        resolved.append({"backend": str(name), "command": command, "executable": str(Path(found).resolve())})
+        resolved.append(
+            {
+                "backend": str(name),
+                "command": command,
+                "executable": os.path.abspath(found),
+            }
+        )
     return resolved
 
 
