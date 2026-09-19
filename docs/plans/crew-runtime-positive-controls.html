@@ -291,6 +291,25 @@
     learns the field only from the node brief — recorded as a follow-on rather than taken, since that file is
     outside this node's fence.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The interface gap is closed 2026-09-19.</strong> Both remainders named above are now reachable
+    from the surfaces a coordinator and a worker actually use. <code>reckon/cli.py</code>'s
+    <code>crew dispatch</code> gains <code>--negative-control</code>, written onto the
+    <code>TaskNode</code> record before <code>plan_dispatch</code> judges it, so the dispatch refusal this
+    section landed can be discharged from the command a coordinator runs rather than only from a library
+    caller that constructs the record itself; the option documents the field as the mutation the node's
+    checks must fail against, and admits <code>none: &lt;reason&gt;</code> for a check that no mutation
+    could redden. <code>reckon/crew/prompts.py</code>'s emitted manifest template names
+    <code>negative_control_log</code> beside <code>tests</code> and <code>test_logs</code>, glossed with
+    the same requirement, so the promotion refusal is legible from the contract a worker is handed
+    instead of only from its brief. Verified by a throwaway node whose declared write path is a test file:
+    dispatched <code>--dry-run</code> with no declaration it exits 2 and refuses with a single
+    <code>negative_control</code> finding naming the field and the test path; with
+    <code>--negative-control "&lt;mutation&gt;"</code> the same node resolves at exit 0 with no findings
+    and the declaration carried on the node record; and with <code>none: &lt;reason&gt;</code> it resolves
+    likewise, so the explicit escape reaches the interface too. The three outputs and the rendered
+    template are kept under
+    <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
