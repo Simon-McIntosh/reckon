@@ -545,6 +545,34 @@ nothing has been launched</code></pre>
       <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once to
       <code>reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/gate.log</code>:
       <strong>13 passed, exit 0</strong>.</p>
+      <p><strong>The naming convention is stated where it is read, not only enforced.</strong> Promotion's
+      guard matches the declared mutation against the red log's <em>content</em>, so a genuine failing run that
+      does not name the mutation is refused as a failure for some other reason. That requirement was enforced
+      from the day it landed while being written down nowhere a worker reads, and three nodes answered it three
+      different ways — a <code>MUTATION</code> header, a <code>MUTATION DECLARED</code> header, and no header at
+      all, the last refused at promotion until it was resumed to add one. The convention is now stated on both
+      surfaces a worker meets. <code>reckon/crew/prompts.py</code>'s manifest template gloss beside
+      <code>negative_control_log</code> states that the log's first line repeats the declared mutation verbatim,
+      so the requirement arrives with the contract the worker is handed — before the gate, not at it.
+      <code>reckon/crew/promotion.py</code>'s refusal states the same remedy while keeping the detail it already
+      carried, naming both the declared mutation and the resolved log path, so the refusal says what it wants
+      rather than only what is missing.</p>
+      <p><strong>The cases, and the mutation that reddens them.</strong>
+      <code>tests/test_crew_negative_control_header.py</code> holds one case per surface, each entering where a
+      reader reaches it: the template case reads the emitted prompt through <code>compose_prompt</code> and
+      asserts the gloss carries the first-line requirement, and the refusal case drives a promotion whose
+      manifest names a red log failing for an unrelated reason and asserts the refusal carries both the
+      pre-existing detail (the declared mutation and the log path) and the new remedy. One declared mutation —
+      removing the first-line sentence from the template gloss and from the refusal — reddens both cases, each
+      for its own sentence, and its red log is kept beside the green one at
+      <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/first_line_sentence_removed.red.log</code>,
+      whose own first line repeats the declared mutation verbatim, which is the convention this change
+      documents and therefore the log discharges the match it describes. Gate:
+      <code>tests/test_crew_declared_negative_control.py</code>,
+      <code>tests/test_crew_negative_control_interface.py</code> and the new file, run once to
+      <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
+      <strong>15 passed, exit 0</strong> against 13 at base <code>6b506e78</code>, the two added passes being
+      this node's cases.</p>
     </section>
 
     <section id="verification">
