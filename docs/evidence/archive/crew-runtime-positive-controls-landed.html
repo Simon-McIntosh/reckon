@@ -239,6 +239,33 @@ nothing has been launched</code></pre>
       <code>reckon/crew/runs.py</code>. Repointing <code>_watch_arming_line</code> in scope instead was rejected
       because the passing visibility test asserts that line's current value, so the change would have added a
       failure rather than removed one.</p>
+      <p><strong>The dispatch-side refusal landed 2026-09-19</strong> at <code>5ec236d1</code>, over
+      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/node.py</code> and
+      <code>tests/test_crew_dispatch_watcher_required.py</code>. The admission precondition now reads
+      <code>watcher_live</code> from the watcher's own state: <code>_ensure_watch_producer</code> reports the state
+      it observed rather than raising, and the guard raises <code>WatcherRequired</code> when that state carries no
+      live watcher process, before it asks the separate question of whether this session hears what the watcher
+      writes. The refusal names the durable repair, taken from <code>watch_state()["ensure_line"]</code> rather
+      than composed a second time, and it reads
+      <em>project 'sample' has no live crew watcher process; start one with `reckon crew watch --ensure --project
+      sample`, which is safe to run against a watcher that is already up, then attach this session to it with
+      `reckon crew follow --project sample --session …`</em>.</p>
+      <p>Two cases pin it, both entered through <code>crew.dispatch</code> with the dispatching session's delivery
+      registered as a coordinator registers it, and both under the <code>arms_watch_producer</code> marker so the
+      real guard runs rather than the suite's default waiver. A live follower with an ended producer is refused,
+      the ensure command appears in the refusal's text, and the refused run created no pointer; the same dispatch
+      with a genuinely running registered watcher process is admitted unchanged, with <code>watcher_live</code>
+      true and the registered pid on the record. Each has its own mutation and its red log: removing the
+      liveness check makes the refusal case report <strong>DID NOT RAISE WatcherRequired</strong> while the
+      positive control stays green (<code>red-watcher-liveness-not-checked.log</code>), and naming the ephemeral
+      arming line instead of the ensure line fails the refusal case's text assertion alone
+      (<code>red-refusal-names-the-arming-line.log</code>). Gate, run once to
+      <code>reports/reckon/s18-takeover/crpc-dispatch-refuses-an-unwatched-project/gate.log</code>: <strong>6
+      failed, 108 passed, exit 1</strong>, against the same <strong>6 failed</strong> ids at base
+      <code>de1413f6</code> — a <code>diff</code> of the two <code>FAILED</code> sets is empty, so the node adds no
+      failure and the two added passes are its own cases. The six are untouched drift outside this node's change:
+      two visibility and three lifetime cases construct a node with no specification level, and one recovery case
+      fails on the pytest temporary directory being refused as a git worktree.</p>
     </section>
 
     <section id="s4">
