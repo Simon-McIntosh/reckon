@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T20:26:12",
+  "updated": "2026-09-19T20:36:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -194156,6 +194156,230 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T182639437110-crpc-cli-passes-the-raw-repository",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a76",
+        "node": "crpc-cli-passes-the-raw-repository",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 549,
+                "cached_input_tokens": 738828,
+                "input_tokens": 739379,
+                "output_tokens": 182,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 739561,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read the followup f-crpc-cli-preresolves-the-callers-repository. _repo_root in reckon/cli.py near line 792 resolves the repository enclosing the caller and passes that path into dispatch, so a command-line dispatch never arrives without a repository and the mount default landed at 0f9c0e6f is never reached; the two reckon nodes given nova worktrees on 2026-09-19 came through this path. Pass the raw value through, None when the flag is absent, so the mount default applies, and keep an explicit flag value honoured as before. A case in tests/test_crew_cli_repository.py invokes the command-line dispatch entry point with the working directory inside another project's checkout and no flag, and asserts the worktree is cut from the mount rather than from the caller. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_repository_from_the_project.py tests/test_crew_cli_repository.py on the login node, captured once with the exit status; the base is 3a51ffc3. Commits carry a body and name the mechanism in the subject scope. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 1.5,
+          "goal": "Stop the command line pre-resolving the caller repository, so a command-line dispatch reaches the mount default that section 6 landed.",
+          "id": "crpc-cli-passes-the-raw-repository",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T18:26:39Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T182639437110-crpc-cli-passes-the-raw-repository/manifest.md",
+          "negative_control": "make _repo_root resolve the caller repository again and pass it into dispatch, so the mount default is bypassed; the new case must redden",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_cli_repository.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-cli2-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T18:26:43Z",
+        "completed_at": "2026-09-19T18:35:22.186Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 512,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 519,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "08612372ad6730d5c6d1fca74788d15aff1bc35a",
+        "commits": [
+          "deca8728c6865bd0c3b14696022a1654fb4b4149"
+        ],
+        "changed_lines": {
+          "added": 203,
+          "removed": 3,
+          "files": 4
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_repository_from_the_project.py tests/test_crew_cli_repository.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T182639437110-crpc-cli-passes-the-raw-repository/manifest.md",
+        "scope_changed": false,
+        "session_id": "115913f1-f27f-4fb1-bb6f-891e7778ddd0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1142266,
+            "input_tokens_cumulative": 1142266,
+            "output_tokens": 4003,
+            "output_tokens_cumulative": 4003,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T18:35:22.186Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5883214,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 42.253,
+          "generated_tokens": 25709,
+          "generation_seconds": 38.377,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 24.6,
+          "machine_seconds": 3.876,
+          "peak_input_tokens": 118281,
+          "tokens_per_second": 669.91,
+          "wall_tokens_per_second": 608.45
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-cli-passes-the-raw-repository",
+          "session_id": "115913f1-f27f-4fb1-bb6f-891e7778ddd0",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T18:35:22.186Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.98,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.98,
+          "at_complete": 0.99,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_cli_repository.py"
+          ],
+          "declaration": "make _repo_root resolve the caller repository again and pass it into dispatch, so the mount default is bypassed; the new case must redden",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository/negative-control.log"
+        },
+        "tool_steps": 63.0,
+        "orientation_input_tokens": 1508864.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -194440,6 +194664,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1728
+    "_version": 1729
   }
 }
