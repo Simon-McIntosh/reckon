@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls-landed">
+  <meta name="plan-title" content="Crew Runtime Positive Controls — landed evidence">
+  <meta name="plan-summary" content="Every launch resolves its backend to an absolute path before writing, and a launch that dies before its first turn is one recorded failure that stops the lift.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2">
+  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png">
+  <meta name="plan-recorded-at" content="2026-09-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment, login node">
+  <meta name="plan-tags" content="crew,dispatch,launch,verification">
+  <title>Crew Runtime Positive Controls — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>Crew Runtime Positive Controls</h1>
+      <p class="lead">A launch either resolves its backend to an absolute path before anything is written, or it
+      refuses naming the PATH it searched; a launch that runs and dies before its first turn is one recorded
+      failure, and the run leaves the lift loop until a person acts.</p>
+    </header>
+
+    <section id="s1">
+      <h2>&sect;1 &mdash; The launch resolves its executable, or it refuses before writing</h2>
+      <p>The launch plan carried a bare backend name and inherited the PATH of whoever built it, so a watcher
+      armed without the backend directory exec'd a missing binary and left a 0-byte stream per tick while the
+      run read as working. Resolution now happens where the plan is built, at all three sites that construct
+      one: a dispatch, a resume, and a member move.</p>
+      <p>The refusal is literal and names what was searched, so the repair is a command rather than an
+      investigation:</p>
+      <pre><code>backend command 'python3' cannot be resolved on the PATH this launch would
+search: /nonexistent — install it or add its directory to PATH, then retry;
+nothing has been launched</code></pre>
+      <p><code>reckon crew watch</code> resolves every backend its project can route to before the seat is
+      taken, so a watcher that cannot lift is never a watcher that reads as armed.</p>
+      <table>
+        <thead><tr><th>Surface</th><th>Case</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>dispatch</td><td>backend directory off the plan's PATH</td><td>refused, naming the binary and the PATH; no pointer, and no run directory</td></tr>
+          <tr><td>resume</td><td>backend directory off the plan's PATH</td><td>refused; the pointer's bytes are unchanged and the run directory is empty</td></tr>
+          <tr><td>watch</td><td>a routable backend missing from the project's PATH</td><td>refused at arm time; the watch seat directory is never created</td></tr>
+          <tr><td>launch plan</td><td>backend present</td><td><code>argv[0]</code> is absolute and keeps the launcher's own name</td></tr>
+        </tbody>
+      </table>
+      <p>The refusal precedes every write. That ordering was <em>not</em> true of the resume path as found: the
+      pointer was mutated with the context fit before the launch plan was built, so a refusal there would have
+      landed after the pointer write. The reorder is what the resume case pins, by comparing the pointer's bytes
+      before and after the refusal rather than asserting only on the message.</p>
+      <p>The path is made absolute without being canonicalised, and that distinction was found by the population
+      rather than by reading: resolving a launcher installed as <code>bin/codex</code> symlinked to
+      <code>codex.js</code> followed the link, so the run recorded <code>codex.js</code>, the dialect is selected
+      by the command's name, and the run's own stream could no longer be read back — a run made unreadable
+      rather than unrunnable. Three cases outside the new files caught it; the linked launcher now has its own
+      case.</p>
+    </section>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; A worker that exits before its first turn is one launch failure</h2>
+      <p>The reaper knew the child had exited and read that exit against nothing. A run whose stream file is
+      empty when its process is gone is a launch failure, not a worker turn: it is recorded once on the run with
+      the exit status, the argv and the stderr tail, the pointer moves to <code>launch-failed</code>, and the
+      automatic lift refuses that phase until a person resumes or completes the run. The hand-typed resume is
+      deliberately left ungated, so the phase is clearable by the person who repaired the environment.</p>
+      <p>The figure places the two outcomes of a launch beside the path each one takes.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/launch-path.png"
+      alt="A launch plan is resolved; a missing backend refuses and writes nothing, while a found one launches; the reaper reads the stream size on exit and an empty stream records one failure and stops the lift loop."
+      style="width:100%;max-width:1100px"></p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Backend exits 127 immediately, stream empty</td><td>launch-failure records on the run: <strong>1</strong>, exit status <strong>127</strong>, argv equal to the launched argv</td></tr>
+          <tr><td>Second reaper tick</td><td>phase unchanged, record count still <strong>1</strong> — no relaunch</td></tr>
+          <tr><td>Backend writes a turn, then exits 127 (control)</td><td><strong>0</strong> records; the phase stays <code>working</code></td></tr>
+          <tr><td>Automatic lift of a <code>launch-failed</code> run</td><td>refused with the phase and the exit status named; the launcher is never called and no <code>resume-*</code> file appears</td></tr>
+        </tbody>
+      </table>
+      <p>The control case is the one that makes the first meaningful: it runs the same spawn and the same reaper
+      on a backend whose stream is not empty, and asserts no record appears. It also waits for the reaper to have
+      actually consumed the child, so it cannot pass on a process that was never reaped. With the emptiness guard
+      removed, that control fails — which is how the guard was shown to be the thing the first case rests on. The
+      reaper's exit status is converted from the raw wait status before it is recorded, so a process that exited
+      127 records <code>127</code> rather than <code>32512</code>.</p>
+      <p><code>launch-failed</code> is added to the states the follower needs action on, which places it under the
+      blocked bucket rather than the working bucket, and <code>classify_pointer</code> renders it as its own
+      classification carrying the failure count and the last cause. A dedicated infrastructure bucket in the
+      flight and drain views was not added; the state, the count and the cause reach the follower through the
+      classification instead, and that gap is recorded as a follow-on rather than claimed as covered.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
+      to <code>reports/reckon/s18-takeover/crpc-launch-resolution-and-failure-record-2/gate.log</code>:
+      <strong>9 failed, 169 passed, exit 1</strong>. The same population at base
+      <code>e0a8a967</code> gives <strong>9 failed, 161 passed</strong> — the eight added passes are the new
+      cases, and the failure <em>sets</em> are identical, so the node adds no failures. The nine pre-existing
+      failures are unrelated to the launch path (strictly, the resolution and reaper cases are the only ones
+      touching the changed lines and all of them pass).</p>
+      <p>An earlier run of the same gate added three failures, all from the canonicalisation defect above; they
+      are the measurement that found it, and they pass now.</p>
+    </section>
+  </main>
+</body>
+</html>
