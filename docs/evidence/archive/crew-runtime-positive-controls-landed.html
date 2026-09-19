@@ -411,6 +411,29 @@ nothing has been launched</code></pre>
       registration is <code>reckon/ledger.py::register_member</code> reached through
       <code>routing.py</code>, so that surface could not be changed inside the granted fence. Both are recorded
       as follow-ons.</p>
+      <p id="s6-cli"><strong>The command line passes the repository choice through, unnamed
+      (2026-09-19).</strong> The library boundary above was correct while <code>reckon/cli.py</code> defeated it:
+      <code>_repo_root(repo)</code> resolved the repository enclosing the caller and passed that path in at both
+      call sites — the real dispatch and the dry run — so a command-line dispatch could never arrive with no
+      repository named. Both now pass the flag value through unchanged, <code>None</code> when it is absent, so
+      the mount default applies; an explicit <code>--repo</code> still reaches
+      <code>resolve_project_repository</code>, which admits a worktree of the mount and refuses a different
+      repository exactly as before. The <code>--repo</code> help text now states the mount default rather than
+      the enclosing repository. <code>tests/test_crew_cli_repository.py</code> builds two temporary mounts and
+      invokes the command-line entry point from inside the second one with no flag, stubbing only the process
+      spawn and the watch seat, and asserts the cut worktree's <code>repository_identity</code> equals the
+      project's mount.</p>
+      <p><strong>The gate.</strong> <code>tests/test_crew_repository_from_the_project.py</code> and
+      <code>tests/test_crew_cli_repository.py</code>, run once to
+      <code>reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository/gate.log</code>:
+      <strong>6 passed, exit 0</strong>. <strong>The declared mutation.</strong> Restoring
+      <code>repo=_repo_root(repo)</code> at the dispatch call site reddens exactly the new case, and the
+      failure quotes the refusal naming the caller's checkout (<code>basalt</code>) and the mount
+      (<code>amber</code>) — kept at
+      <code>crpc-cli-passes-the-raw-repository/negative-control.log</code>. <strong>The follow-up's second
+      question.</strong> Member registration needs no equivalent change: it resolves through
+      <code>ledger_path(project, root)</code>, which with no <code>root</code> uses the project's registered
+      state path rather than the caller's directory, and it writes no worktree.</p>
     </section>
 
     <section id="s7">

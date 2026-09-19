@@ -1019,7 +1019,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     "--repo",
     default=None,
     type=click.Path(path_type=Path),
-    help="Repository root (default: the enclosing repository).",
+    help="Repository root (default: the project's registered mount).",
 )
 @click.option(
     "--checkout-path",
@@ -1175,7 +1175,7 @@ def crew_dispatch(
                 locked_decisions=locked_decisions,
                 peer_scopes=node.peer_scopes,
                 project=project,
-                repo=_repo_root(repo),
+                repo=repo,
                 base=base,
                 execution_override=allow_execution_mismatch,
                 report_live_conflicts=True,
@@ -1229,7 +1229,7 @@ def crew_dispatch(
         record = crew_module.dispatch(
             node=node,
             project=project,
-            repo=_repo_root(repo),
+            repo=repo,
             config=config,
             session=session,
             wave=wave,
