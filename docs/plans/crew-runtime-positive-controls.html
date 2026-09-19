@@ -250,6 +250,31 @@
     refusal and its discharge on a fixture node.</p>
 
     <p><strong>Files, trigger, channel and discharge.</strong> The dispatch refusal is in <code>reckon/crew/dispatch.py</code> with its text composed in <code>reckon/crew/node.py</code>, and the promotion refusal is in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all three. The trigger is the node’s declared write paths containing a test file, which is the one condition a dispatcher can evaluate without reading prose. The declaration is a structured field on the node record rather than a phrase mined out of the done-when, so the refusal has something exact to test and a brief author knows what to write. At promotion the manifest carries the path to a red log whose content names the declared mutation, not merely any failing log. The escape is explicit rather than silent: a check admitting no mutation that could be applied without disabling the system, such as an identity that must hold, declares its negative as none with the reason, which promotion records rather than refuses.</p>
+<p><strong>Landed 2026-09-19.</strong> The trigger is the node's declared write paths containing a test file,
+    evaluated in <code>reckon/crew/node.py</code> by <code>is_test_path</code> (a test-naming basename or an
+    enclosing <code>test</code>/<code>tests</code> directory) and by <code>negative_control_finding</code>, which
+    composes the refusal naming the <code>negative_control</code> field and the test path that triggered it.
+    <code>reckon/crew/dispatch.py</code> appends that finding in <code>plan_dispatch</code>, so a dispatch
+    refuses the node before any worktree, pointer or ledger row exists, and the refusal text is composed in
+    <code>node.py</code> rather than at the call site. The declaration is a structured field on the node record —
+    <code>TaskNode.negative_control</code>, carried into the pointer by <code>as_dict</code> and through both
+    rebuild paths — so the refusal tests a field rather than mining prose. At promotion,
+    <code>reckon/crew/promotion.py</code>'s <code>_require_declared_negative_control</code> refuses a passing gate
+    on a triggering node whose manifest carries no <code>negative_control_log</code>, or whose named log cannot
+    be read, or whose text does not name the declared mutation: a failing log for another reason is not the
+    negative control, so the declaration is matched against the log rather than its existence. A declaration of
+    <code>none: &lt;reason&gt;</code> is recorded on the ledger row as <code>none-recorded</code> instead of
+    refused, and a bare <code>none</code> without the reason is refused naming that requirement. The row carries
+    <code>negative_control</code> with its verdict beside <code>impl_move</code>, so an audit reads the outcome
+    without reopening the run. Eight cases in <code>tests/test_crew_declared_negative_control.py</code> cover the
+    dispatch refusal naming the field, the admitted dispatch carrying the declaration, the promotion refusal
+    naming the declared mutation, an admitted red log that names it, and the <code>none</code> declaration
+    recorded and admitted; three declared mutations each reddened exactly their own case, with the red logs kept
+    beside the green one. <strong>Not delivered, and why:</strong> <code>reckon/crew/prompts.py</code>, which
+    emits the manifest template a worker reads, does not yet name <code>negative_control_log</code>, so a worker
+    learns the field only from the node brief — recorded as a follow-on rather than taken, since that file is
+    outside this node's fence.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
