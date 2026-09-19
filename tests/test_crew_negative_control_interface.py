@@ -92,9 +92,7 @@ def test_the_command_refuses_a_test_path_with_no_declaration(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The guarded thing happens: a test path is dispatched with nothing declared."""
-    payload, result = _invoke(
-        dispatch_repo, monkeypatch, node="nc-interface-refused"
-    )
+    payload, result = _invoke(dispatch_repo, monkeypatch, node="nc-interface-refused")
 
     assert result.exit_code == 2
     assert payload["validation"]["ok"] is False
@@ -149,7 +147,7 @@ def _prompt() -> str:
         id="nc-interface-template",
         goal="the emitted contract names the field a worker must fill",
         plan="plan-a",
-        section="s7",
+        section="guard",
         role="implement",
         done_when="the emitted manifest template names negative_control_log",
         write_paths=[TEST_PATH],
@@ -189,6 +187,8 @@ def test_the_template_places_the_log_field_beside_the_other_test_fields() -> Non
     """It sits with tests and test_logs, where a worker fills them in."""
     lines = [line.strip() for line in _prompt().splitlines()]
     order = [line.split(":", 1)[0] for line in lines if ":" in line]
-    assert order.index("tests") < order.index("test_logs") < order.index(
-        "negative_control_log"
+    assert (
+        order.index("tests")
+        < order.index("test_logs")
+        < order.index("negative_control_log")
     )
