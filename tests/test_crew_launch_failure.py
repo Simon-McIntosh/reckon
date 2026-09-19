@@ -225,3 +225,30 @@ def test_the_lift_refuses_a_launch_failed_run_but_a_person_may_still_resume(
     assert launched == []
     # Nothing the refused lift would have written appeared.
     assert list(runs.run_dir(RUN_ID).glob("resume-*")) == []
+
+
+def test_a_launch_failed_run_is_counted_as_actionable(
+    isolated_home: Path, tmp_path: Path
+) -> None:
+    """A run wanting a repaired command is work for a person, not inventory.
+
+    The fleet reading counts runs whose classification is actionable. A
+    launch-failed run was classified on its own state and then left out of that
+    count, so it occupied a lane and read as invisible — the same failure as
+    leaving it in the working bucket, one layer over.
+    """
+    import json
+
+    from reckon.crew import promotion
+
+    (isolated_home / "mounts.json").write_text(
+        json.dumps({"sample": str(isolated_home / "docs")}), encoding="utf-8"
+    )
+    _launch_through_the_reaper(tmp_path)
+    _wait_for_phase(RUN_ID, dispatch_module.LAUNCH_FAILED_PHASE)
+
+    reading = promotion._fleet_state_reading("sample")
+
+    assert reading["fleet_state"] == "measured"
+    assert reading["actionable_runs"] == 1
+    assert reading["actionable_classifications"] == ["launch-failed"]

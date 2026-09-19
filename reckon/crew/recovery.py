@@ -141,6 +141,11 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "abandoned",
         "refused-at-admission",
         "wait-aged",
+        # A launch that never reached a model wants the coordinator to repair a
+        # command or a PATH, which is work only a person can do; leaving it out
+        # of the actionable count is how such a run reads as invisible while it
+        # occupies a lane.
+        "launch-failed",
     }
 )
 
@@ -311,7 +316,9 @@ def _record_review_dispatch(
             "reason": reason,
             "run_id": review_run_id or None,
             "at": _utc_now(),
-            "attempt": int((pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0)
+            "attempt": int(
+                (pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0
+            )
             + 1,
         }
         return pointer
@@ -396,11 +403,14 @@ def dispatch_review_for_run(
 
         resolved = flight.select_local_backend(resolved)
     except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
-        reason = (
-            f"the local lane is unavailable: {exc}"
-        )
+        reason = f"the local lane is unavailable: {exc}"
         _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
-        return {"run_id": run_id, "dispatched": False, "awaiting_lane": True, "reason": reason}
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "awaiting_lane": True,
+            "reason": reason,
+        }
 
     node = TaskNode(
         id=fields["node_id"],
@@ -440,7 +450,12 @@ def dispatch_review_for_run(
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
         _record_review_dispatch(run_id, status="refused", reason=str(exc))
-        return {"run_id": run_id, "dispatched": False, "refused": True, "reason": str(exc)}
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "reason": str(exc),
+        }
 
     review_run_id = str(launched.get("run_id") or "")
     _record_review_dispatch(
@@ -477,9 +492,11 @@ def dispatch_awaiting_reviews(
     refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
     for pointer in list_live(project=project):
-        if str(pointer.get("project") or "") and project and str(
-            pointer.get("project")
-        ) != project:
+        if (
+            str(pointer.get("project") or "")
+            and project
+            and str(pointer.get("project")) != project
+        ):
             continue
         scan: dict[str, Any] | None = None
         try:
@@ -3723,7 +3740,11 @@ def recover(
         "runs": reports,
         "counts": counts,
         "classes": list(RECOVERY_CLASSES),
-        "reviews_dispatched": [r["review_run_id"] for r in reflex if r.get("dispatched")],
-        "reviews_awaiting_lane": [r["run_id"] for r in reflex if r.get("awaiting_lane")],
+        "reviews_dispatched": [
+            r["review_run_id"] for r in reflex if r.get("dispatched")
+        ],
+        "reviews_awaiting_lane": [
+            r["run_id"] for r in reflex if r.get("awaiting_lane")
+        ],
         "reviews_refused": [r for r in reflex if r.get("refused")],
     }
