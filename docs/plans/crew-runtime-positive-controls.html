@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Crew runtime positive controls — a launch that cannot fail silently, a watcher that is a process, a wait that cannot loop">
+  <meta name="plan-summary" content="Four measured harness faults become checks that always run: binary resolved before launch, empty stream is a launch failure, watcher is a process, waits validated.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="crew-observability-truth">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>Crew runtime positive controls | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>Four faults were measured on 2026-09-19 while a coordinator drained two sprints, and every one of them
+    was caught by a person reading a run directory rather than by the runtime. The lead's ruling is that a
+    check which always runs beats an instruction an agent has to remember, so each fault becomes a control in
+    code, with a skill carrying at most a pointer to the command that exercises it. The record of this plan is
+    <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
+    <ul>
+      <li>The nova watcher unit ran for seven hours without the backend directory on its <code>PATH</code>.
+      Every wait-lift it issued launched <code>clive</code>, died at exec, and left a 0-byte
+      <code>resume-N.jsonl</code> every two minutes (twelve of them on one run) while the pointer kept
+      reading <code>working</code>. Parks lifted only when a person resumed from a shell that had the path.</li>
+      <li>A second project had no watcher process at all for an hour; its dispatches were admitted because a
+      session follower was armed, and a follower cannot lift a wait. Both runs sat in phase
+      <code>starting</code> with complete manifests.</li>
+      <li>A worker parked with <code>RUNNING</code> listed under <code>wait_terminal</code>, so a healthy
+      watcher would have lifted the park on every tick while the job ran, and the worker would have re-parked
+      each time.</li>
+      <li>A run's <code>tests:</code> prose claimed a passing gate while its structured suite record carried
+      exit status 1; promotion refused correctly, but only because the coordinator read the manifest.</li>
+    </ul>
+
+    <h2 id="s-contract">Section contract</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
+      <tbody>
+        <tr><td>§1 Backend binary resolved before launch</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§2 An empty stream is a launch failure</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§3 A watcher is a process the dispatcher can see</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§5 Skills carry the pointer, not the rule</td><td>1</td><td>standard</td><td>low</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s1">§1 — The backend binary is resolved before any launch, and the watcher execs an absolute path</h2>
+    <p>The launch plan in <code>reckon/crew/dispatch.py</code> hands <code>subprocess.Popen</code> an argv whose
+    first element is a bare backend name and inherits the caller's environment, so whether the launch can
+    happen at all depends on whoever started the process. Resolve the backend executable with
+    <code>shutil.which</code> at the moment a launch plan is built, for dispatch, resume and every watcher lift,
+    and store the absolute path in the plan; when resolution fails, refuse before writing any pointer or stream
+    file, naming the binary and the <code>PATH</code> that was searched. <code>reckon crew watch</code> resolves
+    every backend its project can route to at startup and refuses to arm when one is missing, so a watcher that
+    cannot lift is never a watcher that reads as armed.</p>
+    <p><strong>Done when.</strong> A dispatch, a resume and a watch started with the backend directory removed
+    from <code>PATH</code> each refuse with the binary name and the searched path, and a launch plan built with
+    it present carries an absolute executable; both are pinned by tests that manipulate the environment of the
+    call, not the test process.</p>
+
+    <h2 id="s2">§2 — A worker that exits before its first stream record is a launch failure, recorded once</h2>
+    <p>The launched-worker reaper knows the child exited; nothing reads that exit against the stream. A run
+    whose stream file is empty when its process is gone is a launch failure, not a worker turn: record it as
+    a lane record with the exit status, the stderr tail and the argv, move the pointer to a state the follower
+    renders distinctly from <code>working</code>, and stop the lift loop after one such failure until an
+    operator resumes or completes the run. The follower row shows the failure count and the last cause; the
+    flight and drain views count it under an infrastructure classification rather than leaving the run
+    invisible in a working bucket.</p>
+    <p><strong>Done when.</strong> A synthetic backend that exits immediately produces exactly one launch-failure
+    record and one distinct follower row for a run whose watcher would otherwise have retried every tick,
+    the two-minute retry does not fire again, and a real resume from a repaired environment clears the state;
+    pinned by tests on the reaper and the lift path.</p>
+
+    <h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>
+    <p><code>watcher_state</code> in <code>reckon/crew/runs.py</code> already binds liveness to a registered
+    process, yet a dispatch was admitted with no watcher for its project because a session follower was
+    armed. Make the dispatch and resume preconditions read <code>watcher_live</code> alone; a follower
+    contributes to delivery, never to the watcher requirement. Add <code>reckon crew watch --ensure</code>,
+    which starts or restarts the project's watcher as a user service with the resolved absolute executable and
+    the environment it needs baked into the unit, writes the unit name into the watcher registration, and is
+    idempotent; dispatch names that command in its refusal when the project is unwatched.</p>
+    <p><strong>Done when.</strong> A dispatch into a project with a live follower and no watcher process is
+    refused naming the ensure command; <code>--ensure</code> on a host with no unit starts one whose
+    <code>/proc/&lt;pid&gt;/environ</code> carries the resolved backend directory; a second <code>--ensure</code>
+    reports the existing unit and starts nothing; pinned by tests with a fake service manager.</p>
+
+    <h2 id="s4">§4 — A wait stanza is validated when written and a lift that re-parks on the same output is a defect</h2>
+    <p>The wait reader in <code>reckon/crew/recovery.py</code> already refuses a no-op probe. Extend it: a
+    <code>wait_terminal</code> value the probe prints while the awaited job is still queued or running
+    (<code>RUNNING</code>, <code>PENDING</code>, <code>WAITING</code>, or any token the probe emits from a
+    branch guarded by a live <code>squeue</code> result) is refused at manifest read with the offending token
+    named, and a lift whose resumed worker re-parks with an identical probe output inside one tick is
+    classified as a wait-key defect on the run and not lifted again until the manifest changes.</p>
+    <p><strong>Done when.</strong> The 2026-09-19 stanza (<code>RUNNING</code> under <code>wait_terminal</code>
+    beside a <code>squeue</code> probe) is refused by the reader with the token named, the re-park loop is
+    detected on a synthetic run after one cycle, and both are pinned by tests beside the existing no-op probe
+    test.</p>
+
+    <h2 id="s5">§5 — Skills carry the pointer, not the rule</h2>
+    <p>Replace the recovery prose in <code>skills/reckon-ship</code> that tells a coordinator to export the
+    backend directory and restart watcher units by hand with one line naming <code>reckon crew watch --ensure</code>,
+    and state in the skill that a dispatch refused as unwatched is repaired by that command. Remove any
+    instruction the code now enforces.</p>
+    <p><strong>Done when.</strong> The skill carries the command and no longer carries the manual recipe, and
+    <code>reckon audit-doc</code> passes on the plan and record.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-crpc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §1 and §2 together (resolution and its failure record), then §4, then §3, then §5</h4>
+    <div class="r-fu-body"><p>§1 and §2 share the launch path. §4 is independent and small. §3 touches the service manager and takes the fake-manager test first. §5 waits for §3 so the command it points at exists.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §1</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
