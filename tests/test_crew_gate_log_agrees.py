@@ -292,6 +292,32 @@ def test_command_not_found_at_the_head_without_a_summary_names_the_line(
     assert pointer_path(run_id).is_file()
 
 
+def test_a_capture_recording_exit_127_for_the_diagnostic_is_still_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    # The capture convention writes the shell's own status after the command.
+    # A status of 127 says the shell could not find the command to execute it,
+    # so a worker honestly recording it and still asserting a pass has no
+    # positive record and the refusal must still stand.
+    run_id = "r-20260919T120200000000-exit-127"
+    _write_pointer(run_id, repository)
+    never_ran_log = tmp_path / "exit-127-gate.log"
+    never_ran_log.write_text(
+        "bash: line 1: rekon crew frobnicate: command not found\nEXIT=127\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        _complete_arguments(run_id, repository, str(never_ran_log), exit_status=127),
+    )
+
+    assert result.exit_code != 0
+    assert "Found: no evidence the command ran" in result.output
+    assert "diagnostic at line 1" in result.output
+    assert pointer_path(run_id).is_file()
+
+
 def test_fixture_command_not_found_beside_a_passing_summary_is_accepted(
     repository: Path, tmp_path: Path
 ) -> None:

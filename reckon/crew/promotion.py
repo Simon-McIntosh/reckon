@@ -384,6 +384,26 @@ _RUNNER_SUMMARY = re.compile(
     r"\b\d+\s+(?:passed|failed|errors?|skipped|xfailed|xpassed|deselected|warnings?)\b"
 )
 
+# Exit statuses that assert the shell could not execute the command at all:
+# 127 for a command it could not find, 126 for one it found but could not run.
+# A capture shell recording either has not evidenced that the cited command
+# ran, so such a sentinel is not the positive record a quoted diagnostic needs.
+_UNEXECUTED_EXIT_CODES = frozenset({126, 127})
+
+
+def _log_shows_the_command_ran(log_text: str, recorded: int | None) -> bool:
+    """Whether the log carries positive evidence the cited command executed.
+
+    Two shapes count, and both are what a real capture produces: the runner's
+    own result-count summary, and a terminal ``EXIT=<n>`` record from the
+    capture shell, since writing that line means the shell returned from the
+    command. An exit in ``_UNEXECUTED_EXIT_CODES`` is excluded, because that
+    shell status is itself a statement that the command never started.
+    """
+    if _RUNNER_SUMMARY.search(log_text) is not None:
+        return True
+    return recorded is not None and recorded not in _UNEXECUTED_EXIT_CODES
+
 
 def _first_command_not_found_line(log_text: str) -> tuple[int, str] | None:
     """The first line carrying the shell's own command-not-found diagnostic.
@@ -447,10 +467,11 @@ def _require_gate_log_agrees(
       command did run, states the command never executed. A runner log may
       quote that phrase in fixture or assertion output, so the diagnostic is
       read only in the absence of a positive record: a terminal ``EXIT=<n>``
-      capture line, or a runner's own result-count summary (``518 passed,
-      20 failed``), either of which shows the command executed and its output
-      was captured. When the diagnostic is the only evidence, the refusal
-      names the matched line and its one-based line number.
+      capture line other than the two statuses that say the shell could not
+      execute the command, or a runner's own result-count summary (``518
+      passed, 20 failed``), either of which shows the command executed and its
+      output was captured. When the diagnostic is the only evidence, the
+      refusal names the matched line and its one-based line number.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -487,11 +508,7 @@ def _require_gate_log_agrees(
             "log, or re-promote with the verdict the evidence actually shows"
         )
     not_found = _first_command_not_found_line(log_text)
-    if (
-        not_found is not None
-        and recorded is None
-        and _RUNNER_SUMMARY.search(log_text) is None
-    ):
+    if not_found is not None and not _log_shows_the_command_ran(log_text, recorded):
         number, line = not_found
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' but its cited log "
