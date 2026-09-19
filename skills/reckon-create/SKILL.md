@@ -112,6 +112,27 @@ historical reasons still MUST carry `plan-evidence-for`.
   plan→evidence, and the provenance of results silently vanishes.
 - `plan-verifies` = optional `slug#section` anchors this evidence verifies
 
+**Grammar: `[project:]slug[#section]`.** The project prefix is for a mount other
+than this one (`nova:cut-cell-refactor`); the section anchor names one section
+rather than the whole document (`tokenizer-eval#s3`). Both are optional and both
+may combine (`nova:cut-cell-refactor#s3`). A section anchor is what a gate or a
+`plan-verifies` entry uses: the relationship is between one section and one
+section, not between two whole plans.
+
+**Worked example — a section gate rather than a plan-level wire.** This plan's
+§5 needs the evidence that another plan's §3 will produce, but its first section
+can start immediately. Wire the section, not the plan:
+
+```json
+{"op":"gate","id":"g-<slug>-1","section":"s5","gated_sections":["s5"],
+ "measure":"calibration residuals within tolerance on the held-out shots",
+ "required_evidence":"nova:cut-cell-refactor#s3"}
+```
+
+A `plan-depends-on` here would report this plan blocked from its first section
+onward, which is false and misleads the fleet; the gate names the section that
+is actually held and the anchor it is held on.
+
 **`informs` vs `evidence-for` — direction of the arrow.** `informs` points
 FORWARD (this doc feeds work not yet done); `evidence-for` points BACK (this
 doc records work a plan already did). A landed record carrying only
@@ -277,23 +298,44 @@ DOCS_DIR="$REPO_ROOT/docs"
 2. Read repository instructions and any explicit architecture boundary docs.
 3. Search existing plan and research titles/summaries before creating a new
    resource; edit the existing owner when the work is already represented.
-4. Classify each relation with one question: **would this plan's first section
-   be wrong to start before X ships?**
-   - yes → `depends_on` (X blocks the whole plan, and the roadmap will report
-     this plan blocked until X ships — author it only when that is true);
-   - no, X only feeds this plan evidence or reference → `informs`;
-   - no, but one *section* of this plan cannot land until X's evidence exists →
-     a **gate** on that section, never a comment and never a plan-level wire:
+4. **Wire the plan before writing it.** A live plan that is implementable —
+   `plan-status` is not shipped, done, superseded, abandoned, archived,
+   historical or reference — must declare at least one of `plan-depends-on`,
+   `plan-blocks`, `plan-informs` or a gate. The audit reports `unwired-plan`
+   and `edit_plan(create=True)` refuses without one, so settle this now rather
+   than discovering it at the write boundary.
+
+   Work down the sprint's plan list and fill a row per candidate. "It" below is
+   the candidate slug in the first column:
+
+   | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Relation to write |
+   |---|---|---|---|---|
+   | `…` | | | | |
+   | `…` | | | | |
+
+   - **yes to question 1** → `depends_on` (X blocks the whole plan, and the
+     roadmap will report this plan blocked until X ships — author it only when
+     that is true);
+   - **yes to question 2** → `blocks` (this plan unlocks X);
+   - **yes to question 3** → a **gate** on that section, never a comment and
+     never a plan-level wire:
      `{"op":"gate","id":"g-<slug>-<n>","section":"s5","gated_sections":["s5"],
      "measure":"<what the section needs from X>","required_evidence":"<X's
      evidence anchor or receipt>"}`. Gates feed `roadmap.gate_blockers`; a
      prose comment feeds nothing and the next session cannot see the rule.
-   - downstream plan unlocked here → `blocks`.
+   - **no to all three, and X is research or a reference this plan reads** →
+     `informs`;
+   - **no to all three for every candidate, and nothing downstream waits on
+     this plan** → it genuinely stands alone. Say so in the document, not in
+     your head: `<meta name="plan-standalone" content="<one-sentence reason>">`.
+     The sentence is the reason, and it is what a later reader checks the plan
+     against; an empty declaration is not a declaration.
+
    Measured 2026-09-16 on nova: two new plans wired `depends_on` onto the plan
    whose evidence they consumed were correctly reported blocked by the roadmap
    for an hour while their work was dispatchable; the cut-cell plan's own
    promotion rule, written as a comment, was invisible to every reader but its
-   author. The litmus above would have prevented both.
+   author. The questions above would have prevented both.
 5. Choose the destination sprint now. If the work is intentionally backlog,
    record that explicitly instead of silently leaving it unscheduled.
 
