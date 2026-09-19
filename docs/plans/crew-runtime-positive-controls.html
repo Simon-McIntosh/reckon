@@ -25,6 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-19">
+<meta name="plan-impl" content="0.35">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -182,10 +185,21 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-crpc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §1 and §2 together (resolution and its failure record), then §4, then §3, then §5</h4>
     <div class="r-fu-body"><p>§1 and §2 share the launch path. §4 is independent and small. §3 touches the service manager and takes the fake-manager test first. §5 waits for §3 so the command it points at exists.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §1</pre>
+    <p class="r-fu-outcome">Sections 1 and 2 landed together in twelve commits, merged at ec46d14d, with nine pre-existing suite failures at base and the same nine at head. Verified live in the served module rather than only committed: reckon.crew.dispatch resolves through shutil.which, carries the launch-failed state and names the searched path in its refusal, and reckon.crew.recovery carries the launch-failed handling. The node also found and fixed a real defect in its own area, that a reaped worker's raw wait status was being read as its exit code. Two remainders are opened below and sections 3, 4, 5 and 7 remain.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-launch-failed-has-no-counter-bucket" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A launch-failed run has no bucket of its own in the fleet counter</h4>
+    <div class="r-fu-body">Reported by the launch-resolution node. The counter block is a deliberately fixed four-bucket width (working, blocked, unpromoted, queued), so a launch-failed run's number sits under blocked and reads to a coordinator as a triageable stop rather than an infrastructure fault. The drain reading does count it under its own classification, so it is not invisible, only mis-bucketed. Decide with the monitor plan's owner whether a fifth bucket is worth the column width, or whether the blocked bucket's reason clause should name the launch failure, and implement whichever is chosen.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-gate-population-named-a-missing-file" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The dispatch gate named a test file that does not exist</h4>
+    <div class="r-fu-body">Reported by the launch-resolution node: the gate command in its brief listed tests/test_crew_resum*.py and no file matches that glob, so a coordinator-authored gate population named something absent and the worker had to choose a substitute. A gate population is evidence about what was run, so a named path that does not exist should be caught when the node is dispatched rather than discovered by the worker. Check the gate command's named paths against the repository at dispatch and refuse a population whose glob matches nothing, naming the pattern.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
     </article>
 </section>
   </main>
