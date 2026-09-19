@@ -122,6 +122,7 @@ RECOVERY_VERBS = {
     "ready": "resume",
     "abandoned": "recover",
     "refused-at-admission": "resume",
+    "launch-failed": "resume",
     "wait-aged": "investigate",
 }
 RECOVERY_CLASSIFICATIONS = tuple(RECOVERY_VERBS)
@@ -2294,6 +2295,27 @@ def classify_pointer(
                 "evidence of death"
             )
         action = f"reckon crew observe --run {run_id}"
+    elif phase == "launch-failed":
+        # A launch that never wrote a stream record reached no model, so this
+        # is an infrastructure fault rather than a worker turn. It sits on its
+        # own state so a reader sees it apart from a working run, and the lift
+        # refuses it until a person acts.
+        failures = list(record.get("launch_failures") or ())
+        latest = failures[-1] if failures else {}
+        tail = str(latest.get("stderr_tail") or "").strip().splitlines()
+        cause = tail[-1] if tail else "the process exited before any turn"
+        classification = "launch-failed"
+        detail = (
+            f"the launch for backend {latest.get('backend') or record.get('backend')!r} "
+            f"exited with status {latest.get('exit_status')} before writing any "
+            f"stream record ({cause}); {len(failures)} launch failure"
+            f"{'s' if len(failures) != 1 else ''} recorded; no model was reached"
+        )
+        action = (
+            f"fix the command and PATH for backend "
+            f"{latest.get('backend') or record.get('backend')!r}, then resume "
+            f"{run_id} by hand — the lift loop stays stopped until then"
+        )
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -3443,6 +3465,19 @@ def format_watch_transition(
     return (ticker or _PLAIN).render(event, with_session=with_session)
 
 
+def _refuse_unresolvable_watch(project: str) -> None:
+    """Refuse to arm a watcher whose project routes to a missing backend.
+
+    A watcher that cannot resolve a backend it may be asked to lift reads as
+    armed and loses every park it lifts, leaving a 0-byte stream per tick while
+    the pointer stays working. The check runs before the registration is taken,
+    so the seat is never held by a watcher that cannot do its job.
+    """
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    assert_routable_backends_resolvable(project, _resolved_review_config(project, None))
+
+
 def watch_ticker(
     project: str,
     *,
@@ -3451,6 +3486,7 @@ def watch_ticker(
     sleeper: Callable[[float], None] = time.sleep,
 ) -> Iterator[dict[str, Any]]:
     """Yield a baseline and then every observed fleet state transition."""
+    _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False

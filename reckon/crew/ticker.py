@@ -167,6 +167,7 @@ NEEDS_ACTION = frozenset(
     {
         "blocked",
         "failed",
+        "launch-failed",
         "stalled",
         "stopped",
         "abandoned",
