@@ -141,6 +141,25 @@
     beside a <code>squeue</code> probe) is refused by the reader with the token named, the re-park loop is
     detected on a synthetic run after one cycle, and both are pinned by tests beside the existing no-op probe
     test.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The measured run
+    <code>r-20260919T111944475334-cco-review-repairs</code> declared a <code>squeue</code> probe and, under
+    <code>wait_terminal</code>, <code>RUNNING</code> — the token that probe prints on the branch it takes while
+    the job is still queued. The declaration therefore read terminal on every sweep of a job that had not
+    started, and the watcher wrote <code>resume-1</code> through <code>resume-30</code>, most of them 0-byte
+    streams. Two halves close it, both in the reader. First,
+    <code>_wait_terminal_names_a_live_state</code> refuses <code>RUNNING</code>/<code>PENDING</code>/<code>WAITING</code>
+    in any case and, separately, any token the probe text emits from a branch guarded by a non-empty
+    <code>squeue</code> result — so a probe that invents its own wording for the live state is read out of its
+    own text rather than matched against a vocabulary. The refusal names the offending token in the reason the
+    follower already renders, so the repair needs no second reading of the probe. Second, the wait's
+    <code>signature</code> is derived from what the declaration asks for — condition, probe, terminal and resume
+    brief — rather than from the manifest file's modification time, so a worker that re-parks by rewriting its
+    manifest no longer mints what the lift loop reads as a new condition; and a declaration that already lifted
+    the run and has come back unchanged is marked as a wait-key defect on the run, rendered in
+    <code>classify_pointer</code> with the repair named, so the lift loop stays stopped until the declaration
+    changes. The decision the reader makes is drawn in
+    <a href="/reckon/figures/crew-runtime-positive-controls/wait-key-decision.png">the accompanying figure</a>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s4">§4 landed</a>.</p>
 
     <h2 id="s5">§5 — Skills carry the pointer, not the rule</h2>
     <p>Replace the recovery prose in <code>skills/reckon-ship</code> that tells a coordinator to export the

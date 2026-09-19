@@ -1494,6 +1494,107 @@ def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
     return Path(str(probe[0])).name in _WAIT_PROBE_NO_OP_COMMANDS
 
 
+# A state that means the awaited work has not finished is never a terminal
+# state. A job scheduler spells three of them, and a probe may invent its own
+# wording for the same situation on a branch it takes only while the job is
+# still in the queue — which is how a wait declaring RUNNING terminal reads as
+# satisfied on every sweep of a job that has not started. The fixed spellings
+# are refused outright; the probe's own live branch is read out of its text,
+# because a renamed live state is exactly what the fixed spellings cannot see.
+_WAIT_LIVE_STATE_TOKENS = frozenset({"running", "pending", "waiting"})
+
+# The variable a probe fills from `squeue`, whose non-empty test guards the
+# branch it takes while the job is still in the queue.
+_SQUEUE_GUARDED_VAR = re.compile(
+    r"(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*\$\(\s*squeue\b"
+)
+_WAIT_BRANCH_STOP = re.compile(r"\b(?:elif|else|fi)\b")
+
+
+def _emitted_tokens(branch: str) -> list[str]:
+    """Bare word tokens a shell branch prints, one statement at a time."""
+    tokens: list[str] = []
+    for statement in re.split(r"[;\n]|&&|\|\||\b(?:then|do)\b", branch):
+        words = [word.strip("\"'") for word in statement.split()]
+        if not words or words[0] not in {"echo", "printf"}:
+            continue
+        tokens.extend(word for word in words[1:] if word and not word.startswith("-"))
+    return tokens
+
+
+def _probe_live_state_tokens(probe: Sequence[str]) -> list[str]:
+    """Tokens a probe prints from a branch guarded by a non-empty squeue result.
+
+    Those tokens describe a job that is still in the queue whatever the wait
+    declaration calls the state, so any of them listed as terminal is the
+    declaration contradicting its own probe.
+    """
+    text = " ".join(str(item) for item in probe)
+    tokens: list[str] = []
+    for assignment in _SQUEUE_GUARDED_VAR.finditer(text):
+        var = re.escape(assignment.group("var"))
+        guard = re.search(
+            r"\[\s*-n\s+\"?(?:\$\{?" + var + r"\}?|\$\{\s*" + var + r"\s*\})\"?\s*\]"
+            r"|\[\s*\"?\$\{?" + var + r"\}?\"?\s*\]",
+            text,
+        )
+        if guard is None:
+            continue
+        branch = text[guard.end() :]
+        stop = _WAIT_BRANCH_STOP.search(branch)
+        if stop:
+            branch = branch[: stop.start()]
+        tokens.extend(_emitted_tokens(branch))
+    return tokens
+
+
+def _wait_terminal_names_a_live_state(
+    terminal: Sequence[str], probe: Sequence[str]
+) -> str:
+    """Name the terminal value the probe reports while the awaited job is live.
+
+    Empty when nothing in the terminal list names a live state, which is the
+    only case a wait declaration is read at all.
+    """
+    if not terminal or not probe or _wait_probe_is_a_no_op(probe):
+        return ""
+    emitted = _probe_live_state_tokens(probe)
+    for value in terminal:
+        spelled = str(value).strip()
+        if spelled.casefold() in _WAIT_LIVE_STATE_TOKENS:
+            return spelled
+        if spelled and spelled in emitted:
+            return spelled
+    return ""
+
+
+def _wait_declaration_signature(
+    condition: str,
+    probe: Sequence[str],
+    terminal: Sequence[str],
+    resume_brief: str,
+) -> str:
+    """Identity of a wait declaration, without its file's modification time.
+
+    A lift is keyed to what the declaration asks for, not to when the file was
+    written. A worker that re-parks rewrites its manifest and so advances the
+    mtime, which made every re-park a brand-new condition and re-lifted a wait
+    whose terminal state had not actually ended anything — the loop that
+    resumed one run thirty times. The same declaration arriving twice is the
+    same condition; only an edit to it is a new one.
+    """
+    material = json.dumps(
+        {
+            "condition": condition,
+            "probe": [str(item) for item in probe],
+            "terminal": [str(item) for item in terminal],
+            "resume_brief": resume_brief,
+        },
+        sort_keys=True,
+    )
+    return "wait:" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
     """The newest write to the run's stream, or None when there is none.
 
@@ -1542,6 +1643,7 @@ def _manifest_wait(
     now_seconds: float,
     stale_after_seconds: int,
     stream_mtime: float | None = None,
+    previous_lift: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Return the external-wait declaration a manifest actually holds.
 
@@ -1558,6 +1660,18 @@ def _manifest_wait(
     output: a worker whose stream is still being written is producing, not
     parked, so the age of its wait is measured from the newer of the wait's
     declaration and the last stream write.
+
+    A declaration whose terminal list names a state its own probe reports while
+    the awaited job is still live is refused rather than honoured: it can never
+    report a pending state, so it reads satisfied on every sweep and offers its
+    run to the resume loop forever. The offending token is named in the refusal
+    so the repair is a one-line edit rather than a reread of the probe.
+
+    ``previous_lift`` is the pointer's record of the last condition that lifted
+    this run. A declaration identical to the one already lifted, arriving again
+    after the worker re-parked, is the same condition reporting terminal a
+    second time without ending: a wait-key defect, marked on the wait so the
+    reader sees why the lift loop is stopped instead of watching it repeat.
     """
     if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
         return None
@@ -1579,6 +1693,12 @@ def _manifest_wait(
         )
         if not value
     ]
+    live_token = _wait_terminal_names_a_live_state(terminal, probe)
+    if live_token:
+        missing.append(
+            f"wait_terminal listing {live_token!r}, a state the probe reports "
+            "while the awaited job is still live"
+        )
     started = None
     started_value = str(manifest_data.get("wait_started_at") or "").strip()
     if started_value:
@@ -1607,6 +1727,15 @@ def _manifest_wait(
     )
     if expected_error:
         missing.append(expected_error)
+    signature = _wait_declaration_signature(condition, probe, terminal, resume_brief)
+    wait_key_defect = ""
+    if isinstance(previous_lift, Mapping) and previous_lift.get("trigger") == signature:
+        wait_key_defect = (
+            "wait-key defect: this declaration already lifted the run and has "
+            "come back unchanged, so its terminal state "
+            f"({', '.join(terminal) or 'unset'}) did not end the wait; the "
+            "lift loop stays stopped until the declaration changes"
+        )
     return {
         "condition": condition,
         "probe": probe,
@@ -1619,9 +1748,10 @@ def _manifest_wait(
         "age_seconds": age_seconds,
         "expected_horizon_seconds": expected_seconds,
         "overdue": age_seconds > expected_seconds,
-        "signature": f"condition:{manifest.stat().st_mtime_ns}",
+        "signature": signature,
         "valid": not missing,
         "error": "missing or invalid " + ", ".join(missing) if missing else "",
+        "wait_key_defect": wait_key_defect,
     }
 
 
@@ -1647,6 +1777,7 @@ def external_wait(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
         stream_mtime=_run_stream_mtime(record),
+        previous_lift=record.get("auto_resume"),
     )
 
 
@@ -1863,6 +1994,7 @@ def classify_pointer(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
         stream_mtime=_run_stream_mtime(record),
+        previous_lift=record.get("auto_resume"),
     )
     if wait is not None and not wait["valid"]:
         # An incomplete wait declaration is a reading failure carried on the
@@ -2036,6 +2168,19 @@ def classify_pointer(
             action = (
                 f"the recovery sweep will resume run {run_id} when the condition "
                 "test reports a terminal state"
+            )
+        if wait.get("wait_key_defect"):
+            # The declaration lifted this run once already and came back
+            # unchanged, so its terminal state is not ending anything. The
+            # sweep already refuses a second lift for the same declaration; the
+            # row says why rather than reading as an ordinary pending wait.
+            detail = (
+                f"{wait['wait_key_defect']} (waiting {wait['age_seconds']}s on "
+                f"{wait['condition']})"
+            )
+            action = (
+                f"edit the wait declaration in {manifest} so its terminal list "
+                "names a state the probe cannot report while the job is live"
             )
     elif wait is not None and process_gone:
         classification = "unreadable"
@@ -2506,6 +2651,10 @@ def classify_pointer(
         "wait_observed": (
             wait_observation.get("observed") if wait_observation is not None else None
         ),
+        # A declaration that lifted its run and came back unchanged is the
+        # defect the lift loop's own stop cannot name; carried on the row so a
+        # reader sees why the run is still parked rather than inferring it.
+        "wait_key_defect": wait.get("wait_key_defect") or None if wait else None,
     }
     if session_resolution is not None:
         classified["session_resolution"] = session_resolution
