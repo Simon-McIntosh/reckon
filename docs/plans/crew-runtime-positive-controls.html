@@ -152,6 +152,19 @@
     passing visibility test asserts that line's current value, so changing it would add a failure to a node whose
     gate must add none.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-19 &mdash; the dispatch-side refusal.</strong> The admission
+    precondition now reads <code>watcher_live</code> from the watcher's own state and refuses before it asks the
+    separate question of whether the dispatching session hears what the watcher writes:
+    <code>_ensure_watch_producer</code> reports the state it observed rather than raising, and the guard raises
+    <code>WatcherRequired</code> when that state carries no live watcher process. The refusal names the command
+    that starts a watcher the operator owns, taken from <code>watch_state()["ensure_line"]</code> so there is one
+    definition of it, and the command is idempotent, so it is safe to run against a watcher already up. Two cases
+    enter through <code>crew.dispatch</code> with the dispatching session's delivery registered: a live follower
+    with an ended producer is refused with <code>reckon crew watch --ensure --project sample</code> in the
+    refusal's text and creates no pointer, and the same dispatch against a running registered watcher process is
+    admitted unchanged. Each has its own mutation red, kept beside the green log, and the gate adds no failure to
+    its population. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s3">§3 refused</a>.</p>
+
     <h2 id="s4">§4 — A wait stanza is validated when written and a lift that re-parks on the same output is a defect</h2>
     <p>The wait reader in <code>reckon/crew/recovery.py</code> already refuses a no-op probe. Extend it: a
     <code>wait_terminal</code> value the probe prints while the awaited job is still queued or running

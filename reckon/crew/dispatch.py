@@ -673,7 +673,13 @@ def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
 def _ensure_watch_producer(
     project: str, *, session: str | None = None
 ) -> dict[str, Any]:
-    """Return the live producer, starting at most one across concurrent calls."""
+    """Return the watcher state, starting at most one producer across calls.
+
+    The returned state reports whether a producer is live rather than raising
+    when one cannot be brought up: admission is the caller's decision, and the
+    caller is also the only place that holds the session whose delivery is a
+    separate question from the watcher's liveness.
+    """
     arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
     arming_lock.parent.mkdir(parents=True, exist_ok=True)
     with arming_lock.open("a+b") as handle:
@@ -708,7 +714,7 @@ def _ensure_watch_producer(
             if supervisor.poll() is not None:
                 break
             time.sleep(0.05)
-        raise WatcherRequired(project, state)
+        return watch_state(project, session=session)
 
 
 @dataclass(frozen=True)
@@ -3081,6 +3087,13 @@ def dispatch(
         watch_override = True
     if watch_required and not watch_override:
         dispatch_watch = _ensure_watch_producer(project, session=session)
+        # The watcher requirement is answered by the process, read from the
+        # watcher's own state — never by a session's follower, which is how a
+        # project with no watcher process at all kept admitting dispatches. A
+        # refusal here teaches the command that starts a durable watcher, which
+        # is idempotent, so it is safe to run against one already up.
+        if not dispatch_watch["watcher_live"]:
+            raise WatcherRequired(project, dispatch_watch)
         # A producer exists now. Whether this session hears what it writes is a
         # separate fact, and the only one that decides if the finished run gets
         # noticed, so it is checked before a worktree exists.
