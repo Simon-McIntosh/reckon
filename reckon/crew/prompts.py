@@ -261,7 +261,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   changed_paths: <explicit list>
   tests: <command and result>
   test_logs: <paths on disk>
-  negative_control_log: <path to the red log from applying the node's declared negative_control mutation, whose content names that mutation; required when the node's write paths include a test file and its negative_control is not `none: <reason>`>
+  negative_control_log: <path to the red log from applying the node's declared negative_control mutation, whose content names that mutation; required when the node's write paths include a test file and its negative_control is not `none: <reason>`>. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
   failure_attribution: <armed-only, test role JSON {{failure_id: candidate_commit}} for each newly added failure>
