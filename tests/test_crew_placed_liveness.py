@@ -75,6 +75,40 @@ def test_an_unreadable_scheduler_is_not_a_verdict() -> None:
     assert runs.placement_job_alive(record, _runner(None)) is None
 
 
+def test_a_successful_empty_answer_reports_the_job_gone() -> None:
+    """The common completion: the query succeeds and names no job.
+
+    A job that has left the queue is reported by a successful query with no
+    rows, which is a statement rather than an unreadable answer, so it must
+    answer not-alive. Read as unreadable it would fall through to the pid and
+    report a finished placed run as live for as long as the compute node holds
+    the pid.
+    """
+    record = {"pid": 4242, "placement": PLACEMENT, "job_id": "1274056"}
+    assert runs.placement_job_alive(record, _runner("")) is False
+    assert (
+        runs.record_process_alive(
+            record,
+            alive=lambda _pid: True,
+            job_alive=lambda rec: runs.placement_job_alive(rec, _runner("")),
+        )
+        is False
+    )
+
+
+def test_a_query_that_could_not_be_run_falls_through_to_the_pid() -> None:
+    """The other half: a failed query is not a verdict, so the pid decides."""
+    record = {"pid": 4242, "placement": PLACEMENT, "job_id": "1274056"}
+    assert (
+        runs.record_process_alive(
+            record,
+            alive=lambda _pid: True,
+            job_alive=lambda rec: runs.placement_job_alive(rec, _runner(None)),
+        )
+        is True
+    )
+
+
 # --- a job the scheduler ended at a time or memory limit ---------------------
 
 

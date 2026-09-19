@@ -2539,7 +2539,17 @@ def _scheduler_query_argv(
 def _ask_scheduler(
     argv: list[str] | None, runner: Callable[[list[str]], str | None] | None
 ) -> str | None:
-    """One scheduler question, answering None when it cannot be read."""
+    """One scheduler question, or None when the question could not be asked.
+
+    The two failures are kept apart because they mean opposite things. A query
+    that could not be run — no such scheduler, a non-zero exit, a timeout —
+    answers None, and the caller falls back to another instrument. A query that
+    ran and printed nothing answers the empty string, which for a job-state
+    question is a statement in its own right: the scheduler knows no such job,
+    so the job has left the queue. Collapsing the empty answer into None would
+    read every ordinary completion as unreadable and send the caller back to a
+    pid that belongs to another host.
+    """
     if argv is None:
         return None
     probe = _run_scheduler_query if runner is None else runner
@@ -2550,7 +2560,7 @@ def _ask_scheduler(
     if output is None:
         return None
     lines = str(output).strip().splitlines()
-    return lines[-1].strip() if lines else None
+    return lines[-1].strip() if lines else ""
 
 
 def scheduler_job_reason(
@@ -2658,10 +2668,12 @@ def scheduler_job_state(
 ) -> str | None:
     """The state a scheduler reports for a placed job, or None when unread.
 
-    None is the answer that cannot be turned into a verdict: a scheduler that
-    is absent, cannot be queried, or names a job it does not know leaves the
-    caller to fall back to the pid probe rather than reporting a live run as
-    stopped.
+    Three answers, and the caller must tell the last two apart. A state names
+    the job and is read against the in-flight set. The empty string is a
+    successful query that named no job: the scheduler knows it not, so it has
+    left the queue. None is a question that could not be asked at all — no
+    scheduler, no such wrapper, a non-zero exit — and leaves the caller to fall
+    back to the pid probe rather than reporting a live run as stopped.
     """
     return _ask_scheduler(
         _scheduler_state_argv(placement, str(job_id or "")), runner
@@ -2676,10 +2688,12 @@ def placement_job_alive(
 
     A placed run's recorded pid names the scheduler client, not the worker, so
     the job is the subject of a liveness read. A state the scheduler reports as
-    in-flight answers True; a readable state outside that set means the job has
-    left the queue and answers False, whatever the scheduler calls it. A
-    record carrying no placement, or one whose scheduler cannot be read, answers
-    None so the pid probe decides as it always has.
+    in-flight answers True. Any other readable answer means the job has left the
+    queue and answers False, whatever the scheduler calls it — including the
+    empty answer of a successful query that named no job, which is how an
+    ordinary completion is reported and must not fall through to the pid. A
+    record carrying no placement, or one whose scheduler could not be queried at
+    all, answers None so the pid probe decides as it always has.
 
     ``runner`` is the caller's own scheduler query, handed in the way ``alive``
     is so a test reaches this without a scheduler on the host.
