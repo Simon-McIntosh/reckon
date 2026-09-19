@@ -219,6 +219,16 @@
     both pinned by tests with two temporary mounts.</p>
 
     <p><strong>Files, and what the comparison is.</strong> The four surfaces that resolve a repository are dispatch in <code>reckon/crew/dispatch.py</code>, resume in <code>reckon/crew/resumption.py</code>, member registration in <code>reckon/crew/runs.py</code> and promotion in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all four. The comparison is between resolved real paths, so a symlinked route to the same root agrees. A working copy that shares the mount’s git common directory, which is what a worktree is, is the same repository and is admitted; a different repository is refused whether or not <code>--repo</code> named it, because the point is that the project decides and the shell does not.</p>
+<p><strong>Landed 2026-09-19.</strong> Dispatch, resume and promotion resolve through one helper built on the
+    mounted-project map and <code>repository_identity</code>, so an absent repository takes the mount, a linked
+    worktree of the mount is admitted as the same repository, and a named repository resolving elsewhere is
+    refused before any worktree, pointer or ledger row is written, naming both resolved roots and the flag. Five
+    cases with two temporary mounts pin it, and each was reddened by a declared mutation of the change it
+    covers. Two gaps are recorded rather than claimed: <code>reckon/cli.py::_repo_root</code> pre-resolves the
+    caller's repository before <code>crew.dispatch</code>, so the CLI path cannot yet arrive unnamed, and the
+    Files paragraph's <code>reckon/crew/runs.py</code> carries no member-registration code — that lives in
+    <code>reckon/ledger.py</code> and could not be reached inside the fence. Both are follow-ons.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s6">&sect;6 landed</a>.</p>
 <h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
     <p>Three checks were landed this week that ran, reported success, and could not fail for the reason they
     were written. A persistence guard compared one tensor-spline fit against its own evaluation, so its residual
