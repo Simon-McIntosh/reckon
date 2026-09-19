@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T00:07:28",
+  "updated": "2026-09-20T00:54:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -195334,6 +195334,233 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T223010644483-awcj-backend-identity-is-explicit",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a71",
+        "node": "awcj-backend-identity-is-explicit",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 249,
+                "cached_input_tokens": 183374,
+                "input_tokens": 183625,
+                "output_tokens": 949,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 184574,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "a case builds a run record whose recorded argv begins with a scheduler prefix and whose backend field names a translatable lane, promotes it through the same path reckon crew complete takes, and asserts the translation resolved the declared backend rather than the stem of argv[0]; the existing twenty-four launch cases stay green; the declared negative control reddens the new case",
+          "estimated_hours": null,
+          "goal": "make the backend identity on a run record explicit so a scheduler-prefixed argv no longer misidentifies the lane at promotion",
+          "id": "awcj-backend-identity-is-explicit",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T22:30:11Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/manifest.md",
+          "negative_control": "mutation: the reader infers the harness from argv[0] and carries no lane identity into the translation",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_backends.py",
+            "reckon/crew/promotion.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_placed_promotion.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-argv-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T22:30:16Z",
+        "completed_at": "2026-09-19T22:47:28.661Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1024,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1032,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "750fa6568c7d287f0e259e7adc62c4959b395c14",
+        "commits": [
+          "bf160b8e8afbdedc32c7a202110ad92fa33b8f2c",
+          "f59d5704504d0429de3345cb1679620760f73a93"
+        ],
+        "changed_lines": {
+          "added": 380,
+          "removed": 10,
+          "files": 5
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_placement.py tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py tests/test_crew_placed_promotion.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/after-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/manifest.md",
+        "scope_changed": false,
+        "session_id": "d39e308c-32c5-4a06-8f56-890ad7e8a557",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14131033,
+            "input_tokens_cumulative": 14131033,
+            "output_tokens": 69540,
+            "output_tokens_cumulative": 69540,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T22:47:28.661Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14298070,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1029.902,
+          "generated_tokens": 78131,
+          "generation_seconds": 936.627,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 93.275,
+          "peak_input_tokens": 165737,
+          "tokens_per_second": 83.42,
+          "wall_tokens_per_second": 75.86
+        },
+        "follow_on_paths": [
+          "reckon/crew/recovery.py",
+          "/tmp/reckon",
+          "4.6",
+          "/tmp/script.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-backend-identity-is-explicit",
+          "session_id": "d39e308c-32c5-4a06-8f56-890ad7e8a557",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T22:47:28.661Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.2,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.2,
+          "at_complete": 0.26,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_placed_promotion.py"
+          ],
+          "declaration": "mutation: the reader infers the harness from argv[0] and carries no lane identity into the translation",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/negative-control.red.log"
+        },
+        "tool_steps": 125.0,
+        "orientation_input_tokens": 3011799.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -195618,6 +195845,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1738
+    "_version": 1739
   }
 }
