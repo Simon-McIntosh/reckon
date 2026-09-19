@@ -90,10 +90,14 @@ from reckon.crew.runs import (
     new_run_id,
     pointer_path,
     process_alive,
+    placement_job_alive,
     read_pointer,
     record_process_alive,
     reports_dir,
     run_dir,
+    scheduler_job_reason,
+    scheduler_job_state,
+    scheduler_kill_class,
     project_watch_visibility,
     watch_state,
     watch_stream_path,
@@ -3518,25 +3522,86 @@ def _launched_worker_record(
     }
 
 
+def _placement_job_state(
+    placement: Mapping[str, Any] | None, job_id: Any
+) -> str | None:
+    """The scheduler's state for a placed job, or None when it cannot be read."""
+    if not placement:
+        return None
+    try:
+        return scheduler_job_state(placement, job_id)
+    except (OSError, CrewError):
+        return None
+
+
+def _placement_job_alive(
+    placement: Mapping[str, Any] | None, job_id: Any
+) -> bool | None:
+    """Whether a placed job is still in the system, or None when unread."""
+    if not placement:
+        return None
+    try:
+        return placement_job_alive({"placement": placement, "job_id": job_id})
+    except (OSError, CrewError):
+        return None
+
+
+def _placed_record_identity(run_id: str) -> tuple[dict[str, Any] | None, Any]:
+    """The placement and job id a run's pointer carries, reading it once.
+
+    A reap holds nothing but the launched plan, so the run's own pointer is the
+    only place the placement was ever recorded. A pointer that cannot be read —
+    reclaimed between the reap and this question — answers no placement, which
+    leaves the reap on its original empty-stream rule.
+    """
+    try:
+        pointer = read_pointer(run_id)
+    except CrewError:
+        return None, None
+    placement = pointer.get("placement")
+    if not isinstance(placement, Mapping) or not placement:
+        return None, None
+    return dict(placement), pointer.get("job_id")
+
+
 def _launch_failure_record(
-    launched: Mapping[str, Any], *, exit_status: int
+    launched: Mapping[str, Any],
+    *,
+    exit_status: int,
+    placement: Mapping[str, Any] | None = None,
+    job_id: Any = None,
 ) -> dict[str, Any]:
-    """The one record written for a launch that exited before any turn."""
+    """The one record written for a launch that exited before any turn.
+
+    A placed launch is charged to a scheduler job, so its exit status is the
+    scheduler client's rather than the worker's and the payload log, not that
+    status, is what decides whether the work ran; the job's own terminal state
+    and reason are recorded beside it. A job the scheduler ended at a time or
+    memory limit is named distinctly, because resubmitting it unchanged fails
+    the same way.
+    """
     stderr_tail = ""
     try:
         raw = Path(str(launched["stderr_path"])).read_bytes()
         stderr_tail = raw[-_LAUNCH_FAILURE_STDERR_BYTES:].decode("utf-8", "replace")
     except OSError:
         stderr_tail = ""
-    return {
+    state = _placement_job_state(placement, job_id)
+    reason = scheduler_job_reason(placement, job_id)
+    kind = scheduler_kill_class(state, reason) or "launch-failed"
+    record = {
         "recorded_at": _utc_now(),
-        "kind": "launch-failed",
+        "kind": kind,
         "backend": str(launched.get("backend") or ""),
         "exit_status": exit_status,
         "argv": list(launched.get("argv") or ()),
         "stderr_tail": stderr_tail,
         "stream_path": str(launched.get("stream_path") or ""),
     }
+    if placement:
+        record["scheduler_state"] = state
+        record["scheduler_reason"] = reason
+    return record
 
 
 def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
@@ -3554,12 +3619,28 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     except OSError:
         # A stream that was never created is the same fact as an empty one.
         size = 0
+    # The payload log, not the step's exit status, decides whether the work ran:
+    # a placed launch's exit status belongs to the scheduler client, and a step
+    # the scheduler reports COMPLETED can still have aborted before reaching a
+    # model. A non-empty stream is a turn that ran whatever the status says.
     if size:
         return
     run_id = str(launched.get("run_id") or "")
     if not run_id:
         return
-    record = _launch_failure_record(launched, exit_status=exit_status)
+    placement, job_id = _placed_record_identity(run_id)
+    if placement:
+        # The pid that finished is the scheduler client, not the worker, so a
+        # job still in the system means the worker has not ended and there is no
+        # failure to record yet. Only a job that has left the queue is judged.
+        if _placement_job_alive(placement, job_id) is True:
+            return
+    record = _launch_failure_record(
+        launched,
+        exit_status=exit_status,
+        placement=placement,
+        job_id=job_id,
+    )
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         phase = str(pointer.get("phase") or "")

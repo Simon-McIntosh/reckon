@@ -773,6 +773,25 @@ def _refusal_block(
     }
 
 
+def _harness_command(record: Mapping[str, Any], argv: Any) -> str | None:
+    """The command that names a cli run's harness, for a stream translation.
+
+    A placed launch prefixes its resolved argv with the scheduler invocation, so
+    ``argv[0]`` on such a record names the scheduler rather than the harness and
+    a translation built from it fails. The record carries the harness the launch
+    resolved under ``command``, captured before the placement wrapped the plan,
+    so that field is taken first and ``argv[0]`` is the fallback for a record
+    written before the field existed.
+    """
+    command = record.get("command")
+    if command:
+        return str(command)
+    if isinstance(argv, list) and argv:
+        return str(argv[0])
+    dialect = record.get("dialect")
+    return str(dialect) if dialect else None
+
+
 def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """The budget block a cli run's stream records, folded in or read fresh.
 
@@ -792,7 +811,7 @@ def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     if not log.is_file():
         return None
     argv = record.get("argv")
-    command = argv[0] if isinstance(argv, list) and argv else record.get("dialect")
+    command = _harness_command(record, argv)
     if not command:
         return None
     from reckon import _backends
@@ -1136,9 +1155,7 @@ def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
         log = Path(str(record.get("log_path") or ""))
         if log.is_file():
             argv = record.get("argv")
-            command = (
-                argv[0] if isinstance(argv, list) and argv else record.get("dialect")
-            )
+            command = _harness_command(record, argv)
             if command:
                 from reckon import _backends
 
