@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 </head>
 <body>
   <main class="plan-doc">
@@ -418,6 +418,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-crpc-the-control-refused-its-own-author" data-who="coordinator" data-when="2026-09-19T18:25:00Z">
     <div class="r-comment-body"><p>Worth recording because it is the cleanest evidence this section works and the sharpest instance of the defect it exists to remove. Two minutes after the refusal landed, it refused the coordinator's dispatch of the very node meant to close its manifest-template gap, because that node writes a test file and no interface existed to declare its mutation. The guard fired correctly against something the system gave no way to supply, which is the same shape as a guard that cannot fail, read from the other side: both are a check whose verdict is decided by the interface rather than by the work. The repair had to be a node that writes no test file, which is the only reason it could be dispatched at all, and it verified itself by dry run rather than by a test it was forbidden to write. A rule landed without the means to satisfy it is a fleet stop, so a control of this kind ships with its declaration path in the same change rather than in a followup.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260919T182031456280-crpc-expose-the-negative-control-on-dispatch" data-who="reckon-ship" data-when="2026-09-19T18:23:42.210Z">
+    <div class="r-comment-body"><p>The dispatch option and the manifest template field close a refusal that had no satisfiable path and had stopped every test-writing node; verified by dry run, refused without the option and admitted with it and with the none escape.</p></div>
 </div>
 </section>
 </main>
