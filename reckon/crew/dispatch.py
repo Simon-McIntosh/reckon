@@ -3489,7 +3489,9 @@ def _reap_launched_workers() -> None:
                 _LAUNCHED_WORKERS.discard(pid)
                 launched = _LAUNCHED_WORKER_RUNS.pop(pid, None)
             if launched is not None:
-                _record_launch_failure(launched, exit_status=status)
+                _record_launch_failure(
+                    launched, exit_status=os.waitstatus_to_exitcode(status)
+                )
 
 
 def _worker_reaper_loop() -> None:
