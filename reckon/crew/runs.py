@@ -2482,7 +2482,10 @@ def process_alive(pid: Any) -> bool | None:
     return True
 
 
-def record_process_alive(record: Mapping[str, Any] | None) -> bool | None:
+def record_process_alive(
+    record: Mapping[str, Any] | None,
+    alive: Callable[[Any], bool | None] | None = None,
+) -> bool | None:
     """Report whether the process a run record names is still running.
 
     Every liveness decision about a run is taken from the run's own record, so
@@ -2490,10 +2493,15 @@ def record_process_alive(record: Mapping[str, Any] | None) -> bool | None:
     bare pid. A record that names no process answers None, the same shape
     :func:`process_alive` already returns for a missing pid, so a caller cannot
     read "no process recorded yet" as a stopped worker.
+
+    ``alive`` is the caller's own probe. A module that keeps the primitive
+    bound under its own name — so a test can substitute liveness for that
+    module — hands it in rather than having its substitution bypassed.
     """
     if not record:
         return None
-    return process_alive(record.get("pid"))
+    probe = process_alive if alive is None else alive
+    return probe(record.get("pid"))
 
 
 def _process_stat_fields(pid: Any) -> list[str]:

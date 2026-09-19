@@ -51,6 +51,7 @@ from reckon.crew.runs import (
     drain,
     list_live,
     pointer_path,
+    process_alive,
     read_pointer,
     record_process_alive,
     run_dir,
@@ -1862,7 +1863,7 @@ def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
     if not _release_terminal_manifest(record):
         return False
     pid = record.get("pid")
-    if record_process_alive(record) is not True:
+    if record_process_alive(record, process_alive) is not True:
         return False
     try:
         _signal_process_group(int(pid), record.get("pid_start_time"))
@@ -1891,7 +1892,7 @@ def _promotion_terminal_observation(
     """
     if str(record.get("launch") or "") != "cli":
         return _terminal_stream_data(record)
-    if record_process_alive(record) is True and not settle_even_if_alive:
+    if record_process_alive(record, process_alive) is True and not settle_even_if_alive:
         return _terminal_stream_data(record)
     path = Path(str(record.get("log_path") or ""))
     _wait_out_stream_tail(_run_streams(path))
@@ -2414,7 +2415,7 @@ def _release_run_workspace(
     pid = record.get("pid")
     if not _release_terminal_manifest(record):
         result["process_withheld"] = "no terminal manifest was delivered"
-    elif record_process_alive(record) is not True:
+    elif record_process_alive(record, process_alive) is not True:
         if process_already_ended:
             # The promotion ended this writer before the fold so its stream
             # could settle; the release reports that it signalled, and when,
@@ -3529,7 +3530,7 @@ def discard(run_id: str) -> dict[str, Any]:
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
         pid = record.get("pid")
-        if record_process_alive(record) is True:
+        if record_process_alive(record, process_alive) is True:
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
