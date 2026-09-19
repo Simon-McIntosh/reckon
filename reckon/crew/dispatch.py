@@ -3679,6 +3679,8 @@ def assert_routable_backends_resolvable(
     check runs before the registration is taken rather than at the first lift.
     """
     resolved: list[dict[str, str]] = []
+    from reckon import flight
+
     for name in sorted((config.get("backends") or {}), key=str):
         backend = (config.get("backends") or {})[name] or {}
         if backend.get("launch") != "cli":
@@ -3686,7 +3688,7 @@ def assert_routable_backends_resolvable(
         command = str(backend.get("command") or "")
         if not command:
             continue
-        environment = _backends.expand_backend_environment(str(name), backend)
+        environment = flight.expand_backend_environment(str(name), backend)
         path = launch_search_path(environment)
         found = shutil.which(command, path=path)
         if not found:
@@ -4180,6 +4182,20 @@ def resume_plan(
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
     backend.setdefault("sandbox", record.get("sandbox"))
+    # The plan is built — and its executable resolved — before anything is
+    # written, so an unresolvable backend refuses a resume exactly as it
+    # refuses a dispatch: no pointer field, no advice file, no stream.
+    plan = resolve_launch_executable(
+        _backends.launch_plan(
+            backend_name=str(record.get("backend") or ""),
+            backend=backend,
+            prompt=advice,
+            worktree=str(record.get("worktree") or "."),
+            manifest_path=str(record.get("manifest_path") or ""),
+            writable_directories=record.get("sandbox_write_roots") or (),
+            resume_session=str(session_id),
+        )
+    )
     # A resumption reuses the recorded session and never re-verifies that the
     # session's context window fits the repository it is resumed into; only a
     # fresh dispatch runs that check. The pointer must say so explicitly, or a
@@ -4200,17 +4216,7 @@ def resume_plan(
             },
         },
     )
-    return resolve_launch_executable(
-        _backends.launch_plan(
-            backend_name=str(record.get("backend") or ""),
-            backend=backend,
-            prompt=advice,
-            worktree=str(record.get("worktree") or "."),
-            manifest_path=str(record.get("manifest_path") or ""),
-            writable_directories=record.get("sandbox_write_roots") or (),
-            resume_session=str(session_id),
-        )
-    )
+    return plan
 
 
 def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
