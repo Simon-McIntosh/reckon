@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-impl" content="0.82">
-<meta name="plan-version" content="15">
+<meta name="plan-impl" content="0.86">
+<meta name="plan-version" content="16">
 </head>
 <body>
   <main class="plan-doc">
@@ -301,10 +301,11 @@
     <div class="r-fu-body">Section 7 now states its trigger, its declaration channel, its discharge and its escape, so it is dispatchable. A node whose declared write paths contain a test file must carry a structured negative-control declaration on its node record; dispatch refuses one without it, and promotion refuses a passing gate whose manifest carries no red log naming the declared mutation. A check admitting no applicable mutation declares its negative as none with a reason, which promotion records rather than refuses. Scope is reckon/crew/dispatch.py, node.py and promotion.py plus a test file. Four checks landed this week that could not fail for their own reason, each found by review with the author's gate green.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     </article>
-<article class="r-fu" data-id="f-crpc-skills-point-at-the-ensure-command" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-skills-point-at-the-ensure-command" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §5" data-resolved-at="2026-09-19T18:13:34+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land section 5: the ship skill points at the ensure command and drops the manual recipe</h4>
     <div class="r-fu-body">Unblocked now that reckon crew watch --ensure exists and the dispatch refusal names it. Replace the recovery prose in skills/reckon-ship that tells a coordinator to export the backend directory and restart watcher units by hand with one line naming the ensure command, and state that a dispatch refused as unwatched is repaired by running it. Remove any instruction the runtime now enforces. The section names a directory rather than a file, so the node's scope is skills/reckon-ship/SKILL.md and its references directory, and the node states which file it edited.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §5</pre>
+    <p class="r-fu-outcome">Landed at 74f3c13a and 64451d13 (merged c998719f) in skills/reckon-ship/SKILL.md, which the manifest names since the section named a directory. The watcher recovery prose gives the ensure command instead of the manual export-and-restart recipe, and it does something the brief did not ask for and should have: it separates the two causes the watcher-required refusal can have, so a session with no delivering follower is told to attach while a project with no live watcher process is told to ensure one. It also states that the command is idempotent and safe against a watcher already up, which is what makes a reader willing to run it. Two pre-existing failures at base and the identical two at head.</p>
     </article>
 <article class="r-fu" data-id="f-crpc-cli-preresolves-the-callers-repository" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §6" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The command line still pre-resolves the caller&#x27;s repository, so the measured incident would recur through it</h4>
