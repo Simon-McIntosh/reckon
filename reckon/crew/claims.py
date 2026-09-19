@@ -45,8 +45,8 @@ from reckon.crew.node import CrewError, unintegrated_claim_work
 from reckon.crew.runs import (
     _write_json,
     pointer_path,
-    process_alive,
     read_pointer,
+    record_process_alive,
 )
 
 
@@ -253,7 +253,7 @@ def _worker_liveness(pointer: Mapping[str, Any]) -> tuple[bool | None, str]:
             "its worker is spawned"
         )
         return None, unborn
-    alive = process_alive(pid)
+    alive = record_process_alive(pointer)
     if alive is True:
         return True, f"its worker is still running as pid {pid}"
     if alive is None:

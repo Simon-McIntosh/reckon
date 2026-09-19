@@ -443,7 +443,7 @@ def list_live(
         pid = record.get("pid")
         if not pid:
             continue
-        alive = process_alive(pid)
+        alive = record_process_alive(record)
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
             alive = _process_start_time(pid) == expected_start
@@ -906,7 +906,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         # fence open after a terminal manifest arrives. A pointer with no pid
         # has no process-table evidence and therefore cannot use that stored
         # boolean to outrank delivery on disk.
-        current = {**pointer, "process_alive": process_alive(pointer.get("pid"))}
+        current = {**pointer, "process_alive": record_process_alive(pointer)}
         row = classify_pointer(current)
         recorded = pointer.get("closure_disposition")
         disposition = (
@@ -1311,7 +1311,7 @@ def producer_live(project: str) -> bool:
     if not record:
         return False
     pid = record.get("pid")
-    alive = process_alive(pid) is True
+    alive = record_process_alive(record) is True
     if alive:
         expected = record.get("pid_start_time")
         alive = expected is None or _process_start_time(pid) == expected
@@ -1332,13 +1332,13 @@ def _record_producer_running(record: Mapping[str, Any]) -> bool:
     question than whether it is running.
     """
     pid = record.get("pid")
-    return bool(pid) and process_alive(pid) is True
+    return bool(pid) and record_process_alive(record) is True
 
 
 def _record_producer_dead(record: Mapping[str, Any]) -> bool:
     """Report whether a seat record names a process that is no longer running."""
     pid = record.get("pid")
-    return bool(pid) and process_alive(pid) is not True
+    return bool(pid) and record_process_alive(record) is not True
 
 
 def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
@@ -1640,7 +1640,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         time.sleep(0.005)
 
     pid = record.get("pid")
-    running = process_alive(pid) is True
+    running = record_process_alive(record) is True
     expected = record.get("pid_start_time")
     if expected is not None:
         running = running and _process_start_time(pid) == expected
@@ -1888,7 +1888,7 @@ def project_watch_visibility(
     pid = registration.get("pid")
     expected_start = registration.get("pid_start_time")
     actual_start = _process_start_time(pid)
-    registering_process_alive = process_alive(pid)
+    registering_process_alive = record_process_alive(registration)
     if expected_start is not None:
         registering_process_alive = bool(
             registering_process_alive is True and actual_start == expected_start
@@ -2433,7 +2433,7 @@ def _pointer_claims_worktree(record: Mapping[str, Any]) -> bool:
         return False
     if phase:
         return True
-    return process_alive(record.get("pid")) is not False
+    return record_process_alive(record) is not False
 
 
 def _live_worktree_claims() -> dict[Path, list[str]]:
@@ -2480,6 +2480,20 @@ def process_alive(pid: Any) -> bool | None:
     except (TypeError, ValueError):
         return None
     return True
+
+
+def record_process_alive(record: Mapping[str, Any] | None) -> bool | None:
+    """Report whether the process a run record names is still running.
+
+    Every liveness decision about a run is taken from the run's own record, so
+    the pid lookup lives here in one place and the call site never handles a
+    bare pid. A record that names no process answers None, the same shape
+    :func:`process_alive` already returns for a missing pid, so a caller cannot
+    read "no process recorded yet" as a stopped worker.
+    """
+    if not record:
+        return None
+    return process_alive(record.get("pid"))
 
 
 def _process_stat_fields(pid: Any) -> list[str]:

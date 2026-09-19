@@ -904,7 +904,7 @@ def claim_disposition(
     """
     run_id = str(pointer.get("run_id") or "unknown")
     pid = pointer.get("pid")
-    alive = _claim_process_alive(pid)
+    alive = _claim_process_alive(pointer)
     if alive is None:
         # A pointer is written before its worker is spawned, so no recorded
         # process means "not yet" rather than "gone". Reading the two alike
@@ -938,8 +938,8 @@ def claim_disposition(
     )
 
 
-def _claim_process_alive(pid: Any) -> bool | None:
+def _claim_process_alive(pointer: Mapping[str, Any]) -> bool | None:
     """Report worker liveness, or None when the pointer records no process."""
-    from reckon.crew.runs import process_alive
+    from reckon.crew.runs import record_process_alive
 
-    return process_alive(pid)
+    return record_process_alive(pointer)

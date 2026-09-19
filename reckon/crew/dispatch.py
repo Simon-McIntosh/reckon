@@ -89,8 +89,8 @@ from reckon.crew.runs import (
     list_live,
     new_run_id,
     pointer_path,
-    process_alive,
     read_pointer,
+    record_process_alive,
     reports_dir,
     run_dir,
     project_watch_visibility,
@@ -4025,7 +4025,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["manifest_file_present"] = manifest_file_present
         record["manifest_fresh"] = manifest_fresh
         record["manifest_present"] = manifest_fresh
-        record["process_alive"] = process_alive(record.get("pid"))
+        record["process_alive"] = record_process_alive(record)
         record["observed_at"] = _utc_now()
         stopped = record.get("phase") == "stopped"
 
@@ -4394,7 +4394,7 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if process_alive(record.get("pid")) is True:
+    if record_process_alive(record) is True:
         raise CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
@@ -4824,7 +4824,7 @@ def change_lane(
             f"run {run_id!r} is attached to live harness task {record['task']!r}; "
             "cancel it in that harness before changing backend"
         )
-    if source_launch == "cli" and process_alive(record.get("pid")) is True:
+    if source_launch == "cli" and record_process_alive(record) is True:
         _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
 
     directory.mkdir(parents=True, exist_ok=True)
