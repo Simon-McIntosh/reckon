@@ -112,6 +112,10 @@ _SCALARS = (
     "environment",
     "source",
     "source_quality",
+    # The wiring declaration: a non-empty reason silences the unwired-plan
+    # finding. Carried as markup (plan-standalone) so it round-trips through a
+    # state write rather than being dropped as an unknown field.
+    "standalone",
 )
 _LIST_SCALARS = (
     "depends_on",
@@ -144,6 +148,7 @@ _PLAN_ONLY_METAS = (
     "plan-capability-risk",
     "plan-depends-on",
     "plan-blocks",
+    "plan-standalone",
     "plan-impl",
     "plan-section-declarations",
 )

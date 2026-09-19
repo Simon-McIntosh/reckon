@@ -327,9 +327,13 @@ DOCS_DIR="$REPO_ROOT/docs"
      `informs`;
    - **no to all three for every candidate, and nothing downstream waits on
      this plan** → it genuinely stands alone. Say so in the document, not in
-     your head: `<meta name="plan-standalone" content="<one-sentence reason>">`.
-     The sentence is the reason, and it is what a later reader checks the plan
-     against; an empty declaration is not a declaration.
+     your head, through the write boundary that accepts it:
+     `{"op":"set","path":"standalone","value":"<one-sentence reason>"}` — the
+     same op `reckon-edit` names. It writes the
+     `<meta name="plan-standalone" content="<one-sentence reason>">` the audit
+     and the roadmap read back. The sentence is the reason, and it is what a
+     later reader checks the plan against; an empty declaration is not a
+     declaration.
 
    Measured 2026-09-16 on nova: two new plans wired `depends_on` onto the plan
    whose evidence they consumed were correctly reported blocked by the roadmap
