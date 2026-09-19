@@ -219,6 +219,82 @@ def test_an_agreeing_recorded_exit_status_does_not_refuse(
     assert stored["log_path"] == str(passing_log)
 
 
+# ── The captured exit sentinel is read by value, not by presence ────────────
+
+
+def test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted(
+    repository: Path, tmp_path: Path
+) -> None:
+    # A terminal EXIT=<n> capture record is positive evidence the cited command
+    # executed, because writing it means the shell returned from the command.
+    # Its value decides: only 126 and 127 assert the shell could not execute the
+    # command at all, so a nonzero status outside that pair — here the check
+    # genuinely failing — still shows a command ran. A quoted diagnostic beside
+    # such a record is fixture text, not proof of non-execution, and the
+    # promotion must be accepted.
+    run_id = "r-20260919T120300000000-executed-exit"
+    _write_pointer(run_id, repository)
+    executed_log = tmp_path / "executed-exit-gate.log"
+    executed_log.write_text(
+        "tests/test_crew_gate_log_agrees.py::test_a_command_that_is_missing\n"
+        "bash: line 1: rekon crew frobnicate: command not found\n"
+        "EXIT=1\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        _complete_arguments(run_id, repository, str(executed_log), exit_status=1),
+    )
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(result.output)["record"]
+    assert record["gate"] == "passed"
+    assert record["gate_check"]["exit_status"] == 1
+    assert record["gate_check"]["log_path"] == str(executed_log)
+    # The accepted promotion consumed the pointer as usual.
+    assert not pointer_path(run_id).exists()
+
+
+@pytest.mark.parametrize(
+    ("run_id", "unexecuted_exit"),
+    [
+        ("r-20260919T120400000000-exit-126", 126),
+        ("r-20260919T120500000000-exit-127", 127),
+    ],
+    ids=["found-but-cannot-run", "not-found"],
+)
+def test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused(
+    repository: Path, tmp_path: Path, run_id: str, unexecuted_exit: int
+) -> None:
+    # 126 and 127 are the statuses that assert the shell could not execute the
+    # cited command at all — 126 for one it found but could not run, 127 for a
+    # command it could not find. A terminal record carrying either is a
+    # statement that the command never ran rather than a record that it did, so
+    # the diagnostic is the whole evidence and the refusal must stand, naming
+    # the matched line and its one-based line number.
+    _write_pointer(run_id, repository)
+    never_ran_log = tmp_path / "unexecuted-exit-gate.log"
+    never_ran_log.write_text(
+        "bash: line 1: rekon crew frobnicate: command not found\n"
+        f"EXIT={unexecuted_exit}\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        _complete_arguments(
+            run_id, repository, str(never_ran_log), exit_status=unexecuted_exit
+        ),
+    )
+
+    assert result.exit_code != 0
+    assert "Found: no evidence the command ran" in result.output
+    assert "diagnostic at line 1" in result.output
+    assert "bash: line 1: rekon crew frobnicate: command not found" in result.output
+    assert pointer_path(run_id).is_file()
+
+
 # ── A log showing the command never ran refuses ─────────────────────────────
 
 
