@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job">
+  <meta name="plan-title" content="A worker is charged to a job — move the fleet off the login slice so concurrency is bounded by the cluster, not by 64 GiB">
+  <meta name="plan-summary" content="Worker processes run under a scheduler allocation rather than as login-node children, so the fleet ceiling stops being one user slice.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="24.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="crew-runtime-positive-controls">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>A worker is charged to a job | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>Every worker this fleet has ever run was a child of the coordinator on the login node, and the login
+    node gives one user a slice of memory far smaller than the machine. That slice is the fleet's real
+    ceiling, and it is not a throughput ceiling: it kills processes.</p>
+    <table>
+      <caption>The login slice, read from its own cgroup on 2026-09-19</caption>
+      <thead><tr><th>Reading</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><code>memory.max</code> for the user slice</td><td>64 GiB</td></tr>
+        <tr><td><code>oom_kill</code> since boot</td><td>529</td></tr>
+        <tr><td>allocations blocked at the limit</td><td>2,912,593</td></tr>
+        <tr><td>machine memory, and the part of it free</td><td>503 GB, 401 GB free</td></tr>
+        <tr><td>one measured nova solve, resident</td><td>24.6 GB</td></tr>
+      </tbody>
+    </table>
+    <p>So the machine is nearly empty while our slice is full, and three workers running a solve can exhaust
+    it between them. Five hundred and twenty-nine processes have already been killed this way. The served
+    model is not the constraint: it delivers about 450 tokens a second at roughly twenty-five concurrent
+    workers, which is far past the point where the login slice stops us.</p>
+    <p>Nothing in reckon knows about the scheduler. A search of the package and the skills for
+    <code>srun</code>, <code>sbatch</code> or <code>SLURM</code> returns nothing; workers are launched with
+    <code>subprocess.Popen</code> in <code>reckon/crew/dispatch.py</code> and charged to whoever started the
+    coordinator. What already runs under the scheduler is the model serve, and the per-node gates that briefs
+    ask for by hand. This plan moves the worker itself.</p>
+    <p>Three preconditions were measured before the plan was written, one on each partition a worker might
+    use. From a compute node on <code>all_debug</code> and again from one on <code>rigel</code>, the served
+    model answers on <code>98dci4-gpu-0003:18810</code> and its router on <code>:18802</code>; the worktree
+    root, the crew state directory, the backend binary and the shared project environment are all visible;
+    and <code>TMPDIR</code> already resolves to <code>/tmp</code> rather than to node-local
+    <code>/run/user</code>. Capacity is not scarce either: <code>all</code> carries no time limit with 3,084
+    idle cores across 97 idle nodes, against <code>all_debug</code>'s one-hour ceiling.</p>
+
+    <h2 id="s-contract">Section contract</h2>
+    <p>The order is deliberate. Sections 1 and 2 are prototyped on the local lane, one worker at a time,
+    before any default changes, because every detail below is cheaper to learn on a single run than on a
+    wave.</p>
+    <table>
+      <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
+      <tbody>
+        <tr><td>§1 One worker under one allocation</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§2 Liveness and reaping follow the job</td><td>5</td><td>deep</td><td>critical</td><td>0</td></tr>
+        <tr><td>§3 A standing allocation the fleet draws on</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§4 The workspace contract</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§5 The ceiling moves to the roster</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§6 The prototype ladder and the default</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s1">§1 — One worker under one allocation, on the local lane, before anything else changes</h2>
+    <p>A backend gains an optional placement describing how its launch is wrapped. When a placement is
+    declared, the launch plan built in <code>reckon/crew/dispatch.py</code> prefixes the resolved argv with
+    the scheduler invocation rather than replacing it, so the resolved absolute executable, the environment,
+    and the stdin, stdout and stderr paths that section 1 of the positive-controls plan established are
+    carried through unchanged. Everything reckon writes stays on the shared filesystem, so a worker under an
+    allocation is indistinguishable downstream from one on the login node.</p>
+    <p><strong>Prototype first, on one run.</strong> This section is not finished by a design; it is finished
+    by a single real local-lane node that ran to completion under an allocation and was promoted through the
+    ordinary path. The details that only a real run will settle, and which the section must record as it
+    finds them: whether the wrapper is <code>srun</code> held open for the worker's life or a batch job the
+    coordinator polls, what the worker costs in cores and memory as measured rather than guessed, how a
+    queued allocation is distinguished from a slow worker, and what happens to the run when the allocation is
+    refused, pre-empted or hits a time limit.</p>
+    <p><strong>Done when.</strong> One local-lane implement node dispatched with a placement runs on a
+    compute node, writes its stream, manifest and reports to the same paths, and is promoted without any
+    special handling; the run record names the job id beside the pid; and the section states the measured
+    cost of that worker in cores, memory and queue wait.</p>
+
+    <h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
+    <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the
+    worker's pid belongs to a compute node, so the existing reads become false in a specific and dangerous
+    direction: a live worker looks dead. The classifier, the reaper that section 2 of the positive-controls
+    plan built, and the launch-failure record all need the job as their subject. This is the plan's
+    critical-risk section because a wrong answer here is either a duplicated worker or a silently abandoned
+    one.</p>
+    <p><strong>Done when.</strong> A placed run reports live while its job is running and terminal when the
+    job leaves the queue, decided from the job rather than from a pid; a job that never starts is recorded
+    once as a launch failure with its scheduler reason, the way an unresolvable binary is; a job killed for
+    time or memory is classified distinctly from a worker that failed, since the remedy differs; and the
+    payload log, not the step's exit status, decides whether the work ran, which two jobs proved necessary on
+    2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
+
+    <h2 id="s3">§3 — A standing allocation the fleet draws on, rather than a job per worker</h2>
+    <p>A job per worker pays queue latency on every dispatch and makes a wave's start time a scheduler
+    decision. The alternative is a standing allocation the coordinator holds and places workers into, which
+    trades flexibility for predictability and raises its own questions: how long it may be held, what happens
+    to workers when it expires, whether it is one allocation or one per project, and whether idle cores in it
+    are a cost worth paying against the queue latency they remove. Measure both before choosing: the queue
+    wait for a single worker on <code>all</code> and on <code>rigel</code> at several times of day, against
+    the cores a standing allocation would hold idle at this fleet's measured duty cycle.</p>
+    <p><strong>Done when.</strong> The two placements are measured rather than argued, the choice is a locked
+    decision citing those numbers, and whichever is chosen carries a stated policy for expiry and for a
+    worker outliving its allocation.</p>
+
+    <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
+    <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
+    them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.
+    The worker needs the worktree root, the crew state directory, the backend binary and the shared project
+    environment, all of which sit on the shared filesystem; it needs the served model and its router
+    reachable; and it must never be handed a path under <code>/run/user</code>, which is node-local tmpfs and
+    has already cancelled a job in zero seconds with an empty log when an output path pointed there.</p>
+    <p><strong>Done when.</strong> A placement is refused before launch when any declared requirement is not
+    visible from the target partition, naming the path or the endpoint, pinned by a test with a synthesised
+    unreachable requirement; and the refusal names the node-local case explicitly, because that one fails
+    silently rather than loudly.</p>
+
+    <h2 id="s5">§5 — The ceiling moves from a slice of memory to the roster, and the roster must know it</h2>
+    <p>Today the honest bound on concurrency is the 64 GiB slice, which nothing reads and which announces
+    itself only as a killed process. Once workers are charged to jobs, the roster is the only bound left, as
+    the abandoned local-workers plan already said it should be. The roster then has to be sized against
+    something real: the partition's admitted cores, the served model's measured aggregate, and the coordinator
+    residue that stays on the login node however much moves off it.</p>
+    <p><strong>Done when.</strong> The fleet surface reports the bound that is actually binding, and a
+    dispatch that would exceed it is refused naming which bound and its measured value; the login slice's
+    <code>oom_kill</code> counter is read and surfaced rather than discovered, so a slice under pressure says
+    so before it kills anything.</p>
+
+    <h2 id="s6">§6 — The prototype ladder, and only then the default</h2>
+    <p>The lead's instruction is to prototype on the local lane first and settle the details individually
+    before the design is fixed. That makes the ladder part of the plan rather than a habit: one worker under
+    an allocation, then a small wave of independent nodes, then a wave with a peer-scoped merge, and only then
+    a change to what a dispatch does by default. Each rung records what it measured and what it changed, and a
+    rung that finds a detail the previous rung hid is the ladder working rather than a setback.</p>
+    <p><strong>Done when.</strong> Each rung has run and is recorded with its measurements; the default
+    placement changes only after the wave rung; and the section states what would send the fleet back to
+    login-node launches, so the change is reversible on a stated condition rather than on an argument.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awcj-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Run one placed worker on the local lane before designing anything further</h4>
+    <div class="r-fu-body"><p>Section 1 is the whole prototype: one node, one allocation, promoted through the ordinary path, with the cost and the queue wait measured rather than assumed. Section 2 follows immediately because a placed worker whose liveness is read from a pid reads as dead. Sections 3 and 6 depend on numbers only those two can produce.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
