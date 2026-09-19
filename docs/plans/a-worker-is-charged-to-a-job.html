@@ -25,8 +25,8 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-20">
+<meta name="plan-version" content="6">
 <meta name="plan-impl" content="0.2">
 </head>
 <body>
@@ -272,6 +272,11 @@ under <code>follow_ons</code>.</p>
     <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
     <p class="r-fu-outcome">Section 1 is met on both halves. The mechanism landed at 740e4065, 029ab788, 09e27b83 and b029c66a (merged a6ed1e5d): a backend declares a placement in the schema, a declared one prefixes the already-resolved argv while leaving the executable, environment and stream paths unchanged, absence means today's login-node launch, an unresolvable scheduler is refused before launch, and the run record carries the job id beside the pid. Twenty-four cases pass with the declared mutation reddening exactly the two claims it removes. The proving run was the coordinator's dispatch rather than the worker's, since a node cannot run the node that measures it, and it is recorded below.</p>
     </article>
+<article class="r-fu" data-id="f-awcj-argv-zero-is-not-the-backend" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A placed run cannot be promoted, because the backend is derived from the first word of its argv</h4>
+    <div class="r-fu-body">Found by promoting the proving run rather than by its tests, which is the point worth keeping. reckon crew complete on the placed run raises no launch translation for command 'srun'; reckon can translate: claude, clive, codex. The cause is that the recorded argv begins /usr/bin/srun --partition=all while the backend name on the same record reads clive and its command reads none, so any consumer taking the backend from the argv stem, as the translation in reckon/_backends.py does, sees the scheduler instead of the lane. Section 1's text required the prefix to leave the launch otherwise unchanged, and for launching it does; what it changed is the identity a downstream reader infers. Repair by making the backend identity explicit on the record rather than inferred from argv, so the translation and anything else reading it consult the backend name, while the prefixed argv stays as the faithful record of what ran. A case must promote a run whose argv carries a scheduler prefix, which is the round trip none of the twenty-four launch cases exercised: they tested the plan that is built, not the record that is later read. Scope is reckon/_backends.py, reckon/crew/promotion.py, reckon/crew/dispatch.py and a test file.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-awcj-readback-acted-on" data-who="coordinator" data-when="2026-09-19T20:30:00Z">
@@ -285,6 +290,9 @@ under <code>follow_ons</code>.</p>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260919T203706841041-awcj-one-worker-under-one-allocation" data-who="reckon-ship" data-when="2026-09-19T21:16:56.333Z">
     <div class="r-comment-body"><p>A backend declares a placement in the schema and a declared one prefixes the resolved argv; absence means today login-node launch; an unresolvable scheduler is refused before launch; the run record carries the job id. Twenty-four cases, the mutation reddening exactly its two claims.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-awcj-tests-passed-the-path-broke" data-who="coordinator" data-when="2026-09-20T00:10:00Z">
+    <div class="r-comment-body"><p>Worth recording against this section rather than only in the followup. The mechanism landed with twenty-four passing cases and a mutation that reddened exactly the two claims it removed, and the first attempt to promote a placed run failed outright. The cases exercised the launch plan that is built; the defect is in the record that is later read, where the backend is inferred from the first word of the argv and now finds the scheduler there. So the gate was green for the thing it measured while the end-to-end path was broken, which is the same shape as the checks this sprint has spent the week repairing, appearing here in the plan repairing them. The lesson for the remaining sections is that a placement changes what downstream readers see and not only how a worker starts, so each section owes a round trip rather than a unit case.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
