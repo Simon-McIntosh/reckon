@@ -1962,6 +1962,98 @@ def move_sprint_item(
         return {"from_version": new_from, "to_version": new_to}
 
 
+def push_sprint(
+    docs_dir: Path,
+    project: str,
+    sprint_id: str,
+    expected_version: int,
+) -> dict[str, Any]:
+    """Make one sprint the pushed (active) one, demoting any other in one write.
+
+    ``active`` means pushed: exactly one sprint per project is the one being
+    pushed, and ``open`` means work remains but the sprint is not it. Both the
+    promoting write and any demoting write are applied under one set of
+    resource locks behind a journal with compensating recovery, so an
+    interrupted push restores both files rather than leaving two active
+    sprints or none.
+    """
+    composed = compose_project_state(docs_dir, project)
+    statuses = {
+        str(sprint.get("id") or ""): str(sprint.get("status") or "")
+        for sprint in composed.get("sprints", [])
+    }
+    if sprint_id not in statuses:
+        raise ValueError(f"sprint {sprint_id!r} not found")
+    others = sorted(
+        other_id
+        for other_id, status in statuses.items()
+        if other_id != sprint_id and status == "active"
+    )
+    target_path = resource_path(docs_dir, project, "sprint", sprint_id)
+    anchor = others[0] if others else sprint_id
+    journal = _move_journal_path(docs_dir, project, anchor, sprint_id, "<push>")
+    identities = [("sprint", sprint_id), *[("sprint", other_id) for other_id in others]]
+    with _resource_locks(docs_dir, project, identities):
+        target, target_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", sprint_id
+        )
+        if target_version != expected_version:
+            raise ProjectStateConflict(expected_version, target_version, target)
+        demoted: dict[str, tuple[dict[str, Any], int]] = {}
+        for other_id in others:
+            demoted[other_id] = _read_resource_unchecked(
+                docs_dir, project, "sprint", other_id
+            )
+        backups: dict[Path, bytes] = {target_path: target_path.read_bytes()}
+        for other_id in others:
+            other_path = resource_path(docs_dir, project, "sprint", other_id)
+            backups[other_path] = other_path.read_bytes()
+        _publish_move_journal(
+            journal,
+            project,
+            anchor,
+            sprint_id,
+            backups[target_path],
+            backups.get(resource_path(docs_dir, project, "sprint", anchor), backups[target_path]),
+        )
+        new_version = _write_resource_unlocked(
+            docs_dir,
+            project,
+            "sprint",
+            sprint_id,
+            {**target, "status": "active"},
+            target_version,
+        )
+        try:
+            for other_id in others:
+                other_data, other_version = demoted[other_id]
+                _write_resource_unlocked(
+                    docs_dir,
+                    project,
+                    "sprint",
+                    other_id,
+                    {**other_data, "status": "open"},
+                    other_version,
+                )
+        except Exception:
+            for path, content in backups.items():
+                fd, tmp_name = tempfile.mkstemp(
+                    prefix=f".{path.name}.", suffix=".recover", dir=path.parent
+                )
+                os.close(fd)
+                tmp = Path(tmp_name)
+                try:
+                    tmp.write_bytes(content)
+                    _durable_replace(tmp, path)
+                finally:
+                    tmp.unlink(missing_ok=True)
+            _durable_unlink(journal)
+            raise
+        _mark_move_journal_committed(journal)
+        _durable_unlink(journal)
+        return {"new_version": new_version, "demoted": others}
+
+
 def _sprint_item_payload(row: Any) -> dict[str, Any]:
     return {"slug": row} if isinstance(row, str) else dict(row)
 
@@ -2220,6 +2312,13 @@ def apply_resource_ops(
             )
             return result["from_version"], [
                 f"destination_version={result['to_version']}"
+            ]
+        elif verb == "push" and resource_type == "sprint":
+            if len(ops) != 1:
+                raise ValueError("push must be the only op")
+            pushed = push_sprint(docs_dir, project, resource_id, expected_version)
+            return pushed["new_version"], [
+                f"demoted={sprint_id}" for sprint_id in pushed["demoted"]
             ]
         else:
             raise ValueError(f"unsupported {resource_type} op {verb!r}")

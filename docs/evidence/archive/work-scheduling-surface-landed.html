@@ -13,6 +13,16 @@
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; reckon crew node dispatched into a detached worktree; tests run with the main checkout's virtualenv through UV_PROJECT_ENVIRONMENT">
   <title>Work scheduling surface — cumulative execution-evidence record | reckon</title>
+  <meta name="plan-title" content="One pushed sprint &mdash; landed evidence">
+  <meta name="plan-summary" content="A sprint status that separates open from active, a push op that promotes one sprint and demotes the previously active sprint in a single versioned write under one resource-lock set, roadmap derivation of the unique active sprint and an open bucket, drift suppression for member progress, and two audit codes with their severities.">
+  <meta name="plan-evidence-for" content="reckon:work-scheduling-surface">
+  <meta name="plan-verifies" content="reckon:work-scheduling-surface#s2">
+  <meta name="plan-recorded-at" content="2026-09-18">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; pytest via the shared root virtualenv with --no-sync; filesystem-backed project state; no network, no clock">
+  <meta name="plan-commits" content="bb20f90e,722da501,10529ee4,fec3419d">
+  <meta name="plan-artifacts" content="reckon/_schema.py,reckon/project_state.py,reckon/roadmap.py,reckon/mcp.py,tests/test_sprint_push_status.py,tests/test_roadmap_sprint_derivation.py,skills/reckon-sprint/SKILL.md">
+  <title>One pushed sprint &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
@@ -180,5 +190,177 @@ impl is not this run's to move, state that reason</pre>
       <p>The guard is demonstrated by a refusal, not by a green suite: 22 of 22 new tests fail at the base revision and pass at the head, while the existing promotion suite fails the same three tests at both revisions and therefore gained none.</p>
     </section>
   </main>
+    <h1>One pushed sprint &mdash; landed evidence</h1>
+    <p class="plan-summary">A project schedules exactly one sprint at a time. That invariant was
+    implicit: any sprint could be written <code>active</code>, so two could be, and the derived
+    active sprint became ambiguous. This section makes the invariant explicit in the type, gives it
+    one atomic write to change, derives it for the reader, and reports its violation.</p>
+  </header>
+
+  <section id="scope">
+    <h2>Record scope</h2>
+    <p>Four code changes and one skill change. <code>SPRINT_STATUS_ENUM</code> in
+    <code>reckon/_schema.py</code> gains <code>open</code> between <code>planned</code> and
+    <code>active</code>, and <code>reckon/project_state.py</code> validates it as a stored status, so
+    a project may hold several live sprints that are not the pushed one. A new
+    <code>push_sprint</code> writes the promote-and-demote pair atomically: the selected sprint
+    becomes <code>active</code> and every other sprint that was <code>active</code> becomes
+    <code>open</code>, under one resource-lock set behind a move journal with compensating recovery,
+    so an interrupted push restores both files rather than leaving two active sprints or none. The
+    <code>push</code> op routes to it through <code>apply_resource_ops</code>.
+    <code>reckon/roadmap.py</code> derives <code>active_sprint_id</code> from the unique active row,
+    reports the remaining live sprints in a top-level <code>open_sprint_ids</code> bucket, and labels
+    member progress <code>in-progress</code> rather than <code>active</code> so a sprint stored
+    <code>open</code> or <code>active</code> whose members have started carries no
+    <code>state_drift</code>. <code>reckon/mcp.py</code> raises
+    <code>multiple-active-sprints</code> to error severity and adds
+    <code>pushed-sprint-has-no-ready-work</code> at warn. The sprint skill documents the status
+    meanings and the op.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 260" width="100%" style="max-width:680px" role="img"
+           aria-label="A sprint moves from planned to open when work remains but it is not the pushed sprint, and to active when pushed. A push of one sprint demotes the previously active sprint back to open in the same write. A bare set of status active leaves two rows active, which the audit reports.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="30" width="150" height="40" rx="3"/>
+          <rect x="8" y="120" width="150" height="40" rx="3"/>
+          <rect x="300" y="120" width="150" height="40" rx="3" stroke="#3b82c4" stroke-width="2"/>
+          <path d="M158 50 L232 50 L232 132 L300 132"/>
+          <path d="M292 125 l8 7 -8 7"/>
+          <path d="M458 140 L540 140"/>
+          <path d="M532 133 l8 7 -8 7"/>
+          <path d="M375 120 L375 60 L150 60 L150 118"/>
+          <path d="M158 111 l-8 7 8 7"/>
+          <rect x="540" y="120" width="132" height="40" rx="3"/>
+            <rect x="300" y="200" width="372" height="44" rx="3" stroke="#c4473b"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="18" y="55">planned</text>
+          <text x="18" y="145">open</text>
+          <text x="310" y="145">active (pushed)</text>
+          <text x="550" y="145">open</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="18" y="70">work not started</text>
+          <text x="18" y="160">work remains</text>
+          <text x="310" y="160">the one scheduled sprint</text>
+          <text x="200" y="35">work remains</text>
+          <text x="470" y="128">demote in the</text>
+          <text x="470" y="141">same write</text>
+          <text x="310" y="222">a bare set of status active leaves two rows active:</text>
+          <text x="310" y="236">multiple-active-sprints at error severity</text>
+        </g>
+      </svg>
+      <figcaption>One pushed sprint per project. <code>planned</code> is work not started,
+      <code>open</code> is work that remains but is not the pushed sprint, <code>active</code> means
+      pushed. The push write promotes one sprint and demotes the previously active one together, so
+      the invariant cannot be broken by a two-step edit; a bare status write can break it, and the
+      audit reports that at error severity.</figcaption>
+    </figure>
+  </section>
+
+  <section id="audit">
+    <h2>The two audit codes and their severities</h2>
+    <table>
+      <thead><tr><th>Code</th><th>Severity</th><th>Fires when</th></tr></thead>
+      <tbody>
+        <tr><td><code>multiple-active-sprints</code></td><td>error</td><td>More than one sprint carries <code>active</code>, so the derived pushed sprint is ambiguous. Raised from warn.</td></tr>
+        <tr><td><code>pushed-sprint-has-no-ready-work</code></td><td>warn</td><td>Exactly one sprint is active and none of its member plans is live with work remaining, so the push schedules nothing.</td></tr>
+      </tbody>
+    </table>
+    <p>The warn is deliberately not an error: an exhausted or freshly pushed sprint is a legitimate
+    transient, and gating on it would make the audit unusable at the moment the state changes.
+    <code>multiple-active-sprints</code> is an error because no single sprint answers
+    <code>active_sprint_id</code> in that state, which every consumer of the field depends on.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measured against a stated base</h2>
+    <p>Base revision <code>acb5d608</code>. The gate selects every file this change holds, because a gate
+    that cannot reach the file it broke is the defect that let the second failure past once. No
+    baseline log was captured before the code change, so the first row is an absolute green; the
+    parity failure is a measured delta, green 11 of 11 at the base and red at this head, and the
+    repair is what the second row records.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Result</th><th>Exit</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_sprint_push_status.py tests/test_mcp_roadmap.py tests/test_roadmap_sprint_derivation.py tests/test_surface_parity.py</code></td><td>38 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_schema.py::test_byte_identity_on_real_reckon_plans</code></td><td>1 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_roadmap_sprint_derivation.py</code>, before the literal repair</td><td>1 failed, 1 passed</td><td>1</td></tr>
+        <tr><td><code>tests/test_surface_parity.py</code> at this head, before the drift-rule repair</td><td>1 failed (11 of 11 at base)</td><td>1</td></tr>
+      </tbody>
+    </table>
+    <p>The new test file carries ten cases: the enum and the resource accept <code>open</code>; a
+    push demotes the previous active sprint in one write and the resulting statuses are
+    <code>{"S1": "open", "S2": "active"}</code>; a stale <code>expected_version</code> raises
+    <code>ProjectStateConflict</code> and leaves both sprints untouched; an unknown sprint id raises
+    <code>ValueError</code>; the roadmap derives the unique active sprint and buckets the open ones;
+    member progress derives <code>in-progress</code> with no <code>state_drift</code> key; each audit
+    code fires with its expected severity; and the audit stays quiet when the pushed sprint has ready
+    work. The byte-identity test is included because it parses authored plan HTML, so it covers the
+    landing record's own structure.</p>
+  </section>
+
+  <section id="second-failure">
+    <h2>The failure a two-file gate could not see</h2>
+    <p>The first gate named two files, which was itself the defect: a gate that selects only the
+    files the author thought of cannot reach a file the change broke. The coordinator measured
+    <code>tests/test_surface_parity.py</code> green 11 of 11 at the base revision and red at this
+    head, so the failure was added rather than pre-existing. It is
+    <code>test_a_single_patched_value_on_one_side_makes_the_comparison_fail[sprint-drift-returned]</code>,
+    and it is not the same class as the label literals. The mutation patches the returned side's
+    <code>state_drift</code> for a sprint stored <code>planned</code> whose members have started, and
+    at this head that row carried no <code>state_drift</code> at all, so the mutation raised
+    <code>KeyError: 'state_drift'</code> before any comparison ran. The parity harness was right, and
+    the drift-suppression rule was wrong.</p>
+    <p>The rule treated a member-derived <code>in-progress</code> as compatible with any non-terminal
+    stored status, including <code>planned</code>. That collapses a real contradiction:
+    <code>planned</code> says the work has not begun and a started member says it has. The rule is
+    narrowed to <code>open</code> and <code>active</code> — the two statuses a started member
+    genuinely does not contradict — and the contract is pinned by
+    <code>test_planned_sprint_with_started_members_reports_drift</code>. Measured across the three
+    stored statuses with one started member: <code>planned</code> &rarr; drift
+    <code>{stored: planned, derived: in-progress}</code>; <code>open</code> and <code>active</code>
+    &rarr; no drift.</p>
+  </section>
+
+  <section id="key-collision">
+    <h2>One name, two sets</h2>
+    <p>The top-level open-sprint bucket was first named <code>open_sprints</code>, the name the
+    payload already uses for a different set: <code>schedule.open_sprints</code> is the
+    schedule-horizon list of sprints holding open work, ordered and bounded by the configured
+    window, while the top-level bucket is the sprints whose stored status is <code>open</code>. The
+    two are not the same set, and one name made them indistinguishable to a reader. The top-level
+    key is renamed <code>open_sprint_ids</code>, beside <code>active_sprint_id</code>; the horizon
+    key and its consumers are untouched. Measured: no consumer outside this change reads the
+    top-level key, and the three tests that assert <code>open_sprints</code> read the nested
+    <code>schedule</code> object.</p>
+  </section>
+
+  <section id="caveats">
+    <h2>Recorded rather than smoothed over</h2>
+    <ul>
+      <li><strong>The sibling test that carried the superseded label is updated.</strong>
+        <code>tests/test_roadmap_sprint_derivation.py</code> asserted the member-derived sprint label
+        as <code>active</code>; the two literals now read <code>in-progress</code>, which is what the
+        member-derived label became. The adjacent assertion that a sprint stored <code>active</code>
+        with a started member carries no <code>state_drift</code> is unchanged. The file was outside
+        this node's write scope when the failure was measured and was added to the scope by the
+        coordinator before the edit.</li>
+      <li><strong>The push op is placed on the sprint resource being pushed, not literally on the
+        project resource.</strong> The plan text names the op on the project resource, but
+        <code>project.json</code> is forbidden by <code>PROJECT_DERIVED_FIELDS</code> from carrying
+        <code>active_sprint_id</code>, and sprints are separate resources, so a project-resource op
+        cannot read or write the sprints it must change. The op therefore selects the sprint to push
+        (<code>doc_type="sprint"</code>, with the sprint id as the requested op's resource), and the
+        atomicity is what the plan requires regardless of which resource carries the verb.
+        Re-routing the surface to <code>doc_type="project"</code> is a small change in
+        <code>apply_resource_ops</code> and no change to <code>push_sprint</code>.</li>
+      <li><strong>Plan state is untouched by design.</strong> The pushed sprint and the plan's own
+        metadata are the coordinator's write; a worker records the outcome and returns it. The
+        stating of the new tests is evidence of the behaviour at the recorded commit, not proof that
+        a later merge keeps it.</li>
+    </ul>
+  </section>
+</main>
 </body>
 </html>

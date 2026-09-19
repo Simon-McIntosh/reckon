@@ -116,7 +116,7 @@ RESOURCE_TYPE_ENUM = [
     "timeline",
     "project",
 ]
-SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
+SPRINT_STATUS_ENUM = ["planned", "open", "active", "done", "shipped"]
 _RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _OPTIONAL_IDENTIFIER_PATTERN = r"^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$"
 _OPTIONAL_IDENTIFIER_RE = re.compile(_OPTIONAL_IDENTIFIER_PATTERN)
