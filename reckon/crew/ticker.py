@@ -252,6 +252,23 @@ STAT_LETTER = {
     "queued": "q",
 }
 
+# The counter cells whose backlog belongs to the orchestrator: a blocked run
+# needs a decision and an unpromoted one needs merging, reviewing or recording.
+# The other two are work in progress and need nothing from the reader, so they
+# carry no age. Which states land in which bucket stays the fleet partition's
+# question — this names only the buckets that answer with an age, and the
+# states themselves are read from that partition rather than restated here.
+ACTIONABLE_CELLS = ("blocked", "unpromoted")
+
+# The fixed width an age occupies, held constant whether a cell has an age to
+# show or not: the block keeps one width as counts and ages change, so the
+# columns beside it never move. Held rather than trimmed because a field that
+# appears only when there is something to say shunts every column to its right
+# on the row that finally has news to deliver. Four characters hold a minute
+# count, an hour count and a day count, and the rare age past that is claimed
+# as `99d+` rather than allowed to widen the field.
+AGE = 4
+
 # Two digits and the bucket label per counter, joined by a bare middle dot with
 # no surrounding space. Two digits cover any fleet the dispatcher opens; a
 # wider count pushes its own label rather than silently misaligning the column
@@ -417,6 +434,75 @@ def _clock(seconds: float) -> str:
     if hours:
         return f"{hours}:{minutes:02d}:{secs:02d}"
     return f"{minutes}:{secs:02d}"
+
+
+def _epoch(observed: Any) -> float | None:
+    """A stored UTC stamp as epoch seconds, or None when it is no reading.
+
+    A stamp that does not say which zone it is in cannot be placed on a clock,
+    so it yields no age rather than one computed against whatever zone the
+    reader happens to be sitting in. An age nobody could observe is not a
+    reading about the backlog, and the row already has a blank for it.
+    """
+    text = str(observed or "")
+    if len(text) < 19:
+        return None
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        return None
+    return moment.timestamp()
+
+
+def _age_span(seconds: float) -> str:
+    """An age as the coarsest unit that still carries its magnitude.
+
+    Minutes under an hour, hours under two days, days beyond — the unit grows
+    with the age so a reader comparing two backlogs is not left counting
+    characters to find the larger. The scale coarsens where a reader's action
+    does not change with it, which is why the two-day step is where hours stop
+    being worth printing.
+    """
+    if seconds < 3600:
+        return f"{int(seconds // 60)}m"
+    if seconds < 48 * 3600:
+        return f"{int(seconds // 3600)}h"
+    days = int(seconds // 86400)
+    return "99d+" if days > 99 else f"{days}d"
+
+
+def _bucket_of(state: Any, classification: Any) -> str | None:
+    """Which counter bucket a run's state belongs to, or None off the fleet.
+
+    Membership is read from the fleet partition rather than restated, so the
+    counter and the age that follows it always describe the same population.
+    The import happens here rather than at module scope because the partition
+    imports this module: taking the names at import time would freeze them
+    before the partition has finished defining them. A held run counts as
+    waiting, which is the partition's own reading of a refusal that has been
+    accepted rather than acted on.
+    """
+    from reckon.crew.recovery import (
+        FLEET_BLOCKED_STATES,
+        FLEET_UNPROMOTED_STATES,
+        FLEET_WAITING_STATES,
+        FLEET_WORKING_STATES,
+    )
+
+    if str(classification or "") == "held":
+        return _WAIT_CELL
+    word = str(state or "")
+    if word in FLEET_UNPROMOTED_STATES:
+        return "unpromoted"
+    if word in FLEET_BLOCKED_STATES:
+        return "blocked"
+    if word in FLEET_WAITING_STATES:
+        return _WAIT_CELL
+    if word in FLEET_WORKING_STATES:
+        return "working"
+    return None
 
 
 def single_clause(value: Any, *, limit: int = 96) -> str:
@@ -633,6 +719,15 @@ class Ticker:
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
         self._hues: dict[str, int] = {}
+        # When each run entered the bucket it now sits in, keyed by run. The
+        # record carries counts, not per-item ages, so the age of a bucket's
+        # oldest member is derived from the transitions this pane has itself
+        # seen: the instance lives as long as the reader's grid, and its first
+        # sighting of a run is the baseline the watch emitted on attach. An age
+        # is therefore the age within this pane's view — a re-attach restamps
+        # every live run, which is a fact about the reading rather than a defect
+        # in it, because an age nobody observed cannot be reported honestly.
+        self._entered: dict[str, tuple[str, float]] = {}
 
     def hue(self, node: str) -> int:
         """The node's colour, claimed on first sighting and kept thereafter."""
@@ -640,6 +735,40 @@ class Ticker:
             palette = PALETTE[self.theme]
             self._hues[node] = palette[len(self._hues) % len(palette)]
         return self._hues[node]
+
+    def _register(self, event: Mapping[str, Any], state: Any) -> None:
+        """Note when this run entered the bucket it now occupies.
+
+        A run already in the bucket keeps the stamp it arrived with, so the
+        oldest member's age grows while the backlog stands still rather than
+        resetting on every unrelated transition. A run that leaves every bucket
+        is dropped, because it is no longer a member of anything the row counts.
+        """
+        run = str(event.get("run_id") or event.get("node") or "")
+        moment = _epoch(event.get("observed_at"))
+        if not run or moment is None:
+            return
+        bucket = _bucket_of(state, event.get("recovery_classification"))
+        if bucket is None:
+            self._entered.pop(run, None)
+            return
+        held = self._entered.get(run)
+        if held is not None and held[0] == bucket:
+            return
+        self._entered[run] = (bucket, moment)
+
+    def _oldest_age(self, label: str, now: float) -> str:
+        """The age of the oldest run in ``label``'s bucket, or blank when empty.
+
+        Blank rather than zero: nothing outstanding and something that just
+        arrived are different facts, and a zero in this position reads as the
+        second. An empty bucket is the common case, so the age field spends its
+        width on nothing at all rather than on a figure a reader must discount.
+        """
+        stamps = [stamp for held, stamp in self._entered.values() if held == label]
+        if not stamps:
+            return ""
+        return _age_span(max(0.0, now - min(stamps)))
 
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
@@ -672,6 +801,10 @@ class Ticker:
         # one, because nothing moved: showing a from-state would claim a
         # transition the fleet never made.
         from_state = "" if baseline else _display_state(event.get("from_state"))
+        # Recorded before the row is built, so a run that arrives in an
+        # actionable bucket on this very transition is a member of it when the
+        # counter beside it is rendered, and its age starts at this reading.
+        self._register(event, raw_to_state)
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
 
@@ -709,8 +842,22 @@ class Ticker:
 
         head = sum(len(text) for text, _ in cells)
         room = max(self.width - head, 0)
+        # The ages are read against the counters they qualify, so they take the
+        # fixed columns and the clause keeps the margin. Every column ahead of
+        # the reason is sized by what it carries, so the ages are paid for out
+        # of the free text — and only where the clause does not need those
+        # columns. A clause that claims the margin keeps it whole and the age
+        # blanks, which is the bargain the margin already makes: what is
+        # present holds its room and what is absent holds none.
         reason = self._reason(event, to_state, room)
-        cells.append((f"{reason:<{room}}", "dim") if room else ("", None))
+        ages = self._age_cells(event)
+        if ages and len(reason) <= room - len(ages):
+            cells.append((ages, None))
+            cells.append((f"{reason:<{room - len(ages)}}", "dim"))
+        elif room:
+            cells.append((f"{reason:<{room}}", "dim"))
+        else:
+            cells.append(("", None))
         # A shadow will never merge, so the row says so about itself end to end
         # rather than spending a column on an identifier a reader cannot use.
         shadow = is_shadow(event)
@@ -811,6 +958,12 @@ class Ticker:
         trailing whitespace and take the right edge ragged, and a reader
         waiting for a drain needs to see the count reach zero, not see it
         disappear.
+
+        The block carries no age itself: the count alone cannot separate a
+        backlog being worked from one standing still — the same figure reads
+        identically while a stalled item is cleared and a fresh one takes its
+        place — and the ages that answer that question are rendered by
+        ``_age_cells``, where the row has room for them.
         """
         cells: list[tuple[str, Any]] = []
         wait_field = _COUNT_FIELD.get(_WAIT_CELL, _WAIT_CELL)
@@ -821,6 +974,32 @@ class Ticker:
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
             cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
         return cells
+
+    def _age_cells(self, event: Mapping[str, Any]) -> str:
+        """The actionable buckets' oldest age, or empty when they hold nobody.
+
+        The count alone cannot separate a backlog being worked from one
+        standing still: clearing a stalled item while a fresh one arrives
+        clears the figure and leaves its membership turned over entirely. The
+        age of the oldest member is the fact that separates the two — it grows
+        while nothing is cleared and drops when the oldest item is dealt with.
+        The two buckets that are work in progress carry none, because nothing
+        is asked of the reader there.
+
+        Each age carries the same letter its counter prints, so a reading at
+        the end of a row still names its bucket. The field holds its width, so
+        the row's right edge never moves as counts and ages change. An empty
+        bucket renders nothing rather than a zero, because a zero here reads
+        as fresh work rather than as none.
+        """
+        now = _epoch(event.get("observed_at"))
+        if now is None:
+            return ""
+        return "".join(
+            f" {span:>{AGE}}{STAT_LETTER[label]}"
+            for label in ACTIONABLE_CELLS
+            if (span := self._oldest_age(label, now))
+        )
 
     def _paint(self, text: str, style: Any) -> str:
         if not self.color or style is None or not text:
