@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="488">
+<meta name="plan-version" content="489">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
-<meta name="plan-impl" content="0.42">
+<meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 </head>
@@ -1689,10 +1689,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body">Measured 2026-09-19 promoting r-20260915T093545453615-the-guard-holds-at-the-merged-head: crew complete refused a passing gate because the cited pytest log carried the line 'bash: line 1: rekon crew frobnicate: command not found', which is captured stdout of tests/test_crew_gate_log_agrees.py deliberately running a misspelled command, while the log's own summary reads 518 passed, 20 failed, 2 skipped. The scan treats any command-not-found line as proof the command never ran; a log whose pytest summary line is present and whose exit sentinel is recorded did run. The coordinator promoted by citing the log's digest instead of its path, which bypasses the scan and is a worse record. Remedy: the scan applies the command-not-found rule only when the log carries no pytest summary or exit sentinel, or only to the log's first and last lines, and its refusal names the matched line.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
     </article>
-<article class="r-fu" data-id="f-cot-sentinel-acceptance-test" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:45:00Z" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-sentinel-acceptance-test" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:45:00Z" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="2026-09-19T13:31:47+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Test the acceptance half of the by-value exit sentinel rule</h4>
     <div class="r-fu-body">The review of the gate-log scan repair showed that replacing the recorded-not-in-unexecuted-codes test in reckon/crew/promotion.py near line 405 with recorded == 0 leaves tests/test_crew_gate_log_agrees.py green, so a regression that refuses a log carrying a nonzero-but-executed sentinel beside a quoted diagnostic would pass the gate. Add the test that pins acceptance for a recorded nonzero exit that is not in the unexecuted set, and one that pins refusal for an exit in that set.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
+    <p class="r-fu-outcome">Landed at c8178dd4 and b8f946aa (merged b51b1dbf): tests/test_crew_gate_log_agrees.py pins both halves of the by-value sentinel rule, a quoted diagnostic beside an executed exit is accepted and beside EXIT=126 or EXIT=127 is refused naming the line. The review reproduced the focused gate (17 passed against 14 at base, zero added) and both mutations falsify the pair; total 100.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
