@@ -62,7 +62,7 @@
       </tbody>
     </table>
 
-    <h2 id="s1">§1 — The backend binary is resolved before any launch, and the watcher execs an absolute path</h2>
+    <h2 id="s1">§1 — The backend binary is resolved before any launch, and the watcher execs an absolute path <span class="badge badge-shipped">&#10003; landed 2026-09-19</span></h2>
     <p>The launch plan in <code>reckon/crew/dispatch.py</code> hands <code>subprocess.Popen</code> an argv whose
     first element is a bare backend name and inherits the caller's environment, so whether the launch can
     happen at all depends on whoever started the process. Resolve the backend executable with
@@ -75,8 +75,18 @@
     from <code>PATH</code> each refuse with the binary name and the searched path, and a launch plan built with
     it present carries an absolute executable; both are pinned by tests that manipulate the environment of the
     call, not the test process.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The plan is resolved where it is built, at the
+    dispatch, resume and member-move sites, and <code>crew watch</code> resolves every backend its project can
+    route to before it takes the seat. A refusal names the binary and the searched PATH and precedes every write;
+    on the resume path that ordering was false as found, because the pointer was mutated with the context fit
+    before the plan was built, and the reorder is pinned by comparing the pointer's bytes across the refusal. The
+    path is made absolute without being canonicalised — resolving a launcher installed as <code>bin/codex</code>
+    symlinked to <code>codex.js</code> recorded <code>codex.js</code>, which is a name no dialect matches, so the
+    run could no longer read its own stream. Three cases outside the new files caught that; the linked launcher
+    now has its own.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s1">§1 landed</a>.</p>
 
-    <h2 id="s2">§2 — A worker that exits before its first stream record is a launch failure, recorded once</h2>
+    <h2 id="s2">§2 — A worker that exits before its first stream record is a launch failure, recorded once <span class="badge badge-shipped">&#10003; landed 2026-09-19</span></h2>
     <p>The launched-worker reaper knows the child exited; nothing reads that exit against the stream. A run
     whose stream file is empty when its process is gone is a launch failure, not a worker turn: record it as
     a lane record with the exit status, the stderr tail and the argv, move the pointer to a state the follower
@@ -88,6 +98,17 @@
     record and one distinct follower row for a run whose watcher would otherwise have retried every tick,
     the two-minute retry does not fire again, and a real resume from a repaired environment clears the state;
     pinned by tests on the reaper and the lift path.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> A run whose stream is empty when its process is
+    gone gets one record on the run — exit status, argv, stderr tail — and a pointer in
+    <code>launch-failed</code>, which the automatic lift refuses until a person resumes or completes the run; the
+    hand-typed resume is deliberately left ungated so the person who repaired the environment can clear it. The
+    control that makes the emptiness check mean anything runs the same spawn and reaper on a backend that writes a
+    turn first and asserts no record appears; with the guard removed that control fails, which is how the guard was
+    shown to be the thing the record rests on. The reaper's raw wait status is converted to an exit code, so an
+    exit of 127 records <code>127</code> and not <code>32512</code>. One gap is carried rather than claimed: the
+    flight and drain views have no dedicated infrastructure bucket, so the state, the count and the cause reach the
+    follower through the recovery classification instead.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s2">§2 landed</a>.</p>
 
     <h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>
     <p><code>watcher_state</code> in <code>reckon/crew/runs.py</code> already binds liveness to a registered
