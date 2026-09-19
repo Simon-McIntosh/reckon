@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T20:14:12",
+  "updated": "2026-09-19T20:18:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -193685,6 +193685,231 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T180552379490-crpc-declared-negative-control",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a77",
+        "node": "crpc-declared-negative-control",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2583,
+                "cached_input_tokens": 698193,
+                "input_tokens": 700778,
+                "output_tokens": 328,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 701106,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read section 7 of docs/plans/crew-runtime-positive-controls.html, including its Files paragraph, which names the three modules and settles the trigger, the channel, the discharge and the escape. The trigger is the node's declared write paths containing a test file. The declaration is a structured field on the node record rather than a phrase mined from prose. Dispatch in reckon/crew/dispatch.py refuses a triggering node carrying no declaration, with the refusal text composed in reckon/crew/node.py naming the field to add, the same way a missing specification level is refused. Promotion in reckon/crew/promotion.py refuses a passing gate on a triggering node whose manifest carries no path to a red log whose content names the declared mutation; any failing log is not enough. A check admitting no mutation that could be applied without disabling the system declares its negative as none with a reason, which promotion records on the row rather than refusing. Tests: a triggering node without a declaration is refused naming the field; one with a declaration dispatches; a promotion without a matching red log is refused naming the mutation; one with it passes; the none declaration is recorded and admitted. Declare the mutation each of those tests fails against and keep its red log beside the green one, which is this section's own discipline applied to itself. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_repository_from_the_project.py tests/test_crew_dispatch_watcher_required.py tests/test_crew_launch_resolution.py tests/test_crew_recovery.py plus any new file, on the login node, captured once with the exit status; the base is fc15e7a7 and its failures are in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-repository-from-the-project/gate.log, so state the delta as a set difference against that file. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 4.0,
+          "goal": "Refuse a node whose declared write paths include a test file when it carries no negative-control declaration, and refuse a passing gate on such a node when its manifest carries no red log naming the declared mutation.",
+          "id": "crpc-declared-negative-control",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T18:05:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T180552379490-crpc-declared-negative-control/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/node.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_declared_negative_control.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/figures/crew-runtime-positive-controls",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-declared-negative-control"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-neg-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T18:05:57Z",
+        "completed_at": "2026-09-19T18:16:50.909Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 647,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 653,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "52724ac96633e66ee78a405d3cff442c4f383017",
+        "commits": [
+          "2de00ffd720a9fbf6c6b6e026030a33e61c8eeca",
+          "b3a90816bd480b7a299930fd21508a3f1b0899a4",
+          "688f41b8eccc5998fac809cb692e776026607aa1"
+        ],
+        "changed_lines": {
+          "added": 705,
+          "removed": 3,
+          "files": 7
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_repository_from_the_project.py tests/test_crew_dispatch_watcher_required.py tests/test_crew_launch_resolution.py tests/test_crew_recovery.py tests/test_crew_declared_negative_control.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-declared-negative-control/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T180552379490-crpc-declared-negative-control/manifest.md",
+        "scope_changed": false,
+        "session_id": "c912faf1-c1a6-43a0-88aa-20147d484a3a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 12910175,
+            "input_tokens_cumulative": 12910175,
+            "output_tokens": 53563,
+            "output_tokens_cumulative": 53563,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T18:16:50.909Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 13076866,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 650.378,
+          "generated_tokens": 61992,
+          "generation_seconds": 601.1,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 49.278,
+          "peak_input_tokens": 165391,
+          "tokens_per_second": 103.13,
+          "wall_tokens_per_second": 95.32
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-declared-negative-control",
+          "session_id": "c912faf1-c1a6-43a0-88aa-20147d484a3a",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T18:16:50.909Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.82,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.82,
+          "at_complete": 0.95,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "no-negative-control-declared",
+          "test_paths": [
+            "tests/test_crew_declared_negative_control.py"
+          ]
+        },
+        "tool_steps": 119.0,
+        "orientation_input_tokens": 3148100.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -193969,6 +194194,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1723
+    "_version": 1724
   }
 }
