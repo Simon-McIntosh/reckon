@@ -9,12 +9,12 @@
   <meta name="plan-title" content="A worker is charged to a job — landed evidence">
   <meta name="plan-summary" content="The launch path can now wrap a worker in a scheduler invocation declared on its backend, the field is declared in the flight schema source and regenerated from it, and the run record carries the job the launch became. The single real placed node the section is finished by is a coordinator dispatch, written out as a command.">
   <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
-  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1">
-  <meta name="plan-recorded-at" content="2026-09-19">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1,reckon:a-worker-is-charged-to-a-job#s2">
+  <meta name="plan-recorded-at" content="2026-09-20">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base 49f36920">
-  <meta name="plan-commits" content="740e4065,09e27b83">
-  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py">
+  <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base 3a05f4f8 for the liveness record">
+  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411">
+  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py">
   <title>A worker is charged to a job — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -129,6 +129,127 @@
     Because the node that would dispatch it is the node being measured, this is a coordinator
     dispatch, and the exact command &mdash; backend, partition, flags, and the four readings to
     record &mdash; is carried in this node's manifest under <code>follow_ons</code>.</p>
+  </section>
+
+  <section id="s2-liveness-accessor">
+    <h2>&sect;2 &mdash; One accessor owns the record-to-pid step</h2>
+    <p>Commits <code>2d58b953</code> and <code>d417b411</code>. This record answers the half of &sect;2 that is
+    a refactor: liveness is decided in ten modules, and before this it was decided at each call site by
+    reading <code>record.get("pid")</code> and handing the integer to the primitive. The section's own
+    change &mdash; making those answers follow the job &mdash; is not here, and cannot be until the pid lookup
+    has one home.</p>
+
+    <figure>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="100%" role="img"
+           aria-label="Every module that decides a run's liveness from a record calls one accessor in runs.py, which is the single place the record's pid is read before reaching the host process table; parent-pid reads keep the primitive because a parent is not the record's own process.">
+        <style>
+          .bx { fill: #f7f9fc; stroke: #6b7a90; stroke-width: 1.5; }
+          .hub { fill: #e8f0fb; stroke: #2f5d94; stroke-width: 2.5; }
+          .prim { fill: #eef7ee; stroke: #3f7a3f; stroke-width: 2; }
+          .lbl { font: 13px system-ui, sans-serif; fill: #1c2430; }
+          .sub { font: 11px system-ui, sans-serif; fill: #56637a; }
+          .edge { stroke: #6b7a90; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+          .bypass { stroke: #b45309; stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; marker-end: url(#b); }
+          .note { font: 11px system-ui, sans-serif; fill: #8a5a00; }
+          .title { font: 15px system-ui, sans-serif; font-weight: 600; fill: #1c2430; }
+        </style>
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#6b7a90"/>
+          </marker>
+          <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#b45309"/>
+          </marker>
+        </defs>
+        <text class="title" x="24" y="30">One accessor owns the record-to-pid step</text>
+        <rect class="bx" x="24" y="56" width="230" height="150" rx="6"/>
+        <text class="lbl" x="38" y="78">record-level call sites</text>
+        <text class="sub" x="38" y="98">runs.py — live listing, closure</text>
+        <text class="sub" x="38" y="115">recheck, seat records</text>
+        <text class="sub" x="38" y="132">recovery.py &middot; dispatch.py</text>
+        <text class="sub" x="38" y="149">resumption.py &middot; promotion.py</text>
+        <text class="sub" x="38" y="166">routing.py &middot; claims.py</text>
+        <text class="sub" x="38" y="183">node.py &middot; directory.py</text>
+        <rect class="hub" x="330" y="96" width="212" height="70" rx="6"/>
+        <text class="lbl" x="344" y="122">runs.record_process_alive(record)</text>
+        <text class="sub" x="344" y="142">the only place a record's pid is read</text>
+        <rect class="prim" x="618" y="96" width="216" height="70" rx="6"/>
+        <text class="lbl" x="632" y="122">runs.process_alive(pid)</text>
+        <text class="sub" x="632" y="142">kernel process table, this host</text>
+        <path class="edge" d="M254,120 L326,120"/>
+        <path class="edge" d="M542,131 L614,131"/>
+        <rect class="bx" x="330" y="214" width="212" height="66" rx="6"/>
+        <text class="lbl" x="344" y="240">parent-pid reads</text>
+        <text class="sub" x="344" y="260">a parent is not the record's</text>
+        <text class="sub" x="344" y="275">own process</text>
+        <path class="bypass" d="M542,247 L726,168"/>
+        <text class="note" x="556" y="212">keeps the primitive;</text>
+        <text class="note" x="556" y="228">a different question</text>
+        <rect class="bx" x="24" y="300" width="810" height="96" rx="6"/>
+        <text class="lbl" x="38" y="326">A module that keeps the primitive bound under its own name hands it in as the</text>
+        <text class="lbl" x="38" y="344">accessor's optional probe, so a test substituting liveness for that module still</text>
+        <text class="lbl" x="38" y="362">reaches it: promotion.py, dispatch.py, resumption.py. recovery.py keeps the</text>
+        <text class="lbl" x="38" y="380">accessor's own default, because its callers rebind that name to a forbidden</text>
+        <text class="lbl" x="38" y="394">lookup as a tripwire, and passing the snapshot would fire it.</text>
+      </svg>
+      <figcaption>Ten modules decided a run's liveness by reading a pid out of a record; the accessor is now
+      the single place that happens, and the parent-pid reads are a separate question left answering what
+      they always answered.</figcaption>
+    </figure>
+
+    <p><strong>The accessor.</strong> <code>record_process_alive(record)</code> in
+    <code>reckon/crew/runs.py</code> returns what <code>process_alive</code> returns for that record's pid,
+    including the <code>None</code> a record naming no process already produced &mdash; so a caller cannot
+    read &ldquo;no process recorded yet&rdquo; as a stopped worker. Each record-level call site calls it:
+    the live-pointer listing, the closure recheck and the seat-record reads in <code>runs.py</code>, and the
+    classify, reaper, launch-failure, resume-refusal, promotion, claim, routing and directory paths in
+    <code>recovery.py</code>, <code>dispatch.py</code>, <code>resumption.py</code>,
+    <code>promotion.py</code>, <code>routing.py</code>, <code>claims.py</code>, <code>node.py</code> and
+    <code>directory.py</code>. <code>query.py</code> carries the field through and decides nothing, so it
+    has no call site to route. The pid calls that read a <em>parent</em> pid keep the primitive: a parent is
+    not the record's own process, which is a different question.</p>
+
+    <p><strong>The seam the refactor had to keep, reproduced before it was repaired.</strong> A module's
+    liveness answer is substituted in tests by rebinding that module's own <code>process_alive</code> name.
+    Moving every call site to the accessor removed that name from <code>promotion</code>,
+    <code>dispatch</code> and <code>resumption</code>, and nine cases failed with, quoted from
+    <code>tests/test_promotion_reads_the_terminal_record.py</code>:</p>
+    <pre><code>AttributeError: &lt;module 'reckon.crew.promotion' ...&gt; has no attribute 'process_alive'</code></pre>
+    <p>The accessor therefore takes the caller's probe as an optional second argument. The pid is still read
+    in the one place; a module that keeps the primitive bound under its own name hands it in, so a
+    substitution for that module is honoured. <code>recovery.py</code> stays on the accessor's own default
+    deliberately: its callers rebind its <code>process_alive</code> to a forbidden lookup to prove
+    classification reads the live module attribute rather than that import-time snapshot, and passing the
+    snapshot would have made that tripwire fire.</p>
+
+    <p><strong>Gate, and the delta.</strong> Base <code>3a05f4f8</code>, then the landed head, over the
+    116-file set that reaches these modules (the list is in this node's manifest):</p>
+    <table>
+      <caption>Same command both sides; only the ten modules under test differ</caption>
+      <thead><tr><th>Revision</th><th>Failed</th><th>Passed</th><th>Newly failing ids</th></tr></thead>
+      <tbody>
+        <tr><td><code>3a05f4f8</code> (base)</td><td>78</td><td>1612</td><td>&mdash;</td></tr>
+        <tr><td>head <code>d417b411</code></td><td>78</td><td>1616</td><td>none &mdash; the id sets are identical</td></tr>
+      </tbody>
+    </table>
+    <p>The four added tests are <code>tests/test_crew_record_liveness.py</code>. The seventy-eight failures
+    are the worker tier's own &mdash; present at base, unchanged at head, and outside this node's declared
+    scope. The file list is a superset chosen by which modules the tests reach, not the whole suite; the
+    test role that verifies the merged result is a separately dispatched node's.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: revert <code>directory.py</code> to
+    <code>process_alive(record["pid"])</code>. The red log at
+    <code>runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log</code>,
+    whose first line repeats the mutation verbatim, fails exactly
+    <code>test_no_module_decides_record_liveness_with_a_bare_pid</code> and leaves the other three green.
+    The case itself carries a positive control: it shows the AST scan recognises
+    <code>process_alive(record['pid'])</code> and the indirect <code>pid = pointer.get('pid')</code> form, so
+    an empty offender set means compliance rather than a blind instrument.</p>
+
+    <p><strong>What is not here.</strong> No answer changed, so nothing is job-aware yet: a placed run's
+    liveness still resolves through the local process table. The accessor is the seam where the job becomes
+    the subject, and that change is the rest of &sect;2. A figure for this record was inlined rather than
+    written under <code>docs/figures/</code>, because that path is outside this node's write scope.</p>
   </section>
 </main>
 </body>

@@ -73,6 +73,7 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    record_process_alive,
     run_dir,
 )
 
@@ -515,7 +516,7 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
             continue
         if str(other.get("repo") or "") != repo:
             continue
-        if process_alive(other.get("pid")) is not True:
+        if record_process_alive(other, process_alive) is not True:
             continue
         other_node = other.get("node") or {}
         claimed |= mine & {str(path) for path in (other_node.get("write_paths") or ())}
@@ -572,7 +573,7 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if process_alive(record.get("pid")) is True:
+    if record_process_alive(record, process_alive) is True:
         return CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )

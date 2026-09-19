@@ -10,7 +10,7 @@ from typing import Any
 
 from reckon import ledger
 from reckon.crew.recovery import classify_pointer
-from reckon.crew.runs import list_live, process_alive
+from reckon.crew.runs import list_live, record_process_alive
 
 
 class DirectoryError(RuntimeError):
@@ -66,7 +66,7 @@ def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
     node = _node(record)
     observed = dict(record)
     if record.get("pid"):
-        observed["process_alive"] = process_alive(record["pid"])
+        observed["process_alive"] = record_process_alive(record)
     classified = classify_pointer(observed)
     row = {
         "run_id": str(record.get("run_id") or ""),

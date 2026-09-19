@@ -1902,7 +1902,7 @@ def classify_pointer(
         # reused pid — the same reading ``list_live`` produces for a fleet
         # view. A zombie entry answers not alive, composing with the narrowed
         # probe rather than reviving the old answer.
-        alive = runs.process_alive(record.get("pid"))
+        alive = runs.record_process_alive(record)
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
             alive = _process_start_time(record.get("pid")) == expected_start
