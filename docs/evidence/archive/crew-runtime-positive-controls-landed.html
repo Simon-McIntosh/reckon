@@ -501,6 +501,26 @@ nothing has been launched</code></pre>
       under <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>. The
       cases that pin the interface are the follow-on test node's; this node writes no test file, which is
       what makes it dispatchable under the trigger it exists to satisfy.</p>
+      <p><strong>The interface is pinned by cases, not by a dry run.</strong> The option that sets the declaration
+      and the template line that names the log field landed together, verified only by a throwaway dry run because
+      the node that added them was forbidden a test file. <code>tests/test_crew_negative_control_interface.py</code>
+      now holds five cases over two properties, each entering where a caller enters: the real
+      <code>crew dispatch</code> command through Click's runner, and <code>compose_prompt</code> for the contract a
+      worker is handed. The dispatch cases assert that a test-writing node's <code>negative_control</code> finding
+      is its <em>only</em> finding and names both the field and the triggering path, that
+      <code>--negative-control "&lt;mutation&gt;"</code> resolves at exit 0 with the declaration carried on the
+      returned node record, and that <code>none: &lt;reason&gt;</code> resolves likewise. The template cases assert
+      the emitted <code>negative_control_log:</code> line sits between <code>test_logs</code> and
+      <code>baseline_suite</code>, glossed as the red log of the declared mutation.</p>
+      <p><strong>Each property fails under its own removal.</strong> Dropping the option's value from the node
+      record — the option present, the field left empty — reddens the two declaration-carrying cases alone, the
+      refusal case staying green, which shows the refusal never rested on the option's wiring while the discharge
+      does. Removing the template line reddens the two template cases alone. Both mutations were applied in a
+      scratch copy of the tree, so no source outside the new test file was touched, and each red log sits beside
+      the green one in the report directory with a header line naming the mutation. Gate:
+      <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once to
+      <code>reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/gate.log</code>:
+      <strong>13 passed, exit 0</strong>.</p>
     </section>
 
     <section id="verification">
