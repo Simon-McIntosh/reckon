@@ -186,7 +186,8 @@
     &sect;6's first clause. Gate: <code>133 passed</code>, exit 0, zero added failures against base; the four
     audit paths and the three write-boundary outcomes are covered by tests, and the roadmap test asserts its
     message equals the predicate's so the two readers cannot drift. The nova measurement did not match this
-    section's prediction: read-only, nova carries 27 live implementable plans and the finding names 1
+    section's prediction: read-only, nova carries 27 live implementable plans under <code>docs/plans/</code>
+    (a docs-wide walk returns 29 &mdash; two live plans sit at the docs root) and the finding names 1
     (<code>forward-profile-validator-set</code>, at warn), against the predicted nine of sixteen &mdash; a
     positive control confirms the reader fires on the plan that qualifies. The <code>standalone</code> meta is
     read and written through a shared reader in <code>reckon/_schema.py</code> plus an explicit meta write at
@@ -194,6 +195,27 @@
     registering it there is the follow-on that also makes the text-mode route able to set the declaration.
     Full record:
     <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#s7-refusal">§7 landed</a>.</p>
+
+    <p><strong>Review findings closed 2026-09-19.</strong> The wiring refusal's review
+    (<code>83/100</code>) left four findings, now closed on <code>reckon/roadmap.py</code>,
+    <code>reckon/_plan_html.py</code>, <code>reckon/_store.py</code>,
+    <code>skills/reckon-create/SKILL.md</code> and their tests. (1) The wiring scan took each
+    plan's standalone declaration from the registered mount rather than the checkout the rows
+    were inventoried from, so a worktree-scoped roadmap could judge one tree's plans against
+    another tree's declarations; <code>build_roadmap</code> now takes a <code>docs_dir</code>
+    naming the inventoried checkout and passes it to the wiring scan, falling back to the
+    registered mount only when none is supplied, with tests driving both directions of the
+    cross-tree disagreement. (2) The roadmap's declaration branch now has a test &mdash; a plan
+    that declares standalone is silent, and one that does not is reported. (3)
+    <code>standalone</code> is registered in the plan-html scalars and the store's write-path
+    allow-list, so the <code>plan-standalone</code> meta round-trips through a state write and
+    the generic <code>{"op":"set","path":"standalone"}</code> route sets it on an existing plan;
+    <code>reckon-create</code> now names that op instead of spelling markup its own boundary
+    would not accept. (4) The measurement's population is stated plans-scoped
+    (<code>docs/plans/</code> only; 27 live implementable plans on nova, against 29 for a
+    docs-wide walk) in the evidence record and above. Gate <code>173 passed</code>, zero added
+    failures against base <code>0bf94fd5</code> (the three <code>test_edit_plan.py</code>
+    failures are pre-existing at that base and are not this node's).</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
