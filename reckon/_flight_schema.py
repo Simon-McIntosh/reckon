@@ -215,6 +215,7 @@ class BackendConfig(ConfiguredBaseModel):
     budget_group: Optional[str] = Field(default=None, description="""Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.""")
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
     token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
+    placement: Optional[PlacementConfig] = Field(default=None, description="""Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before.""")
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -228,6 +229,15 @@ class BackendConfig(ConfiguredBaseModel):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class PlacementConfig(ConfiguredBaseModel):
+    """
+    A scheduler wrapper declared for one backend's workers. It describes how the launch is wrapped and never what runs: the resolved command stays the backend's own, so a placement moves a worker between hosts without changing which lane serves it.
+    """
+    scheduler: str = Field(default=..., description="""Scheduler executable the launch is wrapped in. Resolved against the same PATH the launch searches, so an unresolvable wrapper is refused before launch rather than dying at exec and leaving an empty stream that reads as a worker turn.""")
+    options: Optional[list[str]] = Field(default=None, description="""Argument strings passed to the scheduler ahead of the resolved command, such as a partition and a resource request. User data; the schema names no partition and no site.""")
+    job_id_probe: Optional[list[str]] = Field(default=None, description="""Argument vector asked which job the launch became, with `{run}` replaced by the run id. Read rather than guessed, and declared per backend because reckon knows no scheduler's own vocabulary; a probe that answers no identifier records why instead of a fabricated id.""")
 
 
 class CatalogConfig(ConfiguredBaseModel):
@@ -396,6 +406,7 @@ class SummaryConfig(ConfiguredBaseModel):
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
+PlacementConfig.model_rebuild()
 CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
 EffortSpelling.model_rebuild()

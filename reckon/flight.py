@@ -338,6 +338,22 @@ def _ignore_removed_backend_keys(
     return migrated, warnings
 
 
+def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return this backend's declared placement, or None when it declares none.
+
+    Absence is not an empty placement: a backend declaring one is launched
+    inside the scheduler invocation it names, and a backend declaring none is
+    launched exactly as it always has been, as a child of whoever started the
+    coordinator.
+    """
+    if not isinstance(backend, Mapping):
+        return None
+    placement = backend.get("placement")
+    if not isinstance(placement, Mapping) or not placement:
+        return None
+    return dict(placement)
+
+
 def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     """Schema-check one layer, raising FlightConfigError on the first violation.
 
