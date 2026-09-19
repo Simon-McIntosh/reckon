@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T00:58:00",
+  "updated": "2026-09-20T01:39:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -195579,6 +195579,239 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T225816807113-awcj-one-record-level-liveness-read",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a72",
+        "node": "awcj-one-record-level-liveness-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1724,
+                "cached_input_tokens": 340588,
+                "input_tokens": 342314,
+                "output_tokens": 1111,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 343425,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "a single accessor in reckon/crew/runs.py takes a run record rather than a pid and returns what process_alive returns for that record pid today; every call site that decides a run liveness from a record calls it, across runs.py, recovery.py, dispatch.py, resumption.py, promotion.py, routing.py, claims.py, node.py, directory.py and query.py; a committed case asserts the accessor agrees with the primitive on a pid-carrying record and that no module outside runs.py calls process_alive with a record pid; the existing suite shows zero added failures against the base revision; the declared negative control reddens the case",
+          "estimated_hours": null,
+          "goal": "funnel every liveness decision in the crew through one record-level accessor, changing no answer, so a later change can make that one accessor job-aware",
+          "id": "awcj-one-record-level-liveness-read",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T22:58:17Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/manifest.md",
+          "negative_control": "declared negative control: revert reckon/crew/directory.py to process_alive(record[\"pid\"])",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "reckon/crew/recovery.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew/resumption.py",
+            "reckon/crew/promotion.py",
+            "reckon/crew/routing.py",
+            "reckon/crew/claims.py",
+            "reckon/crew/node.py",
+            "reckon/crew/directory.py",
+            "reckon/crew/query.py",
+            "tests/test_crew_record_liveness.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-liveness-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T22:58:23Z",
+        "completed_at": "2026-09-19T23:36:23.805Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2271,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2280,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "3a05f4f81a826e422fa7557cc91cdb0db67108e2",
+        "commits": [
+          "2d58b9530466a67f0253b2e176fa87ccd8b6118f",
+          "d417b411478d4a9c507a7fe399f1d9ca559675f0",
+          "222a14c0e6d0d95ccf77da9945d89654d4462568"
+        ],
+        "changed_lines": {
+          "added": 370,
+          "removed": 34,
+          "files": 12
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q <116 files from focused_tests.txt>, base and head arms on all_debug",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "f894900b-d6b5-45b0-b090-061914e85950",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10350188,
+            "input_tokens_cumulative": 10350188,
+            "output_tokens": 58715,
+            "output_tokens_cumulative": 58715,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T23:36:23.805Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10518031,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2277.911,
+          "generated_tokens": 65986,
+          "generation_seconds": 681.046,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 1596.865,
+          "peak_input_tokens": 166543,
+          "tokens_per_second": 96.89,
+          "wall_tokens_per_second": 28.97
+        },
+        "follow_on_paths": [
+          "docs/figures/",
+          "docs/figures/record-liveness/."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-one-record-level-liveness-read",
+          "session_id": "f894900b-d6b5-45b0-b090-061914e85950",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T23:36:23.805Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.26,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.26,
+          "at_complete": 0.34,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_record_liveness.py"
+          ],
+          "declaration": "declared negative control: revert reckon/crew/directory.py to process_alive(record[\"pid\"])",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log"
+        },
+        "tool_steps": 128.0,
+        "orientation_input_tokens": 1104030.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -195863,6 +196096,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1741
+    "_version": 1742
   }
 }
