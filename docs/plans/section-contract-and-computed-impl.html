@@ -173,6 +173,27 @@
     checklist produces are drawn (it should run through cut-cell into the topology rebank and the accuracy
     gates, which today it does not).</p>
 
+    <p><strong>Landed 2026-09-19.</strong> One predicate, <code>unwired_plan_finding()</code>, decides, and
+    three readers call it rather than each spelling the rule: the audit emits <code>unwired-plan</code> at warn
+    for a plan predating the rule and error after it, <code>edit_plan(create=True)</code> refuses with the same
+    message and removes the half-written file, and the sprint view folds the same finding into
+    <code>wiring_findings</code>. A plan is held to the rule only when it declares
+    <code>reckon-type=plan</code>, and a non-empty <code>plan-standalone</code> reason silences it. The
+    three-question checklist is now a table the author fills from the sprint's plan list in both
+    <code>reckon-create</code> Step&nbsp;1.5 and <code>reckon-edit</code>, and the relation grammar
+    <code>[project:]slug[#section]</code> is documented there with a worked section-gate example, which is
+    &sect;6's first clause. Gate: <code>133 passed</code>, exit 0, zero added failures against base; the four
+    audit paths and the three write-boundary outcomes are covered by tests, and the roadmap test asserts its
+    message equals the predicate's so the two readers cannot drift. The nova measurement did not match this
+    section's prediction: read-only, nova carries 27 live implementable plans and the finding names 1
+    (<code>forward-profile-validator-set</code>, at warn), against the predicted nine of sixteen &mdash; a
+    positive control confirms the reader fires on the plan that qualifies. The <code>standalone</code> meta is
+    read and written through a shared reader in <code>reckon/_schema.py</code> plus an explicit meta write at
+    the create boundary, because the round-trip scalar tables live in files outside this node's write scope;
+    registering it there is the follow-on that also makes the text-mode route able to set the declaration.
+    Full record:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#s7-refusal">§7 landed</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="impl-is-computed" data-choice="computed-from-section-effort" data-by="lead" data-when="2026-09-19">
