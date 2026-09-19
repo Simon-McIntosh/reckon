@@ -1003,6 +1003,44 @@ reading taken as an authority it was not.</p>
     its durable-store commit before those success-path assertions.</p>
   </section>
 
+  <section id="gate-log-scan-reads-a-quoted-diagnostic">
+    <h3>§10 — The gate-log scan reads a quoted diagnostic only absent a positive record</h3>
+    <p>Run <code>r-20260919T114507627170-cot-gate-log-scan-fixture-output</code>, base
+    <code>568f92dd</code>. The recorded defect: the scan refused a passing promotion whenever
+    the cited log contained the shell's <code>command not found</code> text, so a real pytest
+    run that captures a fixture deliberately invoking a misspelled command was refused despite
+    carrying its own runner summary.</p>
+    <p><strong>Reproduction at base.</strong> A log reading
+    <code>bash: line 1: rekon crew frobnicate: command not found</code> beside
+    <code>=== 518 passed, 20 failed, 2 skipped in 91.2s ===</code> was refused with
+    <em>Found: no evidence the command ran</em>. The recorded real fixture
+    <code>runs/r-20260915T093545453615-the-guard-holds-at-the-merged-head/after.log</code> —
+    665 lines, the diagnostic at line 77 as fixture text, <code>20 failed, 518 passed</code>,
+    judged as a delta against its red base — now loads accepted; its last non-empty line is an
+    srun error, so no terminal capture is read and the runner summary is the positive record
+    that admits it.</p>
+    <p><strong>A first attempt weakened the guard and was corrected before landing.</strong>
+    Accepting any terminal <code>EXIT=&lt;n&gt;</code> capture as the only positive record
+    admitted <code>command not found</code> beside <code>EXIT=127</code>, which the base
+    revision refused. <code>127</code> and <code>126</code> are the POSIX statuses asserting
+    the shell could not execute the command, so a sentinel recording one of them is a statement
+    the command never ran. The landed rule reads the sentinel by value: a recorded exit outside
+    that pair, or a runner result summary, is the positive record; otherwise the diagnostic is
+    the whole evidence and the refusal stands.</p>
+    <p><strong>Measure.</strong> <code>tests/test_crew_gate_log_agrees.py</code> gains three
+    cases. <em>Accepted:</em> a fixture-quoted diagnostic between a runner summary and no
+    terminal capture. <em>Refused:</em> the diagnostic at the head with no summary, asserting
+    the refusal names the matched line and its one-based line number. <em>Refused:</em> a log
+    whose only content is the diagnostic beside <code>EXIT=127</code>. Focused gate
+    <code>tests/test_crew_gate_log_agrees.py tests/test_promotion_*.py</code>: 55 passed, 3
+    failed, against 52 passed, 3 failed at base — the same three failure ids before and after,
+    zero added. The adjacent <code>tests/test_crew_promotion*.py</code>,
+    <code>test_report_only_promotion.py</code> and
+    <code>test_refused_promotion_leaves_no_trace.py</code> pass 81 of 81.</p>
+    <p>The refusal now reports <code>diagnostic at line N: '&lt;matched line&gt;'</code>, so a
+    reader sees which line was matched rather than searching the log for the phrase.</p>
+  </section>
+
   <section id="live-process-outranks-every-manifest-classification">
     <h3>&#167;16 &mdash; A live process outranks every manifest-derived classification</h3>
     <p>Run

@@ -267,6 +267,86 @@ def test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused(
     assert "Found: no evidence the command ran" in result.output
 
 
+def test_command_not_found_at_the_head_without_a_summary_names_the_line(
+    repository: Path, tmp_path: Path
+) -> None:
+    # The diagnostic is the log's only content, so it is the whole evidence and
+    # the command never ran. The refusal must point at the matched line so the
+    # author does not have to search the log for it.
+    run_id = "r-20260919T120000000000-head-line"
+    _write_pointer(run_id, repository)
+    not_found_log = tmp_path / "head-line-gate.log"
+    not_found_log.write_text(
+        "bash: line 1: rekon crew frobnicate: command not found\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main, _complete_arguments(run_id, repository, str(not_found_log))
+    )
+
+    assert result.exit_code != 0
+    assert "Found: no evidence the command ran" in result.output
+    assert "diagnostic at line 1" in result.output
+    assert "bash: line 1: rekon crew frobnicate: command not found" in result.output
+    assert pointer_path(run_id).is_file()
+
+
+def test_a_capture_recording_exit_127_for_the_diagnostic_is_still_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    # The capture convention writes the shell's own status after the command.
+    # A status of 127 says the shell could not find the command to execute it,
+    # so a worker honestly recording it and still asserting a pass has no
+    # positive record and the refusal must still stand.
+    run_id = "r-20260919T120200000000-exit-127"
+    _write_pointer(run_id, repository)
+    never_ran_log = tmp_path / "exit-127-gate.log"
+    never_ran_log.write_text(
+        "bash: line 1: rekon crew frobnicate: command not found\nEXIT=127\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        _complete_arguments(run_id, repository, str(never_ran_log), exit_status=127),
+    )
+
+    assert result.exit_code != 0
+    assert "Found: no evidence the command ran" in result.output
+    assert "diagnostic at line 1" in result.output
+    assert pointer_path(run_id).is_file()
+
+
+def test_fixture_command_not_found_beside_a_passing_summary_is_accepted(
+    repository: Path, tmp_path: Path
+) -> None:
+    # A test fixture that deliberately runs a misspelled command prints the
+    # shell's diagnostic into captured stdout. The log's own runner summary is
+    # positive evidence the check executed, so the quoted diagnostic in the
+    # middle of a real run must not refuse the promotion.
+    run_id = "r-20260919T120100000000-fixture-summary"
+    _write_pointer(run_id, repository)
+    captured_log = tmp_path / "fixture-summary-gate.log"
+    captured_log.write_text(
+        "tests/test_crew_gate_log_agrees.py::test_a_command_that_is_missing\n"
+        "bash: line 1: rekon crew frobnicate: command not found\n"
+        "=== 518 passed, 20 failed, 2 skipped in 91.2s ===\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main, _complete_arguments(run_id, repository, str(captured_log))
+    )
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(result.output)["record"]
+    assert record["gate"] == "passed"
+    assert record["gate_check"]["log_path"] == str(captured_log)
+    # The agreeing promotion consumed the pointer as usual.
+    assert not pointer_path(run_id).exists()
+
+
 @pytest.mark.parametrize(
     "later_content",
     [

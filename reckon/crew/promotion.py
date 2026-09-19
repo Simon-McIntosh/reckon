@@ -376,6 +376,47 @@ def _require_gate_evidence(
 
 _EXIT_RECORD = re.compile(r"EXIT=(-?\d+)")
 
+# A test runner's result-count token ("518 passed", "3 failed", "1 warning"),
+# which is direct evidence the runner itself executed. The scan below reads the
+# log as text and parses no runner's schema, so this is a conservative marker of
+# a result summary rather than a full pytest tail parse.
+_RUNNER_SUMMARY = re.compile(
+    r"\b\d+\s+(?:passed|failed|errors?|skipped|xfailed|xpassed|deselected|warnings?)\b"
+)
+
+# Exit statuses that assert the shell could not execute the command at all:
+# 127 for a command it could not find, 126 for one it found but could not run.
+# A capture shell recording either has not evidenced that the cited command
+# ran, so such a sentinel is not the positive record a quoted diagnostic needs.
+_UNEXECUTED_EXIT_CODES = frozenset({126, 127})
+
+
+def _log_shows_the_command_ran(log_text: str, recorded: int | None) -> bool:
+    """Whether the log carries positive evidence the cited command executed.
+
+    Two shapes count, and both are what a real capture produces: the runner's
+    own result-count summary, and a terminal ``EXIT=<n>`` record from the
+    capture shell, since writing that line means the shell returned from the
+    command. An exit in ``_UNEXECUTED_EXIT_CODES`` is excluded, because that
+    shell status is itself a statement that the command never started.
+    """
+    if _RUNNER_SUMMARY.search(log_text) is not None:
+        return True
+    return recorded is not None and recorded not in _UNEXECUTED_EXIT_CODES
+
+
+def _first_command_not_found_line(log_text: str) -> tuple[int, str] | None:
+    """The first line carrying the shell's own command-not-found diagnostic.
+
+    Returns the one-based line number and the stripped line text, so the refusal
+    can name exactly which line it matched rather than leaving the author to
+    search a long log for the phrase.
+    """
+    for number, raw_line in enumerate(log_text.splitlines(), start=1):
+        if re.search(r"\bcommand not found\b", raw_line):
+            return number, raw_line.strip()
+    return None
+
 
 def _recorded_exit_status(log_text: str) -> int | None:
     """The status a shell capture recorder wrote, read from the log's tail.
@@ -422,10 +463,15 @@ def _require_gate_log_agrees(
       terminal ``EXIT=<n>`` capture record differs from the asserted status
       has filed contradictory evidence.
     * no evidence the command ran — a line carrying the shell's own
-      command-not-found diagnostic, without a positive terminal ``EXIT=0``
-      record, states the command never executed. A runner log may quote that
-      phrase in fixture or assertion output, so the diagnostic cannot override
-      a positive record from the capture shell.
+      command-not-found diagnostic, when the log carries nothing that shows a
+      command did run, states the command never executed. A runner log may
+      quote that phrase in fixture or assertion output, so the diagnostic is
+      read only in the absence of a positive record: a terminal ``EXIT=<n>``
+      capture line other than the two statuses that say the shell could not
+      execute the command, or a runner's own result-count summary (``518
+      passed, 20 failed``), either of which shows the command executed and its
+      output was captured. When the diagnostic is the only evidence, the
+      refusal names the matched line and its one-based line number.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -461,14 +507,17 @@ def _require_gate_log_agrees(
             "that contradicts the asserted one. Re-run the check and cite its "
             "log, or re-promote with the verdict the evidence actually shows"
         )
-    if recorded != 0 and re.search(r"\bcommand not found\b", log_text):
+    not_found = _first_command_not_found_line(log_text)
+    if not_found is not None and not _log_shows_the_command_ran(log_text, recorded):
+        number, line = not_found
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' but its cited log "
             f"{log_path!r} carries the shell's 'command not found' "
-            "diagnostic: the command never ran, so the log is no evidence "
-            "of the pass being asserted. Found: no evidence the command ran. "
-            "Re-run the check and cite its log, or re-promote with the "
-            "verdict the evidence actually shows"
+            f"diagnostic at line {number}: {line!r}, and shows nothing else "
+            "that a command ran. The command never ran, so the log is no "
+            "evidence of the pass being asserted. Found: no evidence the "
+            "command ran. Re-run the check and cite its log, or re-promote "
+            "with the verdict the evidence actually shows"
         )
 
 
