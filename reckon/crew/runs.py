@@ -2106,6 +2106,13 @@ def watch(
     sleeper: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
     """Block for a fleet event, optionally treating an empty fleet as a drain."""
+    # The single-event arm takes the same seat as the streaming watcher, so it
+    # owes the same refusal: a seat held by a watcher that cannot resolve a
+    # backend it may be asked to lift reads as armed while it can lift nothing.
+    from reckon import flight
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    assert_routable_backends_resolvable(project, flight.resolve(project=project).config)
     stall_seconds = parse_duration(stall_window)
     with _project_watch_claim(project, stall_window) as (acquired, watcher):
         if not acquired:

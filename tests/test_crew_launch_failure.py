@@ -202,6 +202,40 @@ def test_an_empty_stream_is_recorded_once_and_stops_the_lift(
     assert len(list(again.get("launch_failures") or ())) == 1
 
 
+def test_a_second_recording_for_one_launch_does_not_double_record(
+    isolated_home: Path, tmp_path: Path
+) -> None:
+    """The once-only guard, reached twice without a reap in between.
+
+    The end-to-end cases show one record per launch, but the once-ness they
+    measure comes from the pid being consumed by ``os.waitpid`` before a second
+    tick can reach the recorder, not from the guard the code relies on. A second
+    reaper or a handover edge that reaches the recorder twice for one launch
+    would double-record, so the guard is reached directly here: two recordings,
+    one run, one failure.
+    """
+    run_id = "r-double-record"
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True)
+    runs._write_json(runs.pointer_path(run_id), _pointer(run_id, directory))
+    launched = {
+        "run_id": run_id,
+        "stream_path": str(directory / "stream.jsonl"),
+        "stderr_path": str(directory / "stderr.log"),
+        "argv": ["/bin/false"],
+        "backend": "alpha",
+    }
+
+    dispatch_module._record_launch_failure(launched, exit_status=EXIT_STATUS)
+    dispatch_module._record_launch_failure(launched, exit_status=EXIT_STATUS)
+
+    record = runs.read_pointer(run_id)
+    failures = list(record.get("launch_failures") or ())
+    assert len(failures) == 1
+    assert record["phase"] == dispatch_module.LAUNCH_FAILED_PHASE
+    assert failures[0]["exit_status"] == EXIT_STATUS
+
+
 def test_the_lift_refuses_a_launch_failed_run_but_a_person_may_still_resume(
     isolated_home: Path, tmp_path: Path
 ) -> None:

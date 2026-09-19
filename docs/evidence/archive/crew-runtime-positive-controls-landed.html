@@ -34,15 +34,34 @@
       <h2>&sect;1 &mdash; The launch resolves its executable, or it refuses before writing</h2>
       <p>The launch plan carried a bare backend name and inherited the PATH of whoever built it, so a watcher
       armed without the backend directory exec'd a missing binary and left a 0-byte stream per tick while the
-      run read as working. Resolution now happens where the plan is built, at all three sites that construct
-      one: a dispatch, a resume, and a member move.</p>
+      run read as working. Resolution now happens where the plan is built, at the three sites that construct a
+      plan for a run: a dispatch, a resume, and a member move. A fourth site constructs a plan without
+      resolving it — the lane-availability probe at <code>reckon/crew/resumption.py:234</code> — and is
+      deliberately left unwrapped because it probes a capability rather than launching a run: its failure is
+      loud (it reports <code>unavailable</code> and the availability report says so) and it writes no pointer,
+      stream or stderr, so the property this section claims still holds there.</p>
       <p>The refusal is literal and names what was searched, so the repair is a command rather than an
       investigation:</p>
       <pre><code>backend command 'python3' cannot be resolved on the PATH this launch would
 search: /nonexistent — install it or add its directory to PATH, then retry;
 nothing has been launched</code></pre>
       <p><code>reckon crew watch</code> resolves every backend its project can route to before the seat is
-      taken, so a watcher that cannot lift is never a watcher that reads as armed.</p>
+      taken, in the single-event arm as well as the streaming one, so no arming mode takes a seat it cannot
+      lift from and a watcher that cannot lift is never a watcher that reads as armed.</p>
+      <p>A later review of this section found that claim true of the streaming arm and false of the
+      single-event one: <code>crew watch --once</code> claimed the seat with no resolution check anywhere on its
+      path, so a host whose backend directory was off the project's PATH could arm a seat-holder that read as
+      live and could lift nothing from it — a posture defect rather than a silent launch failure, because
+      dispatch resolves at launch on the same host and refuses before writing anything. The single-event arm now
+      refuses through the same check, before the seat is claimed. A case enters the <code>--once</code> path with
+      the backend directory absent from the PATH handed to the call and asserts both the refusal and that no lock
+      file appears under <code>crew/watch</code>, with a positive control showing that the same call does take
+      the seat once the backend resolves; with the refusal disabled that case is the only one in its file that
+      fails. The count stated above was also wrong in one direction and is corrected here: the lane-availability
+      probe at <code>reckon/crew/resumption.py:234</code> is a fourth <code>launch_plan</code> construction site,
+      deliberately left unwrapped because it probes a capability rather than launching a run — it reports
+      <code>unavailable</code> loudly and writes no pointer, stream or stderr, which is why the property this
+      section claims still holds there.</p>
       <table>
         <thead><tr><th>Surface</th><th>Case</th><th>Result</th></tr></thead>
         <tbody>
@@ -91,6 +110,68 @@ nothing has been launched</code></pre>
       removed, that control fails — which is how the guard was shown to be the thing the first case rests on. The
       reaper's exit status is converted from the raw wait status before it is recorded, so a process that exited
       127 records <code>127</code> rather than <code>32512</code>.</p>
+      <p>A later review found the once-only guard load-bearing and unpinned by these cases. The end-to-end cases
+      show one record per launch, but the once-ness they measure comes from the pid being consumed by
+      <code>os.waitpid</code> before a second tick can reach the recorder — not from the guard inside the
+      recorder. Removing the guard's phase check leaves all four pre-existing cases green while a direct probe
+      that records twice for one launch turns red, which is how the guard was shown to be what the node's cases
+      were not resting on. A case now reaches the recorder twice for one launch without waiting on a reap and
+      asserts one record and one phase, so a second reaper or a handover edge that re-records is caught rather
+      than silently double-counted.</p>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 470" style="width:100%;max-width:1040px" role="img"
+           aria-label="Both the streaming and single-event arming arms pass through a backend resolution check before the watch seat is claimed; a missing backend refuses with no lock file. On the recording path the reaper's first tick records one launch failure, and a second recording for the same launch returns the pointer unchanged."
+           font-family="Helvetica, Arial, sans-serif" font-size="13">
+        <rect width="1040" height="470" fill="#ffffff"/>
+        <text x="24" y="30" font-size="15" font-weight="bold" fill="#111">Where the watch seat is refused, and where a second recording is stopped</text>
+        <text x="24" y="62" font-size="13" font-weight="bold" fill="#111">A — arming: both entry points reach the same seat</text>
+        <rect x="24" y="78" width="180" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="114" y="95" text-anchor="middle" fill="#111">streaming arm</text>
+        <text x="114" y="110" text-anchor="middle" fill="#555" font-size="11">crew watch / --follow</text>
+        <rect x="24" y="140" width="180" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="114" y="157" text-anchor="middle" fill="#111">single-event arm</text>
+        <text x="114" y="172" text-anchor="middle" fill="#555" font-size="11">crew watch --once</text>
+        <rect x="250" y="108" width="200" height="42" rx="6" fill="#fff7e6" stroke="#b8860b"/>
+        <text x="350" y="126" text-anchor="middle" fill="#111">resolve every routable backend</text>
+        <text x="350" y="141" text-anchor="middle" fill="#555" font-size="11">refuses before any write</text>
+        <rect x="500" y="108" width="170" height="42" rx="6" fill="#e9f6ec" stroke="#2e7d43"/>
+        <text x="585" y="126" text-anchor="middle" fill="#111">claim the seat</text>
+        <text x="585" y="141" text-anchor="middle" fill="#555" font-size="11">crew/watch/*.lock</text>
+        <line x1="204" y1="98" x2="250" y2="120" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="204" y1="160" x2="250" y2="140" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="450" y1="129" x2="500" y2="129" stroke="#2e7d43" marker-end="url(#g)"/>
+        <line x1="350" y1="108" x2="350" y2="72" stroke="#b8860b" marker-end="url(#y)"/>
+        <text x="360" y="70" fill="#8a6100" font-size="11">missing backend — refuse, no lock file</text>
+        <text x="690" y="126" fill="#555" font-size="11">the single-event arm previously reached the</text>
+        <text x="690" y="141" fill="#555" font-size="11">seat with no check on its path</text>
+        <text x="24" y="228" font-size="13" font-weight="bold" fill="#111">B — recording: the guard, not the reap, is what makes it once</text>
+        <rect x="24" y="248" width="150" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="99" y="265" text-anchor="middle" fill="#111">worker exits</text>
+        <text x="99" y="280" text-anchor="middle" fill="#555" font-size="11">stream empty</text>
+        <rect x="220" y="248" width="150" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="295" y="265" text-anchor="middle" fill="#111">reaper tick</text>
+        <text x="295" y="280" text-anchor="middle" fill="#555" font-size="11">reads the exit status</text>
+        <rect x="416" y="248" width="210" height="40" rx="6" fill="#fff7e6" stroke="#b8860b"/>
+        <text x="521" y="265" text-anchor="middle" fill="#111">record once — phase guard</text>
+        <text x="521" y="280" text-anchor="middle" fill="#555" font-size="11">phase stays launch-failed</text>
+        <rect x="672" y="248" width="150" height="40" rx="6" fill="#e9f6ec" stroke="#2e7d43"/>
+        <text x="747" y="265" text-anchor="middle" fill="#111">one record</text>
+        <text x="747" y="280" text-anchor="middle" fill="#555" font-size="11">lift stops</text>
+        <line x1="174" y1="268" x2="220" y2="268" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="370" y1="268" x2="416" y2="268" stroke="#b8860b" marker-end="url(#y)"/>
+        <line x1="626" y1="268" x2="672" y2="268" stroke="#2e7d43" marker-end="url(#g)"/>
+        <rect x="416" y="322" width="210" height="40" rx="6" fill="#fdecec" stroke="#b23b3b"/>
+        <text x="521" y="339" text-anchor="middle" fill="#111">a second recording for one launch</text>
+        <text x="521" y="354" text-anchor="middle" fill="#555" font-size="11">guard returns the pointer unchanged</text>
+        <line x1="521" y1="322" x2="521" y2="292" stroke="#b23b3b" marker-end="url(#r)"/>
+        <text x="536" y="378" fill="#8a2b2b" font-size="11">with the guard removed this path double-records, and no</text>
+        <text x="536" y="393" fill="#8a2b2b" font-size="11">end-to-end case that waits on the reap can see it</text>
+        <defs>
+          <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#3b6ea5"/></marker>
+          <marker id="g" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2e7d43"/></marker>
+          <marker id="y" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b8860b"/></marker>
+          <marker id="r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b23b3b"/></marker>
+        </defs>
+      </svg>
       <p><code>launch-failed</code> is added to the states the follower needs action on, which places it under the
       blocked bucket rather than the working bucket, and <code>classify_pointer</code> renders it as its own
       classification carrying the failure count and the last cause. Its classification is also in the actionable
@@ -173,6 +254,20 @@ nothing has been launched</code></pre>
       (<code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, which fails on the
       pytest temporary directory being refused as a git worktree and touches nothing on the wait path), so the
       node adds no failures. Both mutations' red logs are in the same report directory.</p>
+      <p>The closure of the review's three findings is gated on the launch, recovery, wait and watch
+      populations — <code>tests/test_crew_launch_resolution.py</code>,
+      <code>tests/test_crew_launch_failure.py</code>, <code>tests/test_crew_recovery.py</code>,
+      <code>tests/test_crew_wait_stanza_validation.py</code> and every <code>tests/test_*watch*.py</code> — run
+      once to <code>reports/reckon/s18-takeover/crpc-arming-and-once-only-findings/gate.log</code>:
+      <strong>9 failed, 137 passed, exit 1</strong> at head, against <strong>9 failed, 135 passed</strong> at
+      base <code>ae589f5b</code>, with the failure <em>sets</em> identical (<code>diff</code> of the two
+      <code>FAILED</code> lists empty) — the two added passes are this node's new cases and no failure is added.
+      The nine pre-existing failures are unrelated to the change: each appears identically at base, none is in
+      the two launch files, and they are recorded rather than triaged here. Two mutations were run as negative
+      controls and both red logs are kept beside this record: disabling the single-event arming refusal fails
+      only <code>test_the_once_watch_arm_refuses_the_seat_when_a_routable_backend_is_missing</code>, and
+      removing the recorder's phase guard leaves the four pre-existing launch-failure cases green while the new
+      double-recording case fails.</p>
     </section>
   </main>
 </body>
