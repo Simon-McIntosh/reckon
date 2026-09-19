@@ -272,12 +272,18 @@ class WatcherRequired(CrewError):
         self.watch = dict(watch)
         self.session = session
         attach = watch.get("attach_line") or "reckon crew follow"
+        # The repair for a project with no watcher process is the command that
+        # starts one as a durable service, taken from the watcher's own state
+        # rather than composed here — one definition, so a better remedy reaches
+        # every refusal without a second copy to keep in step.
+        ensure = watch["ensure_line"]
         if session is None:
             super().__init__(
                 format_refusal(
                     "D13",
-                    f"project {project!r} has no live crew watcher; arm one with "
-                    f"`{watch['arming_line']}`, then attach this session to it with "
+                    f"project {project!r} has no live crew watcher process; start "
+                    f"one with `{ensure}`, which is safe to run against a watcher "
+                    f"that is already up, then attach this session to it with "
                     f"`{attach}` as a per-line monitor -- a live seat is "
                     "project-global and does not by itself deliver anything to the "
                     "session that dispatched. Or pass --no-watch to record an "
