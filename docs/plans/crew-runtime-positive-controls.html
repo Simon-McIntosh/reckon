@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="17">
+<meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="18">
 </head>
 <body>
   <main class="plan-doc">
@@ -321,10 +321,11 @@
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
     <p class="r-fu-outcome">The library boundary lands at 0f9c0e6f and ebde5838 (merged fc15e7a7). Dispatch, resume and promotion resolve the repository from the project mount through the same mounted-project map every other scope resolution consults, so there is one definition rather than a second spelling, and a named repository whose identity differs is refused before anything is written. Identity is the git common directory, which is what makes a linked worktree of the mount the same repository under a second path rather than a different one. Five tests, a mutation red log for each. Two gaps the node reported rather than hid are carried below: the command line still pre-resolves the caller's repository before dispatch is reached, so the measured incident would recur through it, and member registration is not where this plan said it was.</p>
     </article>
-<article class="r-fu" data-id="f-crpc-declared-negative-control" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-declared-negative-control" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="2026-09-19T18:18:13+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land section 7: a node writing a check declares the negative it fails against</h4>
     <div class="r-fu-body">Section 7 now states its trigger, its declaration channel, its discharge and its escape, so it is dispatchable. A node whose declared write paths contain a test file must carry a structured negative-control declaration on its node record; dispatch refuses one without it, and promotion refuses a passing gate whose manifest carries no red log naming the declared mutation. A check admitting no applicable mutation declares its negative as none with a reason, which promotion records rather than refuses. Scope is reckon/crew/dispatch.py, node.py and promotion.py plus a test file. Four checks landed this week that could not fail for their own reason, each found by review with the author's gate green.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    <p class="r-fu-outcome">Landed at 2de00ffd, b3a90816 and 688f41b8 (merged 69ee1b47), verified live in the served modules. A node whose declared write paths include a test file must carry a negative control on its record; dispatch refuses one that does not, naming the field, and promotion refuses a passing gate whose manifest carries no red log whose content names the declared mutation, so any failing log will not do. A check admitting no applicable mutation declares none with a reason, which the ledger records beside the impl move rather than refusing. Eight cases with three mutations, each reddening only its own, an empty failure-set difference against the base and zero added lint findings. The node applied the discipline to itself, which is the strongest evidence the rule is workable. Two remainders are opened below.</p>
     </article>
 <article class="r-fu" data-id="f-crpc-skills-point-at-the-ensure-command" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §5" data-resolved-at="2026-09-19T18:13:34+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land section 5: the ship skill points at the ensure command and drops the manual recipe</h4>
@@ -336,6 +337,11 @@
     <h4 class="r-fu-title">The command line still pre-resolves the caller&#x27;s repository, so the measured incident would recur through it</h4>
     <div class="r-fu-body">Reported by the mount-resolution node from outside its fence, and it is the half that touches the incident this section exists for. _repo_root in reckon/cli.py near line 792 resolves the repository enclosing the caller and passes that path into dispatch, so a command-line dispatch can never arrive with no repository named and the library default is never reached. The two reckon nodes given nova worktrees on 2026-09-19 came through exactly this path. Pass the raw value through, None when the flag is absent, so the mount default applies, and pin it with a test that invokes the command-line entry point from inside another project's checkout and asserts the worktree lands under the mount. Scope is reckon/cli.py plus a test file. Also decide whether member registration, which lives in reckon/ledger.py register_member reached through reckon/crew/routing.py rather than where this plan first said, needs the same resolution; it writes no worktree, so the answer may be no, but it should be recorded either way.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-manifest-template-names-the-negative-log" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The manifest template does not name the negative-control log field</h4>
+    <div class="r-fu-body">Reported by the negative-control node from outside its fence. The worker prompt template in reckon/crew/prompts.py emits the manifest shape a worker fills, and it does not name negative_control_log, so a worker learns the field only if its brief happens to mention it, while promotion now refuses a passing gate without it. That is a refusal a worker cannot anticipate from the contract it is given. Add the field to the emitted template beside the other test fields, and check that the emitted template carries it. Scope is reckon/crew/prompts.py and its test.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -383,6 +389,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260919T180615506949-crpc-skills-point-at-the-ensure-command" data-who="reckon-ship" data-when="2026-09-19T18:12:51.013Z">
     <div class="r-comment-body"><p>The ship skill gives the ensure command instead of the manual recipe, separates the two causes of the watcher refusal, and states the command is idempotent. Two pre-existing failures at base and the identical two at head.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-crpc-node-properties-decision" data-who="coordinator" data-when="2026-09-19T18:20:00Z">
+    <div class="r-comment-body"><p>The negative control is carried on the node record and surfaced through its finding rather than added as a ninth entry in the node-property list, because two tests outside the node's fence pin that list at eight and require a skill table row for each member. That is a deliberate boundary rather than an omission: the property list is a published contract with its own parity checks, and widening it is a separate change with its own review. Recorded here so a later reader does not take the absence from the list as a defect. If the field should become a published property, it wants a node holding tests/test_crew.py, tests/test_skill_contracts.py and the skill table together.</p></div>
 </div>
 </section>
 </main>
