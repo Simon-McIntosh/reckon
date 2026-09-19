@@ -325,16 +325,25 @@ def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | 
 
 
 def _unwired_plan_findings(
-    project: str, plans: Mapping[str, dict[str, Any]]
+    project: str,
+    plans: Mapping[str, dict[str, Any]],
+    docs_dir: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Report in-scope implementable plans that declare no wire at all.
 
     The same condition, message and severities the audit emits, so a plan the
     audit refuses is also visible on the sprint view rather than only in a
     separate command.
+
+    ``docs_dir`` is the checkout the plan rows were inventoried from. A
+    worktree-scoped roadmap inventories a worktree's rows, so it must read the
+    standalone declarations from that same tree — reading the registered mount
+    instead reports one tree's plans against another tree's declarations. It
+    falls back to the registered mount only when the caller supplies none.
     """
 
-    docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
     out: list[dict[str, Any]] = []
     for slug, plan in sorted(plans.items()):
         if str(plan.get("type") or "plan") != "plan":
@@ -1200,8 +1209,15 @@ def build_roadmap(
     max_paths: int = 5,
     project_manifest: dict[str, Any] | None = None,
     review: dict[str, Any] | None = None,
+    docs_dir: Path | str | None = None,
 ) -> dict[str, Any]:
-    """Return pending work, execution paths, progress, blockers, and wiring findings."""
+    """Return pending work, execution paths, progress, blockers, and wiring findings.
+
+    ``docs_dir`` names the checkout ``inventory`` was read from; it is passed
+    through to the wiring scan so a worktree-scoped roadmap reads standalone
+    declarations from the same tree as the rows it judges. Absent, the wiring
+    scan falls back to the project's registered mount.
+    """
 
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
     all_plans: dict[str, dict[str, Any]] = {}
@@ -2006,11 +2022,15 @@ def build_roadmap(
     uncalibrated = _uncalibrated_plans(plans)
     allocation = (project_manifest or {}).get("scope") or {}
     if review is None:
-        docs_dir = _load_mounts().get(project)
+        review_docs_dir = _load_mounts().get(project)
         review_block = None
-        if docs_dir is not None:
+        if review_docs_dir is not None:
             review_block, _review_version = load_composed_review(
-                docs_dir, project, list(all_plans.values()), sprints, project_manifest
+                review_docs_dir,
+                project,
+                list(all_plans.values()),
+                sprints,
+                project_manifest,
             )
     elif review:
         review_block = compose_review(
@@ -2019,7 +2039,11 @@ def build_roadmap(
     else:
         review_block = None
     review_findings = _review_health(project, review_block, local_graph)
-    findings.extend(_unwired_plan_findings(project, plans))
+    findings.extend(
+        _unwired_plan_findings(
+            project, plans, Path(docs_dir) if docs_dir is not None else None
+        )
+    )
     if review_block is not None:
         review_block = dict(review_block)
         review_block["findings"] = [

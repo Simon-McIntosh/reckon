@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon import _plan_html as plan_html_module
+from reckon import _store as store_module
 from reckon import mcp as mcp_module
 from reckon.doccheck import audit_html, unwired_plan_finding
 
@@ -211,3 +213,68 @@ def test_create_accepts_and_round_trips_a_standalone_declaration(checkout: Path)
     )
     assert read["data"]["standalone"] == reason
     assert _wiring(audit_html(header)) == []
+
+
+def test_edit_sets_a_standalone_declaration_on_an_existing_plan(checkout: Path):
+    """The declaration is reachable through the ordinary state write, not only
+    at creation, so an existing plan can be declared standalone after the fact."""
+
+    reason = "Feeds nothing and waits on nothing; it is a one-file fix."
+
+    created = mcp_module._edit_plan(
+        "sample",
+        "grow",
+        [{"op": "set", "path": "depends_on", "value": ["other"]}],
+        expected_version=0,
+        create=True,
+        checkout_path=str(checkout),
+        doc_type="plan",
+    )
+    assert created["ok"] is True
+
+    current = mcp_module._read_plan(
+        project="sample",
+        slug="grow",
+        checkout_path=str(checkout),
+        doc_type="plan",
+    )
+    edited = mcp_module._edit_plan(
+        "sample",
+        "grow",
+        [{"op": "set", "path": "standalone", "value": reason}],
+        expected_version=current["version"],
+        checkout_path=str(checkout),
+        doc_type="plan",
+    )
+
+    assert edited["ok"] is True
+    header = (checkout / "docs" / "plans" / "grow.html").read_text(encoding="utf-8")
+    assert f'<meta name="plan-standalone" content="{reason}">' in header
+
+    read = mcp_module._read_plan(
+        project="sample",
+        slug="grow",
+        checkout_path=str(checkout),
+        doc_type="plan",
+    )
+    assert read["data"]["standalone"] == reason
+
+
+def test_store_write_path_accepts_the_standalone_declaration():
+    """The generic store write path carries the declaration, not only the MCP
+    route that splits it out of the batch and writes the meta directly."""
+
+    working = {"status": "active"}
+    warnings: list[str] = []
+
+    store_module._apply_set(
+        working,
+        {"op": "set", "path": "standalone", "value": "One-file fix."},
+        False,
+        warnings,
+    )
+
+    assert working["standalone"] == "One-file fix."
+
+    state = plan_html_module.read_state(_plan_html(standalone="One-file fix."))
+    assert state["standalone"] == "One-file fix."

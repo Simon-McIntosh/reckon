@@ -104,7 +104,7 @@
     <table>
       <thead><tr><th>Quantity</th><th>Predicted</th><th>Measured</th></tr></thead>
       <tbody>
-        <tr><td>Live implementable plans (non-terminal, not archived, <code>reckon-type=plan</code>)</td><td>16</td><td><strong>27</strong></td></tr>
+        <tr><td>Live implementable plans in <code>docs/plans/</code> (non-terminal, not archived, <code>reckon-type=plan</code>)</td><td>16</td><td><strong>27</strong></td></tr>
         <tr><td>Named by <code>unwired-plan</code></td><td>9</td><td><strong>1</strong></td></tr>
         <tr><td>&mdash; of those, at warning severity</td><td>&mdash;</td><td>1</td></tr>
         <tr><td>&mdash; of those, at error severity</td><td>&mdash;</td><td>0</td></tr>
@@ -114,6 +114,16 @@
     (<code>plan-modified 2026-08-26</code>, draft, no wires, no gate, no declaration) &mdash;
     reported as a warning, which is the severity the rule prescribes for a plan predating
     it.</p>
+    <p><strong>The population is plans-scoped, and the definition is stated here.</strong>
+    The 27 counts only the live plans that sit under <code>docs/plans/</code>. A walk of the
+    whole mounted docs tree returns <strong>29</strong> instead, because two live plans sit
+    at the docs root rather than under <code>plans/</code>
+    (<code>mast-catalog-gpu-solve.html</code> and
+    <code>mast-nonaxisymmetric-physics.html</code>). Both numbers are correct walks of
+    different sets; a reader reproducing 27 must scope the walk to <code>docs/plans/</code>,
+    and one reproducing the docs-wide number gets 29. The plan text's own count and the
+    audit's finding count both use the plans-scoped definition, so they are comparable; a
+    docs-wide count is not.</p>
     <p><strong>Why the two numbers differ, and why the instrument is not the suspect.</strong>
     The prediction is stale rather than the reader being blind, and the evidence for that is
     a positive control: the reader <em>does</em> fire on the one plan that qualifies, at the
@@ -161,6 +171,80 @@
       section-shaped need wired as a plan-level <code>depends_on</code>, and section edges in
       the roadmap raw view &mdash; are not claimed here.</li>
     </ul>
+
+    <h3>The review findings, closed</h3>
+    <p>An independent review of this landing
+    (<code>r-20260919T121016391583</code>, <code>83/100</code>) left four findings. All four
+    are closed, on the change that closes them named beside each; the closures land in
+    <code>2b04c779</code> (the roadmap scan), <code>35d2953b</code> (the write path and the
+    skill) and <code>604026a6</code> (this record), against base
+    <code>0bf94fd5</code>.</p>
+    <table>
+      <thead><tr><th>Finding</th><th>Closure</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The wiring scan read each plan's standalone declaration through the registered
+          mount rather than the checkout the rows were inventoried from, so a worktree-scoped
+          roadmap judged one tree's plans against another tree's declarations.</td>
+          <td><code>build_roadmap(..., docs_dir=...)</code> now names the inventoried checkout
+          and passes it to the wiring scan, falling back to the registered mount only when
+          none is supplied.</td>
+        </tr>
+        <tr>
+          <td>No roadmap test exercised a plan that declares standalone, so the declaration
+          branch was untested and the cross-tree read had nothing to catch it.</td>
+          <td>Three roadmap tests added: a declaring plan is silent, and the cross-tree
+          disagreement is asserted in both directions.</td>
+        </tr>
+        <tr>
+          <td>The create skill spelled the declaration as a meta tag while only the state-mode
+          op was accepted at the boundary, and <code>standalone</code> was absent from the
+          round-trip tables and the write-path allow-list.</td>
+          <td><code>standalone</code> registered in the plan-html scalars and the store's
+          write-path allow-list; <code>reckon-create</code> now names the
+          <code>{"op":"set","path":"standalone"}</code> route.</td>
+        </tr>
+        <tr>
+          <td>The recorded population of 27 live implementable plans depended on a
+          <code>plans/</code>-scoped walk the record did not state.</td>
+          <td>The definition is stated above and in &sect;7: 27 under
+          <code>docs/plans/</code>, 29 for a docs-wide walk. The finding also asked for
+          it in the audit's own message; that half is not reachable here, because the
+          wiring message is defined in <code>reckon/_schema.py</code> and the audit entry
+          point in <code>reckon/cli.py</code> &mdash; both outside this node's write fence
+          &mdash; and a project's counts cannot be written into reckon source at all
+          without breaking the repo-agnostic rule. It is recorded as a follow-on.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The declaration now round-trips, shown by the write</h3>
+    <p>The gap the third finding named was reproduced before it was repaired. At base
+    <code>0bf94fd5</code>, driving the store's own write path directly:</p>
+    <pre><code>&gt;&gt;&gt; store._apply_set({}, {"op": "set", "path": "standalone", "value": "one-file fix"}, False, [])
+OpError: unsupported plan set path 'standalone'
+&gt;&gt;&gt; _plan_html.read_state(html_with_plan_standalone_meta).get("standalone")
+None</code></pre>
+    <p>The MCP <code>_edit_plan</code> route masked this: it splits a <em>set standalone</em>
+    op out of the batch and writes the meta directly before <code>apply_ops</code> ever sees
+    it, which is why the create skill's own literal route appeared to work while the generic
+    write path refused the same field. After registering <code>standalone</code> in the
+    plan-html scalars and the store's write-path allow-list, the same call is accepted,
+    <code>read_state</code> returns the reason, and the meta survives a state write; the test
+    added for it enters through the store path rather than through the MCP masking route, and
+    separately through the ordinary edit path that reads the reason back out of the file and
+    out of <code>read_plan</code>.</p>
+    <p>The cross-tree defect is shown by the same discipline &mdash; two docs trees, one
+    mounted and one inventoried, carrying opposite declarations for the same slug, with only
+    the <code>docs_dir</code> argument varying and the verdict following it. The
+    mount-only fallback is asserted alongside, so the parameter is shown to be load-bearing
+    rather than incidental.</p>
+    <p><strong>Gate.</strong> <code>173 passed</code> over the two wiring test files plus
+    <code>tests/test_roadmap.py</code>, <code>tests/test_store_concurrency.py</code>,
+    <code>tests/test_edit_plan.py</code> and <code>tests/test_mcp_store.py</code>, against
+    <code>168 passed</code> at base <code>0bf94fd5</code>. Both runs carry the same three
+    <code>test_edit_plan.py</code> failures, which predate this node and are recorded as
+    follow-ons rather than repaired here; the added-failure set is empty.</p>
   </section>
 </main>
 </body>
