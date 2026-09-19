@@ -26,7 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.2">
 </head>
 <body>
   <main class="plan-doc">
@@ -256,10 +257,11 @@ under <code>follow_ons</code>.</p>
     <p><strong>Files.</strong> The placement fields are on the backend schema in <code>reckon/flight.py</code>, the lane-agnostic launch is in <code>reckon/crew/dispatch.py</code>, and the reachability refusal shares the pre-launch site and the refusal text of section 4 rather than adding a second one. This section extends no other section’s requirement set: the credential paths are in section 4 from the outset.</p>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awcj-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcj-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="2026-09-19T21:05:42+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Run one placed worker on the local lane before designing anything further</h4>
     <div class="r-fu-body"><p>Section 1 is the whole prototype: one node, one allocation, promoted through the ordinary path, with the cost and the queue wait measured rather than assumed. Section 2 follows immediately because a placed worker whose liveness is read from a pid reads as dead. Sections 3 and 6 depend on numbers only those two can produce.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
+    <p class="r-fu-outcome">Section 1 is met on both halves. The mechanism landed at 740e4065, 029ab788, 09e27b83 and b029c66a (merged a6ed1e5d): a backend declares a placement in the schema, a declared one prefixes the already-resolved argv while leaving the executable, environment and stream paths unchanged, absence means today's login-node launch, an unresolvable scheduler is refused before launch, and the run record carries the job id beside the pid. Twenty-four cases pass with the declared mutation reddening exactly the two claims it removes. The proving run was the coordinator's dispatch rather than the worker's, since a node cannot run the node that measures it, and it is recorded below.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -268,6 +270,9 @@ under <code>follow_ons</code>.</p>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260919T200906847660-readback-of-a-worker-is-charged-to-a-job" data-who="reckon-ship" data-when="2026-09-19T20:19:17.896Z">
     <div class="r-comment-body"><p>Read-back found five of seven sections naming no file including the critical-risk one, section 1 requiring three failure shapes a single completed run cannot exhibit, and three claims in the why section reaching past their evidence, the 401 attribution being the sharpest. All acted on before release.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-awcj-proving-run" data-who="coordinator" data-when="2026-09-19T21:05:00Z">
+    <div class="r-comment-body"><p>The first worker ever placed ran to completion on 2026-09-19 and reported from inside its own process. It executed on compute node <code>98dci4-clu-3036</code> under job 1274056 on partition <code>all</code>, granted 4 cores and 16 GiB, having been submitted from the login node, and it finished its session in 129 seconds. The evidence that settles it is not the environment variables, which a login-node process could in principle carry, but the process ancestry the worker walked itself: its own pid is a direct child of the job's step daemon, which is execution inside the allocation rather than a process merely holding the variables. The worktree, the crew state directory and the model endpoint were all reachable from the node. The queue wait between submit and start was zero at that hour, which is the number that later argued against a job per worker on the wrong axis; section 3 now rests on the shape of the reservation rather than on its latency. Two things the run deliberately does not show, and says so: the failure shapes belong to section 2, and nothing here concerns authenticated traffic to an external lane, which is section 7's. The worker also reported its endpoint probe as a screen rather than an identity result, distinguishing what a 404 from a gateway can and cannot prove, which is the evidence discipline the plan's own read-back forced on its author a few hours earlier.</p></div>
 </div>
 </section>
 </main>
