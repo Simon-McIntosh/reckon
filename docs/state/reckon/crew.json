@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T19:18:27",
+  "updated": "2026-09-19T19:33:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -192540,6 +192540,233 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T171831929382-crpc-watcher-is-a-process",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a73",
+        "node": "crpc-watcher-is-a-process",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 808,
+                "cached_input_tokens": 641787,
+                "input_tokens": 642597,
+                "output_tokens": 2010,
+                "reasoning_output_tokens": 581,
+                "total_tokens": 644607,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read plan section 3 first, and the measured incident behind it: on 2026-09-19 a project ran an hour with no watcher process while dispatches were admitted because a session follower was armed, and separately a watcher unit ran seven hours without the backend directory on its PATH so every lift died at exec. The dispatch and resume preconditions read watcher_live from watcher_state in reckon/crew/runs.py alone; a follower contributes to delivery and never to the watcher requirement, so a project with a live follower and no watcher process is refused, and the refusal names the ensure command. A new reckon crew watch --ensure starts or restarts the project's watcher as a user service whose unit carries the resolved absolute executable and the environment the launch needs, writes the unit name into the watcher registration, and is idempotent so a second call reports the existing unit and starts nothing. Tests, with a fake service manager rather than the real one: a dispatch into a project with a live follower and no watcher is refused naming the command; an ensure on a host with no unit starts one whose recorded environment carries the backend directory; a second ensure starts nothing and says so; the registration carries the unit name. This node writes checks, so declare in the manifest the mutation each new test fails against and keep its red log beside the green one, as the two nodes before it did. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_recovery.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_visibility.py plus any new file, on the login node, captured once with the exit status; the base is 32447fa9, whose nine failures are named in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-arming-and-once-only-findings/base-failed.txt, so the delta is stated as a set difference rather than a count. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 4.0,
+          "goal": "Make the watcher requirement read the watcher process alone and give reckon a command that starts or restarts a project watcher as an idempotent user service with the environment it needs.",
+          "id": "crpc-watcher-is-a-process",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T17:18:32Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T171831929382-crpc-watcher-is-a-process/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "reckon/crew/recovery.py",
+            "reckon/cli.py",
+            "tests/test_crew_watch_ensure.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/figures/crew-runtime-positive-controls",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-watcher-is-a-process"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-ensure-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T17:18:37Z",
+        "completed_at": "2026-09-19T17:31:39.692Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 776,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 782,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "6b83fad3966fe730ac4d04e1e44feadae610aa90",
+        "commits": [
+          "adb2f8e63b90a4d0fffec1cd0c869fe0b33f7772",
+          "1e785993576fb161a6333a6f4a738c0c1be12098",
+          "cfc580841a282361aa7d5b87d051383f9952d1a9"
+        ],
+        "changed_lines": {
+          "added": 611,
+          "removed": 1,
+          "files": 6
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_recovery.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_visibility.py tests/test_crew_watch_ensure.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-watcher-is-a-process/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "The ensure command lands with five negative controls and identical failure sets at base and head, verified live. The dispatch-side refusal is not delivered because the brief granted no scope for it, which is a coordinator defect; it carries on as a followup naming the files and the interface.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T171831929382-crpc-watcher-is-a-process/manifest.md",
+        "scope_changed": false,
+        "session_id": "b3341986-3854-468a-a334-74620836b308",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3034506,
+            "input_tokens_cumulative": 3034506,
+            "output_tokens": 13063,
+            "output_tokens_cumulative": 13063,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T17:31:39.692Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11866911,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 124.982,
+          "generated_tokens": 80132,
+          "generation_seconds": 118.587,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 25.7,
+          "machine_seconds": 6.395,
+          "peak_input_tokens": 123443,
+          "tokens_per_second": 675.72,
+          "wall_tokens_per_second": 641.15
+        },
+        "follow_on_paths": [
+          "reckon/crew/dispatch.py",
+          "reckon/crew/node.py.",
+          "dispatch.py",
+          "reckon/crew/runs.py.",
+          "tests/test_watch_arming_isolation.py",
+          "base-failed.txt",
+          "reckon/crew/runs.py",
+          "reckon.crew.dispatch"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-watcher-is-a-process",
+          "session_id": "b3341986-3854-468a-a334-74620836b308",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T17:31:39.692Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.52,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.52,
+          "at_complete": 0.62,
+          "verdict": "moved"
+        },
+        "tool_steps": 89.0,
+        "orientation_input_tokens": 3853242.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -192824,6 +193051,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1712
+    "_version": 1713
   }
 }
