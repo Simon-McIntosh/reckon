@@ -3324,6 +3324,12 @@ def dispatch(
             "task": None,
             "pid": None,
             "argv": None,
+            # The harness the launch resolves to, recorded explicitly rather
+            # than left to be read off argv[0]: a placed launch prefixes the
+            # scheduler onto the argv, so its first word names the scheduler and
+            # a later reader reconstructing the backend from it would translate
+            # the wrong lane.
+            "command": None,
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
@@ -3359,6 +3365,9 @@ def dispatch(
                         resume_session=reuse_session,
                     )
                 )
+                # Read before the placement wraps the plan: the harness is
+                # argv[0] here, and after the wrap argv[0] is the scheduler.
+                harness_command = str(plan.argv[0]) if plan.argv else None
                 plan = apply_backend_placement(plan, backend)
                 spawn = launcher or _spawn
                 spawned_pid = spawn(
@@ -3377,6 +3386,7 @@ def dispatch(
                     "pid": spawned_pid,
                     "pid_start_time": spawned_start_time,
                     "argv": list(plan.argv),
+                    "command": harness_command,
                     "dialect": plan.dialect,
                     "session_resumed": _launched_prior_session(plan) is not None,
                     # A placed launch is charged to a scheduler job rather than
@@ -4313,20 +4323,31 @@ def _backend_settings(
     """Rebuild the settings a recorded run's stream is read with.
 
     Two authorities carry different parts of the rebuild, and dropping either
-    corrupts the reading. The recorded argv is the ground truth for the command,
-    so a run stays observable after its config layer changes. The configured
-    lane supplies the window, the model and the effort, without which a
-    stream-announced window substitutes as the utilisation's denominator and a
-    resumed turn launches without its recorded model. The two are merged rather
-    than one derived from the other, and a value the row recorded itself wins
-    the merge: the row is the authority for what it was measured against, which
-    a fresh config lookup cannot answer for a run already in flight.
+    corrupts the reading. The recorded command is the ground truth for the
+    harness, so a run stays observable after its config layer changes. The
+    configured lane supplies the window, the model and the effort, without
+    which a stream-announced window substitutes as the utilisation's
+    denominator and a resumed turn launches without its recorded model. The two
+    are merged rather than one derived from the other, and a value the row
+    recorded itself wins the merge: the row is the authority for what it was
+    measured against, which a fresh config lookup cannot answer for a run
+    already in flight.
     """
     backends = (config or {}).get("backends") or {}
     configured = backends.get(record.get("backend"))
     argv = record.get("argv")
-    if isinstance(argv, list) and argv:
-        settings: dict[str, Any] = {"launch": "cli", "command": argv[0]}
+    # The harness is read from the record's own explicit field rather than from
+    # argv[0]. A placed launch prefixes the scheduler onto the argv, so the
+    # first word of a placed run's argv names the scheduler, and a reader
+    # taking the harness from it translates the wrong lane — the launch itself
+    # succeeded, and only the identity a later reader infers is wrong. A record
+    # written before the field existed falls back to argv[0], which is the
+    # harness for every launch that was not placed.
+    command = str(record.get("command") or "").strip()
+    if not command and isinstance(argv, list) and argv:
+        command = str(argv[0])
+    if command:
+        settings: dict[str, Any] = {"launch": "cli", "command": command}
     elif isinstance(configured, Mapping):
         settings = dict(configured)
     else:
@@ -4334,6 +4355,14 @@ def _backend_settings(
             f"run {record.get('run_id')!r} records no argv and its backend is not "
             "in the supplied config, so its stream cannot be read"
         )
+    # The identity the launch resolved to, recorded beside the command. It is
+    # consulted when the command's own stem names no dialect, which is the case
+    # a placed run produces; a record naming only its lane still resolves.
+    identity = str(record.get("dialect") or "").strip() or str(
+        record.get("backend") or ""
+    ).strip()
+    if identity:
+        settings.setdefault("dialect", identity)
     for key in ("usable_input_window", "model", "effort"):
         if isinstance(configured, Mapping) and configured.get(key) is not None:
             settings.setdefault(key, configured[key])
