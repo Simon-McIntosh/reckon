@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-impl" content="0.2">
 </head>
 <body>
@@ -89,7 +89,7 @@
       <tbody>
         <tr><td>§1 One worker under one allocation</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
         <tr><td>§2 Liveness and reaping follow the job</td><td>5</td><td>deep</td><td>critical</td><td>0</td></tr>
-        <tr><td>§3 One shared standing allocation, Slurm as its queue</td><td>5</td><td>deep</td><td>elevated</td><td>1 (pattern measured, design settled)</td></tr>
+        <tr><td>§3 One reservation, overlapping steps, our own limit</td><td>5</td><td>deep</td><td>elevated</td><td>1 (both step forms measured, design settled)</td></tr>
         <tr><td>§4 The workspace contract</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
         <tr><td>§5 The ceiling moves to the roster</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
         <tr><td>§6 The prototype ladder and the default</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
@@ -164,44 +164,53 @@ under <code>follow_ons</code>.</p>
     2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
 
     <p><strong>Files.</strong> The classifier and the liveness reads are in <code>reckon/crew/recovery.py</code> and <code>reckon/crew/runs.py</code>; the reaper, its once-only guard and the launch-failure record are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a job-placed run is in <code>reckon/crew/resumption.py</code>. Those four plus a test file are the grant, and this section is dispatched with them named because it is the critical-risk one.</p>
-<h2 id="s3">&#167;3 &mdash; One standing allocation the whole workstation shares, and Slurm is its queue</h2>
-    <p>A job per worker mints a reservation per worker. That was measured to be fast &mdash; the proving run's
-    allocation started in zero seconds on <code>all</code> &mdash; and speed was the wrong axis to judge it on.
-    The objection is that every worker becomes its own reservation against the scheduler, so raising the
-    fleet's concurrency means submitting more reservations rather than sizing one, and nothing about the
-    arrangement is shared between the sessions that run on this workstation. The lead's design is one standing
-    allocation with a generous core count, held once, that every session places workers into.</p>
-    <p><strong>The pattern was measured before this section was written, on 2026-09-19.</strong> An allocation
-    is held with no shell attached (<code>salloc --no-shell</code>), which returns a job id and keeps the
-    resources without occupying a terminal: job 1274057, 8 cores and 32 GB on one node. Workers then run inside
-    it as steps (<code>srun --jobid=&lt;id&gt;</code>), each appearing under its own step id, and the
-    distinction that decides the whole surface is how the step asks for its share.</p>
+<h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
+    <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
+    in zero seconds, and speed was the wrong axis: the objection is that concurrency then means submitting
+    more reservations rather than sizing one, and nothing is shared between the sessions on this workstation.
+    The design is one reservation held once, private to us, that every session places workers into as steps.</p>
+    <p><strong>Measured on 2026-09-19, and the step form decides everything.</strong> An allocation is held
+    with no shell attached (<code>salloc --no-shell</code>), which returns a job id and keeps the resources
+    without occupying a terminal. Workers then run inside it as steps under their own step ids. The cluster
+    queue sees one entry for the reservation and never sees a step.</p>
     <table>
-      <caption>Five steps of two cores each, dispatched at once into an eight-core allocation</caption>
-      <thead><tr><th>Step asks with</th><th>What happened</th><th>What it means for reckon</th></tr></thead>
+      <caption>What the two step forms do, measured</caption>
+      <thead><tr><th>Step asks with</th><th>Behaviour</th></tr></thead>
       <tbody>
-        <tr><td><code>--overlap</code></td><td>all five ran at once, ten cores asked of eight, every step home in 6 s</td><td>the scheduler enforces nothing; reckon would have to build and own an admission queue</td></tr>
-        <tr><td><code>--exact</code></td><td>four ran immediately and the fifth waited 61 s for a slot, 67 s in total</td><td>the scheduler is the queue; reckon submits and the step blocks until the allocation has room</td></tr>
+        <tr><td><code>--exact</code></td><td>the allocation is a quota: four two-core steps ran in an eight-core allocation and a fifth waited 61 s for a slot</td></tr>
+        <tr><td><code>--overlap</code></td><td>nothing is enforced: six steps each asking 4 GB ran inside an 8 GB allocation, and two steps then held 5 GiB of real memory each, 10 GiB inside 8 GB, and both survived</td></tr>
       </tbody>
     </table>
-    <p>So the design follows from the measurement rather than from a preference: workers are placed as exact
-    steps, the allocation's size is the fleet's concurrency, and raising concurrency is one change to one
-    allocation rather than a change to how dispatch behaves. Reckon does not implement a queue, which is the
-    part of this section most likely to have been built unnecessarily.</p>
-    <p><strong>Files, and what the surface looks like.</strong> The allocation is a durable shared resource of
+    <p><strong>The choice is <code>--overlap</code>, and the reason is what a worker is.</strong> A worker is a
+    thin client that spends nearly all its life blocked on the served model, so reserving cores exactly for one
+    prices an idle process and would need fifty to a hundred cores to host the concurrency the serve already
+    supports. Under <code>--overlap</code> the reservation is a place to run rather than a quota to queue
+    behind: a step launches in under a tenth of a second against the 0.13 s the reservation itself costs once,
+    and no worker ever waits on another. The concurrent limit is then ours, held in the roster, which this
+    project already calls the only concurrency authority, and sized from dispatch experience rather than from a
+    core count.</p>
+    <p><strong>What follows, stated rather than left implicit.</strong> Because nothing is enforced, the
+    failure this plan escapes does not vanish; it moves. On the login node the bound was a 64 GiB slice we did
+    not choose, which announced itself by killing 529 processes. Inside the reservation the bound is the node's
+    real memory and the number is ours, so oversubscribing far enough brings the kills back on a larger machine.
+    That makes the sizing input memory per worker against reserved memory, measured across a real wave, and
+    makes cores the cheap axis precisely because the workers are blocked on the network. The roster limit is a
+    real limit rather than a formality, and the reading to watch while raising it is resident memory across the
+    wave.</p>
+    <p><strong>Files, and what the surface looks like.</strong> The reservation is a durable shared resource of
     the same kind as the model serve and the project watcher, so it is managed the same way rather than
     invented afresh: an ensure command in <code>reckon/cli.py</code> and <code>reckon/crew/runs.py</code> that
-    holds the allocation if it is absent, reports it if it is present and starts nothing, mirroring
-    <code>reckon crew watch --ensure</code>; its identity published where every session reads it rather than
-    held in one session's memory, the way the served model publishes its endpoint; and the placement in
+    holds the reservation if it is absent and reports it if it is present, mirroring
+    <code>reckon crew watch --ensure</code>; its job id published where every session reads it rather than held
+    in one session's memory, the way the served model publishes its endpoint; and the placement in
     <code>reckon/crew/dispatch.py</code> resolving that published id rather than taking one on the command
-    line. Those three plus a test file are the grant.</p>
-    <p><strong>Done when.</strong> One allocation is held by the ensure command and a second call reports it
-    and starts nothing; two workers dispatched from two different sessions both run as steps inside that one
-    allocation, which is the property the shared design exists for and which a single-session test cannot
-    show; a worker dispatched when the allocation is full waits for a slot rather than being refused, and is
-    reported as waiting for capacity rather than as slow, which section 2 owes the surface anyway; and the
-    policy is stated for an allocation that expires under workers and for a worker that outlives it.</p>
+    line. No admission queue is written: Slurm does not provide one under <code>--overlap</code> and the roster
+    already is one.</p>
+    <p><strong>Done when.</strong> One reservation is held by the ensure command and a second call reports it
+    and starts nothing; two workers dispatched from two different sessions both run as steps inside it, which
+    is the property the shared design exists for and which a single-session test cannot show; the roster limit
+    refuses the worker that would exceed it, naming the limit and its measured basis rather than a core count;
+    and the reservation's size and the roster's limit are both recorded with the wave that measured them.</p>
 
 <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
     <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
@@ -277,6 +286,19 @@ under <code>follow_ons</code>.</p>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260919T203706841041-awcj-one-worker-under-one-allocation" data-who="reckon-ship" data-when="2026-09-19T21:16:56.333Z">
     <div class="r-comment-body"><p>A backend declares a placement in the schema and a declared one prefixes the resolved argv; absence means today login-node launch; an unresolvable scheduler is refused before launch; the run record carries the job id. Twenty-four cases, the mutation reddening exactly its two claims.</p></div>
 </div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reservation-size-and-roster-limit" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How large is the standing reservation, and what does the roster admit against it?</p>
+    <p class="r-dec-ctx">Measured 2026-09-19. Under --overlap nothing is enforced, so the reservation is a place to run and the limit is the roster&#x27;s. Compute nodes on the all partition are 28 cores with 128 GB or 36 cores with 192 GB, so a reservation lives within one node rather than spanning the 503 GB the login host carries. Workers are blocked on the served model almost all the time, so cores are cheap and memory is the axis that binds, exactly as it did in the 64 GiB login slice that killed 529 processes. The serve was observed delivering about 450 tokens a second at roughly twenty-five concurrent workers, so twenty-five is the concurrency worth hosting. Per-worker resident memory has not been measured across a wave; the only figure in hand is a single nova solve at 24.6 GB, which is a test process rather than a worker.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="thirty-two-cores-128-gb">hold 32 cores and 128 GB on a 36-core node, cap the roster at 25, and adjust from the first wave&#x27;s resident memory</button>
+      <button class="r-opt" data-value="whole-small-node">hold an entire 28-core 128 GB node so nothing else shares it, with the same roster cap</button>
+      <button class="r-opt" data-value="measure-first-then-size">hold a deliberately small reservation for one wave, measure per-worker resident memory, and size only then</button>
+      </p>
+    <p class="r-dec-rat">Coordinator recommendation, for the lead. 128 GB is twice the login slice we are escaping and leaves headroom on a 192 GB node for the occupant we are not, while 32 cores is ample for workers that are network-blocked. Capping the roster at 25 matches the concurrency the serve was seen to sustain, so the first wave measures per-worker memory against a bound that is already generous rather than against one chosen to be tight. Sizing from measurement first is the more careful option and costs a wave before any benefit; taking a whole node is cleaner but claims more than the fleet needs on a shared partition.</p>
+    </div>
 </section>
 </main>
 </body>
