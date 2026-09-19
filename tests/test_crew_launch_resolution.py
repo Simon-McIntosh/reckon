@@ -23,7 +23,7 @@ from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
-MISSING_PATH = "/nonexistent-crpc-backend-bin"
+MISSING_PATH = "/nonexistent-backend-bin"
 
 
 def _backend_environment(path: str) -> dict:
