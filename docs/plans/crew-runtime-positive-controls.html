@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="crew-runtime-positive-controls">
   <meta name="plan-title" content="Crew runtime positive controls — a launch that cannot fail silently, a watcher that is a process, a wait that cannot loop">
-  <meta name="plan-summary" content="Four measured harness faults become checks that always run: binary resolved before launch, empty stream is a launch failure, watcher is a process, waits checked.">
+  <meta name="plan-summary" content="Measured harness faults become checks that always run: binary resolved before launch, empty stream is a failure, watcher is a process, waits checked.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="16.0">
+  <meta name="plan-effort-hours" content="20.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,7 +21,7 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -59,6 +59,7 @@
         <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
         <tr><td>§5 Skills carry the pointer, not the rule</td><td>1</td><td>standard</td><td>low</td><td>0</td></tr>
         <tr><td>§6 The repository comes from the project, never from the shell</td><td>2</td><td>standard</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§7 A node that writes a check states the negative it fails against</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
       </tbody>
     </table>
 
@@ -134,6 +135,26 @@
     <p><strong>Done when.</strong> A dispatch for project A run from project B's checkout with no <code>--repo</code>
     creates its worktree under A's mount; one run with <code>--repo</code> naming B is refused naming both roots;
     both pinned by tests with two temporary mounts.</p>
+
+    <h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
+    <p>Three checks were landed this week that ran, reported success, and could not fail for the reason they
+    were written. A persistence guard compared one tensor-spline fit against its own evaluation, so its residual
+    was zero by construction; it passed on all twenty archived states whose stored flux disagreed with their
+    stored field by up to 2.2e-2 Wb. A receipt test held the two caption counts of a figure to its receipt but
+    not the per-axis bars the renderer draws, so a figure built from a retired capture passed the gate that
+    exists to catch exactly that. A panel test asserted a shared level array across two panels whose fixtures
+    were written on one grid, so the assertion reproduced itself. Every one was found by an independent
+    reviewer rather than by the runtime, and in each case the author's own gate was green.</p>
+    <p>The remedy is not more review. A node whose deliverable is a guard, an assertion or a test declares, in
+    its done-when, the mutation that must turn it red, and its manifest carries that mutation's log beside the
+    passing one. Dispatch refuses a node whose write paths include a test file when no negative is declared,
+    the same way it refuses a missing specification level; promotion refuses a passing gate on such a node when
+    the manifest carries no red log for the declared mutation. The two logs are the positive and negative
+    control of one measurement, which is the standard this repository already holds physics evidence to.</p>
+    <p><strong>Done when.</strong> A dispatch declaring a test path without a negative is refused, naming the
+    field; a promotion of such a node without a red log is refused, naming the declared mutation; both pass
+    when the pair is present, and the refusal messages name the discharge. Pinned by tests that exercise the
+    refusal and its discharge on a fixture node.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
