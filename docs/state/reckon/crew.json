@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T15:37:54",
+  "updated": "2026-09-19T15:42:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -189829,6 +189829,230 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T130222850716-cot-sentinel-acceptance-test",
+        "plan": "crew-observability-truth",
+        "section": "",
+        "node": "cot-sentinel-acceptance-test",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 6090,
+                "cached_input_tokens": 952649,
+                "input_tokens": 958741,
+                "output_tokens": 2571,
+                "reasoning_output_tokens": 151,
+                "total_tokens": 961312,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "followup f-cot-sentinel-acceptance-test on the plan: in tests/test_crew_gate_log_agrees.py add a test that a cited log carrying a quoted command-not-found line beside a recorded nonzero exit that is not in the unexecuted set (reckon/crew/promotion.py near line 405, _UNEXECUTED_EXIT_CODES) is accepted, and one that a recorded exit in that set beside the same line is refused with the matched line named; confirm by a scratch mutation (recorded == 0 in place of the not-in set test) that the new tests fail, and record the mutation result in the manifest; gate is uv run --no-sync pytest tests/test_crew_gate_log_agrees.py with zero added failures against base; the plan comment and the evidence record docs/evidence/archive/crew-observability-truth-landed.html carry the landing; every uv command carries --no-sync; py_compile with /home/ITER/mcintos/Code/reckon/.venv/bin/python before each commit; manifest at the first commit; status words complete, waiting or blocked only",
+          "estimated_hours": null,
+          "goal": "pin the acceptance half of the by-value exit sentinel rule with tests",
+          "id": "cot-sentinel-acceptance-test",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T13:02:23Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T130222850716-cot-sentinel-acceptance-test/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_gate_log_agrees.py",
+            "docs/plans/crew-observability-truth.html",
+            "docs/evidence/archive/crew-observability-truth-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/cot-sentinel"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-cot-sentinel-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T13:02:31Z",
+        "completed_at": "2026-09-19T13:08:39.370Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 360,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 368,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "0bf94fd5f7bdb7be9529245bf5ec55cb64b9bc39",
+        "commits": [
+          "c8178dd4036998fb9523ee0ee7710c629b67be55",
+          "b8f946aa2504a2b62955e680b5d4d7d122f96de5"
+        ],
+        "changed_lines": {
+          "added": 111,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv uv run --no-sync pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T130222850716-cot-sentinel-acceptance-test/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T130222850716-cot-sentinel-acceptance-test/manifest.md",
+        "scope_changed": false,
+        "session_id": "d0bbb591-bc08-4c98-a90b-c051e27cfada",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3748486,
+            "input_tokens_cumulative": 3748486,
+            "output_tokens": 22521,
+            "output_tokens_cumulative": 22521,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T13:08:39.370Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 100
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3748486,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 364.27,
+          "generated_tokens": 22521,
+          "generation_seconds": 333.835,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 24.9,
+          "machine_seconds": 30.435,
+          "peak_input_tokens": 119360,
+          "tokens_per_second": 67.46,
+          "wall_tokens_per_second": 61.83
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_gate_log_agrees.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/cot-sentinel-acceptance-test",
+          "session_id": "d0bbb591-bc08-4c98-a90b-c051e27cfada",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T13:08:39.370Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.42,
+        "impl_move": {
+          "plan": "crew-observability-truth",
+          "at_dispatch": 0.42,
+          "at_complete": 0.45,
+          "verdict": "moved"
+        },
+        "tool_steps": 42.0,
+        "orientation_input_tokens": 803503.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -190113,6 +190337,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1693
+    "_version": 1694
   }
 }
