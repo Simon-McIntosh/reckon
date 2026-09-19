@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T18:43:49",
+  "updated": "2026-09-19T18:44:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -191333,6 +191333,229 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T141900699431-crpc-launch-resolution-and-failure-record-2",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a71",
+        "node": "crpc-launch-resolution-and-failure-record-2",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2022,
+                "cached_input_tokens": 368188,
+                "input_tokens": 370242,
+                "output_tokens": 2652,
+                "reasoning_output_tokens": 507,
+                "total_tokens": 372894,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read the plan sections 1 and 2 first. In reckon/crew (the launch plan built for dispatch in dispatch.py, the resume plan in resumption.py used by both crew resume and the watcher lift, and the watcher startup in recovery.py watch_ticker or its caller) the backend command is resolved with shutil.which against the environment the launch will use, the absolute path replaces argv[0] in the plan, and an unresolved binary raises a refusal that names the binary and the searched PATH before any pointer, advice file, stream or stderr file is written; reckon crew watch resolves every backend its project can route to at startup and refuses to arm when one is missing. The launched-worker reaper in dispatch.py, on reaping a pid whose stream file is empty, writes one launch-failure lane record on the run (exit status, argv, stderr tail), moves the pointer phase to launch-failed, and the lift path in resumption.py does not resume a run in that phase until a person resumes or completes it; the follower renders launch-failed as its own state with the failure count and the flight and drain counts place it under an infrastructure classification. Tests: one per surface (dispatch, resume, watch) that removes the backend directory from the PATH handed to the call, not from the test process, and asserts the refusal text and that no files were written; one launch-plan test asserting an absolute executable; a reaper test with a synthetic backend script that exits 127 immediately, asserting exactly one lane record, the phase, and that a second tick does not relaunch. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_dispatch*.py tests/test_crew_resum*.py tests/test_crew_watch*.py tests/test_crew_recovery*.py plus the new tests, on the login node (light work), captured once to a log in the reports directory with the exit status, zero added failures against base e0a8a967. The landed record anchors sections 1 and 2 with the refusal text quoted. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 6.0,
+          "goal": "Make every crew launch resolve its backend executable to an absolute path before writing anything, refusing with the searched PATH when it cannot, and record a worker that exits before its first stream record as one launch failure that stops the lift loop.",
+          "id": "crpc-launch-resolution-and-failure-record-2",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T14:19:01Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T141900699431-crpc-launch-resolution-and-failure-record-2/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/resumption.py",
+            "reckon/crew/recovery.py",
+            "reckon/crew/runs.py",
+            "reckon/crew/summary.py",
+            "reckon/crew/ticker.py",
+            "tests/test_crew_launch_resolution.py",
+            "tests/test_crew_launch_failure.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-launch-resolution-and-failure-record-2"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-launch-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T14:19:11Z",
+        "completed_at": "2026-09-19T15:18:00.235Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3519,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3529,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "e0a8a9677bec325e63e587da9ab7a7a5e8c93290",
+        "commits": [
+          "8115d773d95cf39c92ab2ac18f0bf7182c4761bf"
+        ],
+        "changed_lines": {
+          "added": 1,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <twelve pre-existing files plus the two new ones>",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-launch-resolution-and-failure-record-2/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T141900699431-crpc-launch-resolution-and-failure-record-2/manifest.md",
+        "scope_changed": false,
+        "session_id": "833dd328-55ef-46d9-9a1e-f049acb2a6be",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 20698773,
+            "input_tokens_cumulative": 20698773,
+            "output_tokens": 72480,
+            "output_tokens_cumulative": 72480,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T15:18:00.235Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 30842792,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1584.554,
+          "generated_tokens": 117428,
+          "generation_seconds": 1210.222,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 374.332,
+          "peak_input_tokens": 165739,
+          "tokens_per_second": 97.03,
+          "wall_tokens_per_second": 74.11
+        },
+        "follow_on_paths": [
+          "tests/test_crew_resum*.py",
+          "tests/test_crew_recovery.py.",
+          "tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-launch-resolution-and-failure-record-2",
+          "session_id": "833dd328-55ef-46d9-9a1e-f049acb2a6be",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T15:18:00.235Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": null,
+          "at_complete": 0.35,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "tool_steps": 104.0,
+        "orientation_input_tokens": 3143038.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -191617,6 +191840,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1704
+    "_version": 1705
   }
 }
