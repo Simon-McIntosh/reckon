@@ -181,6 +181,48 @@ broken, which is the shape this section now has a round trip for.</p>
     2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
 
     <p><strong>Files.</strong> The classifier and the liveness reads are in <code>reckon/crew/recovery.py</code> and <code>reckon/crew/runs.py</code>; the reaper, its once-only guard and the launch-failure record are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a job-placed run is in <code>reckon/crew/resumption.py</code>. Those four plus a test file are the grant, and this section is dispatched with them named because it is the critical-risk one.</p>
+<div class="r-note" data-reckon="landed" data-node="awcj-one-record-level-liveness-read" data-when="2026-09-20">
+<p><strong>Outcome — one accessor owns the record-to-pid step, and no answer changed.</strong> Commits
+<code>2d58b953</code> and <code>d417b411</code>. <code>reckon/crew/runs.py</code> gains
+<code>record_process_alive(record)</code>, which returns exactly what <code>process_alive</code> returns for
+that record's pid, including the <code>None</code> a record naming no process already produced. Every call
+site that decided a run's liveness from a record now calls it: in <code>runs.py</code> the live-pointer
+listing, the closure recheck and the seat-record reads, and in <code>recovery.py</code>,
+<code>dispatch.py</code>, <code>resumption.py</code>, <code>promotion.py</code>, <code>routing.py</code>,
+<code>claims.py</code>, <code>node.py</code> and <code>directory.py</code> the classify, reaper, launch-failure,
+resume-refusal, promotion and claim paths. The pid calls that read a <em>parent</em> pid keep the primitive,
+because a parent pid is not the record's own process — that is a different question and it is left
+answering what it always answered. <code>query.py</code> carries the field through and decides nothing, so it
+has no call site to route.</p>
+<p><strong>The seam the refactor had to keep.</strong> A module's liveness answer is substituted in tests by
+rebinding that module's own <code>process_alive</code> name, so moving every call site to the accessor removed
+the name from <code>promotion</code>, <code>dispatch</code> and <code>resumption</code> and turned nine cases
+red with <code>AttributeError: ... has no attribute 'process_alive'</code> — reproduced before the repair,
+quoted from <code>tests/test_promotion_reads_the_terminal_record.py</code>. The accessor therefore takes the
+caller's probe as an optional second argument: the pid is still read in the one place, and a module that keeps
+the primitive bound under its own name hands it in so a substitution for that module is honoured.
+<code>recovery.py</code> stays on the accessor's own default deliberately — its callers rebind the name to a
+forbidden lookup to prove classification reads the live module attribute rather than that import-time
+snapshot, and passing the snapshot would have made that tripwire fire.</p>
+<p><strong>Gate.</strong> The 116-file set that reaches these modules (list in this node's manifest) run
+against base <code>3a05f4f8</code> and against the landed head: <strong>78 failed / 1612 passed</strong> at
+base and <strong>78 failed / 1616 passed</strong> at head, with the failure-id sets <em>identical</em> —
+zero added, zero removed — and four tests added. The file list is a superset chosen by which modules the
+tests reach, not the whole suite; the eighty-odd failures on both sides are the worker tier's own, present at
+base and unchanged. <code>tests/test_crew_record_liveness.py</code> is the new case: it holds the accessor
+against the primitive on a live, a reaped and a pid-less record, and scans the ten modules by AST for a call
+that takes a pid out of a record without the accessor, with a positive control showing the scan recognises
+the forbidden shape so an empty result means compliance.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: revert <code>directory.py</code> to
+<code>process_alive(record["pid"])</code>. The red log at
+<code>runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log</code> (first
+line repeats the mutation verbatim) fails exactly
+<code>test_no_module_decides_record_liveness_with_a_bare_pid</code> and leaves the other three green. A
+passing suite would not have shown that.</p>
+<p><strong>What this node did not do.</strong> It changed no answer, so nothing here is job-aware yet: a placed
+run's liveness still resolves through the local process table, and the accessor is the single seam where the
+job becomes the subject. Verifying the merged result belongs to a separately dispatched test node.</p>
+</div>
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
     in zero seconds, and speed was the wrong axis: the objection is that concurrency then means submitting
