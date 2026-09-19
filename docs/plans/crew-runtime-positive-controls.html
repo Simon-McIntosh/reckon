@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Four measured harness faults become checks that always run: binary resolved before launch, empty stream is a launch failure, watcher is a process, waits checked.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,7 +21,7 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -58,6 +58,7 @@
         <tr><td>§3 A watcher is a process the dispatcher can see</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
         <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
         <tr><td>§5 Skills carry the pointer, not the rule</td><td>1</td><td>standard</td><td>low</td><td>0</td></tr>
+        <tr><td>§6 The repository comes from the project, never from the shell</td><td>2</td><td>standard</td><td>elevated</td><td>0</td></tr>
       </tbody>
     </table>
 
@@ -120,6 +121,19 @@
     instruction the code now enforces.</p>
     <p><strong>Done when.</strong> The skill carries the command and no longer carries the manual recipe, and
     <code>reckon audit-doc</code> passes on the plan and record.</p>
+
+    <h2 id="s6">§6 — A dispatch resolves its repository from the project mount, never from the caller's directory</h2>
+    <p>Measured 2026-09-19 an hour after this plan was written: two reckon nodes dispatched from a shell whose
+    working directory was the nova checkout received worktrees under the nova repository, because
+    <code>--repo</code> defaults to the enclosing repository of the caller. One worker oriented, found none of
+    its write paths, and blocked; the other was stopped before it could act. The dispatch already knows the
+    project's mount (<code>authority.plan.repository</code>); when the resolved repository root is not that
+    mount, refuse before creating a worktree, naming both paths and the <code>--repo</code> flag, and when
+    <code>--repo</code> is absent take the mount rather than the shell. The same rule binds <code>resume</code>,
+    <code>member add</code> and <code>complete</code>, each of which writes a checkout it resolves the same way.</p>
+    <p><strong>Done when.</strong> A dispatch for project A run from project B's checkout with no <code>--repo</code>
+    creates its worktree under A's mount; one run with <code>--repo</code> naming B is refused naming both roots;
+    both pinned by tests with two temporary mounts.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
