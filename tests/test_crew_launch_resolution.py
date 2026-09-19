@@ -107,7 +107,7 @@ def _node(name: str) -> crew.TaskNode:
         done_when="one launch resolution case passes",
         write_paths=["src/resolved.txt"],
         time_budget="20m",
-        manifest_path="/tmp/never/used.md",
+        manifest_path="manifest-never-used.md",
     )
 
 
@@ -164,7 +164,7 @@ def test_a_dispatch_plan_carries_an_absolute_executable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_home, repo = project
+    _config_home, repo = project
     bin_dir = tmp_path / "backend-bin"
     bin_dir.mkdir()
     fake = bin_dir / "codex"
@@ -183,7 +183,7 @@ def test_a_dispatch_refuses_an_unresolvable_backend_before_writing_anything(
     project: tuple[Path, Path],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_home, repo = project
+    _config_home, repo = project
 
     with pytest.raises(crew.CrewError) as refusal:
         _dispatch(repo, _config(_backend_environment(MISSING_PATH)), monkeypatch)
@@ -198,7 +198,7 @@ def test_a_dispatch_refuses_an_unresolvable_backend_before_writing_anything(
 def test_a_resume_refuses_an_unresolvable_backend_and_leaves_the_pointer_alone(
     project: tuple[Path, Path],
 ) -> None:
-    config_home, repo = project
+    _config_home, repo = project
     run_id = "r-resolve-refusal"
     directory = runs.run_dir(run_id)
     directory.mkdir(parents=True)
