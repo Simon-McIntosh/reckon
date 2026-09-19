@@ -317,6 +317,48 @@ nothing has been launched</code></pre>
       rather than quietly claimed.</p>
     </section>
 
+    <section id="s5">
+      <h2>&sect;5 &mdash; The skill points at the ensure command</h2>
+      <p>One file carries the change: <code>skills/reckon-ship/SKILL.md</code>. The command reaches a
+      coordinator from three places in it, because those are the three where a coordinator decides what to do
+      about a watcher — the <code>watcher-required</code> row of the dispatch refusal table, the producer
+      paragraph that explains what the refusal is answering, and the command block that lists the producer, the
+      follower and the ensure call together.</p>
+      <p><strong>The manual instruction that was present, and what replaced it.</strong> The section describes
+      prose telling a coordinator to export the backend directory and restart watcher units by hand. That
+      recipe is not in <code>skills/reckon-ship</code> at the base revision <code>52724ac9</code>. The search
+      is a case-insensitive pass for <code>export</code>, <code>PATH=</code>, <code>systemctl</code>,
+      <code>user unit</code>, <code>watcher unit</code>, <code>by hand</code> and <code>restart the
+      watcher</code> over every file under the directory: it returns no hit on the recipe, and the two
+      <code>by hand</code> rows it does return are unrelated (<code>effort-routing.md</code> on applying
+      routing thresholds manually, <code>sprint-orchestration.md</code> on hand-composing a delegation). The
+      same command returns the known-present <code>watcher-required</code> prose, so the instrument is aimed
+      rather than empty. The manual instruction actually present is the refusal table's <em>inspect the
+      reported watcher state</em>, and that is what is replaced: the table now names
+      <code>reckon crew watch --ensure --project P</code> as the repair, taken from the command the runtime's
+      own refusal carries in <code>watch_state()["ensure_line"]</code>. The non-reproduction is recorded rather
+      than papered over, because a section written against prose that has since been removed will otherwise be
+      dispatched again.</p>
+      <p><strong>The pointer is not dangling.</strong> The command the skill now names exists and resolves to
+      exactly the string the skill carries: <code>watcher_ensure_line("sample")</code> returns
+      <code>reckon crew watch --ensure --project sample</code>, and the option's own help states the
+      idempotency the skill repeats — "a second call on a live, unchanged unit reports it and starts
+      nothing".</p>
+      <p><strong>Gate.</strong> <code>tests/test_doccheck.py</code>,
+      <code>tests/test_skill_contracts.py</code> and <code>tests/test_skill_contract_parity.py</code> — the plan
+      gate plus every test file whose name mentions skill — run once to
+      <code>reports/reckon/s18-takeover/crpc-skills-point-at-the-ensure-command/head-gate.log</code>:
+      <strong>2 failed, 92 passed, exit 1</strong> at head against the same <strong>2 failed, 92
+      passed</strong> at base <code>52724ac9</code>, with the <code>FAILED</code> lists identical
+      (<code>diff</code> empty). Both failures are pre-existing and neither touches this change:
+      <code>test_ship_skill_states_one_monitor_per_session</code> asserts a phrase the skill no longer carries,
+      and in failing it quotes the file's own text — which is the positive control that the suite reads
+      <code>SKILL.md</code> as data rather than asserting against a fixture — and
+      <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> fails identically at base. No
+      test asserts the ensure line the skill now carries, so this node claims no coverage of the new prose;
+      the reader that does consume the file is the one the failure above demonstrates.</p>
+    </section>
+
     <section id="s6">
       <h2>&sect;6 &mdash; The repository comes from the project's mount, not from the caller's shell</h2>
       <p>The incident this section records: two nodes were dispatched for one project from a shell whose working
