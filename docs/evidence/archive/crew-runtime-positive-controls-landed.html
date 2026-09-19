@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Crew Runtime Positive Controls — landed evidence">
   <meta name="plan-summary" content="Every launch resolves its backend to an absolute path before writing, and a launch that dies before its first turn is one recorded failure that stops the lift.">
   <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
-  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2">
-  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4">
-  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7">
+  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png">
   <meta name="plan-recorded-at" content="2026-09-19">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment, login node">
@@ -411,6 +411,71 @@ nothing has been launched</code></pre>
       registration is <code>reckon/ledger.py::register_member</code> reached through
       <code>routing.py</code>, so that surface could not be changed inside the granted fence. Both are recorded
       as follow-ons.</p>
+    </section>
+
+    <section id="s7">
+      <h2>&sect;7 &mdash; A node that writes a check declares the mutation it fails against</h2>
+      <p>The failure this section answers: a guard, assertion or test whose author never named the mutation it
+      must fail against is a check that passed by not exercising anything. Three of those landed in one week, each
+      green under its own gate, and each found by an independent reviewer rather than by the gate it was supposed
+      to serve. The trigger is therefore the node's <em>declared write paths</em> containing a test file, not
+      prose mined from the done-when, so the refusal rests on a structured field a dispatcher can read.</p>
+      <figure>
+        <img src="/reckon/figures/crew-runtime-positive-controls/declared-negative-control-flow.png"
+             alt="Two pipelines. Dispatch: a declared write path contains a test file, so the node must declare
+                  its negative control; with no declaration the dispatch is refused naming the field, with a
+                  declaration it dispatches. Promotion: a passing gate on such a node must name a red log whose
+                  content names the declared mutation; a missing, unreadable or unrelated log is refused naming
+                  the declaration, a matching log records the row verdict matched, and a declaration of
+                  none with a reason records the row verdict none-recorded.">
+        <figcaption>The declared negative control, at dispatch and at promotion.</figcaption>
+      </figure>
+      <p><code>reckon/crew/node.py</code> carries the evaluation and the composed text: <code>is_test_path</code>
+      recognises a test-naming basename (<code>test_*.py</code>, <code>*_test.py</code>, <code>*.test.*</code>,
+      <code>*.spec.*</code>) or an enclosing <code>test</code>/<code>tests</code> directory, and
+      <code>negative_control_finding</code> returns a finding naming the <code>negative_control</code> field and
+      the test path that triggered it. <code>reckon/crew/dispatch.py</code> appends that finding inside
+      <code>plan_dispatch</code>, immediately after <code>validate_node</code>, so a triggering node without a
+      declaration is refused before any worktree, live pointer or ledger row exists — the same way a missing
+      specification level is refused. The declaration travels as the new structured field
+      <code>TaskNode.negative_control</code>, emitted by <code>as_dict</code> into the live pointer and read back
+      through both rebuild paths, so promotion tests a field rather than re-deriving intent from the brief.</p>
+      <p><code>reckon/crew/promotion.py</code>'s <code>_require_declared_negative_control</code> is the second
+      surface. It resolves the manifest's <code>negative_control_log</code> against the manifest's own directory,
+      refuses when the field is absent, when the named log cannot be read, and when the log's text does not name
+      the declared mutation — a failing log for an unrelated reason is not the negative control, so the
+      declaration is matched against the log's content rather than against its existence. The recorded row
+      carries <code>negative_control</code> beside <code>impl_move</code>, with a verdict of
+      <code>matched</code>, <code>none-recorded</code> or <code>exempt</code> and the reason, so an audit reads
+      the outcome without reopening the run. A declaration of <code>none: &lt;reason&gt;</code> is the explicit
+      escape for a check no mutation can redden, and it is recorded rather than refused; a bare
+      <code>none</code> with no reason is refused naming that requirement.</p>
+      <p><strong>The gate.</strong> <code>tests/test_crew_repository_from_the_project.py</code>,
+      <code>tests/test_crew_dispatch_watcher_required.py</code>, <code>tests/test_crew_launch_resolution.py</code>,
+      <code>tests/test_crew_recovery.py</code> and the new
+      <code>tests/test_crew_declared_negative_control.py</code>, run once to
+      <code>reports/reckon/s18-takeover/crpc-declared-negative-control/gate.log</code>: <strong>1 failed, 112
+      passed, exit 1</strong>. The same population at base <code>fc15e7a7</code>, whose log is
+      <code>reports/reckon/s18-takeover/crpc-repository-from-the-project/gate.log</code>, gives <strong>1 failed,
+      104 passed</strong>. The failure <em>set</em> difference is empty: the one failure,
+      <code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, is in the base set with
+      the same text (the pytest temporary directory is refused as a git worktree), and the eight added passes are
+      this node's new cases.</p>
+      <p><strong>Eight cases, three declared mutations.</strong> The eight cases cover the dispatch refusal naming
+      the field and creating nothing, the same node admitted once it declares its mutation, the promotion refusal
+      naming the declared mutation when the manifest carries no log, the refusal of a log whose failure is for
+      another reason, the admitted red log that names the mutation with the row's <code>matched</code> verdict read
+      back from the ledger, the <code>none</code> declaration recorded with its reason, the bare
+      <code>none</code> refused, and a node writing no test path exempt. Each mutation was applied and run, and
+      each red log is kept beside the green one in the report directory with a header line naming the mutation:
+      removing the dispatch refusal reddens the missing-declaration case alone; removing the log-content match
+      reddens the unrelated-log case alone; and removing the promotion guard wholesale reddens the six
+      promotion-side cases together, which is one guard answering on each surface rather than several that happen
+      to agree.</p>
+      <p><strong>What this change does not reach.</strong> <code>reckon/crew/prompts.py</code>, which emits the
+      manifest template a worker reads, does not yet name <code>negative_control_log</code>, so a worker learns
+      the field from its node brief alone and a manifest that omits it is refused with the field named. That file
+      is outside this node's write scope and is recorded as a follow-on.</p>
     </section>
 
     <section id="verification">

@@ -40,6 +40,7 @@ from reckon.crew.node import (
     _SAFE_ID,
     _TERMINAL_RUN_PHASES,
     normalize_section,
+    negative_control_finding,
     parse_duration,
     validate_node,
 )
@@ -2267,6 +2268,16 @@ def plan_dispatch(
     verdict = validate_node(
         node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
     )
+    # A node whose scope includes a test file writes a check, and a check whose
+    # author never named the mutation it must fail against is a guard that
+    # passed by not exercising anything. The trigger is the declared write path
+    # rather than the done-when prose, so the refusal rests on a structured
+    # field the dispatcher can read.
+    control_finding = negative_control_finding(node)
+    if control_finding is not None:
+        verdict = NodeValidation(
+            ok=False, findings=[*verdict.findings, control_finding]
+        )
     if not execution_fit.allowed:
         verdict = NodeValidation(
             ok=False,
@@ -2502,6 +2513,7 @@ def shadow_source(
         spec_level=str(definition.get("spec_level") or primary.get("spec_level") or ""),
         done_when=str(definition["done_when"]),
         write_paths=[str(path) for path in definition.get("write_paths") or ()],
+        negative_control=str(definition.get("negative_control") or ""),
         estimated_hours=definition.get("estimated_hours"),
         requires_decisions=[
             str(key) for key in definition.get("requires_decisions") or ()
@@ -4339,6 +4351,7 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         manifest_path=str(
             data.get("manifest_path") or record.get("manifest_path") or ""
         ),
+        negative_control=str(data.get("negative_control") or ""),
         estimated_hours=data.get("estimated_hours"),
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
     )

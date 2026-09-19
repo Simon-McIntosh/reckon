@@ -387,6 +387,7 @@ class TaskNode:
     write_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
     manifest_path: str = ""
+    negative_control: str = ""
     estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
@@ -399,6 +400,7 @@ class TaskNode:
             "id": self.id,
             "manifest_path": self.manifest_path,
             "estimated_hours": self.estimated_hours,
+            "negative_control": self.negative_control,
             "plan": self.plan,
             "requires_decisions": list(self.requires_decisions),
             "role": self.role,
@@ -492,6 +494,91 @@ def _declared_repository_paths(
             continue
         repository_paths.append(str(raw))
     return repository_paths
+
+
+# ── A node that writes a check declares the mutation it fails against ───────
+
+# The node-record field carrying the declaration, and the word that exempts a
+# check from having one. Both are named here so a refusal and the reader of a
+# ledger row quote one spelling rather than composing a second.
+NEGATIVE_CONTROL_FIELD = "negative_control"
+NEGATIVE_CONTROL_NONE = "none"
+
+# A write path is a test file when its basename follows the test-naming
+# convention or an enclosing directory names the test tree. The suffix set is
+# the languages this repository tests in; a path that matches none of them is
+# not treated as a check, because the trigger is a file a reader would
+# recognise as a test rather than a substring guess.
+_TEST_DIRECTORY_NAMES = frozenset({"test", "tests"})
+_TEST_FILE_RE = re.compile(
+    r"^(?:test_.+|.+_test|.+\.test|.+\.spec)\.(?:py|sh|js|jsx|ts|tsx|mjs|cjs)$"
+)
+
+
+def is_test_path(path: str) -> bool:
+    """Return whether a declared write path names a test file.
+
+    This is the trigger the dispatcher evaluates without reading prose: a node
+    whose scope includes a test file is writing a check, and a check that cannot
+    fail for the reason it was written is a guard that reports a protection it
+    does not provide.
+    """
+    parts = Path(str(path)).parts
+    if not parts:
+        return False
+    if any(part.lower() in _TEST_DIRECTORY_NAMES for part in parts[:-1]):
+        return True
+    return bool(_TEST_FILE_RE.match(parts[-1].lower()))
+
+
+def declares_negative_control(node: TaskNode) -> bool:
+    """Return whether a node carries a negative-control declaration."""
+    return bool(str(node.negative_control or "").strip())
+
+
+def negative_control_writes_a_check(node: TaskNode) -> bool:
+    """Return whether a node declares a test path and no negative control."""
+    if declares_negative_control(node):
+        return False
+    return any(is_test_path(path) for path in node.write_paths)
+
+
+def negative_control_is_none(declaration: str) -> bool:
+    """Whether a declaration states that no mutation applies, rather than one."""
+    head = str(declaration or "").strip().split(":", 1)[0].strip()
+    return head.lower() == NEGATIVE_CONTROL_NONE
+
+
+def negative_control_reason(declaration: str) -> str:
+    """Return the reason carried beside a ``none`` declaration, if any."""
+    text = str(declaration or "").strip()
+    head, separator, rest = text.partition(":")
+    if not separator or str(head).strip().lower() != NEGATIVE_CONTROL_NONE:
+        return ""
+    return rest.strip()
+
+
+def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
+    """Compose the dispatch refusal for a check written without a negative.
+
+    The declaration is a structured field rather than a phrase mined out of the
+    done-when, so the refusal has something exact to name and a brief author
+    knows what to write. ``none`` is a declaration too, and carries the reason
+    it applies, so the escape is explicit rather than silent.
+    """
+    if not negative_control_writes_a_check(node):
+        return None
+    test_paths = sorted(str(path) for path in node.write_paths if is_test_path(path))
+    return {
+        "property": NEGATIVE_CONTROL_FIELD,
+        "detail": (
+            f"the node's write paths include a test file ({', '.join(test_paths)}), "
+            f"so it writes a check, but its {NEGATIVE_CONTROL_FIELD} field declares "
+            "no mutation that check must fail against; name the mutation in that "
+            f"field, or declare it as `{NEGATIVE_CONTROL_NONE}: <reason>` when no "
+            "mutation could be applied without disabling the system"
+        ),
+    }
 
 
 def validate_node(
