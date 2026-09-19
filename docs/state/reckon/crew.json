@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T14:40:52",
+  "updated": "2026-09-19T14:45:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -189356,6 +189356,236 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T114507627170-cot-gate-log-scan-fixture-output",
+        "plan": "crew-observability-truth",
+        "section": "",
+        "node": "cot-gate-log-scan-fixture-output",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 740,
+                "cached_input_tokens": 848259,
+                "input_tokens": 849031,
+                "output_tokens": 3701,
+                "reasoning_output_tokens": 361,
+                "total_tokens": 852732,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "followup f-cot-gate-log-scan-reads-fixture-output on the plan: _require_gate_log_agrees in reckon/crew/promotion.py (near line 398) refuses a passing gate whenever the cited log contains a command-not-found line, which on 2026-09-19 refused run r-20260915T093545453615 whose log carried bash: line 1: rekon crew frobnicate: command not found from tests/test_crew_gate_log_agrees.py while its summary read 518 passed, 20 failed, 2 skipped; change the rule so the command-not-found refusal applies only when the log carries no pytest summary line and no exit sentinel, or only when the line sits in the log's first or last five lines, whichever the existing tests in tests/test_crew_gate_log_agrees.py make cleaner, and make the refusal name the matched line and its line number; add a test with a log that carries a fixture-embedded command-not-found line and a passing summary and is accepted, and one with the line at the head and no summary that is still refused; gate is uv run --no-sync pytest tests/test_crew_gate_log_agrees.py tests/test_promotion*.py with zero added failures against base; record the landing in the plan comment and the evidence record docs/evidence/archive/crew-observability-truth-landed.html; every uv command carries --no-sync; py_compile with /home/ITER/mcintos/Code/reckon/.venv/bin/python before each commit; manifest at the first commit; status words complete, waiting or blocked only",
+          "estimated_hours": null,
+          "goal": "narrow the gate-log evidence scan so a log with a pytest summary is evidence even when a test fixture printed command not found",
+          "id": "cot-gate-log-scan-fixture-output",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T11:45:08Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114507627170-cot-gate-log-scan-fixture-output/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_gate_log_agrees.py",
+            "docs/plans/crew-observability-truth.html",
+            "docs/evidence/archive/crew-observability-truth-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/cot-gate-log"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-cot-gatelog-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T11:45:13Z",
+        "completed_at": "2026-09-19T12:16:13.800Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1852,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1860,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "568f92ddfed031eeedfa06fee133e9fdfb81bc77",
+        "commits": [
+          "a6fe28d7431d83635bc0c506b70e03e1628a06e1",
+          "6e4d93d2905b88e7e0fa58d5d77c099a3daa08d5",
+          "f6d26ae6ac6b2248407184d634fc1bd99ab80b39"
+        ],
+        "changed_lines": {
+          "added": 179,
+          "removed": 9,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_gate_log_agrees.py tests/test_promotion*.py (55 passed, 3 pre-existing failures at head and base, zero added)",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114507627170-cot-gate-log-scan-fixture-output/final_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "The gate-log scan trusts a quoted diagnostic only absent a positive record and names the matched line; review 93/100",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T114507627170-cot-gate-log-scan-fixture-output/manifest.md",
+        "scope_changed": false,
+        "session_id": "a18a0a92-05a5-4619-9680-855db1c4435b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1350494,
+            "input_tokens_cumulative": 1350494,
+            "output_tokens": 6851,
+            "output_tokens_cumulative": 6851,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T12:16:13.800Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 15,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6932359,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 125.154,
+          "generated_tokens": 46164,
+          "generation_seconds": 110.122,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 29.1,
+          "machine_seconds": 15.032,
+          "peak_input_tokens": 139532,
+          "tokens_per_second": 419.21,
+          "wall_tokens_per_second": 368.86
+        },
+        "follow_on_paths": [
+          "tests/test_promotion_beat_carries_fleet_state.py::test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger;",
+          "tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row;",
+          "tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest summary",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/cot-gate-log-scan-fixture-output",
+          "session_id": "a18a0a92-05a5-4619-9680-855db1c4435b",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T12:16:13.800Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.38,
+        "impl_move": {
+          "plan": "crew-observability-truth",
+          "at_dispatch": 0.38,
+          "at_complete": 0.42,
+          "verdict": "moved"
+        },
+        "tool_steps": 61.0,
+        "orientation_input_tokens": 859287.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -189640,6 +189870,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1687
+    "_version": 1688
   }
 }
