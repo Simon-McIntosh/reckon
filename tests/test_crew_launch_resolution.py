@@ -294,3 +294,62 @@ def test_a_watcher_refuses_to_arm_when_a_routable_backend_is_missing(
     assert MISSING_PATH in message
     # The seat is never taken by a watcher that cannot lift.
     assert not (config_home / "crew" / "watch").exists()
+
+
+def test_the_once_watch_arm_refuses_the_seat_when_a_routable_backend_is_missing(
+    project: tuple[Path, Path],
+    tmp_path: Path,
+) -> None:
+    """The single-event arm takes the same seat, so it owes the same refusal.
+
+    ``crew watch --once`` is the single-event arm of the seat the streaming
+    watcher holds. It claimed the seat with no resolution check on its path, so
+    a host whose backend directory is off the project's PATH could arm a
+    seat-holder that reads as live and can lift nothing from it.
+    """
+    config_home, repo = project
+    state = repo / "docs" / "state" / "sample"
+    state.mkdir(parents=True)
+    flight_yaml = state / "flight.yaml"
+    flight_yaml.write_text(
+        "default_backend: alpha\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    environment:\n"
+        f"      PATH: {MISSING_PATH}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        runs.watch("sample", exit_on_empty=True, poll_interval=0)
+
+    message = str(refusal.value)
+    assert "codex" in message
+    assert MISSING_PATH in message
+    # No lock file is created, so no watcher reads as armed on this host.
+    assert not (config_home / "crew" / "watch").exists()
+
+    # Positive control: the same call with the backend resolvable does reach the
+    # claim and take the seat, so the absence above is the refusal rather than a
+    # call that never got as far as claiming anything.
+    bin_dir = tmp_path / "backend-bin"
+    bin_dir.mkdir()
+    launcher = bin_dir / "codex"
+    launcher.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    launcher.chmod(0o755)
+    flight_yaml.write_text(
+        "default_backend: alpha\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    environment:\n"
+        f"      PATH: {bin_dir}\n",
+        encoding="utf-8",
+    )
+
+    runs.watch("sample", exit_on_empty=True, poll_interval=0)
+
+    assert list((config_home / "crew" / "watch").glob("*.lock"))
