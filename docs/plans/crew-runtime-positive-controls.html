@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-impl" content="0.62">
-<meta name="plan-version" content="9">
+<meta name="plan-impl" content="0.72">
+<meta name="plan-version" content="10">
 </head>
 <body>
   <main class="plan-doc">
@@ -255,10 +255,11 @@
     <div class="r-fu-body">Reported by the launch-resolution node: the gate command in its brief listed tests/test_crew_resum*.py and no file matches that glob, so a coordinator-authored gate population named something absent and the worker had to choose a substitute. A gate population is evidence about what was run, so a named path that does not exist should be caught when the node is dispatched rather than discovered by the worker. Check the gate command's named paths against the repository at dispatch and refuse a population whose glob matches nothing, naming the pattern.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
     </article>
-<article class="r-fu" data-id="f-crpc-dispatch-refuses-an-unwatched-project" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-dispatch-refuses-an-unwatched-project" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §3" data-resolved-at="2026-09-19T17:45:35+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A dispatch into a project with a live follower and no watcher process is still admitted</h4>
     <div class="r-fu-body">The remaining half of section 3, not delivered by the ensure node because it needs files outside that node's scope, and not claimed. The admission precondition is read in reckon/crew/dispatch.py, where _ensure_watch_producer auto-starts a producer and the guard consults the follower's attach state, and the refusal is raised by WatcherRequired in reckon/crew/node.py where its text is composed. Make the precondition read watcher_live alone so a follower contributes to delivery and never to the watcher requirement, and have the refusal name the ensure command. The interface it consumes already exists and is live: ensure_watcher_service, watcher_ensure_line, and the ensure_line key of watch_state in reckon/crew/runs.py. Pin it with a test that dispatches into a project holding a live follower and no watcher process and asserts both the refusal and the command named in it, and declare the mutation that test fails against with its red log, as every node on this plan has done. Scope must include reckon/crew/dispatch.py and reckon/crew/node.py.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §3</pre>
+    <p class="r-fu-outcome">Landed at 5ec236d1 and 39568d2f (merged 025a22ff), which completes section 3. The admission precondition reads watcher liveness from the watcher's own state, so a live follower no longer satisfies the watcher requirement, and the refusal text names the ensure command taken from the ensure_line key of that same state rather than composing a second copy, so one definition reaches every refusal. Two tests, a mutation red log for each, and an empty set difference against the base failures. Verified live in the served module: node.py reads ensure_line from the state and no longer composes the old arming line.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
