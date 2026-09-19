@@ -88,7 +88,7 @@
       <tbody>
         <tr><td>§1 One worker under one allocation</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
         <tr><td>§2 Liveness and reaping follow the job</td><td>5</td><td>deep</td><td>critical</td><td>0</td></tr>
-        <tr><td>§3 A standing allocation the fleet draws on</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§3 One shared standing allocation, Slurm as its queue</td><td>5</td><td>deep</td><td>elevated</td><td>1 (pattern measured, design settled)</td></tr>
         <tr><td>§4 The workspace contract</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
         <tr><td>§5 The ceiling moves to the roster</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
         <tr><td>§6 The prototype ladder and the default</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
@@ -163,19 +163,45 @@ under <code>follow_ons</code>.</p>
     2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
 
     <p><strong>Files.</strong> The classifier and the liveness reads are in <code>reckon/crew/recovery.py</code> and <code>reckon/crew/runs.py</code>; the reaper, its once-only guard and the launch-failure record are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a job-placed run is in <code>reckon/crew/resumption.py</code>. Those four plus a test file are the grant, and this section is dispatched with them named because it is the critical-risk one.</p>
-<h2 id="s3">§3 — A standing allocation the fleet draws on, rather than a job per worker</h2>
-    <p>A job per worker pays queue latency on every dispatch and makes a wave's start time a scheduler
-    decision. The alternative is a standing allocation the coordinator holds and places workers into, which
-    trades flexibility for predictability and raises its own questions: how long it may be held, what happens
-    to workers when it expires, whether it is one allocation or one per project, and whether idle cores in it
-    are a cost worth paying against the queue latency they remove. Measure both before choosing: the queue
-    wait for a single worker on <code>all</code> and on <code>rigel</code> at several times of day, against
-    the cores a standing allocation would hold idle at this fleet's measured duty cycle.</p>
-    <p><strong>Done when.</strong> The two placements are measured rather than argued, the choice is a locked
-    decision citing those numbers, and whichever is chosen carries a stated policy for expiry and for a
-    worker outliving its allocation.</p>
+<h2 id="s3">&#167;3 &mdash; One standing allocation the whole workstation shares, and Slurm is its queue</h2>
+    <p>A job per worker mints a reservation per worker. That was measured to be fast &mdash; the proving run's
+    allocation started in zero seconds on <code>all</code> &mdash; and speed was the wrong axis to judge it on.
+    The objection is that every worker becomes its own reservation against the scheduler, so raising the
+    fleet's concurrency means submitting more reservations rather than sizing one, and nothing about the
+    arrangement is shared between the sessions that run on this workstation. The lead's design is one standing
+    allocation with a generous core count, held once, that every session places workers into.</p>
+    <p><strong>The pattern was measured before this section was written, on 2026-09-19.</strong> An allocation
+    is held with no shell attached (<code>salloc --no-shell</code>), which returns a job id and keeps the
+    resources without occupying a terminal: job 1274057, 8 cores and 32 GB on one node. Workers then run inside
+    it as steps (<code>srun --jobid=&lt;id&gt;</code>), each appearing under its own step id, and the
+    distinction that decides the whole surface is how the step asks for its share.</p>
+    <table>
+      <caption>Five steps of two cores each, dispatched at once into an eight-core allocation</caption>
+      <thead><tr><th>Step asks with</th><th>What happened</th><th>What it means for reckon</th></tr></thead>
+      <tbody>
+        <tr><td><code>--overlap</code></td><td>all five ran at once, ten cores asked of eight, every step home in 6 s</td><td>the scheduler enforces nothing; reckon would have to build and own an admission queue</td></tr>
+        <tr><td><code>--exact</code></td><td>four ran immediately and the fifth waited 61 s for a slot, 67 s in total</td><td>the scheduler is the queue; reckon submits and the step blocks until the allocation has room</td></tr>
+      </tbody>
+    </table>
+    <p>So the design follows from the measurement rather than from a preference: workers are placed as exact
+    steps, the allocation's size is the fleet's concurrency, and raising concurrency is one change to one
+    allocation rather than a change to how dispatch behaves. Reckon does not implement a queue, which is the
+    part of this section most likely to have been built unnecessarily.</p>
+    <p><strong>Files, and what the surface looks like.</strong> The allocation is a durable shared resource of
+    the same kind as the model serve and the project watcher, so it is managed the same way rather than
+    invented afresh: an ensure command in <code>reckon/cli.py</code> and <code>reckon/crew/runs.py</code> that
+    holds the allocation if it is absent, reports it if it is present and starts nothing, mirroring
+    <code>reckon crew watch --ensure</code>; its identity published where every session reads it rather than
+    held in one session's memory, the way the served model publishes its endpoint; and the placement in
+    <code>reckon/crew/dispatch.py</code> resolving that published id rather than taking one on the command
+    line. Those three plus a test file are the grant.</p>
+    <p><strong>Done when.</strong> One allocation is held by the ensure command and a second call reports it
+    and starts nothing; two workers dispatched from two different sessions both run as steps inside that one
+    allocation, which is the property the shared design exists for and which a single-session test cannot
+    show; a worker dispatched when the allocation is full waits for a slot rather than being refused, and is
+    reported as waiting for capacity rather than as slow, which section 2 owes the surface anyway; and the
+    policy is stated for an allocation that expires under workers and for a worker that outlives it.</p>
 
-    <p><strong>Files, and where the second input comes from.</strong> The placement policy lives with the backend schema in <code>reckon/flight.py</code> and is consumed in <code>reckon/crew/dispatch.py</code>; the duty cycle is not a stored figure, so the section derives it from the committed ledger rows through <code>reckon/crew/query.py</code> and says over which window. The policy for expiry is configuration and prose, not code, unless the measurement shows otherwise.</p>
 <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
     <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
     them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.
