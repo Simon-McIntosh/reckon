@@ -245,6 +245,21 @@
     Files paragraph's <code>reckon/crew/runs.py</code> carries no member-registration code — that lives in
     <code>reckon/ledger.py</code> and could not be reached inside the fence. Both are follow-ons.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s6">&sect;6 landed</a>.</p>
+<p><strong>The command line now hands the choice to the library (landed 2026-09-19).</strong>
+    <code>reckon/cli.py</code> passed <code>_repo_root(repo)</code> into both
+    <code>crew.dispatch</code> and <code>plan_dispatch</code>, which resolves the repository enclosing the
+    caller whenever <code>--repo</code> is absent — so a command-line dispatch arrived already naming the
+    caller's checkout and the mount default above was never reached. Both call sites now pass the flag value
+    through unchanged, <code>None</code> when it is absent, and the <code>--repo</code> help text states the
+    mount default. An explicit flag is still honoured: the library resolves and admits-or-refuses it exactly
+    as before. A new case, <code>tests/test_crew_cli_repository.py</code>, invokes the command-line dispatch
+    entry point with the working directory inside a second project's checkout and no flag, and asserts the
+    cut worktree's <code>repository_identity</code> is the mount. Gate: <strong>6 passed</strong> on the login
+    node; the case reddens when <code>_repo_root(repo)</code> is restored. The follow-up's second question is
+    answered rather than deferred: member registration resolves through <code>ledger_path(project, root)</code>,
+    which without <code>root</code> uses the project's registered state path and never the caller's directory,
+    and it writes no worktree — so no change is needed there.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s6-cli">&sect;6 command line landed</a>.</p>
 <h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
     <p>Three checks were landed this week that ran, reported success, and could not fail for the reason they
     were written. A persistence guard compared one tensor-spline fit against its own evaluation, so its residual
