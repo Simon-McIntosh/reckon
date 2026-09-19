@@ -109,6 +109,38 @@ slots:
     range: integer
     minimum_value: 1
 
+  placement:
+    description: >-
+      Optional scheduler placement for this backend's workers. A declared
+      placement wraps the launch in the scheduler invocation rather than
+      replacing it, so the resolved command, its environment and its stream
+      paths are the ones that run. Absent means the login-node launch, which is
+      what keeps every backend that declares none behaving exactly as before.
+    range: PlacementConfig
+
+  scheduler:
+    description: >-
+      Scheduler executable the launch is wrapped in. Resolved against the same
+      PATH the launch searches, so an unresolvable wrapper is refused before
+      launch rather than dying at exec and leaving an empty stream that reads
+      as a worker turn.
+    required: true
+
+  options:
+    description: >-
+      Argument strings passed to the scheduler ahead of the resolved command,
+      such as a partition and a resource request. User data; the schema names no
+      partition and no site.
+    multivalued: true
+
+  job_id_probe:
+    description: >-
+      Argument vector asked which job the launch became, with `{run}` replaced
+      by the run id. Read rather than guessed, and declared per backend because
+      reckon knows no scheduler's own vocabulary; a probe that answers no
+      identifier records why instead of a fabricated id.
+    multivalued: true
+
   default_backend:
     description: >-
       Name of the backend used when a role does not select one. Must name a key
@@ -576,6 +608,18 @@ classes:
       - budget_group
       - time_budget
       - token_budget
+      - placement
+
+  PlacementConfig:
+    description: >-
+      A scheduler wrapper declared for one backend's workers. It describes how
+      the launch is wrapped and never what runs: the resolved command stays the
+      backend's own, so a placement moves a worker between hosts without
+      changing which lane serves it.
+    slots:
+      - scheduler
+      - options
+      - job_id_probe
 
   CatalogConfig:
     description: Provider-neutral model catalog probe owned by a backend.

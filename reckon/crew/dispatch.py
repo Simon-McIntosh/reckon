@@ -3388,8 +3388,10 @@ def dispatch(
                         None
                         if placement is None
                         else {
-                            "scheduler": placement["scheduler"],
-                            "options": list(placement["options"]),
+                            "scheduler": str(placement["scheduler"]),
+                            "options": [
+                                str(item) for item in placement.get("options") or ()
+                            ],
                             "job_id_status": job_id_status,
                         }
                     ),
@@ -3815,7 +3817,10 @@ def apply_backend_placement(
             "install it or add its directory to PATH, then retry; nothing has "
             "been launched"
         )
-    prefix = [os.path.abspath(found), *[str(item) for item in placement["options"]]]
+    prefix = [
+        os.path.abspath(found),
+        *[str(item) for item in placement.get("options") or ()],
+    ]
     return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
 
 

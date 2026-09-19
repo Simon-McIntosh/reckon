@@ -106,11 +106,16 @@ def test_a_placement_that_names_no_scheduler_is_refused() -> None:
 
 
 def test_a_placement_field_outside_the_declared_set_is_refused() -> None:
+    # The scheduler is named, so the misspelling is the only defect and the
+    # refusal has to be the unknown key rather than a missing required one.
     with pytest.raises(flight.FlightConfigError) as refused:
         flight.validate_layer(
             {
                 "backends": {
-                    "alpha": {"launch": "cli", "placement": {"schduler": "srun"}}
+                    "alpha": {
+                        "launch": "cli",
+                        "placement": {"scheduler": "srun", "schduler": "srun"},
+                    }
                 }
             },
             "probe.yaml",

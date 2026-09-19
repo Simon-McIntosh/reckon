@@ -338,103 +338,20 @@ def _ignore_removed_backend_keys(
     return migrated, warnings
 
 
-_PLACEMENT_KEYS = ("scheduler", "options", "job_id_probe")
-
-
-def _validate_placement(
-    backend_name: str, raw: Any, source: str | Path
-) -> dict[str, Any]:
-    """Return one backend's placement block, normalised, or raise on its shape."""
-    key_path = f"backends.{backend_name}.placement"
-    if raw is None:
-        return {}
-    if not isinstance(raw, Mapping):
-        raise FlightConfigError(
-            source, key_path, "must be a mapping describing the scheduler wrapper"
-        )
-    unknown = sorted(str(key) for key in set(raw) - set(_PLACEMENT_KEYS))
-    if unknown:
-        raise FlightConfigError(
-            source,
-            f"{key_path}.{unknown[0]}",
-            f"is not a placement field; a placement declares "
-            f"{', '.join(_PLACEMENT_KEYS)}",
-        )
-    scheduler = raw.get("scheduler")
-    if not isinstance(scheduler, str) or not scheduler.strip():
-        raise FlightConfigError(
-            source,
-            f"{key_path}.scheduler",
-            "must name the scheduler executable the resolved launch is wrapped in",
-        )
-    options = raw.get("options") or []
-    if isinstance(options, str):
-        options = [options]
-    if not isinstance(options, list) or not all(isinstance(item, str) for item in options):
-        raise FlightConfigError(
-            source, f"{key_path}.options", "must be a list of argument strings"
-        )
-    probe = raw.get("job_id_probe")
-    if probe is not None:
-        if isinstance(probe, str):
-            probe = [probe]
-        if not isinstance(probe, list) or not all(
-            isinstance(item, str) for item in probe
-        ):
-            raise FlightConfigError(
-                source,
-                f"{key_path}.job_id_probe",
-                "must be a list of argument strings printing the job identifier",
-            )
-    return {
-        "scheduler": scheduler.strip(),
-        "options": [str(item) for item in options],
-        "job_id_probe": None if probe is None else [str(item) for item in probe],
-    }
-
-
-def _lift_placement_blocks(
-    data: Mapping[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Remove each backend's placement block, returning it beside the data.
-
-    The block is lifted rather than validated in place because the generated
-    model is built from a schema document that does not carry the field and
-    forbids unknown keys. Removing it before that check and restoring it after
-    keeps a declared placement a first-class backend field for every reader of
-    the resolved configuration, while a backend that declares none is untouched.
-    """
-    out = copy.deepcopy(dict(data))
-    lifted: dict[str, Any] = {}
-    backends = out.get("backends")
-    if isinstance(backends, Mapping):
-        for name, backend in backends.items():
-            if isinstance(backend, dict) and "placement" in backend:
-                lifted[str(name)] = backend.pop("placement")
-    return out, lifted
-
-
 def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
     """Return this backend's declared placement, or None when it declares none.
 
     Absence is not an empty placement: a backend declaring one is launched
     inside the scheduler invocation it names, and a backend declaring none is
     launched exactly as it always has been, as a child of whoever started the
-    coordinator. The declared block is returned in the same normalised shape
-    :func:`_validate_placement` accepts, so a caller never has to know whether
-    the configuration wrote one option or a list of them.
+    coordinator.
     """
     if not isinstance(backend, Mapping):
         return None
     placement = backend.get("placement")
     if not isinstance(placement, Mapping) or not placement:
         return None
-    # A malformed block is refused here rather than reported as no placement:
-    # a backend that declared one and silently launched on the login node would
-    # be the exact misrouting a placement exists to prevent.
-    return _validate_placement(
-        str(backend.get("name") or "?"), placement, "<resolved flight>"
-    )
+    return dict(placement)
 
 
 def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
@@ -448,15 +365,8 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
 
     from reckon._flight_schema import FlightConfig
 
-    # The placement block is checked here rather than by the generated model,
-    # which is built from a schema document that does not carry the field and
-    # forbids unknown keys. Only the copy handed to the model is stripped, so a
-    # declared placement reaches the resolved configuration unaltered.
-    checkable, placements = _lift_placement_blocks(data)
-    for backend_name, raw in placements.items():
-        _validate_placement(str(backend_name), raw, source)
     try:
-        FlightConfig.model_validate(_inject_map_keys(checkable))
+        FlightConfig.model_validate(_inject_map_keys(data))
     except ValidationError as exc:
         first = exc.errors()[0]
         key_path = ".".join(str(part) for part in first.get("loc", ()))
