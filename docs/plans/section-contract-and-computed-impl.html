@@ -26,7 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.22">
 </head>
 <body>
   <main class="plan-doc">
@@ -221,7 +222,17 @@
     <div class="r-fu-body"><p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p></div>
     <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §1</pre>
     </article>
+<article class="r-fu" data-id="f-scci-wiring-refusal-findings" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:35:00Z" data-recommends-skill="/reckon-ship section-contract-and-computed-impl §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the four review findings on the wiring refusal and register standalone on the write path</h4>
+    <div class="r-fu-body">(1) Read the standalone declaration from the inventoried checkout, not the registered mount, in reckon/roadmap.py near line 337, with a test on a worktree-scoped roadmap; (2) add a roadmap test for a plan that declares standalone; (3) make the create skill name the state-mode op that the boundary accepts, or accept the meta tag at the boundary too, and register standalone in reckon/_plan_html.py scalars and the reckon/_store.py write-path allow-list so the generic text route can set it; (4) state the plans-scoped population definition in the evidence record and the audit message.</div>
+    <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §7</pre>
+    </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-scci-wiring-reviewed" data-who="" data-when="">
+    <div class="r-comment-body">Run r-20260919T114226411288 (local lane, commits 5ded9147 e87e5e3a 033cd1f2, merged at 23635a76; review r-20260919T121016391583) makes the document audit, edit_plan create and the roadmap name an implementable plan with no depends_on, blocks, informs or gate unless it declares itself standalone, at warn before the rule's date and error after, with the checklist in the message and in both skills; 133 tests pass with zero added failures. Measured over nova: one of 27 live plans fires (forward-profile-validator-set), not the nine of sixteen this plan predicted, because the coordinator wired four plans between prediction and measurement and the reader counts informs. Four findings for the next node: the roadmap reads the standalone declaration through the registered mount rather than the inventoried checkout, so a worktree-scoped roadmap can misreport; no roadmap test exercises a declared-standalone plan; the create skill spells the declaration as a meta tag while only the state-mode op is accepted at the boundary, so an author following it literally has no route; and the population of 27 depends on a plans-scoped walk the record does not state (a docs-root walk gives 29). The node's own follow-on stands: standalone is not yet registered in the plan-html scalars and the store's write-path allow-list.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
