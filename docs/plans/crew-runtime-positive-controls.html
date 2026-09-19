@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="25">
 </head>
 <body>
   <main class="plan-doc">
@@ -396,6 +396,11 @@
     <div class="r-fu-body">Reported by the negative-control node from outside its fence. The worker prompt template in reckon/crew/prompts.py emits the manifest shape a worker fills, and it does not name negative_control_log, so a worker learns the field only if its brief happens to mention it, while promotion now refuses a passing gate without it. That is a refusal a worker cannot anticipate from the contract it is given. Add the field to the emitted template beside the other test fields, and check that the emitted template carries it. Scope is reckon/crew/prompts.py and its test.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     <p class="r-fu-outcome">Landed at 92e02503 and dee72b33 (merged 3a51ffc3), together with a gap the followup had not named. Section 7's refusal reads the declaration from the node record and no dispatch option set it, so within two minutes of landing it refused the coordinator's own attempt to dispatch the template fix, and every node writing a test was unsatisfiable. The dispatch command now carries --negative-control, naming the mutation and accepting a none declaration with a reason, and the emitted manifest template names the negative_control_log field with the same gloss so a worker meets no refusal its own contract omits. Verified by dry run rather than by assertion: a node with a test path refused without the option, admitted with it, and admitted with the none escape; both the option and the template field confirmed live.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-the-red-log-header-is-an-undocumented-convention" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The red log must name its mutation and nothing tells a worker how</h4>
+    <div class="r-fu-body">Promotion compares the red log's content against the declared mutation, so a genuine red run that does not name it is refused as a failure for some other reason. Three nodes produced three answers: one wrote a MUTATION header, one wrote MUTATION DECLARED, and one wrote no header and was refused until it was resumed to add one. The requirement is real and the convention is nowhere a worker reads. State it in the manifest template gloss in reckon/crew/prompts.py beside the negative_control_log field, in one sentence saying the log's first line repeats the declared mutation verbatim, and make the promotion refusal say the same thing rather than only that the log does not name it. Scope is reckon/crew/prompts.py, reckon/crew/promotion.py and a test.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
