@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T13:24:47",
+  "updated": "2026-09-19T13:29:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -187407,6 +187407,243 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260918T085137364285-wss-push-status",
+        "plan": "work-scheduling-surface",
+        "section": "\u00a72",
+        "node": "wss-push-status",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3263,
+                "cached_input_tokens": 471164,
+                "input_tokens": 474429,
+                "output_tokens": 519,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 474948,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "nova-wss-20260918"
+          },
+          "done_when": "SPRINT_STATUS_ENUM in reckon/_schema.py and the validation in reckon/project_state.py accept open; a push op on the project resource (edit_plan op push with a sprint id, exposed through reckon/mcp.py) sets that sprint active and demotes the previously active sprint to open in one versioned write, with a test proving both changes land or neither; reckon/roadmap.py derives active_sprint_id from the unique active sprint, reports open sprints in their own bucket of schedule_readiness, and _derived_sprint_state returns in-progress rather than active from member progress so an open sprint with shipped members carries no state_drift; the audit in reckon/mcp.py raises multiple-active-sprints at error severity and adds pushed-sprint-has-no-ready-work at warn, each with a test; skills/reckon-sprint/SKILL.md documents open, active-means-pushed and the push op; tests/test_mcp_roadmap.py and the new test file pass with zero added failures against the base; the plan section and the evidence record docs/evidence/archive/work-scheduling-surface-landed.html are written in the worktree with the landed summary; every uv command carries --no-sync and nothing runs uv sync; python syntax is checked with /home/ITER/mcintos/Code/reckon/.venv/bin/python -m py_compile before each commit; tests run with UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=$PWD uv run --no-sync pytest -p no:cacheprovider on the named test files only, output captured to one log under the reports fence; write the manifest as soon as the first commit exists and rewrite it in place, never defer it to the end; do not edit reckon/crew/reports.py, recovery.py, prompts.py, ticker.py, routing.py, query.py or reckon/ledger.py, which another session holds",
+          "estimated_hours": null,
+          "goal": "give every project exactly one pushed sprint by adding the open sprint status and a push op",
+          "id": "wss-push-status",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-18T08:51:39Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260918T085137364285-wss-push-status/manifest.md",
+          "plan": "work-scheduling-surface",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_schema.py",
+            "reckon/project_state.py",
+            "reckon/roadmap.py",
+            "reckon/mcp.py",
+            "skills/reckon-sprint/SKILL.md",
+            "tests/test_sprint_push_status.py",
+            "tests/test_mcp_roadmap.py",
+            "docs/plans/work-scheduling-surface.html",
+            "docs/evidence/archive/work-scheduling-surface-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/nova-wss/push-status",
+            "tests/test_roadmap_sprint_derivation.py",
+            "tests/test_surface_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "wss-push-status-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-18T08:51:54Z",
+        "completed_at": "2026-09-18T17:17:34.600Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 30318,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 30340,
+        "stalled": true,
+        "time_budget": "55m",
+        "base_sha": "acb5d6081abd596d9eefc936240d65817df47047",
+        "commits": [
+          "bb20f90e80fd8e8643f09f7a50844a52986e877f",
+          "722da50174bb1fcc57cb80ed5629098ade86586c",
+          "10529ee44c3721059ee777252fa37be2a68e2a5f",
+          "fec3419dd4a93c0db8e38d5149eebb7bd76da7ae",
+          "15f64e36e2b31ee136ed480bd1bbe1c68ea45e79"
+        ],
+        "changed_lines": {
+          "added": 598,
+          "removed": 10,
+          "files": 9
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_sprint_push_status.py tests/test_mcp_roadmap.py tests/test_roadmap_sprint_derivation.py tests/test_surface_parity.py (38 passed)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/nova-wss/push-status/gate-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260918T085137364285-wss-push-status/manifest.md",
+        "scope_changed": false,
+        "session_id": "629ab097-438c-4eef-ad94-fc2c23e56932",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8623515,
+            "input_tokens_cumulative": 8623515,
+            "output_tokens": 40762,
+            "output_tokens_cumulative": 40762,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-18T17:17:34.600Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 16,
+            "fit": 16,
+            "goal_fidelity": 18,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 85
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8790959,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2676.623,
+          "generated_tokens": 48627,
+          "generation_seconds": 2552.426,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 124.197,
+          "peak_input_tokens": 166144,
+          "tokens_per_second": 19.05,
+          "wall_tokens_per_second": 18.17
+        },
+        "follow_on_paths": [
+          "project.json"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/nova-wss-20260918/wss-push-status",
+          "session_id": "629ab097-438c-4eef-ad94-fc2c23e56932",
+          "session_source": "pointer",
+          "retained_at": "2026-09-18T17:17:34.600Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "work-scheduling-surface",
+          "at_dispatch": null,
+          "at_complete": 0.4,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "tool_steps": 91.0,
+        "orientation_input_tokens": 2076288.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -187691,6 +187928,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1677
+    "_version": 1678
   }
 }
