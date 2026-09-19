@@ -204,6 +204,22 @@
     instruction the code now enforces.</p>
     <p><strong>Done when.</strong> The skill carries the command and no longer carries the manual recipe, and
     <code>reckon audit-doc</code> passes on the plan and record.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The command reaches the coordinator from three
+    places in <code>skills/reckon-ship/SKILL.md</code>: the <code>watcher-required</code> row of the refusal
+    table, the producer section, and the command block that lists the producer, the follower and the ensure
+    call together. The refusal table's manual instruction — inspect the reported watcher state — is replaced by
+    the repair the runtime itself names, <code>reckon crew watch --ensure --project P</code>, and the producer
+    section states that it is idempotent, starting nothing when the project's unit already carries the current
+    definition and restarting it when the definition changed, so it is safe against a watcher already up. The
+    two causes the one exit code covers are separated there, because the repair in the refusal names its own
+    cause: a session with no delivering follower is answered with the <code>attach_line</code>, not with a
+    watcher command. The node looked for the literal recipe the section describes — export the backend
+    directory, restart watcher units by hand — and it is not in the skill at this revision; the manual
+    instruction actually present, and now superseded, is recorded above and in the evidence anchor. Gate:
+    <code>tests/test_doccheck.py</code>, <code>tests/test_skill_contracts.py</code> and
+    <code>tests/test_skill_contract_parity.py</code> — 92 passed and the same 2 failures at head as at base,
+    failure sets identical. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s5">&sect;5
+    landed</a>.</p>
 
     <h2 id="s6">§6 — A dispatch resolves its repository from the project mount, never from the caller's directory</h2>
     <p>Measured 2026-09-19 an hour after this plan was written: two reckon nodes dispatched from a shell whose
