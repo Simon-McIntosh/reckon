@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.52">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -129,6 +129,28 @@
     refused naming the ensure command; <code>--ensure</code> on a host with no unit starts one whose
     <code>/proc/&lt;pid&gt;/environ</code> carries the resolved backend directory; a second <code>--ensure</code>
     reports the existing unit and starts nothing; pinned by tests with a fake service manager.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19 — the <code>--ensure</code> half only.</strong>
+    <code>reckon crew watch --ensure</code> renders a systemd user unit for the project and reconciles it in three
+    ways: no unit gets written and started, an unchanged unit that is already active starts nothing and says so,
+    and a rewritten unit is restarted onto its new definition, so the command a refusal names is safe to run
+    against a watcher that is already up. The unit carries rather than inherits what the launch needs —
+    <code>ExecStart</code> is the resolved absolute executable and the <code>PATH</code> line is built from the
+    directories this project's routable backends resolve in, which is what the seven-hour unit was missing when
+    its every lift died at exec. The seat stays owned by the process: <code>--ensure</code> never claims it, so a
+    service that never comes up does not read as a live watcher, and the claiming watcher writes its own unit
+    name into the registration. Everything is asserted against a fake service manager, so no test touches the real
+    account home or needs a systemd manager on the host. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s3">§3 landed</a>.</p>
+    <p><strong>What this node does not reach, and why.</strong> The first half of the done-when — a dispatch into
+    a project with a live follower and no watcher process is refused naming the ensure command — is not
+    implemented here and is not claimed. The refusal is raised by <code>WatcherRequired</code> in
+    <code>reckon/crew/node.py</code>, the precondition is read in <code>reckon/crew/dispatch.py</code> where
+    <code>_ensure_watch_producer</code> auto-starts a producer and the guard consults the follower's attach state,
+    and both files lie outside this node's write scope. The ensure command and its line are now in place for
+    whoever lands that half: <code>ensure_watcher_service</code> and <code>watcher_ensure_line</code> in
+    <code>reckon/crew/runs.py</code>, with <code>watch_state()["ensure_line"]</code> returning the command a
+    refusal should teach. Repointing <code>_watch_arming_line</code> instead was considered and rejected: the
+    passing visibility test asserts that line's current value, so changing it would add a failure to a node whose
+    gate must add none.</p>
 
     <h2 id="s4">§4 — A wait stanza is validated when written and a lift that re-parks on the same output is a defect</h2>
     <p>The wait reader in <code>reckon/crew/recovery.py</code> already refuses a no-op probe. Extend it: a
@@ -245,6 +267,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260919T164506464908-crpc-wait-stanza-validation" data-who="reckon-ship" data-when="2026-09-19T17:01:54.223Z">
     <div class="r-comment-body"><p>A wait_terminal naming a live probe state is refused with the token named, and a re-park on an unchanged declaration is a wait-key defect not lifted again. Ten tests, both mutations red, one pre-existing failure at base and the same one at head; verified live in the served module.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260919T171831929382-crpc-watcher-is-a-process" data-who="reckon-ship" data-when="2026-09-19T19:40:00Z">
+    <div class="r-comment-body"><p>The watcher-as-a-service half of this section lands at adb2f8e6, recorded at 1e785993. <code>reckon crew watch --ensure</code> renders a systemd user unit for the project and reconciles it three ways: no unit gets written and started; an unchanged unit that is already active starts nothing and reports <strong>started nothing</strong>; a rewritten unit is restarted onto its new definition, so the command a refusal names is safe to run against a watcher already up. The unit carries rather than inherits what the launch needs — <code>ExecStart</code> is the resolved absolute executable and <code>Environment="PATH=…"</code> is built from the directories this project's routable backends resolve in, which is exactly what the seven-hour unit lacked when every lift it attempted died at exec. The seat stays owned by the process: ensure never claims it, so a service that never comes up does not read as a live watcher, and the claiming watcher writes its own unit name into the registration. Six tests against a fake service manager, so no test touches the real account home; each of the five declared mutations turns exactly its own test red, with the red logs kept beside the green one. Gate population: 6 failed, 106 passed at head against the same 6 failed at base, failure sets identical.</p><p><strong>The dispatch-side refusal is not delivered, and the scope is why.</strong> The section's first done-when — a dispatch into a project with a live follower and no watcher process is refused naming the ensure command — needs <code>reckon/crew/dispatch.py</code>, where <code>_ensure_watch_producer</code> auto-starts a producer and the admission guard consults the follower's attach state, and <code>reckon/crew/node.py</code>, where <code>WatcherRequired</code> raises and the refusal text is composed. Neither is in this node's write paths, so the half was reported as a blocker rather than taken. Repointing <code>_watch_arming_line</code> inside the fence instead was considered and rejected: a passing visibility test asserts that line's current value, so the change would have added a failure instead of removing one. What exists for the follow-on node is the interface: <code>ensure_watcher_service</code>, <code>watcher_ensure_line</code>, and <code>watch_state()["ensure_line"]</code>, all in <code>reckon/crew/runs.py</code>. The section is left open; the coordinator closes it.</p></div>
 </div>
 </section>
 </main>

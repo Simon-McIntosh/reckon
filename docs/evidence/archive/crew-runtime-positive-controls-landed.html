@@ -185,6 +185,62 @@ nothing has been launched</code></pre>
       is left for the plan owner rather than decided here.</p>
     </section>
 
+    <section id="s3">
+      <h2>&sect;3 &mdash; The watcher is a process, and the command that starts one carries its environment</h2>
+      <p>Two incidents on 2026-09-19 set the shape. A project ran for an hour with no watcher process while
+      dispatches kept being admitted, because a session follower was armed and the admission path read the
+      follower. Separately, a watcher unit ran for seven hours whose <code>PATH</code> did not contain the
+      backend's directory, so every lift it attempted died at exec — the unit was alive and none of its work
+      could start.</p>
+      <p>The figure places the two decisions beside each other: what an <code>--ensure</code> call does with the
+      unit it finds on disk, and which of the two registration facts carries which meaning.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/watcher-as-a-service.png"
+      alt="Left: ensure renders the unit, then branches on what is on disk — no unit writes and starts, an unchanged active unit starts nothing, a rewritten unit is restarted — and every branch ends in a registration naming the unit, while the seat stays unclaimed until a process takes it. Right: watcher_live is read from the process table by watch_state, the unit name is written into the registration by the claiming watcher, a follower contributes to delivery only, and the unit carries an absolute ExecStart and a PATH built from the directories the backends resolve in."
+      style="width:100%;max-width:1160px"></p>
+      <p><code>reckon crew watch --ensure</code> is the command the refusal will teach. It renders a systemd user
+      unit for the project and reconciles it against what is already on disk: with no unit it writes one and
+      starts it; with an unchanged unit that is already active it starts nothing and reports
+      <code>started nothing</code>; with a rewritten unit it restarts onto the new definition. The count of
+      service starts is the measure of idempotency, and it is one across the first two cases together.</p>
+      <p>The unit carries the environment rather than inheriting it. <code>ExecStart</code> is the resolved
+      absolute executable, obtained as a sibling of the running interpreter and falling back to the one
+      <code>reckon</code> on <code>PATH</code>, and the <code>Environment="PATH=…"</code> line is built from the
+      directories this project's routable backends resolve in, unioned with the ambient <code>PATH</code> and
+      ordered so the backend dirs come first. That is exactly the fact the seven-hour unit was missing, and it is
+      why the test asserts the backend directory appears in the unit's PATH <em>line</em> while the same directory
+      is absent from the ambient <code>PATH</code> — the ambient value cannot pass the assertion in its place.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>An ensure on a host with no unit</td><td><code>started: true</code>, one start, the unit's PATH line carries the backend's own directory (absent from ambient <code>PATH</code>)</td></tr>
+          <tr><td>A second ensure, same config</td><td><code>started: false</code>, <code>unit_changed: false</code>, detail reads <strong>started nothing</strong>; still exactly one start recorded</td></tr>
+          <tr><td>A third ensure after the backend directory changes</td><td><code>unit_changed: true</code>, one further start, issued as a <em>restart</em> rather than a start</td></tr>
+          <tr><td>The registration after ensure</td><td><code>{"registered": true, "reason": "written", "unit": "reckon-watch-&lt;project&gt;.service"}</code>, read back through <code>watch_state()["unit"]</code></td></tr>
+          <tr><td><code>watcher_live</code> immediately after ensure</td><td><code>false</code> — ensure writes a unit and does not take the seat, so a service that never comes up cannot read as a watcher</td></tr>
+          <tr><td>A watcher started under a unit</td><td>the seat record it writes carries <code>unit: "reckon-watch-&lt;project&gt;.service"</code>, taken from <code>RECKON_WATCH_UNIT</code></td></tr>
+          <tr><td>The ensure line</td><td><code>reckon crew watch --ensure --project sample</code>, and <code>watch_state()["ensure_line"]</code> returns the same string</td></tr>
+        </tbody>
+      </table>
+      <p>Five control facts make the measurements mean something, each a mutation of the change with its red log
+      kept beside the green one. Dropping the backend directories from the derived <code>PATH</code> fails the
+      environment test alone. Making the start unconditional fails the second-ensure case. Making the start
+      depend only on the service being inactive — never restarting onto a rewritten unit — fails the changed-unit
+      case. Writing no unit name in the registration fails the registration test. Removing the unit recording in
+      the seat claim fails the claiming-watcher test. Each mutation turns exactly its own test red, which is how
+      each test was shown to rest on the line it names. With the change in place the six tests pass, and the gate
+      adds no failure to its population.</p>
+      <p><strong>What this change does not reach.</strong> The plan's first done-when — a dispatch into a project
+      with a live follower and no watcher process is refused naming the ensure command — is not landed here. The
+      refusal is raised by <code>WatcherRequired</code> in <code>reckon/crew/node.py</code> and the precondition
+      is read in <code>reckon/crew/dispatch.py</code>, where <code>_ensure_watch_producer</code> auto-starts a
+      producer and the guard consults the follower's attach state; both files are outside this node's write
+      scope. What exists for that half is its interface: <code>ensure_watcher_service</code>,
+      <code>watcher_ensure_line</code>, and <code>watch_state()["ensure_line"]</code>, all in
+      <code>reckon/crew/runs.py</code>. Repointing <code>_watch_arming_line</code> in scope instead was rejected
+      because the passing visibility test asserts that line's current value, so the change would have added a
+      failure rather than removed one.</p>
+    </section>
+
     <section id="s4">
       <h2>&sect;4 &mdash; A terminal list naming a live state, and a lift that re-parks unchanged</h2>
       <p>Measured 2026-09-19 on <code>r-20260919T111944475334-cco-review-repairs</code>. The run's manifest
