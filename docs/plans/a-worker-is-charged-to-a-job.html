@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Worker processes run under a scheduler allocation rather than as login-node children, so the fleet ceiling stops being one user slice.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="24.0">
+  <meta name="plan-effort-hours" content="27.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,7 +21,7 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-runtime-positive-controls">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -59,6 +59,15 @@
     and <code>TMPDIR</code> already resolves to <code>/tmp</code> rather than to node-local
     <code>/run/user</code>. Capacity is not scarce either: <code>all</code> carries no time limit with 3,084
     idle cores across 97 idle nodes, against <code>all_debug</code>'s one-hour ceiling.</p>
+    <p><strong>The external lanes reach out from a compute node too, which is what keeps this from becoming
+    a local-only pattern.</strong> Measured from <code>rigel</code> on 2026-09-19: TCP 443 opens to
+    <code>api.openai.com</code>, <code>chatgpt.com</code> and <code>api.anthropic.com</code>, and an
+    unauthenticated request to two of them answers <code>401</code>, which is the reachability result worth
+    having because it proves the request arrived and the service replied rather than merely that a port
+    accepted a connection. Both the <code>codex</code> and <code>claude</code> launchers resolve on the
+    node’s path, no proxy variable is needed, and every lane’s credentials are files on the shared
+    home (<code>~/.codex/auth.json</code> and <code>~/.claude/.credentials.json</code>) rather than
+    environment secrets, so they travel with the filesystem the worker already needs.</p>
 
     <h2 id="s-contract">Section contract</h2>
     <p>The order is deliberate. Sections 1 and 2 are prototyped on the local lane, one worker at a time,
@@ -73,6 +82,7 @@
         <tr><td>§4 The workspace contract</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
         <tr><td>§5 The ceiling moves to the roster</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
         <tr><td>§6 The prototype ladder and the default</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§7 Every lane is placeable, not only the local one</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
       </tbody>
     </table>
 
@@ -153,6 +163,22 @@
     <p><strong>Done when.</strong> Each rung has run and is recorded with its measurements; the default
     placement changes only after the wave rung; and the section states what would send the fleet back to
     login-node launches, so the change is reversible on a stated condition rather than on an argument.</p>
+
+    <h2 id="s7">&#167;7 &mdash; Every lane is placeable, not only the local one</h2>
+    <p>The reason to move workers is a memory slice, not a model, so a placement that quietly serves only the
+    locally hosted lane would trade one ceiling for a narrower fleet. All four lanes this project routes to
+    were measured reachable from a compute node before the plan was written, and the credentials for each are
+    files on the shared home rather than environment secrets, so nothing about placement is inherently local.
+    What remains is to keep it that way by construction: placement is a property of the backend rather than a
+    property of the local one, an externally served backend carries the same placement fields as the local
+    one, and a dispatch is never silently rerouted to a different lane because of where it would run.</p>
+    <p><strong>Done when.</strong> A placed dispatch to an externally served backend runs on a compute node
+    and reaches its provider, demonstrated on one real node rather than by a port check; the placement
+    configuration is asserted to carry no lane-specific branch, so adding a backend needs no placement code;
+    and a placement whose partition cannot reach a backend&#x27;s provider is refused before launch naming the
+    backend and the endpoint, the way an invisible path is, rather than failing as a worker error. The
+    credential path each lane needs is part of the workspace requirements of section 4, so a lane whose
+    credentials do not travel is refused rather than discovered mid-run.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
