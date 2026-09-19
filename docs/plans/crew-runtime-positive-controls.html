@@ -105,9 +105,12 @@
     control that makes the emptiness check mean anything runs the same spawn and reaper on a backend that writes a
     turn first and asserts no record appears; with the guard removed that control fails, which is how the guard was
     shown to be the thing the record rests on. The reaper's raw wait status is converted to an exit code, so an
-    exit of 127 records <code>127</code> and not <code>32512</code>. One gap is carried rather than claimed: the
-    flight and drain views have no dedicated infrastructure bucket, so the state, the count and the cause reach the
-    follower through the recovery classification instead.
+    exit of 127 records <code>127</code> and not <code>32512</code>. The drain reading counts the run among the
+    actionable ones under its own classification, which it did not before: the state had been given a
+    classification and then left out of the set the count reads, so the run occupied a lane and read as invisible
+    — the same defect one layer over. What is still carried is narrower and is a width question rather than a
+    correctness one: the fleet counter's fixed four-bucket block has no bucket of its own for an infrastructure
+    fault, so the number a reader sees is under blocked.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s2">§2 landed</a>.</p>
 
     <h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>

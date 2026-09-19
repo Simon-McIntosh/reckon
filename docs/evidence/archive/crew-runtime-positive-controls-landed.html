@@ -82,6 +82,7 @@ nothing has been launched</code></pre>
           <tr><td>Second reaper tick</td><td>phase unchanged, record count still <strong>1</strong> — no relaunch</td></tr>
           <tr><td>Backend writes a turn, then exits 127 (control)</td><td><strong>0</strong> records; the phase stays <code>working</code></td></tr>
           <tr><td>Automatic lift of a <code>launch-failed</code> run</td><td>refused with the phase and the exit status named; the launcher is never called and no <code>resume-*</code> file appears</td></tr>
+          <tr><td>Fleet reading with one live <code>launch-failed</code> run</td><td><code>actionable_runs</code> 1, <code>actionable_classifications</code> <code>["launch-failed"]</code></td></tr>
         </tbody>
       </table>
       <p>The control case is the one that makes the first meaningful: it runs the same spawn and the same reaper
@@ -92,17 +93,23 @@ nothing has been launched</code></pre>
       127 records <code>127</code> rather than <code>32512</code>.</p>
       <p><code>launch-failed</code> is added to the states the follower needs action on, which places it under the
       blocked bucket rather than the working bucket, and <code>classify_pointer</code> renders it as its own
-      classification carrying the failure count and the last cause. A dedicated infrastructure bucket in the
-      flight and drain views was not added; the state, the count and the cause reach the follower through the
-      classification instead, and that gap is recorded as a follow-on rather than claimed as covered.</p>
+      classification carrying the failure count and the last cause. Its classification is also in the actionable
+      set the drain reading counts, which it was not: the state had a classification and a recovery verb and was
+      then left out of the set that count reads, so a run that occupied a lane appeared in no count at all — the
+      same defect as the working bucket, one layer over. The measured reading with one such run is
+      <code>actionable_runs: 1</code> with <code>actionable_classifications: ["launch-failed"]</code>.</p>
+      <p>What remains open is a width question and not a correctness one: the fleet counter's fixed block has four
+      buckets — working, blocked, unpromoted, queued — and no bucket of its own for an infrastructure fault, so the
+      number a reader sees sits under blocked. Adding a fifth bucket changes a deliberately fixed-width column and
+      is left for the plan owner rather than decided here.</p>
     </section>
 
     <section id="verification">
       <h2>Verification</h2>
       <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
       to <code>reports/reckon/s18-takeover/crpc-launch-resolution-and-failure-record-2/gate.log</code>:
-      <strong>9 failed, 169 passed, exit 1</strong>. The same population at base
-      <code>e0a8a967</code> gives <strong>9 failed, 161 passed</strong> — the eight added passes are the new
+      <strong>9 failed, 170 passed, exit 1</strong>. The same population at base
+      <code>e0a8a967</code> gives <strong>9 failed, 161 passed</strong> — the nine added passes are the new
       cases, and the failure <em>sets</em> are identical, so the node adds no failures. The nine pre-existing
       failures are unrelated to the launch path (strictly, the resolution and reaper cases are the only ones
       touching the changed lines and all of them pass).</p>
