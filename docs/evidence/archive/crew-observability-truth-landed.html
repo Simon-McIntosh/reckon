@@ -1041,6 +1041,37 @@ reading taken as an authority it was not.</p>
     reader sees which line was matched rather than searching the log for the phrase.</p>
   </section>
 
+  <section id="by-value-exit-sentinel-pins-both-halves">
+    <h3>§10 — The by-value exit sentinel is pinned on both halves</h3>
+    <p>Run <code>r-20260919T130222850716-cot-sentinel-acceptance-test</code>, base
+    <code>0bf94fd5</code>. Commit <code>c8178dd4</code> changes only
+    <code>tests/test_crew_gate_log_agrees.py</code>.</p>
+    <p><strong>The gap.</strong> The gate-log scan admits a quoted
+    <code>command not found</code> line when the log also carries a positive record
+    that the cited command executed, and the terminal <code>EXIT=&lt;n&gt;</code> capture
+    is read by value: <code>126</code> and <code>127</code> are the statuses asserting the
+    shell could not execute the command at all, so either is a statement it never ran
+    while any other status means it did. The file covered only the zero case, so the
+    review measured that replacing the membership test
+    (<code>recorded not in _UNEXECUTED_EXIT_CODES</code>) with <code>recorded == 0</code>
+    left every case green: a regression refusing a nonzero-but-executed sentinel beside a
+    quoted diagnostic would have passed the gate.</p>
+    <p><strong>Measure.</strong> <code>tests/test_crew_gate_log_agrees.py</code> gains
+    three cases. <em>Accepted:</em> a quoted diagnostic beside
+    <code>EXIT=1</code>, asserted at status 1, lands. <em>Refused:</em> the same line
+    beside <code>EXIT=126</code> and beside <code>EXIT=127</code>, each refused and each
+    asserting the refusal names the matched line and its one-based line number. The
+    focused gate ran <strong>17 passed</strong> against <strong>14 passed</strong> at base,
+    zero added failures.</p>
+    <p><strong>Scratch mutation, applied as a pytest plugin so no tracked source is
+    touched.</strong> With the membership test replaced by <code>recorded == 0</code>, the
+    new acceptance case fails (1 failed, 16 passed) — exactly the gap the review named,
+    now covered. A complementary mutation emptying <code>_UNEXECUTED_EXIT_CODES</code>
+    turns the new refusal cases red, both parameters, beside the pre-existing 127 case
+    (3 failed, 14 passed). So each new case is load-bearing in the direction it pins, and
+    neither half is left resting on the other.</p>
+  </section>
+
   <section id="live-process-outranks-every-manifest-classification">
     <h3>&#167;16 &mdash; A live process outranks every manifest-derived classification</h3>
     <p>Run
