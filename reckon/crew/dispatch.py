@@ -126,6 +126,58 @@ _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
 DONE_WHEN_PLAN_TEXT_SPAN_WORDS = 23
 
 
+def project_mount_repository(project: str) -> Path | None:
+    """Return the repository root registered for one project's docs mount.
+
+    The answer comes from the same mounted-project map every other scope
+    resolution consults, so a project's mount has one definition rather than a
+    second spelling here.
+    """
+    for repository, projects in mounted_repository_projects().items():
+        if project in projects:
+            return repository
+    return None
+
+
+def resolve_project_repository(
+    project: str, repo: str | Path | None, *, flag: str = "--repo"
+) -> Path:
+    """Return the repository root one project's work is written in.
+
+    The project's registered mount decides it, never the repository enclosing
+    the caller's working directory. A caller that names no repository is given
+    the mount, because a dispatch run from another checkout otherwise cuts its
+    worktree from the wrong repository and the worker then finds none of its
+    declared write paths. A named repository is admitted when it resolves to
+    the same repository as the mount — a linked worktree shares the mount's git
+    common directory, so it is one repository under two paths, which is what
+    lets a coordinator dispatch from inside a worktree. Anything else is
+    refused before a worktree, pointer or ledger row exists, naming both
+    resolved roots and the flag so the caller can correct one of them.
+    """
+    mount = project_mount_repository(project)
+    if repo is None:
+        if mount is None:
+            raise CrewError(
+                f"project {project!r} has no registered mount, so {flag} must "
+                "name the repository its work is written in"
+            )
+        return mount
+    named = Path(repo).expanduser().resolve()
+    if mount is None:
+        return named
+    if repository_identity(named) == repository_identity(mount):
+        # One repository under two paths: the mount is the canonical root, and
+        # the caller's worktree names the same repository rather than a second
+        # one, so the work is still cut from the mount.
+        return mount
+    raise CrewError(
+        f"{flag} {named} is not the repository registered for project "
+        f"{project!r} ({mount}); the project's mount decides where its work is "
+        f"written, so name {mount} or omit {flag}"
+    )
+
+
 def _normalised_words(text: str) -> tuple[list[str], list[str]]:
     """Return comparison words and their readable spellings from HTML or prose."""
     from bs4 import BeautifulSoup
@@ -2090,6 +2142,12 @@ def plan_dispatch(
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
+    # A dry run must reach the verdict the real dispatch reaches, and the real
+    # dispatch refuses a repository that is not the project's mount, so the
+    # same resolution runs here. A caller that named no repository keeps its
+    # ``None``: only the dispatch path turns that into the mount.
+    if repo is not None and project_mount_repository(project) is not None:
+        repo = resolve_project_repository(project, repo)
     requested_backend = str(backend_override or default_backend_override or "").strip()
     # The configured local lane, named here so a ``--local`` dispatch has one
     # concrete backend to agree or disagree with. The CLI has already merged it
@@ -2713,7 +2771,7 @@ def dispatch(
     *,
     node: TaskNode,
     project: str,
-    repo: str | Path,
+    repo: str | Path | None,
     config: Mapping[str, Any],
     session: str,
     wave: str = "",
@@ -2767,8 +2825,12 @@ def dispatch(
     supervisor as its live parent, so it remains valid after the dispatching
     process exits. A watch override records both the arming command and the
     liveness observed at the dispatch gate.
+
+    The repository is the project's own mount, resolved before any worktree,
+    pointer or ledger row exists, so a dispatch run from another checkout
+    cannot cut its worktree from that checkout.
     """
-    repo_root = Path(repo).resolve()
+    repo_root = resolve_project_repository(project, repo)
     worktree_identity = str(worktree_session or session)
     shadow_lineage = (
         dict(lineage_override)
@@ -4184,6 +4246,16 @@ def resume_plan(
         raise CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
+    # The ledger and budget lookups below run against the project's own mount,
+    # so a run recorded in another repository is refused here and a run whose
+    # record names none falls back to the mount rather than to whatever
+    # checkout the resuming session happens to stand in.
+    resume_project = str(record.get("project") or "")
+    resume_root = record.get("repo")
+    if resume_project and project_mount_repository(resume_project) is not None:
+        resume_root = resolve_project_repository(
+            resume_project, resume_root, flag="the run's recorded repository"
+        )
     # The pointer is a cache. A stream may already carry the captured session
     # while the next observation has not folded it into that cache yet.
     from reckon.crew.resumption import resolve_session
@@ -4191,8 +4263,8 @@ def resume_plan(
     session = resolve_session(
         run_id,
         record=record,
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
+        project=resume_project,
+        root=resume_root,
     )
     session_id = str(session.get("session_id") or "")
     if not session["resolved"]:
@@ -4202,8 +4274,8 @@ def resume_plan(
         )
     backend = _backend_settings(record, config)
     verdict = _budget_verdict(
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
+        project=resume_project,
+        root=resume_root,
         config=config,
         backend_name=str(record.get("backend") or ""),
         backend=backend,

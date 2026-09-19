@@ -56,7 +56,9 @@ from reckon.crew.dispatch import (
     _actionable_budget_hold,
     _backend_settings,
     _spawn,
+    project_mount_repository,
     record_resumption,
+    resolve_project_repository,
     resume_plan,
 )
 from reckon.crew.node import CrewError
@@ -636,6 +638,17 @@ def _resume(
     advice: str = CONTINUE_ADVICE,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does."""
+    # The repository a resume continues in is the project's mount, exactly as
+    # for the dispatch that created the run. A run recorded in a different
+    # repository is refused here, naming both roots, rather than resumed into a
+    # checkout the project does not own.
+    resume_project = str(record.get("project") or "")
+    if resume_project and project_mount_repository(resume_project) is not None:
+        resolve_project_repository(
+            resume_project,
+            record.get("repo"),
+            flag="the run's recorded repository",
+        )
     failure = _launch_failure_block(record)
     if failure is not None:
         # A launch that produced no stream has no session to continue, so a

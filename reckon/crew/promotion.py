@@ -14,7 +14,12 @@ from typing import Any, Iterable, Mapping, Sequence
 from reckon import _backends, _store, capabilities, ledger
 from reckon.crew import review as review_module
 from reckon.crew import rollout
-from reckon.crew.dispatch import _backend_settings, _capture_member_session
+from reckon.crew.dispatch import (
+    _backend_settings,
+    _capture_member_session,
+    project_mount_repository,
+    resolve_project_repository,
+)
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
     CrewError,
@@ -2001,6 +2006,19 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
+        # A promotion writes the ledger row into the project's own mount, so
+        # the repository is resolved from that mount before anything is
+        # written: a checkout named from elsewhere is refused, and a run whose
+        # record names none is given the mount rather than the caller's
+        # enclosing repository. A project with no mount keeps the caller's
+        # checkout, which is the only root available to it. Judged ahead of the
+        # per-run evidence so a repository defect is reported as itself rather
+        # than as a missing commit further down.
+        landing_project = str(record.get("project") or "")
+        if landing_project and project_mount_repository(landing_project) is not None:
+            root = resolve_project_repository(
+                landing_project, root, flag="--checkout-path"
+            )
         _require_commit_for_changed_manifest(run_id, record)
         if _is_shadow(record) and commit_list:
             raise CrewError(
