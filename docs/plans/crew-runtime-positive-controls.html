@@ -325,6 +325,24 @@
     template are kept under
     <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The interface is pinned by cases 2026-09-19.</strong> The option and the template field landed verified
+    by a dry run rather than by a case, because the node that added them was forbidden a test file. Five cases in
+    <code>tests/test_crew_negative_control_interface.py</code> now hold the two properties from the surfaces a
+    caller reaches. Through the real <code>crew dispatch</code> command: a node whose declared write path is a
+    test file is refused at exit 2 with <code>negative_control</code> as its <em>only</em> finding, a detail naming
+    the field and the triggering path; given <code>--negative-control "&lt;mutation&gt;"</code> the same node
+    resolves at exit 0 and the returned node record carries the declaration; given
+    <code>none: &lt;reason&gt;</code> it resolves likewise, so the explicit escape reaches the command rather than
+    only the library. Through <code>compose_prompt</code>: the emitted manifest template names
+    <code>negative_control_log</code> between <code>test_logs</code> and <code>baseline_suite</code>, glossed as
+    the red log of the declared mutation. Each property is reddened by its own declared mutation — removing the
+    <code>--negative-control</code> option reddens the two declaration-carrying cases alone while the refusal
+    case stays green, and removing the template line reddens the two template cases alone — with both red logs
+    kept beside the green one, each header carrying the declared mutation verbatim so promotion's match against
+    the log's content is discharged by the log itself. The gate is
+    <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once:
+    <strong>13 passed, exit 0</strong>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
