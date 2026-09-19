@@ -25,6 +25,8 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-19">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -45,8 +47,11 @@
     </table>
     <p>So the machine is nearly empty while our slice is full, and three workers running a solve can exhaust
     it between them. Five hundred and twenty-nine processes have already been killed this way. The served
-    model is not the constraint: it delivers about 450 tokens a second at roughly twenty-five concurrent
-    workers, which is far past the point where the login slice stops us.</p>
+    model is not what stops us: one observed operating point is about 450 tokens a second in aggregate at
+    roughly twenty-five concurrent workers, which is a rate under a load and not a measured ceiling. It is
+    quoted here only to show that the serve was still delivering at a concurrency the login slice cannot
+    host, and it is deliberately not offered as the sizing figure section 5 needs, which is a curve rather
+    than a point. The slice binds on memory, so it has no fixed worker count of its own to compare against.</p>
     <p>Nothing in reckon knows about the scheduler. A search of the package and the skills for
     <code>srun</code>, <code>sbatch</code> or <code>SLURM</code> returns nothing; workers are launched with
     <code>subprocess.Popen</code> in <code>reckon/crew/dispatch.py</code> and charged to whoever started the
@@ -59,15 +64,20 @@
     and <code>TMPDIR</code> already resolves to <code>/tmp</code> rather than to node-local
     <code>/run/user</code>. Capacity is not scarce either: <code>all</code> carries no time limit with 3,084
     idle cores across 97 idle nodes, against <code>all_debug</code>'s one-hour ceiling.</p>
-    <p><strong>The external lanes reach out from a compute node too, which is what keeps this from becoming
-    a local-only pattern.</strong> Measured from <code>rigel</code> on 2026-09-19: TCP 443 opens to
-    <code>api.openai.com</code>, <code>chatgpt.com</code> and <code>api.anthropic.com</code>, and an
-    unauthenticated request to two of them answers <code>401</code>, which is the reachability result worth
-    having because it proves the request arrived and the service replied rather than merely that a port
-    accepted a connection. Both the <code>codex</code> and <code>claude</code> launchers resolve on the
-    node’s path, no proxy variable is needed, and every lane’s credentials are files on the shared
-    home (<code>~/.codex/auth.json</code> and <code>~/.claude/.credentials.json</code>) rather than
-    environment secrets, so they travel with the filesystem the worker already needs.</p>
+    <p><strong>The external lanes screen as reachable from a compute node, which is what keeps this from
+    becoming a local-only pattern.</strong> Measured once, from one <code>rigel</code> node on 2026-09-19:
+    TCP 443 opened to <code>api.openai.com</code>, <code>chatgpt.com</code> and
+    <code>api.anthropic.com</code>; an unauthenticated <code>GET</code> completed an HTTP exchange with
+    <code>api.openai.com</code> and <code>api.anthropic.com</code>, each answering <code>401</code>, while
+    <code>chatgpt.com</code> was tested only at the port. State the strength of that plainly: it shows
+    something at those addresses speaks HTTP from a compute node, and it does not show which party replied,
+    since a gateway or an edge can answer <code>401</code> as readily as the provider, nor anything about
+    the authenticated traffic a lane actually carries. It is a screening result that makes the plan worth
+    writing; section 7 is where the question is answered, by running a real node on an externally served
+    backend. Alongside it: both the <code>codex</code> and <code>claude</code> launchers resolve on the
+    node’s path, no proxy variable was needed, and the two lane credentials inspected
+    (<code>~/.codex/auth.json</code> and <code>~/.claude/.credentials.json</code>) are files on the shared
+    home rather than environment secrets, so those two travel with the filesystem the worker already needs.</p>
 
     <h2 id="s-contract">Section contract</h2>
     <p>The order is deliberate. Sections 1 and 2 are prototyped on the local lane, one worker at a time,
@@ -97,15 +107,20 @@
     by a single real local-lane node that ran to completion under an allocation and was promoted through the
     ordinary path. The details that only a real run will settle, and which the section must record as it
     finds them: whether the wrapper is <code>srun</code> held open for the worker's life or a batch job the
-    coordinator polls, what the worker costs in cores and memory as measured rather than guessed, how a
-    queued allocation is distinguished from a slow worker, and what happens to the run when the allocation is
-    refused, pre-empted or hits a time limit.</p>
+    coordinator polls, what the worker costs in cores and memory as measured rather than guessed, and how a
+    queued allocation is distinguished from a slow worker. The size of this section is one node and no more:
+    the three failure shapes, an allocation refused, pre-empted, or stopped at a time limit, are section 2's
+    subject and are not produced here, which also settles that a time limit need not be exercised on a
+    partition that has none. A design document is not a deliverable; what the run teaches is recorded in the
+    evidence anchor, and the cost it measures is this worker on this node rather than the sizing curve
+    section 5 needs.</p>
     <p><strong>Done when.</strong> One local-lane implement node dispatched with a placement runs on a
     compute node, writes its stream, manifest and reports to the same paths, and is promoted without any
     special handling; the run record names the job id beside the pid; and the section states the measured
     cost of that worker in cores, memory and queue wait.</p>
 
-    <h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
+    <p><strong>Files, and what this section mints.</strong> The launch plan and the reaper are in <code>reckon/crew/dispatch.py</code>; the run record the job id must appear in is written by <code>reckon/crew/runs.py</code> for the live pointer and <code>reckon/crew/promotion.py</code> for the ledger row, and the section states which of the two it chose and why; the backend schema the placement field joins is in <code>reckon/flight.py</code>. Those four plus a test file are the grant. The field is optional in one specific sense fixed here rather than later: its absence means today’s login-node launch, so nothing changes for a backend that does not declare it, and section 6 changes which backends declare one rather than changing what absence means. Indistinguishable downstream means the paths and the formats are unchanged; the record gains the job id as a new field beside the pid, which is an addition rather than a difference in shape.</p>
+<h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
     <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the
     worker's pid belongs to a compute node, so the existing reads become false in a specific and dangerous
     direction: a live worker looks dead. The classifier, the reaper that section 2 of the positive-controls
@@ -119,7 +134,8 @@
     payload log, not the step's exit status, decides whether the work ran, which two jobs proved necessary on
     2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
 
-    <h2 id="s3">§3 — A standing allocation the fleet draws on, rather than a job per worker</h2>
+    <p><strong>Files.</strong> The classifier and the liveness reads are in <code>reckon/crew/recovery.py</code> and <code>reckon/crew/runs.py</code>; the reaper, its once-only guard and the launch-failure record are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a job-placed run is in <code>reckon/crew/resumption.py</code>. Those four plus a test file are the grant, and this section is dispatched with them named because it is the critical-risk one.</p>
+<h2 id="s3">§3 — A standing allocation the fleet draws on, rather than a job per worker</h2>
     <p>A job per worker pays queue latency on every dispatch and makes a wave's start time a scheduler
     decision. The alternative is a standing allocation the coordinator holds and places workers into, which
     trades flexibility for predictability and raises its own questions: how long it may be held, what happens
@@ -131,7 +147,8 @@
     decision citing those numbers, and whichever is chosen carries a stated policy for expiry and for a
     worker outliving its allocation.</p>
 
-    <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
+    <p><strong>Files, and where the second input comes from.</strong> The placement policy lives with the backend schema in <code>reckon/flight.py</code> and is consumed in <code>reckon/crew/dispatch.py</code>; the duty cycle is not a stored figure, so the section derives it from the committed ledger rows through <code>reckon/crew/query.py</code> and says over which window. The policy for expiry is configuration and prose, not code, unless the measurement shows otherwise.</p>
+<h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
     <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
     them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.
     The worker needs the worktree root, the crew state directory, the backend binary and the shared project
@@ -143,7 +160,8 @@
     unreachable requirement; and the refusal names the node-local case explicitly, because that one fails
     silently rather than loudly.</p>
 
-    <h2 id="s5">§5 — The ceiling moves from a slice of memory to the roster, and the roster must know it</h2>
+    <p><strong>Files, and which side refuses.</strong> The requirement set is declared with the backend in <code>reckon/flight.py</code> and checked coordinator-side in <code>reckon/crew/dispatch.py</code> before a worktree or a pointer exists, with the refusal text composed in <code>reckon/crew/node.py</code> as the other pre-launch refusals are. Coordinator-side is the choice because a node-side check would need the node to start, which is the thing being refused. The credential path each lane needs belongs to this requirement set from the outset rather than being added by section 7.</p>
+<h2 id="s5">§5 — The ceiling moves from a slice of memory to the roster, and the roster must know it</h2>
     <p>Today the honest bound on concurrency is the 64 GiB slice, which nothing reads and which announces
     itself only as a killed process. Once workers are charged to jobs, the roster is the only bound left, as
     the abandoned local-workers plan already said it should be. The roster then has to be sized against
@@ -154,7 +172,8 @@
     <code>oom_kill</code> counter is read and surfaced rather than discovered, so a slice under pressure says
     so before it kills anything.</p>
 
-    <h2 id="s6">§6 — The prototype ladder, and only then the default</h2>
+    <p><strong>Files, and the instrument that can actually warn.</strong> The bound is reported by the fleet surface in <code>reckon/crew/summary.py</code> and <code>reckon/crew/ticker.py</code> and enforced at the admission check in <code>reckon/crew/dispatch.py</code>. The <code>oom_kill</code> counter cannot warn before a kill, since it only increments on one; what warns is <code>memory.current</code> against <code>memory.max</code>, and the allocation-stall counter beside them, which stood at 2,912,593 while the kill count was 529. The surface reads those and reports the kill count only as history.</p>
+<h2 id="s6">§6 — The prototype ladder, and only then the default</h2>
     <p>The lead's instruction is to prototype on the local lane first and settle the details individually
     before the design is fixed. That makes the ladder part of the plan rather than a habit: one worker under
     an allocation, then a small wave of independent nodes, then a wave with a peer-scoped merge, and only then
@@ -180,7 +199,8 @@
     credential path each lane needs is part of the workspace requirements of section 4, so a lane whose
     credentials do not travel is refused rather than discovered mid-run.</p>
 
-    <section data-reckon="followups" id="followups" class="r-followups">
+    <p><strong>Files.</strong> The placement fields are on the backend schema in <code>reckon/flight.py</code>, the lane-agnostic launch is in <code>reckon/crew/dispatch.py</code>, and the reachability refusal shares the pre-launch site and the refusal text of section 4 rather than adding a second one. This section extends no other section’s requirement set: the credential paths are in section 4 from the outset.</p>
+<section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-awcj-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Run one placed worker on the local lane before designing anything further</h4>
@@ -188,6 +208,11 @@
     <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-awcj-readback-acted-on" data-who="coordinator" data-when="2026-09-19T20:30:00Z">
+    <div class="r-comment-body"><p>Read back before release, and the report changed the plan in three ways rather than confirming it. First, five of the seven sections named no file at all and the critical-risk one named none, which is the same defect that stopped a node earlier the same day and which I had just finished repairing on another plan; every section now carries its files, and where a section needed a choice rather than a list it states the choice, so the run record's job id lands in a named module and the pre-launch refusal is coordinator-side because a node-side check would need the node to start. Second, section 1's size was genuinely ambiguous: it named three failure shapes a completed run cannot exhibit, one of which is not producible on the partition the plan prefers, so those move to section 2 and section 1 is one node and no more. Third, and sharpest, the reviewer refused my own evidence. A 401 from an unauthenticated request shows that something at that address speaks HTTP from a compute node; it does not show which party replied, since a gateway or an edge answers 401 as readily as a provider, and it says nothing about authenticated traffic. The paragraph now says that, names which two of the three hosts were tested beyond the port, and defers the real answer to section 7. The token rate is likewise restated as one operating point under load rather than a ceiling, and section 5's claim that the kill counter could warn before a kill is corrected to the two readings that can.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
