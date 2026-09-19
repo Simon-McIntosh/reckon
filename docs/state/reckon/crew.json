@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T16:09:31",
+  "updated": "2026-09-19T16:18:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -190852,6 +190852,182 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T140120162026-scci-create-tests-under-wiring-refusal",
+        "plan": "section-contract-and-computed-impl",
+        "section": "\u00a77",
+        "node": "scci-create-tests-under-wiring-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2577,
+                "cached_input_tokens": 274425,
+                "input_tokens": 277034,
+                "output_tokens": 1876,
+                "reasoning_output_tokens": 412,
+                "total_tokens": 278910,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "tests/test_edit_plan.py::test_create_new_plan and the two create tests beside it that fail at main (3 failed, 173 passed on the six-file set recorded in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/review-of-scci-wiring-refusal-findings/gate-head-review.log) pass because each test plan either wires itself (blocks, depends_on or informs to a plan the fixture project holds) or carries the standalone declaration the write boundary accepts, not because the refusal is bypassed or the assertion weakened; one added test asserts that a create with neither wiring nor declaration is refused with the checklist message and leaves no stub file. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan.py tests/test_mcp_store.py tests/test_roadmap_unwired_plan.py tests/test_doccheck_unwired_plan.py on the login node, light work, captured once to a log in the reports directory with the exit status, zero failures at head against the three at base 24611028. The plan comment records the mechanism in one paragraph. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 0.75,
+          "goal": "Make the three failing create tests in tests/test_edit_plan.py pass under the wiring refusal by declaring the wiring each test plan carries, and pin that an undeclared unwired create is refused.",
+          "id": "scci-create-tests-under-wiring-refusal",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T14:01:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140120162026-scci-create-tests-under-wiring-refusal/manifest.md",
+          "plan": "section-contract-and-computed-impl",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_edit_plan.py",
+            "docs/plans/section-contract-and-computed-impl.html",
+            "docs/evidence/archive/section-contract-and-computed-impl-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/scci-create-tests-under-wiring-refusal"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "session-b6b2a88f910c13f167b6",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T14:01:35Z",
+        "completed_at": "2026-09-19T14:16:11.630Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 868,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 876,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "1f9fe3cfa3d8d409089d1e0dfac07dec77ca2e72",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Malformed dispatch: reckon crew dispatch run from the nova checkout without --repo created the worktree in the nova repository, so the node had none of its write paths; stopped before any commit and redispatched with --repo.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140120162026-scci-create-tests-under-wiring-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "5b58dda5-f959-4084-b34e-ee205b49843b",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T14:16:11.630Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/nova-a0f1e0938fc2/s18-takeover-20260919/scci-create-tests-under-wiring-refusal",
+          "session_id": "5b58dda5-f959-4084-b34e-ee205b49843b",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T14:16:11.630Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.26,
+        "impl_move": {
+          "plan": "section-contract-and-computed-impl",
+          "at_dispatch": 0.26,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "tool_steps": 52.0,
+        "orientation_input_tokens": 3421644.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -191136,6 +191312,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1699
+    "_version": 1700
   }
 }
