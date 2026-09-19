@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T19:09:50",
+  "updated": "2026-09-19T19:17:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -192309,6 +192309,228 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T170754795647-crpc-arming-and-once-only-findings",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a71",
+        "node": "crpc-arming-and-once-only-findings",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1762,
+                "cached_input_tokens": 620693,
+                "input_tokens": 622457,
+                "output_tokens": 1799,
+                "reasoning_output_tokens": 118,
+                "total_tokens": 624256,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/review-of-crpc-launch-resolution/launch-resolution-and-failure-review.md first; its three findings are the scope and its mutation driver is beside it. F1: the --once arm of watch in reckon/crew/runs.py near line 2100 refuses through assert_routable_backends_resolvable before claiming the seat at _project_watch_claim, so no arming mode takes a seat it cannot lift from; pinned by a test that calls the --once path with the backend directory absent from the PATH handed to the call and asserts both the refusal and that no lock file under crew/watch is created. F2: the evidence anchor's count of launch_plan construction sites is corrected to what it measured, naming reckon/crew/resumption.py near line 234 as a fourth construction site that is a lane probe rather than a run launch, and saying why the property still holds there, namely that it fails loudly as unavailable and writes no pointer, stream or stderr. F3: a case is added that reaches _record_launch_failure twice for one launch without relying on the pid being consumed by waitpid, so it fails when the once-only guard at reckon/crew/dispatch.py near line 3449 is removed; the reviewer's mutation driver shows the node's existing four cases all pass with the guard removed, so the new case must be shown red against that same mutation and green at head, with both logs kept. Declare that mutation in this manifest as the negative control. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_launch_failure.py tests/test_crew_recovery.py tests/test_crew_wait_stanza_validation.py plus any watch test file, on the login node, captured once with the exit status; the base is ae589f5b and its failure ids are stated so the delta is zero. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 1.5,
+          "goal": "Close the three findings of the launch-resolution review so no arming mode takes the watch seat without resolving, the record counts what it measured, and the once-only guard is pinned by a case that fails without it.",
+          "id": "crpc-arming-and-once-only-findings",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T17:07:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T170754795647-crpc-arming-and-once-only-findings/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_launch_resolution.py",
+            "tests/test_crew_launch_failure.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-arming-and-once-only-findings"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-f1f2f3-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T17:07:59Z",
+        "completed_at": "2026-09-19T17:15:42.719Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 456,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 463,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "4d7ee580938f270aaa7af687018daf5afeef98e3",
+        "commits": [
+          "902bd2e4a40c8ea477023eb913455c07fd4d81bb"
+        ],
+        "changed_lines": {
+          "added": 201,
+          "removed": 3,
+          "files": 5
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py tests/test_crew_launch_failure.py tests/test_crew_recovery.py tests/test_crew_wait_stanza_validation.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_visibility.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-arming-and-once-only-findings/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T170754795647-crpc-arming-and-once-only-findings/manifest.md",
+        "scope_changed": false,
+        "session_id": "45028392-c08e-454a-b690-1b619e11974f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7184508,
+            "input_tokens_cumulative": 7184508,
+            "output_tokens": 46038,
+            "output_tokens_cumulative": 46038,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T17:15:42.719Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7184508,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 460.284,
+          "generated_tokens": 46038,
+          "generation_seconds": 369.316,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 29.8,
+          "machine_seconds": 90.968,
+          "peak_input_tokens": 142895,
+          "tokens_per_second": 124.66,
+          "wall_tokens_per_second": 100.02
+        },
+        "follow_on_paths": [
+          "tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion",
+          "tests/test_crew_watch_lifetime.py",
+          "tests/test_crew_watch_visibility.py",
+          "tests/test_watch_arming_isolation.py",
+          "docs/figures/<topic>/",
+          "docs/figures/crew-runtime-positive-controls/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-arming-and-once-only-findings",
+          "session_id": "45028392-c08e-454a-b690-1b619e11974f",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T17:15:42.719Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.35,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.35,
+          "at_complete": 0.52,
+          "verdict": "moved"
+        },
+        "tool_steps": 75.0,
+        "orientation_input_tokens": 1186452.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -192593,6 +192815,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1710
+    "_version": 1711
   }
 }

@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.52">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -236,6 +236,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-crpc-findings-closed" data-who="coordinator" data-when="2026-09-19T17:20:00Z">
     <div class="r-comment-body"><p>The three review findings close at 902bd2e4, merged 32447fa9, with nine failures at base and an identical nine at head. The single-event watch arm now refuses through the routable-backend assertion before claiming the seat, so this section's clause that a watcher which cannot lift never reads as armed holds for every arming mode rather than only the streaming one, and section 3 can build on it. The launch-plan construction count is corrected to name the lane probe in resumption.py as a fourth site, with the reason the property still holds there. The once-only guard gains a case that reaches the recorder twice without relying on the pid being consumed by waitpid, and that case goes red when the guard is removed while the four earlier cases did not, so the guard is now pinned by something that fails without it. Both negative controls are kept as red logs beside the green one, which is the discipline section 7 will require of every node that writes a check.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T170754795647-crpc-arming-and-once-only-findings" data-who="reckon-ship" data-when="2026-09-19T17:15:42.719Z">
+    <div class="r-comment-body"><p>All three findings closed: the single-event watch arm refuses before the seat, the construction count names the lane probe, and the once-only guard is pinned by a case that goes red when it is removed. Nine failures at base and the identical nine at head; the arming refusal verified live in the served module.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-crpc-wait-control-live" data-who="coordinator" data-when="2026-09-19T17:05:00Z">
     <div class="r-comment-body"><p>Section 4 lands at a466546b, merged ae589f5b, and is verified live in the served module rather than only committed. A <code>wait_terminal</code> naming a state the probe reports while its job is still running is refused at read with the token quoted, whatever its case and including a token the probe itself emits from a branch guarded by a live result (recovery.py:1696). A lift whose worker re-parks on an unchanged declaration is marked a wait-key defect and is not lifted again until the declaration changes (recovery.py:1734). Ten new tests, both mutations red, one pre-existing failure at base and the same one at head. The node volunteered both negative controls before section 7 requires them. The stanza this closes is the measured one: the centroid node listed RUNNING as terminal beside a squeue probe and the watcher resumed it thirty times across four hours.</p></div>
