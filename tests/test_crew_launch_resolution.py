@@ -35,14 +35,14 @@ def _config(environment: dict) -> dict:
         "default_backend": "alpha",
         "backends": {
             "alpha": {
-                    "launch": "cli",
-                    "command": "codex",
-                    "model": "some-model",
-                    "effort": "high",
-                    "sandbox": "worktree-full",
-                    "session_reuse": True,
-                    "time_budget": "25m",
-                    "environment": environment,
+                "launch": "cli",
+                "command": "codex",
+                "model": "some-model",
+                "effort": "high",
+                "sandbox": "worktree-full",
+                "session_reuse": True,
+                "time_budget": "25m",
+                "environment": environment,
             }
         },
         "roles": {"implement": {}},
@@ -97,7 +97,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path
     return config_home, repo
 
 
-def _node(name: str) -> crew.TaskNode:
+def _node(name: str, manifest_path: str) -> crew.TaskNode:
     return crew.TaskNode(
         id=f"node-{name}",
         goal="resolve the backend before the launch writes anything",
@@ -107,7 +107,7 @@ def _node(name: str) -> crew.TaskNode:
         done_when="one launch resolution case passes",
         write_paths=["src/resolved.txt"],
         time_budget="20m",
-        manifest_path="manifest-never-used.md",
+        manifest_path=manifest_path,
     )
 
 
@@ -148,7 +148,9 @@ def _dispatch(
 
     with runs.follower_claim("sample", session, delivery="stream"):
         crew.dispatch(
-            node=_node("resolve"),
+            # The node contract requires a manifest path the orchestrator can
+            # reach, so it is absolute and outside the worker's worktree.
+            node=_node("resolve", str(repo.parent / "manifest.md")),
             project="sample",
             repo=repo,
             config=config,
