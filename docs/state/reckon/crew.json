@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T16:44:34",
+  "updated": "2026-09-19T17:02:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -191037,6 +191037,284 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T144456275579-aobi-plan-rubber-duck-skill-contract",
+        "plan": "an-orchestrator-is-bound-by-its-inbox",
+        "section": "\u00a73",
+        "node": "aobi-plan-rubber-duck-skill-contract",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 648,
+                "cached_input_tokens": 461783,
+                "input_tokens": 462433,
+                "output_tokens": 1314,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 463747,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "Read section 3 of docs/plans/an-orchestrator-is-bound-by-its-inbox.html first; it carries the measured incident the contract exists to prevent. skills/reckon-create/SKILL.md and skills/reckon-edit/SKILL.md each gain one short numbered step, placed where the author would reach it rather than in an appendix, stating: that a new plan and a material revision are both released only after a read-only rubber-duck review dispatched to the local lane through reckon crew dispatch with the review role; the exact dispatch form to copy, naming the review node id convention, the read-only sandbox, the report write path under the reports fence and a time budget, with --local; what the reviewer is asked for, a restatement of the plan's intent, each decision and each done-when in the reviewer's own words plus every place two readings are possible, and explicitly not a critique of the work itself; what the author does with the findings, which is to revise the plan and re-read the divergent sentences before release, iterating until the restatement matches the intent, with the iteration stated as a loop rather than a single pass; and what counts as material, which is any change to a decision, a done-when, a section declaration or a gate, as against a landing comment or an impl move which do not. A material revision is defined once in reckon-edit and referenced from reckon-create rather than restated. Both skills keep their existing structure and voice, and neither gains a rule the runtime already enforces. Every claim about a command's flags is checked against reckon crew dispatch --help before it is written. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_doccheck.py plus any test file whose name mentions skill, on the login node, captured once to a log in the reports directory with the exit status; if no test covers skill prose the manifest says so rather than implying coverage. Commits carry a body. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 1.5,
+          "goal": "Give reckon-create and reckon-edit a binding rubber-duck review contract so a newly authored or materially revised plan is read back on the local lane before it is released for execution.",
+          "id": "aobi-plan-rubber-duck-skill-contract",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T14:44:57Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T144456275579-aobi-plan-rubber-duck-skill-contract/manifest.md",
+          "plan": "an-orchestrator-is-bound-by-its-inbox",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-create/SKILL.md",
+            "skills/reckon-edit/SKILL.md",
+            "docs/plans/an-orchestrator-is-bound-by-its-inbox.html",
+            "docs/evidence/archive/an-orchestrator-is-bound-by-its-inbox-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/aobi-plan-rubber-duck-skill-contract"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-aobi-duck-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T14:45:00Z",
+        "completed_at": "2026-09-19T15:00:24.916Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 914,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 924,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "88d9a22f050649b5cebe5c800fe60cab29712d2d",
+        "commits": [
+          "88d7d859c29d2f8953d0b32013589556008a36eb",
+          "01c9576731f8d0da28276f5686925ac23217245d"
+        ],
+        "changed_lines": {
+          "added": 175,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_doccheck.py tests/test_skill_contracts.py tests/test_skill_contract_parity.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/aobi-plan-rubber-duck-skill-contract/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "Both authoring skills carry the read-back release rule with the dispatch form, the material-revision definition stated once, and release as a loop rather than a pass.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T144456275579-aobi-plan-rubber-duck-skill-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "4a9ff977-2d55-430f-a13a-57111f5d9f3d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9661671,
+            "input_tokens_cumulative": 9661671,
+            "output_tokens": 48854,
+            "output_tokens_cumulative": 48854,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T15:00:24.916Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3300,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: The assigned worktree is a nova checkout; every write path in this node's scope is a reckon path and no reckon worktree exists for the session.",
+              "elapsed_seconds": 294,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1816,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_derived": false,
+              "manifest_digest": "3d7d2d28aa70550b5b16ea324bbfc7b202f9a32e9443b7d93613a88b88f85e4c",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140936345345-crpc-launch-resolution-and-failure-record/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140936345345-crpc-launch-resolution-and-failure-record/manifest.md; resolve the blocker before resuming the run",
+              "node": "crpc-launch-resolution-and-failure-record",
+              "phase": "stopped",
+              "plan": "crew-runtime-positive-controls",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260919T140936345345-crpc-launch-resolution-and-failure-record",
+              "session": "s18-takeover-20260919",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260919T140936345345-crpc-launch-resolution-and-failure-record",
+                "session_id": "bc0282b1-1547-42c3-8f81-27a9f0fbf2fe",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 1852,
+              "terminal_at": "2026-09-19T14:14:06Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/nova-a0f1e0938fc2/s18-takeover-20260919/crpc-launch-resolution-and-failure-record"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9827445,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 921.53,
+          "generated_tokens": 57058,
+          "generation_seconds": 873.825,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.3,
+          "machine_seconds": 47.705,
+          "peak_input_tokens": 164474,
+          "tokens_per_second": 65.3,
+          "wall_tokens_per_second": 61.92
+        },
+        "follow_on_paths": [
+          "tests/test_skill_contracts.py",
+          "tests/test_skill_contract_parity.py",
+          "skills/reckon-ship/SKILL.md",
+          "/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/aobi-plan-rubber-duck-skill-contract",
+          "session_id": "4a9ff977-2d55-430f-a13a-57111f5d9f3d",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T15:00:24.916Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "an-orchestrator-is-bound-by-its-inbox",
+          "at_dispatch": 0.5,
+          "at_complete": 0.6,
+          "verdict": "moved"
+        },
+        "tool_steps": 88.0,
+        "orientation_input_tokens": 2973718.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -191321,6 +191599,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1701
+    "_version": 1702
   }
 }
