@@ -47,12 +47,18 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 
 from reckon import _plan_html
-from reckon._schema import parse_plan_ref
+from reckon._schema import (
+    parse_plan_ref,
+    standalone_reason,
+    unwired_plan_message,
+    unwired_plan_severity,
+)
 from reckon._store import (
     PLAN_SUMMARY_MAX_LENGTH,
     _mounts_path,
     plan_summary_length,
 )
+from reckon.lifecycle import TERMINAL_STATUSES
 
 # Required scalar meta tags for plan-family documents. Research, evidence, and
 # general documents relax ``status``. Distributed project-state resources use
@@ -623,6 +629,64 @@ def _structure_findings(html_text: str) -> list[Finding]:
     return out
 
 
+def _unwired_plan_findings(
+    declared_type: str,
+    state: Mapping[str, Any],
+    soup: BeautifulSoup,
+    html_text: str,
+    slug: str,
+) -> list[Finding]:
+    """Flag an implementable plan that declares no wire and no standalone reason."""
+
+    status = str(state.get("status") or "").strip().lower()
+    gate_count = len(soup.select('section[data-reckon="gates"] .r-gate[data-id]'))
+    finding = unwired_plan_finding(
+        doc_type=str(declared_type or "").strip().lower(),
+        status=status,
+        modified=str(state.get("modified") or ""),
+        links=(
+            list(state.get("depends_on") or [])
+            + list(state.get("blocks") or [])
+            + list(state.get("informs") or [])
+        ),
+        gate_count=gate_count,
+        standalone=standalone_reason(html_text),
+        slug=slug,
+    )
+    return [finding] if finding else []
+
+
+def unwired_plan_finding(
+    *,
+    doc_type: str,
+    status: str,
+    modified: str,
+    links: list[str],
+    gate_count: int,
+    standalone: str | None,
+    slug: str,
+) -> Finding | None:
+    """Build the ``unwired-plan`` finding for an unwired implementable plan.
+
+    ``doc_type`` must be the DECLARED type — ``"plan"`` only when the document
+    says it is one — so an authored prose fragment is not held to a plan's
+    wiring contract. ``None`` when the document is not a plan, is already
+    terminal, is wired by a link or a gate, or carries a plan-standalone
+    reason. Severity is ``error`` for a plan modified since the rule landed and
+    ``warn`` before it, so earlier plans are visible without stopping the fleet.
+    """
+
+    if doc_type != "plan" or status in TERMINAL_STATUSES:
+        return None
+    if links or gate_count or (standalone or "").strip():
+        return None
+    return Finding(
+        unwired_plan_severity(modified),
+        "unwired-plan",
+        unwired_plan_message(slug=slug),
+    )
+
+
 def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     """Audit one document's HTML, returning findings (worst-first ordering)."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -653,7 +717,8 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 )
             )
 
-    summary = str(_plan_html.read_state(html_text).get("summary") or "")
+    state = _plan_html.read_state(html_text)
+    summary = str(state.get("summary") or "")
     summary_length = plan_summary_length(summary)
     if doc_type == "plan" and summary_length > PLAN_SUMMARY_MAX_LENGTH:
         out.append(
@@ -684,6 +749,17 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 "whose execution this record documents",
             )
         )
+
+    # Wiring — an implementable plan must declare what it waits on or feeds,
+    # or say in words that it stands alone. The roadmap can only follow wires
+    # that were drawn; an unwired plan is invisible on the critical path. The
+    # gate is the DECLARED type, so a prose fragment that merely carries a
+    # slug is not held to a plan's wiring contract.
+    out.extend(
+        _unwired_plan_findings(
+            (rt.get("content") if rt else "") or "", state, soup, html_text, slug
+        )
+    )
 
     # Project for image-path checks — meta, then fallback arg.
     dp = soup.find("meta", attrs={"name": "docs-project"})
