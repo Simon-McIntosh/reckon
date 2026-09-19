@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-impl" content="0.35">
-<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.45">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -224,6 +224,15 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260919T141900699431-crpc-launch-resolution-and-failure-record-2" data-who="reckon-ship" data-when="2026-09-19T15:18:00.235Z">
     <div class="r-comment-body"><p>Launch resolution and the launch-failure record land with nine pre-existing failures at base and the same nine at head; verified live in the served module. A reaped worker exit-code defect was found and fixed in passing.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-crpc-review-three-findings" data-who="coordinator" data-when="2026-09-19T17:08:00Z">
+    <div class="r-comment-body"><p>The independent review of sections 1 and 2 returns pass on the headline question: no measured path allows a silent launch failure or a second record, a dispatch refusal unwinds everything it created, and the exit status now reads 127 rather than 32512. Three findings stand and a corrective node carries them. The one that matters is that <code>crew watch --once</code> claims the seat at <code>_project_watch_claim</code> with no resolution anywhere on its path, measured by arming with the only backend absent from PATH and finding the lock file created, so this section's own clause that a watcher which cannot lift never reads as armed is true for the documented mode and false for <code>--once</code>; it must close before section 3 builds on that clause. The second is an overstated count, since the lane probe in resumption.py is a fourth construction site of a launch plan, though it fails loudly and writes nothing. The third is the sharper one: removing the once-only guard leaves all four of the node's launch-failure cases passing, because the once-ness they appear to prove comes from the pid being consumed by waitpid rather than from the guard, so the guard is load-bearing and unpinned.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T164442838679-review-of-crpc-launch-resolution" data-who="reckon-ship" data-when="2026-09-19T17:06:54.518Z">
+    <div class="r-comment-body"><p>Review verdict pass with three findings: no measured path allows a silent launch failure or a second record, and the exit code reads 127 rather than 32512. F1, the --once watch arm takes the seat without resolving, is a posture defect that must close before the watcher section builds on the arming clause. F2 is an overstated count. F3 shows the once-only guard is load-bearing but unpinned, since the four existing cases pass with it removed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-crpc-wait-control-live" data-who="coordinator" data-when="2026-09-19T17:05:00Z">
+    <div class="r-comment-body"><p>Section 4 lands at a466546b, merged ae589f5b, and is verified live in the served module rather than only committed. A <code>wait_terminal</code> naming a state the probe reports while its job is still running is refused at read with the token quoted, whatever its case and including a token the probe itself emits from a branch guarded by a live result (recovery.py:1696). A lift whose worker re-parks on an unchanged declaration is marked a wait-key defect and is not lifted again until the declaration changes (recovery.py:1734). Ten new tests, both mutations red, one pre-existing failure at base and the same one at head. The node volunteered both negative controls before section 7 requires them. The stanza this closes is the measured one: the centroid node listed RUNNING as terminal beside a squeue probe and the watcher resumed it thirty times across four hours.</p></div>
 </div>
 </section>
 </main>

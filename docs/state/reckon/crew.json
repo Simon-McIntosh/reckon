@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T19:07:50",
+  "updated": "2026-09-19T19:08:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -191758,6 +191758,274 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T164442838679-review-of-crpc-launch-resolution",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a71",
+        "node": "review-of-crpc-launch-resolution",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 902,
+                "cached_input_tokens": 559209,
+                "input_tokens": 560113,
+                "output_tokens": 1834,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 561947,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "The stored review record judges, with file and line for every finding: whether every launch path resolves its backend before writing anything, checked by reading reckon/crew/dispatch.py, resumption.py and the watcher arm in recovery.py and by exercising each with a PATH that lacks the backend directory, asserting first-hand that no pointer, advice, stream or stderr file is created on the refusal, with /home/ITER/mcintos/Code/reckon/.venv/bin/python on the login node, which is light work; whether a symlinked launcher keeps its own name rather than resolving to its target, since the backend name selects the lane; whether the reaper records a launch failure exactly once for a worker that exits before its first stream record and whether a second tick relaunches it, shown by running the node's own reaper test and by one mutation that removes the once-only guard; whether the exit code is now read as an exit code rather than a raw wait status, with the arithmetic checked on one value; and whether the plan record and the evidence anchor claim only what the logs show, including that nine suite failures pre-exist at base and the same nine stand at head. The record closes with a verdict of pass or fail and the reason. The review record is the only deliverable; every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 0.8,
+          "goal": "Review the merged launch-resolution and launch-failure landing (twelve commits, merged ec46d14d) for whether a launch can still fail silently and whether the failure record fires exactly once.",
+          "id": "review-of-crpc-launch-resolution",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T16:44:43Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T164442838679-review-of-crpc-launch-resolution/manifest.md",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/review-of-crpc-launch-resolution"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "s18t-review-crpc-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T16:44:48Z",
+        "completed_at": "2026-09-19T17:06:54.518Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1317,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1326,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5c893483cf55e97f4108ae592fabea115365a5f8",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T164442838679-review-of-crpc-launch-resolution/manifest.md",
+        "scope_changed": false,
+        "session_id": "9f827e9b-a2d6-41ee-9a18-dc61faed6cd3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6373030,
+            "input_tokens_cumulative": 6373030,
+            "output_tokens": 70719,
+            "output_tokens_cumulative": 70719,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T17:06:54.518Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3300,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: The assigned worktree is a nova checkout; every write path in this node's scope is a reckon path and no reckon worktree exists for the session.",
+              "elapsed_seconds": 294,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 9002,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_derived": false,
+              "manifest_digest": "3d7d2d28aa70550b5b16ea324bbfc7b202f9a32e9443b7d93613a88b88f85e4c",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140936345345-crpc-launch-resolution-and-failure-record/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T140936345345-crpc-launch-resolution-and-failure-record/manifest.md; resolve the blocker before resuming the run",
+              "node": "crpc-launch-resolution-and-failure-record",
+              "phase": "stopped",
+              "plan": "crew-runtime-positive-controls",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260919T140936345345-crpc-launch-resolution-and-failure-record",
+              "session": "s18-takeover-20260919",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260919T140936345345-crpc-launch-resolution-and-failure-record",
+                "session_id": "bc0282b1-1547-42c3-8f81-27a9f0fbf2fe",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 9038,
+              "terminal_at": "2026-09-19T14:14:06Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/nova-a0f1e0938fc2/s18-takeover-20260919/crpc-launch-resolution-and-failure-record"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6539931,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1323.208,
+          "generated_tokens": 80821,
+          "generation_seconds": 1003.764,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 319.444,
+          "peak_input_tokens": 165601,
+          "tokens_per_second": 80.52,
+          "wall_tokens_per_second": 61.08
+        },
+        "follow_on_paths": [
+          "reckon/crew/runs.py:2100",
+          "reckon/cli.py:2179",
+          "reckon/crew/recovery.py:3506",
+          "independent-exercise.log",
+          "reckon/crew/dispatch.py:3263",
+          "reckon/crew/resumption.py:234",
+          "reckon/crew/dispatch.py:3449",
+          "tests/test_crew_launch_failure.py",
+          "tests/test_crew_resum*.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "review role: the sole deliverable is the stored review record",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/review-of-crpc-launch-resolution",
+          "session_id": "9f827e9b-a2d6-41ee-9a18-dc61faed6cd3",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T17:06:54.518Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.35,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.35,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "tool_steps": 73.0,
+        "orientation_input_tokens": 3247698.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -192042,6 +192310,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1708
+    "_version": 1709
   }
 }
