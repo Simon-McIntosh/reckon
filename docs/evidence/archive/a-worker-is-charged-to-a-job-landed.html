@@ -251,6 +251,55 @@
     the subject, and that change is the rest of &sect;2. A figure for this record was inlined rather than
     written under <code>docs/figures/</code>, because that path is outside this node's write scope.</p>
   </section>
+
+  <section id="s2-job-is-the-subject">
+    <h2>&sect;2 &mdash; The job becomes the subject of a liveness read</h2>
+    <p>A placed run's recorded pid names the scheduler client, not the worker, and under an allocation it
+    belongs to a compute node. The accessor that owns every record-to-liveness step now asks the scheduler
+    whether the job is still in the system when the record carries a placement, and falls through to the pid
+    probe otherwise. The mapping from the placement's declared wrapper to its reporting verb lives in
+    <code>reckon/crew/runs.py</code> beside the accessor, keyed on the wrapper's own name, so a scheduler
+    reckon cannot query answers <code>None</code> and the pid probe decides rather than a silent scheduler
+    being read as a stopped job.</p>
+
+    <table>
+      <caption>What each clause of the measure asserts, and where it is committed</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
+        <tr><td>job consulted when placed</td><td>live while the job runs; terminal when it leaves the queue; pid fallback otherwise</td><td><code>test_a_placed_run_reports_live_while_its_job_is_running</code>, <code>test_a_placed_run_reports_terminal_when_the_job_leaves_the_queue</code>, <code>test_a_scheduler_reckon_cannot_query_falls_through_to_the_pid</code></td></tr>
+        <tr><td>never-started job</td><td>recorded once with the scheduler's reason</td><td><code>test_a_job_that_never_started_records_its_scheduler_reason</code></td></tr>
+        <tr><td>time or memory end distinct</td><td>named apart from a worker whose work failed</td><td><code>test_a_job_killed_for_time_is_not_a_worker_whose_work_failed</code>, <code>test_a_job_killed_for_memory_is_named_distinctly</code></td></tr>
+        <tr><td>payload log decides</td><td>a non-empty stream is a turn whatever the step exit status says</td><td><code>test_the_payload_log_decides_that_the_work_ran</code></td></tr>
+        <tr><td>harness from the record</td><td>the two recovery sites take the record's command over <code>argv[0]</code></td><td><code>test_recovery_takes_the_recorded_command_over_the_scheduler_argv</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Gate, and the delta.</strong> The focused set over the crew liveness, placement, launch and
+    promotion cases at base <code>a46166c2</code> and at head:</p>
+    <table>
+      <caption>Same command both sides</caption>
+      <thead><tr><th>Revision</th><th>Failed</th><th>Passed</th><th>Newly failing ids</th></tr></thead>
+      <tbody>
+        <tr><td><code>a46166c2</code> (base)</td><td>2</td><td>75</td><td>&mdash;</td></tr>
+        <tr><td>head <code>b4f64519</code></td><td>2</td><td>75</td><td>none</td></tr>
+      </tbody>
+    </table>
+    <p>The two failures are <code>test_promotion_reads_the_terminal_record.py</code>'s git-worktree fixture
+    checks, reproduced at base with the three modules reverted, so they are the worker tier's own and outside
+    this node's scope. Sixteen cases are added in <code>tests/test_crew_placed_liveness.py</code>.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: revert
+    <code>record_process_alive</code> to <code>process_alive(record["pid"])</code>, so a placed run is read
+    from the local process table. The red log at
+    <code>runs/r-20260919T233958925409-awcj-liveness-and-reaping-follow-the-job/negative-control.red.log</code>,
+    whose first line repeats the mutation verbatim, fails exactly
+    <code>test_a_placed_run_reports_live_while_its_job_is_running</code> and leaves the other fifteen green.</p>
+
+    <p><strong>What is not here.</strong> The scheduler query is keyed on the wrapper's family name for the
+    verbs it knows, which is a convention in code rather than a declared field, because the placement schema
+    is outside this node's write scope. Verifying the merged result belongs to a separately dispatched test
+    node.</p>
+  </section>
 </main>
 </body>
 </html>

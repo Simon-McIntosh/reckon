@@ -223,6 +223,32 @@ passing suite would not have shown that.</p>
 run's liveness still resolves through the local process table, and the accessor is the single seam where the
 job becomes the subject. Verifying the merged result belongs to a separately dispatched test node.</p>
 </div>
+<div class="r-note" data-reckon="landed" data-node="awcj-liveness-and-reaping-follow-the-job" data-when="2026-09-20">
+<p><strong>Outcome — the job is now the subject, and the reaper and recovery follow it.</strong> Commit
+<code>b4f64519</code>. <code>record_process_alive</code> asks the scheduler whether the job is still in the
+system when the record carries a placement, and falls through to the pid probe otherwise, so every one of the
+ten migrated call sites answers a placed run from its job and an unplaced run exactly as before. A scheduler
+reckon cannot query answers <code>None</code> rather than a verdict, so a silent controller never reads as a
+stopped worker. The reaper judges a placed launch by its job and by the payload log rather than by the
+scheduler client's exit status: a job the scheduler ended at a time or memory limit is named distinctly from
+a worker whose work failed, and a job that never started is recorded once with the scheduler's own reason in
+the shape an unresolvable binary already takes. The two sites in <code>recovery.py</code> that rebuilt a run
+harness from <code>argv[0]</code> — the scheduler under a placement — take the record's explicit command
+first, so a placed run's stream budget, provider refusal block and final message are read rather than
+reported absent.</p>
+<p><strong>Gate.</strong> Sixteen committed cases in <code>tests/test_crew_placed_liveness.py</code>, one per
+clause plus the fallbacks. The focused set at base <code>a46166c2</code> and at head: 2 failed / 75 passed
+either side, failure ids identical, zero added. The two failures are
+<code>test_promotion_reads_the_terminal_record.py</code>'s git-worktree fixture checks, reproduced at base
+with this node's modules reverted, so they are the worker tier's own. The declared mutation (revert the
+accessor to the bare pid probe) reddens exactly
+<code>test_a_placed_run_reports_live_while_its_job_is_running</code> and leaves the other fifteen green.</p>
+<p><strong>What this node did not settle.</strong> The scheduler query is keyed on the wrapper's family name
+for the verbs it knows, which is a convention in code rather than a declared field, because the placement
+schema is outside this node's write scope; a placement whose wrapper is unlisted falls through to the pid
+probe rather than being misread. No placed run was executed here, so the query is exercised against an
+injected runner; verifying it against a real job belongs to the proving run the coordinator owns.</p>
+</div>
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
     in zero seconds, and speed was the wrong axis: the objection is that concurrency then means submitting
