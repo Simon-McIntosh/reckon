@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="section-contract-and-computed-impl">
+  <meta name="plan-title" content="Section contract and computed impl — every section states its effort, depth, risk and attempts, and the plan figure is calculated from them">
+  <meta name="plan-summary" content="Sections carry a schema-enforced contract (effort, reasoning, risk, attempts); impl is computed from it; attempts steer the capability class.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="22.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew,spa">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="work-scheduling-surface">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>Section contract and computed impl | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>The lead's directive of 2026-09-19, given while re-planning nova's S19: "the sections should always
+    contain the effort, depth, risk and number of retries (a strong signal for difficult work: if this is the
+    third attempt, try a better model). The implementation is then the sum of all the complete implementation
+    times divided by the sum of the complete implementation time and the predicted time for all remaining
+    items, so plan metrics do not go stale or need reassessing, they are calculated. Positive control ensures
+    sections are always written with schema-controlled metadata and links to other complete plans or plan
+    subsections. Our DAG could support both."</p>
+    <p>Measured on nova the same day: the roadmap sees plans, so the four items that decided the sprint (a
+    solver-route regression, an X-point production wiring, a field-response production builder and a topology
+    rebank) sat as followups on plans at impl 0.6, 0.88, 0.92 and 0.99 with no edge, no effort and no
+    readiness; three plans at 0.99, 0.995 and 0.88 carried 14, 7 and 4 open followups of real work while
+    reading as finished; a 46-hour plan had its second half unsized; and routing difficult nodes to a stronger
+    lane was the coordinator's per-dispatch judgment because nothing recorded how many times a section had
+    already been attempted. The nova coordinator re-authored that work as sections with a hand-written contract
+    table, which is exactly the thing this plan makes structural. Section-level dependency refs already exist
+    (<code>slug#section</code> on <code>depends_on</code>, resolved by the roadmap, and gates with
+    <code>gated_sections</code>), so the DAG half of the directive is documentation, not implementation; the
+    contract, the computed figure, the attempt counter and the refusal are new.</p>
+    <p>One caution the halted reckon coordinator recorded and this plan inherits: a computed figure is only as
+    good as its inputs, and reckon already carries a field written, read as authoritative and wrong on a third
+    of rows (<code>wall_seconds</code>, disagreeing with elapsed time on 328 of 1,074 ledger rows). So the
+    computed impl must state where section effort comes from and how a wrong figure is detectable, or it will
+    become a number nobody questions because it is calculated.</p>
+
+    <h2 id="s-contract">Section contract</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
+      <tbody>
+        <tr><td>§1 Section schema</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§2 Write-boundary refusal</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§3 Computed impl</td><td>5</td><td>deep</td><td>critical</td><td>0</td></tr>
+        <tr><td>§4 Attempts counter</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§5 Attempts as a routing input</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§6 Section refs documented and audited</td><td>3</td><td>standard</td><td>low</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s1">§1 — A section is a typed record: effort, reasoning, risk, attempts, status, links</h2>
+    <p>Today a section is an <code>&lt;h2 id="sN"&gt;</code> heading whose only structured state is the
+    <code>plan-section-declarations</code> map (implementable, deferred, done). Add a per-section record carried
+    on the heading element or an adjacent <code>data-reckon="section"</code> element and parsed into
+    <code>PlanState</code>: <code>effort_hours</code> (quarter-hour positive number), a <code>CapabilityRequest</code>
+    with reasoning, verification and risk, <code>attempts</code> (non-negative integer, tool-owned), a
+    <code>status</code> mirroring the declaration, and <code>links</code> (a list of <code>[project:]slug[#section]</code>
+    refs the section depends on or consumes, with the same grammar <code>depends_on</code> already parses). The
+    JSON schema published at <code>docs/_shared/plan.schema.json</code> gains the section object; the LinkML
+    question the lead raised is answered here: the schema stays the JSON Schema reckon already publishes, and a
+    LinkML rendering is generated from it only if a consumer needs it, never authored twice.</p>
+    <p><strong>Done when.</strong> <code>read_plan(view="raw")</code> returns a <code>sections</code> list with
+    the six fields for every section of a plan that carries them, the round trip through <code>write_state</code>
+    is byte-stable, and the nova plans authored on 2026-09-19 with hand-written contract tables parse into it once
+    their tables are converted.</p>
+
+    <h2 id="s2">§2 — Positive control: a section without its contract is refused at the write boundary</h2>
+    <p>The lead asked for positive control, meaning the rule is enforced where the write happens, not audited
+    afterwards. <code>edit_plan</code> gains an <code>append</code> target <code>sections</code> (id, title, body
+    HTML, effort_hours, capability, links) and refuses a section whose effort or capability is missing or off-enum,
+    exactly as it refuses an off-enum status today; a text-mode edit that introduces a new <code>&lt;h2 id="sN"&gt;</code>
+    without a contract is refused with the field named; <code>audit-doc</code> reports a plan whose implementable
+    sections lack the contract as an error, and reports a followup whose body describes executable work of more
+    than a stated effort as a warning that it belongs in a section. The refusal message carries a worked example,
+    because the local lane paraphrases rules it cannot see.</p>
+    <p><strong>Done when.</strong> The refusals are exercised by tests for each of the three paths, the message
+    carries the example, and the existing plans that predate the contract audit as warnings (not errors) until
+    their sections are converted, so the fleet does not stop on the day the rule lands.</p>
+
+    <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
+    <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
+    effort of every remaining implementable section; deferred sections are outside the denominator, as the
+    declarations map already intends. The field stays on the plan as a read-only projection: <code>edit_plan</code>
+    refuses a <code>set impl</code> on a plan that carries section contracts, and <code>reckon crew complete</code>
+    moves impl only by moving a section to done. The <code>impl-must-move</code> promotion rule then reads as a
+    section transition rather than a number the coordinator remembers to bump, which is where it failed three
+    times on nova on 2026-09-19.</p>
+    <p><strong>Where the effort comes from, and how a wrong one shows.</strong> The predicted effort is the
+    section's authored figure; the completed effort is the same authored figure, not the measured worker time,
+    so a plan's impl is a ratio of estimates and says so in the SPA. Beside it the roadmap reports, per plan, the
+    measured worker-hours of the promoted runs that landed each done section against its authored effort, so an
+    estimate that was wrong by more than a factor of two is visible on the plan and the calibration table is
+    fed by every landing. The measured figure comes from the ledger's dispatch-to-completion elapsed time, not
+    from <code>wall_seconds</code>, until that field is repaired.</p>
+    <p><strong>Done when.</strong> impl on a contract-carrying plan equals the computed ratio on read, a plan
+    with a new section added shows impl fall by the predicted amount without any other write, the SPA labels the
+    figure as computed, and the calibration column shows authored against measured effort per done section.</p>
+
+    <h2 id="s4">§4 — attempts is a tool-owned counter</h2>
+    <p><code>reckon crew dispatch</code> increments the target section's attempts when it launches a node on it
+    (a resume does not increment; a redispatch under a new node id does), and <code>reckon crew complete</code>
+    records the attempt's outcome (promoted, failed with its classification, superseded) on the section. Nothing
+    else writes the counter. The count is displayed on the section heading and in the roadmap's ready set, so a
+    coordinator opening the sprint sees which sections have already consumed two attempts.</p>
+    <p><strong>Done when.</strong> Dispatching to a section twice and promoting once leaves attempts at 2 with
+    outcomes recorded, a resume leaves it unchanged, and the counter survives the plan's round trip through
+    edit and merge.</p>
+
+    <h2 id="s5">§5 — attempts steers the capability class, never a named model</h2>
+    <p>Reckon's routing rule is that source, plans and skills may not encode a model hierarchy, so the lever is
+    the capability request. Flight config gains a rule that raises the effective capability class of a node whose
+    section attempts is at or above a threshold (default 3): general becomes orchestrator, reasoning becomes deep,
+    verification becomes strict; the backend then resolves from the raised class as it does today. The dispatch
+    summary names the raise and the count that caused it, so the coordinator reads "third attempt, raised" rather
+    than inferring it.</p>
+    <p><strong>Done when.</strong> A dispatch on a section at attempts 3 resolves to the backend the raised class
+    maps to in the test flight config, the summary states the raise, and a section at attempts 2 resolves
+    unchanged.</p>
+
+    <h2 id="s6">§6 — Section-level dependency refs are documented, audited and used</h2>
+    <p><code>parse_plan_ref</code> already parses <code>[project:]slug[#stage]</code> and the roadmap already
+    resolves a stage against the target's sections with a wiring finding when the stage is missing; gates carry
+    <code>gated_sections</code>. What is missing is that the create and edit skills say so in one place, that
+    <code>audit-doc</code> warns when a plan-level <code>depends_on</code> could have been a section ref (the
+    consumer's first implementable section does not need the whole target), and that the roadmap's critical path
+    reports section-level edges so a plan blocked on one section of another shows the section, not the plan.</p>
+    <p><strong>Done when.</strong> The reckon-create and reckon-edit skills carry the grammar with a worked
+    example, the audit warning is exercised by a test, and the roadmap raw view shows a section edge for the two
+    nova gates authored on 2026-09-19 (the topology rebank on cut-cell section 6, the corpus on the throughput
+    sections).</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="impl-is-computed" data-choice="computed-from-section-effort" data-by="lead" data-when="2026-09-19">
+        <p class="r-dec-q">Is impl authored or computed?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="computed-from-section-effort">computed from section effort: done over done plus remaining predicted</button>
+          <button class="r-opt" data-value="authored">authored by the coordinator at each landing</button>
+        </p>
+        <p class="r-dec-rat">Lead 2026-09-19: plan metrics must not go stale or need reassessing; they are calculated. The impl-must-move promotion rule failed three times on nova the same day because the number was remembered, not derived.</p>
+      </div>
+      <div class="r-dec" data-key="routing-lever" data-choice="capability-class" data-by="lead" data-when="2026-09-19">
+        <p class="r-dec-q">What does a high attempt count raise?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="capability-class">the capability class of the request, which flight config maps to a backend</button>
+          <button class="r-opt" data-value="named-model">a named model</button>
+        </p>
+        <p class="r-dec-rat">Reckon's standing rule: source may not encode a model hierarchy; availability and measured performance change, and the plan must not churn when they do.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-scci-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship section-contract-and-computed-impl §1">
+        <h4 class="r-fu-title">Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h4>
+        <div class="r-fu-body"><p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §1</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
