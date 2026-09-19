@@ -1697,6 +1697,14 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
     The command is matched rather than the backend's name because the name is
     free-form user data — a config may call a backend ``fast`` or ``reviewer``
     — while the command is the executable whose flags have to be spoken.
+
+    A placed launch prefixes the scheduler onto the argv, so a run record read
+    back later begins with the scheduler and the command's stem names that
+    scheduler rather than the harness. The identity the launch resolved to is
+    recorded beside the command for exactly that case, and is consulted only
+    when the stem names no dialect — so a configuration's command stays the
+    authority at dispatch, where a mapping carrying no recorded identity and an
+    untranslatable command is still refused.
     """
     command = backend.get("command")
     if not command:
@@ -1704,6 +1712,10 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
     stem = Path(str(command)).name
     dialect = _DIALECTS.get(stem)
     if dialect is None:
+        for key in ("dialect", "backend"):
+            recorded = str(backend.get(key) or "").strip()
+            if recorded and (candidate := _DIALECTS.get(Path(recorded).name)):
+                return candidate
         known = ", ".join(known_dialects())
         raise BackendError(
             f"no launch translation for command '{stem}'; reckon can translate: {known}"
