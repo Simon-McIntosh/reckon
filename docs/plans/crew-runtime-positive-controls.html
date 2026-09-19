@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
-<meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="19">
+<meta name="plan-impl" content="0.98">
+<meta name="plan-version" content="20">
 </head>
 <body>
   <main class="plan-doc">
@@ -357,10 +357,11 @@
     <div class="r-fu-body">Reported by the mount-resolution node from outside its fence, and it is the half that touches the incident this section exists for. _repo_root in reckon/cli.py near line 792 resolves the repository enclosing the caller and passes that path into dispatch, so a command-line dispatch can never arrive with no repository named and the library default is never reached. The two reckon nodes given nova worktrees on 2026-09-19 came through exactly this path. Pass the raw value through, None when the flag is absent, so the mount default applies, and pin it with a test that invokes the command-line entry point from inside another project's checkout and asserts the worktree lands under the mount. Scope is reckon/cli.py plus a test file. Also decide whether member registration, which lives in reckon/ledger.py register_member reached through reckon/crew/routing.py rather than where this plan first said, needs the same resolution; it writes no worktree, so the answer may be no, but it should be recorded either way.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
     </article>
-<article class="r-fu" data-id="f-crpc-manifest-template-names-the-negative-log" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-manifest-template-names-the-negative-log" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="2026-09-19T18:25:02+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The manifest template does not name the negative-control log field</h4>
     <div class="r-fu-body">Reported by the negative-control node from outside its fence. The worker prompt template in reckon/crew/prompts.py emits the manifest shape a worker fills, and it does not name negative_control_log, so a worker learns the field only if its brief happens to mention it, while promotion now refuses a passing gate without it. That is a refusal a worker cannot anticipate from the contract it is given. Add the field to the emitted template beside the other test fields, and check that the emitted template carries it. Scope is reckon/crew/prompts.py and its test.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    <p class="r-fu-outcome">Landed at 92e02503 and dee72b33 (merged 3a51ffc3), together with a gap the followup had not named. Section 7's refusal reads the declaration from the node record and no dispatch option set it, so within two minutes of landing it refused the coordinator's own attempt to dispatch the template fix, and every node writing a test was unsatisfiable. The dispatch command now carries --negative-control, naming the mutation and accepting a none declaration with a reason, and the emitted manifest template names the negative_control_log field with the same gloss so a worker meets no refusal its own contract omits. Verified by dry run rather than by assertion: a node with a test path refused without the option, admitted with it, and admitted with the none escape; both the option and the template field confirmed live.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -414,6 +415,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260919T180552379490-crpc-declared-negative-control" data-who="reckon-ship" data-when="2026-09-19T18:16:50.909Z">
     <div class="r-comment-body"><p>Dispatch refuses a test-writing node with no declared negative control and promotion refuses a passing gate with no red log naming the declared mutation; a check with no applicable mutation declares none with a reason. Eight cases, three mutations each reddening only its own, empty failure-set difference, zero added lint findings, verified live.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-crpc-the-control-refused-its-own-author" data-who="coordinator" data-when="2026-09-19T18:25:00Z">
+    <div class="r-comment-body"><p>Worth recording because it is the cleanest evidence this section works and the sharpest instance of the defect it exists to remove. Two minutes after the refusal landed, it refused the coordinator's dispatch of the very node meant to close its manifest-template gap, because that node writes a test file and no interface existed to declare its mutation. The guard fired correctly against something the system gave no way to supply, which is the same shape as a guard that cannot fail, read from the other side: both are a check whose verdict is decided by the interface rather than by the work. The repair had to be a node that writes no test file, which is the only reason it could be dispatched at all, and it verified itself by dry run rather than by a test it was forbidden to write. A rule landed without the means to satisfy it is a fleet stop, so a control of this kind ships with its declaration path in the same change rather than in a followup.</p></div>
 </div>
 </section>
 </main>
