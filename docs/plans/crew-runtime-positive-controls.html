@@ -25,9 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-19">
+<meta name="plan-modified" content="2026-09-20">
 <meta name="plan-impl" content="0.995">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 </head>
 <body>
   <main class="plan-doc">
@@ -427,6 +427,11 @@
     <h4 class="r-fu-title">The negative-control log field is read as a path, and a worker cannot tell that from the template</h4>
     <div class="r-fu-body">Second instance of the same shape as the red-log header, found in ordinary use on 2026-09-19. A worker wrote negative_control_log as the path followed by a prose clause explaining what the log shows, which is a reasonable reading of a field the template glosses in a sentence, and promotion refused it because the guard resolves the field as a path. The refusal named the value but not the constraint. Two repairs, both small: the template gloss in reckon/crew/prompts.py says the field is a path and nothing else, with the explanation belonging in tests or artifacts; and the promotion refusal in reckon/crew/promotion.py says the field must be a bare path rather than only reporting that the one given does not resolve. Pin both with a case whose declared mutation is the removal of each sentence. This is the third time a field this plan introduced has been correct in the runtime and unlearnable from the contract, so the section's own lesson is that a new field ships with its gloss and its refusal wording in the same change.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-resolved-launcher-must-reach-a-serving-origin" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The pre-launch check proves the launcher exists, not that it points anywhere alive</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-20. This workstation carries two launchers named <code>clive</code>. The canonical one at <code>/work/projects/imas_gpu/agents/clive</code>, dated 2026-09-16, targets the standing router origin <code>98dci4-gpu-0003:18802</code>. A stale copy at <code>~/public/bin/clive</code>, dated 2026-08-26, targets <code>:18800</code>, which nothing has served for some time. Neither directory is on the default PATH in this harness, so the resolution control added by this plan correctly refused an unarmed watcher and named the missing command. The repair then put the wrong directory on PATH, and every check downstream passed: the command resolved, the launch succeeded, a pid was recorded, and the banner printed the right model name, because reckon passes <code>--model</code> explicitly so the launcher's own endpoint auto-detect never runs. The worker then spent three minutes on ten API retries and died with <code>API Error: Connection refused</code>, leaving an abandoned run and an empty manifest. The lane document and the endpoints document were both accurate throughout; nothing read them against the launcher that was actually resolved.</p><p>The control to add is one step past the one this plan already landed: where a backend declares an <code>endpoints_document</code>, the pre-launch check should establish that the resolved launcher would reach a serving origin, and refuse by naming the resolved path and the origin it would use when it cannot. The cheapest honest form is to ask the launcher which origin it would use rather than parse it, then probe that origin's model listing with a short timeout, and treat an unreachable origin as a launch refusal in the same shape as an unresolvable command. A refusal that names <code>~/public/bin/clive</code> beside <code>:18800</code> would have cost one line instead of a dead worker and half an hour of attribution.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
