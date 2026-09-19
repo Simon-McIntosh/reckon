@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-19">
 <meta name="plan-impl" content="0.72">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 </head>
 <body>
   <main class="plan-doc">
@@ -56,10 +56,10 @@
     <table>
       <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
       <tbody>
-        <tr><td>§1 Backend binary resolved before launch</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
-        <tr><td>§2 An empty stream is a launch failure</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
-        <tr><td>§3 A watcher is a process the dispatcher can see</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
-        <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§1 Backend binary resolved before launch</td><td>3</td><td>standard</td><td>moderate</td><td>2 (one malformed dispatch, one landing)</td></tr>
+        <tr><td>§2 An empty stream is a launch failure</td><td>3</td><td>deep</td><td>elevated</td><td>1 (landed with §1)</td></tr>
+        <tr><td>§3 A watcher is a process the dispatcher can see</td><td>4</td><td>deep</td><td>elevated</td><td>2 (service half, then the dispatch refusal)</td></tr>
+        <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>1 (landed)</td></tr>
         <tr><td>§5 Skills carry the pointer, not the rule</td><td>1</td><td>standard</td><td>low</td><td>0</td></tr>
         <tr><td>§6 The repository comes from the project, never from the shell</td><td>2</td><td>standard</td><td>elevated</td><td>0</td></tr>
         <tr><td>§7 A node that writes a check states the negative it fails against</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
@@ -117,7 +117,8 @@
     fault, so the number a reader sees is under blocked.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s2">§2 landed</a>.</p>
 
-    <h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>
+    <p><strong>Files.</strong> The reaper and the once-only guard are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a launch-failed run is in <code>reckon/crew/resumption.py</code>; the classification the follower renders and the counts the flight and drain views read are in <code>reckon/crew/recovery.py</code>, <code>reckon/crew/runs.py</code> and <code>reckon/crew/ticker.py</code>. A node taking this section is granted all five.</p>
+<h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>
     <p><code>watcher_state</code> in <code>reckon/crew/runs.py</code> already binds liveness to a registered
     process, yet a dispatch was admitted with no watcher for its project because a session follower was
     armed. Make the dispatch and resume preconditions read <code>watcher_live</code> alone; a follower
@@ -217,7 +218,8 @@
     creates its worktree under A's mount; one run with <code>--repo</code> naming B is refused naming both roots;
     both pinned by tests with two temporary mounts.</p>
 
-    <h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
+    <p><strong>Files, and what the comparison is.</strong> The four surfaces that resolve a repository are dispatch in <code>reckon/crew/dispatch.py</code>, resume in <code>reckon/crew/resumption.py</code>, member registration in <code>reckon/crew/runs.py</code> and promotion in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all four. The comparison is between resolved real paths, so a symlinked route to the same root agrees. A working copy that shares the mount’s git common directory, which is what a worktree is, is the same repository and is admitted; a different repository is refused whether or not <code>--repo</code> named it, because the point is that the project decides and the shell does not.</p>
+<h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
     <p>Three checks were landed this week that ran, reported success, and could not fail for the reason they
     were written. A persistence guard compared one tensor-spline fit against its own evaluation, so its residual
     was zero by construction; it passed on all twenty archived states whose stored flux disagreed with their
@@ -237,7 +239,8 @@
     when the pair is present, and the refusal messages name the discharge. Pinned by tests that exercise the
     refusal and its discharge on a fixture node.</p>
 
-    <section data-reckon="followups" id="followups" class="r-followups">
+    <p><strong>Files, trigger, channel and discharge.</strong> The dispatch refusal is in <code>reckon/crew/dispatch.py</code> with its text composed in <code>reckon/crew/node.py</code>, and the promotion refusal is in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all three. The trigger is the node’s declared write paths containing a test file, which is the one condition a dispatcher can evaluate without reading prose. The declaration is a structured field on the node record rather than a phrase mined out of the done-when, so the refusal has something exact to test and a brief author knows what to write. At promotion the manifest carries the path to a red log whose content names the declared mutation, not merely any failing log. The escape is explicit rather than silent: a check admitting no mutation that could be applied without disabling the system, such as an identity that must hold, declares its negative as none with the reason, which promotion records rather than refuses.</p>
+<section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §1 and §2 together (resolution and its failure record), then §4, then §3, then §5</h4>
@@ -260,6 +263,21 @@
     <div class="r-fu-body">The remaining half of section 3, not delivered by the ensure node because it needs files outside that node's scope, and not claimed. The admission precondition is read in reckon/crew/dispatch.py, where _ensure_watch_producer auto-starts a producer and the guard consults the follower's attach state, and the refusal is raised by WatcherRequired in reckon/crew/node.py where its text is composed. Make the precondition read watcher_live alone so a follower contributes to delivery and never to the watcher requirement, and have the refusal name the ensure command. The interface it consumes already exists and is live: ensure_watcher_service, watcher_ensure_line, and the ensure_line key of watch_state in reckon/crew/runs.py. Pin it with a test that dispatches into a project holding a live follower and no watcher process and asserts both the refusal and the command named in it, and declare the mutation that test fails against with its red log, as every node on this plan has done. Scope must include reckon/crew/dispatch.py and reckon/crew/node.py.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §3</pre>
     <p class="r-fu-outcome">Landed at 5ec236d1 and 39568d2f (merged 025a22ff), which completes section 3. The admission precondition reads watcher liveness from the watcher's own state, so a live follower no longer satisfies the watcher requirement, and the refusal text names the ensure command taken from the ensure_line key of that same state rather than composing a second copy, so one definition reaches every refusal. Two tests, a mutation red log for each, and an empty set difference against the base failures. Verified live in the served module: node.py reads ensure_line from the state and no longer composes the old arming line.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-repository-from-the-project" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 6: the repository comes from the project mount, never from the shell</h4>
+    <div class="r-fu-body">Now that section 6 names its four surfaces and states its comparison, it is dispatchable. Dispatch, resume, member registration and promotion each take the repository from the project's mount rather than from the enclosing repository of the caller; a mismatch is refused naming both resolved real paths and the flag. A working copy sharing the mount's git common directory is the same repository and is admitted. Scope is reckon/crew/dispatch.py, resumption.py, runs.py and promotion.py plus a test file. The measured incident is two reckon nodes given nova worktrees on 2026-09-19 because the dispatch ran from the nova checkout.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-declared-negative-control" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 7: a node writing a check declares the negative it fails against</h4>
+    <div class="r-fu-body">Section 7 now states its trigger, its declaration channel, its discharge and its escape, so it is dispatchable. A node whose declared write paths contain a test file must carry a structured negative-control declaration on its node record; dispatch refuses one without it, and promotion refuses a passing gate whose manifest carries no red log naming the declared mutation. A check admitting no applicable mutation declares its negative as none with a reason, which promotion records rather than refuses. Scope is reckon/crew/dispatch.py, node.py and promotion.py plus a test file. Four checks landed this week that could not fail for their own reason, each found by review with the author's gate green.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-skills-point-at-the-ensure-command" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 5: the ship skill points at the ensure command and drops the manual recipe</h4>
+    <div class="r-fu-body">Unblocked now that reckon crew watch --ensure exists and the dispatch refusal names it. Replace the recovery prose in skills/reckon-ship that tells a coordinator to export the backend directory and restart watcher units by hand with one line naming the ensure command, and state that a dispatch refused as unwatched is repaired by running it. Remove any instruction the runtime now enforces. The section names a directory rather than a file, so the node's scope is skills/reckon-ship/SKILL.md and its references directory, and the node states which file it edited.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -295,6 +313,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260919T173406101093-crpc-dispatch-refuses-an-unwatched-project" data-who="reckon-ship" data-when="2026-09-19T17:44:32.094Z">
     <div class="r-comment-body"><p>Section 3 complete: watcher liveness read from the watcher own state so a follower never satisfies the requirement, and the refusal names the ensure command from one definition. Two mutation red logs and an empty set difference against the base failures.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-readback-findings" data-who="coordinator" data-when="2026-09-19T17:55:00Z">
+    <div class="r-comment-body"><p>This plan was read back under the rule it helped introduce, and the read-back paid for itself before a single line was dispatched. Its central finding is that sections 2, 6 and 7 named no file at all, describing their surfaces rather than locating them, and section 3 named its decisive files only in a retrospective paragraph. That is precisely the defect that stopped the watcher node an hour earlier, when a done-when asked for a dispatch-side refusal while the brief granted three files that did not contain it. Each of those sections now carries a Files paragraph, and sections 6 and 7 also carry the semantics a worker would otherwise have had to guess: what the repository comparison actually compares, and what triggers the negative-control requirement, where the declaration lives, what discharges it at promotion, and what a check with no applicable mutation declares instead. The read-back also caught the contract table reading zero attempts on every row while the same document carried four landing summaries, which is now corrected, and noted that the implementation scalar is not derivable from the section states, which is the defect the section-contract plan exists to remove rather than one to patch here. Finally it observed that no followup opened sections 5, 6 or 7, so the next invocation existed only in the coordinator's head; three followups now carry them.</p></div>
 </div>
 </section>
 </main>
