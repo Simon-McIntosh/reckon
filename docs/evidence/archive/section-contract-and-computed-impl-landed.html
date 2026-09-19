@@ -175,7 +175,10 @@
     <h3>The review findings, closed</h3>
     <p>An independent review of this landing
     (<code>r-20260919T121016391583</code>, <code>83/100</code>) left four findings. All four
-    are closed, on the change that closes them named beside each.</p>
+    are closed, on the change that closes them named beside each; the closures land in
+    <code>2b04c779</code> (the roadmap scan), <code>35d2953b</code> (the write path and the
+    skill) and <code>604026a6</code> (this record), against base
+    <code>0bf94fd5</code>.</p>
     <table>
       <thead><tr><th>Finding</th><th>Closure</th></tr></thead>
       <tbody>
@@ -205,7 +208,12 @@
           <td>The recorded population of 27 live implementable plans depended on a
           <code>plans/</code>-scoped walk the record did not state.</td>
           <td>The definition is stated above and in &sect;7: 27 under
-          <code>docs/plans/</code>, 29 for a docs-wide walk.</td>
+          <code>docs/plans/</code>, 29 for a docs-wide walk. The finding also asked for
+          it in the audit's own message; that half is not reachable here, because the
+          wiring message is defined in <code>reckon/_schema.py</code> and the audit entry
+          point in <code>reckon/cli.py</code> &mdash; both outside this node's write fence
+          &mdash; and a project's counts cannot be written into reckon source at all
+          without breaking the repo-agnostic rule. It is recorded as a follow-on.</td>
         </tr>
       </tbody>
     </table>
