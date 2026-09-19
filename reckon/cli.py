@@ -957,6 +957,16 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     default=None,
     help="Declared specification ownership level; omitted means undeclared.",
 )
+@click.option(
+    "--negative-control",
+    "negative_control",
+    default="",
+    help=(
+        "The mutation this node's checks must fail against, declared when its "
+        "write paths include a test file; `none: <reason>` for a check that "
+        "admits no applicable mutation."
+    ),
+)
 @click.option("--node", "node_id", required=True, help="Stable node id.")
 @click.option("--goal", default="", help="The one deliverable this node produces.")
 @click.option("--done-when", default="", help="The measure that emits evidence.")
@@ -1070,6 +1080,7 @@ def crew_dispatch(
     role,
     backend,
     spec_level,
+    negative_control,
     node_id,
     goal,
     done_when,
@@ -1129,6 +1140,7 @@ def crew_dispatch(
         section=section,
         role=role,
         spec_level=spec_level or "",
+        negative_control=negative_control or "",
         done_when=done_when,
         write_paths=list(write_paths),
         time_budget=time_budget,
