@@ -120,6 +120,27 @@
     cost of that worker in cores, memory and queue wait.</p>
 
     <p><strong>Files, and what this section mints.</strong> The launch plan and the reaper are in <code>reckon/crew/dispatch.py</code>; the run record the job id must appear in is written by <code>reckon/crew/runs.py</code> for the live pointer and <code>reckon/crew/promotion.py</code> for the ledger row, and the section states which of the two it chose and why; the backend schema the placement field joins is in <code>reckon/flight.py</code>. Those four plus a test file are the grant. The field is optional in one specific sense fixed here rather than later: its absence means today’s login-node launch, so nothing changes for a backend that does not declare it, and section 6 changes which backends declare one rather than changing what absence means. Indistinguishable downstream means the paths and the formats are unchanged; the record gains the job id as a new field beside the pid, which is an addition rather than a difference in shape.</p>
+
+<div class="r-note" data-reckon="landed" data-node="awcj-one-worker-under-one-allocation" data-when="2026-09-19">
+<p><strong>Outcome — mechanism landed, the proving run still owed.</strong> Commit <code>740e4065</code>
+lands the wrap in <code>reckon/crew/dispatch.py</code>: a backend's declared placement is resolved against the
+same PATH the launch searches and prefixed onto the already-resolved argv, so the absolute executable, the
+environment and the stream paths are carried through; a backend declaring none is returned untouched. The
+field is validated with the backend definition in <code>reckon/flight.py</code> and survives resolution into the
+resolved configuration. The job id is read through the placement's own declared probe and recorded beside the
+pid on the run record; <code>reckon/crew/promotion.py</code> is the module chosen to carry it onto the committed
+ledger row, because that row is the durable record a later attribution reads while the live pointer is removed
+by the same promotion. Gate: <code>tests/test_crew_launch_resolution.py
+tests/test_crew_declared_negative_control.py tests/test_crew_placement.py</code> — 24 passed, exit 0, against 14
+passed at base <code>49f36920</code>; ten tests added, no newly failing id. The declared negative control (drop
+the prefix) fails exactly the two tests that assert the prefix.</p>
+<p><strong>Not done, and the section is not finished without it:</strong> no placed worker has run on a compute
+node from this work. The partition and job id, the measured cores and peak memory, the queue wait, and whether a
+queued allocation is distinguishable from a slow worker are therefore unmeasured. A second gap is recorded
+against the fence rather than worked around into the schema: the generated backend model forbids unknown keys, so
+the placement block is lifted before that check; adding the slot to <code>reckon/schema/flight.yaml</code> and
+regenerating is what makes it visible to the served JSON Schema.</p>
+</div>
 <h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
     <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the
     worker's pid belongs to a compute node, so the existing reads become false in a specific and dangerous

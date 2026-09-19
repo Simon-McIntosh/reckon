@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job-landed">
+  <meta name="plan-title" content="A worker is charged to a job — landed evidence">
+  <meta name="plan-summary" content="The launch path can now wrap a worker in a scheduler invocation declared on its backend, and the run record carries the job the launch became. The single real placed node the section is finished by has not been run.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1">
+  <meta name="plan-recorded-at" content="2026-09-19">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base b82dcbe5">
+  <meta name="plan-commits" content="740e4065">
+  <meta name="plan-artifacts" content="reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py">
+  <title>A worker is charged to a job — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A worker is charged to a job — landed evidence</h1>
+    <p class="plan-summary">The mechanism is landed and its guard is shown to fire. The run
+    that the section is <em>finished</em> by &mdash; one real placed node on a compute node,
+    promoted through the ordinary path &mdash; was not dispatched inside this node's time
+    fence, and the measurement it owes is therefore still owed.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Section 1 asks for a mechanism and then asks to be proved by one real run. The mechanism
+    half is landed: a backend may declare a placement, the launch it produces is wrapped rather
+    than rebuilt, and the run record names the job beside the pid. The proof half is not: no
+    placed worker has yet run on a compute node from this node's work, so the partition, the
+    job id, the measured cores and peak memory, the queue wait, and the queued-versus-slow
+    question are all unmeasured. This record states that as a shortfall rather than reporting
+    the mechanism as the section.</p>
+  </section>
+
+  <section id="s1-mechanism">
+    <h2>&sect;1 &mdash; The wrap, the record, and the refusal</h2>
+    <p>Commit <code>740e4065</code>. Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py
+    tests/test_crew_declared_negative_control.py tests/test_crew_placement.py</code> &mdash;
+    <strong>24 passed, exit 0</strong>. The same command over the two pre-existing files alone
+    is <strong>14 passed, exit 0</strong> at base <code>49f36920</code>, so the delta is ten
+    tests added and an empty set of newly failing ids.</p>
+    <p>A backend's placement declares a <code>scheduler</code> executable, its
+    <code>options</code>, and optionally a <code>job_id_probe</code>. Dispatch resolves the
+    scheduler head against the same PATH the launch searches and prefixes the
+    <em>already-resolved</em> argv, so the absolute executable, the environment and the stream
+    file descriptors are the ones the launch was built with &mdash; the wrap carries the launch
+    through rather than replacing it. A backend that declares no placement is returned
+    untouched, which is the sense in which the field is optional and the reason no undeclared
+    backend changes behaviour.</p>
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: make
+    <code>apply_backend_placement</code> return the resolved plan unprefixed, so a declared
+    placement is silently dropped. The red log at
+    <code>/tmp/awcj/negative_control.log</code> fails
+    <code>test_a_declared_placement_prefixes_the_resolved_launch</code> and
+    <code>test_an_unresolvable_scheduler_is_refused_before_launch</code> &mdash; the two claims
+    the mutation removes. A passing suite would not have shown that.</p>
+    <p><strong>The job is read, not guessed.</strong> A placed launch records
+    <code>job_id</code> beside <code>pid</code>, read through the placement's declared probe so
+    reckon learns no scheduler's own vocabulary; a probe that answers nothing records its
+    reason rather than a fabricated id. Promotion carries the field onto the committed ledger
+    row, which is the durable record a later attribution reads &mdash; the live pointer it was
+    first written on is removed by that same promotion.</p>
+  </section>
+
+  <section id="shortfall">
+    <h2>The shortfall, stated plainly</h2>
+    <p>The section is finished by a run, not by a design, and that run has not happened. What
+    remains is one throwaway local-lane node dispatched with a placement declared, run to
+    completion on a compute node, and promoted by the ordinary path; then the partition, job
+    id, measured cores and peak memory, queue wait between dispatch and first stream record,
+    and whether a queued allocation is distinguishable from a slow worker in the surfaces a
+    coordinator watches, recorded from that run.</p>
+    <p><strong>A configuration gap the fence did not reach.</strong> The backend schema is
+    generated from <code>reckon/schema/flight.yaml</code> into
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>,
+    and the generated model forbids unknown keys. The placement block is therefore lifted
+    before that check and validated alongside the other backend fields, which keeps it a
+    first-class field of the resolved configuration without touching files outside this node's
+    grant. Adding the slot to the schema source and regenerating is the follow-on that makes
+    the field visible to the served JSON Schema and its editor completion.</p>
+  </section>
+</main>
+</body>
+</html>
