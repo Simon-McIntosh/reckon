@@ -476,6 +476,31 @@ nothing has been launched</code></pre>
       manifest template a worker reads, does not yet name <code>negative_control_log</code>, so a worker learns
       the field from its node brief alone and a manifest that omits it is refused with the field named. That file
       is outside this node's write scope and is recorded as a follow-on.</p>
+      <p><strong>The interface gap is closed.</strong> Both remainders reached every reader that way only
+      through the library record; neither was reachable from the command line. <code>reckon/cli.py</code>'s
+      <code>crew dispatch</code> now carries <code>--negative-control</code>, assigned to
+      <code>TaskNode.negative_control</code> before <code>plan_dispatch</code> judges the node, so the
+      refusal above is discharged from the command a coordinator runs; its one-line gloss names the field as
+      the mutation the node's checks must fail against and admits <code>none: &lt;reason&gt;</code>.
+      <code>reckon/crew/prompts.py</code>'s emitted manifest template now names
+      <code>negative_control_log</code> beside <code>tests</code> and <code>test_logs</code>, with the same
+      gloss, so the promotion refusal is legible from the contract handed to a worker rather than only from
+      its brief.</p>
+      <p><strong>The check that saw it.</strong> One throwaway node whose declared write path is a test file
+      was dispatched <code>--dry-run</code> through the real command line three times, with
+      <code>PYTHONPATH</code> pinned to this worktree so the edited command was the one exercised
+      (<code>reckon.cli.__file__</code> resolved inside the worktree, not the main checkout). Without the
+      option the dispatch exits <strong>2</strong> and refuses with a single finding,
+      <code>negative_control</code>, whose detail names both the field and the triggering test path. With
+      <code>--negative-control "&lt;mutation&gt;"</code> the same node resolves at exit <strong>0</strong>
+      with no findings, and the returned node record carries the declaration it was given. With
+      <code>--negative-control "none: &lt;reason&gt;"</code> it resolves likewise, so the explicit escape
+      reaches the interface rather than only the library. The rendered template was read back and the
+      <code>negative_control_log:</code> line confirmed present between <code>test_logs</code> and
+      <code>baseline_suite</code>. The three dispatch outputs, the rendered template, and the gate log are
+      under <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>. The
+      cases that pin the interface are the follow-on test node's; this node writes no test file, which is
+      what makes it dispatchable under the trigger it exists to satisfy.</p>
     </section>
 
     <section id="verification">
