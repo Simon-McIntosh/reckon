@@ -2994,8 +2994,8 @@ def _require_declared_negative_control(
             f"run {run_id!r} declares the mutation {declaration!r} but the log at "
             f"{resolved!r} does not name it, so the log is a failure for some other "
             "reason and not the negative control of this check. Record the log the "
-            "declared mutation produced, or correct the declaration to the mutation "
-            "the log shows"
+            "declared mutation produced with its first line repeating that mutation "
+            "verbatim, or correct the declaration to the mutation the log shows"
         )
     check["verdict"] = "matched"
     return check

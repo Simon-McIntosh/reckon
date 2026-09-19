@@ -343,6 +343,26 @@
     <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once:
     <strong>13 passed, exit 0</strong>.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The first-line convention is stated where a worker reads it, 2026-09-19.</strong> Promotion matches
+    the declared mutation against the red log's content, so a genuine red run that does not name it is refused as a
+    failure for some other reason — and the convention that satisfies that match was enforced while being written
+    nowhere a worker reads, which three nodes answered three ways: a <code>MUTATION</code> header, a
+    <code>MUTATION DECLARED</code> header, and no header at all until the node was resumed to add one. Two surfaces
+    now state it. The manifest template's gloss beside <code>negative_control_log</code> in
+    <code>reckon/crew/prompts.py</code> says the log's first line repeats the declared mutation verbatim, so the
+    convention reaches a worker before it starts rather than only at the promotion it fails. The refusal in
+    <code>reckon/crew/promotion.py</code> says the same thing while keeping the detail it already carried about
+    which declaration and which resolved log are being matched, so a worker reading the refusal learns what to
+    write rather than only what is missing. Two cases in
+    <code>tests/test_crew_negative_control_header.py</code> pin the two surfaces, each entering where a reader
+    reaches it — <code>compose_prompt</code> for the contract handed to the worker, and the promotion refusal for
+    the one the worker meets. Each was reddened by the sentence it measures being removed; both reddened together
+    under one declared mutation whose red log is kept beside the green one, its own first line repeating that
+    mutation verbatim. Gate: <code>tests/test_crew_declared_negative_control.py</code>,
+    <code>tests/test_crew_negative_control_interface.py</code> and the new file, run once to
+    <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
+    <strong>15 passed, exit 0</strong>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
