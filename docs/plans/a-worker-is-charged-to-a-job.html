@@ -148,6 +148,23 @@ and whether a queued allocation is distinguishable from a slow worker are unmeas
 mechanism and its cases; the proving run is one dispatch a coordinator owns, because a worker that dispatches a
 worker does not fit a fence. It is a command rather than a design, and it is written out in this node's manifest
 under <code>follow_ons</code>.</p>
+<p><strong>Read back through a promotion, and repaired where it broke.</strong> The wrap is what the launch plan
+carries; what a later reader infers from the record it leaves behind is a second thing, and that half was
+broken. Promoting a placed run raised <code>no launch translation for command 'srun'</code>, because the
+record's first word is the scheduler while the lane the run launched from is named beside it. The record now
+carries the harness the launch resolved, captured before the placement wraps the plan, and the translation it
+resolved to; a reader consults those and falls back to <code>argv[0]</code> only for a record written before
+the fields existed, and the translation takes the recorded identity when the command's stem names no dialect. A
+configuration mapping carries no such identity, so dispatch-time strictness is unchanged: an untranslatable
+command with nothing recorded beside it is refused exactly as before. Gate
+<code>tests/test_crew_placement.py tests/test_crew_launch_resolution.py
+tests/test_crew_declared_negative_control.py tests/test_crew_placed_promotion.py</code> — <strong>28 passed,
+exit 0</strong>, against <strong>24 passed, exit 0</strong> at base <code>750fa656</code> for the three
+pre-existing files: four cases added and no newly failing id. Held against the base reader, the two new claims
+fail with the refusal quoted above, which is the reproduction rather than an assertion about one. The declared
+mutation (read the harness from <code>argv[0]</code> again) reddens exactly those two and nothing else. The new
+case is a promotion rather than a unit case because the launch cases were green while the end-to-end path was
+broken, which is the shape this section now has a round trip for.</p>
 </div>
 <h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
     <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the

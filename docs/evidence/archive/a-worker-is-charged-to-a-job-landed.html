@@ -82,6 +82,43 @@
     it was first written on is removed by that same promotion.</p>
   </section>
 
+  <section id="s1-readback">
+    <h2>&sect;1 read-back &mdash; the identity a promotion infers</h2>
+    <p>Commit <code>bf160b8e</code>. Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_placement.py
+    tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py
+    tests/test_crew_placed_promotion.py</code> &mdash; <strong>28 passed, exit 0</strong>. The same command
+    over the three pre-existing files at base <code>750fa656</code> is <strong>24 passed, exit 0</strong>, so
+    the delta is four tests added and an empty set of newly failing ids.</p>
+    <p><strong>The defect, reproduced before it was repaired.</strong> Held against the base revision, the two
+    new claims fail with <code>reckon._backends.BackendError: no launch translation for command 'srun'; reckon
+    can translate: claude, clive, codex</code>, raised through <code>crew.complete</code> on a placed run whose
+    stream is on disk. The wrap the section landed was correct for launching; what it changed is the identity a
+    downstream reader infers, because it puts the scheduler at <code>argv[0]</code> while the lane the run
+    launched from is named beside it.</p>
+    <p><strong>What carries the identity now.</strong> Dispatch records the harness command it resolved,
+    captured before the placement wraps the plan, together with the translation it resolved to. The reader
+    consults those, falling back to <code>argv[0]</code> only for a record written before the fields existed,
+    and the translation takes the recorded identity when the command's stem names no dialect &mdash; which is
+    what makes a placed run already in flight promotable, since its argv names the scheduler and nothing else.
+    A mapping built from configuration carries no recorded identity, so dispatch-time strictness is unchanged
+    and an untranslatable command with nothing beside it is refused exactly as before; that half is asserted,
+    not assumed.</p>
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: read the harness from
+    <code>argv[0]</code> again and carry no lane identity into the translation. The red log at
+    <code>runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/negative-control.red.log</code> (first
+    line repeats the mutation verbatim) fails <code>test_a_placed_run_promotes_on_its_declared_backend</code>
+    and <code>test_a_record_naming_only_its_lane_still_resolves_it</code> &mdash; the two claims the mutation
+    removes &mdash; and leaves the other twenty-six green. A passing suite would not have shown that.</p>
+    <p><strong>What this node did not touch.</strong> <code>reckon/crew/promotion.py</code> is in scope and
+    needed no change: the reader it calls lives in <code>reckon/crew/dispatch.py</code>, and a completion
+    has no configuration to resolve a lane from, which is why the identity had to be recorded rather than
+    looked up. <code>reckon/crew/recovery.py</code> reads a run's harness from its <code>argv[0]</code> in two
+    places and therefore loses a placed run's budget, refusal and final-message readings while swallowing the
+    refusal; that module is out of this node's scope and the finding is carried under
+    <code>follow_ons</code>.</p>
+  </section>
+
   <section id="owed">
     <h2>The run still owed, and whose it is</h2>
     <p>Section 1 is finished by a run, not by a design, and that run has not happened here. It
