@@ -18,9 +18,9 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
-from reckon import _backends, _store, capability, ledger
+from reckon import _backends, _store, capability, flight, ledger
 from reckon.calibration import agent_configuration_key
 from reckon.crew.node import (
     BudgetHold,
@@ -3359,6 +3359,7 @@ def dispatch(
                         resume_session=reuse_session,
                     )
                 )
+                plan = apply_backend_placement(plan, backend)
                 spawn = launcher or _spawn
                 spawned_pid = spawn(
                     plan,
@@ -3366,9 +3367,11 @@ def dispatch(
                     stderr_path=stderr_path,
                     prompt_path=prompt_path,
                 )
-            except (_backends.BackendError, OSError) as exc:
+            except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             spawned_start_time = _process_start_time(spawned_pid)
+            placement = flight.placement_for(backend)
+            job_id, job_id_status = placement_job_id(placement, run_id=run_id)
             record.update(
                 {
                     "pid": spawned_pid,
@@ -3376,6 +3379,20 @@ def dispatch(
                     "argv": list(plan.argv),
                     "dialect": plan.dialect,
                     "session_resumed": _launched_prior_session(plan) is not None,
+                    # A placed launch is charged to a scheduler job rather than
+                    # to the coordinator's own login slice, so the job is the
+                    # process identity a liveness read needs; it is recorded
+                    # beside the pid, from which it is not derivable.
+                    "job_id": job_id,
+                    "placement": (
+                        None
+                        if placement is None
+                        else {
+                            "scheduler": placement["scheduler"],
+                            "options": list(placement["options"]),
+                            "job_id_status": job_id_status,
+                        }
+                    ),
                 }
             )
         else:
@@ -3764,6 +3781,95 @@ def resolve_launch_executable(
     # selected and how the run records what it ran.
     resolved = os.path.abspath(resolved)
     return dataclasses.replace(plan, argv=[resolved, *plan.argv[1:]])
+
+
+def apply_backend_placement(
+    plan: _backends.LaunchPlan, backend: Mapping[str, Any]
+) -> _backends.LaunchPlan:
+    """Prefix an already-resolved launch with its backend's declared placement.
+
+    The resolved argv is carried through unchanged behind the scheduler
+    invocation, so the absolute executable, the environment, and the stdin,
+    stdout and stderr paths the launch was built with are the ones that run.
+    The scheduler executable is resolved against the same PATH the launch
+    searches, because an unresolvable wrapper would die at exec and leave an
+    empty stream that reads as a worker turn — the failure the launch resolution
+    above exists to turn into an explicit refusal.
+
+    A backend declaring no placement is returned untouched, which is what keeps
+    an undeclared backend launching as a child of the coordinator exactly as it
+    does today.
+    """
+    from reckon import flight
+
+    placement = flight.placement_for(backend)
+    if placement is None:
+        return plan
+    searched = launch_search_path(plan.environment)
+    scheduler = str(placement["scheduler"])
+    found = shutil.which(scheduler, path=searched)
+    if not found:
+        raise LaunchResolutionError(
+            f"the declared placement names scheduler {scheduler!r}, which cannot "
+            f"be resolved on the PATH this launch would search: {searched} — "
+            "install it or add its directory to PATH, then retry; nothing has "
+            "been launched"
+        )
+    prefix = [os.path.abspath(found), *[str(item) for item in placement["options"]]]
+    return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
+
+
+# How long a declared job-id probe is given to answer, and how many times it is
+# retried. The scheduler assigns the identifier as the job is admitted, so a
+# probe read in the same instant as the spawn can precede the assignment.
+_PLACEMENT_PROBE_TIMEOUT_SECONDS = 10
+_PLACEMENT_PROBE_ATTEMPTS = 3
+
+
+def placement_job_id(
+    placement: Mapping[str, Any] | None,
+    *,
+    run_id: str,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> tuple[str | None, str]:
+    """Ask the scheduler which job a placed launch became.
+
+    Returns the identifier and a status naming what happened, because a
+    placement that reaches a job always identifies it while one that cannot
+    must say so rather than record a fabricated id. ``{run}`` in the probe
+    argument vector is replaced by the run id, which is how a probe addresses
+    the job it is asking about without reckon knowing any scheduler's own
+    vocabulary.
+    """
+    if not placement:
+        return None, "no-placement"
+    probe = placement.get("job_id_probe")
+    if not probe:
+        return None, "no-probe-declared"
+    argv = [str(token).replace("{run}", run_id) for token in probe]
+    run = runner or subprocess.run
+    last = ""
+    for attempt in range(_PLACEMENT_PROBE_ATTEMPTS):
+        try:
+            completed = run(
+                argv,
+                capture_output=True,
+                text=True,
+                timeout=_PLACEMENT_PROBE_TIMEOUT_SECONDS,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            last = f"probe failed to run — {exc}"
+        else:
+            for token in str(completed.stdout or "").split():
+                if token.isdigit():
+                    return token, "recorded"
+            last = (
+                "probe answered no identifier "
+                f"(exit {completed.returncode})"
+            )
+        if attempt + 1 < _PLACEMENT_PROBE_ATTEMPTS:
+            time.sleep(1.0)
+    return None, last or "probe answered no identifier"
 
 
 def assert_routable_backends_resolvable(

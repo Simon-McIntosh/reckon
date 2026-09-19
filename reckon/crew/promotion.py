@@ -3353,6 +3353,15 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # The job a placed launch was charged to rides the committed row beside the
+    # run it belongs to, because the ledger row is the durable record a later
+    # attribution reads; the live pointer it was first written on is removed by
+    # this promotion. A run that declared no placement records the key absent
+    # rather than zero, so an unplaced run is distinguishable from a placed one
+    # whose scheduler never answered.
+    job_id = record.get("job_id")
+    if job_id is not None:
+        run["job_id"] = str(job_id)
     # A deliberate commitless promotion survives on the record with its reason,
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
