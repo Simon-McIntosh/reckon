@@ -599,6 +599,34 @@ def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, An
     return {**entry, "reason": "resume-refused", "detail": str(exc)}
 
 
+def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
+    """Describe the launch failure that stops this run's lift, or None.
+
+    Only a hand-typed resume or a completion clears the phase, so the lift loop
+    is where the refusal belongs: a watcher lifting this run would repeat an
+    exec that already failed, once per tick, which is the loop the phase exists
+    to stop. The last recorded failure supplies the cause and the remedy.
+    """
+    phase = str(record.get("phase") or "")
+    if phase != "launch-failed":
+        return None
+    failures = list(record.get("launch_failures") or ())
+    latest = failures[-1] if failures else {}
+    exit_status = latest.get("exit_status")
+    backend = str(latest.get("backend") or record.get("backend") or "the backend")
+    tail = str(latest.get("stderr_tail") or "").strip().splitlines()
+    cause = tail[-1] if tail else "the process exited before writing any turn"
+    return {
+        "phase": phase,
+        "detail": (
+            f"a {backend} launch exited with status {exit_status} before "
+            f"writing any stream record ({cause}); {len(failures)} failure"
+            f"{'s' if len(failures) != 1 else ''} recorded"
+        ),
+        "remedy": f"fix the command for backend {backend!r} and its PATH",
+    }
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -608,6 +636,15 @@ def _resume(
     advice: str = CONTINUE_ADVICE,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does."""
+    failure = _launch_failure_block(record)
+    if failure is not None:
+        # A launch that produced no stream has no session to continue, so a
+        # lift would repeat the failed exec every tick. It waits for a person.
+        raise CrewError(
+            f"run {run_id!r} is in phase {failure['phase']!r}: "
+            f"{failure['detail']} — repair the launch ("
+            f"{failure['remedy']}) and resume it by hand, or complete it"
+        )
     plan = resume_plan(run_id, advice, config=config)
     directory = run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1

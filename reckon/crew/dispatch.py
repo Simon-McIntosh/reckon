@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ast
 import ctypes
+import dataclasses
 import fcntl
 import json
 import os
@@ -3259,15 +3260,17 @@ def dispatch(
 
         if launch_kind == "cli":
             try:
-                plan = _backends.launch_plan(
-                    backend_name=backend_name,
-                    backend=backend,
-                    prompt=prompt,
-                    worktree=worktree["path"],
-                    manifest_path=node.manifest_path,
-                    writable_directories=resolution.sandbox_write_roots or (),
-                    final_message_path=str(final_path),
-                    resume_session=reuse_session,
+                plan = resolve_launch_executable(
+                    _backends.launch_plan(
+                        backend_name=backend_name,
+                        backend=backend,
+                        prompt=prompt,
+                        worktree=worktree["path"],
+                        manifest_path=node.manifest_path,
+                        writable_directories=resolution.sandbox_write_roots or (),
+                        final_message_path=str(final_path),
+                        resume_session=reuse_session,
+                    )
                 )
                 spawn = launcher or _spawn
                 spawned_pid = spawn(
@@ -3353,12 +3356,110 @@ if __name__ == "__main__":
 # no corpse exists for that probe to misread. Owned by the process that called
 # :func:`_spawn`, because only the parent may wait on a child.
 _LAUNCHED_WORKERS: set[int] = set()
+# What each launched pid was launched as, so a reap can judge the exit against
+# the run it belongs to. A pid is only ever in both this map and the set above
+# together; the map is popped with the pid.
+_LAUNCHED_WORKER_RUNS: dict[int, dict[str, Any]] = {}
 _LAUNCHED_WORKERS_LOCK = threading.Lock()
 _LAUNCHED_WORKERS_WAKE = threading.Event()
 # The reaper thread, once started, behind the same lock as the set it guards.
 # A mutable holder rather than a rebound global so the start-once guard can
 # record it without a module-level reassignment.
 _LAUNCHED_WORKER_REAPER: dict[str, threading.Thread | None] = {"thread": None}
+
+
+# The stream file a launch writes its turn records into. A launch that produced
+# no byte of it never reached a model: the process is gone, so there is no turn
+# to wait for and no session to reuse, and the run is stopped rather than
+# retried. Named as a phase so every reader of the pointer sees the same thing.
+LAUNCH_FAILED_PHASE = "launch-failed"
+
+# How much of the failed launch's stderr is kept on the run. Enough for a
+# traceback or an exec diagnostic, bounded so a chatty backend cannot grow a
+# pointer without limit.
+_LAUNCH_FAILURE_STDERR_BYTES = 2048
+
+
+def _launched_worker_record(
+    plan: _backends.LaunchPlan, log_path: Path, stderr_path: Path
+) -> dict[str, Any] | None:
+    """Describe a launched worker, or None when its stream names no run.
+
+    The stream path is ``<run dir>/<turn>.jsonl``, so the run it belongs to is
+    the directory's name. A launch outside a run directory — a lane probe —
+    hands back None and is reaped exactly as before.
+    """
+    run_id = Path(log_path).parent.name
+    if not run_id or Path(log_path).parent != run_dir(run_id):
+        return None
+    return {
+        "run_id": run_id,
+        "stream_path": str(log_path),
+        "stderr_path": str(stderr_path),
+        "argv": list(plan.argv),
+        "backend": plan.backend,
+    }
+
+
+def _launch_failure_record(
+    launched: Mapping[str, Any], *, exit_status: int
+) -> dict[str, Any]:
+    """The one record written for a launch that exited before any turn."""
+    stderr_tail = ""
+    try:
+        raw = Path(str(launched["stderr_path"])).read_bytes()
+        stderr_tail = raw[-_LAUNCH_FAILURE_STDERR_BYTES:].decode("utf-8", "replace")
+    except OSError:
+        stderr_tail = ""
+    return {
+        "recorded_at": _utc_now(),
+        "kind": "launch-failed",
+        "backend": str(launched.get("backend") or ""),
+        "exit_status": exit_status,
+        "argv": list(launched.get("argv") or ()),
+        "stderr_tail": stderr_tail,
+        "stream_path": str(launched.get("stream_path") or ""),
+    }
+
+
+def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
+    """Record one launch failure on its run, and stop its lift loop.
+
+    A worker that exited with an empty stream is not a worker turn: no model
+    was reached, so there is nothing to resume from and nothing the lift loop
+    can usefully retry. Recording happens once per failure and the phase stops
+    a further lift until a person resumes or completes the run, which is what
+    breaks the measured loop of one 0-byte stream every two minutes.
+    """
+    stream = Path(str(launched.get("stream_path") or ""))
+    try:
+        size = stream.stat().st_size
+    except OSError:
+        # A stream that was never created is the same fact as an empty one.
+        size = 0
+    if size:
+        return
+    run_id = str(launched.get("run_id") or "")
+    if not run_id:
+        return
+    record = _launch_failure_record(launched, exit_status=exit_status)
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        phase = str(pointer.get("phase") or "")
+        if phase == LAUNCH_FAILED_PHASE or phase in _TERMINAL_RUN_PHASES:
+            return pointer
+        pointer["phase"] = LAUNCH_FAILED_PHASE
+        failures = list(pointer.get("launch_failures") or ())
+        failures.append(record)
+        pointer["launch_failures"] = failures
+        return pointer
+
+    try:
+        _mutate_pointer(run_id, mutation)
+    except CrewError:
+        # The pointer was reclaimed between the reap and the write; there is
+        # no run left to mark, which is not this reaper's failure to report.
+        return
 
 
 def _reap_launched_workers() -> None:
@@ -3374,7 +3475,7 @@ def _reap_launched_workers() -> None:
         pending = list(_LAUNCHED_WORKERS)
     for pid in pending:
         try:
-            got, _status = os.waitpid(pid, os.WNOHANG)
+            got, status = os.waitpid(pid, os.WNOHANG)
         except ChildProcessError:
             with _LAUNCHED_WORKERS_LOCK:
                 _LAUNCHED_WORKERS.discard(pid)
@@ -3384,6 +3485,11 @@ def _reap_launched_workers() -> None:
         if got:
             with _LAUNCHED_WORKERS_LOCK:
                 _LAUNCHED_WORKERS.discard(pid)
+                launched = _LAUNCHED_WORKER_RUNS.pop(pid, None)
+            if launched is not None:
+                _record_launch_failure(
+                    launched, exit_status=os.waitstatus_to_exitcode(status)
+                )
 
 
 def _worker_reaper_loop() -> None:
@@ -3455,8 +3561,15 @@ def _export_launched_workers_for_reexec() -> None:
     """
     with _LAUNCHED_WORKERS_LOCK:
         outstanding = sorted(_LAUNCHED_WORKERS)
+        carried = {
+            str(pid): dict(_LAUNCHED_WORKER_RUNS[pid])
+            for pid in outstanding
+            if pid in _LAUNCHED_WORKER_RUNS
+        }
     if outstanding:
-        os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(outstanding)
+        os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(
+            {"pids": outstanding, "runs": carried}
+        )
     else:
         os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, None)
 
@@ -3475,11 +3588,22 @@ def _adopt_launched_workers_from_reexec() -> None:
     if not raw:
         return
     try:
-        pids = [int(pid) for pid in json.loads(raw)]
+        payload = json.loads(raw)
     except (TypeError, ValueError):
         return
+    # A bare pid list is the older carrier; the mapping is the current one.
+    if isinstance(payload, dict):
+        pids = [int(pid) for pid in payload.get("pids") or ()]
+        runs_carried = payload.get("runs") or {}
+    else:
+        pids = [int(pid) for pid in payload]
+        runs_carried = {}
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.update(pid for pid in pids)
+        for pid in pids:
+            entry = runs_carried.get(str(pid))
+            if isinstance(entry, dict):
+                _LAUNCHED_WORKER_RUNS[pid] = dict(entry)
         adopted = bool(_LAUNCHED_WORKERS)
         if adopted:
             _LAUNCHED_WORKERS_WAKE.set()
@@ -3505,6 +3629,94 @@ def _launched_prior_session(plan: _backends.LaunchPlan | None) -> str | None:
     if str(session) not in [str(token) for token in plan.argv]:
         return None
     return carried
+
+
+class LaunchResolutionError(CrewError):
+    """A backend command could not be resolved against the launching PATH."""
+
+
+def launch_search_path(environment: Mapping[str, str] | None = None) -> str:
+    """Return the PATH a launch will search: the plan's environment, then ours."""
+    merged = {**os.environ, **(environment or {})}
+    return str(merged.get("PATH") or os.defpath)
+
+
+def resolve_launch_executable(
+    plan: _backends.LaunchPlan,
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> _backends.LaunchPlan:
+    """Return the plan with argv[0] replaced by an absolute executable path.
+
+    The launch inherits the PATH of whoever started it, so a watcher armed
+    without the backend directory execs a bare name, dies at exec and leaves an
+    empty stream that reads as a worker turn. Resolving at plan construction
+    makes the launch either runnable or an explicit refusal, and the refusal
+    names the binary and the PATH that was searched so the repair is a command
+    rather than an investigation.
+
+    ``environment`` is the overlay the launch will run with; absent, the plan's
+    own environment is used, which is what every construction site passes.
+    """
+    merged = {
+        **os.environ,
+        **(plan.environment if environment is None else environment),
+    }
+    searched = str(merged.get("PATH") or os.defpath)
+    binary = str(plan.argv[0]) if plan.argv else ""
+    resolved = shutil.which(binary, path=searched) if binary else None
+    if not resolved:
+        raise LaunchResolutionError(
+            f"backend command {binary!r} cannot be resolved on the PATH this "
+            f"launch would search: {searched} — install it or add its directory "
+            "to PATH, then retry; nothing has been launched"
+        )
+    # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
+    # to ``codex.js`` must still be exec'd under the name the launch was
+    # configured with, because that name is how the command's dialect is
+    # selected and how the run records what it ran.
+    resolved = os.path.abspath(resolved)
+    return dataclasses.replace(plan, argv=[resolved, *plan.argv[1:]])
+
+
+def assert_routable_backends_resolvable(
+    project: str,
+    config: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Refuse when any backend this project can route to has no executable.
+
+    A watcher that cannot resolve a backend it may be asked to lift is a
+    watcher that reads as armed and silently loses every park it lifts, so the
+    check runs before the registration is taken rather than at the first lift.
+    """
+    resolved: list[dict[str, str]] = []
+    from reckon import flight
+
+    for name in sorted((config.get("backends") or {}), key=str):
+        backend = (config.get("backends") or {})[name] or {}
+        if backend.get("launch") != "cli":
+            continue
+        command = str(backend.get("command") or "")
+        if not command:
+            continue
+        environment = flight.expand_backend_environment(str(name), backend)
+        path = launch_search_path(environment)
+        found = shutil.which(command, path=path)
+        if not found:
+            raise LaunchResolutionError(
+                f"project {project!r} routes to backend {name!r} whose command "
+                f"{command!r} cannot be resolved on the PATH the launch would "
+                f"search: {path} — install it or add its directory to PATH, "
+                "then arm the watcher again; it is not armed"
+            )
+        resolved.append(
+            {
+                "backend": str(name),
+                "command": command,
+                "executable": os.path.abspath(found),
+            }
+        )
+    return resolved
 
 
 def _spawn(
@@ -3543,6 +3755,9 @@ def _spawn(
         )
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
+        launched = _launched_worker_record(plan, log_path, stderr_path)
+        if launched is not None:
+            _LAUNCHED_WORKER_RUNS[process.pid] = launched
     _LAUNCHED_WORKERS_WAKE.set()
     _ensure_launched_worker_reaper()
     return process.pid
@@ -3984,6 +4199,20 @@ def resume_plan(
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
     backend.setdefault("sandbox", record.get("sandbox"))
+    # The plan is built — and its executable resolved — before anything is
+    # written, so an unresolvable backend refuses a resume exactly as it
+    # refuses a dispatch: no pointer field, no advice file, no stream.
+    plan = resolve_launch_executable(
+        _backends.launch_plan(
+            backend_name=str(record.get("backend") or ""),
+            backend=backend,
+            prompt=advice,
+            worktree=str(record.get("worktree") or "."),
+            manifest_path=str(record.get("manifest_path") or ""),
+            writable_directories=record.get("sandbox_write_roots") or (),
+            resume_session=str(session_id),
+        )
+    )
     # A resumption reuses the recorded session and never re-verifies that the
     # session's context window fits the repository it is resumed into; only a
     # fresh dispatch runs that check. The pointer must say so explicitly, or a
@@ -4004,15 +4233,7 @@ def resume_plan(
             },
         },
     )
-    return _backends.launch_plan(
-        backend_name=str(record.get("backend") or ""),
-        backend=backend,
-        prompt=advice,
-        worktree=str(record.get("worktree") or "."),
-        manifest_path=str(record.get("manifest_path") or ""),
-        writable_directories=record.get("sandbox_write_roots") or (),
-        resume_session=str(session_id),
-    )
+    return plan
 
 
 def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
@@ -4325,15 +4546,17 @@ def change_lane(
     }
     target_plan: _backends.LaunchPlan | None = None
     if target_launch == "cli":
-        target_plan = _backends.launch_plan(
-            backend_name=resolution.backend,
-            backend=backend,
-            prompt=prompt,
-            worktree=str(record.get("worktree") or "."),
-            manifest_path=str(record.get("manifest_path") or ""),
-            writable_directories=resolution.sandbox_write_roots or (),
-            final_message_path=str(final_path),
-            resume_session=session_id if continued else None,
+        target_plan = resolve_launch_executable(
+            _backends.launch_plan(
+                backend_name=resolution.backend,
+                backend=backend,
+                prompt=prompt,
+                worktree=str(record.get("worktree") or "."),
+                manifest_path=str(record.get("manifest_path") or ""),
+                writable_directories=resolution.sandbox_write_roots or (),
+                final_message_path=str(final_path),
+                resume_session=session_id if continued else None,
+            )
         )
     preview: dict[str, Any] = {
         "run_id": run_id,
