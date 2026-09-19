@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="an-orchestrator-can-discharge-a-refusal">
   <meta name="plan-title" content="An Orchestrator Can Discharge A Refusal">
   <meta name="plan-summary" content="A guard that refuses without naming a way through is a stop: 42 refusal sites, 5 discharges, and a verified row unreconciled for three days.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,9 @@
   <title>An Orchestrator Can Discharge A Refusal | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-18">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-19">
+<meta name="plan-version" content="6">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -410,6 +411,9 @@
     <div class="r-comment-body"><p><strong>The same shape one layer down, inside the tool rather than in front of the orchestrator: a rollback that cannot succeed, refused by a claim it created itself, destroying the error that invoked it.</strong> Found by the peer coordinator on a run that died nine seconds after dispatch; verified here in the source.</p><p><code>reckon/crew/dispatch.py</code> writes the run pointer at line 3290, inside the same <code>try</code>. <code>_register_session_member</code> runs at 3296 and can raise — a dirty committed ledger refuses the registration. The handler at 3307 then unwires peers, signals the spawned worker, and calls <code>_remove_worktree</code> at 3313. That function, at <code>reckon/crew/routing.py:908</code>, opens:</p><pre>claims = _live_worktree_claims().get(Path(path).resolve(), [])
 if claims:
     raise CrewError(f"refusing to remove worktree {path}: claimed by live runs …")</pre><p><strong>The pointer written at 3290 is exactly such a claim.</strong> So the rollback always raises, <code>pointer_path(run_id).unlink(missing_ok=True)</code> at 3315 and the bare <code>raise</code> at 3316 are unreachable, and the caller receives a message about worktree removal in place of the failure that occurred.</p><p><strong>Neither component is wrong on its own, which is why this survived.</strong> The guard is right — nothing should remove a worktree a live run claims, and that rule exists because removing one destroys work. The rollback is right to want the worktree gone. The defect is only in the order, and the order is invisible from either file: <code>routing.py</code> cannot know its caller created the claim, and <code>dispatch.py</code> cannot see that its own pointer is what the guard will find.</p><p><strong>What it costs is every diagnosis downstream of it.</strong> Every post-pointer dispatch failure in this codebase presents identically, masks its own cause, and leaves worker dead, worktree present, pointer present and run directory present — which is precisely the <code>abandoned</code> classification. So a class of failure with many possible causes reports one message, and that message is about the cleanup rather than the fault. The peer reached the real cause only by reading the stream to <code>system/init</code> and the dispatch's own exit status.</p><p><strong>Two repairs, and the second is the one that matters.</strong> Unlink the pointer before removing the worktree, which is one line. And preserve the original exception across the rollback, so a failure in cleanup cannot replace the failure being cleaned up — without that, the next refusal added to <code>_remove_worktree</code> re-creates this silently.</p><p><strong>It closes a loop from the same afternoon.</strong> The node that made a dispatch-created member commit its own registration landed today; that registration is what raises here when the ledger is dirty. So a repair landed in the morning created the path, an uncommitted ledger triggered it, and this rollback hid it — three independently correct pieces composing into a failure none of them contains.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-aocdar-uniqueness-promoted" data-who="" data-when="">
+    <div class="r-comment-body">Run r-20260918T141613614848 (six commits, merged earlier) reports whether an unreachable worktree's content is unique, with fail-safe branch coverage added after review; the review named two places where the same unverified premise still reaches a coordinator (reckon/crew/promotion.py near lines 2255 and 2317, where a superseded tree still reads as the only copy of its commit because _inspect_workspace is called without an integration listing). Promoted by the nova coordinator after the reckon coordinator sessions ended; the plan moves from draft to active with its first section landed.</div>
 </div>
 </section>
 </main>
