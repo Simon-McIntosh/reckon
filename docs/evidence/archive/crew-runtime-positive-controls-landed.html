@@ -104,6 +104,55 @@ nothing has been launched</code></pre>
       is left for the plan owner rather than decided here.</p>
     </section>
 
+    <section id="s4">
+      <h2>&sect;4 &mdash; A terminal list naming a live state, and a lift that re-parks unchanged</h2>
+      <p>Measured 2026-09-19 on <code>r-20260919T111944475334-cco-review-repairs</code>. The run's manifest
+      declared a <code>squeue</code> probe whose first branch prints <code>RUNNING</code> while the job is still
+      queued, and listed <code>RUNNING</code> among its <code>wait_terminal</code> values. The condition
+      therefore reported terminal on every sweep of a job that had not started, and the recovery watcher lifted
+      the run thirty times in one afternoon — <code>resume-1</code> through <code>resume-30</code> in the run
+      directory, most of them producing a 0-byte stream. The second half is what made the first repeat: each
+      re-park rewrote the manifest, and the lift was keyed to the file's modification time, so every rewrite
+      read as a brand-new condition.</p>
+      <p>The figure places the two decisions beside each other — which tokens the reader refuses, and which
+      lift key stops a loop that has come back unchanged.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/wait-key-decision.png"
+      alt="Left: the probe text is read for a squeue-guarded branch; a token that branch prints and that appears in wait_terminal is refused with the token named. Right: a lift keyed to the manifest mtime re-lifts a re-parking worker, while a lift keyed to the declaration marks a wait-key defect and stops."
+      style="width:100%;max-width:1160px"></p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>The measured cco stanza, <code>RUNNING</code> under <code>wait_terminal</code></td><td><code>valid: false</code>, the reason names <strong>RUNNING</strong>; <code>classify_pointer</code> renders it as <code>manifest_error</code></td></tr>
+          <tr><td>The repaired stanza, same probe, <code>RUNNING</code> removed</td><td><code>valid: true</code>, <code>error: ""</code>, terminal list unchanged</td></tr>
+          <tr><td>Live state spelled <code>running</code> / <code>Pending</code> / <code>WAITING</code></td><td>refused in each case, the offending spelling named</td></tr>
+          <tr><td>A probe whose live branch prints <code>STILL-QUEUED</code></td><td>refused with <strong>STILL-QUEUED</strong> named — the branch is read, not a fixed vocabulary matched</td></tr>
+          <tr><td>A probe with no live branch (control)</td><td><code>valid: true</code>; its token means what the declaration says it means</td></tr>
+          <tr><td>Declaration lifted once, then re-parked unchanged</td><td><code>wait_key_defect</code> set after one cycle; the second sweep returns no lift with reason <code>already-resumed-for-this-condition</code></td></tr>
+          <tr><td>Declaration edited after the defect</td><td>defect cleared, and the next sweep lifts</td></tr>
+        </tbody>
+      </table>
+      <p>Three control facts make the refusals mean something. The repaired stanza still reads, so the refusal
+      is the token and not the probe. The probe with no live branch is left alone, so the reader is not refusing
+      every conditional probe. And a first lift still happens, so the re-park marker is a second-cycle verdict
+      rather than a blanket stop.</p>
+      <p>Each new test fails against a declared mutation of the change, and both red logs sit beside the green
+      one. With the live-state refusal removed, the gate reads <strong>6 failed, 4 passed</strong>: the four
+      refusals above fail while the repaired-stanza, no-live-branch, first-lift and cleared-declaration controls
+      pass — the controls are what show the four failures are the guard and not an accident of the fixtures.
+      With the declaration key reverted to the manifest mtime, the gate reads <strong>2 failed, 8 passed</strong>:
+      exactly the two re-park cases fail and the eight controls pass, which is how the key was shown to be the
+      thing the re-park detection rests on.</p>
+      <p><strong>What this change does not reach.</strong> The lift itself runs in
+      <code>reckon/crew/resumption.py</code>, outside this node's write scope. Keying the signature to the
+      declaration makes that module's existing duplicate guard stop a re-parked unchanged declaration, which is
+      the observable the plan asks for; but recording the probe <em>output</em> that lifted a wait, and comparing
+      a re-park against it literally, are not implemented here. Two consequences belong to whoever next touches
+      that module: the guard's detail string still reads that a rewritten waiting manifest creates a new
+      condition, which is no longer true of a declaration-keyed signature; and a probe whose output changes while
+      its declaration does not is, under this key, still a single condition. Both are carried as follow-ons
+      rather than quietly claimed.</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
       <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
@@ -115,6 +164,15 @@ nothing has been launched</code></pre>
       touching the changed lines and all of them pass).</p>
       <p>An earlier run of the same gate added three failures, all from the canonicalisation defect above; they
       are the measurement that found it, and they pass now.</p>
+      <p>&sect;4's gate is the recovery population plus the wait files —
+      <code>tests/test_crew_recovery.py</code>, <code>tests/test_crew_wait_stanza_validation.py</code> and
+      <code>tests/test_wait_marker_is_not_a_stub.py</code> — run once to
+      <code>reports/reckon/s18-takeover/crpc-wait-stanza-validation/gate.log</code>: <strong>1 failed, 138
+      passed, exit 1</strong>. The same population at base <code>ec46d14d</code> gives <strong>1 failed, 128
+      passed</strong>; the ten added passes are the new cases and the failure <em>id</em> is identical
+      (<code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, which fails on the
+      pytest temporary directory being refused as a git worktree and touches nothing on the wait path), so the
+      node adds no failures. Both mutations' red logs are in the same report directory.</p>
     </section>
   </main>
 </body>
