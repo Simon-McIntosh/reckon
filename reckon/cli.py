@@ -2123,6 +2123,16 @@ def crew_follow(
     ),
 )
 @click.option(
+    "--ensure",
+    "ensure_service",
+    is_flag=True,
+    help=(
+        "Start or restart this project's watcher user service and return, "
+        "instead of watching here. Idempotent: a second call on a live, "
+        "unchanged unit reports it and starts nothing."
+    ),
+)
+@click.option(
     "--follow",
     is_flag=True,
     hidden=True,
@@ -2144,6 +2154,7 @@ def crew_watch(
     stall_window,
     exit_on_empty,
     once,
+    ensure_service,
     follow,
     json_output,
     pretty,
@@ -2160,6 +2171,18 @@ def crew_watch(
     empty project, through every landing, until the fleet drains.
     """
     crew_module, _ = _crew_modules()
+    if ensure_service:
+        # The service is the durable seat: it survives the shell that ensured
+        # it, carries the backend directory on its PATH, and is restarted onto
+        # a rewritten unit. Nothing here holds the seat in the caller's name.
+        from reckon.crew import runs as runs_module
+
+        try:
+            result = runs_module.ensure_watcher_service(project)
+        except crew_module.CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit({"ok": True, **result}, pretty)
+        return
     # --exit-on-empty only means anything to the single-event mode, so asking
     # for it selects that mode rather than being silently ignored.
     single_event = once or exit_on_empty

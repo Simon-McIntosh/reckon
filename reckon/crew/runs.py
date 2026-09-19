@@ -6,8 +6,10 @@ import json
 import os
 import re
 import shlex
+import shutil
 import socket
 import stat
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping
@@ -1396,6 +1398,13 @@ def _project_watch_claim(project: str, stall_window: str):
             "stream_path": str(watch_stream_path(project)),
             "reckon_version": __version__,
         }
+        # Which unit owns this seat, so a reader can tell a watcher a service
+        # will replace from one nothing will. The unit exports its own name, and
+        # a watcher started by any other route leaves the key absent rather than
+        # claiming a service that does not exist.
+        unit = _read_watch_record(handle).get("unit") or os.environ.get(WATCH_UNIT_ENV)
+        if unit:
+            record["unit"] = str(unit)
         _write_watch_record(handle, record)
         producer = _WatchStreamProducer(
             path=watch_stream_path(project),
@@ -1835,6 +1844,8 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     return {
         "arming_line": arming_line,
         "attach_line": attach_line,
+        "ensure_line": watcher_ensure_line(project),
+        "unit": registration.get("unit"),
         "watcher_live": watcher_live,
         "watcher": dict(registration),
         "session": session,
@@ -1966,6 +1977,264 @@ def project_watch_visibility(
     }
 
 
+# ── Watcher user service ────────────────────────────────────────────────────
+
+
+WATCH_UNIT_TEMPLATE = """\
+[Unit]
+Description=reckon crew watcher for {project}
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={working_directory}
+Environment="PATH={path}"
+Environment="{unit_variable}={unit}"
+{environment}\
+ExecStart={exec_start}
+StandardOutput=append:{log_file}
+StandardError=append:{log_file}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+"""
+
+
+def _watcher_executable() -> str:
+    """Resolve the reckon console script the unit execs, as an absolute path.
+
+    The unit runs without a shell, so ExecStart cannot depend on PATH. The
+    interpreter's own bin directory is preferred because it pins the unit to
+    the environment the command was invoked from.
+    """
+    sibling = Path(sys.executable).resolve().parent / "reckon"
+    if sibling.is_file():
+        return str(sibling)
+    discovered = shutil.which("reckon")
+    if discovered:
+        return os.path.abspath(discovered)
+    raise CrewError(
+        "cannot start the project watcher service: the 'reckon' console script "
+        "is not beside the running interpreter and is not on PATH"
+    )
+
+
+def _watcher_search_path(config: Mapping[str, Any]) -> str:
+    """Return the PATH a project's watcher must run with.
+
+    The measured fault: a watcher unit ran seven hours with the backend
+    directory absent from PATH, so every wait-lift it issued died at exec while
+    the pointer kept reading ``working``. The PATH here is the one the launch
+    would search — the resolved backend executables' own directories first —
+    so a lift started by this watcher can resolve what a dispatch can.
+    """
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    resolved = assert_routable_backends_resolvable("<watcher>", config)
+    directories = [str(Path(row["executable"]).parent) for row in resolved]
+    current = (os.environ.get("PATH") or os.defpath).split(os.pathsep)
+    return os.pathsep.join(
+        dict.fromkeys(directory for directory in [*directories, *current] if directory)
+    )
+
+
+def _watcher_service_environment(config: Mapping[str, Any]) -> dict[str, str]:
+    """Return the environment the watcher unit must carry."""
+    environment = {"PATH": _watcher_search_path(config)}
+    config_home = os.environ.get("RECKON_HOME")
+    if config_home:
+        # Forward the config home so the unit resolves the same mounts and run
+        # pointers as the shell that ensured it, rather than the account
+        # default it would otherwise fall back to.
+        environment["RECKON_HOME"] = str(Path(config_home).expanduser().resolve())
+    return environment
+
+
+def render_watch_unit(
+    project: str,
+    *,
+    environment: Mapping[str, str],
+    executable: str | None = None,
+) -> str:
+    """Render the systemd user unit that runs one project's watcher."""
+    command = executable or _watcher_executable()
+    argv = [command, "crew", "watch", "--project", project]
+    log_file = _config_home() / "logs" / f"watch-{watch_unit_name(project)}.log"
+    override = "".join(
+        f'Environment="{name}={value}"\n'
+        for name, value in environment.items()
+        if name != "PATH"
+    )
+    return WATCH_UNIT_TEMPLATE.format(
+        project=project,
+        working_directory=Path.home(),
+        path=environment.get("PATH") or os.defpath,
+        unit_variable=WATCH_UNIT_ENV,
+        unit=watch_unit_name(project),
+        environment=override,
+        exec_start=" ".join(shlex.quote(part) for part in argv),
+        log_file=log_file,
+    )
+
+
+class SystemdUserWatchService:
+    """The host's systemd user manager, as a watcher service needs it.
+
+    Narrow on purpose: the ensure path asks four questions (what is written,
+    is it active, write it, start it), so a caller can answer them from a fake
+    without a systemd manager on the host — and so no unit is written to the
+    real account home by a test.
+    """
+
+    def unit_path(self, project: str) -> Path:
+        return Path.home() / ".config" / "systemd" / "user" / watch_unit_name(project)
+
+    def installed(self, project: str) -> bool:
+        return self.unit_path(project).is_file()
+
+    def active(self, project: str) -> bool:
+        from reckon import service
+
+        completed = service.systemctl(
+            "is-active", watch_unit_name(project), check=False
+        )
+        return completed.returncode == 0
+
+    def lingering(self) -> bool:
+        from reckon import service
+
+        return service.linger_enabled()
+
+    def enable_linger(self) -> None:
+        from reckon import service
+
+        service.enable_linger()
+
+    def write_unit(self, project: str, content: str) -> tuple[Path, bool]:
+        target = self.unit_path(project)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # systemd opens the log file but will not create its parent directory.
+        (_config_home() / "logs").mkdir(parents=True, exist_ok=True)
+        unchanged = target.is_file() and target.read_text() == content
+        if not unchanged:
+            target.write_text(content)
+        return target, not unchanged
+
+    def start(self, project: str, *, restart: bool) -> None:
+        from reckon import service
+
+        unit = watch_unit_name(project)
+        service.systemctl("daemon-reload")
+        service.systemctl("restart" if restart else "start", unit)
+
+
+def _register_watch_unit(project: str, unit: str) -> dict[str, Any]:
+    """Record the unit name in the project's watcher registration.
+
+    Written only while the seat is free, and non-blocking: when the seat is held,
+    the watcher holding it is authoritative and records the unit itself from
+    its own environment, so a registration never ends up with no live writer
+    behind it. A held seat is reported rather than overwritten.
+    """
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            held = _read_watch_record(handle)
+            return {
+                "registered": False,
+                "reason": "seat-held",
+                "unit": held.get("unit") or unit,
+            }
+        record = _read_watch_record(handle)
+        record["project"] = project
+        record["unit"] = unit
+        _write_watch_record(handle, record)
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return {"registered": True, "reason": "written", "unit": unit}
+
+
+def ensure_watcher_service(
+    project: str,
+    *,
+    manager: Any | None = None,
+    config: Mapping[str, Any] | None = None,
+    restart: bool = False,
+) -> dict[str, Any]:
+    """Start or restart a project's watcher as an idempotent user service.
+
+    Idempotent in the sense that decides whether a second call disturbs a live
+    watcher: the unit is rewritten only when its rendered content changed, and a
+    unit already active on an unchanged definition is reported rather than
+    restarted. Restarting unconditionally would drop the seat and re-take it,
+    so the command a refusal tells a person to run would interrupt the watcher
+    it exists to guarantee.
+    """
+    from reckon import flight
+
+    service_manager = manager if manager is not None else SystemdUserWatchService()
+    if manager is None:
+        # A real unit is written to the account's systemd directory, which a
+        # throwaway configuration home must never cause. Imported lazily so the
+        # read-only surfaces of this module do not depend on the arming path.
+        from reckon.crew.dispatch import _refuse_arming_under_a_throwaway_home
+
+        _refuse_arming_under_a_throwaway_home(project)
+    resolved_config = (
+        config if config is not None else flight.resolve(project=project).config
+    )
+    environment = _watcher_service_environment(resolved_config)
+    content = render_watch_unit(project, environment=environment)
+    path, changed = service_manager.write_unit(project, content)
+
+    was_active = service_manager.active(project)
+    start_required = bool(changed or restart or not was_active)
+    if start_required:
+        # 'enable --now' leaves an already-running unit on its old definition,
+        # so a rewritten active unit needs an explicit restart.
+        service_manager.start(
+            project, restart=bool(restart or (changed and was_active))
+        )
+
+    lingering: bool | None = None
+    if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
+        lingering = bool(service_manager.lingering())
+        if not lingering:
+            service_manager.enable_linger()
+            lingering = bool(service_manager.lingering())
+
+    registration = _register_watch_unit(project, watch_unit_name(project))
+    if start_required:
+        detail = (
+            f"restarted {watch_unit_name(project)} onto a rewritten unit"
+            if changed and was_active
+            else f"started {watch_unit_name(project)}"
+        )
+    else:
+        detail = (
+            f"{watch_unit_name(project)} is already active on an unchanged unit; "
+            "started nothing"
+        )
+    return {
+        "project": project,
+        "unit": watch_unit_name(project),
+        "unit_path": str(path),
+        "unit_changed": bool(changed),
+        "service_active": was_active or start_required,
+        "started": start_required,
+        "detail": detail,
+        "environment": environment,
+        "lingering": lingering,
+        "registration": registration,
+        "watcher_live": watch_state(project)["watcher_live"],
+        "ensure_line": watcher_ensure_line(project),
+    }
+
+
 # Every state the watch surface can emit, split by whether a coordinator has to
 # act on it. The first set is the vocabulary a reader acts on the sight of; the
 # second is progress and is not news on its own. The split used to feed a
@@ -1990,6 +2259,30 @@ WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "waiting", "promote
 def _watch_arming_line(project: str) -> str:
     """Return the exact shell-safe command a dispatch payload carries."""
     return f"reckon crew watch --project {shlex.quote(project)}"
+
+
+# The unit exports this into the watcher's own environment, so the seat record
+# a service-armed watcher claims names the unit that will replace it. Read from
+# the environment rather than passed as an argument: the watcher's argv is the
+# arming contract a person copies, and a path-only flag would appear there.
+WATCH_UNIT_ENV = "RECKON_WATCH_UNIT"
+
+# A watcher holds its seat for as long as it runs, so a service that dies at
+# logout is the fault this deployment exists to remove: none of the units it
+# owns come back, and the project reads as watched until the next dispatch
+# refuses. Lingering is what keeps a user manager alive past the last session.
+LINGER_IF_REQUIRED = True
+
+
+def watch_unit_name(project: str) -> str:
+    """Return the systemd user unit that runs one project's watcher service."""
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    return f"reckon-watch-{readable}.service"
+
+
+def watcher_ensure_line(project: str) -> str:
+    """Return the command that starts or restarts a project's watcher service."""
+    return f"reckon crew watch --ensure --project {shlex.quote(project)}"
 
 
 def _watch_attach_line(project: str, *, session: str | None = None) -> str:
