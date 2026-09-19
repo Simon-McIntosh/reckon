@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-19T20:36:17",
+  "updated": "2026-09-19T20:36:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -194380,6 +194380,234 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260919T182616454062-crpc-pin-the-negative-control-interface",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a77",
+        "node": "crpc-pin-the-negative-control-interface",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2442,
+                "cached_input_tokens": 736386,
+                "input_tokens": 738830,
+                "output_tokens": 158,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 738988,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "The dispatch interface landed at 92e02503 was verified by dry run rather than by cases, because the node that added it was forbidden a test file. Add tests/test_crew_negative_control_interface.py holding two properties: the dispatch command exposes an option that sets negative_control on the node definition, so a node whose write paths include a test file resolves when it is given and is refused naming the field when it is not; and the manifest template that reckon/crew/prompts.py emits names the negative_control_log field with the gloss that it holds the path to a red log naming the declared mutation. Each property fails under its own removal, and both red logs are kept beside the green one. Nothing outside the new test file and the two record files is touched. Gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_declared_negative_control.py tests/test_crew_negative_control_interface.py on the login node, captured once with the exit status; the base is 3a51ffc3. Commits carry a body and name the mechanism in the subject scope. Every uv command carries --no-sync and nothing runs uv sync.",
+          "estimated_hours": 1.0,
+          "goal": "Pin the negative-control declaration path with cases, now that the option exists to declare their own mutation.",
+          "id": "crpc-pin-the-negative-control-interface",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-19T18:26:16Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T182616454062-crpc-pin-the-negative-control-interface/manifest.md",
+          "negative_control": "remove the --negative-control option from the dispatch command in reckon/cli.py, and separately remove the negative_control_log line from the manifest template in reckon/crew/prompts.py; each removal must redden its own case",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_negative_control_interface.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-crpc-tmpl-test-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-19T18:26:20Z",
+        "completed_at": "2026-09-19T18:34:24.286Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 477,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 484,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "08612372ad6730d5c6d1fca74788d15aff1bc35a",
+        "commits": [
+          "4a37fe5984c064a487b6aa19ef1d134e7084ad58",
+          "786b0a5f8f0f4d382700fe3548675a796544e7a8",
+          "8b5f370c4beed346b0b0dc843e2258afcfa7e083",
+          "ad4f60246cfbc12ada13c4f9f4846dccac27424d"
+        ],
+        "changed_lines": {
+          "added": 233,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_declared_negative_control.py tests/test_crew_negative_control_interface.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260919T182616454062-crpc-pin-the-negative-control-interface/manifest.md",
+        "scope_changed": false,
+        "session_id": "ebdcf9d2-b082-4593-83ed-1ca87cf6f59a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8114941,
+            "input_tokens_cumulative": 8114941,
+            "output_tokens": 45771,
+            "output_tokens_cumulative": 45771,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-19T18:34:24.286Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8114941,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 480.774,
+          "generated_tokens": 45771,
+          "generation_seconds": 435.429,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.8,
+          "machine_seconds": 45.345,
+          "peak_input_tokens": 162070,
+          "tokens_per_second": 105.12,
+          "wall_tokens_per_second": 95.2
+        },
+        "follow_on_paths": [
+          "reckon/crew/promotion.py:2992)."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/crpc-pin-the-negative-control-interface",
+          "session_id": "ebdcf9d2-b082-4593-83ed-1ca87cf6f59a",
+          "session_source": "stream",
+          "retained_at": "2026-09-19T18:34:24.286Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.98,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.98,
+          "at_complete": 0.99,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_negative_control_interface.py"
+          ],
+          "declaration": "remove the --negative-control option from the dispatch command in reckon/cli.py, and separately remove the negative_control_log line from the manifest template in reckon/crew/prompts.py; each removal must redden its own case",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/dispatch_option_removed.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/dispatch_option_removed.red.log"
+        },
+        "tool_steps": 87.0,
+        "orientation_input_tokens": 2258186.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -194664,6 +194892,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1729
+    "_version": 1730
   }
 }
