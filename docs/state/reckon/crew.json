@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T02:14:07",
+  "updated": "2026-09-20T02:21:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -196081,6 +196081,244 @@
             "message": "the gate passed at the worker's base but reports failed on the integrated revision 4dbea5ab8142: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
           }
         }
+      },
+      {
+        "run_id": "r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a74",
+        "node": "awcj-a-placement-declares-what-it-needs-visible",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1248,
+                "cached_input_tokens": 532097,
+                "input_tokens": 533347,
+                "output_tokens": 1708,
+                "reasoning_output_tokens": 432,
+                "total_tokens": 535055,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "a backend placement declares its requirement set in reckon/schema/flight.yaml, with the generated reckon/_flight_schema.py regenerated rather than hand-edited, covering the worktree root, the crew state directory, the backend binary, the shared project environment, the served model endpoint and the credential path each lane needs; reckon/crew/dispatch.py checks the set coordinator-side before any worktree or pointer exists, with the refusal text composed in reckon/crew/node.py beside the other pre-launch refusals, because a node-side check would need the node to start; a path under /run/user is refused by name and with its own sentence, because that case fails silently rather than loudly and has already cancelled a job in zero seconds with an empty log; the same declaration carries the scheduler state-query and reason-query for the placement wrapper, so which reporting verb answers a given scheduler is configuration rather than a table in reckon/crew/runs.py and a placement naming a wrapper it does not say how to ask is refused rather than silently unqueryable; committed cases pin a synthesised unreachable path, an unreachable endpoint, a node-local path, and an undeclared query, the focused suite shows zero added failures against the base revision, and the declared negative control reddens",
+          "estimated_hours": null,
+          "goal": "refuse a placement before launch when something it declares it needs is not visible from the target partition, naming the path or the endpoint",
+          "id": "awcj-a-placement-declares-what-it-needs-visible",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-20T00:00:17Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/manifest.md",
+          "negative_control": "declared mutation: removing the node-local refusal branch from check_placement_requirements turns the node-local path case red",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "reckon/flight.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew/node.py",
+            "reckon/crew/runs.py",
+            "tests/test_crew_workspace_requirements.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-s4-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-20T00:00:23Z",
+        "completed_at": "2026-09-20T00:17:42.891Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1033,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1039,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "4dbea5ab8142d16046011425a0e1cefbee8d3a12",
+        "commits": [
+          "0a2cb56a757e19321209beb4809eba9a4b4aa91f",
+          "67b3ad493ce733f627bc96c1a29dfee33c221b1d",
+          "9dfe85de89c06258aebea85fc770e4ebac17f16c"
+        ],
+        "changed_lines": {
+          "added": 985,
+          "removed": 45,
+          "files": 11
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_workspace_requirements.py tests/test_crew_placed_liveness.py tests/test_crew_placement.py tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/manifest.md",
+        "scope_changed": false,
+        "session_id": "cedfa39f-418e-4d01-a3d0-3419d17c4193",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16867256,
+            "input_tokens_cumulative": 16867256,
+            "output_tokens": 70846,
+            "output_tokens_cumulative": 70846,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-20T00:17:42.891Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 17033489,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1036.226,
+          "generated_tokens": 78742,
+          "generation_seconds": 946.178,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 90.048,
+          "peak_input_tokens": 164933,
+          "tokens_per_second": 83.22,
+          "wall_tokens_per_second": 75.99
+        },
+        "follow_on_paths": [
+          "docs/_shared/flight.schema.json",
+          "tests/test_crew_placed_liveness.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/_shared/flight.schema.json",
+            "reason": "the generated JSON Schema companion; regenerating without it leaves the committed pair byte-divergent and the round-trip check fails, and I confirmed at the merged head that the generator leaves both files unchanged"
+          },
+          {
+            "path": "tests/test_crew_placed_liveness.py",
+            "reason": "this fixture pinned the wrapper-keyed query table the declaration replaces, so its placement now carries the two query fields; no assertion changed"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-a-placement-declares-what-it-needs-visible",
+          "session_id": "cedfa39f-418e-4d01-a3d0-3419d17c4193",
+          "session_source": "stream",
+          "retained_at": "2026-09-20T00:17:42.891Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.46,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.46,
+          "at_complete": 0.62,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_workspace_requirements.py"
+          ],
+          "declaration": "declared mutation: removing the node-local refusal branch from check_placement_requirements turns the node-local path case red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log"
+        },
+        "tool_steps": 152.0,
+        "orientation_input_tokens": 3770513.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -196365,6 +196603,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1746
+    "_version": 1747
   }
 }
