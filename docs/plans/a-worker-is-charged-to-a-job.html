@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-20">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-impl" content="0.76">
 </head>
 <body>
@@ -515,15 +515,15 @@ chosen for which tests reach the changed modules, not as a whole-suite run.</p>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="reservation-size-and-roster-limit" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="reservation-size-and-roster-limit" data-choice="thirty-two-cores-128-gb" data-by="lead" data-when="2026-09-20T17:57:51+00:00">
     <p class="r-dec-q">How large is the standing reservation, and what does the roster admit against it?</p>
     <p class="r-dec-ctx">Measured 2026-09-19. Under --overlap nothing is enforced, so the reservation is a place to run and the limit is the roster&#x27;s. Compute nodes on the all partition are 28 cores with 128 GB or 36 cores with 192 GB, so a reservation lives within one node rather than spanning the 503 GB the login host carries. Workers are blocked on the served model almost all the time, so cores are cheap and memory is the axis that binds, exactly as it did in the 64 GiB login slice that killed 529 processes. The serve was observed delivering about 450 tokens a second at roughly twenty-five concurrent workers, so twenty-five is the concurrency worth hosting. Per-worker resident memory has not been measured across a wave; the only figure in hand is a single nova solve at 24.6 GB, which is a test process rather than a worker.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="thirty-two-cores-128-gb">hold 32 cores and 128 GB on a 36-core node, cap the roster at 25, and adjust from the first wave&#x27;s resident memory</button>
+      <button class="r-opt chosen" data-value="thirty-two-cores-128-gb">hold 32 cores and 128 GB on a 36-core node, cap the roster at 25, and adjust from the first wave&#x27;s resident memory</button>
       <button class="r-opt" data-value="whole-small-node">hold an entire 28-core 128 GB node so nothing else shares it, with the same roster cap</button>
       <button class="r-opt" data-value="measure-first-then-size">hold a deliberately small reservation for one wave, measure per-worker resident memory, and size only then</button>
       </p>
-    <p class="r-dec-rat">Coordinator recommendation, for the lead. 128 GB is twice the login slice we are escaping and leaves headroom on a 192 GB node for the occupant we are not, while 32 cores is ample for workers that are network-blocked. Capping the roster at 25 matches the concurrency the serve was seen to sustain, so the first wave measures per-worker memory against a bound that is already generous rather than against one chosen to be tight. Sizing from measurement first is the more careful option and costs a wave before any benefit; taking a whole node is cleaner but claims more than the fleet needs on a shared partition.</p>
+    <p class="r-dec-rat">Lead ruling 2026-09-20: hold 32 cores and 128 GB on a 36-core node, cap the roster at 25, and adjust the cap from the first wave&#x27;s measured per-worker resident memory. Matches the concurrency the serve already delivers throughput for, leaves headroom on the node, and is the cheapest shape to start from and to reverse.</p>
     </div>
 </section>
 </main>
