@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T02:00:14",
+  "updated": "2026-09-20T02:14:07",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -196060,6 +196060,26 @@
         "orientation_input_tokens": 2229882.0,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "failed",
+          "integrated_revision": "4dbea5ab8142d16046011425a0e1cefbee8d3a12",
+          "checkout_revision": "4dbea5ab8142d16046011425a0e1cefbee8d3a12",
+          "checkout_on_integrated_revision": true,
+          "gate_command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q <nine focused files>, base and head arms each in their own process and log",
+          "ran": true,
+          "exit_status": 1,
+          "timed_out": false,
+          "reason": null,
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "failed",
+            "integrated_revision": "4dbea5ab8142d16046011425a0e1cefbee8d3a12",
+            "exit_status": 1,
+            "reason": null,
+            "message": "the gate passed at the worker's base but reports failed on the integrated revision 4dbea5ab8142: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       }
     ],
@@ -196345,6 +196365,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1745
+    "_version": 1746
   }
 }
