@@ -324,6 +324,77 @@ injected runner; verifying it against a real job belongs to the proving run the 
     silently rather than loudly.</p>
 
     <p><strong>Files, and which side refuses.</strong> The requirement set is declared with the backend in <code>reckon/schema/flight.yaml</code> and read through <code>reckon/flight.py</code>, both of which the grant needs because the generated <code>reckon/_flight_schema.py</code> is regenerated rather than edited and checked coordinator-side in <code>reckon/crew/dispatch.py</code> before a worktree or a pointer exists, with the refusal text composed in <code>reckon/crew/node.py</code> as the other pre-launch refusals are. Coordinator-side is the choice because a node-side check would need the node to start, which is the thing being refused. The credential path each lane needs belongs to this requirement set from the outset rather than being added by section 7.</p>
+<div class="r-note" data-reckon="landed" data-node="awcj-a-placement-declares-what-it-needs-visible" data-when="2026-09-20">
+<p><strong>Outcome — the workspace contract is declared, and a placement that breaks it is refused before anything exists.</strong>
+A backend's <code>placement</code> in <code>reckon/schema/flight.yaml</code> now carries a
+<code>requirements</code> list — one entry per path or endpoint the placement's workers need visible from the
+node they run on — and the same placement carries <code>state_query</code> and <code>reason_query</code>, the
+two argv the placement-wrapper's reporting verbs are asked with, each spelling the job id as the
+<code>{job}</code> token. <code>reckon/_flight_schema.py</code> is regenerated from the LinkML source rather
+than hand-edited, and <code>reckon/flight.py</code> reads the declaration back through
+<code>placement_requirement_entries</code> and <code>placement_scheduler_queries</code>, refusing at
+whole-config validation a requirement that declares both a <code>path</code> and an
+<code>endpoint</code> — a malformed requirement is a configuration error, not a check that quietly passes.</p>
+<p><strong>Coordinator-side, and why that is the whole point.</strong> The check runs inside
+<code>plan_dispatch</code> in <code>reckon/crew/dispatch.py</code>, which is the single pre-side-effect
+resolver both the dry-run path and a real dispatch reach, so the verdict a dry run reports is the verdict a
+launch reaches and no worktree, pointer or job exists when the refusal is raised. A node-side check could not
+do this: it would need the node to start, which is the thing being refused. The refusal text is composed in
+<code>reckon/crew/node.py</code> beside the other pre-launch refusals, all three in the shared formatter's
+family so the reason is legible on the fleet surface.</p>
+<p><strong>The node-local case gets its own sentence.</strong> A path under <code>/run/user</code> — or under
+<code>XDG_RUNTIME_DIR</code>, or on any tmpfs the dispatcher can see in its own mount table — exists on every
+node and names different bytes on each, so an existence check admits it and the worker fails later on a path
+that is present on the dispatcher. It is refused by name, with a sentence that says the storage is per-node
+and points at the shared filesystem, distinct from the sentence a plain absent path gets. That is the case the
+section named as failing silently rather than loudly.</p>
+<table>
+  <caption>What each clause of the measure asserts, and the case that pins it</caption>
+  <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+  <tbody>
+    <tr><td>unreachable path</td><td>refused naming the requirement, the path and the target partition</td><td><code>test_an_unreachable_requirement_path_is_refused_before_launch</code></td></tr>
+    <tr><td>unreachable endpoint</td><td>a declared endpoint nothing answers on is refused, naming it</td><td><code>test_an_unreachable_endpoint_is_refused_naming_the_endpoint</code></td></tr>
+    <tr><td>node-local path</td><td>refused by name with its own sentence, not the not-visible one</td><td><code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code></td></tr>
+    <tr><td>undeclared query</td><td>a wrapper declared with no way to ask it is refused, not left unqueryable</td><td><code>test_a_placement_naming_a_wrapper_with_no_query_is_refused</code></td></tr>
+    <tr><td>half a query set</td><td>one query without the other is still a placement reckon cannot follow</td><td><code>test_a_half_declared_query_set_is_refused</code></td></tr>
+    <tr><td>satisfied placement</td><td>every requirement visible admits the node unchanged</td><td><code>test_a_satisfied_placement_is_admitted</code></td></tr>
+    <tr><td>no placement</td><td>absence is not an empty placement: nothing required, nothing runs</td><td><code>test_a_backend_declaring_no_placement_is_untouched</code></td></tr>
+    <tr><td>malformed requirement</td><td>neither target declared is refused rather than quietly passing</td><td><code>test_a_requirement_declaring_no_target_is_refused</code>, <code>test_a_requirement_declaring_both_targets_is_refused_by_the_schema</code></td></tr>
+  </tbody>
+</table>
+<p><strong>The declaration replaces a table in code.</strong> The state and reason queries were keyed on the
+basename of the wrapper a placement named, in two dictionaries in <code>reckon/crew/runs.py</code> — a
+convention that made adding a scheduler a code change and made a placement naming an unknown wrapper silently
+unqueryable rather than refused. Those tables are gone; <code>_scheduler_query_argv</code> now reads the
+declaration off the placement, substituting the job id for the <code>{job}</code> token, and a wrapper with
+no declared query answers <code>None</code> so the pid probe decides rather than a silent scheduler being read
+as a stopped job. The declared queries are recorded on the run pointer's <code>placement</code> dict, so a
+reader of the record can see which verbs answered it.</p>
+<p><strong>Gate, and the delta.</strong> The five focused files over the placement, liveness, launch and
+refusal cases, base <code>4dbea5ab</code> and this node's landed head: <strong>42 passed</strong> at base over
+the four files that exist there and <strong>54 passed</strong> at head over the five, with no failure id
+present on either side — zero added, twelve cases added in
+<code>tests/test_crew_workspace_requirements.py</code>. Ruff findings over the changed modules are 130 at
+base and 130 at head, so the change adds none, and the four files in the set that are unformatted are
+unformatted at base too: the repository's formatting backlog, not this change.</p>
+<p><strong>A defect the gate caught.</strong> The accessor's loop variable was renamed to stop shadowing the
+module's <code>field</code> import and one assignment kept the old name, so the accessor returned a dict
+keyed on the imported function object and every placement was refused for an undeclared query. Five new cases
+failed <em>for the wrong reason</em> and Ruff stayed clean, because the stray name was a module-level import
+rather than an undefined one. It was the run that found it, not the diff.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: remove the node-local refusal branch from
+<code>check_placement_requirements</code>, so a <code>/run/user</code> path is judged only by whether it
+exists. The red log at
+<code>runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log</code>
+(first line repeats the mutation verbatim) fails <code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code>
+with <code>DID NOT RAISE CrewError</code> and leaves the sibling unreachable-path case green. The case is loaded by an
+<code>assert Path(node_local).is_dir()</code>, so the path's existence — the very thing an existence-only
+check would admit — is proved in the test rather than assumed.</p>
+<p><strong>What this node did not do.</strong> It touches no plan state: the driving followup stays open and no
+terminal status is set, because only the coordinator observes the other nodes. Verifying the merged result
+belongs to a separately dispatched test node. The focused suite is not the whole suite: the file list is
+chosen for which tests reach the changed modules, not as a whole-suite run.</p>
+</div>
 <h2 id="s5">§5 — The ceiling moves from a slice of memory to the roster, and the roster must know it</h2>
     <p>Today the honest bound on concurrency is the 64 GiB slice, which nothing reads and which announces
     itself only as a killed process. Once workers are charged to jobs, the roster is the only bound left, as

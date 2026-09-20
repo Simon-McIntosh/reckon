@@ -233,11 +233,23 @@ class BackendConfig(ConfiguredBaseModel):
 
 class PlacementConfig(ConfiguredBaseModel):
     """
-    A scheduler wrapper declared for one backend's workers. It describes how the launch is wrapped and never what runs: the resolved command stays the backend's own, so a placement moves a worker between hosts without changing which lane serves it.
+    A scheduler wrapper declared for one backend's workers. It describes how the launch is wrapped and never what runs: the resolved command stays the backend's own, so a placement moves a worker between hosts without changing which lane serves it. It also declares what the worker needs visible where it lands, and how to ask the wrapper about a job it started.
     """
     scheduler: str = Field(default=..., description="""Scheduler executable the launch is wrapped in. Resolved against the same PATH the launch searches, so an unresolvable wrapper is refused before launch rather than dying at exec and leaving an empty stream that reads as a worker turn.""")
     options: Optional[list[str]] = Field(default=None, description="""Argument strings passed to the scheduler ahead of the resolved command, such as a partition and a resource request. User data; the schema names no partition and no site.""")
     job_id_probe: Optional[list[str]] = Field(default=None, description="""Argument vector asked which job the launch became, with `{run}` replaced by the run id. Read rather than guessed, and declared per backend because reckon knows no scheduler's own vocabulary; a probe that answers no identifier records why instead of a fabricated id.""")
+    requirements: Optional[list[PlacementRequirement]] = Field(default=None, description="""Filesystem paths and network endpoints this placement's workers need visible from the node the scheduler places them on. Checked before launch, so a placement into a partition that cannot see one is refused while naming which, rather than failing later in a way that reads as a worker defect. A path on per-node storage is refused by name: it exists on the dispatcher and not where the worker runs, so it fails silently.""")
+    state_query: Optional[list[str]] = Field(default=None, description="""Argument vector that asks the scheduler for one job's state, with `{job}` replaced by the job id. Declared beside the wrapper it asks, so which reporting verb answers a given scheduler is configuration rather than a table in reckon's own code, and a wrapper declared without one is a placement reckon cannot follow rather than one it silently cannot query.""")
+    reason_query: Optional[list[str]] = Field(default=None, description="""Argument vector that asks the scheduler for one job's own reason string, with `{job}` replaced by the job id. A job that never started reports why here rather than through an exit status the scheduler client never produced.""")
+
+
+class PlacementRequirement(ConfiguredBaseModel):
+    """
+    One filesystem path or network endpoint this placement's workers need visible from the node they run on. Exactly one of `path` and `endpoint` is declared; a requirement naming both or neither is a configuration error rather than a check that quietly passes.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    path: Optional[str] = Field(default=None, description="""A filesystem path this placement's workers must be able to see. User data; the schema names no site and fixes no layout.""")
+    endpoint: Optional[str] = Field(default=None, description="""A network endpoint, given as host and port, this placement's workers must be able to reach — the served model and its router are the intended case.""")
 
 
 class CatalogConfig(ConfiguredBaseModel):
@@ -407,6 +419,7 @@ class SummaryConfig(ConfiguredBaseModel):
 FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
 PlacementConfig.model_rebuild()
+PlacementRequirement.model_rebuild()
 CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
 EffortSpelling.model_rebuild()

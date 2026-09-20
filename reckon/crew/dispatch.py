@@ -10,6 +10,7 @@ import os
 import re
 import select
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -42,6 +43,9 @@ from reckon.crew.node import (
     normalize_section,
     negative_control_finding,
     parse_duration,
+    placement_query_undeclared,
+    placement_requirement_node_local,
+    placement_requirement_unmet,
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt
@@ -2020,6 +2024,138 @@ def _path_is_tmpfs(path: str | Path) -> bool:
     return bool(best and best[1] in {"tmpfs", "ramfs"})
 
 
+# A declared endpoint is probed before launch, so the probe is bounded: a slow
+# or absent router must refuse the placement rather than hold the dispatch open.
+_REQUIREMENT_PROBE_TIMEOUT_SECONDS = 3.0
+
+
+def _is_node_local_path(path: str | Path) -> bool:
+    """Whether a path lives on this node's own storage rather than shared.
+
+    The per-user runtime directory is named first because it is the case that
+    reads as present: it exists on every node, so a launch against it succeeds
+    and the worker then finds different bytes on the node it runs on. The mount
+    table is the general answer beneath it, covering any tmpfs the host mounts
+    for scratch.
+    """
+    text = str(Path(str(path)).expanduser())
+    if text == "/run/user" or text.startswith("/run/user/"):
+        return True
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime:
+        runtime_root = str(Path(runtime).expanduser())
+        if text == runtime_root or text.startswith(runtime_root.rstrip("/") + "/"):
+            return True
+    return _path_is_tmpfs(text)
+
+
+def _endpoint_answers(endpoint: str) -> tuple[bool, str]:
+    """Whether a host:port endpoint accepts a connection, and why not.
+
+    Bounded, because the check is a precondition of the launch rather than part
+    of it: a router that is slow to answer must refuse the placement rather
+    than hold the dispatch open.
+    """
+    host, separator, port_text = str(endpoint).strip().rpartition(":")
+    if not separator or not host:
+        return False, "not a host:port endpoint"
+    try:
+        port = int(port_text)
+    except ValueError:
+        return False, f"{port_text!r} is not a port"
+    try:
+        with socket.create_connection(
+            (host, port), timeout=_REQUIREMENT_PROBE_TIMEOUT_SECONDS
+        ):
+            return True, "reachable"
+    except OSError as exc:
+        return False, f"{host}:{port} refused the connection — {exc}"
+
+
+def check_placement_requirements(
+    placement: Mapping[str, Any] | None, *, backend_name: str
+) -> None:
+    """Refuse a placement before launch when something it declares is invisible.
+
+    Coordinator-side and ahead of every side effect, because the check decides
+    whether the launch is worth making: a requirement the target node cannot
+    see fails inside the worker and reads as a worker defect. A node-side check
+    would need the node to start, which is the thing being refused.
+
+    Only the declaration is read — no scheduler is invoked and no job is
+    submitted — so a dry run reaches the verdict a real dispatch reaches. A
+    backend declaring no placement is untouched, which keeps every backend
+    that declares none launching exactly as before.
+    """
+    if not isinstance(placement, Mapping) or not placement:
+        return
+    scheduler = str(placement.get("scheduler") or "")
+    queries = flight.placement_scheduler_queries(placement)
+    if scheduler and set(queries) != {"state_query", "reason_query"}:
+        raise CrewError(
+            placement_query_undeclared(backend=backend_name, scheduler=scheduler)
+        )
+    for name, path, endpoint in _placement_requirement_targets(placement):
+        if path is None and endpoint is None:
+            raise CrewError(
+                placement_requirement_unmet(
+                    backend=backend_name,
+                    placement=placement,
+                    name=name,
+                    detail="the requirement declares neither a path nor an endpoint",
+                )
+            )
+        if path is not None:
+            if _is_node_local_path(path):
+                raise CrewError(
+                    placement_requirement_node_local(
+                        backend=backend_name,
+                        placement=placement,
+                        name=name,
+                        path=path,
+                    )
+                )
+            if not Path(path).expanduser().exists():
+                raise CrewError(
+                    placement_requirement_unmet(
+                        backend=backend_name,
+                        placement=placement,
+                        name=name,
+                        detail=f"path {path!r} does not exist",
+                    )
+                )
+            continue
+        assert endpoint is not None
+        reachable, why = _endpoint_answers(endpoint)
+        if not reachable:
+            raise CrewError(
+                placement_requirement_unmet(
+                    backend=backend_name,
+                    placement=placement,
+                    name=name,
+                    detail=f"endpoint {endpoint!r} is unreachable — {why}",
+                )
+            )
+
+
+def _placement_requirement_targets(
+    placement: Mapping[str, Any],
+) -> Iterable[tuple[str, str | None, str | None]]:
+    """Yield each declared requirement as (name, path, endpoint).
+
+    An entry declaring neither target is yielded with both absent rather than
+    skipped, so a malformed declaration is refused by the caller instead of
+    silently passing a check it never ran.
+    """
+    for index, entry in enumerate(flight.placement_requirement_entries(placement)):
+        if not isinstance(entry, Mapping):
+            continue
+        name = str(entry.get("name") or f"requirement {index + 1}")
+        path = str(entry["path"]) if entry.get("path") else None
+        endpoint = str(entry["endpoint"]) if entry.get("endpoint") else None
+        yield name, path, endpoint
+
+
 def _resolved_write_paths(
     backend: Mapping[str, Any], *, run_directory: Path
 ) -> list[str]:
@@ -2235,6 +2371,12 @@ def plan_dispatch(
                 "expected 'cli' or 'in-harness'",
             )
         )
+    # A placement's declared requirements are checked here rather than at
+    # launch, so a dry run reports what a real dispatch would and the refusal
+    # lands before a worktree, a pointer or a job exists. A requirement the
+    # target node cannot see fails inside the worker and reads as a worker
+    # defect, which is the reading this refuses to hand anyone.
+    check_placement_requirements(backend.get("placement"), backend_name=backend_name)
     # Local is a property of where the dispatch actually landed, not of the
     # flag the caller passed: a request that resolved onto another backend — a
     # budget fallback, or a lane the caller named alongside the flag — is not a
@@ -3399,6 +3541,12 @@ def dispatch(
                     # process identity a liveness read needs; it is recorded
                     # beside the pid, from which it is not derivable.
                     "job_id": job_id,
+                    # The queries the placement declares are carried onto the
+                    # record with it: a liveness read happens long after the
+                    # configuration that launched the run may have changed, and
+                    # the record is the only place the placement was ever
+                    # recorded. A record that keeps the wrapper without its
+                    # query cannot be asked about its own job.
                     "placement": (
                         None
                         if placement is None
@@ -3408,6 +3556,7 @@ def dispatch(
                                 str(item) for item in placement.get("options") or ()
                             ],
                             "job_id_status": job_id_status,
+                            **flight.placement_scheduler_queries(placement),
                         }
                     ),
                 }

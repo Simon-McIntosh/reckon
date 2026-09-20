@@ -364,6 +364,88 @@ class PlanVisibilityError(CrewError):
         super().__init__(format_refusal("D05", detail))
 
 
+# ── Placement requirements ──────────────────────────────────────────────────
+
+
+def _placement_target(placement: Mapping[str, Any] | None) -> str:
+    """Name where a placement sends its workers, for a refusal to quote.
+
+    The target is read from the scheduler options the placement declares rather
+    than from a site reckon knows, because a partition name is user data.
+    """
+    for option in (placement or {}).get("options") or ():
+        text = str(option)
+        for prefix in ("--partition=", "-p"):
+            if text.startswith(prefix) and len(text) > len(prefix):
+                return text[len(prefix) :].lstrip("=").strip()
+        if text == "-p":
+            continue
+    return "the target node"
+
+
+def placement_requirement_node_local(
+    *,
+    backend: str,
+    placement: Mapping[str, Any] | None,
+    name: str,
+    path: str,
+) -> str:
+    """Refuse a requirement that lives on per-node storage.
+
+    This one gets its own sentence because it fails silently rather than
+    loudly: the path exists on the dispatcher, so nothing is wrong at launch,
+    and the worker dies on a node where the same path names different bytes or
+    nothing at all. The remedy is a path on shared storage, not a retry.
+    """
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} places its workers on {_placement_target(placement)} "
+        f"but requirement {name!r} names {path!r}, which is per-node storage: it "
+        "exists on this dispatcher and not on the node the worker runs on, so "
+        "the launch would succeed and the worker would then fail on a path that "
+        "reads as present and is not. Point the requirement at the shared "
+        "filesystem, or write the worker's scratch there",
+    )
+
+
+def placement_requirement_unmet(
+    *,
+    backend: str,
+    placement: Mapping[str, Any] | None,
+    name: str,
+    detail: str,
+) -> str:
+    """Refuse a requirement the target node cannot satisfy."""
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} places its workers on {_placement_target(placement)} "
+        f"but requirement {name!r} is not visible from there: {detail}",
+    )
+
+
+def placement_query_undeclared(
+    *,
+    backend: str,
+    scheduler: str,
+) -> str:
+    """Refuse a placement that names a wrapper it does not say how to ask.
+
+    A placement without a query is not merely less informative: the liveness
+    read falls through to a pid that belongs to the scheduler client on another
+    host, so a job that ended and a worker that is running are told apart by
+    nothing. Declaring the query beside the wrapper is what makes following a
+    placement the wrapper's own fact rather than a table in reckon.
+    """
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} declares placement wrapper {scheduler!r} but no "
+        "state_query and reason_query, so reckon cannot ask that scheduler about "
+        "the jobs it starts and a placed run's liveness would fall back to a pid "
+        "on the wrong host. Declare both queries beside the wrapper, with the job "
+        "id spelled as the {job} token",
+    )
+
+
 # ── Node definition and the task contract ───────────────────────────────────
 
 
