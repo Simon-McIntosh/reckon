@@ -925,6 +925,39 @@ def _remove_worktree(repo: Path, path: str) -> None:
     )
 
 
+def signal_worker(pid: int, sig: int = signal.SIGTERM) -> bool:
+    """Signal one spawned process, never a group it does not lead.
+
+    ``os.killpg`` takes a process GROUP id, and ``killpg(1, ...)`` is
+    ``kill(-1, ...)`` — every process the caller is permitted to signal. A pid
+    taken from a scan or a run record can report a group it does not lead: one
+    reparented to init, or started without a session of its own, shares its
+    group with unrelated work. Signalling that group reaches the whole account
+    across every control group and session, which no caller here intends, and
+    the reach is invisible at the call site because the argument looks like one
+    process.
+
+    The group is therefore signalled only when the process leads it, which is
+    true of anything started detached on purpose and is the case the group
+    signal exists for. Otherwise the process alone is signalled and its children
+    are left running, because ending one worker is never worth the risk of
+    ending everything. Returns whether a signal was delivered.
+    """
+    try:
+        group = os.getpgid(pid)
+    except (ProcessLookupError, PermissionError):
+        return False
+    target_is_own_group_leader = group == pid and group > 1
+    try:
+        if target_is_own_group_leader and group != os.getpgid(0):
+            os.killpg(group, sig)
+        else:
+            os.kill(pid, sig)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
+
+
 def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
     """Signal a worker only while its pid still names the spawned process.
 
@@ -948,7 +981,7 @@ def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
             f"refusing to signal pid {pid}: process identity changed "
             f"from {expected_start_time!r} to {actual_start_time!r}"
         )
-    os.killpg(os.getpgid(pid), signal.SIGTERM)
+    signal_worker(pid, signal.SIGTERM)
 
 
 def _base_commit(repo: Path, base: str) -> str:

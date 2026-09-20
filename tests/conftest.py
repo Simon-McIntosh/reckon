@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew.dispatch import WATCH_ARMING_ENV
+from reckon.crew.routing import signal_worker
 
 ARMING_MARKER = "arms_watch_producer"
 
@@ -84,10 +85,7 @@ def reaped_watch_producers(tmp_path_factory):
     root = tmp_path_factory.getbasetemp()
     yield
     for pid, _home in watch_producers_under(root):
-        try:
-            os.killpg(os.getpgid(pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError):
-            continue
+        signal_worker(pid, signal.SIGTERM)
 
 
 def pytest_configure(config: pytest.Config) -> None:

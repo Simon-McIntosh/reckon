@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew.routing import signal_worker
+
 from reckon import crew
 from reckon.crew import recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
@@ -91,10 +93,7 @@ def orphan_processes():
     for pid, start_time in owned:
         if crew._process_start_time(pid) != start_time:
             continue
-        try:
-            os.killpg(os.getpgid(pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError):
-            pass
+        signal_worker(pid, signal.SIGTERM)
 
 
 def _wait_for_file(path: Path) -> None:
