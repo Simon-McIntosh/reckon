@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T02:21:45",
+  "updated": "2026-09-20T17:31:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -196328,6 +196328,240 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260920T002147346403-awcj-the-fleet-surface-reports-the-binding-bound",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a75",
+        "node": "awcj-the-fleet-surface-reports-the-binding-bound",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 998,
+                "cached_input_tokens": 611283,
+                "input_tokens": 612283,
+                "output_tokens": 1378,
+                "reasoning_output_tokens": 230,
+                "total_tokens": 613661,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "the fleet surface in reckon/crew/summary.py and reckon/crew/ticker.py reports which bound is binding among the roster ceiling, the partition admitted cores and the login memory slice, with the measured value beside it rather than a label alone; the admission check in reckon/crew/dispatch.py refuses a dispatch that would exceed the binding bound and the refusal names the bound and its value; the memory slice is read as memory.current against memory.max from the login cgroup, with the allocation-stall counter beside them, because those are what can warn before a kill, and the oom_kill counter is reported only as history and never as the warning, since it increments only after a kill has happened; a slice whose cgroup files cannot be read reports the bound as unknown and does not refuse, because absence of a reading is never exhaustion; committed cases pin each bound being the binding one in turn, the unknown case, and the refusal text; the focused suite shows zero added failures against the base revision and the declared negative control reddens",
+          "estimated_hours": null,
+          "goal": "report the bound that is actually binding on concurrency, and refuse a dispatch that would exceed it naming which bound and its measured value",
+          "id": "awcj-the-fleet-surface-reports-the-binding-bound",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-20T00:21:47Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T002147346403-awcj-the-fleet-surface-reports-the-binding-bound/manifest.md",
+          "negative_control": "remove the binding-bound refusal from the admission check so a dispatch past the bound is admitted; the case refusing that dispatch must redden",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/summary.py",
+            "reckon/crew/ticker.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_binding_bound.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-s5-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-20T00:21:55Z",
+        "completed_at": "2026-09-20T15:28:20.372Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 54374,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 54385,
+        "stalled": true,
+        "time_budget": "55m",
+        "base_sha": "578fd2d9eba8015727220d841ffd4ca8c87e5b92",
+        "commits": [
+          "9f5728850b0a51e93b801d0c2a9e92a0955caf28",
+          "5ac9bf16eda6e66ce5a442573581144222b7b01f"
+        ],
+        "changed_lines": {
+          "added": 1027,
+          "removed": 29,
+          "files": 6
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_binding_bound.py tests/test_crew_orphan.py tests/test_worker_signal_reach.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-nova/8fac263d-04b1-4202-bc28-df1b0b73ec93/scratchpad/bb-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T002147346403-awcj-the-fleet-surface-reports-the-binding-bound/manifest.md",
+        "scope_changed": false,
+        "session_id": "d7d72aff-5b14-41fe-b82c-baf1927d557c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1956398,
+            "input_tokens_cumulative": 1956398,
+            "output_tokens": 7583,
+            "output_tokens_cumulative": 7583,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-20T15:28:20.372Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10307258,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 165.976,
+          "generated_tokens": 65686,
+          "generation_seconds": 154.097,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 11.879,
+          "peak_input_tokens": 165372,
+          "tokens_per_second": 426.26,
+          "wall_tokens_per_second": 395.76
+        },
+        "follow_on_paths": [
+          "reckon/crew/recovery.py",
+          "tests/test_worker_signal_reach.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 5,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "tests/conftest.py",
+            "reason": "a cleanup fixture here signalled a process group built from a scanned pid, which reaches every process this account may signal; the node found it while running the suite and repaired it, and the merge kept the shared helper main had landed independently the same day"
+          },
+          {
+            "path": "tests/test_crew_orphan.py",
+            "reason": "the same raw group signal in a second cleanup fixture, repaired and resolved the same way"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-the-fleet-surface-reports-the-binding-bound",
+          "session_id": "d7d72aff-5b14-41fe-b82c-baf1927d557c",
+          "session_source": "stream",
+          "retained_at": "2026-09-20T15:28:20.372Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.62,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.62,
+          "at_complete": 0.76,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_binding_bound.py"
+          ],
+          "declaration": "remove the binding-bound refusal from the admission check so a dispatch past the bound is admitted; the case refusing that dispatch must redden",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T002147346403-awcj-the-fleet-surface-reports-the-binding-bound/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T002147346403-awcj-the-fleet-surface-reports-the-binding-bound/negative-control.red.log"
+        },
+        "tool_steps": 77.0,
+        "orientation_input_tokens": 2040002.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -196612,6 +196846,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1748
+    "_version": 1749
   }
 }
