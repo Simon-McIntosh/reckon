@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T20:16:24",
+  "updated": "2026-09-20T20:33:07",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -196814,6 +196814,237 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a73",
+        "node": "awcj-one-reservation-held-once-and-steps-that-never-queue",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3058,
+                "cached_input_tokens": 178593,
+                "input_tokens": 181653,
+                "output_tokens": 3090,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 184743,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "the lead sized the reservation on 2026-09-20 at thirty-two cores and 128 GB with a roster cap of twenty-five, and the locked decision reservation-size-and-roster-limit on the plan carries it; reckon crew placement --ensure in reckon/cli.py and reckon/crew/runs.py holds the reservation with salloc --no-shell at that size when it is absent and reports it when present, a second call starting nothing, mirroring reckon crew watch --ensure, with the job id published in the shared crew state where every session reads it and never held in one session memory; the placement in reckon/crew/dispatch.py resolves that published id and launches the worker as an srun --overlap step inside it; two workers dispatched from two different sessions both run as steps inside the one reservation, shown by a test that drives two dispatch calls under two session ids against a fake scheduler and asserts one reservation and two steps; the roster refuses the twenty-sixth concurrent worker naming the cap twenty-five and its measured basis of resident memory per worker rather than a core count, pinned by a test; the reservation size and the roster limit are recorded in docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html with the wave that measured them; the focused suite tests/test_crew_placement.py tests/test_crew_watch_ensure.py tests/test_crew_runs_scope.py and the new file reports zero added failures against the base revision and the declared negative control reddens",
+          "estimated_hours": null,
+          "goal": "hold one private Slurm reservation once through an ensure command and place every worker into it as an overlap step, with the roster limit as the only concurrency authority",
+          "id": "awcj-one-reservation-held-once-and-steps-that-never-queue",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-20T18:18:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue/manifest.md",
+          "negative_control": "make the second ensure call hold a second reservation instead of reporting the first; the test asserting one reservation across two sessions must redden",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/runs.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew/placement.py",
+            "tests/test_crew_placement_reservation.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-s3-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-20T18:18:43Z",
+        "completed_at": "2026-09-20T18:26:36.017Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 463,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 473,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "7072ecfde63736e2c3e348d5010684180f1c7657",
+        "commits": [
+          "1ace8694bc5c4430c8ab45915f6ba3a1d73fb4a8",
+          "39889fe207f3fdf40939a12317df7aae507f8f0f"
+        ],
+        "changed_lines": {
+          "added": 880,
+          "removed": 17,
+          "files": 7
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_placement.py tests/test_crew_watch_ensure.py tests/test_crew_runs_scope.py tests/test_crew_placement_reservation.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue/manifest.md",
+        "scope_changed": false,
+        "session_id": "6661f278-f7b9-4b60-b698-3526ac638b79",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7329137,
+            "input_tokens_cumulative": 7329137,
+            "output_tokens": 38583,
+            "output_tokens_cumulative": 38583,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-20T18:26:36.017Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7329137,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 469.63,
+          "generated_tokens": 38583,
+          "generation_seconds": 434.284,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.1,
+          "machine_seconds": 35.346,
+          "peak_input_tokens": 154221,
+          "tokens_per_second": 88.84,
+          "wall_tokens_per_second": 82.16
+        },
+        "follow_on_paths": [
+          "reckon/crew/placement.py",
+          "reckon/schema/flight.yaml"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-one-reservation-held-once-and-steps-that-never-queue",
+          "session_id": "6661f278-f7b9-4b60-b698-3526ac638b79",
+          "session_source": "stream",
+          "retained_at": "2026-09-20T18:26:36.017Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.76,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.76,
+          "at_complete": 0.76,
+          "verdict": "waived",
+          "reason": "the worker commits the plan landing record from its worktree, so the impl advance is the coordinator plan write that follows this merge in the same beat: 0.76 to 0.90 with section 3 landed and section 6 the remainder"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_placement_reservation.py"
+          ],
+          "declaration": "make the second ensure call hold a second reservation instead of reporting the first; the test asserting one reservation across two sessions must redden",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T181837652282-awcj-one-reservation-held-once-and-steps-that-never-queue/negative-control.red.log"
+        },
+        "tool_steps": 68.0,
+        "orientation_input_tokens": 1801751.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -197098,6 +197329,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1755
+    "_version": 1756
   }
 }
