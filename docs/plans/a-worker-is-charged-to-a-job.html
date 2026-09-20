@@ -371,16 +371,23 @@ no declared query answers <code>None</code> so the pid probe decides rather than
 as a stopped job. The declared queries are recorded on the run pointer's <code>placement</code> dict, so a
 reader of the record can see which verbs answered it.</p>
 <p><strong>Gate, and the delta.</strong> The five focused files over the placement, liveness, launch and
-refusal cases, base <code>4dbea5ab</code> and this node's landed head: <strong>141 passed</strong> at base and
-<strong>153 passed</strong> after, with no failure id present on either side — zero added, twelve cases
-added in <code>tests/test_crew_workspace_requirements.py</code>. Ruff findings over the changed modules are
-22 at base and 22 at head, so the change adds none.</p>
+refusal cases, base <code>4dbea5ab</code> and this node's landed head: <strong>42 passed</strong> at base over
+the four files that exist there and <strong>54 passed</strong> at head over the five, with no failure id
+present on either side — zero added, twelve cases added in
+<code>tests/test_crew_workspace_requirements.py</code>. Ruff findings over the changed modules are 130 at
+base and 130 at head, so the change adds none, and the four files in the set that are unformatted are
+unformatted at base too: the repository's formatting backlog, not this change.</p>
+<p><strong>A defect the gate caught.</strong> The accessor's loop variable was renamed to stop shadowing the
+module's <code>field</code> import and one assignment kept the old name, so the accessor returned a dict
+keyed on the imported function object and every placement was refused for an undeclared query. Five new cases
+failed <em>for the wrong reason</em> and Ruff stayed clean, because the stray name was a module-level import
+rather than an undefined one. It was the run that found it, not the diff.</p>
 <p><strong>The guard was shown to fire.</strong> Declared mutation: remove the node-local refusal branch from
 <code>check_placement_requirements</code>, so a <code>/run/user</code> path is judged only by whether it
 exists. The red log at
 <code>runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log</code>
 (first line repeats the mutation verbatim) fails <code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code>
-with <code>DID NOT RAISE CrewError</code> and leaves the other eleven green. The case is loaded by an
+with <code>DID NOT RAISE CrewError</code> and leaves the sibling unreachable-path case green. The case is loaded by an
 <code>assert Path(node_local).is_dir()</code>, so the path's existence — the very thing an existence-only
 check would admit — is proved in the test rather than assumed.</p>
 <p><strong>What this node did not do.</strong> It touches no plan state: the driving followup stays open and no

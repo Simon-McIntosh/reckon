@@ -9,12 +9,12 @@
   <meta name="plan-title" content="A worker is charged to a job — landed evidence">
   <meta name="plan-summary" content="The launch path can now wrap a worker in a scheduler invocation declared on its backend, the field is declared in the flight schema source and regenerated from it, and the run record carries the job the launch became. The single real placed node the section is finished by is a coordinator dispatch, written out as a command.">
   <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
-  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1,reckon:a-worker-is-charged-to-a-job#s2">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1,reckon:a-worker-is-charged-to-a-job#s2,reckon:a-worker-is-charged-to-a-job#s4">
   <meta name="plan-recorded-at" content="2026-09-20">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base 3a05f4f8 for the liveness record">
-  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411">
-  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py">
+  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411,0a2cb56a,67b3ad49">
+  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py,tests/test_crew_workspace_requirements.py">
   <title>A worker is charged to a job — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -313,6 +313,93 @@
     verbs it knows, which is a convention in code rather than a declared field, because the placement schema
     is outside this node's write scope. Verifying the merged result belongs to a separately dispatched test
     node.</p>
+  </section>
+
+  <section id="s4-workspace-contract">
+    <h2>&sect;4 &mdash; The workspace contract, declared and checked before launch</h2>
+    <p>Commits <code>0a2cb56a</code> (fenced implementation) and <code>67b3ad49</code> (two files outside the
+    granted scope, committed apart so the exception is visible). Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_workspace_requirements.py
+    tests/test_crew_placed_liveness.py tests/test_crew_placement.py tests/test_crew_launch_resolution.py
+    tests/test_crew_declared_negative_control.py</code> &mdash; <strong>54 passed, exit 0</strong>. The same
+    command over the four files that exist at base <code>4dbea5ab</code> is <strong>42 passed, exit 0</strong>,
+    so the delta is twelve cases added and an empty set of newly failing ids.</p>
+
+    <p>A backend's <code>placement</code> now carries a <code>requirements</code> list &mdash; one entry per
+    path or endpoint its workers need visible from the node they run on &mdash; alongside
+    <code>state_query</code> and <code>reason_query</code>, the two argv the placement wrapper's reporting
+    verbs are asked with, each spelling the job id as the <code>{job}</code> token. The requirement set is a
+    first-class slot of <code>reckon/schema/flight.yaml</code>, so <code>reckon/_flight_schema.py</code> is
+    regenerated from it rather than hand-edited, and <code>reckon/flight.py</code> reads the declaration back
+    through <code>placement_requirement_entries</code> and <code>placement_scheduler_queries</code>. A
+    requirement that declares both a <code>path</code> and an <code>endpoint</code>, or neither, is refused at
+    whole-config validation rather than admitted as a check that quietly passes.</p>
+
+    <p><strong>The check is coordinator-side, and the refusal text is beside the other pre-launch
+    refusals.</strong> It runs inside <code>plan_dispatch</code> in <code>reckon/crew/dispatch.py</code>, the
+    single pre-side-effect resolver both the dry-run path and a real launch reach, so the verdict a dry run
+    reports is the verdict a launch reaches and no worktree, pointer or job exists when the refusal is raised.
+    A node-side check could not do this &mdash; it would need the node to start, which is the thing being
+    refused. The three refusal sentences are composed in <code>reckon/crew/node.py</code> through the shared
+    formatter, so the reason is legible on the fleet surface.</p>
+
+    <p><strong>The node-local case gets its own sentence.</strong> A path under <code>/run/user</code>, under
+    <code>XDG_RUNTIME_DIR</code>, or on any tmpfs in the dispatcher's own mount table exists on every node and
+    names different bytes on each, so an existence check admits it and the worker fails later on a path that is
+    present where the dispatcher runs. It is refused by name, with a sentence saying the storage is per-node
+    and pointing at the shared filesystem, distinct from the sentence an absent path gets.</p>
+
+    <table>
+      <caption>What each clause of the measure asserts, and the case that pins it</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
+        <tr><td>unreachable path</td><td>refused naming the requirement, the path and the target partition</td><td><code>test_an_unreachable_requirement_path_is_refused_before_launch</code></td></tr>
+        <tr><td>unreachable endpoint</td><td>a declared endpoint nothing answers on is refused, naming it</td><td><code>test_an_unreachable_endpoint_is_refused_naming_the_endpoint</code></td></tr>
+        <tr><td>node-local path</td><td>refused by name with its own sentence, not the not-visible one</td><td><code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code></td></tr>
+        <tr><td>undeclared query</td><td>a wrapper declared with no way to ask it is refused, not left unqueryable</td><td><code>test_a_placement_naming_a_wrapper_with_no_query_is_refused</code></td></tr>
+        <tr><td>half a query set</td><td>one query without the other is still a placement reckon cannot follow</td><td><code>test_a_half_declared_query_set_is_refused</code></td></tr>
+        <tr><td>satisfied placement</td><td>every requirement visible admits the node unchanged</td><td><code>test_a_satisfied_placement_is_admitted</code></td></tr>
+        <tr><td>no placement</td><td>absence is not an empty placement: nothing required, nothing runs</td><td><code>test_a_backend_declaring_no_placement_is_untouched</code></td></tr>
+        <tr><td>malformed requirement</td><td>neither target declared is refused rather than quietly passing</td><td><code>test_a_requirement_declaring_no_target_is_refused</code>, <code>test_a_requirement_declaring_both_targets_is_refused_by_the_schema</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The declaration replaces a table in code.</strong> The state and reason queries were keyed on the
+    basename of the wrapper a placement named, in two dictionaries in <code>reckon/crew/runs.py</code> &mdash;
+    the convention section 2's own evidence flagged as a convention. Those tables are gone;
+    <code>_scheduler_query_argv</code> reads the declaration off the placement, substituting the job id for the
+    <code>{job}</code> token, and a wrapper with no declared query answers <code>None</code> so the pid probe
+    decides rather than a silent scheduler being read as a stopped job. The declared queries are recorded on
+    the run pointer's <code>placement</code> dict, so a reader of a record can see which verbs answered it.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: remove the node-local refusal branch
+    from <code>check_placement_requirements</code>, so a <code>/run/user</code> path is judged only by whether
+    it exists. The red log at
+    <code>runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log</code>
+    (its first lines repeat the mutation verbatim) fails
+    <code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code> with <code>DID NOT RAISE
+    CrewError</code> and leaves the sibling case green. The case carries <code>assert
+    Path(node_local).is_dir()</code>, so the path's existence &mdash; the very property an existence-only check
+    would admit &mdash; is proved in the test rather than assumed; the first cut of this case used a
+    subdirectory that does not exist and reddened on the sentence alone, which is a weaker control.</p>
+
+    <p><strong>A defect this node's own gate caught, recorded because it is instructive.</strong> The
+    accessor's loop variable was renamed to stop shadowing the module's <code>field</code> import, and one
+    assignment kept the old name, so <code>placement_scheduler_queries</code> returned a dict keyed on the
+    imported function object. Every placement was then refused for an undeclared query and five of the twelve
+    new cases failed <em>for the wrong reason</em>. Ruff was clean throughout, because the name was a
+    module-level import rather than an undefined name. It was found by running the suite, not by reading the
+    diff, which is the argument for running the gate after every edit rather than once at the end.</p>
+
+    <p><strong>Lint and formatting delta.</strong> Ruff findings over the changed modules are 130 at base and
+    130 at head, so the change adds none; the new test file is lint-clean and format-clean. Four files in the
+    changed set are unformatted at base and remain so at head &mdash; the repository's formatting backlog, not
+    this change.</p>
+
+    <p><strong>What is not here.</strong> No plan state is touched: the driving followup stays open and no
+    terminal status is set, because only the coordinator observes the other nodes. The five-file set is
+    focused by which tests reach the changed modules, not a whole-suite run; verifying the merged result
+    belongs to a separately dispatched test node.</p>
   </section>
 </main>
 </body>
