@@ -23,6 +23,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
 from reckon.calibration import agent_configuration_key
+from reckon.crew import summary
 from reckon.crew.node import (
     BudgetHold,
     CompetenceLimit,
@@ -414,7 +415,7 @@ def _live_runs_on_backend(backend_name: str) -> list[dict[str, Any]]:
 def _refuse_over_concurrency_ceiling(
     backend_name: str, backend: Mapping[str, Any]
 ) -> None:
-    """Refuse a dispatch that would push a backend past its declared ceiling.
+    """Refuse a dispatch that would exceed whichever bound is actually binding.
 
     A lane already carrying its ceiling of live runs must not be asked to carry
     one more: the harness retry budget is fixed and reckon passes no retry
@@ -424,37 +425,33 @@ def _refuse_over_concurrency_ceiling(
     after ten 429 retries. Adding work destroyed work, so the only reliable
     remedy is not to create the overload.
 
-    The refusal happens before any worktree or worker exists and never touches
-    a run already in flight — a finished run holds no slot (its phase is
-    terminal), and terminating one to admit a new one would reproduce the harm
-    this exists to prevent. ``max_concurrent_runs`` is user data; a backend
-    that declares none is unlimited and this check does nothing.
+    Which resource bounds the lane is read rather than assumed. The roster
+    ceiling is one candidate; the cores a placement's reservation admits and
+    the login memory slice the coordinator still lives inside are the others,
+    and the refusal names the one that ran out with its measured value. The
+    check happens before any worktree or worker exists and never touches a run
+    already in flight — a finished run holds no slot (its phase is terminal),
+    and terminating one to admit a new one would reproduce the harm this exists
+    to prevent.
+
+    Every bound is user data or a host reading. A bound that cannot be read
+    admits: an unknown ceiling, an unstated reservation and an unreadable
+    cgroup can none of them justify refusing work.
     """
-    ceiling = backend.get("max_concurrent_runs")
-    # An unresolvable ceiling is an unmeasured lane: the schema rejects a value
-    # below one at load time, and a caller that bypassed the schema with a
-    # non-integer must not crash dispatch — an unknown ceiling cannot justify
-    # refusing work.
-    if (
-        ceiling is None
-        or isinstance(ceiling, bool)
-        or not isinstance(ceiling, int)
-        or ceiling <= 0
-    ):
-        return
     occupying = _live_runs_on_backend(backend_name)
-    if len(occupying) < ceiling:
-        return
-    run_ids = ", ".join(
-        sorted(str(pointer.get("run_id") or "unknown") for pointer in occupying)
+    bounds = summary.concurrency_bounds(
+        backend, occupancy=len(occupying), login_slice=summary.read_login_slice()
     )
+    binding = summary.binding_bound(bounds)
+    if binding is None or binding.admits_one_more:
+        return
+    run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
     raise CrewError(
         format_refusal(
             "D09",
-            f"node is not dispatchable — backend {backend_name!r} is at its "
-            f"concurrency ceiling ({len(occupying)} live runs of {ceiling} max); "
-            f"the runs occupying its slots: {run_ids}. Wait for one to finish, "
-            f"or raise max_concurrent_runs for this backend.",
+            summary.bound_refusal_text(
+                binding, backend_name=backend_name, occupying=run_ids
+            ),
         )
     )
 

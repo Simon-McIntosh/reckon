@@ -538,6 +538,49 @@ def elide(text: str, width: int) -> str:
     return text if len(text) <= width else text[: width - 1] + "…"
 
 
+# The prefix the fleet surface prints ahead of the bound that is binding. A
+# word rather than a glyph, because the reading is a sentence fragment a reader
+# has to be able to search for, and because the same clause appears in a
+# refusal where no legend is available to decode a symbol.
+BOUND_PREFIX = "bind"
+# What the clause says when no bound could be read. Distinct from a bound that
+# reads as ample: an unreadable slice is a fact about the instrument, and a
+# reader who sees it should go looking rather than assume headroom.
+BOUND_UNKNOWN = "unknown"
+# The widest the bound clause is allowed to grow before it is elided. The
+# clause carries a label and a measured value, so it is longer than a counter;
+# this holds the right edge of the row steady across readings.
+BOUND_WIDTH = 46
+
+
+def bound_clause(report: Mapping[str, Any] | None) -> str:
+    """Name the binding bound with its measured value, for the fleet surface.
+
+    A label alone says a resource was considered, not how close it is: the
+    reader's next question is the figure, so the clause carries both and never
+    reports the label on its own. A report that names no binding bound — every
+    candidate unreadable or unbounded — says ``unknown`` rather than naming one,
+    because there is nothing to name.
+    """
+    if not report or not report.get("binding"):
+        return f"{BOUND_PREFIX} {BOUND_UNKNOWN}"
+    value = single_clause(report.get("value"), limit=BOUND_WIDTH)
+    clause = f"{BOUND_PREFIX} {report['binding']} {value}".strip()
+    return elide(clause, BOUND_WIDTH)
+
+
+def bound_cells(report: Mapping[str, Any] | None) -> list[tuple[str, Any]]:
+    """The binding-bound clause as a ranked grid cell, or empty when absent.
+
+    A transition whose record carries no bound reading adds no cell rather than
+    an ``unknown`` one: the fleet surface says what it was told, and inventing
+    an unknown for every older record would drown the reading where it exists.
+    """
+    if not report:
+        return []
+    return [(" " * GAP, None), (bound_clause(report), "dim")]
+
+
 def _display_state(state: Any) -> str:
     return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE)
 
@@ -974,6 +1017,11 @@ class Ticker:
                 cells += [("·", "dim")]
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
             cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
+        # The bound sits beside the counters the transition carries, because
+        # the counters say how much work is in flight and the bound says what
+        # limits it. A record written before the reading existed carries none,
+        # so the clause is absent rather than unknown.
+        cells += bound_cells(event.get("bounds"))
         return cells
 
     def _age_cells(self, event: Mapping[str, Any]) -> str:
