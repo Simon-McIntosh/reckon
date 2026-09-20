@@ -2500,40 +2500,29 @@ _SCHEDULER_QUERY_TIMEOUT_SECONDS = 5.0
 # spells its own argument order rather than reckon guessing one.
 _JOB_STATE_PLACEHOLDER = "{job}"
 
-# The reporting verb each scheduler family answers a single job's state through,
-# keyed on the wrapper executable a placement names. A family reckon does not
-# know here answers None and falls through to the pid probe.
-_SCHEDULER_STATE_QUERIES: dict[str, list[str]] = {
-    "srun": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%T"],
-    "sbatch": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%T"],
-    "salloc": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%T"],
-}
-
-# The reporting verb for the scheduler's own reason string for one job — why it
-# has not started, or why it ended. A job that never started carries its reason
-# here, which is what a launch-failure record quotes instead of an exit status
-# the scheduler client never produced.
-_SCHEDULER_REASON_QUERIES: dict[str, list[str]] = {
-    "srun": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%r"],
-    "sbatch": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%r"],
-    "salloc": ["squeue", "-h", "-j", _JOB_STATE_PLACEHOLDER, "-o", "%r"],
-}
-
 
 def _scheduler_query_argv(
     placement: Mapping[str, Any] | None,
     job_id: Any,
-    queries: Mapping[str, list[str]],
+    field: str,
 ) -> list[str] | None:
-    """The argument vector for one field of one job, or None when unknowable."""
+    """The argument vector for one field of one job, or None when unknowable.
+
+    The query is read from the placement's own declaration rather than from a
+    table keyed on the wrapper's name, so which reporting verb answers a given
+    scheduler is configuration. A placement that declares the wrapper without
+    declaring how to ask it answers None here and falls through to the pid
+    probe, having been refused before launch for exactly that omission.
+    """
     if not placement or not job_id:
         return None
-    scheduler = Path(str(placement.get("scheduler") or "")).name
-    query = queries.get(scheduler)
-    if query is None:
+    query = placement.get(field)
+    if not isinstance(query, Iterable) or isinstance(query, (str, bytes)) or not query:
         return None
     token = str(job_id)
-    return [token if item == _JOB_STATE_PLACEHOLDER else item for item in query]
+    return [
+        token if str(item) == _JOB_STATE_PLACEHOLDER else str(item) for item in query
+    ]
 
 
 def _ask_scheduler(
@@ -2575,7 +2564,7 @@ def scheduler_job_reason(
     of fabricating one.
     """
     return _ask_scheduler(
-        _scheduler_query_argv(placement, job_id, _SCHEDULER_REASON_QUERIES), runner
+        _scheduler_query_argv(placement, job_id, "reason_query"), runner
     )
 
 
@@ -2646,19 +2635,11 @@ def _scheduler_state_argv(
 ) -> list[str] | None:
     """The argument vector that asks a scheduler for one job's state, or None.
 
-    A placement names the wrapper executable the launch runs through, and the
-    query is that same family's reporting verb answering one job. The mapping is
-    keyed on the wrapper's own name rather than on a site, so a placement that
-    names no scheduler reckon can query answers None and falls through to the
-    pid probe instead of being read as a stopped job.
+    A placement declares the reporting verb that answers one job's state beside
+    the wrapper it asks, so a placement that declares no query answers None and
+    falls through to the pid probe instead of being read as a stopped job.
     """
-    if not placement or not job_id:
-        return None
-    scheduler = Path(str(placement.get("scheduler") or "")).name
-    query = _SCHEDULER_STATE_QUERIES.get(scheduler)
-    if query is None:
-        return None
-    return [job_id if item == _JOB_STATE_PLACEHOLDER else item for item in query]
+    return _scheduler_query_argv(placement, job_id, "state_query")
 
 
 def scheduler_job_state(
