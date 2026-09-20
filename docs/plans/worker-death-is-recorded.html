@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="worker-death-is-recorded">
-  <meta name="plan-title"     content="A Worker's Death Is Recorded — exit status, a phase for being killed, and a resume that can reach it">
-  <meta name="plan-summary"   content="A worker ended by a signal leaves a pointer reading working forever; record how it died so resume becomes reachable">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="worker-death-is-recorded">
+  <meta name="plan-title" content="A Worker&#x27;s Death Is Recorded — exit status, a phase for being killed, and a resume that can reach it">
+  <meta name="plan-summary" content="A worker ended by a signal leaves a pointer reading working forever; record how it died so resume becomes reachable">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="Nothing waits on it and it waits on nothing: it records how a worker ended, which changes what an operator can see rather than what any other plan produces.">
   <title>A Worker's Death Is Recorded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-20">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -163,53 +165,46 @@
     interrupted is a different plan and a harder one.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-
-      <div class="r-dec" data-key="phase-name" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What is the phase called for a run ended by a signal it did not choose?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="interrupted">interrupted — names what happened to the work, not to the process</button>
-          <button class="r-opt" data-value="killed">killed — blunt and unambiguous, but reads as deliberate</button>
-          <button class="r-opt" data-value="terminated">terminated — matches the signal vocabulary, collides with the existing stopped</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="reconcile-when" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">When is liveness re-derived — on every read, or by a periodic sweep?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="on-read">On read — always current, costs a pid check per pointer</button>
-          <button class="r-opt" data-value="sweep">Periodic sweep — cheaper reads, a window where state is stale</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="auto-resume" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Should an interrupted run with a live session resume automatically, or wait for a human?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="manual">Wait — an operator decides, because the cause may recur</button>
-          <button class="r-opt" data-value="auto">Automatic — restores the fleet without intervention, risks looping into the same killer</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="phase-name" data-choice="interrupted" data-by="Simon McIntosh" data-when="2026-09-20T13:32:04+00:00">
+    <p class="r-dec-q">What is the phase called for a run ended by a signal it did not choose?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="interrupted">interrupted — names what happened to the work, not to the process</button>
+      <button class="r-opt" data-value="killed">killed — blunt and unambiguous, but reads as deliberate</button>
+      <button class="r-opt" data-value="terminated">terminated — matches the signal vocabulary, collides with the existing stopped</button>
+      </p>
+    <p class="r-dec-rat">Locked to &lt;code&gt;interrupted&lt;/code&gt;. It names what happened to the work rather than to the process, which is the distinction an operator acts on, and it sits cleanly beside &lt;code&gt;orphaned&lt;/code&gt; (the supervisor went) and &lt;code&gt;stopped&lt;/code&gt; (deliberate). &lt;code&gt;killed&lt;/code&gt; was rejected because it reads as intentional, so a reader would reach for promote or discard rather than resume — the exact wrong turn this plan exists to prevent. &lt;code&gt;terminated&lt;/code&gt; was rejected for colliding semantically with &lt;code&gt;stopped&lt;/code&gt;.</p>
+    </div>
+<div class="r-dec" data-key="reconcile-when" data-choice="on-read" data-by="Simon McIntosh" data-when="2026-09-20T13:32:04+00:00">
+    <p class="r-dec-q">When is liveness re-derived — on every read, or by a periodic sweep?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="on-read">On read — always current, costs a pid check per pointer</button>
+      <button class="r-opt" data-value="sweep">Periodic sweep — cheaper reads, a window where state is stale</button>
+      </p>
+    <p class="r-dec-rat">Locked to re-deriving liveness on every read. The failure being repaired was a stale record believed for three days, and a periodic sweep reintroduces a smaller version of exactly that by leaving a window in which crew state is knowably wrong. The accepted cost is one process check per pointer per read, which is negligible at the measured scale of nine pointers, and the start-time comparison that guards against pid reuse is already written elsewhere in this codebase.</p>
+    </div>
+<div class="r-dec" data-key="auto-resume" data-choice="manual" data-by="Simon McIntosh" data-when="2026-09-20T13:32:04+00:00">
+    <p class="r-dec-q">Should an interrupted run with a live session resume automatically, or wait for a human?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="manual">Wait — an operator decides, because the cause may recur</button>
+      <button class="r-opt" data-value="auto">Automatic — restores the fleet without intervention, risks looping into the same killer</button>
+      </p>
+    <p class="r-dec-rat">Locked to waiting for an operator. The cause of an interruption may recur — a broadcast, an out-of-memory kill, a host teardown — and resuming straight back into it burns the surviving session for nothing. Automatic resume was rejected because repeated deaths from one underlying fault present as flakiness rather than as a single cause, which is what made the originating defect take two days to find. The accepted cost is one human action per interrupted run.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-wdr-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-20">
-        <h4 class="r-fu-title">Record the wait status a launcher already has</h4>
-        <div class="r-fu-body">
-          <p>Plan authored against a measured ledger: nine live pointers, none with a
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wdr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-20" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Record the wait status a launcher already has</h4>
+    <div class="r-fu-body"><p>Plan authored against a measured ledger: nine live pointers, none with a
           living process, thirty commits of work described as still being written. The
           first executable step is §5.1 — the launcher holds the exit code and signal at
           the moment a worker ends and currently discards both, so recording them is the
-          smallest change that makes every later step possible.</p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship worker-death-is-recorded §5</pre>
-      </article>
-    </section>
+          smallest change that makes every later step possible.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship worker-death-is-recorded §5</pre>
+    </article>
+</section>
 
   </main>
 </body>
