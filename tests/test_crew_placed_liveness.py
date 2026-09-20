@@ -18,7 +18,15 @@ from reckon.crew import recovery, runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
-PLACEMENT = {"scheduler": "srun", "options": ["--partition=all"]}
+# The queries live beside the wrapper a placement names, so the fixture carries
+# them: which reporting verb answers a scheduler is configuration rather than a
+# table keyed on the wrapper's name.
+PLACEMENT = {
+    "scheduler": "srun",
+    "options": ["--partition=all"],
+    "state_query": ["squeue", "-h", "-j", "{job}", "-o", "%T"],
+    "reason_query": ["squeue", "-h", "-j", "{job}", "-o", "%r"],
+}
 EXEC = "/opt/backends/bin/codex"
 
 
