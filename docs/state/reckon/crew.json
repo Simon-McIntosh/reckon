@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T19:56:48",
+  "updated": "2026-09-20T20:16:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -196589,6 +196589,231 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260920T162256985533-awcj-placement-carries-any-lane",
+        "plan": "a-worker-is-charged-to-a-job",
+        "section": "\u00a77",
+        "node": "awcj-placement-carries-any-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 633,
+                "cached_input_tokens": 869227,
+                "input_tokens": 869862,
+                "output_tokens": 1257,
+                "reasoning_output_tokens": 130,
+                "total_tokens": 871119,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "8fac263d-04b1-4202-bc28-df1b0b73ec93",
+            "session_id": "s18-takeover-20260919"
+          },
+          "done_when": "tests/test_crew_lane_agnostic_placement.py adds at least three cases and passes with exit status 0: one asserting the placement path branches on no lane identity, so adding a backend needs no placement code; one asserting a placement whose declared provider endpoint is unreachable from the target partition is refused before launch naming the backend and the endpoint, sharing the pre-launch site and refusal wording the workspace-contract section already added rather than adding a second; and one asserting a dispatch is never rerouted to a different lane because of where it would run; the credential path each lane needs is already part of the requirement set, so this node adds none and the manifest says so; the demonstration half of the section, a placed dispatch to an externally served backend running on a compute node and reaching its provider, is NOT attempted and is reported as deferred with the reason, because the external lane reads 98 percent window utilisation and a node spent on it would be spent on the demonstration rather than the mechanism; the focused suite reports zero added failures against the base revision; the declared negative control reddens",
+          "estimated_hours": null,
+          "goal": "keep placement a property of a backend rather than of the locally served one, and refuse a placement whose provider a partition cannot reach",
+          "id": "awcj-placement-carries-any-lane",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-20T16:22:57Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T162256985533-awcj-placement-carries-any-lane/manifest.md",
+          "negative_control": "in plan_dispatch, a placement whose requirements are unmet falls back to the default lane instead of refusing",
+          "plan": "a-worker-is-charged-to-a-job",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/node.py",
+            "tests/test_crew_lane_agnostic_placement.py",
+            "docs/plans/a-worker-is-charged-to-a-job.html",
+            "docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s18t-awcj-s7-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-20T16:23:06Z",
+        "completed_at": "2026-09-20T16:35:14.483Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 717,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 728,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "3450e8e67b11d5f2daebd660e702abea43ecf509",
+        "commits": [
+          "09e48eae152755e2defc345023c46ef0779e2d71",
+          "a7f9575588ed4c0ca5433e2c5bc63cd514b096a8"
+        ],
+        "changed_lines": {
+          "added": 511,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_placement.py tests/test_crew_workspace_requirements.py tests/test_routing_surface.py tests/test_dispatch_names_its_backend.py tests/test_crew_routing_visibility.py tests/test_crew_lane_agnostic_placement.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T162256985533-awcj-placement-carries-any-lane/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T162256985533-awcj-placement-carries-any-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "7e69e627-9cfb-4671-b519-9f2ea8cda08d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7407710,
+            "input_tokens_cumulative": 7407710,
+            "output_tokens": 41586,
+            "output_tokens_cumulative": 41586,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-20T16:35:14.483Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7407710,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 725.233,
+          "generated_tokens": 41586,
+          "generation_seconds": 660.519,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 30.0,
+          "machine_seconds": 64.714,
+          "peak_input_tokens": 143970,
+          "tokens_per_second": 62.96,
+          "wall_tokens_per_second": 57.34
+        },
+        "follow_on_paths": [
+          "tests/test_crew_workspace_requirements.py",
+          "/run/user"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s18-takeover-20260919/awcj-placement-carries-any-lane",
+          "session_id": "7e69e627-9cfb-4671-b519-9f2ea8cda08d",
+          "session_source": "stream",
+          "retained_at": "2026-09-20T16:35:14.483Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.76,
+        "impl_move": {
+          "plan": "a-worker-is-charged-to-a-job",
+          "at_dispatch": 0.76,
+          "at_complete": 0.76,
+          "verdict": "waived",
+          "reason": "the section asked for a pin that placement is lane-agnostic; the pin landed as tests and record because dispatch.py already carried the property, so no production module changed"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_crew_lane_agnostic_placement.py"
+          ],
+          "declaration": "in plan_dispatch, a placement whose requirements are unmet falls back to the default lane instead of refusing",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T162256985533-awcj-placement-carries-any-lane/negative-control.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260920T162256985533-awcj-placement-carries-any-lane/negative-control.red.log"
+        },
+        "tool_steps": 72.0,
+        "orientation_input_tokens": 2395144.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -196873,6 +197098,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1754
+    "_version": 1755
   }
 }
