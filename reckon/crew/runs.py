@@ -2275,6 +2275,36 @@ WATCH_UNIT_ENV = "RECKON_WATCH_UNIT"
 LINGER_IF_REQUIRED = True
 
 
+def ensure_placement_reservation(
+    *,
+    session: str | None = None,
+    runner: Any | None = None,
+    alive_probe: Any | None = None,
+) -> dict[str, Any]:
+    """Hold the placement reservation if absent, and report it if present.
+
+    The reservation is a durable shared resource of the same kind as the model
+    serve and the project watcher, so it is managed the same way: an ensure
+    command that is safe to run twice, holding the resource once and reporting
+    it afterwards. Its job id is published into the shared crew state rather
+    than held in the session that ran the command, because a job id in one
+    session's memory is invisible to every other session and each would hold
+    its own reservation.
+    """
+    from reckon.crew import placement as placement_module
+
+    result = placement_module.ensure_reservation(
+        session=session, runner=runner, alive_probe=alive_probe
+    )
+    result["ensure_line"] = placement_ensure_line()
+    return result
+
+
+def placement_ensure_line() -> str:
+    """Return the command that holds or reports the placement reservation."""
+    return "reckon crew placement --ensure"
+
+
 def watch_unit_name(project: str) -> str:
     """Return the systemd user unit that runs one project's watcher service."""
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
