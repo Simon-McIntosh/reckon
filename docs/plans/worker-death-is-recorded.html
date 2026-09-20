@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="worker-death-is-recorded">
+  <meta name="plan-title"     content="A Worker's Death Is Recorded — exit status, a phase for being killed, and a resume that can reach it">
+  <meta name="plan-summary"   content="A worker ended by a signal leaves a pointer reading working forever; record how it died so resume becomes reachable">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="Nothing waits on it and it waits on nothing: it records how a worker ended, which changes what an operator can see rather than what any other plan produces.">
+  <title>A Worker's Death Is Recorded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — A killed worker is indistinguishable from a working one</h2>
+    <p>A dispatched worker that is ended by a signal it did not choose writes nothing on
+    the way out. Its live pointer keeps the phase it had when it died, which is almost
+    always <code>working</code>, and the ledger has no field that could say otherwise. So
+    the seat stays held, the roadmap keeps counting the run as in flight, and a reader
+    looking at crew state cannot tell a worker that is mid-turn from one whose process
+    left hours ago.</p>
+    <p>Nothing reconciles this later. There is no sweep that notices a recorded pid has no
+    process behind it, so the pointer survives until a human opens it. The oldest such
+    pointer measured on this workstation had been reporting <code>working</code> for three
+    days.</p>
+    <p>The cost is not bookkeeping. It is that <strong>the correct recovery becomes
+    unreachable.</strong> A worker killed mid-run is exactly the case <code>resume</code>
+    exists for — its session holds every turn it had taken — but resume is chosen by a
+    human who can see that the run needs resuming, and the state never says so. The
+    alternative a hurried operator reaches for is promotion, which asserts the work
+    finished and destroys the resume path in the process.</p>
+
+    <h2 id="s2">§2 — What the ledger looked like after one broadcast</h2>
+    <p>A signal reaching every process of the account ended eight workers across three
+    projects. Their pointers, inventoried afterwards:</p>
+    <table>
+      <thead>
+        <tr><th>Recorded phase</th><th>Runs</th><th>Process alive</th>
+            <th>Commits in the worktree</th><th>Resumable</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>working</code></td><td>6</td><td>0</td><td>14 across them</td>
+            <td>2 of 6 carry a session id</td></tr>
+        <tr><td><code>orphaned</code></td><td>2</td><td>0</td><td>1</td><td>both</td></tr>
+        <tr><td><code>stopped</code></td><td>1</td><td>0</td><td>15</td><td>no session id</td></tr>
+      </tbody>
+    </table>
+    <p>Nine live pointers, <strong>none with a living process</strong>, and thirty commits
+    of real work sitting in worktrees that the ledger described as still being written. One
+    run held its only copy of a 63 KB evidence record as an untracked file, with no commit
+    behind it — the case where a worktree reclaim takes the work outright and nothing
+    reports the loss.</p>
+    <p>Four of the nine carry no session id at all, so <code>resume</code> was structurally
+    unavailable for them however they were labelled. That is a second gap and §4 treats it
+    as one.</p>
+
+    <h2 id="s3">§3 — Three separate things are missing</h2>
+    <p>The symptom is one stale phase, but it has three independent causes and fixing any
+    one alone leaves the failure intact.</p>
+    <p><strong>The exit is not observed.</strong> The wrapper that launches a worker has
+    the wait status in hand — it knows whether the process exited 0, exited non-zero, or
+    was terminated by a signal, and which signal. None of it is kept. A worker that
+    finished, one killed by a broadcast, and one killed by the out-of-memory killer are
+    three different situations with three different recoveries, and the record flattens
+    them into the same stale phase.</p>
+    <p><strong>Liveness is never re-derived.</strong> A pointer is written once and
+    believed indefinitely. The check is cheap and already exists elsewhere in the codebase:
+    a recorded pid plus its start time answers both "is it alive" and "is this still the
+    same process", the second being what stops a reused pid from reading as a survivor.</p>
+    <p><strong>A session id is captured inconsistently.</strong> Resume depends on it, and
+    four of nine runs did not have one. Until that is reliable, recording the death
+    correctly still leaves half the runs with no route out of it.</p>
+
+    <h2 id="s4">§4 — The shape of the fix</h2>
+    <p>Add the state the system is missing, then let the existing verbs reach it.</p>
+    <table>
+      <thead><tr><th>Phase</th><th>Means</th><th>Recovery</th></tr></thead>
+      <tbody>
+        <tr><td><code>working</code></td><td>A process is running and was verified so</td>
+            <td>wait</td></tr>
+        <tr><td><strong><code>interrupted</code></strong> (new)</td>
+            <td>Ended by a signal it did not choose; worktree intact</td>
+            <td><code>resume</code> where a session survives, otherwise redispatch the remainder</td></tr>
+        <tr><td><code>orphaned</code></td><td>Its supervisor went, the worker may not have</td>
+            <td>unchanged</td></tr>
+        <tr><td><code>stopped</code></td><td>Terminated deliberately through the tool</td>
+            <td>unchanged</td></tr>
+        <tr><td><code>complete</code></td><td>Exited of its own accord having finished</td>
+            <td>promote</td></tr>
+      </tbody>
+    </table>
+    <p><code>interrupted</code> is the concept the vocabulary lacks. <code>orphaned</code>
+    is close but names the supervisor's fate rather than the worker's, and a run can be
+    both. The distinction that matters to an operator is whether the work stopped because
+    it was finished or because something ended it, and only the second is a candidate for
+    resume.</p>
+    <p>The phase is worth little without the reason, so a terminated run records the
+    signal that ended it. A run interrupted by a broadcast, by the out-of-memory killer,
+    or by a deliberate cancellation look identical today and want different responses: the
+    first is safe to resume immediately, the second says the node needs smaller bounds
+    before it runs again, and the third should not be resumed at all.</p>
+
+    <h2 id="s5">§5 — Implementation</h2>
+    <ol>
+      <li><strong>Keep the wait status.</strong> The launcher records the exit code and,
+      where the process was signalled, the signal number and name, against the run. Done
+      when a worker killed with a known signal records that signal, and one that exits
+      cleanly records its code, both readable from the run record without inspecting a
+      log.</li>
+
+      <li><strong>Re-derive liveness on read.</strong> A pointer whose recorded pid has no
+      process, or whose process start time no longer matches, is reported as not running
+      rather than taken at face value. Done when a pointer whose process is gone stops
+      reporting <code>working</code>, and a reused pid is not mistaken for a survivor.</li>
+
+      <li><strong>Introduce <code>interrupted</code> and set it from the two above.</strong>
+      A run whose process ended by signal, or whose pid is dead with no recorded exit,
+      becomes <code>interrupted</code> rather than staying in its last live phase. Done
+      when the nine pointers in §2 classify correctly against their real state, and a
+      completed run is never relabelled.</li>
+
+      <li><strong>Make the session id reliable.</strong> Establish why four of nine runs
+      carried none and close that gap, because resume cannot be the answer for a run that
+      cannot be resumed. Done when a dispatched run either carries a session id or records
+      why it could not, and the count of runs without one is zero for new dispatches.</li>
+
+      <li><strong>Let the roadmap act on it.</strong> An interrupted run is surfaced as
+      needing a decision rather than counted as in flight, and its seat is released so the
+      lane is not held by a process that no longer exists. Done when a sprint containing
+      interrupted runs reports them distinctly from running ones.</li>
+
+      <li><strong>Prove it end to end.</strong> A worker is dispatched, killed by signal,
+      and the run reports <code>interrupted</code> with the signal named; it is then
+      resumed and completes. Done when that sequence passes as a test rather than as a
+      manual demonstration.</li>
+    </ol>
+    <p>Steps one and two are independent and can land in either order. Step three depends
+    on both. Step four is independent of all of them and is the one that decides whether
+    the remedy is reachable in practice.</p>
+
+    <h2 id="s6">§6 — What this does not cover</h2>
+    <p>This records a death; it does not prevent one. The broadcast that produced the
+    evidence in §2 was a separate defect in a test fixture, repaired independently, and a
+    worker can still be ended by the out-of-memory killer, a cancelled allocation or a
+    host-level teardown. The point of the phase is that every one of those becomes legible
+    rather than silent.</p>
+    <p>It also leaves worktree reclamation alone. The untracked evidence file in §2
+    survived because someone looked; making a worker commit its work before it can be
+    interrupted is a different plan and a harder one.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+
+      <div class="r-dec" data-key="phase-name" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What is the phase called for a run ended by a signal it did not choose?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="interrupted">interrupted — names what happened to the work, not to the process</button>
+          <button class="r-opt" data-value="killed">killed — blunt and unambiguous, but reads as deliberate</button>
+          <button class="r-opt" data-value="terminated">terminated — matches the signal vocabulary, collides with the existing stopped</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="reconcile-when" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">When is liveness re-derived — on every read, or by a periodic sweep?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="on-read">On read — always current, costs a pid check per pointer</button>
+          <button class="r-opt" data-value="sweep">Periodic sweep — cheaper reads, a window where state is stale</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="auto-resume" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Should an interrupted run with a live session resume automatically, or wait for a human?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="manual">Wait — an operator decides, because the cause may recur</button>
+          <button class="r-opt" data-value="auto">Automatic — restores the fleet without intervention, risks looping into the same killer</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wdr-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-20">
+        <h4 class="r-fu-title">Record the wait status a launcher already has</h4>
+        <div class="r-fu-body">
+          <p>Plan authored against a measured ledger: nine live pointers, none with a
+          living process, thirty commits of work described as still being written. The
+          first executable step is §5.1 — the launcher holds the exit code and signal at
+          the moment a worker ends and currently discards both, so recording them is the
+          smallest change that makes every later step possible.</p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship worker-death-is-recorded §5</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
