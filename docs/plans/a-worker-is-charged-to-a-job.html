@@ -434,6 +434,60 @@ chosen for which tests reach the changed modules, not as a whole-suite run.</p>
     credentials do not travel is refused rather than discovered mid-run.</p>
 
     <p><strong>Files.</strong> The placement fields are on the backend schema in <code>reckon/schema/flight.yaml</code>, read through <code>reckon/flight.py</code>, the lane-agnostic launch is in <code>reckon/crew/dispatch.py</code>, and the reachability refusal shares the pre-launch site and the refusal text of section 4 rather than adding a second one. This section extends no other section’s requirement set: the credential paths are in section 4 from the outset.</p>
+<div class="r-note" data-reckon="landed" data-node="awcj-placement-carries-any-lane" data-when="2026-09-20">
+<p><strong>Outcome — placement is pinned as a property of a backend, whatever lane it is.</strong>
+The behaviour this section asks for was already true of the code, so the node adds the
+checks that hold it rather than a second guard: <code>reckon/crew/dispatch.py</code> and
+<code>reckon/crew/node.py</code> are unchanged, and the mechanism half of the measure is
+carried entirely by the new <code>tests/test_crew_lane_agnostic_placement.py</code>. The wrap
+in <code>apply_backend_placement</code> and the pre-launch refusal in
+<code>check_placement_requirements</code> each read the resolved backend's own declaration,
+with no branch on which lane that backend is — which is what makes adding an externally
+served backend a configuration change rather than a placement-code change.</p>
+<table>
+  <caption>What each clause of the measure asserts, and the case that pins it</caption>
+  <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+  <tbody>
+    <tr><td>no lane-specific branch</td><td>the wrap and the refusal follow the resolved backend's declaration, across the local lane and names no code has seen</td><td><code>test_adding_a_backend_needs_no_placement_code</code></td></tr>
+    <tr><td>unreachable provider</td><td>refused before launch naming the backend and the endpoint, in the workspace contract's sentence family</td><td><code>test_an_unreachable_provider_endpoint_is_refused_before_launch</code></td></tr>
+    <tr><td>no reroute</td><td>a satisfiable placement stays on the named lane; an unsatisfiable one refuses rather than falling back</td><td><code>test_a_placed_dispatch_is_never_rerouted_to_another_lane</code></td></tr>
+    <tr><td>reachable control</td><td>an answered endpoint admits the same placement unchanged</td><td><code>test_a_reachable_provider_leaves_the_placement_admitted</code></td></tr>
+  </tbody>
+</table>
+<p><strong>One refusal family, not a second one.</strong> The unreachable-endpoint case was
+already refused by <code>placement_requirement_unmet</code> in <code>reckon/crew/node.py</code>,
+the same sentence the invisible-path case gets, raised from the same pre-launch site in
+<code>plan_dispatch</code>. The new case asserts that rather than adding a check: it pins the
+backend name, the endpoint and the partition into the message, asserts the two sentences
+share their literal framing, and asserts the refusal leaves no live pointer — so a
+placement-specific second refusal would fail it.</p>
+<p><strong>The credential path this section adds: none.</strong> Each lane's credential path
+is a workspace requirement declared in section 4 and read by the same check, so a lane whose
+credentials do not travel is refused there. This node adds no requirement entry.</p>
+<p><strong>Gate, and the delta.</strong> The focused set over the placement, workspace,
+routing and naming surfaces, base <code>3450e8e6</code> and this node's landed head:
+<strong>44 passed</strong> at base and <strong>48 passed</strong> at head, zero failures on
+either side — four cases added, none newly failing. Ruff and format are clean on the new
+file; no changed module gains a finding because no module changed.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: in
+<code>plan_dispatch</code>, a placement whose requirements are unmet falls back to the
+default lane instead of refusing. The red log at
+<code>runs/r-20260920T162256985533-awcj-placement-carries-any-lane/negative-control.red.log</code>
+(first line repeats the mutation verbatim) reddens all three named cases — no refusal is
+raised, and the reroute lands on the lane the caller never asked for — and leaves the
+reachable-endpoint control green, which is the aimed-mutation half of the control.</p>
+<p><strong>The demonstration half is deferred, and why.</strong> A placed dispatch to an
+externally served backend, running on a compute node and reaching its provider, is not
+attempted here: the external lane reads 98 percent window utilisation, so a node spent on it
+would be spent on the demonstration rather than on the mechanism this node owns. The
+mechanism is pinned above; the demonstration remains owed and is reported as a follow-on
+rather than claimed.</p>
+<p><strong>What this node did not do.</strong> It touches no plan state: the driving
+followup stays open and no terminal status is set, because only the coordinator observes the
+other nodes. Verifying the merged result belongs to a separately dispatched test node. The
+focused suite is not the whole suite: the file list is chosen for which tests reach the
+placement path, not as a whole-suite run.</p>
+</div>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-awcj-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="2026-09-19T21:05:42+00:00" data-resolved-by="">
