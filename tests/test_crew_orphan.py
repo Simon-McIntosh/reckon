@@ -92,7 +92,7 @@ def orphan_processes():
         if crew._process_start_time(pid) != start_time:
             continue
         try:
-            os.killpg(os.getpgid(pid), signal.SIGTERM)
+            _signal_one(pid)
         except (ProcessLookupError, PermissionError):
             pass
 
@@ -233,3 +233,29 @@ def test_an_orphaned_watcher_is_replaced_rather_than_refused(
     assert stopped["stopped"] is True
     assert stopped["registration_released"] is True
     assert json.loads(crew.watch_lock_path("proj").read_text()) == {}
+
+
+def _signal_one(pid: int) -> None:
+    """Signal one process, never a group it does not lead.
+
+    os.killpg takes a process GROUP id, so killpg(1, ...) is kill(-1, ...):
+    every process this user may signal, across every control group and session.
+    A pid read from a scan can report a group it does not lead, and at the call
+    site it still looks like one process. The group signal is therefore kept
+    for a process that leads its own group, which is what a detached worker is;
+    anything else is signalled alone.
+    """
+    import os as _os
+    import signal as _signal
+
+    try:
+        group = _os.getpgid(pid)
+    except (ProcessLookupError, PermissionError):
+        return
+    try:
+        if group == pid and group > 1 and group != _os.getpgid(0):
+            _os.killpg(group, _signal.SIGTERM)
+        else:
+            _os.kill(pid, _signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        return
