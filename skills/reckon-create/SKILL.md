@@ -609,6 +609,34 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 **Comment:** `<div class="r-comment" data-section="s1" data-id="c1" data-who="…" data-when="…">` with `<div class="r-comment-body">`. Comments are created by text selection in the SPA — a "¶ Comment" button appears on hover; clicking it opens a popover. The comment anchors to the nearest `h2[id]`. Agents reading plans should check the `comments` section for human feedback left this way.
 
+### Step 4.5 — Rubber-duck the plan before it is released
+
+A new plan is written by you and executed by others, and nothing between those
+two moments checks that what you wrote says what you meant. Release it only
+after a read-only rubber-duck review has read it back, on the local lane:
+
+```bash
+reckon crew dispatch --project P --plan <slug> --section §N \
+  --role review --spec-level exact --node review-of-<slug> \
+  --goal "restate <slug> in your own words before it is released" \
+  --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
+  --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
+  --time-budget 20m --session <session> --local
+```
+
+The `review` role resolves to a **read-only sandbox** with no worktree and no
+execution capability, so the reviewer reads the document and writes nothing but
+its restatement; the node id is `review-of-<slug>`, the convention that makes a
+monitor row name its subject. Ask only for the read-back: the plan's intent,
+each decision and each done-when in the reviewer's own words, and every place
+two readings are possible — explicitly **not** a critique of the work. Read the
+restatement against what you meant and revise the divergent sentences before
+release. **Release is a loop, not a pass:** the revision you make in response is
+itself checkable, so dispatch a fresh read-back until the restatement matches
+the intent. What counts as material on a later revision — and the reviewed
+status of a plan you go on to change — is defined once in `reckon-edit`
+SKILL.md hard rule 9.
+
 ### Step 5 — Confirm
 
 Report:

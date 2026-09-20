@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job">
+  <meta name="plan-title" content="A worker is charged to a job — move the fleet off the login slice so concurrency is bounded by the cluster, not by 64 GiB">
+  <meta name="plan-summary" content="Worker processes run under a scheduler allocation rather than as login-node children, so the fleet ceiling stops being one user slice.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="27.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="crew-runtime-positive-controls">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>A worker is charged to a job | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-20">
+<meta name="plan-version" content="17">
+<meta name="plan-impl" content="0.62">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>Every worker this fleet has ever run was a child of the coordinator on the login node, and the login
+    node gives one user a slice of memory far smaller than the machine. That slice is the fleet's real
+    ceiling, and it is not a throughput ceiling: it kills processes.</p>
+    <table>
+      <caption>The login slice, read from its own cgroup on 2026-09-19</caption>
+      <thead><tr><th>Reading</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><code>memory.max</code> for the user slice</td><td>64 GiB</td></tr>
+        <tr><td><code>oom_kill</code> since boot</td><td>529</td></tr>
+        <tr><td>allocations blocked at the limit</td><td>2,912,593</td></tr>
+        <tr><td>machine memory, and the part of it free</td><td>503 GB, 401 GB free</td></tr>
+        <tr><td>one measured nova solve, resident</td><td>24.6 GB</td></tr>
+      </tbody>
+    </table>
+    <p>So the machine is nearly empty while our slice is full, and three workers running a solve can exhaust
+    it between them. Five hundred and twenty-nine processes have already been killed this way. The served
+    model is not what stops us: one observed operating point is about 450 tokens a second in aggregate at
+    roughly twenty-five concurrent workers, which is a rate under a load and not a measured ceiling. It is
+    quoted here only to show that the serve was still delivering at a concurrency the login slice cannot
+    host, and it is deliberately not offered as the sizing figure section 5 needs, which is a curve rather
+    than a point. The slice binds on memory, so it has no fixed worker count of its own to compare against.</p>
+    <p>Nothing in reckon knows about the scheduler. A search of the package and the skills for
+    <code>srun</code>, <code>sbatch</code> or <code>SLURM</code> returns nothing; workers are launched with
+    <code>subprocess.Popen</code> in <code>reckon/crew/dispatch.py</code> and charged to whoever started the
+    coordinator. What already runs under the scheduler is the model serve, and the per-node gates that briefs
+    ask for by hand. This plan moves the worker itself.</p>
+    <p>Three preconditions were measured before the plan was written, one on each partition a worker might
+    use. From a compute node on <code>all_debug</code> and again from one on <code>rigel</code>, the served
+    model answers on <code>98dci4-gpu-0003:18810</code> and its router on <code>:18802</code>; the worktree
+    root, the crew state directory, the backend binary and the shared project environment are all visible;
+    and <code>TMPDIR</code> already resolves to <code>/tmp</code> rather than to node-local
+    <code>/run/user</code>. Capacity is not scarce either: <code>all</code> carries no time limit with 3,084
+    idle cores across 97 idle nodes, against <code>all_debug</code>'s one-hour ceiling.</p>
+    <p><strong>The external lanes screen as reachable from a compute node, which is what keeps this from
+    becoming a local-only pattern.</strong> Measured once, from one <code>rigel</code> node on 2026-09-19:
+    TCP 443 opened to <code>api.openai.com</code>, <code>chatgpt.com</code> and
+    <code>api.anthropic.com</code>; an unauthenticated <code>GET</code> completed an HTTP exchange with
+    <code>api.openai.com</code> and <code>api.anthropic.com</code>, each answering <code>401</code>, while
+    <code>chatgpt.com</code> was tested only at the port. State the strength of that plainly: it shows
+    something at those addresses speaks HTTP from a compute node, and it does not show which party replied,
+    since a gateway or an edge can answer <code>401</code> as readily as the provider, nor anything about
+    the authenticated traffic a lane actually carries. It is a screening result that makes the plan worth
+    writing; section 7 is where the question is answered, by running a real node on an externally served
+    backend. Alongside it: both the <code>codex</code> and <code>claude</code> launchers resolve on the
+    node’s path, no proxy variable was needed, and the two lane credentials inspected
+    (<code>~/.codex/auth.json</code> and <code>~/.claude/.credentials.json</code>) are files on the shared
+    home rather than environment secrets, so those two travel with the filesystem the worker already needs.</p>
+
+    <h2 id="s-contract">Section contract</h2>
+    <p>The order is deliberate. Sections 1 and 2 are prototyped on the local lane, one worker at a time,
+    before any default changes, because every detail below is cheaper to learn on a single run than on a
+    wave.</p>
+    <table>
+      <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
+      <tbody>
+        <tr><td>§1 One worker under one allocation</td><td>5</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§2 Liveness and reaping follow the job</td><td>5</td><td>deep</td><td>critical</td><td>0</td></tr>
+        <tr><td>§3 One reservation, overlapping steps, our own limit</td><td>5</td><td>deep</td><td>elevated</td><td>1 (both step forms measured, design settled)</td></tr>
+        <tr><td>§4 The workspace contract</td><td>3</td><td>standard</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§5 The ceiling moves to the roster</td><td>3</td><td>deep</td><td>moderate</td><td>0</td></tr>
+        <tr><td>§6 The prototype ladder and the default</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§7 Every lane is placeable, not only the local one</td><td>3</td><td>deep</td><td>elevated</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s1">§1 — One worker under one allocation, on the local lane, before anything else changes</h2>
+    <p>A backend gains an optional placement describing how its launch is wrapped. When a placement is
+    declared, the launch plan built in <code>reckon/crew/dispatch.py</code> prefixes the resolved argv with
+    the scheduler invocation rather than replacing it, so the resolved absolute executable, the environment,
+    and the stdin, stdout and stderr paths that section 1 of the positive-controls plan established are
+    carried through unchanged. Everything reckon writes stays on the shared filesystem, so a worker under an
+    allocation is indistinguishable downstream from one on the login node.</p>
+    <p><strong>Prototype first, on one run.</strong> This section is not finished by a design; it is finished
+    by a single real local-lane node that ran to completion under an allocation and was promoted through the
+    ordinary path. The details that only a real run will settle, and which the section must record as it
+    finds them: whether the wrapper is <code>srun</code> held open for the worker's life or a batch job the
+    coordinator polls, what the worker costs in cores and memory as measured rather than guessed, and how a
+    queued allocation is distinguished from a slow worker. The size of this section is one node and no more:
+    the three failure shapes, an allocation refused, pre-empted, or stopped at a time limit, are section 2's
+    subject and are not produced here, which also settles that a time limit need not be exercised on a
+    partition that has none. A design document is not a deliverable; what the run teaches is recorded in the
+    evidence anchor, and the cost it measures is this worker on this node rather than the sizing curve
+    section 5 needs.</p>
+    <p><strong>Done when.</strong> One local-lane implement node dispatched with a placement runs on a
+    compute node, writes its stream, manifest and reports to the same paths, and is promoted without any
+    special handling; the run record names the job id beside the pid; and the section states the measured
+    cost of that worker in cores, memory and queue wait.</p>
+
+    <p><strong>Files, and what this section mints.</strong> The launch plan and the reaper are in <code>reckon/crew/dispatch.py</code>; the run record the job id must appear in is written by <code>reckon/crew/runs.py</code> for the live pointer and <code>reckon/crew/promotion.py</code> for the ledger row, and the section states which of the two it chose and why; the backend schema the placement field joins is declared in <code>reckon/schema/flight.yaml</code>, which generates <code>reckon/_flight_schema.py</code>, and is read and validated by <code>reckon/flight.py</code>, so a grant that names only the reader cannot add a field. Those four plus a test file are the grant. The field is optional in one specific sense fixed here rather than later: its absence means today’s login-node launch, so nothing changes for a backend that does not declare it, and section 6 changes which backends declare one rather than changing what absence means. Indistinguishable downstream means the paths and the formats are unchanged; the record gains the job id as a new field beside the pid, which is an addition rather than a difference in shape.</p>
+
+<div class="r-note" data-reckon="landed" data-node="awcj-one-worker-under-one-allocation" data-when="2026-09-19">
+<p><strong>Outcome — mechanism landed, the proving run still owed.</strong> Commit <code>740e4065</code>
+lands the wrap in <code>reckon/crew/dispatch.py</code>: a backend's declared placement is resolved against the
+same PATH the launch searches and prefixed onto the already-resolved argv, so the absolute executable, the
+environment and the stream paths are carried through; a backend declaring none is returned untouched. The
+field is declared in the schema source and validated with the backend definition, and it survives resolution
+into the resolved configuration. Commit <code>09e27b83</code> puts the field in
+<code>reckon/schema/flight.yaml</code> as a <code>PlacementConfig</code> — the scheduler executable, its option
+strings and the probe that answers which job the launch became — and regenerates
+<code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> from it with the
+repository's own generator, so the field validates under the same forbids-unknown-keys rule as every other
+backend key rather than being stripped before the model sees it. The job id is read through the placement's own
+declared probe and recorded beside the pid on the run record; <code>reckon/crew/promotion.py</code> is the module
+chosen to carry it onto the committed ledger row, because that row is the durable record a later attribution
+reads while the live pointer is removed by the same promotion. A run declaring no placement records the key
+absent rather than zero, so an unplaced run stays distinguishable from a placed one whose scheduler never
+answered. Gate: <code>tests/test_crew_launch_resolution.py
+tests/test_crew_declared_negative_control.py tests/test_crew_placement.py</code> — 24 passed, exit 0, against 14
+passed at base <code>49f36920</code>; ten tests added, no newly failing id. The declared negative control (drop
+the prefix) fails exactly the two tests that assert the prefix.</p>
+<p><strong>Not done, and now the coordinator's rather than this node's.</strong> No placed worker has run on a
+compute node from this work, so the partition and job id, the measured cores and peak memory, the queue wait,
+and whether a queued allocation is distinguishable from a slow worker are unmeasured. The measure here is the
+mechanism and its cases; the proving run is one dispatch a coordinator owns, because a worker that dispatches a
+worker does not fit a fence. It is a command rather than a design, and it is written out in this node's manifest
+under <code>follow_ons</code>.</p>
+<p><strong>Read back through a promotion, and repaired where it broke.</strong> The wrap is what the launch plan
+carries; what a later reader infers from the record it leaves behind is a second thing, and that half was
+broken. Promoting a placed run raised <code>no launch translation for command 'srun'</code>, because the
+record's first word is the scheduler while the lane the run launched from is named beside it. The record now
+carries the harness the launch resolved, captured before the placement wraps the plan, and the translation it
+resolved to; a reader consults those and falls back to <code>argv[0]</code> only for a record written before
+the fields existed, and the translation takes the recorded identity when the command's stem names no dialect. A
+configuration mapping carries no such identity, so dispatch-time strictness is unchanged: an untranslatable
+command with nothing recorded beside it is refused exactly as before. Gate
+<code>tests/test_crew_placement.py tests/test_crew_launch_resolution.py
+tests/test_crew_declared_negative_control.py tests/test_crew_placed_promotion.py</code> — <strong>28 passed,
+exit 0</strong>, against <strong>24 passed, exit 0</strong> at base <code>750fa656</code> for the three
+pre-existing files: four cases added and no newly failing id. Held against the base reader, the two new claims
+fail with the refusal quoted above, which is the reproduction rather than an assertion about one. The declared
+mutation (read the harness from <code>argv[0]</code> again) reddens exactly those two and nothing else. The new
+case is a promotion rather than a unit case because the launch cases were green while the end-to-end path was
+broken, which is the shape this section now has a round trip for.</p>
+</div>
+<h2 id="s2">§2 — Liveness and reaping follow the job, because a pid on another host is not a process</h2>
+    <p>Every liveness answer in the crew reads a pid on the coordinator's own host. Under an allocation the
+    worker's pid belongs to a compute node, so the existing reads become false in a specific and dangerous
+    direction: a live worker looks dead. The classifier, the reaper that section 2 of the positive-controls
+    plan built, and the launch-failure record all need the job as their subject. This is the plan's
+    critical-risk section because a wrong answer here is either a duplicated worker or a silently abandoned
+    one.</p>
+    <p><strong>Done when.</strong> A placed run reports live while its job is running and terminal when the
+    job leaves the queue, decided from the job rather than from a pid; a job that never starts is recorded
+    once as a launch failure with its scheduler reason, the way an unresolvable binary is; a job killed for
+    time or memory is classified distinctly from a worker that failed, since the remedy differs; and the
+    payload log, not the step's exit status, decides whether the work ran, which two jobs proved necessary on
+    2026-09-19 by reporting COMPLETED while their payloads aborted.</p>
+
+    <p><strong>Files.</strong> The classifier and the liveness reads are in <code>reckon/crew/recovery.py</code> and <code>reckon/crew/runs.py</code>; the reaper, its once-only guard and the launch-failure record are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a job-placed run is in <code>reckon/crew/resumption.py</code>. Those four plus a test file are the grant, and this section is dispatched with them named because it is the critical-risk one.</p>
+<div class="r-note" data-reckon="landed" data-node="awcj-one-record-level-liveness-read" data-when="2026-09-20">
+<p><strong>Outcome — one accessor owns the record-to-pid step, and no answer changed.</strong> Commits
+<code>2d58b953</code> and <code>d417b411</code>. <code>reckon/crew/runs.py</code> gains
+<code>record_process_alive(record)</code>, which returns exactly what <code>process_alive</code> returns for
+that record's pid, including the <code>None</code> a record naming no process already produced. Every call
+site that decided a run's liveness from a record now calls it: in <code>runs.py</code> the live-pointer
+listing, the closure recheck and the seat-record reads, and in <code>recovery.py</code>,
+<code>dispatch.py</code>, <code>resumption.py</code>, <code>promotion.py</code>, <code>routing.py</code>,
+<code>claims.py</code>, <code>node.py</code> and <code>directory.py</code> the classify, reaper, launch-failure,
+resume-refusal, promotion and claim paths. The pid calls that read a <em>parent</em> pid keep the primitive,
+because a parent pid is not the record's own process — that is a different question and it is left
+answering what it always answered. <code>query.py</code> carries the field through and decides nothing, so it
+has no call site to route.</p>
+<p><strong>The seam the refactor had to keep.</strong> A module's liveness answer is substituted in tests by
+rebinding that module's own <code>process_alive</code> name, so moving every call site to the accessor removed
+the name from <code>promotion</code>, <code>dispatch</code> and <code>resumption</code> and turned nine cases
+red with <code>AttributeError: ... has no attribute 'process_alive'</code> — reproduced before the repair,
+quoted from <code>tests/test_promotion_reads_the_terminal_record.py</code>. The accessor therefore takes the
+caller's probe as an optional second argument: the pid is still read in the one place, and a module that keeps
+the primitive bound under its own name hands it in so a substitution for that module is honoured.
+<code>recovery.py</code> stays on the accessor's own default deliberately — its callers rebind the name to a
+forbidden lookup to prove classification reads the live module attribute rather than that import-time
+snapshot, and passing the snapshot would have made that tripwire fire.</p>
+<p><strong>Gate.</strong> The 116-file set that reaches these modules (list in this node's manifest) run
+against base <code>3a05f4f8</code> and against the landed head: <strong>78 failed / 1612 passed</strong> at
+base and <strong>78 failed / 1616 passed</strong> at head, with the failure-id sets <em>identical</em> —
+zero added, zero removed — and four tests added. The file list is a superset chosen by which modules the
+tests reach, not the whole suite; the eighty-odd failures on both sides are the worker tier's own, present at
+base and unchanged. <code>tests/test_crew_record_liveness.py</code> is the new case: it holds the accessor
+against the primitive on a live, a reaped and a pid-less record, and scans the ten modules by AST for a call
+that takes a pid out of a record without the accessor, with a positive control showing the scan recognises
+the forbidden shape so an empty result means compliance.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: revert <code>directory.py</code> to
+<code>process_alive(record["pid"])</code>. The red log at
+<code>runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log</code> (first
+line repeats the mutation verbatim) fails exactly
+<code>test_no_module_decides_record_liveness_with_a_bare_pid</code> and leaves the other three green. A
+passing suite would not have shown that.</p>
+<p><strong>What this node did not do.</strong> It changed no answer, so nothing here is job-aware yet: a placed
+run's liveness still resolves through the local process table, and the accessor is the single seam where the
+job becomes the subject. Verifying the merged result belongs to a separately dispatched test node.</p>
+</div>
+<div class="r-note" data-reckon="landed" data-node="awcj-liveness-and-reaping-follow-the-job" data-when="2026-09-20">
+<p><strong>Outcome — the job is now the subject, and the reaper and recovery follow it.</strong> Commits
+<code>b4f64519</code>, <code>d6182a37</code>, <code>31950e90</code>, <code>316b2c2a</code>.
+<code>record_process_alive</code> asks the scheduler whether the job is still in the
+system when the record carries a placement, and falls through to the pid probe otherwise, so every one of the
+ten migrated call sites answers a placed run from its job and an unplaced run exactly as before. The query's
+success is kept apart from its text: a query that could not be run answers <code>None</code> rather than a
+verdict, so a silent controller never reads as a stopped worker, while a successful query naming no job is
+the completion signal itself and reads as the job having left the queue. The reaper judges a placed launch by
+its job and by the payload log rather than by the
+scheduler client's exit status: a job the scheduler ended at a time or memory limit is named distinctly from
+a worker whose work failed, and a job that never started is recorded once with the scheduler's own reason in
+the shape an unresolvable binary already takes. The two sites in <code>recovery.py</code> that rebuilt a run
+harness from <code>argv[0]</code> — the scheduler under a placement — take the record's explicit command
+first, so a placed run's stream budget, provider refusal block and final message are read rather than
+reported absent.</p>
+<p><strong>The empty answer.</strong> The first cut collapsed a successful query that printed no rows into
+the same <code>None</code> it returns for a query that could not be run, so the ordinary completion — the
+common case — fell through to a pid on a compute node and a finished placed run read as live; only a job
+still listed in an ended state took the terminal path. The query's success now carries separately, and the
+pre-fix behaviour fails <code>test_a_successful_empty_answer_reports_the_job_gone</code> while a failed query
+still falls through to the pid.</p>
+<p><strong>Gate.</strong> Eighteen committed cases in <code>tests/test_crew_placed_liveness.py</code>, one per
+clause plus the fallbacks. Nine focused files, each arm in its own process and its own log: at base
+<code>a46166c2</code> 18 failed / 61 passed (<code>baseline-suite.log</code>) and at head
+<code>316b2c2a</code> 2 failed / 77 passed (<code>after-suite.log</code>). Over the eight files present at
+base the failure ids are identical, so zero failures are added; the base arm's other sixteen are this node's
+own new cases running against source that does not yet carry the symbols they exercise. The two shared
+failures are
+<code>test_promotion_reads_the_terminal_record.py</code>'s git-worktree fixture checks, reproduced at base
+with this node's modules reverted, so they are the worker tier's own. The declared mutation (revert the
+accessor to the bare pid probe) reddens exactly
+<code>test_a_placed_run_reports_live_while_its_job_is_running</code> and
+<code>test_a_successful_empty_answer_reports_the_job_gone</code>, and leaves the other sixteen green.</p>
+<p><strong>What this node did not settle.</strong> The scheduler query is keyed on the wrapper's family name
+for the verbs it knows, which is a convention in code rather than a declared field, because the placement
+schema is outside this node's write scope; a placement whose wrapper is unlisted falls through to the pid
+probe rather than being misread. No placed run was executed here, so the query is exercised against an
+injected runner; verifying it against a real job belongs to the proving run the coordinator owns.</p>
+</div>
+<h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
+    <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
+    in zero seconds, and speed was the wrong axis: the objection is that concurrency then means submitting
+    more reservations rather than sizing one, and nothing is shared between the sessions on this workstation.
+    The design is one reservation held once, private to us, that every session places workers into as steps.</p>
+    <p><strong>Measured on 2026-09-19, and the step form decides everything.</strong> An allocation is held
+    with no shell attached (<code>salloc --no-shell</code>), which returns a job id and keeps the resources
+    without occupying a terminal. Workers then run inside it as steps under their own step ids. The cluster
+    queue sees one entry for the reservation and never sees a step.</p>
+    <table>
+      <caption>What the two step forms do, measured</caption>
+      <thead><tr><th>Step asks with</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><code>--exact</code></td><td>the allocation is a quota: four two-core steps ran in an eight-core allocation and a fifth waited 61 s for a slot</td></tr>
+        <tr><td><code>--overlap</code></td><td>nothing is enforced: six steps each asking 4 GB ran inside an 8 GB allocation, and two steps then held 5 GiB of real memory each, 10 GiB inside 8 GB, and both survived</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The choice is <code>--overlap</code>, and the reason is what a worker is.</strong> A worker is a
+    thin client that spends nearly all its life blocked on the served model, so reserving cores exactly for one
+    prices an idle process and would need fifty to a hundred cores to host the concurrency the serve already
+    supports. Under <code>--overlap</code> the reservation is a place to run rather than a quota to queue
+    behind: a step launches in under a tenth of a second against the 0.13 s the reservation itself costs once,
+    and no worker ever waits on another. The concurrent limit is then ours, held in the roster, which this
+    project already calls the only concurrency authority, and sized from dispatch experience rather than from a
+    core count.</p>
+    <p><strong>What follows, stated rather than left implicit.</strong> Because nothing is enforced, the
+    failure this plan escapes does not vanish; it moves. On the login node the bound was a 64 GiB slice we did
+    not choose, which announced itself by killing 529 processes. Inside the reservation the bound is the node's
+    real memory and the number is ours, so oversubscribing far enough brings the kills back on a larger machine.
+    That makes the sizing input memory per worker against reserved memory, measured across a real wave, and
+    makes cores the cheap axis precisely because the workers are blocked on the network. The roster limit is a
+    real limit rather than a formality, and the reading to watch while raising it is resident memory across the
+    wave.</p>
+    <p><strong>Files, and what the surface looks like.</strong> The reservation is a durable shared resource of
+    the same kind as the model serve and the project watcher, so it is managed the same way rather than
+    invented afresh: an ensure command in <code>reckon/cli.py</code> and <code>reckon/crew/runs.py</code> that
+    holds the reservation if it is absent and reports it if it is present, mirroring
+    <code>reckon crew watch --ensure</code>; its job id published where every session reads it rather than held
+    in one session's memory, the way the served model publishes its endpoint; and the placement in
+    <code>reckon/crew/dispatch.py</code> resolving that published id rather than taking one on the command
+    line. No admission queue is written: Slurm does not provide one under <code>--overlap</code> and the roster
+    already is one.</p>
+    <p><strong>Done when.</strong> One reservation is held by the ensure command and a second call reports it
+    and starts nothing; two workers dispatched from two different sessions both run as steps inside it, which
+    is the property the shared design exists for and which a single-session test cannot show; the roster limit
+    refuses the worker that would exceed it, naming the limit and its measured basis rather than a core count;
+    and the reservation's size and the roster's limit are both recorded with the wave that measured them.</p>
+
+<h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
+    <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
+    them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.
+    The worker needs the worktree root, the crew state directory, the backend binary and the shared project
+    environment, all of which sit on the shared filesystem; it needs the served model and its router
+    reachable; and it must never be handed a path under <code>/run/user</code>, which is node-local tmpfs and
+    has already cancelled a job in zero seconds with an empty log when an output path pointed there.</p>
+    <p><strong>Done when.</strong> A placement is refused before launch when any declared requirement is not
+    visible from the target partition, naming the path or the endpoint, pinned by a test with a synthesised
+    unreachable requirement; and the refusal names the node-local case explicitly, because that one fails
+    silently rather than loudly.</p>
+
+    <p><strong>Files, and which side refuses.</strong> The requirement set is declared with the backend in <code>reckon/schema/flight.yaml</code> and read through <code>reckon/flight.py</code>, both of which the grant needs because the generated <code>reckon/_flight_schema.py</code> is regenerated rather than edited and checked coordinator-side in <code>reckon/crew/dispatch.py</code> before a worktree or a pointer exists, with the refusal text composed in <code>reckon/crew/node.py</code> as the other pre-launch refusals are. Coordinator-side is the choice because a node-side check would need the node to start, which is the thing being refused. The credential path each lane needs belongs to this requirement set from the outset rather than being added by section 7.</p>
+<div class="r-note" data-reckon="landed" data-node="awcj-a-placement-declares-what-it-needs-visible" data-when="2026-09-20">
+<p><strong>Outcome — the workspace contract is declared, and a placement that breaks it is refused before anything exists.</strong>
+A backend's <code>placement</code> in <code>reckon/schema/flight.yaml</code> now carries a
+<code>requirements</code> list — one entry per path or endpoint the placement's workers need visible from the
+node they run on — and the same placement carries <code>state_query</code> and <code>reason_query</code>, the
+two argv the placement-wrapper's reporting verbs are asked with, each spelling the job id as the
+<code>{job}</code> token. <code>reckon/_flight_schema.py</code> is regenerated from the LinkML source rather
+than hand-edited, and <code>reckon/flight.py</code> reads the declaration back through
+<code>placement_requirement_entries</code> and <code>placement_scheduler_queries</code>, refusing at
+whole-config validation a requirement that declares both a <code>path</code> and an
+<code>endpoint</code> — a malformed requirement is a configuration error, not a check that quietly passes.</p>
+<p><strong>Coordinator-side, and why that is the whole point.</strong> The check runs inside
+<code>plan_dispatch</code> in <code>reckon/crew/dispatch.py</code>, which is the single pre-side-effect
+resolver both the dry-run path and a real dispatch reach, so the verdict a dry run reports is the verdict a
+launch reaches and no worktree, pointer or job exists when the refusal is raised. A node-side check could not
+do this: it would need the node to start, which is the thing being refused. The refusal text is composed in
+<code>reckon/crew/node.py</code> beside the other pre-launch refusals, all three in the shared formatter's
+family so the reason is legible on the fleet surface.</p>
+<p><strong>The node-local case gets its own sentence.</strong> A path under <code>/run/user</code> — or under
+<code>XDG_RUNTIME_DIR</code>, or on any tmpfs the dispatcher can see in its own mount table — exists on every
+node and names different bytes on each, so an existence check admits it and the worker fails later on a path
+that is present on the dispatcher. It is refused by name, with a sentence that says the storage is per-node
+and points at the shared filesystem, distinct from the sentence a plain absent path gets. That is the case the
+section named as failing silently rather than loudly.</p>
+<table>
+  <caption>What each clause of the measure asserts, and the case that pins it</caption>
+  <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+  <tbody>
+    <tr><td>unreachable path</td><td>refused naming the requirement, the path and the target partition</td><td><code>test_an_unreachable_requirement_path_is_refused_before_launch</code></td></tr>
+    <tr><td>unreachable endpoint</td><td>a declared endpoint nothing answers on is refused, naming it</td><td><code>test_an_unreachable_endpoint_is_refused_naming_the_endpoint</code></td></tr>
+    <tr><td>node-local path</td><td>refused by name with its own sentence, not the not-visible one</td><td><code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code></td></tr>
+    <tr><td>undeclared query</td><td>a wrapper declared with no way to ask it is refused, not left unqueryable</td><td><code>test_a_placement_naming_a_wrapper_with_no_query_is_refused</code></td></tr>
+    <tr><td>half a query set</td><td>one query without the other is still a placement reckon cannot follow</td><td><code>test_a_half_declared_query_set_is_refused</code></td></tr>
+    <tr><td>satisfied placement</td><td>every requirement visible admits the node unchanged</td><td><code>test_a_satisfied_placement_is_admitted</code></td></tr>
+    <tr><td>no placement</td><td>absence is not an empty placement: nothing required, nothing runs</td><td><code>test_a_backend_declaring_no_placement_is_untouched</code></td></tr>
+    <tr><td>malformed requirement</td><td>neither target declared is refused rather than quietly passing</td><td><code>test_a_requirement_declaring_no_target_is_refused</code>, <code>test_a_requirement_declaring_both_targets_is_refused_by_the_schema</code></td></tr>
+  </tbody>
+</table>
+<p><strong>The declaration replaces a table in code.</strong> The state and reason queries were keyed on the
+basename of the wrapper a placement named, in two dictionaries in <code>reckon/crew/runs.py</code> — a
+convention that made adding a scheduler a code change and made a placement naming an unknown wrapper silently
+unqueryable rather than refused. Those tables are gone; <code>_scheduler_query_argv</code> now reads the
+declaration off the placement, substituting the job id for the <code>{job}</code> token, and a wrapper with
+no declared query answers <code>None</code> so the pid probe decides rather than a silent scheduler being read
+as a stopped job. The declared queries are recorded on the run pointer's <code>placement</code> dict, so a
+reader of the record can see which verbs answered it.</p>
+<p><strong>Gate, and the delta.</strong> The five focused files over the placement, liveness, launch and
+refusal cases, base <code>4dbea5ab</code> and this node's landed head: <strong>42 passed</strong> at base over
+the four files that exist there and <strong>54 passed</strong> at head over the five, with no failure id
+present on either side — zero added, twelve cases added in
+<code>tests/test_crew_workspace_requirements.py</code>. Ruff findings over the changed modules are 130 at
+base and 130 at head, so the change adds none, and the four files in the set that are unformatted are
+unformatted at base too: the repository's formatting backlog, not this change.</p>
+<p><strong>A defect the gate caught.</strong> The accessor's loop variable was renamed to stop shadowing the
+module's <code>field</code> import and one assignment kept the old name, so the accessor returned a dict
+keyed on the imported function object and every placement was refused for an undeclared query. Five new cases
+failed <em>for the wrong reason</em> and Ruff stayed clean, because the stray name was a module-level import
+rather than an undefined one. It was the run that found it, not the diff.</p>
+<p><strong>The guard was shown to fire.</strong> Declared mutation: remove the node-local refusal branch from
+<code>check_placement_requirements</code>, so a <code>/run/user</code> path is judged only by whether it
+exists. The red log at
+<code>runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log</code>
+(first line repeats the mutation verbatim) fails <code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code>
+with <code>DID NOT RAISE CrewError</code> and leaves the sibling unreachable-path case green. The case is loaded by an
+<code>assert Path(node_local).is_dir()</code>, so the path's existence — the very thing an existence-only
+check would admit — is proved in the test rather than assumed.</p>
+<p><strong>What this node did not do.</strong> It touches no plan state: the driving followup stays open and no
+terminal status is set, because only the coordinator observes the other nodes. Verifying the merged result
+belongs to a separately dispatched test node. The focused suite is not the whole suite: the file list is
+chosen for which tests reach the changed modules, not as a whole-suite run.</p>
+</div>
+<h2 id="s5">§5 — The ceiling moves from a slice of memory to the roster, and the roster must know it</h2>
+    <p>Today the honest bound on concurrency is the 64 GiB slice, which nothing reads and which announces
+    itself only as a killed process. Once workers are charged to jobs, the roster is the only bound left, as
+    the abandoned local-workers plan already said it should be. The roster then has to be sized against
+    something real: the partition's admitted cores, the served model's measured aggregate, and the coordinator
+    residue that stays on the login node however much moves off it.</p>
+    <p><strong>Done when.</strong> The fleet surface reports the bound that is actually binding, and a
+    dispatch that would exceed it is refused naming which bound and its measured value; the login slice's
+    <code>oom_kill</code> counter is read and surfaced rather than discovered, so a slice under pressure says
+    so before it kills anything.</p>
+
+    <p><strong>Files, and the instrument that can actually warn.</strong> The bound is reported by the fleet surface in <code>reckon/crew/summary.py</code> and <code>reckon/crew/ticker.py</code> and enforced at the admission check in <code>reckon/crew/dispatch.py</code>. The <code>oom_kill</code> counter cannot warn before a kill, since it only increments on one; what warns is <code>memory.current</code> against <code>memory.max</code>, and the allocation-stall counter beside them, which stood at 2,912,593 while the kill count was 529. The surface reads those and reports the kill count only as history.</p>
+<h2 id="s6">§6 — The prototype ladder, and only then the default</h2>
+    <p>The lead's instruction is to prototype on the local lane first and settle the details individually
+    before the design is fixed. That makes the ladder part of the plan rather than a habit: one worker under
+    an allocation, then a small wave of independent nodes, then a wave with a peer-scoped merge, and only then
+    a change to what a dispatch does by default. Each rung records what it measured and what it changed, and a
+    rung that finds a detail the previous rung hid is the ladder working rather than a setback.</p>
+    <p><strong>Done when.</strong> Each rung has run and is recorded with its measurements; the default
+    placement changes only after the wave rung; and the section states what would send the fleet back to
+    login-node launches, so the change is reversible on a stated condition rather than on an argument.</p>
+
+    <h2 id="s7">&#167;7 &mdash; Every lane is placeable, not only the local one</h2>
+    <p>The reason to move workers is a memory slice, not a model, so a placement that quietly serves only the
+    locally hosted lane would trade one ceiling for a narrower fleet. All four lanes this project routes to
+    were measured reachable from a compute node before the plan was written, and the credentials for each are
+    files on the shared home rather than environment secrets, so nothing about placement is inherently local.
+    What remains is to keep it that way by construction: placement is a property of the backend rather than a
+    property of the local one, an externally served backend carries the same placement fields as the local
+    one, and a dispatch is never silently rerouted to a different lane because of where it would run.</p>
+    <p><strong>Done when.</strong> A placed dispatch to an externally served backend runs on a compute node
+    and reaches its provider, demonstrated on one real node rather than by a port check; the placement
+    configuration is asserted to carry no lane-specific branch, so adding a backend needs no placement code;
+    and a placement whose partition cannot reach a backend&#x27;s provider is refused before launch naming the
+    backend and the endpoint, the way an invisible path is, rather than failing as a worker error. The
+    credential path each lane needs is part of the workspace requirements of section 4, so a lane whose
+    credentials do not travel is refused rather than discovered mid-run.</p>
+
+    <p><strong>Files.</strong> The placement fields are on the backend schema in <code>reckon/schema/flight.yaml</code>, read through <code>reckon/flight.py</code>, the lane-agnostic launch is in <code>reckon/crew/dispatch.py</code>, and the reachability refusal shares the pre-launch site and the refusal text of section 4 rather than adding a second one. This section extends no other section’s requirement set: the credential paths are in section 4 from the outset.</p>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awcj-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="2026-09-19T21:05:42+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Run one placed worker on the local lane before designing anything further</h4>
+    <div class="r-fu-body"><p>Section 1 is the whole prototype: one node, one allocation, promoted through the ordinary path, with the cost and the queue wait measured rather than assumed. Section 2 follows immediately because a placed worker whose liveness is read from a pid reads as dead. Sections 3 and 6 depend on numbers only those two can produce.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
+    <p class="r-fu-outcome">Section 1 is met on both halves. The mechanism landed at 740e4065, 029ab788, 09e27b83 and b029c66a (merged a6ed1e5d): a backend declares a placement in the schema, a declared one prefixes the already-resolved argv while leaving the executable, environment and stream paths unchanged, absence means today's login-node launch, an unresolvable scheduler is refused before launch, and the run record carries the job id beside the pid. Twenty-four cases pass with the declared mutation reddening exactly the two claims it removes. The proving run was the coordinator's dispatch rather than the worker's, since a node cannot run the node that measures it, and it is recorded below.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-argv-zero-is-not-the-backend" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §1" data-resolved-at="2026-09-19T22:50:42+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">A placed run cannot be promoted, because the backend is derived from the first word of its argv</h4>
+    <div class="r-fu-body">Found by promoting the proving run rather than by its tests, which is the point worth keeping. reckon crew complete on the placed run raises no launch translation for command 'srun'; reckon can translate: claude, clive, codex. The cause is that the recorded argv begins /usr/bin/srun --partition=all while the backend name on the same record reads clive and its command reads none, so any consumer taking the backend from the argv stem, as the translation in reckon/_backends.py does, sees the scheduler instead of the lane. Section 1's text required the prefix to leave the launch otherwise unchanged, and for launching it does; what it changed is the identity a downstream reader infers. Repair by making the backend identity explicit on the record rather than inferred from argv, so the translation and anything else reading it consult the backend name, while the prefixed argv stays as the faithful record of what ran. A case must promote a run whose argv carries a scheduler prefix, which is the round trip none of the twenty-four launch cases exercised: they tested the plan that is built, not the record that is later read. Scope is reckon/_backends.py, reckon/crew/promotion.py, reckon/crew/dispatch.py and a test file.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §1</pre>
+    <p class="r-fu-outcome">Landed at bf160b8e and f59d5704, merged at 0aa8a500. The run record now carries the harness the launch resolved, captured before the placement wraps the plan, together with the translation it resolved to; the reader consults those and falls back to argv[0] only for a record written before the fields existed, and the translation takes the recorded identity when the command's stem names no dialect. Twenty-eight cases pass against twenty-four at base with four added and no newly failing id, the declared mutation reddens exactly the two new claims, and two further cases hold dispatch-time strictness unchanged: a record naming an untranslatable lane and a configuration mapping with an untranslatable command are both refused as before. The promotion module needed no change, because the reader a completion calls is the one in dispatch.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-liveness-is-decided-in-ten-modules" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §2" data-resolved-at="2026-09-19T23:38:13+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Section 2 grants four files and liveness is decided in ten, so its measure is unsatisfiable as written</h4>
+    <div class="r-fu-body"><p>Read back before dispatching section 2, and the grant does not hold. There is exactly one liveness primitive, <code>process_alive(pid)</code> in <code>reckon/crew/runs.py</code>, and it takes a pid rather than a record, so it cannot be made job-aware in place. Nine call sites reach it by pulling the pid out of a run record, and six of the modules holding them sit outside the section's four-file grant: <code>promotion.py</code> at four sites, <code>routing.py</code> at two, and one each in <code>claims.py</code>, <code>node.py</code>, <code>directory.py</code> and <code>query.py</code>. Each of those will answer that a placed run is dead, because the pid it reads belongs to a compute node, which is the specific dangerous direction the section already names. A worker granted the four files can make the classifier correct and still leave promotion, routing and the claim check reporting a live worker as abandoned.</p><p>Split it rather than widening a critical-risk node to ten modules. First a node that funnels every liveness decision through one record-level accessor in <code>runs.py</code>, taking the record rather than the pid, changing no answer at all and proving it with a case that asserts the new accessor agrees with the primitive on a pid-carrying record at every migrated site. Then section 2 makes that one accessor consult the job when the record carries a placement, and its four-file grant is correct as written rather than wrong. The funnel node touches <code>promotion.py</code> and <code>dispatch.py</code>, so it serialises behind section 1, which is true of every section in this plan: they all pass through <code>dispatch.py</code>, and this plan cannot be run as a parallel wave.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §2</pre>
+    <p class="r-fu-outcome">Landed at 2d58b953, d417b411 and 222a14c0, merged at 3636d1cc. Every liveness decision about a run now reads the record through one accessor in the runs module, the pid lookup lives in that one place, and a case asserts no module outside it handles a bare record pid. A record naming no process answers the same shape a missing pid already answered, so nothing can read a worker that has not started yet as one that stopped. The focused 116-file set gives byte-identical failure id sets at base and head, 78 either side, with four tests added, which is the no-answer-changes property the split existed to establish. One thing the node found and repaired in a second commit: routing the modules through the accessor removed the name nine existing tests substitute to fake liveness for one module, so the accessor takes the caller's own probe as an optional argument. The pid is still read in one place, which is what section 2 needs, and the job check will sit ahead of the probe rather than beside it.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-recovery-reads-the-harness-from-argv" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §2" data-resolved-at="2026-09-19T23:58:35+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Recovery rebuilds a run&#x27;s harness from argv[0] in two more places, and swallows the refusal</h4>
+    <div class="r-fu-body"><p>Reported by the node that repaired the promotion path, from inside the same file family and outside its fence. <code>reckon/crew/recovery.py</code> builds a backend mapping as <code>{'command': argv[0]}</code> at two sites, the stream-budget read near line 795 and the final-message read near line 1140, and catches the resulting <code>BackendError</code> rather than letting it surface. For a placed run <code>argv[0]</code> is the scheduler, so the translation fails and the swallow turns that failure into absence: the run's stream budget, its provider refusal block and its final message are all reported as missing while the classifier and the ticker appear to have read them. That is worse than the promotion failure this node fixed, because the promotion failure was loud.</p><p>The repair is the same one, applied at those two sites: take the record's explicit command and fall back to <code>argv[0]</code>, as the settings rebuild in dispatch now does. Worth taking inside section 2 rather than alone, since recovery is already in that section's grant and the classifier it repairs is the same one section 2 rewrites.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §2</pre>
+    <p class="r-fu-outcome">Taken inside section 2 as intended and landed at b4f64519, merged at 3a87e0e0. Both sites now take the record's explicit command before falling back to argv, so a placed run's stream budget, provider refusal block and final message are read rather than silently reported absent, and three cases pin the record-command path, the argv fallback for an older record, and the dialect fallback for an empty argv.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-the-scheduler-family-is-a-convention-not-a-declaration" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship a-worker-is-charged-to-a-job §3" data-resolved-at="2026-09-20T00:20:11+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Which query answers a placed job is keyed on the wrapper executable&#x27;s name rather than declared beside the placement</h4>
+    <div class="r-fu-body"><p>Reported by the node that made liveness follow the job, and it is a scope consequence rather than a mistake. The state and reason queries are looked up in a table keyed on the basename of the wrapper the placement names, so a placement naming one of three known scheduler clients is queryable and anything else answers nothing and falls through to the pid. That is the correct failure direction and it is still a convention: the fact that a given wrapper is asked with a particular reporting verb lives in a dictionary in the runs module rather than beside the placement that declares the wrapper.</p><p>The declaration belongs in <code>reckon/schema/flight.yaml</code>, which generates <code>reckon/_flight_schema.py</code> and is read through <code>reckon/flight.py</code>, and that file was outside the node's grant. Give the placement its own state-query and reason-query fields so adding a scheduler is a configuration change rather than a code change, and so a placement that declares a wrapper without declaring how to ask it is refused before launch rather than silently unqueryable. Fold this into the section that already edits the placement schema.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-is-charged-to-a-job §3</pre>
+    <p class="r-fu-outcome">Folded into the workspace-contract section as intended and landed at 0a2cb56a, 67b3ad49 and 9dfe85de, merged at 619b086a. The two wrapper-keyed query tables are gone from the runs module and the state and reason queries are declared beside the placement in the flight schema, so adding a scheduler is configuration, an undeclared query answers nothing and the pid probe decides as before, and a placement naming a wrapper without saying how to ask it is refused rather than silently unqueryable. Two files moved with the change outside the grant and were committed apart with the reason: the generated JSON Schema, without which the committed pair is byte-divergent and the round-trip check fails, and the placed-liveness fixture that pinned the table the declaration replaces, whose assertions did not change. I re-ran the generator at the merged head and both generated files are unchanged, so the pair round-trips.</p>
+    </article>
+<article class="r-fu" data-id="f-awcj-a-gate-command-must-be-runnable" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A gate command recorded as prose makes the integration re-run report a failure it invented</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-20 on this plan's own section. The integration verification re-runs a promoted run's gate command verbatim at the merged head, so the command has to be a command. Mine described the file set in angle brackets instead of listing it, the re-run therefore invoked pytest on a path that does not exist, and the tool recorded on the ledger row that the merge changed what the gate proves. Running the real file set by hand at the same head gave the node's own figures, so nothing had changed. A coordinator reading that row later would see a regression that never happened, attached to a node that was clean.</p><p>Two repairs, and the first is enough on its own. Refuse a promotion whose gate command cannot plausibly be re-executed, by the cheapest test that catches this class: a command containing angle-bracket placeholders or an ellipsis is a description, not a command. Then have the re-run distinguish a gate that failed from a gate that could not run, because those are different findings and only one of them is about the merge. The readable summary a coordinator wants to write belongs in the outcome line, which is already free text.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-awcj-readback-acted-on" data-who="coordinator" data-when="2026-09-19T20:30:00Z">
+    <div class="r-comment-body"><p>Read back before release, and the report changed the plan in three ways rather than confirming it. First, five of the seven sections named no file at all and the critical-risk one named none, which is the same defect that stopped a node earlier the same day and which I had just finished repairing on another plan; every section now carries its files, and where a section needed a choice rather than a list it states the choice, so the run record's job id lands in a named module and the pre-launch refusal is coordinator-side because a node-side check would need the node to start. Second, section 1's size was genuinely ambiguous: it named three failure shapes a completed run cannot exhibit, one of which is not producible on the partition the plan prefers, so those move to section 2 and section 1 is one node and no more. Third, and sharpest, the reviewer refused my own evidence. A 401 from an unauthenticated request shows that something at that address speaks HTTP from a compute node; it does not show which party replied, since a gateway or an edge answers 401 as readily as a provider, and it says nothing about authenticated traffic. The paragraph now says that, names which two of the three hosts were tested beyond the port, and defers the real answer to section 7. The token rate is likewise restated as one operating point under load rather than a ceiling, and section 5's claim that the kill counter could warn before a kill is corrected to the two readings that can.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260919T200906847660-readback-of-a-worker-is-charged-to-a-job" data-who="reckon-ship" data-when="2026-09-19T20:19:17.896Z">
+    <div class="r-comment-body"><p>Read-back found five of seven sections naming no file including the critical-risk one, section 1 requiring three failure shapes a single completed run cannot exhibit, and three claims in the why section reaching past their evidence, the 401 attribution being the sharpest. All acted on before release.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-awcj-the-integration-finding-is-the-instrument" data-who="coordinator" data-when="2026-09-20T02:16:00Z">
+    <div class="r-comment-body"><p>The integration re-run of this section's gate at the merged head reports a finding, and the finding is about my recorded gate command rather than about the merge. The re-run takes the gate command verbatim off the ledger row, and the command I recorded ends in <code>&lt;nine focused files&gt;</code>, a description of the file set rather than the file set, so what ran at the merged head was a pytest invocation naming a path that does not exist. It exited non-zero, which the tool correctly reported as the gate no longer passing.</p><p>I then ran the nine files by hand at the merged head: 2 failed, 77 passed, and the two are the pre-existing pair in the terminal-record module that the node reproduced at its own base with its modules reverted. That is the same count the node measured on its own head arm, so the merge changed nothing and the recorded finding should be read as an instrument artefact. The lesson is cheap and general: a gate command on a ledger row is re-executed later by a tool, so it has to be literally runnable, and a readable summary of the command belongs in the outcome line instead.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-awcj-the-integration-check-at-the-merged-head" data-who="coordinator" data-when="2026-09-20T02:20:00Z">
+    <div class="r-comment-body"><p>Verified at the merged head rather than in the worktree, with a command that runs: the six focused files give 58 passed and exit 0, against the node's own 54 at its head and 42 at its base over the subset that exists there. The generator was re-run at the merged head and left both generated files unchanged, so the schema source and its two generated companions agree. Nothing in the host flight configuration declares a placement yet, so replacing the wrapper-keyed table with the declaration changes no live routing today; the first backend that declares one will need its two query fields, which is the refusal this section added.</p><p>One defect the node found in its own gate is worth keeping because of how it hid: renaming a loop variable to stop it shadowing an imported name left one assignment on the old name, so the query accessor returned a dictionary keyed on the imported function object and five new cases failed for a reason that had nothing to do with what they measure, while the linter stayed clean throughout. It was found and fixed before the commit. A test failing for the wrong reason is the same hazard as a test passing for the wrong reason, and only reading the failure rather than the count separates them.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-awcj-proving-run" data-who="coordinator" data-when="2026-09-19T21:05:00Z">
+    <div class="r-comment-body"><p>The first worker ever placed ran to completion on 2026-09-19 and reported from inside its own process. It executed on compute node <code>98dci4-clu-3036</code> under job 1274056 on partition <code>all</code>, granted 4 cores and 16 GiB, having been submitted from the login node, and it finished its session in 129 seconds. The evidence that settles it is not the environment variables, which a login-node process could in principle carry, but the process ancestry the worker walked itself: its own pid is a direct child of the job's step daemon, which is execution inside the allocation rather than a process merely holding the variables. The worktree, the crew state directory and the model endpoint were all reachable from the node. The queue wait between submit and start was zero at that hour, which is the number that later argued against a job per worker on the wrong axis; section 3 now rests on the shape of the reservation rather than on its latency. Two things the run deliberately does not show, and says so: the failure shapes belong to section 2, and nothing here concerns authenticated traffic to an external lane, which is section 7's. The worker also reported its endpoint probe as a screen rather than an identity result, distinguishing what a 404 from a gateway can and cannot prove, which is the evidence discipline the plan's own read-back forced on its author a few hours earlier.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T203706841041-awcj-one-worker-under-one-allocation" data-who="reckon-ship" data-when="2026-09-19T21:16:56.333Z">
+    <div class="r-comment-body"><p>A backend declares a placement in the schema and a declared one prefixes the resolved argv; absence means today login-node launch; an unresolvable scheduler is refused before launch; the run record carries the job id. Twenty-four cases, the mutation reddening exactly its two claims.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-awcj-tests-passed-the-path-broke" data-who="coordinator" data-when="2026-09-20T00:10:00Z">
+    <div class="r-comment-body"><p>Worth recording against this section rather than only in the followup. The mechanism landed with twenty-four passing cases and a mutation that reddened exactly the two claims it removed, and the first attempt to promote a placed run failed outright. The cases exercised the launch plan that is built; the defect is in the record that is later read, where the backend is inferred from the first word of the argv and now finds the scheduler there. So the gate was green for the thing it measured while the end-to-end path was broken, which is the same shape as the checks this sprint has spent the week repairing, appearing here in the plan repairing them. The lesson for the remaining sections is that a placement changes what downstream readers see and not only how a worker starts, so each section owes a round trip rather than a unit case.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T223010644483-awcj-backend-identity-is-explicit" data-who="reckon-ship" data-when="2026-09-19T22:47:28.661Z">
+    <div class="r-comment-body"><p>a run record now carries the harness the launch resolved and the translation it resolved to, so a scheduler-prefixed argv no longer misidentifies the lane at promotion; 28 passed against 24 at base with four cases added, the declared mutation reddens exactly the two new claims, and two cases hold dispatch-time strictness unchanged</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260919T225816807113-awcj-one-record-level-liveness-read" data-who="reckon-ship" data-when="2026-09-19T23:36:23.805Z">
+    <div class="r-comment-body"><p>every liveness decision about a run reads the record through one accessor in the runs module, the pid lookup lives in that one place, and a case asserts no module outside it handles a bare record pid; failure id sets are byte identical at base and head over a focused 116-file set, 78 either side, so no answer changed, and the accessor takes the caller probe as an optional argument because routing the modules through it had removed the name nine tests substitute</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260919T233958925409-awcj-liveness-and-reaping-follow-the-job" data-who="reckon-ship" data-when="2026-09-19T23:56:00.113Z">
+    <div class="r-comment-body"><p>a placed run liveness and terminal state are read from its scheduler job, with a successful query naming no job read as the job having left the queue and only an unaskable question falling through to the pid; a job that never starts records its scheduler reason once, a time or memory kill is named distinctly from a failed worker, the payload log decides that the work ran, and recovery takes the record command before the argv; eighteen cases, two pre-existing failures reproduced at base with the modules reverted, zero added</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible" data-who="reckon-ship" data-when="2026-09-20T00:17:42.891Z">
+    <div class="r-comment-body"><p>a placement declares what a worker needs visible and how its scheduler is asked, in the flight schema rather than a table in code, and a placement whose declared requirement is not visible is refused inside the dispatch plan before any worktree, pointer or job exists; a node-local runtime path is refused by name in its own sentence because that case cancels a job in zero seconds with an empty log; 54 passed at head against 42 at base with twelve added, and 58 passed at the merged head. The mutation the worker ran removed the node-local refusal branch rather than the visibility check I declared, so the control exercises a different clause of the same section than the one I named.</p></div>
+</div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reservation-size-and-roster-limit" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How large is the standing reservation, and what does the roster admit against it?</p>
+    <p class="r-dec-ctx">Measured 2026-09-19. Under --overlap nothing is enforced, so the reservation is a place to run and the limit is the roster&#x27;s. Compute nodes on the all partition are 28 cores with 128 GB or 36 cores with 192 GB, so a reservation lives within one node rather than spanning the 503 GB the login host carries. Workers are blocked on the served model almost all the time, so cores are cheap and memory is the axis that binds, exactly as it did in the 64 GiB login slice that killed 529 processes. The serve was observed delivering about 450 tokens a second at roughly twenty-five concurrent workers, so twenty-five is the concurrency worth hosting. Per-worker resident memory has not been measured across a wave; the only figure in hand is a single nova solve at 24.6 GB, which is a test process rather than a worker.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="thirty-two-cores-128-gb">hold 32 cores and 128 GB on a 36-core node, cap the roster at 25, and adjust from the first wave&#x27;s resident memory</button>
+      <button class="r-opt" data-value="whole-small-node">hold an entire 28-core 128 GB node so nothing else shares it, with the same roster cap</button>
+      <button class="r-opt" data-value="measure-first-then-size">hold a deliberately small reservation for one wave, measure per-worker resident memory, and size only then</button>
+      </p>
+    <p class="r-dec-rat">Coordinator recommendation, for the lead. 128 GB is twice the login slice we are escaping and leaves headroom on a 192 GB node for the occupant we are not, while 32 cores is ample for workers that are network-blocked. Capping the roster at 25 matches the concurrency the serve was seen to sustain, so the first wave measures per-worker memory against a bound that is already generous rather than against one chosen to be tight. Sizing from measurement first is the more careful option and costs a wave before any benefit; taking a whole node is cleaner but claims more than the fleet needs on a shared partition.</p>
+    </div>
+</section>
+</main>
+</body>
+</html>

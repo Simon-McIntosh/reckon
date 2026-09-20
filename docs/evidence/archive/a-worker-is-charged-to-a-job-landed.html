@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job-landed">
+  <meta name="plan-title" content="A worker is charged to a job — landed evidence">
+  <meta name="plan-summary" content="The launch path can now wrap a worker in a scheduler invocation declared on its backend, the field is declared in the flight schema source and regenerated from it, and the run record carries the job the launch became. The single real placed node the section is finished by is a coordinator dispatch, written out as a command.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1,reckon:a-worker-is-charged-to-a-job#s2,reckon:a-worker-is-charged-to-a-job#s4">
+  <meta name="plan-recorded-at" content="2026-09-20">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; login node; Python 3.14 in the repository's own root environment; detached git worktree at base 3a05f4f8 for the liveness record">
+  <meta name="plan-commits" content="740e4065,09e27b83,bf160b8e,2d58b953,d417b411,0a2cb56a,67b3ad49">
+  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/crew/dispatch.py,reckon/crew/promotion.py,tests/test_crew_placement.py,reckon/crew/runs.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/routing.py,reckon/crew/claims.py,reckon/crew/node.py,reckon/crew/directory.py,tests/test_crew_record_liveness.py,tests/test_crew_workspace_requirements.py">
+  <title>A worker is charged to a job — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A worker is charged to a job — landed evidence</h1>
+    <p class="plan-summary">The mechanism is landed and its guard is shown to fire. The
+    proving run the section is <em>finished</em> by is a dispatch a coordinator owns rather
+    than this node, and its four measurements are written out as a command in this node's
+    manifest.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Three things are landed and each is proved by a case rather than by a design: a backend
+    may declare a placement and the launch it produces is wrapped rather than rebuilt; the
+    field is a first-class slot of the flight schema, declared in the source and regenerated
+    into the served JSON Schema; and the run record names the job beside the pid, carried onto
+    the committed ledger row. What is not here is the run itself — no placed worker has run on
+    a compute node from this work — and that measurement is the coordinator's, named as a
+    <code>follow_on</code> because a worker that dispatches a worker does not fit a fence.</p>
+  </section>
+
+  <section id="s1-mechanism">
+    <h2>&sect;1 &mdash; The wrap, the schema field, and the record</h2>
+    <p>Commits <code>740e4065</code> and <code>09e27b83</code>. Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_resolution.py
+    tests/test_crew_declared_negative_control.py tests/test_crew_placement.py</code> &mdash;
+    <strong>24 passed, exit 0</strong>. The same command over the two pre-existing files alone
+    is <strong>14 passed, exit 0</strong> at base <code>49f36920</code>, so the delta is ten
+    tests added and an empty set of newly failing ids.</p>
+    <p>A backend's placement declares a <code>scheduler</code> executable, its
+    <code>options</code>, and optionally a <code>job_id_probe</code>. Dispatch resolves the
+    scheduler head against the same PATH the launch searches and prefixes the
+    <em>already-resolved</em> argv, so the absolute executable, the environment and the stream
+    file descriptors are the ones the launch was built with &mdash; the wrap carries the launch
+    through rather than replacing it. A backend that declares no placement is returned
+    untouched, which is the sense in which the field is optional and the reason no undeclared
+    backend changes behaviour. An unresolvable scheduler is refused before anything is
+    launched, rather than at exec, where it would leave an empty stream that reads as a worker
+    turn.</p>
+    <p><strong>The field is declared where the schema is declared.</strong> The placement lives
+    in <code>reckon/schema/flight.yaml</code> as a <code>PlacementConfig</code>, and
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> are
+    regenerated from it with the repository's own generator rather than edited. The field
+    therefore validates under the same forbids-unknown-keys rule as every other backend key,
+    and reaches the served JSON Schema and its editor completion. A placement naming a
+    scheduler but no options wraps the launch with an empty prefix rather than failing on a
+    required key.</p>
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: make
+    <code>apply_backend_placement</code> return the resolved plan unprefixed, so a declared
+    placement is silently dropped. The red log at
+    <code>/tmp/awcj/negative_control.log</code> fails
+    <code>test_a_declared_placement_prefixes_the_resolved_launch</code> and
+    <code>test_an_unresolvable_scheduler_is_refused_before_launch</code> &mdash; the two claims
+    the mutation removes. A passing suite would not have shown that.</p>
+    <p><strong>The job is read, not guessed.</strong> A placed launch records
+    <code>job_id</code> beside <code>pid</code>, read through the placement's declared probe so
+    reckon learns no scheduler's own vocabulary; a probe that answers nothing records its
+    reason rather than a fabricated id, and an unplaced run records the key absent rather than
+    zero, so the two remain distinguishable. Promotion carries the field onto the committed
+    ledger row, which is the durable record a later attribution reads &mdash; the live pointer
+    it was first written on is removed by that same promotion.</p>
+  </section>
+
+  <section id="s1-readback">
+    <h2>&sect;1 read-back &mdash; the identity a promotion infers</h2>
+    <p>Commit <code>bf160b8e</code>. Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_placement.py
+    tests/test_crew_launch_resolution.py tests/test_crew_declared_negative_control.py
+    tests/test_crew_placed_promotion.py</code> &mdash; <strong>28 passed, exit 0</strong>. The same command
+    over the three pre-existing files at base <code>750fa656</code> is <strong>24 passed, exit 0</strong>, so
+    the delta is four tests added and an empty set of newly failing ids.</p>
+    <p><strong>The defect, reproduced before it was repaired.</strong> Held against the base revision, the two
+    new claims fail with <code>reckon._backends.BackendError: no launch translation for command 'srun'; reckon
+    can translate: claude, clive, codex</code>, raised through <code>crew.complete</code> on a placed run whose
+    stream is on disk. The wrap the section landed was correct for launching; what it changed is the identity a
+    downstream reader infers, because it puts the scheduler at <code>argv[0]</code> while the lane the run
+    launched from is named beside it.</p>
+    <p><strong>What carries the identity now.</strong> Dispatch records the harness command it resolved,
+    captured before the placement wraps the plan, together with the translation it resolved to. The reader
+    consults those, falling back to <code>argv[0]</code> only for a record written before the fields existed,
+    and the translation takes the recorded identity when the command's stem names no dialect &mdash; which is
+    what makes a placed run already in flight promotable, since its argv names the scheduler and nothing else.
+    A mapping built from configuration carries no recorded identity, so dispatch-time strictness is unchanged
+    and an untranslatable command with nothing beside it is refused exactly as before; that half is asserted,
+    not assumed.</p>
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: read the harness from
+    <code>argv[0]</code> again and carry no lane identity into the translation. The red log at
+    <code>runs/r-20260919T223010644483-awcj-backend-identity-is-explicit/negative-control.red.log</code> (first
+    line repeats the mutation verbatim) fails <code>test_a_placed_run_promotes_on_its_declared_backend</code>
+    and <code>test_a_record_naming_only_its_lane_still_resolves_it</code> &mdash; the two claims the mutation
+    removes &mdash; and leaves the other twenty-six green. A passing suite would not have shown that.</p>
+    <p><strong>What this node did not touch.</strong> <code>reckon/crew/promotion.py</code> is in scope and
+    needed no change: the reader it calls lives in <code>reckon/crew/dispatch.py</code>, and a completion
+    has no configuration to resolve a lane from, which is why the identity had to be recorded rather than
+    looked up. <code>reckon/crew/recovery.py</code> reads a run's harness from its <code>argv[0]</code> in two
+    places and therefore loses a placed run's budget, refusal and final-message readings while swallowing the
+    refusal; that module is out of this node's scope and the finding is carried under
+    <code>follow_ons</code>.</p>
+  </section>
+
+  <section id="owed">
+    <h2>The run still owed, and whose it is</h2>
+    <p>Section 1 is finished by a run, not by a design, and that run has not happened here. It
+    is one throwaway local-lane node dispatched with a placement declared, run to completion
+    on a compute node, and promoted by the ordinary path; the partition, the job id, the
+    measured cores and peak memory, the queue wait between dispatch and first stream record,
+    and whether a queued allocation is distinguishable from a slow worker are read from it.
+    Because the node that would dispatch it is the node being measured, this is a coordinator
+    dispatch, and the exact command &mdash; backend, partition, flags, and the four readings to
+    record &mdash; is carried in this node's manifest under <code>follow_ons</code>.</p>
+  </section>
+
+  <section id="s2-liveness-accessor">
+    <h2>&sect;2 &mdash; One accessor owns the record-to-pid step</h2>
+    <p>Commits <code>2d58b953</code> and <code>d417b411</code>. This record answers the half of &sect;2 that is
+    a refactor: liveness is decided in ten modules, and before this it was decided at each call site by
+    reading <code>record.get("pid")</code> and handing the integer to the primitive. The section's own
+    change &mdash; making those answers follow the job &mdash; is not here, and cannot be until the pid lookup
+    has one home.</p>
+
+    <figure>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="100%" role="img"
+           aria-label="Every module that decides a run's liveness from a record calls one accessor in runs.py, which is the single place the record's pid is read before reaching the host process table; parent-pid reads keep the primitive because a parent is not the record's own process.">
+        <style>
+          .bx { fill: #f7f9fc; stroke: #6b7a90; stroke-width: 1.5; }
+          .hub { fill: #e8f0fb; stroke: #2f5d94; stroke-width: 2.5; }
+          .prim { fill: #eef7ee; stroke: #3f7a3f; stroke-width: 2; }
+          .lbl { font: 13px system-ui, sans-serif; fill: #1c2430; }
+          .sub { font: 11px system-ui, sans-serif; fill: #56637a; }
+          .edge { stroke: #6b7a90; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+          .bypass { stroke: #b45309; stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; marker-end: url(#b); }
+          .note { font: 11px system-ui, sans-serif; fill: #8a5a00; }
+          .title { font: 15px system-ui, sans-serif; font-weight: 600; fill: #1c2430; }
+        </style>
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#6b7a90"/>
+          </marker>
+          <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#b45309"/>
+          </marker>
+        </defs>
+        <text class="title" x="24" y="30">One accessor owns the record-to-pid step</text>
+        <rect class="bx" x="24" y="56" width="230" height="150" rx="6"/>
+        <text class="lbl" x="38" y="78">record-level call sites</text>
+        <text class="sub" x="38" y="98">runs.py — live listing, closure</text>
+        <text class="sub" x="38" y="115">recheck, seat records</text>
+        <text class="sub" x="38" y="132">recovery.py &middot; dispatch.py</text>
+        <text class="sub" x="38" y="149">resumption.py &middot; promotion.py</text>
+        <text class="sub" x="38" y="166">routing.py &middot; claims.py</text>
+        <text class="sub" x="38" y="183">node.py &middot; directory.py</text>
+        <rect class="hub" x="330" y="96" width="212" height="70" rx="6"/>
+        <text class="lbl" x="344" y="122">runs.record_process_alive(record)</text>
+        <text class="sub" x="344" y="142">the only place a record's pid is read</text>
+        <rect class="prim" x="618" y="96" width="216" height="70" rx="6"/>
+        <text class="lbl" x="632" y="122">runs.process_alive(pid)</text>
+        <text class="sub" x="632" y="142">kernel process table, this host</text>
+        <path class="edge" d="M254,120 L326,120"/>
+        <path class="edge" d="M542,131 L614,131"/>
+        <rect class="bx" x="330" y="214" width="212" height="66" rx="6"/>
+        <text class="lbl" x="344" y="240">parent-pid reads</text>
+        <text class="sub" x="344" y="260">a parent is not the record's</text>
+        <text class="sub" x="344" y="275">own process</text>
+        <path class="bypass" d="M542,247 L726,168"/>
+        <text class="note" x="556" y="212">keeps the primitive;</text>
+        <text class="note" x="556" y="228">a different question</text>
+        <rect class="bx" x="24" y="300" width="810" height="96" rx="6"/>
+        <text class="lbl" x="38" y="326">A module that keeps the primitive bound under its own name hands it in as the</text>
+        <text class="lbl" x="38" y="344">accessor's optional probe, so a test substituting liveness for that module still</text>
+        <text class="lbl" x="38" y="362">reaches it: promotion.py, dispatch.py, resumption.py. recovery.py keeps the</text>
+        <text class="lbl" x="38" y="380">accessor's own default, because its callers rebind that name to a forbidden</text>
+        <text class="lbl" x="38" y="394">lookup as a tripwire, and passing the snapshot would fire it.</text>
+      </svg>
+      <figcaption>Ten modules decided a run's liveness by reading a pid out of a record; the accessor is now
+      the single place that happens, and the parent-pid reads are a separate question left answering what
+      they always answered.</figcaption>
+    </figure>
+
+    <p><strong>The accessor.</strong> <code>record_process_alive(record)</code> in
+    <code>reckon/crew/runs.py</code> returns what <code>process_alive</code> returns for that record's pid,
+    including the <code>None</code> a record naming no process already produced &mdash; so a caller cannot
+    read &ldquo;no process recorded yet&rdquo; as a stopped worker. Each record-level call site calls it:
+    the live-pointer listing, the closure recheck and the seat-record reads in <code>runs.py</code>, and the
+    classify, reaper, launch-failure, resume-refusal, promotion, claim, routing and directory paths in
+    <code>recovery.py</code>, <code>dispatch.py</code>, <code>resumption.py</code>,
+    <code>promotion.py</code>, <code>routing.py</code>, <code>claims.py</code>, <code>node.py</code> and
+    <code>directory.py</code>. <code>query.py</code> carries the field through and decides nothing, so it
+    has no call site to route. The pid calls that read a <em>parent</em> pid keep the primitive: a parent is
+    not the record's own process, which is a different question.</p>
+
+    <p><strong>The seam the refactor had to keep, reproduced before it was repaired.</strong> A module's
+    liveness answer is substituted in tests by rebinding that module's own <code>process_alive</code> name.
+    Moving every call site to the accessor removed that name from <code>promotion</code>,
+    <code>dispatch</code> and <code>resumption</code>, and nine cases failed with, quoted from
+    <code>tests/test_promotion_reads_the_terminal_record.py</code>:</p>
+    <pre><code>AttributeError: &lt;module 'reckon.crew.promotion' ...&gt; has no attribute 'process_alive'</code></pre>
+    <p>The accessor therefore takes the caller's probe as an optional second argument. The pid is still read
+    in the one place; a module that keeps the primitive bound under its own name hands it in, so a
+    substitution for that module is honoured. <code>recovery.py</code> stays on the accessor's own default
+    deliberately: its callers rebind its <code>process_alive</code> to a forbidden lookup to prove
+    classification reads the live module attribute rather than that import-time snapshot, and passing the
+    snapshot would have made that tripwire fire.</p>
+
+    <p><strong>Gate, and the delta.</strong> Base <code>3a05f4f8</code>, then the landed head, over the
+    116-file set that reaches these modules (the list is in this node's manifest):</p>
+    <table>
+      <caption>Same command both sides; only the ten modules under test differ</caption>
+      <thead><tr><th>Revision</th><th>Failed</th><th>Passed</th><th>Newly failing ids</th></tr></thead>
+      <tbody>
+        <tr><td><code>3a05f4f8</code> (base)</td><td>78</td><td>1612</td><td>&mdash;</td></tr>
+        <tr><td>head <code>d417b411</code></td><td>78</td><td>1616</td><td>none &mdash; the id sets are identical</td></tr>
+      </tbody>
+    </table>
+    <p>The four added tests are <code>tests/test_crew_record_liveness.py</code>. The seventy-eight failures
+    are the worker tier's own &mdash; present at base, unchanged at head, and outside this node's declared
+    scope. The file list is a superset chosen by which modules the tests reach, not the whole suite; the
+    test role that verifies the merged result is a separately dispatched node's.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: revert <code>directory.py</code> to
+    <code>process_alive(record["pid"])</code>. The red log at
+    <code>runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log</code>,
+    whose first line repeats the mutation verbatim, fails exactly
+    <code>test_no_module_decides_record_liveness_with_a_bare_pid</code> and leaves the other three green.
+    The case itself carries a positive control: it shows the AST scan recognises
+    <code>process_alive(record['pid'])</code> and the indirect <code>pid = pointer.get('pid')</code> form, so
+    an empty offender set means compliance rather than a blind instrument.</p>
+
+    <p><strong>What is not here.</strong> No answer changed, so nothing is job-aware yet: a placed run's
+    liveness still resolves through the local process table. The accessor is the seam where the job becomes
+    the subject, and that change is the rest of &sect;2. A figure for this record was inlined rather than
+    written under <code>docs/figures/</code>, because that path is outside this node's write scope.</p>
+  </section>
+
+  <section id="s2-job-is-the-subject">
+    <h2>&sect;2 &mdash; The job becomes the subject of a liveness read</h2>
+    <p>A placed run's recorded pid names the scheduler client, not the worker, and under an allocation it
+    belongs to a compute node. The accessor that owns every record-to-liveness step now asks the scheduler
+    whether the job is still in the system when the record carries a placement, and falls through to the pid
+    probe otherwise. The mapping from the placement's declared wrapper to its reporting verb lives in
+    <code>reckon/crew/runs.py</code> beside the accessor, keyed on the wrapper's own name, so a scheduler
+    reckon cannot query answers <code>None</code> and the pid probe decides rather than a silent scheduler
+    being read as a stopped job.</p>
+
+    <table>
+      <caption>What each clause of the measure asserts, and where it is committed</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
+        <tr><td>job consulted when placed</td><td>live while the job runs; terminal when it leaves the queue; pid fallback otherwise</td><td><code>test_a_placed_run_reports_live_while_its_job_is_running</code>, <code>test_a_placed_run_reports_terminal_when_the_job_leaves_the_queue</code>, <code>test_a_scheduler_reckon_cannot_query_falls_through_to_the_pid</code></td></tr>
+        <tr><td>ordinary completion</td><td>a successful query naming no job reads as the job leaving the queue; a failed query falls through to the pid</td><td><code>test_a_successful_empty_answer_reports_the_job_gone</code>, <code>test_a_query_that_could_not_be_run_falls_through_to_the_pid</code></td></tr>
+        <tr><td>never-started job</td><td>recorded once with the scheduler's reason</td><td><code>test_a_job_that_never_started_records_its_scheduler_reason</code></td></tr>
+        <tr><td>time or memory end distinct</td><td>named apart from a worker whose work failed</td><td><code>test_a_job_killed_for_time_is_not_a_worker_whose_work_failed</code>, <code>test_a_job_killed_for_memory_is_named_distinctly</code></td></tr>
+        <tr><td>payload log decides</td><td>a non-empty stream is a turn whatever the step exit status says</td><td><code>test_the_payload_log_decides_that_the_work_ran</code></td></tr>
+        <tr><td>harness from the record</td><td>the two recovery sites take the record's command over <code>argv[0]</code>, falling back for a record written before the field existed</td><td><code>test_recovery_takes_the_recorded_command_over_the_scheduler_argv</code>, <code>test_recovery_falls_back_to_argv_for_a_record_without_the_field</code>, <code>test_recovery_falls_back_to_the_dialect_when_argv_is_empty</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The empty answer, and why it mattered.</strong> A job that has left the queue is reported by a
+    <em>successful</em> query that prints no rows. The first cut of the helper collapsed that empty answer into
+    the same <code>None</code> it returns for a query that could not be run at all, so the ordinary completion
+    &mdash; the common case &mdash; read as unreadable and fell through to a pid on a compute node, leaving a
+    finished placed run reported as live. Only a job still listed in some ended state took the terminal path.
+    The query's success is now carried separately from its text. The reproduction is at
+    <code>runs/r-20260919T233958925409-awcj-liveness-and-reaping-follow-the-job/empty-answer.repro.log</code>:
+    with the pre-fix helper restored, <code>test_a_successful_empty_answer_reports_the_job_gone</code> fails;
+    with the fix it passes.</p>
+
+    <p><strong>Gate, and the delta.</strong> The nine focused files over the crew liveness, placement, launch
+    and promotion cases, each arm in its own process and its own log:</p>
+    <table>
+      <caption>Same nine files both arms; base = <code>a46166c2</code> source, head = <code>316b2c2a</code></caption>
+      <thead><tr><th>Arm</th><th>Log</th><th>Failed</th><th>Passed</th></tr></thead>
+      <tbody>
+        <tr><td><code>a46166c2</code> (base)</td><td><code>baseline-suite.log</code></td><td>18</td><td>61</td></tr>
+        <tr><td>head <code>316b2c2a</code></td><td><code>after-suite.log</code></td><td>2</td><td>77</td></tr>
+      </tbody>
+    </table>
+    <p>Over the eight files that exist at base, the failure ids are <em>identical</em>, the same two
+    <code>test_promotion_reads_the_terminal_record.py</code> git-worktree fixture checks, so zero failures are
+    added. The base arm's other sixteen failures are this node's own new cases running against source that does
+    not yet carry the symbols they exercise &mdash; the feature's absence, not a regression. Eighteen cases are
+    added in <code>tests/test_crew_placed_liveness.py</code>.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: revert
+    <code>record_process_alive</code> to <code>process_alive(record["pid"])</code>, so a placed run is read
+    from the local process table. The red log at
+    <code>runs/r-20260919T233958925409-awcj-liveness-and-reaping-follow-the-job/negative-control.red.log</code>,
+    whose first line repeats the mutation verbatim, fails exactly
+    <code>test_a_placed_run_reports_live_while_its_job_is_running</code> and
+    <code>test_a_successful_empty_answer_reports_the_job_gone</code>, and leaves the other sixteen green.</p>
+
+    <p><strong>What is not here.</strong> The scheduler query is keyed on the wrapper's family name for the
+    verbs it knows, which is a convention in code rather than a declared field, because the placement schema
+    is outside this node's write scope. Verifying the merged result belongs to a separately dispatched test
+    node.</p>
+  </section>
+
+  <section id="s4-workspace-contract">
+    <h2>&sect;4 &mdash; The workspace contract, declared and checked before launch</h2>
+    <p>Commits <code>0a2cb56a</code> (fenced implementation) and <code>67b3ad49</code> (two files outside the
+    granted scope, committed apart so the exception is visible). Gate
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_workspace_requirements.py
+    tests/test_crew_placed_liveness.py tests/test_crew_placement.py tests/test_crew_launch_resolution.py
+    tests/test_crew_declared_negative_control.py</code> &mdash; <strong>54 passed, exit 0</strong>. The same
+    command over the four files that exist at base <code>4dbea5ab</code> is <strong>42 passed, exit 0</strong>,
+    so the delta is twelve cases added and an empty set of newly failing ids.</p>
+
+    <p>A backend's <code>placement</code> now carries a <code>requirements</code> list &mdash; one entry per
+    path or endpoint its workers need visible from the node they run on &mdash; alongside
+    <code>state_query</code> and <code>reason_query</code>, the two argv the placement wrapper's reporting
+    verbs are asked with, each spelling the job id as the <code>{job}</code> token. The requirement set is a
+    first-class slot of <code>reckon/schema/flight.yaml</code>, so <code>reckon/_flight_schema.py</code> is
+    regenerated from it rather than hand-edited, and <code>reckon/flight.py</code> reads the declaration back
+    through <code>placement_requirement_entries</code> and <code>placement_scheduler_queries</code>. A
+    requirement that declares both a <code>path</code> and an <code>endpoint</code>, or neither, is refused at
+    whole-config validation rather than admitted as a check that quietly passes.</p>
+
+    <p><strong>The check is coordinator-side, and the refusal text is beside the other pre-launch
+    refusals.</strong> It runs inside <code>plan_dispatch</code> in <code>reckon/crew/dispatch.py</code>, the
+    single pre-side-effect resolver both the dry-run path and a real launch reach, so the verdict a dry run
+    reports is the verdict a launch reaches and no worktree, pointer or job exists when the refusal is raised.
+    A node-side check could not do this &mdash; it would need the node to start, which is the thing being
+    refused. The three refusal sentences are composed in <code>reckon/crew/node.py</code> through the shared
+    formatter, so the reason is legible on the fleet surface.</p>
+
+    <p><strong>The node-local case gets its own sentence.</strong> A path under <code>/run/user</code>, under
+    <code>XDG_RUNTIME_DIR</code>, or on any tmpfs in the dispatcher's own mount table exists on every node and
+    names different bytes on each, so an existence check admits it and the worker fails later on a path that is
+    present where the dispatcher runs. It is refused by name, with a sentence saying the storage is per-node
+    and pointing at the shared filesystem, distinct from the sentence an absent path gets.</p>
+
+    <table>
+      <caption>What each clause of the measure asserts, and the case that pins it</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
+        <tr><td>unreachable path</td><td>refused naming the requirement, the path and the target partition</td><td><code>test_an_unreachable_requirement_path_is_refused_before_launch</code></td></tr>
+        <tr><td>unreachable endpoint</td><td>a declared endpoint nothing answers on is refused, naming it</td><td><code>test_an_unreachable_endpoint_is_refused_naming_the_endpoint</code></td></tr>
+        <tr><td>node-local path</td><td>refused by name with its own sentence, not the not-visible one</td><td><code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code></td></tr>
+        <tr><td>undeclared query</td><td>a wrapper declared with no way to ask it is refused, not left unqueryable</td><td><code>test_a_placement_naming_a_wrapper_with_no_query_is_refused</code></td></tr>
+        <tr><td>half a query set</td><td>one query without the other is still a placement reckon cannot follow</td><td><code>test_a_half_declared_query_set_is_refused</code></td></tr>
+        <tr><td>satisfied placement</td><td>every requirement visible admits the node unchanged</td><td><code>test_a_satisfied_placement_is_admitted</code></td></tr>
+        <tr><td>no placement</td><td>absence is not an empty placement: nothing required, nothing runs</td><td><code>test_a_backend_declaring_no_placement_is_untouched</code></td></tr>
+        <tr><td>malformed requirement</td><td>neither target declared is refused rather than quietly passing</td><td><code>test_a_requirement_declaring_no_target_is_refused</code>, <code>test_a_requirement_declaring_both_targets_is_refused_by_the_schema</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The declaration replaces a table in code.</strong> The state and reason queries were keyed on the
+    basename of the wrapper a placement named, in two dictionaries in <code>reckon/crew/runs.py</code> &mdash;
+    the convention section 2's own evidence flagged as a convention. Those tables are gone;
+    <code>_scheduler_query_argv</code> reads the declaration off the placement, substituting the job id for the
+    <code>{job}</code> token, and a wrapper with no declared query answers <code>None</code> so the pid probe
+    decides rather than a silent scheduler being read as a stopped job. The declared queries are recorded on
+    the run pointer's <code>placement</code> dict, so a reader of a record can see which verbs answered it.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: remove the node-local refusal branch
+    from <code>check_placement_requirements</code>, so a <code>/run/user</code> path is judged only by whether
+    it exists. The red log at
+    <code>runs/r-20260920T000016468530-awcj-a-placement-declares-what-it-needs-visible/negative-control.red.log</code>
+    (its first lines repeat the mutation verbatim) fails
+    <code>test_a_node_local_path_is_refused_by_name_with_its_own_sentence</code> with <code>DID NOT RAISE
+    CrewError</code> and leaves the sibling case green. The case carries <code>assert
+    Path(node_local).is_dir()</code>, so the path's existence &mdash; the very property an existence-only check
+    would admit &mdash; is proved in the test rather than assumed; the first cut of this case used a
+    subdirectory that does not exist and reddened on the sentence alone, which is a weaker control.</p>
+
+    <p><strong>A defect this node's own gate caught, recorded because it is instructive.</strong> The
+    accessor's loop variable was renamed to stop shadowing the module's <code>field</code> import, and one
+    assignment kept the old name, so <code>placement_scheduler_queries</code> returned a dict keyed on the
+    imported function object. Every placement was then refused for an undeclared query and five of the twelve
+    new cases failed <em>for the wrong reason</em>. Ruff was clean throughout, because the name was a
+    module-level import rather than an undefined name. It was found by running the suite, not by reading the
+    diff, which is the argument for running the gate after every edit rather than once at the end.</p>
+
+    <p><strong>Lint and formatting delta.</strong> Ruff findings over the changed modules are 130 at base and
+    130 at head, so the change adds none; the new test file is lint-clean and format-clean. Four files in the
+    changed set are unformatted at base and remain so at head &mdash; the repository's formatting backlog, not
+    this change.</p>
+
+    <p><strong>What is not here.</strong> No plan state is touched: the driving followup stays open and no
+    terminal status is set, because only the coordinator observes the other nodes. The five-file set is
+    focused by which tests reach the changed modules, not a whole-suite run; verifying the merged result
+    belongs to a separately dispatched test node.</p>
+  </section>
+</main>
+</body>
+</html>

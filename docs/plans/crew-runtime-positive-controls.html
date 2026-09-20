@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Crew runtime positive controls — a launch that cannot fail silently, a watcher that is a process, a wait that cannot loop">
+  <meta name="plan-summary" content="Measured harness faults become checks that always run: binary resolved before launch, empty stream is a failure, watcher is a process, waits checked.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="20.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="crew-observability-truth">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>Crew runtime positive controls | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-20">
+<meta name="plan-impl" content="0.995">
+<meta name="plan-version" content="34">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>Four faults were measured on 2026-09-19 while a coordinator drained two sprints, and every one of them
+    was caught by a person reading a run directory rather than by the runtime. The lead's ruling is that a
+    check which always runs beats an instruction an agent has to remember, so each fault becomes a control in
+    code, with a skill carrying at most a pointer to the command that exercises it. The record of this plan is
+    <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
+    <ul>
+      <li>The nova watcher unit ran for seven hours without the backend directory on its <code>PATH</code>.
+      Every wait-lift it issued launched <code>clive</code>, died at exec, and left a 0-byte
+      <code>resume-N.jsonl</code> every two minutes (twelve of them on one run) while the pointer kept
+      reading <code>working</code>. Parks lifted only when a person resumed from a shell that had the path.</li>
+      <li>A second project had no watcher process at all for an hour; its dispatches were admitted because a
+      session follower was armed, and a follower cannot lift a wait. Both runs sat in phase
+      <code>starting</code> with complete manifests.</li>
+      <li>A worker parked with <code>RUNNING</code> listed under <code>wait_terminal</code>, so a healthy
+      watcher would have lifted the park on every tick while the job ran, and the worker would have re-parked
+      each time.</li>
+      <li>A run's <code>tests:</code> prose claimed a passing gate while its structured suite record carried
+      exit status 1; promotion refused correctly, but only because the coordinator read the manifest.</li>
+    </ul>
+
+    <h2 id="s-contract">Section contract</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Effort (worker-hours)</th><th>Reasoning</th><th>Risk</th><th>Attempts so far</th></tr></thead>
+      <tbody>
+        <tr><td>§1 Backend binary resolved before launch</td><td>3</td><td>standard</td><td>moderate</td><td>2 (one malformed dispatch, one landing)</td></tr>
+        <tr><td>§2 An empty stream is a launch failure</td><td>3</td><td>deep</td><td>elevated</td><td>1 (landed with §1)</td></tr>
+        <tr><td>§3 A watcher is a process the dispatcher can see</td><td>4</td><td>deep</td><td>elevated</td><td>2 (service half, then the dispatch refusal)</td></tr>
+        <tr><td>§4 Wait stanzas validated on write and lift</td><td>3</td><td>deep</td><td>moderate</td><td>1 (landed)</td></tr>
+        <tr><td>§5 Skills carry the pointer, not the rule</td><td>1</td><td>standard</td><td>low</td><td>0</td></tr>
+        <tr><td>§6 The repository comes from the project, never from the shell</td><td>2</td><td>standard</td><td>elevated</td><td>0</td></tr>
+        <tr><td>§7 A node that writes a check states the negative it fails against</td><td>4</td><td>deep</td><td>elevated</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s1">§1 — The backend binary is resolved before any launch, and the watcher execs an absolute path <span class="badge badge-shipped">&#10003; landed 2026-09-19</span></h2>
+    <p>The launch plan in <code>reckon/crew/dispatch.py</code> hands <code>subprocess.Popen</code> an argv whose
+    first element is a bare backend name and inherits the caller's environment, so whether the launch can
+    happen at all depends on whoever started the process. Resolve the backend executable with
+    <code>shutil.which</code> at the moment a launch plan is built, for dispatch, resume and every watcher lift,
+    and store the absolute path in the plan; when resolution fails, refuse before writing any pointer or stream
+    file, naming the binary and the <code>PATH</code> that was searched. <code>reckon crew watch</code> resolves
+    every backend its project can route to at startup and refuses to arm when one is missing, so a watcher that
+    cannot lift is never a watcher that reads as armed.</p>
+    <p><strong>Done when.</strong> A dispatch, a resume and a watch started with the backend directory removed
+    from <code>PATH</code> each refuse with the binary name and the searched path, and a launch plan built with
+    it present carries an absolute executable; both are pinned by tests that manipulate the environment of the
+    call, not the test process.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The plan is resolved where it is built, at the
+    dispatch, resume and member-move sites, and <code>crew watch</code> resolves every backend its project can
+    route to before it takes the seat. A refusal names the binary and the searched PATH and precedes every write;
+    on the resume path that ordering was false as found, because the pointer was mutated with the context fit
+    before the plan was built, and the reorder is pinned by comparing the pointer's bytes across the refusal. The
+    path is made absolute without being canonicalised — resolving a launcher installed as <code>bin/codex</code>
+    symlinked to <code>codex.js</code> recorded <code>codex.js</code>, which is a name no dialect matches, so the
+    run could no longer read its own stream. Three cases outside the new files caught that; the linked launcher
+    now has its own.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s1">§1 landed</a>.</p>
+
+    <h2 id="s2">§2 — A worker that exits before its first stream record is a launch failure, recorded once <span class="badge badge-shipped">&#10003; landed 2026-09-19</span></h2>
+    <p>The launched-worker reaper knows the child exited; nothing reads that exit against the stream. A run
+    whose stream file is empty when its process is gone is a launch failure, not a worker turn: record it as
+    a lane record with the exit status, the stderr tail and the argv, move the pointer to a state the follower
+    renders distinctly from <code>working</code>, and stop the lift loop after one such failure until an
+    operator resumes or completes the run. The follower row shows the failure count and the last cause; the
+    flight and drain views count it under an infrastructure classification rather than leaving the run
+    invisible in a working bucket.</p>
+    <p><strong>Done when.</strong> A synthetic backend that exits immediately produces exactly one launch-failure
+    record and one distinct follower row for a run whose watcher would otherwise have retried every tick,
+    the two-minute retry does not fire again, and a real resume from a repaired environment clears the state;
+    pinned by tests on the reaper and the lift path.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> A run whose stream is empty when its process is
+    gone gets one record on the run — exit status, argv, stderr tail — and a pointer in
+    <code>launch-failed</code>, which the automatic lift refuses until a person resumes or completes the run; the
+    hand-typed resume is deliberately left ungated so the person who repaired the environment can clear it. The
+    control that makes the emptiness check mean anything runs the same spawn and reaper on a backend that writes a
+    turn first and asserts no record appears; with the guard removed that control fails, which is how the guard was
+    shown to be the thing the record rests on. The reaper's raw wait status is converted to an exit code, so an
+    exit of 127 records <code>127</code> and not <code>32512</code>. The drain reading counts the run among the
+    actionable ones under its own classification, which it did not before: the state had been given a
+    classification and then left out of the set the count reads, so the run occupied a lane and read as invisible
+    — the same defect one layer over. What is still carried is narrower and is a width question rather than a
+    correctness one: the fleet counter's fixed four-bucket block has no bucket of its own for an infrastructure
+    fault, so the number a reader sees is under blocked.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s2">§2 landed</a>.</p>
+
+    <p><strong>Files.</strong> The reaper and the once-only guard are in <code>reckon/crew/dispatch.py</code>; the lift path that must not resume a launch-failed run is in <code>reckon/crew/resumption.py</code>; the classification the follower renders and the counts the flight and drain views read are in <code>reckon/crew/recovery.py</code>, <code>reckon/crew/runs.py</code> and <code>reckon/crew/ticker.py</code>. A node taking this section is granted all five.</p>
+<h2 id="s3">§3 — Watcher liveness is read from the watcher process, and a follower never satisfies it</h2>
+    <p><code>watcher_state</code> in <code>reckon/crew/runs.py</code> already binds liveness to a registered
+    process, yet a dispatch was admitted with no watcher for its project because a session follower was
+    armed. Make the dispatch and resume preconditions read <code>watcher_live</code> alone; a follower
+    contributes to delivery, never to the watcher requirement. Add <code>reckon crew watch --ensure</code>,
+    which starts or restarts the project's watcher as a user service with the resolved absolute executable and
+    the environment it needs baked into the unit, writes the unit name into the watcher registration, and is
+    idempotent; dispatch names that command in its refusal when the project is unwatched.</p>
+    <p><strong>Done when.</strong> A dispatch into a project with a live follower and no watcher process is
+    refused naming the ensure command; <code>--ensure</code> on a host with no unit starts one whose
+    <code>/proc/&lt;pid&gt;/environ</code> carries the resolved backend directory; a second <code>--ensure</code>
+    reports the existing unit and starts nothing; pinned by tests with a fake service manager.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19 — the <code>--ensure</code> half only.</strong>
+    <code>reckon crew watch --ensure</code> renders a systemd user unit for the project and reconciles it in three
+    ways: no unit gets written and started, an unchanged unit that is already active starts nothing and says so,
+    and a rewritten unit is restarted onto its new definition, so the command a refusal names is safe to run
+    against a watcher that is already up. The unit carries rather than inherits what the launch needs —
+    <code>ExecStart</code> is the resolved absolute executable and the <code>PATH</code> line is built from the
+    directories this project's routable backends resolve in, which is what the seven-hour unit was missing when
+    its every lift died at exec. The seat stays owned by the process: <code>--ensure</code> never claims it, so a
+    service that never comes up does not read as a live watcher, and the claiming watcher writes its own unit
+    name into the registration. Everything is asserted against a fake service manager, so no test touches the real
+    account home or needs a systemd manager on the host. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s3">§3 landed</a>.</p>
+    <p><strong>What this node does not reach, and why.</strong> The first half of the done-when — a dispatch into
+    a project with a live follower and no watcher process is refused naming the ensure command — is not
+    implemented here and is not claimed. The refusal is raised by <code>WatcherRequired</code> in
+    <code>reckon/crew/node.py</code>, the precondition is read in <code>reckon/crew/dispatch.py</code> where
+    <code>_ensure_watch_producer</code> auto-starts a producer and the guard consults the follower's attach state,
+    and both files lie outside this node's write scope. The ensure command and its line are now in place for
+    whoever lands that half: <code>ensure_watcher_service</code> and <code>watcher_ensure_line</code> in
+    <code>reckon/crew/runs.py</code>, with <code>watch_state()["ensure_line"]</code> returning the command a
+    refusal should teach. Repointing <code>_watch_arming_line</code> instead was considered and rejected: the
+    passing visibility test asserts that line's current value, so changing it would add a failure to a node whose
+    gate must add none.</p>
+
+    <p class="landed-summary"><strong>Landed 2026-09-19 &mdash; the dispatch-side refusal.</strong> The admission
+    precondition now reads <code>watcher_live</code> from the watcher's own state and refuses before it asks the
+    separate question of whether the dispatching session hears what the watcher writes:
+    <code>_ensure_watch_producer</code> reports the state it observed rather than raising, and the guard raises
+    <code>WatcherRequired</code> when that state carries no live watcher process. The refusal names the command
+    that starts a watcher the operator owns, taken from <code>watch_state()["ensure_line"]</code> so there is one
+    definition of it, and the command is idempotent, so it is safe to run against a watcher already up. Two cases
+    enter through <code>crew.dispatch</code> with the dispatching session's delivery registered: a live follower
+    with an ended producer is refused with <code>reckon crew watch --ensure --project sample</code> in the
+    refusal's text and creates no pointer, and the same dispatch against a running registered watcher process is
+    admitted unchanged. Each has its own mutation red, kept beside the green log, and the gate adds no failure to
+    its population. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s3">§3 refused</a>.</p>
+
+    <h2 id="s4">§4 — A wait stanza is validated when written and a lift that re-parks on the same output is a defect</h2>
+    <p>The wait reader in <code>reckon/crew/recovery.py</code> already refuses a no-op probe. Extend it: a
+    <code>wait_terminal</code> value the probe prints while the awaited job is still queued or running
+    (<code>RUNNING</code>, <code>PENDING</code>, <code>WAITING</code>, or any token the probe emits from a
+    branch guarded by a live <code>squeue</code> result) is refused at manifest read with the offending token
+    named, and a lift whose resumed worker re-parks with an identical probe output inside one tick is
+    classified as a wait-key defect on the run and not lifted again until the manifest changes.</p>
+    <p><strong>Done when.</strong> The 2026-09-19 stanza (<code>RUNNING</code> under <code>wait_terminal</code>
+    beside a <code>squeue</code> probe) is refused by the reader with the token named, the re-park loop is
+    detected on a synthetic run after one cycle, and both are pinned by tests beside the existing no-op probe
+    test.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The measured run
+    <code>r-20260919T111944475334-cco-review-repairs</code> declared a <code>squeue</code> probe and, under
+    <code>wait_terminal</code>, <code>RUNNING</code> — the token that probe prints on the branch it takes while
+    the job is still queued. The declaration therefore read terminal on every sweep of a job that had not
+    started, and the watcher wrote <code>resume-1</code> through <code>resume-30</code>, most of them 0-byte
+    streams. Two halves close it, both in the reader. First,
+    <code>_wait_terminal_names_a_live_state</code> refuses <code>RUNNING</code>/<code>PENDING</code>/<code>WAITING</code>
+    in any case and, separately, any token the probe text emits from a branch guarded by a non-empty
+    <code>squeue</code> result — so a probe that invents its own wording for the live state is read out of its
+    own text rather than matched against a vocabulary. The refusal names the offending token in the reason the
+    follower already renders, so the repair needs no second reading of the probe. Second, the wait's
+    <code>signature</code> is derived from what the declaration asks for — condition, probe, terminal and resume
+    brief — rather than from the manifest file's modification time, so a worker that re-parks by rewriting its
+    manifest no longer mints what the lift loop reads as a new condition; and a declaration that already lifted
+    the run and has come back unchanged is marked as a wait-key defect on the run, rendered in
+    <code>classify_pointer</code> with the repair named, so the lift loop stays stopped until the declaration
+    changes. The decision the reader makes is drawn in
+    <a href="/reckon/figures/crew-runtime-positive-controls/wait-key-decision.png">the accompanying figure</a>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s4">§4 landed</a>.</p>
+
+    <h2 id="s5">§5 — Skills carry the pointer, not the rule</h2>
+    <p>Replace the recovery prose in <code>skills/reckon-ship</code> that tells a coordinator to export the
+    backend directory and restart watcher units by hand with one line naming <code>reckon crew watch --ensure</code>,
+    and state in the skill that a dispatch refused as unwatched is repaired by that command. Remove any
+    instruction the code now enforces.</p>
+    <p><strong>Done when.</strong> The skill carries the command and no longer carries the manual recipe, and
+    <code>reckon audit-doc</code> passes on the plan and record.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-19.</strong> The command reaches the coordinator from three
+    places in <code>skills/reckon-ship/SKILL.md</code>: the <code>watcher-required</code> row of the refusal
+    table, the producer section, and the command block that lists the producer, the follower and the ensure
+    call together. The refusal table's manual instruction — inspect the reported watcher state — is replaced by
+    the repair the runtime itself names, <code>reckon crew watch --ensure --project P</code>, and the producer
+    section states that it is idempotent, starting nothing when the project's unit already carries the current
+    definition and restarting it when the definition changed, so it is safe against a watcher already up. The
+    two causes the one exit code covers are separated there, because the repair in the refusal names its own
+    cause: a session with no delivering follower is answered with the <code>attach_line</code>, not with a
+    watcher command. The node looked for the literal recipe the section describes — export the backend
+    directory, restart watcher units by hand — and it is not in the skill at this revision; the manual
+    instruction actually present, and now superseded, is recorded above and in the evidence anchor. Gate:
+    <code>tests/test_doccheck.py</code>, <code>tests/test_skill_contracts.py</code> and
+    <code>tests/test_skill_contract_parity.py</code> — 92 passed and the same 2 failures at head as at base,
+    failure sets identical. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s5">&sect;5
+    landed</a>.</p>
+
+    <h2 id="s6">§6 — A dispatch resolves its repository from the project mount, never from the caller's directory</h2>
+    <p>Measured 2026-09-19 an hour after this plan was written: two reckon nodes dispatched from a shell whose
+    working directory was the nova checkout received worktrees under the nova repository, because
+    <code>--repo</code> defaults to the enclosing repository of the caller. One worker oriented, found none of
+    its write paths, and blocked; the other was stopped before it could act. The dispatch already knows the
+    project's mount (<code>authority.plan.repository</code>); when the resolved repository root is not that
+    mount, refuse before creating a worktree, naming both paths and the <code>--repo</code> flag, and when
+    <code>--repo</code> is absent take the mount rather than the shell. The same rule binds <code>resume</code>,
+    <code>member add</code> and <code>complete</code>, each of which writes a checkout it resolves the same way.</p>
+    <p><strong>Done when.</strong> A dispatch for project A run from project B's checkout with no <code>--repo</code>
+    creates its worktree under A's mount; one run with <code>--repo</code> naming B is refused naming both roots;
+    both pinned by tests with two temporary mounts.</p>
+
+    <p><strong>Files, and what the comparison is.</strong> The four surfaces that resolve a repository are dispatch in <code>reckon/crew/dispatch.py</code>, resume in <code>reckon/crew/resumption.py</code>, member registration in <code>reckon/ledger.py</code> reached through <code>reckon/crew/routing.py</code>, and promotion in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all four. The comparison is between resolved real paths, so a symlinked route to the same root agrees. A working copy that shares the mount’s git common directory, which is what a worktree is, is the same repository and is admitted; a different repository is refused whether or not <code>--repo</code> named it, because the point is that the project decides and the shell does not.</p>
+<p><strong>Landed 2026-09-19.</strong> Dispatch, resume and promotion resolve through one helper built on the
+    mounted-project map and <code>repository_identity</code>, so an absent repository takes the mount, a linked
+    worktree of the mount is admitted as the same repository, and a named repository resolving elsewhere is
+    refused before any worktree, pointer or ledger row is written, naming both resolved roots and the flag. Five
+    cases with two temporary mounts pin it, and each was reddened by a declared mutation of the change it
+    covers. Two gaps are recorded rather than claimed: <code>reckon/cli.py::_repo_root</code> pre-resolves the
+    caller's repository before <code>crew.dispatch</code>, so the CLI path cannot yet arrive unnamed, and the
+    Files paragraph's <code>reckon/crew/runs.py</code> carries no member-registration code — that lives in
+    <code>reckon/ledger.py</code> and could not be reached inside the fence. Both are follow-ons.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s6">&sect;6 landed</a>.</p>
+<p><strong>The command line now hands the choice to the library (landed 2026-09-19).</strong>
+    <code>reckon/cli.py</code> passed <code>_repo_root(repo)</code> into both
+    <code>crew.dispatch</code> and <code>plan_dispatch</code>, which resolves the repository enclosing the
+    caller whenever <code>--repo</code> is absent — so a command-line dispatch arrived already naming the
+    caller's checkout and the mount default above was never reached. Both call sites now pass the flag value
+    through unchanged, <code>None</code> when it is absent, and the <code>--repo</code> help text states the
+    mount default. An explicit flag is still honoured: the library resolves and admits-or-refuses it exactly
+    as before. A new case, <code>tests/test_crew_cli_repository.py</code>, invokes the command-line dispatch
+    entry point with the working directory inside a second project's checkout and no flag, and asserts the
+    cut worktree's <code>repository_identity</code> is the mount. Gate: <strong>6 passed</strong> on the login
+    node; the case reddens when <code>_repo_root(repo)</code> is restored. The follow-up's second question is
+    answered rather than deferred: member registration resolves through <code>ledger_path(project, root)</code>,
+    which without <code>root</code> uses the project's registered state path and never the caller's directory,
+    and it writes no worktree — so no change is needed there.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s6-cli">&sect;6 command line landed</a>.</p>
+<h2 id="s7">&#167;7 &mdash; A node that writes a check declares the negative that check fails against</h2>
+    <p>Three checks were landed this week that ran, reported success, and could not fail for the reason they
+    were written. A persistence guard compared one tensor-spline fit against its own evaluation, so its residual
+    was zero by construction; it passed on all twenty archived states whose stored flux disagreed with their
+    stored field by up to 2.2e-2 Wb. A receipt test held the two caption counts of a figure to its receipt but
+    not the per-axis bars the renderer draws, so a figure built from a retired capture passed the gate that
+    exists to catch exactly that. A panel test asserted a shared level array across two panels whose fixtures
+    were written on one grid, so the assertion reproduced itself. Every one was found by an independent
+    reviewer rather than by the runtime, and in each case the author's own gate was green.</p>
+    <p>The remedy is not more review. A node whose deliverable is a guard, an assertion or a test declares, in
+    its done-when, the mutation that must turn it red, and its manifest carries that mutation's log beside the
+    passing one. Dispatch refuses a node whose write paths include a test file when no negative is declared,
+    the same way it refuses a missing specification level; promotion refuses a passing gate on such a node when
+    the manifest carries no red log for the declared mutation. The two logs are the positive and negative
+    control of one measurement, which is the standard this repository already holds physics evidence to.</p>
+    <p><strong>Done when.</strong> A dispatch declaring a test path without a negative is refused, naming the
+    field; a promotion of such a node without a red log is refused, naming the declared mutation; both pass
+    when the pair is present, and the refusal messages name the discharge. Pinned by tests that exercise the
+    refusal and its discharge on a fixture node.</p>
+
+    <p><strong>Files, trigger, channel and discharge.</strong> The dispatch refusal is in <code>reckon/crew/dispatch.py</code> with its text composed in <code>reckon/crew/node.py</code>, and the promotion refusal is in <code>reckon/crew/promotion.py</code>; a node taking this section is granted all three. The trigger is the node’s declared write paths containing a test file, which is the one condition a dispatcher can evaluate without reading prose. The declaration is a structured field on the node record rather than a phrase mined out of the done-when, so the refusal has something exact to test and a brief author knows what to write. At promotion the manifest carries the path to a red log whose content names the declared mutation, not merely any failing log. The escape is explicit rather than silent: a check admitting no mutation that could be applied without disabling the system, such as an identity that must hold, declares its negative as none with the reason, which promotion records rather than refuses.</p>
+<p><strong>Landed 2026-09-19.</strong> The trigger is the node's declared write paths containing a test file,
+    evaluated in <code>reckon/crew/node.py</code> by <code>is_test_path</code> (a test-naming basename or an
+    enclosing <code>test</code>/<code>tests</code> directory) and by <code>negative_control_finding</code>, which
+    composes the refusal naming the <code>negative_control</code> field and the test path that triggered it.
+    <code>reckon/crew/dispatch.py</code> appends that finding in <code>plan_dispatch</code>, so a dispatch
+    refuses the node before any worktree, pointer or ledger row exists, and the refusal text is composed in
+    <code>node.py</code> rather than at the call site. The declaration is a structured field on the node record —
+    <code>TaskNode.negative_control</code>, carried into the pointer by <code>as_dict</code> and through both
+    rebuild paths — so the refusal tests a field rather than mining prose. At promotion,
+    <code>reckon/crew/promotion.py</code>'s <code>_require_declared_negative_control</code> refuses a passing gate
+    on a triggering node whose manifest carries no <code>negative_control_log</code>, or whose named log cannot
+    be read, or whose text does not name the declared mutation: a failing log for another reason is not the
+    negative control, so the declaration is matched against the log rather than its existence. A declaration of
+    <code>none: &lt;reason&gt;</code> is recorded on the ledger row as <code>none-recorded</code> instead of
+    refused, and a bare <code>none</code> without the reason is refused naming that requirement. The row carries
+    <code>negative_control</code> with its verdict beside <code>impl_move</code>, so an audit reads the outcome
+    without reopening the run. Eight cases in <code>tests/test_crew_declared_negative_control.py</code> cover the
+    dispatch refusal naming the field, the admitted dispatch carrying the declaration, the promotion refusal
+    naming the declared mutation, an admitted red log that names it, and the <code>none</code> declaration
+    recorded and admitted; three declared mutations each reddened exactly their own case, with the red logs kept
+    beside the green one. <strong>Not delivered, and why:</strong> <code>reckon/crew/prompts.py</code>, which
+    emits the manifest template a worker reads, does not yet name <code>negative_control_log</code>, so a worker
+    learns the field only from the node brief — recorded as a follow-on rather than taken, since that file is
+    outside this node's fence.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The interface gap is closed 2026-09-19.</strong> Both remainders named above are now reachable
+    from the surfaces a coordinator and a worker actually use. <code>reckon/cli.py</code>'s
+    <code>crew dispatch</code> gains <code>--negative-control</code>, written onto the
+    <code>TaskNode</code> record before <code>plan_dispatch</code> judges it, so the dispatch refusal this
+    section landed can be discharged from the command a coordinator runs rather than only from a library
+    caller that constructs the record itself; the option documents the field as the mutation the node's
+    checks must fail against, and admits <code>none: &lt;reason&gt;</code> for a check that no mutation
+    could redden. <code>reckon/crew/prompts.py</code>'s emitted manifest template names
+    <code>negative_control_log</code> beside <code>tests</code> and <code>test_logs</code>, glossed with
+    the same requirement, so the promotion refusal is legible from the contract a worker is handed
+    instead of only from its brief. Verified by a throwaway node whose declared write path is a test file:
+    dispatched <code>--dry-run</code> with no declaration it exits 2 and refuses with a single
+    <code>negative_control</code> finding naming the field and the test path; with
+    <code>--negative-control "&lt;mutation&gt;"</code> the same node resolves at exit 0 with no findings
+    and the declaration carried on the node record; and with <code>none: &lt;reason&gt;</code> it resolves
+    likewise, so the explicit escape reaches the interface too. The three outputs and the rendered
+    template are kept under
+    <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The interface is pinned by cases 2026-09-19.</strong> The option and the template field landed verified
+    by a dry run rather than by a case, because the node that added them was forbidden a test file. Five cases in
+    <code>tests/test_crew_negative_control_interface.py</code> now hold the two properties from the surfaces a
+    caller reaches. Through the real <code>crew dispatch</code> command: a node whose declared write path is a
+    test file is refused at exit 2 with <code>negative_control</code> as its <em>only</em> finding, a detail naming
+    the field and the triggering path; given <code>--negative-control "&lt;mutation&gt;"</code> the same node
+    resolves at exit 0 and the returned node record carries the declaration; given
+    <code>none: &lt;reason&gt;</code> it resolves likewise, so the explicit escape reaches the command rather than
+    only the library. Through <code>compose_prompt</code>: the emitted manifest template names
+    <code>negative_control_log</code> between <code>test_logs</code> and <code>baseline_suite</code>, glossed as
+    the red log of the declared mutation. Each property is reddened by its own declared mutation — removing the
+    <code>--negative-control</code> option reddens the two declaration-carrying cases alone while the refusal
+    case stays green, and removing the template line reddens the two template cases alone — with both red logs
+    kept beside the green one, each header carrying the declared mutation verbatim so promotion's match against
+    the log's content is discharged by the log itself. The gate is
+    <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once:
+    <strong>13 passed, exit 0</strong>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<p><strong>The first-line convention is stated where a worker reads it, 2026-09-19.</strong> Promotion matches
+    the declared mutation against the red log's content, so a genuine red run that does not name it is refused as a
+    failure for some other reason — and the convention that satisfies that match was enforced while being written
+    nowhere a worker reads, which three nodes answered three ways: a <code>MUTATION</code> header, a
+    <code>MUTATION DECLARED</code> header, and no header at all until the node was resumed to add one. Two surfaces
+    now state it. The manifest template's gloss beside <code>negative_control_log</code> in
+    <code>reckon/crew/prompts.py</code> says the log's first line repeats the declared mutation verbatim, so the
+    convention reaches a worker before it starts rather than only at the promotion it fails. The refusal in
+    <code>reckon/crew/promotion.py</code> says the same thing while keeping the detail it already carried about
+    which declaration and which resolved log are being matched, so a worker reading the refusal learns what to
+    write rather than only what is missing. Two cases in
+    <code>tests/test_crew_negative_control_header.py</code> pin the two surfaces, each entering where a reader
+    reaches it — <code>compose_prompt</code> for the contract handed to the worker, and the promotion refusal for
+    the one the worker meets. Each was reddened by the sentence it measures being removed; both reddened together
+    under one declared mutation whose red log is kept beside the green one, its own first line repeating that
+    mutation verbatim. Gate: <code>tests/test_crew_declared_negative_control.py</code>,
+    <code>tests/test_crew_negative_control_interface.py</code> and the new file, run once to
+    <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
+    <strong>15 passed, exit 0</strong>.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land §1 and §2 together (resolution and its failure record), then §4, then §3, then §5</h4>
+    <div class="r-fu-body"><p>§1 and §2 share the launch path. §4 is independent and small. §3 touches the service manager and takes the fake-manager test first. §5 waits for §3 so the command it points at exists.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §1</pre>
+    <p class="r-fu-outcome">Sections 1 and 2 landed together in twelve commits, merged at ec46d14d, with nine pre-existing suite failures at base and the same nine at head. Verified live in the served module rather than only committed: reckon.crew.dispatch resolves through shutil.which, carries the launch-failed state and names the searched path in its refusal, and reckon.crew.recovery carries the launch-failed handling. The node also found and fixed a real defect in its own area, that a reaped worker's raw wait status was being read as its exit code. Two remainders are opened below and sections 3, 4, 5 and 7 remain.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-launch-failed-has-no-counter-bucket" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A launch-failed run has no bucket of its own in the fleet counter</h4>
+    <div class="r-fu-body">Reported by the launch-resolution node. The counter block is a deliberately fixed four-bucket width (working, blocked, unpromoted, queued), so a launch-failed run's number sits under blocked and reads to a coordinator as a triageable stop rather than an infrastructure fault. The drain reading does count it under its own classification, so it is not invisible, only mis-bucketed. Decide with the monitor plan's owner whether a fifth bucket is worth the column width, or whether the blocked bucket's reason clause should name the launch failure, and implement whichever is chosen.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-gate-population-named-a-missing-file" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The dispatch gate named a test file that does not exist</h4>
+    <div class="r-fu-body">Reported by the launch-resolution node: the gate command in its brief listed tests/test_crew_resum*.py and no file matches that glob, so a coordinator-authored gate population named something absent and the worker had to choose a substitute. A gate population is evidence about what was run, so a named path that does not exist should be caught when the node is dispatched rather than discovered by the worker. Check the gate command's named paths against the repository at dispatch and refuse a population whose glob matches nothing, naming the pattern.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-dispatch-refuses-an-unwatched-project" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §3" data-resolved-at="2026-09-19T17:45:35+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">A dispatch into a project with a live follower and no watcher process is still admitted</h4>
+    <div class="r-fu-body">The remaining half of section 3, not delivered by the ensure node because it needs files outside that node's scope, and not claimed. The admission precondition is read in reckon/crew/dispatch.py, where _ensure_watch_producer auto-starts a producer and the guard consults the follower's attach state, and the refusal is raised by WatcherRequired in reckon/crew/node.py where its text is composed. Make the precondition read watcher_live alone so a follower contributes to delivery and never to the watcher requirement, and have the refusal name the ensure command. The interface it consumes already exists and is live: ensure_watcher_service, watcher_ensure_line, and the ensure_line key of watch_state in reckon/crew/runs.py. Pin it with a test that dispatches into a project holding a live follower and no watcher process and asserts both the refusal and the command named in it, and declare the mutation that test fails against with its red log, as every node on this plan has done. Scope must include reckon/crew/dispatch.py and reckon/crew/node.py.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §3</pre>
+    <p class="r-fu-outcome">Landed at 5ec236d1 and 39568d2f (merged 025a22ff), which completes section 3. The admission precondition reads watcher liveness from the watcher's own state, so a live follower no longer satisfies the watcher requirement, and the refusal text names the ensure command taken from the ensure_line key of that same state rather than composing a second copy, so one definition reaches every refusal. Two tests, a mutation red log for each, and an empty set difference against the base failures. Verified live in the served module: node.py reads ensure_line from the state and no longer composes the old arming line.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-repository-from-the-project" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §6" data-resolved-at="2026-09-19T18:04:42+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 6: the repository comes from the project mount, never from the shell</h4>
+    <div class="r-fu-body">Now that section 6 names its four surfaces and states its comparison, it is dispatchable. Dispatch, resume, member registration and promotion each take the repository from the project's mount rather than from the enclosing repository of the caller; a mismatch is refused naming both resolved real paths and the flag. A working copy sharing the mount's git common directory is the same repository and is admitted. Scope is reckon/crew/dispatch.py, resumption.py, runs.py and promotion.py plus a test file. The measured incident is two reckon nodes given nova worktrees on 2026-09-19 because the dispatch ran from the nova checkout.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
+    <p class="r-fu-outcome">The library boundary lands at 0f9c0e6f and ebde5838 (merged fc15e7a7). Dispatch, resume and promotion resolve the repository from the project mount through the same mounted-project map every other scope resolution consults, so there is one definition rather than a second spelling, and a named repository whose identity differs is refused before anything is written. Identity is the git common directory, which is what makes a linked worktree of the mount the same repository under a second path rather than a different one. Five tests, a mutation red log for each. Two gaps the node reported rather than hid are carried below: the command line still pre-resolves the caller's repository before dispatch is reached, so the measured incident would recur through it, and member registration is not where this plan said it was.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-declared-negative-control" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="2026-09-19T18:18:13+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 7: a node writing a check declares the negative it fails against</h4>
+    <div class="r-fu-body">Section 7 now states its trigger, its declaration channel, its discharge and its escape, so it is dispatchable. A node whose declared write paths contain a test file must carry a structured negative-control declaration on its node record; dispatch refuses one without it, and promotion refuses a passing gate whose manifest carries no red log naming the declared mutation. A check admitting no applicable mutation declares its negative as none with a reason, which promotion records rather than refuses. Scope is reckon/crew/dispatch.py, node.py and promotion.py plus a test file. Four checks landed this week that could not fail for their own reason, each found by review with the author's gate green.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    <p class="r-fu-outcome">Landed at 2de00ffd, b3a90816 and 688f41b8 (merged 69ee1b47), verified live in the served modules. A node whose declared write paths include a test file must carry a negative control on its record; dispatch refuses one that does not, naming the field, and promotion refuses a passing gate whose manifest carries no red log whose content names the declared mutation, so any failing log will not do. A check admitting no applicable mutation declares none with a reason, which the ledger records beside the impl move rather than refusing. Eight cases with three mutations, each reddening only its own, an empty failure-set difference against the base and zero added lint findings. The node applied the discipline to itself, which is the strongest evidence the rule is workable. Two remainders are opened below.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-skills-point-at-the-ensure-command" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §5" data-resolved-at="2026-09-19T18:13:34+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land section 5: the ship skill points at the ensure command and drops the manual recipe</h4>
+    <div class="r-fu-body">Unblocked now that reckon crew watch --ensure exists and the dispatch refusal names it. Replace the recovery prose in skills/reckon-ship that tells a coordinator to export the backend directory and restart watcher units by hand with one line naming the ensure command, and state that a dispatch refused as unwatched is repaired by running it. Remove any instruction the runtime now enforces. The section names a directory rather than a file, so the node's scope is skills/reckon-ship/SKILL.md and its references directory, and the node states which file it edited.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §5</pre>
+    <p class="r-fu-outcome">Landed at 74f3c13a and 64451d13 (merged c998719f) in skills/reckon-ship/SKILL.md, which the manifest names since the section named a directory. The watcher recovery prose gives the ensure command instead of the manual export-and-restart recipe, and it does something the brief did not ask for and should have: it separates the two causes the watcher-required refusal can have, so a session with no delivering follower is told to attach while a project with no live watcher process is told to ensure one. It also states that the command is idempotent and safe against a watcher already up, which is what makes a reader willing to run it. Two pre-existing failures at base and the identical two at head.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-cli-preresolves-the-callers-repository" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §6" data-resolved-at="2026-09-19T18:31:42+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">The command line still pre-resolves the caller&#x27;s repository, so the measured incident would recur through it</h4>
+    <div class="r-fu-body">Reported by the mount-resolution node from outside its fence, and it is the half that touches the incident this section exists for. _repo_root in reckon/cli.py near line 792 resolves the repository enclosing the caller and passes that path into dispatch, so a command-line dispatch can never arrive with no repository named and the library default is never reached. The two reckon nodes given nova worktrees on 2026-09-19 came through exactly this path. Pass the raw value through, None when the flag is absent, so the mount default applies, and pin it with a test that invokes the command-line entry point from inside another project's checkout and asserts the worktree lands under the mount. Scope is reckon/cli.py plus a test file. Also decide whether member registration, which lives in reckon/ledger.py register_member reached through reckon/crew/routing.py rather than where this plan first said, needs the same resolution; it writes no worktree, so the answer may be no, but it should be recorded either way.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §6</pre>
+    <p class="r-fu-outcome">Landed at deca8728 (merged 3c3369ea). The command line passes the repository flag through unresolved, None when it is absent, so a command-line dispatch now reaches the mount default that section 6 landed and an explicit value is still honoured. One case invoking the entry point from inside another project's checkout, red under the declared mutation of restoring the pre-resolution. This closes the path the measured incident came through: the two reckon nodes given nova worktrees on 2026-09-19 were dispatched from the nova checkout on the command line, and the library fix alone would not have stopped them. The member-registration question the earlier node raised is answered by inspection rather than by code: registration writes no worktree and resolves no checkout for a worker, so the rule has nothing to bind there.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-manifest-template-names-the-negative-log" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="2026-09-19T18:25:02+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">The manifest template does not name the negative-control log field</h4>
+    <div class="r-fu-body">Reported by the negative-control node from outside its fence. The worker prompt template in reckon/crew/prompts.py emits the manifest shape a worker fills, and it does not name negative_control_log, so a worker learns the field only if its brief happens to mention it, while promotion now refuses a passing gate without it. That is a refusal a worker cannot anticipate from the contract it is given. Add the field to the emitted template beside the other test fields, and check that the emitted template carries it. Scope is reckon/crew/prompts.py and its test.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    <p class="r-fu-outcome">Landed at 92e02503 and dee72b33 (merged 3a51ffc3), together with a gap the followup had not named. Section 7's refusal reads the declaration from the node record and no dispatch option set it, so within two minutes of landing it refused the coordinator's own attempt to dispatch the template fix, and every node writing a test was unsatisfiable. The dispatch command now carries --negative-control, naming the mutation and accepting a none declaration with a reason, and the emitted manifest template names the negative_control_log field with the same gloss so a worker meets no refusal its own contract omits. Verified by dry run rather than by assertion: a node with a test path refused without the option, admitted with it, and admitted with the none escape; both the option and the template field confirmed live.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-the-red-log-header-is-an-undocumented-convention" data-status="resolved" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="2026-09-19T19:18:14+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">The red log must name its mutation and nothing tells a worker how</h4>
+    <div class="r-fu-body">Promotion compares the red log's content against the declared mutation, so a genuine red run that does not name it is refused as a failure for some other reason. Three nodes produced three answers: one wrote a MUTATION header, one wrote MUTATION DECLARED, and one wrote no header and was refused until it was resumed to add one. The requirement is real and the convention is nowhere a worker reads. State it in the manifest template gloss in reckon/crew/prompts.py beside the negative_control_log field, in one sentence saying the log's first line repeats the declared mutation verbatim, and make the promotion refusal say the same thing rather than only that the log does not name it. Scope is reckon/crew/prompts.py, reckon/crew/promotion.py and a test.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    <p class="r-fu-outcome">Landed at d90879aa and eec3c838 (merged 663b7d85), verified live in both served modules. The manifest template says the red log's first line repeats the declared mutation verbatim, and the promotion refusal says the same, so a worker meeting the refusal learns the remedy from it rather than from another worker's practice. Two cases, each red under its own removal, and the node followed the convention it documents: its own red log leads with the declared text.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-the-log-field-is-a-path-and-the-refusal-should-say-so" data-status="open" data-capability-version="1.0" data-capability-class="routine" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The negative-control log field is read as a path, and a worker cannot tell that from the template</h4>
+    <div class="r-fu-body">Second instance of the same shape as the red-log header, found in ordinary use on 2026-09-19. A worker wrote negative_control_log as the path followed by a prose clause explaining what the log shows, which is a reasonable reading of a field the template glosses in a sentence, and promotion refused it because the guard resolves the field as a path. The refusal named the value but not the constraint. Two repairs, both small: the template gloss in reckon/crew/prompts.py says the field is a path and nothing else, with the explanation belonging in tests or artifacts; and the promotion refusal in reckon/crew/promotion.py says the field must be a bare path rather than only reporting that the one given does not resolve. Pin both with a case whose declared mutation is the removal of each sentence. This is the third time a field this plan introduced has been correct in the runtime and unlearnable from the contract, so the section's own lesson is that a new field ships with its gloss and its refusal wording in the same change.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls §7</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-resolved-launcher-must-reach-a-serving-origin" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The pre-launch check proves the launcher exists, not that it points anywhere alive</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-20. This workstation carries two launchers named <code>clive</code>. The canonical one at <code>/work/projects/imas_gpu/agents/clive</code>, dated 2026-09-16, targets the standing router origin <code>98dci4-gpu-0003:18802</code>. A stale copy at <code>~/public/bin/clive</code>, dated 2026-08-26, targets <code>:18800</code>, which nothing has served for some time. Neither directory is on the default PATH in this harness, so the resolution control added by this plan correctly refused an unarmed watcher and named the missing command. The repair then put the wrong directory on PATH, and every check downstream passed: the command resolved, the launch succeeded, a pid was recorded, and the banner printed the right model name, because reckon passes <code>--model</code> explicitly so the launcher's own endpoint auto-detect never runs. The worker then spent three minutes on ten API retries and died with <code>API Error: Connection refused</code>, leaving an abandoned run and an empty manifest. The lane document and the endpoints document were both accurate throughout; nothing read them against the launcher that was actually resolved.</p><p>The control to add is one step past the one this plan already landed: where a backend declares an <code>endpoints_document</code>, the pre-launch check should establish that the resolved launcher would reach a serving origin, and refuse by naming the resolved path and the origin it would use when it cannot. The cheapest honest form is to ask the launcher which origin it would use rather than parse it, then probe that origin's model listing with a short timeout, and treat an unreachable origin as a launch refusal in the same shape as an unresolvable command. A refusal that names <code>~/public/bin/clive</code> beside <code>:18800</code> would have cost one line instead of a dead worker and half an hour of attribution.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-the-log-field-is-a-path-and-reads-as-a-sentence" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Both workers in one wave wrote the red-log field as a path followed by prose, and the guard reads it as a path</h4>
+    <div class="r-fu-body"><p>Measured on two nodes dispatched minutes apart on 2026-09-20, one in each project, neither of which had seen the other. Both wrote <code>negative_control_log</code> as the log path, an em dash, and a sentence explaining the control. The guard resolves the whole value as a filename, so both promotions were refused with the entire sentence quoted back inside the error, and both were unblocked by a coordinator splitting the line by hand. The first-line convention this plan already landed is being followed; this is a different field-shape problem sitting next to it.</p><p>The template invites it. The gloss reads <code>&lt;path to the red log from applying the node's declared negative_control mutation, whose content names that mutation; required when ...&gt;</code>, which is a long description inside the placeholder, and a worker filling it naturally emits the path and then the description. Two repairs, and the second matters more than the first. Say in the template that the value is the path alone and that commentary goes on a <code>negative_control_note</code> line beside it, which is the shape a manifest already used successfully. Then make the guard accept a value whose first whitespace-delimited token resolves to a readable file, treating the remainder as the note, so a worker that writes the sentence anyway is read rather than refused. A guard that refuses a manifest for its punctuation costs a coordinator round trip and teaches nothing.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-a-file-condition-has-no-probe-shape" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The probe contract can ask a scheduler a question but cannot ask whether three files exist, so workers invent a shape the reader discards</h4>
+    <div class="r-fu-body"><p>Observed on a live node 2026-09-20, and it is the third time this session that a worker has written the wait block with the right key names and a value the reader throws away. The contract is a shell-free argument vector, which the template states and illustrates with a scheduler query. The condition this worker actually held was that three log files exist and a fourth contains either of two markers, and there is no argument vector that asks that: <code>test -f</code> answers for one path, and anything covering three needs a shell, which the contract excludes by name. So the worker wrote a list of <code>{kind, path}</code> objects, the reader required a list of non-empty strings, returned nothing, and the run would have been reported as an incompletely declared wait rather than lifted when its condition came true. Nothing was lost here because the process stayed alive, which is exactly why this keeps recurring: it costs nothing until the one time a worker's turn ends mid-wait.</p><p><strong>Three workers, three different wrong shapes, all in one wave.</strong> The first wrote a list of <code>{kind, path}</code> objects for a three-file condition; the reader requires strings, so it parsed to nothing. The second wrote a valid argument vector and then put <code>exit:0</code> in <code>wait_terminal</code>, which is not a state any probe emits, so the wait had no terminal condition to reach. The third wrote a list of whole shell command lines — <code>["squeue -j 1274086 -o '%.10i %.8T'", "grep -E ... logfile"]</code> — which passes the string check and then cannot exec, because the first element is a program name containing spaces and flags; its <code>wait_terminal</code> was a sentence. None of the three is careless: each is a reasonable reading of a field whose only example is a scheduler query, written by a worker whose actual condition was about files. A contract three independent workers fill three wrong ways in one hour is a contract defect, and the validation should say which shapes it accepts at the moment the manifest is read rather than reducing an unrecognised one to silence.</p><p>The gap is in the contract rather than in the workers. A file condition is the ordinary shape of a wait in this fleet, because a worker waits for a job's log to appear far more often than it waits for a scheduler to say a job left the queue. Give it a first-class form the reader accepts, alongside the argument vector, and say in the template which to use when. Whatever the form, the validation should refuse a shape it does not understand by naming the shapes it does, rather than silently reducing to no probe, because the current failure mode reads to a coordinator as a worker that declared no probe at all.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-appending-a-decision-loses-its-question-and-options" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-20" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Appending a decision writes its key into the question and drops its options, and the write reports success</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-20 while recording a real decision on a nova plan. An append to the decisions target, with the key given both as the operation's own argument and inside the item, returns ok and writes a decision block whose question paragraph contains the KEY rather than the question text, and with no options element at all. The context paragraph survives intact, which is what makes it silent: the decision looks written, it renders, and a reader sees a paragraph of reasoning under a heading that is a slug, with nothing to choose between. Reading it back gives a question equal to the key and an empty option list. Omitting the outer key is not an alternative, because the call is then refused outright, so there is no spelling of this operation that preserves a decision.</p><p>A decision nobody can answer is worse than no decision, because the roadmap counts it as open and the lead sees a question that is not one. Two things: make the append carry the item's question and options through to the written block, and add a case that appends a decision and asserts the parsed state carries the question text and every option value. The same case is the regression guard for the older defect on this plan where a decision written in one spelling vanished entirely.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T141900699431-crpc-launch-resolution-and-failure-record-2" data-who="reckon-ship" data-when="2026-09-19T15:18:00.235Z">
+    <div class="r-comment-body"><p>Launch resolution and the launch-failure record land with nine pre-existing failures at base and the same nine at head; verified live in the served module. A reaped worker exit-code defect was found and fixed in passing.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-crpc-review-three-findings" data-who="coordinator" data-when="2026-09-19T17:08:00Z">
+    <div class="r-comment-body"><p>The independent review of sections 1 and 2 returns pass on the headline question: no measured path allows a silent launch failure or a second record, a dispatch refusal unwinds everything it created, and the exit status now reads 127 rather than 32512. Three findings stand and a corrective node carries them. The one that matters is that <code>crew watch --once</code> claims the seat at <code>_project_watch_claim</code> with no resolution anywhere on its path, measured by arming with the only backend absent from PATH and finding the lock file created, so this section's own clause that a watcher which cannot lift never reads as armed is true for the documented mode and false for <code>--once</code>; it must close before section 3 builds on that clause. The second is an overstated count, since the lane probe in resumption.py is a fourth construction site of a launch plan, though it fails loudly and writes nothing. The third is the sharper one: removing the once-only guard leaves all four of the node's launch-failure cases passing, because the once-ness they appear to prove comes from the pid being consumed by waitpid rather than from the guard, so the guard is load-bearing and unpinned.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T164442838679-review-of-crpc-launch-resolution" data-who="reckon-ship" data-when="2026-09-19T17:06:54.518Z">
+    <div class="r-comment-body"><p>Review verdict pass with three findings: no measured path allows a silent launch failure or a second record, and the exit code reads 127 rather than 32512. F1, the --once watch arm takes the seat without resolving, is a posture defect that must close before the watcher section builds on the arming clause. F2 is an overstated count. F3 shows the once-only guard is load-bearing but unpinned, since the four existing cases pass with it removed.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T170754795647-crpc-arming-and-once-only-findings-1" data-who="reckon-ship" data-when="2026-09-19T17:13:17.874Z">
+    <div class="r-comment-body"><p>The launch-resolution review's three findings are closed. <strong>F1</strong>: <code>crew watch --once</code> claimed the watch seat with no resolution check on its path, so a host whose backend directory was off the project's PATH could hold a seat it could not lift from; the single-event arm now refuses through the same check before the seat is claimed, pinned by a case that enters the <code>--once</code> path with the backend absent and asserts the refusal and the absence of any <code>crew/watch</code> lock file, with a positive control that the same call does take the seat once the backend resolves. <strong>F2</strong>: the anchor's count of <code>launch_plan</code> construction sites is corrected to name the lane-availability probe at <code>reckon/crew/resumption.py:234</code> as a fourth site, deliberately unwrapped, whose failure is loud and writes nothing. <strong>F3</strong>: the recorder's once-only guard was load-bearing and unpinned — the existing cases' once-ness came from the pid being reaped, not the guard — and a case now records twice for one launch and asserts a single record. Both negative controls are kept: disabling the arming refusal fails only the new arming case, and removing the phase guard leaves the four pre-existing launch-failure cases green while the new case fails. Gate at head: 9 failed, 137 passed against 9 failed, 135 passed at base <code>ae589f5b</code>, failure sets identical.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-crpc-findings-closed" data-who="coordinator" data-when="2026-09-19T17:20:00Z">
+    <div class="r-comment-body"><p>The three review findings close at 902bd2e4, merged 32447fa9, with nine failures at base and an identical nine at head. The single-event watch arm now refuses through the routable-backend assertion before claiming the seat, so this section's clause that a watcher which cannot lift never reads as armed holds for every arming mode rather than only the streaming one, and section 3 can build on it. The launch-plan construction count is corrected to name the lane probe in resumption.py as a fourth site, with the reason the property still holds there. The once-only guard gains a case that reaches the recorder twice without relying on the pid being consumed by waitpid, and that case goes red when the guard is removed while the four earlier cases did not, so the guard is now pinned by something that fails without it. Both negative controls are kept as red logs beside the green one, which is the discipline section 7 will require of every node that writes a check.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260919T170754795647-crpc-arming-and-once-only-findings" data-who="reckon-ship" data-when="2026-09-19T17:15:42.719Z">
+    <div class="r-comment-body"><p>All three findings closed: the single-event watch arm refuses before the seat, the construction count names the lane probe, and the once-only guard is pinned by a case that goes red when it is removed. Nine failures at base and the identical nine at head; the arming refusal verified live in the served module.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-crpc-wait-control-live" data-who="coordinator" data-when="2026-09-19T17:05:00Z">
+    <div class="r-comment-body"><p>Section 4 lands at a466546b, merged ae589f5b, and is verified live in the served module rather than only committed. A <code>wait_terminal</code> naming a state the probe reports while its job is still running is refused at read with the token quoted, whatever its case and including a token the probe itself emits from a branch guarded by a live result (recovery.py:1696). A lift whose worker re-parks on an unchanged declaration is marked a wait-key defect and is not lifted again until the declaration changes (recovery.py:1734). Ten new tests, both mutations red, one pre-existing failure at base and the same one at head. The node volunteered both negative controls before section 7 requires them. The stanza this closes is the measured one: the centroid node listed RUNNING as terminal beside a squeue probe and the watcher resumed it thirty times across four hours.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260919T164506464908-crpc-wait-stanza-validation" data-who="reckon-ship" data-when="2026-09-19T17:01:54.223Z">
+    <div class="r-comment-body"><p>A wait_terminal naming a live probe state is refused with the token named, and a re-park on an unchanged declaration is a wait-key defect not lifted again. Ten tests, both mutations red, one pre-existing failure at base and the same one at head; verified live in the served module.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260919T171831929382-crpc-watcher-is-a-process" data-who="reckon-ship" data-when="2026-09-19T19:40:00Z">
+    <div class="r-comment-body"><p>The watcher-as-a-service half of this section lands at adb2f8e6, recorded at 1e785993. <code>reckon crew watch --ensure</code> renders a systemd user unit for the project and reconciles it three ways: no unit gets written and started; an unchanged unit that is already active starts nothing and reports <strong>started nothing</strong>; a rewritten unit is restarted onto its new definition, so the command a refusal names is safe to run against a watcher already up. The unit carries rather than inherits what the launch needs — <code>ExecStart</code> is the resolved absolute executable and <code>Environment="PATH=…"</code> is built from the directories this project's routable backends resolve in, which is exactly what the seven-hour unit lacked when every lift it attempted died at exec. The seat stays owned by the process: ensure never claims it, so a service that never comes up does not read as a live watcher, and the claiming watcher writes its own unit name into the registration. Six tests against a fake service manager, so no test touches the real account home; each of the five declared mutations turns exactly its own test red, with the red logs kept beside the green one. Gate population: 6 failed, 106 passed at head against the same 6 failed at base, failure sets identical.</p><p><strong>The dispatch-side refusal is not delivered, and the scope is why.</strong> The section's first done-when — a dispatch into a project with a live follower and no watcher process is refused naming the ensure command — needs <code>reckon/crew/dispatch.py</code>, where <code>_ensure_watch_producer</code> auto-starts a producer and the admission guard consults the follower's attach state, and <code>reckon/crew/node.py</code>, where <code>WatcherRequired</code> raises and the refusal text is composed. Neither is in this node's write paths, so the half was reported as a blocker rather than taken. Repointing <code>_watch_arming_line</code> inside the fence instead was considered and rejected: a passing visibility test asserts that line's current value, so the change would have added a failure instead of removing one. What exists for the follow-on node is the interface: <code>ensure_watcher_service</code>, <code>watcher_ensure_line</code>, and <code>watch_state()["ensure_line"]</code>, all in <code>reckon/crew/runs.py</code>. The section is left open; the coordinator closes it.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-crpc-ensure-landed-half" data-who="coordinator" data-when="2026-09-19T17:35:00Z">
+    <div class="r-comment-body"><p>The service half of section 3 lands at adb2f8e6, 1e785993 and cfc58084, merged de1413f6, and is verified live: <code>ensure_watcher_service</code>, <code>watcher_ensure_line</code> and <code>watch_state</code> are all in the served module. <code>reckon crew watch --ensure</code> starts a project watcher as an idempotent user unit whose definition carries the resolved executable and the backend directories, records the unit name in the registration, restarts only when the definition changed, and otherwise reports the existing unit and starts nothing. Six tests with five separate negative controls, each red under its own mutation, and identical failure sets at base and head. The dispatch-side refusal is not delivered and the node did not claim it: the brief asked for it while granting only runs.py, recovery.py and cli.py, so it was unsatisfiable inside the fence, which is the coordinator's defect rather than the worker's. It carries on as the followup below with the right scope named.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260919T173406101093-crpc-dispatch-refuses-an-unwatched-project" data-who="reckon-ship" data-when="2026-09-19T17:44:32.094Z">
+    <div class="r-comment-body"><p>Section 3 complete: watcher liveness read from the watcher own state so a follower never satisfies the requirement, and the refusal names the ensure command from one definition. Two mutation red logs and an empty set difference against the base failures.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-readback-findings" data-who="coordinator" data-when="2026-09-19T17:55:00Z">
+    <div class="r-comment-body"><p>This plan was read back under the rule it helped introduce, and the read-back paid for itself before a single line was dispatched. Its central finding is that sections 2, 6 and 7 named no file at all, describing their surfaces rather than locating them, and section 3 named its decisive files only in a retrospective paragraph. That is precisely the defect that stopped the watcher node an hour earlier, when a done-when asked for a dispatch-side refusal while the brief granted three files that did not contain it. Each of those sections now carries a Files paragraph, and sections 6 and 7 also carry the semantics a worker would otherwise have had to guess: what the repository comparison actually compares, and what triggers the negative-control requirement, where the declaration lives, what discharges it at promotion, and what a check with no applicable mutation declares instead. The read-back also caught the contract table reading zero attempts on every row while the same document carried four landing summaries, which is now corrected, and noted that the implementation scalar is not derivable from the section states, which is the defect the section-contract plan exists to remove rather than one to patch here. Finally it observed that no followup opened sections 5, 6 or 7, so the next invocation existed only in the coordinator's head; three followups now carry them.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260919T174236310536-readback-of-crew-runtime-positive-controls" data-who="reckon-ship" data-when="2026-09-19T17:50:52.348Z">
+    <div class="r-comment-body"><p>Read-back found that sections 2, 6 and 7 named no file, the same defect that stopped the watcher node, and that section 3 named its decisive files only retrospectively; also that the attempts column read zero against four landing summaries, that the implementation scalar is not derivable from the section states, and that no followup opened sections 5, 6 or 7. All acted on before dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
+    <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260919T182639437110-crpc-cli-passes-the-raw-repository" data-who="reckon-ship" data-when="2026-09-19T18:35:22.186Z">
+    <div class="r-comment-body"><p>The command line passes the repository flag through unresolved so a dispatch reaches the mount default, closing the path the measured incident came through. One case, red under the declared mutation.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260919T180615506949-crpc-skills-point-at-the-ensure-command" data-who="reckon-ship" data-when="2026-09-19T18:12:51.013Z">
+    <div class="r-comment-body"><p>The ship skill gives the ensure command instead of the manual recipe, separates the two causes of the watcher refusal, and states the command is idempotent. Two pre-existing failures at base and the identical two at head.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-crpc-node-properties-decision" data-who="coordinator" data-when="2026-09-19T18:20:00Z">
+    <div class="r-comment-body"><p>The negative control is carried on the node record and surfaced through its finding rather than added as a ninth entry in the node-property list, because two tests outside the node's fence pin that list at eight and require a skill table row for each member. That is a deliberate boundary rather than an omission: the property list is a published contract with its own parity checks, and widening it is a separate change with its own review. Recorded here so a later reader does not take the absence from the list as a defect. If the field should become a published property, it wants a node holding tests/test_crew.py, tests/test_skill_contracts.py and the skill table together.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260919T180552379490-crpc-declared-negative-control" data-who="reckon-ship" data-when="2026-09-19T18:16:50.909Z">
+    <div class="r-comment-body"><p>Dispatch refuses a test-writing node with no declared negative control and promotion refuses a passing gate with no red log naming the declared mutation; a check with no applicable mutation declares none with a reason. Eight cases, three mutations each reddening only its own, empty failure-set difference, zero added lint findings, verified live.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-crpc-the-control-refused-its-own-author" data-who="coordinator" data-when="2026-09-19T18:25:00Z">
+    <div class="r-comment-body"><p>Worth recording because it is the cleanest evidence this section works and the sharpest instance of the defect it exists to remove. Two minutes after the refusal landed, it refused the coordinator's dispatch of the very node meant to close its manifest-template gap, because that node writes a test file and no interface existed to declare its mutation. The guard fired correctly against something the system gave no way to supply, which is the same shape as a guard that cannot fail, read from the other side: both are a check whose verdict is decided by the interface rather than by the work. The repair had to be a node that writes no test file, which is the only reason it could be dispatched at all, and it verified itself by dry run rather than by a test it was forbidden to write. A rule landed without the means to satisfy it is a fleet stop, so a control of this kind ships with its declaration path in the same change rather than in a followup.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260919T182031456280-crpc-expose-the-negative-control-on-dispatch" data-who="reckon-ship" data-when="2026-09-19T18:23:42.210Z">
+    <div class="r-comment-body"><p>The dispatch option and the manifest template field close a refusal that had no satisfiable path and had stopped every test-writing node; verified by dry run, refused without the option and admitted with it and with the none escape.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260919T182616454062-crpc-pin-the-negative-control-interface" data-who="reckon-ship" data-when="2026-09-19T18:34:24.286Z">
+    <div class="r-comment-body"><p>The dispatch option and the manifest template field are pinned by cases rather than only by dry run; each fails under its own removal. 13 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260919T191328574077-crpc-state-the-red-log-header" data-who="reckon-ship" data-when="2026-09-19T19:22:52.066Z">
+    <div class="r-comment-body"><p>The manifest template and the promotion refusal both state that the red log first line repeats the declared mutation verbatim, so the refusal carries its own remedy. The improved refusal then refused this very node for paraphrasing its declaration, which is the control working on its author.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

@@ -56,7 +56,9 @@ from reckon.crew.dispatch import (
     _actionable_budget_hold,
     _backend_settings,
     _spawn,
+    project_mount_repository,
     record_resumption,
+    resolve_project_repository,
     resume_plan,
 )
 from reckon.crew.node import CrewError
@@ -71,6 +73,7 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    record_process_alive,
     run_dir,
 )
 
@@ -513,7 +516,7 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
             continue
         if str(other.get("repo") or "") != repo:
             continue
-        if process_alive(other.get("pid")) is not True:
+        if record_process_alive(other, process_alive) is not True:
             continue
         other_node = other.get("node") or {}
         claimed |= mine & {str(path) for path in (other_node.get("write_paths") or ())}
@@ -570,7 +573,7 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if process_alive(record.get("pid")) is True:
+    if record_process_alive(record, process_alive) is True:
         return CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
@@ -599,6 +602,34 @@ def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, An
     return {**entry, "reason": "resume-refused", "detail": str(exc)}
 
 
+def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
+    """Describe the launch failure that stops this run's lift, or None.
+
+    Only a hand-typed resume or a completion clears the phase, so the lift loop
+    is where the refusal belongs: a watcher lifting this run would repeat an
+    exec that already failed, once per tick, which is the loop the phase exists
+    to stop. The last recorded failure supplies the cause and the remedy.
+    """
+    phase = str(record.get("phase") or "")
+    if phase != "launch-failed":
+        return None
+    failures = list(record.get("launch_failures") or ())
+    latest = failures[-1] if failures else {}
+    exit_status = latest.get("exit_status")
+    backend = str(latest.get("backend") or record.get("backend") or "the backend")
+    tail = str(latest.get("stderr_tail") or "").strip().splitlines()
+    cause = tail[-1] if tail else "the process exited before writing any turn"
+    return {
+        "phase": phase,
+        "detail": (
+            f"a {backend} launch exited with status {exit_status} before "
+            f"writing any stream record ({cause}); {len(failures)} failure"
+            f"{'s' if len(failures) != 1 else ''} recorded"
+        ),
+        "remedy": f"fix the command for backend {backend!r} and its PATH",
+    }
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -608,6 +639,26 @@ def _resume(
     advice: str = CONTINUE_ADVICE,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does."""
+    # The repository a resume continues in is the project's mount, exactly as
+    # for the dispatch that created the run. A run recorded in a different
+    # repository is refused here, naming both roots, rather than resumed into a
+    # checkout the project does not own.
+    resume_project = str(record.get("project") or "")
+    if resume_project and project_mount_repository(resume_project) is not None:
+        resolve_project_repository(
+            resume_project,
+            record.get("repo"),
+            flag="the run's recorded repository",
+        )
+    failure = _launch_failure_block(record)
+    if failure is not None:
+        # A launch that produced no stream has no session to continue, so a
+        # lift would repeat the failed exec every tick. It waits for a person.
+        raise CrewError(
+            f"run {run_id!r} is in phase {failure['phase']!r}: "
+            f"{failure['detail']} — repair the launch ("
+            f"{failure['remedy']}) and resume it by hand, or complete it"
+        )
     plan = resume_plan(run_id, advice, config=config)
     directory = run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1

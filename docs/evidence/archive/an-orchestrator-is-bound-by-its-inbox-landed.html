@@ -43,6 +43,7 @@
         <tr><td>&sect;5</td><td><a href="#follower-listing-reports-what-delivers">follower-listing-reports-what-delivers</a></td><td>c0a07f8f</td><td>landed</td></tr>
         <tr><td>&sect;5</td><td><a href="#released-registration-is-counted-not-listed">released-registration-is-counted-not-listed</a></td><td>80f28c39</td><td>landed</td></tr>
         <tr><td>&sect;5</td><td><a href="#a-released-registration-is-swept-by-age">a-released-registration-is-swept-by-age</a></td><td>a77bd30b</td><td>landed</td></tr>
+        <tr><td>&sect;3</td><td><a href="#plan-reviewed-before-release">plan-reviewed-before-release</a></td><td>88d7d859</td><td>landed</td></tr>
       </tbody>
     </table>
   </section>
@@ -318,6 +319,111 @@
       holds 28 registrations, one of which delivers.</figcaption>
     </figure>
   </section>
+
+  <section id="plan-reviewed-before-release">
+    <h2>&sect;3 &mdash; A plan is read back before it is released</h2>
+
+    <p>Run <code>r-20260919T144456275579-aobi-plan-rubber-duck-skill-contract</code>,
+    node <code>aobi-plan-rubber-duck-skill-contract</code>. Commit <code>88d7d859</code>,
+    two files and both inside the node's fence: <code>skills/reckon-edit/SKILL.md</code>
+    &mdash; hard rule 9 &mdash; and <code>skills/reckon-create/SKILL.md</code> &mdash;
+    Step 4.5, placed in the workflow where an author reconciles before confirming.</p>
+
+    <p><strong>What the step asks for, and what it deliberately does not.</strong> The
+    reviewer restates the plan's intent, each decision and each done-when in its own
+    words, and names every sentence with two readings. It is not asked to critique the
+    work: a rubric invites a verdict on quality, and what &sect;3 needs is a statement
+    of what the document says, so a divergence between the two renderings is visible
+    without anyone defending a position. The author revises the divergent sentences and
+    re-reads them before release.</p>
+
+    <p><strong>Release is a loop, and this is the part that is easy to get wrong.</strong>
+    A repair that moved a decision, a done-when, a section declaration or a gate is
+    itself a material revision, so it owes its own read-back; a rule written as a single
+    pass is satisfied by the first restatement and silently licenses every repair after
+    it. The loop is the whole of the difference between a review and a formality.</p>
+
+    <svg viewBox="0 0 640 170" width="100%" role="img"
+         aria-label="The release loop: author writes, a read-only reviewer restates, divergences are repaired, and a repair that moved a decision, done-when, section declaration or gate re-enters the review."
+         style="max-width:640px;font-family:system-ui,-apple-system,sans-serif">
+      <rect x="1" y="40" width="130" height="44" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="66" y="60" text-anchor="middle" font-size="13" fill="#111">author writes</text>
+      <text x="66" y="76" text-anchor="middle" font-size="13" fill="#111">or revises</text>
+
+      <rect x="180" y="40" width="150" height="44" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="255" y="60" text-anchor="middle" font-size="13" fill="#111">reviewer restates</text>
+      <text x="255" y="76" text-anchor="middle" font-size="13" fill="#111">intent, decisions,</text>
+      <text x="255" y="92" text-anchor="middle" font-size="13" fill="#111">done-whens</text>
+
+      <rect x="379" y="40" width="150" height="44" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="454" y="68" text-anchor="middle" font-size="13" fill="#111">restatement matches</text>
+
+      <line x1="131" y1="62" x2="178" y2="62" stroke="#444" stroke-width="1"/>
+      <line x1="330" y1="62" x2="377" y2="62" stroke="#444" stroke-width="1"/>
+
+      <path d="M 331 62 L 355 62 L 355 130 L 66 130 L 66 86" fill="none"
+            stroke="#b03a2e" stroke-width="1.5"/>
+      <polygon points="66,88 62,80 70,80" fill="#b03a2e"/>
+      <text x="210" y="148" text-anchor="middle" font-size="13" fill="#b03a2e">a moved decision, done-when, section declaration or gate re-enters</text>
+
+      <text x="454" y="30" text-anchor="middle" font-size="13" fill="#111">release</text>
+    </svg>
+    <p><em>One pass would be satisfied by the first restatement and would license every
+    repair after it; the loop is what makes the rule hold.</em></p>
+
+    <p><strong>The dispatch an author is handed was validated by running it, not by
+    reading it.</strong> Flag names were taken from <code>reckon crew dispatch --help</code>;
+    the block as it appears in the skills was then written to a shell script with its
+    placeholders substituted and executed against the registered checkout
+    (<code>--project reckon --plan an-orchestrator-is-bound-by-its-inbox --section s3
+    --node review-of-an-orchestrator-is-bound-by-its-inbox --time-budget 20m --session
+    s18-takeover --local</code>, write path under the reports fence):</p>
+
+    <table>
+      <thead><tr><th>Check</th><th>Observed</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Copyable block as a shell script, placeholders substituted</td><td><code>exit 0</code></td><td>pass</td></tr>
+        <tr><td>All eight node-contract properties</td><td><code>"findings": []</code>, <code>"ok": true</code></td><td>pass</td></tr>
+        <tr><td>Sandbox tier the <code>review</code> role resolves to</td><td><code>"tier": "read-only"</code>, <code>execution_capable: false</code></td><td>pass</td></tr>
+        <tr><td>Write reach granted the reviewer</td><td><code>crew/reports</code>, <code>crew/reviews</code>, its own run dir, <code>/run/user/&lt;uid&gt;</code> &mdash; no repository source</td><td>pass</td></tr>
+        <tr><td><code>--local</code> resolves the local lane</td><td><code>"local": true</code>, backend resolved</td><td>pass</td></tr>
+        <tr><td>Scope overlap against live claims</td><td><code>"live_conflicts": []</code> for the sibling report path</td><td>pass</td></tr>
+        <tr><td>First draft measure (ask restated in prose)</td><td><code>demonstrable</code> refusal, <code>exit 2</code>, <code>ok: false</code></td><td>repaired</td></tr>
+        <tr><td>Gate: <code>test_doccheck.py</code> + both <code>*skill*</code> test files, base vs head</td><td>base 2 failed / 92 passed &rarr; head 2 failed / 92 passed</td><td>pass, 0 added</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The measure was refused once, and the refusal is the useful half.</strong>
+    The first draft's <code>--done-when</code> restated the ask as prose
+    (&ldquo;every sentence that admits two readings&rdquo;) and dispatch refused it:
+    <code>node is not dispatchable &mdash; demonstrable: done-when emits no evidence;
+    name a test, a command output or a numeric result against a stated bound</code>.
+    The measure now names its own artifact and carries a bound, so the block a reader
+    copies is one a dispatcher accepts. A rule that hands out a command which exits 2 is
+    worse than no rule, because the author's next move is to run it and be refused.</p>
+
+    <p><strong>What was not built, and it is not an omission.</strong> The refusal of an
+    unreviewed plan at the <code>crew dispatch</code> preflight is code, locked as
+    <code>unreviewed-plan-refusal-surface=refuse-at-dispatch</code>; a rule inside a
+    skill is a rule an agent can skip, so neither skill states it and neither carries a
+    second copy of it. The per-plan review record and the launch of a review from that
+    refusal belong to the execution half of this section and are still open.</p>
+
+    <p><strong>Coverage, stated rather than implied.</strong> No test asserts the content
+    of either new step. <code>tests/test_skill_contracts.py</code> and
+    <code>tests/test_skill_contract_parity.py</code> pin the reckon-ship skill's prose and
+    the prompt-parity clauses, and neither reads <code>reckon-create</code> or
+    <code>reckon-edit</code>. The gate run here proves that no existing skill contract
+    regressed and nothing more; the two failures it reports are pre-existing at the base
+    revision, reproduce there with identical ids, and are recorded as follow-ons because
+    they sit in <code>tests/test_doctor.py</code> and the reckon-ship read-set budget,
+    both outside this node's fence.</p>
+
+    <p>Receipts in this node's run directory: the fenced gate at
+    <code>gate-skill-prose.log</code>, the same two failures reproduced at the base
+    revision at <code>gate-base-two-failures.log</code>, and the dispatch validation at
+    <code>dry-run-review-form-exact.log</code>.</p>
+  </section>
 </main>
   <main class="plan-doc">
     <header class="plan-header">
@@ -394,6 +500,7 @@
       <code>baseline-suite.log</code>, the head gate at <code>after-suite.log</code>, and
       the focused ticker gate at <code>focused-gate.log</code>.</p>
     </section>
+
   </main>
 </body>
 </html>

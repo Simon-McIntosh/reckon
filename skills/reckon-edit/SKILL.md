@@ -104,6 +104,36 @@ hid it. Canonical rule: `reckon-ship` SKILL.md §7a-bis.
 8. **Repository allocation is part of plan integrity.** Before relocating or
    materially changing scope, read both repositories' instructions and project
    scope policies. Preserve one canonical live owner.
+9. **A material revision is released only after something has read it back.**
+   A **material revision** is any change to a decision, a done-when, a section
+   declaration, or a gate. A landing comment or an `impl` move is not one, and
+   neither needs a review. The failure this catches is not a typo — it is a
+   sentence that reads differently to the executor than to its author, and the
+   author cannot see it by re-reading, which is why the reader must be someone
+   else. Before the revised plan goes back to work, dispatch a read-only
+   rubber-duck review to the local lane:
+
+   ```bash
+   reckon crew dispatch --project P --plan L --section §N \
+     --role review --spec-level exact --node review-of-<slug> \
+     --goal "restate <slug> in your own words before it is released" \
+     --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
+     --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
+     --time-budget 20m --session <session> --local
+   ```
+
+   The `review` role resolves to a **read-only sandbox** with no worktree and no
+   execution capability, so the reviewer reads the document and writes nothing
+   but its restatement; the node id is `review-of-<slug>`, the convention that
+   makes a monitor row name its subject. Ask only for the read-back: the plan's
+   intent, each decision and each done-when in the reviewer's own words, and
+   every place two readings are possible — explicitly **not** a critique of the
+   work. Read the restatement against what you meant and revise the divergent
+   sentences before release. **Release is a loop, not a pass:** a revision that
+   moved a decision, a done-when, a section declaration or a gate is itself
+   material, so dispatch a fresh read-back until the restatement matches the
+   intent. `reckon-create` states the same step for a new plan and references
+   this definition rather than restating it.
 
 ```html
 <!-- ❌ WRONG — stub body -->

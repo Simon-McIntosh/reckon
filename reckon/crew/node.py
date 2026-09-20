@@ -272,12 +272,18 @@ class WatcherRequired(CrewError):
         self.watch = dict(watch)
         self.session = session
         attach = watch.get("attach_line") or "reckon crew follow"
+        # The repair for a project with no watcher process is the command that
+        # starts one as a durable service, taken from the watcher's own state
+        # rather than composed here — one definition, so a better remedy reaches
+        # every refusal without a second copy to keep in step.
+        ensure = watch["ensure_line"]
         if session is None:
             super().__init__(
                 format_refusal(
                     "D13",
-                    f"project {project!r} has no live crew watcher; arm one with "
-                    f"`{watch['arming_line']}`, then attach this session to it with "
+                    f"project {project!r} has no live crew watcher process; start "
+                    f"one with `{ensure}`, which is safe to run against a watcher "
+                    f"that is already up, then attach this session to it with "
                     f"`{attach}` as a per-line monitor -- a live seat is "
                     "project-global and does not by itself deliver anything to the "
                     "session that dispatched. Or pass --no-watch to record an "
@@ -358,6 +364,88 @@ class PlanVisibilityError(CrewError):
         super().__init__(format_refusal("D05", detail))
 
 
+# ── Placement requirements ──────────────────────────────────────────────────
+
+
+def _placement_target(placement: Mapping[str, Any] | None) -> str:
+    """Name where a placement sends its workers, for a refusal to quote.
+
+    The target is read from the scheduler options the placement declares rather
+    than from a site reckon knows, because a partition name is user data.
+    """
+    for option in (placement or {}).get("options") or ():
+        text = str(option)
+        for prefix in ("--partition=", "-p"):
+            if text.startswith(prefix) and len(text) > len(prefix):
+                return text[len(prefix) :].lstrip("=").strip()
+        if text == "-p":
+            continue
+    return "the target node"
+
+
+def placement_requirement_node_local(
+    *,
+    backend: str,
+    placement: Mapping[str, Any] | None,
+    name: str,
+    path: str,
+) -> str:
+    """Refuse a requirement that lives on per-node storage.
+
+    This one gets its own sentence because it fails silently rather than
+    loudly: the path exists on the dispatcher, so nothing is wrong at launch,
+    and the worker dies on a node where the same path names different bytes or
+    nothing at all. The remedy is a path on shared storage, not a retry.
+    """
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} places its workers on {_placement_target(placement)} "
+        f"but requirement {name!r} names {path!r}, which is per-node storage: it "
+        "exists on this dispatcher and not on the node the worker runs on, so "
+        "the launch would succeed and the worker would then fail on a path that "
+        "reads as present and is not. Point the requirement at the shared "
+        "filesystem, or write the worker's scratch there",
+    )
+
+
+def placement_requirement_unmet(
+    *,
+    backend: str,
+    placement: Mapping[str, Any] | None,
+    name: str,
+    detail: str,
+) -> str:
+    """Refuse a requirement the target node cannot satisfy."""
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} places its workers on {_placement_target(placement)} "
+        f"but requirement {name!r} is not visible from there: {detail}",
+    )
+
+
+def placement_query_undeclared(
+    *,
+    backend: str,
+    scheduler: str,
+) -> str:
+    """Refuse a placement that names a wrapper it does not say how to ask.
+
+    A placement without a query is not merely less informative: the liveness
+    read falls through to a pid that belongs to the scheduler client on another
+    host, so a job that ended and a worker that is running are told apart by
+    nothing. Declaring the query beside the wrapper is what makes following a
+    placement the wrapper's own fact rather than a table in reckon.
+    """
+    return format_refusal(
+        "D22",
+        f"backend {backend!r} declares placement wrapper {scheduler!r} but no "
+        "state_query and reason_query, so reckon cannot ask that scheduler about "
+        "the jobs it starts and a placed run's liveness would fall back to a pid "
+        "on the wrong host. Declare both queries beside the wrapper, with the job "
+        "id spelled as the {job} token",
+    )
+
+
 # ── Node definition and the task contract ───────────────────────────────────
 
 
@@ -381,6 +469,7 @@ class TaskNode:
     write_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
     manifest_path: str = ""
+    negative_control: str = ""
     estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
@@ -393,6 +482,7 @@ class TaskNode:
             "id": self.id,
             "manifest_path": self.manifest_path,
             "estimated_hours": self.estimated_hours,
+            "negative_control": self.negative_control,
             "plan": self.plan,
             "requires_decisions": list(self.requires_decisions),
             "role": self.role,
@@ -486,6 +576,91 @@ def _declared_repository_paths(
             continue
         repository_paths.append(str(raw))
     return repository_paths
+
+
+# ── A node that writes a check declares the mutation it fails against ───────
+
+# The node-record field carrying the declaration, and the word that exempts a
+# check from having one. Both are named here so a refusal and the reader of a
+# ledger row quote one spelling rather than composing a second.
+NEGATIVE_CONTROL_FIELD = "negative_control"
+NEGATIVE_CONTROL_NONE = "none"
+
+# A write path is a test file when its basename follows the test-naming
+# convention or an enclosing directory names the test tree. The suffix set is
+# the languages this repository tests in; a path that matches none of them is
+# not treated as a check, because the trigger is a file a reader would
+# recognise as a test rather than a substring guess.
+_TEST_DIRECTORY_NAMES = frozenset({"test", "tests"})
+_TEST_FILE_RE = re.compile(
+    r"^(?:test_.+|.+_test|.+\.test|.+\.spec)\.(?:py|sh|js|jsx|ts|tsx|mjs|cjs)$"
+)
+
+
+def is_test_path(path: str) -> bool:
+    """Return whether a declared write path names a test file.
+
+    This is the trigger the dispatcher evaluates without reading prose: a node
+    whose scope includes a test file is writing a check, and a check that cannot
+    fail for the reason it was written is a guard that reports a protection it
+    does not provide.
+    """
+    parts = Path(str(path)).parts
+    if not parts:
+        return False
+    if any(part.lower() in _TEST_DIRECTORY_NAMES for part in parts[:-1]):
+        return True
+    return bool(_TEST_FILE_RE.match(parts[-1].lower()))
+
+
+def declares_negative_control(node: TaskNode) -> bool:
+    """Return whether a node carries a negative-control declaration."""
+    return bool(str(node.negative_control or "").strip())
+
+
+def negative_control_writes_a_check(node: TaskNode) -> bool:
+    """Return whether a node declares a test path and no negative control."""
+    if declares_negative_control(node):
+        return False
+    return any(is_test_path(path) for path in node.write_paths)
+
+
+def negative_control_is_none(declaration: str) -> bool:
+    """Whether a declaration states that no mutation applies, rather than one."""
+    head = str(declaration or "").strip().split(":", 1)[0].strip()
+    return head.lower() == NEGATIVE_CONTROL_NONE
+
+
+def negative_control_reason(declaration: str) -> str:
+    """Return the reason carried beside a ``none`` declaration, if any."""
+    text = str(declaration or "").strip()
+    head, separator, rest = text.partition(":")
+    if not separator or str(head).strip().lower() != NEGATIVE_CONTROL_NONE:
+        return ""
+    return rest.strip()
+
+
+def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
+    """Compose the dispatch refusal for a check written without a negative.
+
+    The declaration is a structured field rather than a phrase mined out of the
+    done-when, so the refusal has something exact to name and a brief author
+    knows what to write. ``none`` is a declaration too, and carries the reason
+    it applies, so the escape is explicit rather than silent.
+    """
+    if not negative_control_writes_a_check(node):
+        return None
+    test_paths = sorted(str(path) for path in node.write_paths if is_test_path(path))
+    return {
+        "property": NEGATIVE_CONTROL_FIELD,
+        "detail": (
+            f"the node's write paths include a test file ({', '.join(test_paths)}), "
+            f"so it writes a check, but its {NEGATIVE_CONTROL_FIELD} field declares "
+            "no mutation that check must fail against; name the mutation in that "
+            f"field, or declare it as `{NEGATIVE_CONTROL_NONE}: <reason>` when no "
+            "mutation could be applied without disabling the system"
+        ),
+    }
 
 
 def validate_node(
@@ -811,7 +986,7 @@ def claim_disposition(
     """
     run_id = str(pointer.get("run_id") or "unknown")
     pid = pointer.get("pid")
-    alive = _claim_process_alive(pid)
+    alive = _claim_process_alive(pointer)
     if alive is None:
         # A pointer is written before its worker is spawned, so no recorded
         # process means "not yet" rather than "gone". Reading the two alike
@@ -845,8 +1020,8 @@ def claim_disposition(
     )
 
 
-def _claim_process_alive(pid: Any) -> bool | None:
+def _claim_process_alive(pointer: Mapping[str, Any]) -> bool | None:
     """Report worker liveness, or None when the pointer records no process."""
-    from reckon.crew.runs import process_alive
+    from reckon.crew.runs import record_process_alive
 
-    return process_alive(pid)
+    return record_process_alive(pointer)

@@ -14,10 +14,20 @@ from typing import Any, Iterable, Mapping, Sequence
 from reckon import _backends, _store, capabilities, ledger
 from reckon.crew import review as review_module
 from reckon.crew import rollout
-from reckon.crew.dispatch import _backend_settings, _capture_member_session
+from reckon.crew.dispatch import (
+    _backend_settings,
+    _capture_member_session,
+    project_mount_repository,
+    resolve_project_repository,
+)
 from reckon.crew.node import (
+    NEGATIVE_CONTROL_FIELD,
+    NEGATIVE_CONTROL_NONE,
     STALL_BUDGET_MULTIPLE,
     CrewError,
+    is_test_path,
+    negative_control_is_none,
+    negative_control_reason,
     parse_duration,
     role_may_write_repository_paths,
 )
@@ -43,6 +53,7 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    record_process_alive,
     run_dir,
 )
 
@@ -1852,7 +1863,7 @@ def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
     if not _release_terminal_manifest(record):
         return False
     pid = record.get("pid")
-    if process_alive(pid) is not True:
+    if record_process_alive(record, process_alive) is not True:
         return False
     try:
         _signal_process_group(int(pid), record.get("pid_start_time"))
@@ -1881,7 +1892,7 @@ def _promotion_terminal_observation(
     """
     if str(record.get("launch") or "") != "cli":
         return _terminal_stream_data(record)
-    if process_alive(record.get("pid")) is True and not settle_even_if_alive:
+    if record_process_alive(record, process_alive) is True and not settle_even_if_alive:
         return _terminal_stream_data(record)
     path = Path(str(record.get("log_path") or ""))
     _wait_out_stream_tail(_run_streams(path))
@@ -2001,6 +2012,19 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
+        # A promotion writes the ledger row into the project's own mount, so
+        # the repository is resolved from that mount before anything is
+        # written: a checkout named from elsewhere is refused, and a run whose
+        # record names none is given the mount rather than the caller's
+        # enclosing repository. A project with no mount keeps the caller's
+        # checkout, which is the only root available to it. Judged ahead of the
+        # per-run evidence so a repository defect is reported as itself rather
+        # than as a missing commit further down.
+        landing_project = str(record.get("project") or "")
+        if landing_project and project_mount_repository(landing_project) is not None:
+            root = resolve_project_repository(
+                landing_project, root, flag="--checkout-path"
+            )
         _require_commit_for_changed_manifest(run_id, record)
         if _is_shadow(record) and commit_list:
             raise CrewError(
@@ -2391,7 +2415,7 @@ def _release_run_workspace(
     pid = record.get("pid")
     if not _release_terminal_manifest(record):
         result["process_withheld"] = "no terminal manifest was delivered"
-    elif process_alive(pid) is not True:
+    elif record_process_alive(record, process_alive) is not True:
         if process_already_ended:
             # The promotion ended this writer before the fold so its stream
             # could settle; the release reports that it signalled, and when,
@@ -2866,6 +2890,118 @@ def _require_impl_moved(
     )
 
 
+def _negative_control_log_text(
+    log_path: str, *, manifest_path: str
+) -> tuple[str | None, str]:
+    """Read the red log a declaration names, resolving it against the manifest.
+
+    A worker writes a path relative to the manifest it delivered, so a relative
+    value is resolved there rather than against the promoting process's working
+    directory, which would read as a missing file for every manifest on disk.
+    """
+    raw = str(log_path or "").strip()
+    if not raw:
+        return None, ""
+    path = Path(raw).expanduser()
+    if not path.is_absolute() and manifest_path:
+        path = Path(manifest_path).expanduser().parent / path
+    try:
+        return path.read_text(encoding="utf-8"), str(path)
+    except (OSError, UnicodeError):
+        return None, str(path)
+
+
+def _require_declared_negative_control(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    gate: str,
+    manifest: Mapping[str, Any] | None,
+    manifest_path: str,
+) -> dict[str, Any]:
+    """Refuse a passing gate on a check whose red log is not delivered.
+
+    A node whose write paths include a test file declares the mutation that
+    check must fail against. The declaration is discharged at promotion by a
+    manifest that carries the path to the log that mutation produced: the pair
+    of logs is the positive and negative control of one measurement, and the
+    red log must name the declared mutation rather than merely be a run that
+    failed for something else. A declaration of ``none`` with its reason is an
+    explicit escape rather than a silent one, so it is recorded on the row
+    rather than refused.
+    """
+
+    check: dict[str, Any] = {"verdict": "exempt", "reason": "node-writes-no-test-path"}
+    node = record.get("node") or {}
+    if not isinstance(node, Mapping):
+        return check
+    test_paths = sorted(
+        str(path) for path in node.get("write_paths") or () if is_test_path(str(path))
+    )
+    if not test_paths:
+        return check
+    check["test_paths"] = test_paths
+    declaration = str(node.get(NEGATIVE_CONTROL_FIELD) or "").strip()
+    if not declaration:
+        # A run dispatched before this check existed carries no field to read;
+        # it is exempt rather than treated as a node that declared nothing.
+        check["verdict"] = "exempt"
+        check["reason"] = "no-negative-control-declared"
+        return check
+    if str(gate).strip().lower() != "passed":
+        check["verdict"] = "exempt"
+        check["reason"] = "gate-not-passing"
+        return check
+    if negative_control_is_none(declaration):
+        reason = negative_control_reason(declaration)
+        if not reason:
+            raise CrewError(
+                f"run {run_id!r} declares its negative control as "
+                f"{NEGATIVE_CONTROL_NONE!r} in the {NEGATIVE_CONTROL_FIELD} field "
+                "without the reason it applies. A check that admits no applicable "
+                f"mutation states so as `{NEGATIVE_CONTROL_NONE}: <reason>`, and "
+                "the reason is what a later reader has to judge"
+            )
+        check["verdict"] = "none-recorded"
+        check["declaration"] = declaration
+        check["reason"] = reason
+        return check
+
+    check["declaration"] = declaration
+    delivered = (
+        "" if manifest is None else str(manifest.get("negative_control_log") or "")
+    )
+    check["log"] = delivered
+    if not delivered:
+        raise CrewError(
+            f"run {run_id!r} writes a check ({', '.join(test_paths)}) and declares "
+            f"the mutation {declaration!r} in its {NEGATIVE_CONTROL_FIELD} field, "
+            "but its manifest carries no negative_control_log path. Promotion "
+            "refuses a passing gate whose negative control was never run: keep the "
+            "log that mutation produced beside the passing one and name its path "
+            "in the manifest as `negative_control_log: <path>`"
+        )
+    text, resolved = _negative_control_log_text(delivered, manifest_path=manifest_path)
+    check["resolved_log"] = resolved
+    if text is None:
+        raise CrewError(
+            f"run {run_id!r} names negative_control_log {delivered!r}, which cannot "
+            "be read, so the mutation it was to evidence was never shown to fail. "
+            "Write the red log where the manifest can be read alongside it and "
+            "name that path"
+        )
+    if declaration not in text:
+        raise CrewError(
+            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
+            f"{resolved!r} does not name it, so the log is a failure for some other "
+            "reason and not the negative control of this check. Record the log the "
+            "declared mutation produced with its first line repeating that mutation "
+            "verbatim, or correct the declaration to the mutation the log shows"
+        )
+    check["verdict"] = "matched"
+    return check
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -3140,6 +3276,16 @@ def _complete_locked(
             manifest = parse_manifest(manifest_text)
         except (KeyError, ValueError, OSError):
             manifest = None
+    # A passing gate on a node that writes a check is refused unless the
+    # manifest names the red log the declared mutation produced. The check runs
+    # after the manifest is read, because the discharge lives there.
+    negative_control = _require_declared_negative_control(
+        run_id,
+        record,
+        gate=gate,
+        manifest=manifest,
+        manifest_path=manifest_path,
+    )
     follow_on_paths = (
         None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
     )
@@ -3208,6 +3354,15 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # The job a placed launch was charged to rides the committed row beside the
+    # run it belongs to, because the ledger row is the durable record a later
+    # attribution reads; the live pointer it was first written on is removed by
+    # this promotion. A run that declared no placement records the key absent
+    # rather than zero, so an unplaced run is distinguishable from a placed one
+    # whose scheduler never answered.
+    job_id = record.get("job_id")
+    if job_id is not None:
+        run["job_id"] = str(job_id)
     # A deliberate commitless promotion survives on the record with its reason,
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
@@ -3217,6 +3372,10 @@ def _complete_locked(
     if impl_move.get("at_dispatch") is not None:
         run["plan_impl_at_dispatch"] = impl_move["at_dispatch"]
     run["impl_move"] = dict(impl_move)
+    # The negative-control verdict rides the row, so an audit can separate a
+    # red log that was delivered and matched from a declaration of none that was
+    # recorded with its reason rather than refused.
+    run["negative_control"] = dict(negative_control)
     # A presented-list shortfall survives on the record so a reader of the
     # ledger sees the boundary check may have been under-scoped, not only the
     # coordinator that was looking at the immediate report.
@@ -3362,6 +3521,7 @@ def _complete_locked(
         "release": release,
         "store": store_outcome,
         "impl_move": dict(impl_move),
+        "negative_control": dict(negative_control),
     }
 
 
@@ -3370,7 +3530,7 @@ def discard(run_id: str) -> dict[str, Any]:
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
         pid = record.get("pid")
-        if process_alive(pid) is True:
+        if record_process_alive(record, process_alive) is True:
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )

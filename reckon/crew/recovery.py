@@ -122,6 +122,7 @@ RECOVERY_VERBS = {
     "ready": "resume",
     "abandoned": "recover",
     "refused-at-admission": "resume",
+    "launch-failed": "resume",
     "wait-aged": "investigate",
 }
 RECOVERY_CLASSIFICATIONS = tuple(RECOVERY_VERBS)
@@ -140,6 +141,11 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "abandoned",
         "refused-at-admission",
         "wait-aged",
+        # A launch that never reached a model wants the coordinator to repair a
+        # command or a PATH, which is work only a person can do; leaving it out
+        # of the actionable count is how such a run reads as invisible while it
+        # occupies a lane.
+        "launch-failed",
     }
 )
 
@@ -310,7 +316,9 @@ def _record_review_dispatch(
             "reason": reason,
             "run_id": review_run_id or None,
             "at": _utc_now(),
-            "attempt": int((pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0)
+            "attempt": int(
+                (pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0
+            )
             + 1,
         }
         return pointer
@@ -395,11 +403,14 @@ def dispatch_review_for_run(
 
         resolved = flight.select_local_backend(resolved)
     except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
-        reason = (
-            f"the local lane is unavailable: {exc}"
-        )
+        reason = f"the local lane is unavailable: {exc}"
         _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
-        return {"run_id": run_id, "dispatched": False, "awaiting_lane": True, "reason": reason}
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "awaiting_lane": True,
+            "reason": reason,
+        }
 
     node = TaskNode(
         id=fields["node_id"],
@@ -439,7 +450,12 @@ def dispatch_review_for_run(
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
         _record_review_dispatch(run_id, status="refused", reason=str(exc))
-        return {"run_id": run_id, "dispatched": False, "refused": True, "reason": str(exc)}
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "reason": str(exc),
+        }
 
     review_run_id = str(launched.get("run_id") or "")
     _record_review_dispatch(
@@ -476,9 +492,11 @@ def dispatch_awaiting_reviews(
     refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
     for pointer in list_live(project=project):
-        if str(pointer.get("project") or "") and project and str(
-            pointer.get("project")
-        ) != project:
+        if (
+            str(pointer.get("project") or "")
+            and project
+            and str(pointer.get("project")) != project
+        ):
             continue
         scan: dict[str, Any] | None = None
         try:
@@ -755,6 +773,25 @@ def _refusal_block(
     }
 
 
+def _harness_command(record: Mapping[str, Any], argv: Any) -> str | None:
+    """The command that names a cli run's harness, for a stream translation.
+
+    A placed launch prefixes its resolved argv with the scheduler invocation, so
+    ``argv[0]`` on such a record names the scheduler rather than the harness and
+    a translation built from it fails. The record carries the harness the launch
+    resolved under ``command``, captured before the placement wrapped the plan,
+    so that field is taken first and ``argv[0]`` is the fallback for a record
+    written before the field existed.
+    """
+    command = record.get("command")
+    if command:
+        return str(command)
+    if isinstance(argv, list) and argv:
+        return str(argv[0])
+    dialect = record.get("dialect")
+    return str(dialect) if dialect else None
+
+
 def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """The budget block a cli run's stream records, folded in or read fresh.
 
@@ -774,7 +811,7 @@ def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     if not log.is_file():
         return None
     argv = record.get("argv")
-    command = argv[0] if isinstance(argv, list) and argv else record.get("dialect")
+    command = _harness_command(record, argv)
     if not command:
         return None
     from reckon import _backends
@@ -1118,9 +1155,7 @@ def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
         log = Path(str(record.get("log_path") or ""))
         if log.is_file():
             argv = record.get("argv")
-            command = (
-                argv[0] if isinstance(argv, list) and argv else record.get("dialect")
-            )
+            command = _harness_command(record, argv)
             if command:
                 from reckon import _backends
 
@@ -1476,6 +1511,107 @@ def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
     return Path(str(probe[0])).name in _WAIT_PROBE_NO_OP_COMMANDS
 
 
+# A state that means the awaited work has not finished is never a terminal
+# state. A job scheduler spells three of them, and a probe may invent its own
+# wording for the same situation on a branch it takes only while the job is
+# still in the queue — which is how a wait declaring RUNNING terminal reads as
+# satisfied on every sweep of a job that has not started. The fixed spellings
+# are refused outright; the probe's own live branch is read out of its text,
+# because a renamed live state is exactly what the fixed spellings cannot see.
+_WAIT_LIVE_STATE_TOKENS = frozenset({"running", "pending", "waiting"})
+
+# The variable a probe fills from `squeue`, whose non-empty test guards the
+# branch it takes while the job is still in the queue.
+_SQUEUE_GUARDED_VAR = re.compile(
+    r"(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*\$\(\s*squeue\b"
+)
+_WAIT_BRANCH_STOP = re.compile(r"\b(?:elif|else|fi)\b")
+
+
+def _emitted_tokens(branch: str) -> list[str]:
+    """Bare word tokens a shell branch prints, one statement at a time."""
+    tokens: list[str] = []
+    for statement in re.split(r"[;\n]|&&|\|\||\b(?:then|do)\b", branch):
+        words = [word.strip("\"'") for word in statement.split()]
+        if not words or words[0] not in {"echo", "printf"}:
+            continue
+        tokens.extend(word for word in words[1:] if word and not word.startswith("-"))
+    return tokens
+
+
+def _probe_live_state_tokens(probe: Sequence[str]) -> list[str]:
+    """Tokens a probe prints from a branch guarded by a non-empty squeue result.
+
+    Those tokens describe a job that is still in the queue whatever the wait
+    declaration calls the state, so any of them listed as terminal is the
+    declaration contradicting its own probe.
+    """
+    text = " ".join(str(item) for item in probe)
+    tokens: list[str] = []
+    for assignment in _SQUEUE_GUARDED_VAR.finditer(text):
+        var = re.escape(assignment.group("var"))
+        guard = re.search(
+            r"\[\s*-n\s+\"?(?:\$\{?" + var + r"\}?|\$\{\s*" + var + r"\s*\})\"?\s*\]"
+            r"|\[\s*\"?\$\{?" + var + r"\}?\"?\s*\]",
+            text,
+        )
+        if guard is None:
+            continue
+        branch = text[guard.end() :]
+        stop = _WAIT_BRANCH_STOP.search(branch)
+        if stop:
+            branch = branch[: stop.start()]
+        tokens.extend(_emitted_tokens(branch))
+    return tokens
+
+
+def _wait_terminal_names_a_live_state(
+    terminal: Sequence[str], probe: Sequence[str]
+) -> str:
+    """Name the terminal value the probe reports while the awaited job is live.
+
+    Empty when nothing in the terminal list names a live state, which is the
+    only case a wait declaration is read at all.
+    """
+    if not terminal or not probe or _wait_probe_is_a_no_op(probe):
+        return ""
+    emitted = _probe_live_state_tokens(probe)
+    for value in terminal:
+        spelled = str(value).strip()
+        if spelled.casefold() in _WAIT_LIVE_STATE_TOKENS:
+            return spelled
+        if spelled and spelled in emitted:
+            return spelled
+    return ""
+
+
+def _wait_declaration_signature(
+    condition: str,
+    probe: Sequence[str],
+    terminal: Sequence[str],
+    resume_brief: str,
+) -> str:
+    """Identity of a wait declaration, without its file's modification time.
+
+    A lift is keyed to what the declaration asks for, not to when the file was
+    written. A worker that re-parks rewrites its manifest and so advances the
+    mtime, which made every re-park a brand-new condition and re-lifted a wait
+    whose terminal state had not actually ended anything — the loop that
+    resumed one run thirty times. The same declaration arriving twice is the
+    same condition; only an edit to it is a new one.
+    """
+    material = json.dumps(
+        {
+            "condition": condition,
+            "probe": [str(item) for item in probe],
+            "terminal": [str(item) for item in terminal],
+            "resume_brief": resume_brief,
+        },
+        sort_keys=True,
+    )
+    return "wait:" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
     """The newest write to the run's stream, or None when there is none.
 
@@ -1524,6 +1660,7 @@ def _manifest_wait(
     now_seconds: float,
     stale_after_seconds: int,
     stream_mtime: float | None = None,
+    previous_lift: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Return the external-wait declaration a manifest actually holds.
 
@@ -1540,6 +1677,18 @@ def _manifest_wait(
     output: a worker whose stream is still being written is producing, not
     parked, so the age of its wait is measured from the newer of the wait's
     declaration and the last stream write.
+
+    A declaration whose terminal list names a state its own probe reports while
+    the awaited job is still live is refused rather than honoured: it can never
+    report a pending state, so it reads satisfied on every sweep and offers its
+    run to the resume loop forever. The offending token is named in the refusal
+    so the repair is a one-line edit rather than a reread of the probe.
+
+    ``previous_lift`` is the pointer's record of the last condition that lifted
+    this run. A declaration identical to the one already lifted, arriving again
+    after the worker re-parked, is the same condition reporting terminal a
+    second time without ending: a wait-key defect, marked on the wait so the
+    reader sees why the lift loop is stopped instead of watching it repeat.
     """
     if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
         return None
@@ -1561,6 +1710,12 @@ def _manifest_wait(
         )
         if not value
     ]
+    live_token = _wait_terminal_names_a_live_state(terminal, probe)
+    if live_token:
+        missing.append(
+            f"wait_terminal listing {live_token!r}, a state the probe reports "
+            "while the awaited job is still live"
+        )
     started = None
     started_value = str(manifest_data.get("wait_started_at") or "").strip()
     if started_value:
@@ -1589,6 +1744,15 @@ def _manifest_wait(
     )
     if expected_error:
         missing.append(expected_error)
+    signature = _wait_declaration_signature(condition, probe, terminal, resume_brief)
+    wait_key_defect = ""
+    if isinstance(previous_lift, Mapping) and previous_lift.get("trigger") == signature:
+        wait_key_defect = (
+            "wait-key defect: this declaration already lifted the run and has "
+            "come back unchanged, so its terminal state "
+            f"({', '.join(terminal) or 'unset'}) did not end the wait; the "
+            "lift loop stays stopped until the declaration changes"
+        )
     return {
         "condition": condition,
         "probe": probe,
@@ -1601,9 +1765,10 @@ def _manifest_wait(
         "age_seconds": age_seconds,
         "expected_horizon_seconds": expected_seconds,
         "overdue": age_seconds > expected_seconds,
-        "signature": f"condition:{manifest.stat().st_mtime_ns}",
+        "signature": signature,
         "valid": not missing,
         "error": "missing or invalid " + ", ".join(missing) if missing else "",
+        "wait_key_defect": wait_key_defect,
     }
 
 
@@ -1629,6 +1794,7 @@ def external_wait(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
         stream_mtime=_run_stream_mtime(record),
+        previous_lift=record.get("auto_resume"),
     )
 
 
@@ -1753,7 +1919,7 @@ def classify_pointer(
         # reused pid — the same reading ``list_live`` produces for a fleet
         # view. A zombie entry answers not alive, composing with the narrowed
         # probe rather than reviving the old answer.
-        alive = runs.process_alive(record.get("pid"))
+        alive = runs.record_process_alive(record)
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
             alive = _process_start_time(record.get("pid")) == expected_start
@@ -1845,6 +2011,7 @@ def classify_pointer(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
         stream_mtime=_run_stream_mtime(record),
+        previous_lift=record.get("auto_resume"),
     )
     if wait is not None and not wait["valid"]:
         # An incomplete wait declaration is a reading failure carried on the
@@ -2018,6 +2185,19 @@ def classify_pointer(
             action = (
                 f"the recovery sweep will resume run {run_id} when the condition "
                 "test reports a terminal state"
+            )
+        if wait.get("wait_key_defect"):
+            # The declaration lifted this run once already and came back
+            # unchanged, so its terminal state is not ending anything. The
+            # sweep already refuses a second lift for the same declaration; the
+            # row says why rather than reading as an ordinary pending wait.
+            detail = (
+                f"{wait['wait_key_defect']} (waiting {wait['age_seconds']}s on "
+                f"{wait['condition']})"
+            )
+            action = (
+                f"edit the wait declaration in {manifest} so its terminal list "
+                "names a state the probe cannot report while the job is live"
             )
     elif wait is not None and process_gone:
         classification = "unreadable"
@@ -2294,6 +2474,27 @@ def classify_pointer(
                 "evidence of death"
             )
         action = f"reckon crew observe --run {run_id}"
+    elif phase == "launch-failed":
+        # A launch that never wrote a stream record reached no model, so this
+        # is an infrastructure fault rather than a worker turn. It sits on its
+        # own state so a reader sees it apart from a working run, and the lift
+        # refuses it until a person acts.
+        failures = list(record.get("launch_failures") or ())
+        latest = failures[-1] if failures else {}
+        tail = str(latest.get("stderr_tail") or "").strip().splitlines()
+        cause = tail[-1] if tail else "the process exited before any turn"
+        classification = "launch-failed"
+        detail = (
+            f"the launch for backend {latest.get('backend') or record.get('backend')!r} "
+            f"exited with status {latest.get('exit_status')} before writing any "
+            f"stream record ({cause}); {len(failures)} launch failure"
+            f"{'s' if len(failures) != 1 else ''} recorded; no model was reached"
+        )
+        action = (
+            f"fix the command and PATH for backend "
+            f"{latest.get('backend') or record.get('backend')!r}, then resume "
+            f"{run_id} by hand — the lift loop stays stopped until then"
+        )
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -2467,6 +2668,10 @@ def classify_pointer(
         "wait_observed": (
             wait_observation.get("observed") if wait_observation is not None else None
         ),
+        # A declaration that lifted its run and came back unchanged is the
+        # defect the lift loop's own stop cannot name; carried on the row so a
+        # reader sees why the run is still parked rather than inferring it.
+        "wait_key_defect": wait.get("wait_key_defect") or None if wait else None,
     }
     if session_resolution is not None:
         classified["session_resolution"] = session_resolution
@@ -3443,6 +3648,19 @@ def format_watch_transition(
     return (ticker or _PLAIN).render(event, with_session=with_session)
 
 
+def _refuse_unresolvable_watch(project: str) -> None:
+    """Refuse to arm a watcher whose project routes to a missing backend.
+
+    A watcher that cannot resolve a backend it may be asked to lift reads as
+    armed and loses every park it lifts, leaving a 0-byte stream per tick while
+    the pointer stays working. The check runs before the registration is taken,
+    so the seat is never held by a watcher that cannot do its job.
+    """
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    assert_routable_backends_resolvable(project, _resolved_review_config(project, None))
+
+
 def watch_ticker(
     project: str,
     *,
@@ -3451,6 +3669,7 @@ def watch_ticker(
     sleeper: Callable[[float], None] = time.sleep,
 ) -> Iterator[dict[str, Any]]:
     """Yield a baseline and then every observed fleet state transition."""
+    _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
@@ -3687,7 +3906,11 @@ def recover(
         "runs": reports,
         "counts": counts,
         "classes": list(RECOVERY_CLASSES),
-        "reviews_dispatched": [r["review_run_id"] for r in reflex if r.get("dispatched")],
-        "reviews_awaiting_lane": [r["run_id"] for r in reflex if r.get("awaiting_lane")],
+        "reviews_dispatched": [
+            r["review_run_id"] for r in reflex if r.get("dispatched")
+        ],
+        "reviews_awaiting_lane": [
+            r["run_id"] for r in reflex if r.get("awaiting_lane")
+        ],
         "reviews_refused": [r for r in reflex if r.get("refused")],
     }

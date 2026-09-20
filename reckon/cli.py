@@ -957,6 +957,16 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     default=None,
     help="Declared specification ownership level; omitted means undeclared.",
 )
+@click.option(
+    "--negative-control",
+    "negative_control",
+    default="",
+    help=(
+        "The mutation this node's checks must fail against, declared when its "
+        "write paths include a test file; `none: <reason>` for a check that "
+        "admits no applicable mutation."
+    ),
+)
 @click.option("--node", "node_id", required=True, help="Stable node id.")
 @click.option("--goal", default="", help="The one deliverable this node produces.")
 @click.option("--done-when", default="", help="The measure that emits evidence.")
@@ -1009,7 +1019,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     "--repo",
     default=None,
     type=click.Path(path_type=Path),
-    help="Repository root (default: the enclosing repository).",
+    help="Repository root (default: the project's registered mount).",
 )
 @click.option(
     "--checkout-path",
@@ -1070,6 +1080,7 @@ def crew_dispatch(
     role,
     backend,
     spec_level,
+    negative_control,
     node_id,
     goal,
     done_when,
@@ -1129,6 +1140,7 @@ def crew_dispatch(
         section=section,
         role=role,
         spec_level=spec_level or "",
+        negative_control=negative_control or "",
         done_when=done_when,
         write_paths=list(write_paths),
         time_budget=time_budget,
@@ -1163,7 +1175,7 @@ def crew_dispatch(
                 locked_decisions=locked_decisions,
                 peer_scopes=node.peer_scopes,
                 project=project,
-                repo=_repo_root(repo),
+                repo=repo,
                 base=base,
                 execution_override=allow_execution_mismatch,
                 report_live_conflicts=True,
@@ -1217,7 +1229,7 @@ def crew_dispatch(
         record = crew_module.dispatch(
             node=node,
             project=project,
-            repo=_repo_root(repo),
+            repo=repo,
             config=config,
             session=session,
             wave=wave,
@@ -2123,6 +2135,16 @@ def crew_follow(
     ),
 )
 @click.option(
+    "--ensure",
+    "ensure_service",
+    is_flag=True,
+    help=(
+        "Start or restart this project's watcher user service and return, "
+        "instead of watching here. Idempotent: a second call on a live, "
+        "unchanged unit reports it and starts nothing."
+    ),
+)
+@click.option(
     "--follow",
     is_flag=True,
     hidden=True,
@@ -2144,6 +2166,7 @@ def crew_watch(
     stall_window,
     exit_on_empty,
     once,
+    ensure_service,
     follow,
     json_output,
     pretty,
@@ -2160,6 +2183,18 @@ def crew_watch(
     empty project, through every landing, until the fleet drains.
     """
     crew_module, _ = _crew_modules()
+    if ensure_service:
+        # The service is the durable seat: it survives the shell that ensured
+        # it, carries the backend directory on its PATH, and is restarted onto
+        # a rewritten unit. Nothing here holds the seat in the caller's name.
+        from reckon.crew import runs as runs_module
+
+        try:
+            result = runs_module.ensure_watcher_service(project)
+        except crew_module.CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit({"ok": True, **result}, pretty)
+        return
     # --exit-on-empty only means anything to the single-event mode, so asking
     # for it selects that mode rather than being silently ignored.
     single_event = once or exit_on_empty

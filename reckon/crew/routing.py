@@ -33,8 +33,8 @@ from reckon.crew.runs import (
     delivery_roots,
     list_live,
     pointer_path,
-    process_alive,
     read_pointer,
+    record_process_alive,
     runs_dir,
 )
 
@@ -704,13 +704,13 @@ def garbage_collect(
     pointer_reports: list[dict[str, Any]] = []
     for record in list_live():
         run_id = str(record.get("run_id") or "")
-        if run_id not in ledgered or process_alive(record.get("pid")) is not False:
+        if run_id not in ledgered or record_process_alive(record) is not False:
             continue
         report = {"run_id": run_id, "action": "reap", "removed": False}
         if apply:
             with _pointer_lock(run_id):
                 current = read_pointer(run_id)
-                if run_id in ledgered and process_alive(current.get("pid")) is False:
+                if run_id in ledgered and record_process_alive(current) is False:
                     pointer_path(run_id).unlink()
                     report["removed"] = True
         pointer_reports.append(report)

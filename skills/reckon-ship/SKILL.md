@@ -462,7 +462,7 @@ repair the request, not as a worker failure:
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
 | `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
-| `watcher-required` | 8 | Automatic producer arming could not acquire a valid watcher seat; inspect the reported watcher state, or use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |
+| `watcher-required` | 8 | No watcher this session can rely on — either the project has no live watcher process or this session has no delivering follower, and the refusal names which. Repair the first with `reckon crew watch --ensure --project P` and the second by arming the `attach_line`. Use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase, or dispatch to a different roster member. |
 
 Every refusal answers with a JSON document on stdout carrying `error` and
@@ -747,6 +747,14 @@ whose session has no delivering follower is refused with `watcher-required`
 the explicit waiver for a genuinely synchronous one-off, and records on the run
 that nobody was listening.
 
+**A refusal for a missing watcher process is repaired by starting one.** The
+`watcher-required` refusal names the repair for its own cause: a session with no
+delivering follower needs the `attach_line` above, while a project with no live
+watcher process needs `reckon crew watch --ensure --project P`. `--ensure` is
+idempotent — it starts nothing when the project's unit already carries the
+current definition and restarts it when the definition has changed — so it is
+safe to run against a watcher already up.
+
 **How to arm it is a property of your host harness, and it is the step that
 goes wrong.** Read `references/orchestrator-harness/<harness>.md` — the one for
 the host you are running inside — *before* arming, not after. The rule that
@@ -799,6 +807,7 @@ nothing either: it opens with a baseline of every live run before streaming.
 
 ```bash
 reckon crew watch --project <project> [--stall-window 15m]     # producer
+reckon crew watch --ensure --project <project>                 # start or restart it as a user service
 reckon crew follow --project <project> --session <session>        # you
 ```
 

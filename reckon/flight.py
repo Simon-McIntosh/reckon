@@ -338,6 +338,64 @@ def _ignore_removed_backend_keys(
     return migrated, warnings
 
 
+def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return this backend's declared placement, or None when it declares none.
+
+    Absence is not an empty placement: a backend declaring one is launched
+    inside the scheduler invocation it names, and a backend declaring none is
+    launched exactly as it always has been, as a child of whoever started the
+    coordinator.
+    """
+    if not isinstance(backend, Mapping):
+        return None
+    placement = backend.get("placement")
+    if not isinstance(placement, Mapping) or not placement:
+        return None
+    return dict(placement)
+
+
+def placement_requirement_entries(
+    placement: Mapping[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Return the requirement set a placement declares, in declaration order.
+
+    Each entry names one thing the placement's workers need visible where they
+    land: a filesystem path or a network endpoint. A placement declaring none
+    requires nothing, which is the shape every configuration had before the
+    field existed.
+    """
+    if not isinstance(placement, Mapping):
+        return []
+    entries = placement.get("requirements")
+    if not isinstance(entries, Iterable) or isinstance(entries, (str, bytes)):
+        return []
+    return [dict(entry) for entry in entries if isinstance(entry, Mapping)]
+
+
+def placement_scheduler_queries(
+    placement: Mapping[str, Any] | None,
+) -> dict[str, list[str]]:
+    """The state and reason queries a placement declares for its own wrapper.
+
+    Read from the declaration rather than from a table keyed on the wrapper's
+    name, so which reporting verb answers a given scheduler is configuration.
+    A key that is absent or empty is left out rather than recorded as an empty
+    answer, so a caller can tell a placement that says how to ask from one that
+    does not.
+    """
+    declared: dict[str, list[str]] = {}
+    if not isinstance(placement, Mapping):
+        return declared
+    for key in ("state_query", "reason_query"):
+        value = placement.get(key)
+        if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
+            continue
+        tokens = [str(token) for token in value if str(token)]
+        if tokens:
+            declared[key] = tokens
+    return declared
+
+
 def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     """Schema-check one layer, raising FlightConfigError on the first violation.
 
@@ -430,6 +488,23 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
                     sources,
                     f"backends.{backend_name}.catalog.{catalog_field}",
                     "is required when catalog is declared",
+                )
+    for backend_name, backend in backends.items():
+        if not isinstance(backend, Mapping):
+            continue
+        placement = backend.get("placement")
+        if not isinstance(placement, Mapping):
+            continue
+        for entry in placement.get("requirements") or ():
+            if not isinstance(entry, Mapping):
+                continue
+            named = [field for field in ("path", "endpoint") if entry.get(field)]
+            if len(named) != 1:
+                raise FlightConfigError(
+                    sources,
+                    f"backends.{backend_name}.placement.requirements"
+                    f".{entry.get('name')}",
+                    "must declare exactly one of path and endpoint",
                 )
     for role_name, role in (config.get("roles") or {}).items():
         if not isinstance(role, Mapping):

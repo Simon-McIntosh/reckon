@@ -6,8 +6,11 @@ import json
 import os
 import re
 import shlex
+import shutil
 import socket
 import stat
+import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping
@@ -441,7 +444,7 @@ def list_live(
         pid = record.get("pid")
         if not pid:
             continue
-        alive = process_alive(pid)
+        alive = record_process_alive(record)
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
             alive = _process_start_time(pid) == expected_start
@@ -904,7 +907,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         # fence open after a terminal manifest arrives. A pointer with no pid
         # has no process-table evidence and therefore cannot use that stored
         # boolean to outrank delivery on disk.
-        current = {**pointer, "process_alive": process_alive(pointer.get("pid"))}
+        current = {**pointer, "process_alive": record_process_alive(pointer)}
         row = classify_pointer(current)
         recorded = pointer.get("closure_disposition")
         disposition = (
@@ -1309,7 +1312,7 @@ def producer_live(project: str) -> bool:
     if not record:
         return False
     pid = record.get("pid")
-    alive = process_alive(pid) is True
+    alive = record_process_alive(record) is True
     if alive:
         expected = record.get("pid_start_time")
         alive = expected is None or _process_start_time(pid) == expected
@@ -1330,13 +1333,13 @@ def _record_producer_running(record: Mapping[str, Any]) -> bool:
     question than whether it is running.
     """
     pid = record.get("pid")
-    return bool(pid) and process_alive(pid) is True
+    return bool(pid) and record_process_alive(record) is True
 
 
 def _record_producer_dead(record: Mapping[str, Any]) -> bool:
     """Report whether a seat record names a process that is no longer running."""
     pid = record.get("pid")
-    return bool(pid) and process_alive(pid) is not True
+    return bool(pid) and record_process_alive(record) is not True
 
 
 def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
@@ -1396,6 +1399,13 @@ def _project_watch_claim(project: str, stall_window: str):
             "stream_path": str(watch_stream_path(project)),
             "reckon_version": __version__,
         }
+        # Which unit owns this seat, so a reader can tell a watcher a service
+        # will replace from one nothing will. The unit exports its own name, and
+        # a watcher started by any other route leaves the key absent rather than
+        # claiming a service that does not exist.
+        unit = _read_watch_record(handle).get("unit") or os.environ.get(WATCH_UNIT_ENV)
+        if unit:
+            record["unit"] = str(unit)
         _write_watch_record(handle, record)
         producer = _WatchStreamProducer(
             path=watch_stream_path(project),
@@ -1631,7 +1641,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         time.sleep(0.005)
 
     pid = record.get("pid")
-    running = process_alive(pid) is True
+    running = record_process_alive(record) is True
     expected = record.get("pid_start_time")
     if expected is not None:
         running = running and _process_start_time(pid) == expected
@@ -1835,6 +1845,8 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     return {
         "arming_line": arming_line,
         "attach_line": attach_line,
+        "ensure_line": watcher_ensure_line(project),
+        "unit": registration.get("unit"),
         "watcher_live": watcher_live,
         "watcher": dict(registration),
         "session": session,
@@ -1877,7 +1889,7 @@ def project_watch_visibility(
     pid = registration.get("pid")
     expected_start = registration.get("pid_start_time")
     actual_start = _process_start_time(pid)
-    registering_process_alive = process_alive(pid)
+    registering_process_alive = record_process_alive(registration)
     if expected_start is not None:
         registering_process_alive = bool(
             registering_process_alive is True and actual_start == expected_start
@@ -1966,6 +1978,264 @@ def project_watch_visibility(
     }
 
 
+# ── Watcher user service ────────────────────────────────────────────────────
+
+
+WATCH_UNIT_TEMPLATE = """\
+[Unit]
+Description=reckon crew watcher for {project}
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={working_directory}
+Environment="PATH={path}"
+Environment="{unit_variable}={unit}"
+{environment}\
+ExecStart={exec_start}
+StandardOutput=append:{log_file}
+StandardError=append:{log_file}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+"""
+
+
+def _watcher_executable() -> str:
+    """Resolve the reckon console script the unit execs, as an absolute path.
+
+    The unit runs without a shell, so ExecStart cannot depend on PATH. The
+    interpreter's own bin directory is preferred because it pins the unit to
+    the environment the command was invoked from.
+    """
+    sibling = Path(sys.executable).resolve().parent / "reckon"
+    if sibling.is_file():
+        return str(sibling)
+    discovered = shutil.which("reckon")
+    if discovered:
+        return os.path.abspath(discovered)
+    raise CrewError(
+        "cannot start the project watcher service: the 'reckon' console script "
+        "is not beside the running interpreter and is not on PATH"
+    )
+
+
+def _watcher_search_path(config: Mapping[str, Any]) -> str:
+    """Return the PATH a project's watcher must run with.
+
+    The measured fault: a watcher unit ran seven hours with the backend
+    directory absent from PATH, so every wait-lift it issued died at exec while
+    the pointer kept reading ``working``. The PATH here is the one the launch
+    would search — the resolved backend executables' own directories first —
+    so a lift started by this watcher can resolve what a dispatch can.
+    """
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    resolved = assert_routable_backends_resolvable("<watcher>", config)
+    directories = [str(Path(row["executable"]).parent) for row in resolved]
+    current = (os.environ.get("PATH") or os.defpath).split(os.pathsep)
+    return os.pathsep.join(
+        dict.fromkeys(directory for directory in [*directories, *current] if directory)
+    )
+
+
+def _watcher_service_environment(config: Mapping[str, Any]) -> dict[str, str]:
+    """Return the environment the watcher unit must carry."""
+    environment = {"PATH": _watcher_search_path(config)}
+    config_home = os.environ.get("RECKON_HOME")
+    if config_home:
+        # Forward the config home so the unit resolves the same mounts and run
+        # pointers as the shell that ensured it, rather than the account
+        # default it would otherwise fall back to.
+        environment["RECKON_HOME"] = str(Path(config_home).expanduser().resolve())
+    return environment
+
+
+def render_watch_unit(
+    project: str,
+    *,
+    environment: Mapping[str, str],
+    executable: str | None = None,
+) -> str:
+    """Render the systemd user unit that runs one project's watcher."""
+    command = executable or _watcher_executable()
+    argv = [command, "crew", "watch", "--project", project]
+    log_file = _config_home() / "logs" / f"watch-{watch_unit_name(project)}.log"
+    override = "".join(
+        f'Environment="{name}={value}"\n'
+        for name, value in environment.items()
+        if name != "PATH"
+    )
+    return WATCH_UNIT_TEMPLATE.format(
+        project=project,
+        working_directory=Path.home(),
+        path=environment.get("PATH") or os.defpath,
+        unit_variable=WATCH_UNIT_ENV,
+        unit=watch_unit_name(project),
+        environment=override,
+        exec_start=" ".join(shlex.quote(part) for part in argv),
+        log_file=log_file,
+    )
+
+
+class SystemdUserWatchService:
+    """The host's systemd user manager, as a watcher service needs it.
+
+    Narrow on purpose: the ensure path asks four questions (what is written,
+    is it active, write it, start it), so a caller can answer them from a fake
+    without a systemd manager on the host — and so no unit is written to the
+    real account home by a test.
+    """
+
+    def unit_path(self, project: str) -> Path:
+        return Path.home() / ".config" / "systemd" / "user" / watch_unit_name(project)
+
+    def installed(self, project: str) -> bool:
+        return self.unit_path(project).is_file()
+
+    def active(self, project: str) -> bool:
+        from reckon import service
+
+        completed = service.systemctl(
+            "is-active", watch_unit_name(project), check=False
+        )
+        return completed.returncode == 0
+
+    def lingering(self) -> bool:
+        from reckon import service
+
+        return service.linger_enabled()
+
+    def enable_linger(self) -> None:
+        from reckon import service
+
+        service.enable_linger()
+
+    def write_unit(self, project: str, content: str) -> tuple[Path, bool]:
+        target = self.unit_path(project)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # systemd opens the log file but will not create its parent directory.
+        (_config_home() / "logs").mkdir(parents=True, exist_ok=True)
+        unchanged = target.is_file() and target.read_text() == content
+        if not unchanged:
+            target.write_text(content)
+        return target, not unchanged
+
+    def start(self, project: str, *, restart: bool) -> None:
+        from reckon import service
+
+        unit = watch_unit_name(project)
+        service.systemctl("daemon-reload")
+        service.systemctl("restart" if restart else "start", unit)
+
+
+def _register_watch_unit(project: str, unit: str) -> dict[str, Any]:
+    """Record the unit name in the project's watcher registration.
+
+    Written only while the seat is free, and non-blocking: when the seat is held,
+    the watcher holding it is authoritative and records the unit itself from
+    its own environment, so a registration never ends up with no live writer
+    behind it. A held seat is reported rather than overwritten.
+    """
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            held = _read_watch_record(handle)
+            return {
+                "registered": False,
+                "reason": "seat-held",
+                "unit": held.get("unit") or unit,
+            }
+        record = _read_watch_record(handle)
+        record["project"] = project
+        record["unit"] = unit
+        _write_watch_record(handle, record)
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return {"registered": True, "reason": "written", "unit": unit}
+
+
+def ensure_watcher_service(
+    project: str,
+    *,
+    manager: Any | None = None,
+    config: Mapping[str, Any] | None = None,
+    restart: bool = False,
+) -> dict[str, Any]:
+    """Start or restart a project's watcher as an idempotent user service.
+
+    Idempotent in the sense that decides whether a second call disturbs a live
+    watcher: the unit is rewritten only when its rendered content changed, and a
+    unit already active on an unchanged definition is reported rather than
+    restarted. Restarting unconditionally would drop the seat and re-take it,
+    so the command a refusal tells a person to run would interrupt the watcher
+    it exists to guarantee.
+    """
+    from reckon import flight
+
+    service_manager = manager if manager is not None else SystemdUserWatchService()
+    if manager is None:
+        # A real unit is written to the account's systemd directory, which a
+        # throwaway configuration home must never cause. Imported lazily so the
+        # read-only surfaces of this module do not depend on the arming path.
+        from reckon.crew.dispatch import _refuse_arming_under_a_throwaway_home
+
+        _refuse_arming_under_a_throwaway_home(project)
+    resolved_config = (
+        config if config is not None else flight.resolve(project=project).config
+    )
+    environment = _watcher_service_environment(resolved_config)
+    content = render_watch_unit(project, environment=environment)
+    path, changed = service_manager.write_unit(project, content)
+
+    was_active = service_manager.active(project)
+    start_required = bool(changed or restart or not was_active)
+    if start_required:
+        # 'enable --now' leaves an already-running unit on its old definition,
+        # so a rewritten active unit needs an explicit restart.
+        service_manager.start(
+            project, restart=bool(restart or (changed and was_active))
+        )
+
+    lingering: bool | None = None
+    if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
+        lingering = bool(service_manager.lingering())
+        if not lingering:
+            service_manager.enable_linger()
+            lingering = bool(service_manager.lingering())
+
+    registration = _register_watch_unit(project, watch_unit_name(project))
+    if start_required:
+        detail = (
+            f"restarted {watch_unit_name(project)} onto a rewritten unit"
+            if changed and was_active
+            else f"started {watch_unit_name(project)}"
+        )
+    else:
+        detail = (
+            f"{watch_unit_name(project)} is already active on an unchanged unit; "
+            "started nothing"
+        )
+    return {
+        "project": project,
+        "unit": watch_unit_name(project),
+        "unit_path": str(path),
+        "unit_changed": bool(changed),
+        "service_active": was_active or start_required,
+        "started": start_required,
+        "detail": detail,
+        "environment": environment,
+        "lingering": lingering,
+        "registration": registration,
+        "watcher_live": watch_state(project)["watcher_live"],
+        "ensure_line": watcher_ensure_line(project),
+    }
+
+
 # Every state the watch surface can emit, split by whether a coordinator has to
 # act on it. The first set is the vocabulary a reader acts on the sight of; the
 # second is progress and is not news on its own. The split used to feed a
@@ -1990,6 +2260,30 @@ WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "waiting", "promote
 def _watch_arming_line(project: str) -> str:
     """Return the exact shell-safe command a dispatch payload carries."""
     return f"reckon crew watch --project {shlex.quote(project)}"
+
+
+# The unit exports this into the watcher's own environment, so the seat record
+# a service-armed watcher claims names the unit that will replace it. Read from
+# the environment rather than passed as an argument: the watcher's argv is the
+# arming contract a person copies, and a path-only flag would appear there.
+WATCH_UNIT_ENV = "RECKON_WATCH_UNIT"
+
+# A watcher holds its seat for as long as it runs, so a service that dies at
+# logout is the fault this deployment exists to remove: none of the units it
+# owns come back, and the project reads as watched until the next dispatch
+# refuses. Lingering is what keeps a user manager alive past the last session.
+LINGER_IF_REQUIRED = True
+
+
+def watch_unit_name(project: str) -> str:
+    """Return the systemd user unit that runs one project's watcher service."""
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    return f"reckon-watch-{readable}.service"
+
+
+def watcher_ensure_line(project: str) -> str:
+    """Return the command that starts or restarts a project's watcher service."""
+    return f"reckon crew watch --ensure --project {shlex.quote(project)}"
 
 
 def _watch_attach_line(project: str, *, session: str | None = None) -> str:
@@ -2106,6 +2400,13 @@ def watch(
     sleeper: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
     """Block for a fleet event, optionally treating an empty fleet as a drain."""
+    # The single-event arm takes the same seat as the streaming watcher, so it
+    # owes the same refusal: a seat held by a watcher that cannot resolve a
+    # backend it may be asked to lift reads as armed while it can lift nothing.
+    from reckon import flight
+    from reckon.crew.dispatch import assert_routable_backends_resolvable
+
+    assert_routable_backends_resolvable(project, flight.resolve(project=project).config)
     stall_seconds = parse_duration(stall_window)
     with _project_watch_claim(project, stall_window) as (acquired, watcher):
         if not acquired:
@@ -2133,7 +2434,7 @@ def _pointer_claims_worktree(record: Mapping[str, Any]) -> bool:
         return False
     if phase:
         return True
-    return process_alive(record.get("pid")) is not False
+    return record_process_alive(record) is not False
 
 
 def _live_worktree_claims() -> dict[Path, list[str]]:
@@ -2180,6 +2481,246 @@ def process_alive(pid: Any) -> bool | None:
     except (TypeError, ValueError):
         return None
     return True
+
+
+# The scheduler states that mean a placed job is still in the system: the job
+# exists and its work has not ended. Any other readable state means the job has
+# left the queue, which is terminal whatever the scheduler calls it. A state the
+# scheduler cannot be asked for is None, not False, so a silent scheduler never
+# reads as a stopped worker.
+_JOB_LIVE_STATES = frozenset(
+    {"running", "pending", "configuring", "completing", "suspended"}
+)
+
+# A scheduler query is on the liveness path of every read, so it is bounded:
+# a controller that hangs must not make a fleet listing hang with it.
+_SCHEDULER_QUERY_TIMEOUT_SECONDS = 5.0
+
+# The token a query vector carries where the job id is substituted, so a probe
+# spells its own argument order rather than reckon guessing one.
+_JOB_STATE_PLACEHOLDER = "{job}"
+
+
+def _scheduler_query_argv(
+    placement: Mapping[str, Any] | None,
+    job_id: Any,
+    field: str,
+) -> list[str] | None:
+    """The argument vector for one field of one job, or None when unknowable.
+
+    The query is read from the placement's own declaration rather than from a
+    table keyed on the wrapper's name, so which reporting verb answers a given
+    scheduler is configuration. A placement that declares the wrapper without
+    declaring how to ask it answers None here and falls through to the pid
+    probe, having been refused before launch for exactly that omission.
+    """
+    if not placement or not job_id:
+        return None
+    query = placement.get(field)
+    if not isinstance(query, Iterable) or isinstance(query, (str, bytes)) or not query:
+        return None
+    token = str(job_id)
+    return [
+        token if str(item) == _JOB_STATE_PLACEHOLDER else str(item) for item in query
+    ]
+
+
+def _ask_scheduler(
+    argv: list[str] | None, runner: Callable[[list[str]], str | None] | None
+) -> str | None:
+    """One scheduler question, or None when the question could not be asked.
+
+    The two failures are kept apart because they mean opposite things. A query
+    that could not be run — no such scheduler, a non-zero exit, a timeout —
+    answers None, and the caller falls back to another instrument. A query that
+    ran and printed nothing answers the empty string, which for a job-state
+    question is a statement in its own right: the scheduler knows no such job,
+    so the job has left the queue. Collapsing the empty answer into None would
+    read every ordinary completion as unreadable and send the caller back to a
+    pid that belongs to another host.
+    """
+    if argv is None:
+        return None
+    probe = _run_scheduler_query if runner is None else runner
+    try:
+        output = probe(argv)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if output is None:
+        return None
+    lines = str(output).strip().splitlines()
+    return lines[-1].strip() if lines else ""
+
+
+def scheduler_job_reason(
+    placement: Mapping[str, Any] | None,
+    job_id: Any,
+    runner: Callable[[list[str]], str | None] | None = None,
+) -> str | None:
+    """The scheduler's own reason string for a placed job, or None.
+
+    A job that never started reports why here rather than through an exit
+    status, so a launch-failure record quotes the scheduler's reason instead
+    of fabricating one.
+    """
+    return _ask_scheduler(
+        _scheduler_query_argv(placement, job_id, "reason_query"), runner
+    )
+
+
+# A job the scheduler ended for its own reason is not a worker whose work
+# failed: the remedy differs, since a resubmission with the same resources fails
+# the same way. The two classes a placement plan already names are a time limit
+# and a memory limit, matched on the scheduler's own words so a different
+# spelling adds a class rather than being read as a failed worker.
+_SCHEDULER_KILL_CLASSES: tuple[tuple[frozenset[str], str], ...] = (
+    (frozenset({"timeout", "timelimit", "time limit", "deadline"}), "job-timeout"),
+    (
+        frozenset(
+            {
+                "out_of_memory",
+                "outofmemory",
+                "out of memory",
+                "oom",
+                "memory limit",
+            }
+        ),
+        "job-out-of-memory",
+    ),
+)
+
+
+def scheduler_kill_class(state: Any, reason: Any = None) -> str | None:
+    """Name the scheduler's own kill reason, or None when it ended for another.
+
+    Matched against both the state and the scheduler's reason string, because a
+    scheduler spells a time or memory end in either place and a reason of
+    ``None`` is reported differently depending on which one fired.
+    """
+    haystack = " ".join(
+        part.strip().casefold() for part in (state, reason) if part
+    )
+    if not haystack:
+        return None
+    for spellings, name in _SCHEDULER_KILL_CLASSES:
+        if any(spelling in haystack for spelling in spellings):
+            return name
+    return None
+
+
+def _run_scheduler_query(argv: list[str]) -> str | None:
+    """Run one scheduler state query, answering None when it cannot be read.
+
+    A query that exits non-zero — an unknown job, an unreachable controller —
+    answers None rather than an empty string, because the absence of a state is
+    not the statement that the job has ended.
+    """
+    executable = shutil.which(argv[0])
+    if executable is None:
+        return None
+    completed = subprocess.run(
+        [executable, *argv[1:]],
+        capture_output=True,
+        text=True,
+        timeout=_SCHEDULER_QUERY_TIMEOUT_SECONDS,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return None
+    return completed.stdout
+
+
+def _scheduler_state_argv(
+    placement: Mapping[str, Any] | None, job_id: str
+) -> list[str] | None:
+    """The argument vector that asks a scheduler for one job's state, or None.
+
+    A placement declares the reporting verb that answers one job's state beside
+    the wrapper it asks, so a placement that declares no query answers None and
+    falls through to the pid probe instead of being read as a stopped job.
+    """
+    return _scheduler_query_argv(placement, job_id, "state_query")
+
+
+def scheduler_job_state(
+    placement: Mapping[str, Any] | None,
+    job_id: Any,
+    runner: Callable[[list[str]], str | None] | None = None,
+) -> str | None:
+    """The state a scheduler reports for a placed job, or None when unread.
+
+    Three answers, and the caller must tell the last two apart. A state names
+    the job and is read against the in-flight set. The empty string is a
+    successful query that named no job: the scheduler knows it not, so it has
+    left the queue. None is a question that could not be asked at all — no
+    scheduler, no such wrapper, a non-zero exit — and leaves the caller to fall
+    back to the pid probe rather than reporting a live run as stopped.
+    """
+    return _ask_scheduler(
+        _scheduler_state_argv(placement, str(job_id or "")), runner
+    )
+
+
+def placement_job_alive(
+    record: Mapping[str, Any] | None,
+    runner: Callable[[list[str]], str | None] | None = None,
+) -> bool | None:
+    """Whether the job a placed run was charged to is still in the system.
+
+    A placed run's recorded pid names the scheduler client, not the worker, so
+    the job is the subject of a liveness read. A state the scheduler reports as
+    in-flight answers True. Any other readable answer means the job has left the
+    queue and answers False, whatever the scheduler calls it — including the
+    empty answer of a successful query that named no job, which is how an
+    ordinary completion is reported and must not fall through to the pid. A
+    record carrying no placement, or one whose scheduler could not be queried at
+    all, answers None so the pid probe decides as it always has.
+
+    ``runner`` is the caller's own scheduler query, handed in the way ``alive``
+    is so a test reaches this without a scheduler on the host.
+    """
+    if not record:
+        return None
+    placement = record.get("placement")
+    if not isinstance(placement, Mapping) or not placement:
+        return None
+    state = scheduler_job_state(placement, record.get("job_id"), runner)
+    if state is None:
+        return None
+    return state.casefold() in _JOB_LIVE_STATES
+
+
+def record_process_alive(
+    record: Mapping[str, Any] | None,
+    alive: Callable[[Any], bool | None] | None = None,
+    job_alive: Callable[[Mapping[str, Any] | None], bool | None] | None = None,
+) -> bool | None:
+    """Report whether the process a run record names is still running.
+
+    Every liveness decision about a run is taken from the run's own record, so
+    the pid lookup lives here in one place and the call site never handles a
+    bare pid. A record that names no process answers None, the same shape
+    :func:`process_alive` already returns for a missing pid, so a caller cannot
+    read "no process recorded yet" as a stopped worker.
+
+    A placed run is charged to a scheduler job rather than to the coordinator's
+    own login slice, so its recorded pid names the scheduler client rather than
+    the worker and a local process-table read answers a different question. The
+    job is asked first, and the pid probe is the fallback for a record carrying
+    no placement or a scheduler that cannot be queried — which keeps an
+    unplaced run answering exactly as it always has.
+
+    ``alive`` is the caller's own probe. A module that keeps the primitive
+    bound under its own name — so a test can substitute liveness for that
+    module — hands it in rather than having its substitution bypassed.
+    """
+    if not record:
+        return None
+    placed = (placement_job_alive if job_alive is None else job_alive)(record)
+    if placed is not None:
+        return placed
+    probe = process_alive if alive is None else alive
+    return probe(record.get("pid"))
 
 
 def _process_stat_fields(pid: Any) -> list[str]:

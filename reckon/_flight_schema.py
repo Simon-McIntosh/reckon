@@ -215,6 +215,7 @@ class BackendConfig(ConfiguredBaseModel):
     budget_group: Optional[str] = Field(default=None, description="""Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.""")
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
     token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
+    placement: Optional[PlacementConfig] = Field(default=None, description="""Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before.""")
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -228,6 +229,27 @@ class BackendConfig(ConfiguredBaseModel):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class PlacementConfig(ConfiguredBaseModel):
+    """
+    A scheduler wrapper declared for one backend's workers. It describes how the launch is wrapped and never what runs: the resolved command stays the backend's own, so a placement moves a worker between hosts without changing which lane serves it. It also declares what the worker needs visible where it lands, and how to ask the wrapper about a job it started.
+    """
+    scheduler: str = Field(default=..., description="""Scheduler executable the launch is wrapped in. Resolved against the same PATH the launch searches, so an unresolvable wrapper is refused before launch rather than dying at exec and leaving an empty stream that reads as a worker turn.""")
+    options: Optional[list[str]] = Field(default=None, description="""Argument strings passed to the scheduler ahead of the resolved command, such as a partition and a resource request. User data; the schema names no partition and no site.""")
+    job_id_probe: Optional[list[str]] = Field(default=None, description="""Argument vector asked which job the launch became, with `{run}` replaced by the run id. Read rather than guessed, and declared per backend because reckon knows no scheduler's own vocabulary; a probe that answers no identifier records why instead of a fabricated id.""")
+    requirements: Optional[list[PlacementRequirement]] = Field(default=None, description="""Filesystem paths and network endpoints this placement's workers need visible from the node the scheduler places them on. Checked before launch, so a placement into a partition that cannot see one is refused while naming which, rather than failing later in a way that reads as a worker defect. A path on per-node storage is refused by name: it exists on the dispatcher and not where the worker runs, so it fails silently.""")
+    state_query: Optional[list[str]] = Field(default=None, description="""Argument vector that asks the scheduler for one job's state, with `{job}` replaced by the job id. Declared beside the wrapper it asks, so which reporting verb answers a given scheduler is configuration rather than a table in reckon's own code, and a wrapper declared without one is a placement reckon cannot follow rather than one it silently cannot query.""")
+    reason_query: Optional[list[str]] = Field(default=None, description="""Argument vector that asks the scheduler for one job's own reason string, with `{job}` replaced by the job id. A job that never started reports why here rather than through an exit status the scheduler client never produced.""")
+
+
+class PlacementRequirement(ConfiguredBaseModel):
+    """
+    One filesystem path or network endpoint this placement's workers need visible from the node they run on. Exactly one of `path` and `endpoint` is declared; a requirement naming both or neither is a configuration error rather than a check that quietly passes.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    path: Optional[str] = Field(default=None, description="""A filesystem path this placement's workers must be able to see. User data; the schema names no site and fixes no layout.""")
+    endpoint: Optional[str] = Field(default=None, description="""A network endpoint, given as host and port, this placement's workers must be able to reach — the served model and its router are the intended case.""")
 
 
 class CatalogConfig(ConfiguredBaseModel):
@@ -396,6 +418,8 @@ class SummaryConfig(ConfiguredBaseModel):
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
+PlacementConfig.model_rebuild()
+PlacementRequirement.model_rebuild()
 CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
 EffortSpelling.model_rebuild()

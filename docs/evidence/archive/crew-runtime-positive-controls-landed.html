@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls-landed">
+  <meta name="plan-title" content="Crew Runtime Positive Controls — landed evidence">
+  <meta name="plan-summary" content="Every launch resolves its backend to an absolute path before writing, and a launch that dies before its first turn is one recorded failure that stops the lift.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7">
+  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png">
+  <meta name="plan-recorded-at" content="2026-09-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment, login node">
+  <meta name="plan-tags" content="crew,dispatch,launch,verification">
+  <title>Crew Runtime Positive Controls — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>Crew Runtime Positive Controls</h1>
+      <p class="lead">A launch either resolves its backend to an absolute path before anything is written, or it
+      refuses naming the PATH it searched; a launch that runs and dies before its first turn is one recorded
+      failure, and the run leaves the lift loop until a person acts.</p>
+    </header>
+
+    <section id="s1">
+      <h2>&sect;1 &mdash; The launch resolves its executable, or it refuses before writing</h2>
+      <p>The launch plan carried a bare backend name and inherited the PATH of whoever built it, so a watcher
+      armed without the backend directory exec'd a missing binary and left a 0-byte stream per tick while the
+      run read as working. Resolution now happens where the plan is built, at the three sites that construct a
+      plan for a run: a dispatch, a resume, and a member move. A fourth site constructs a plan without
+      resolving it — the lane-availability probe at <code>reckon/crew/resumption.py:234</code> — and is
+      deliberately left unwrapped because it probes a capability rather than launching a run: its failure is
+      loud (it reports <code>unavailable</code> and the availability report says so) and it writes no pointer,
+      stream or stderr, so the property this section claims still holds there.</p>
+      <p>The refusal is literal and names what was searched, so the repair is a command rather than an
+      investigation:</p>
+      <pre><code>backend command 'python3' cannot be resolved on the PATH this launch would
+search: /nonexistent — install it or add its directory to PATH, then retry;
+nothing has been launched</code></pre>
+      <p><code>reckon crew watch</code> resolves every backend its project can route to before the seat is
+      taken, in the single-event arm as well as the streaming one, so no arming mode takes a seat it cannot
+      lift from and a watcher that cannot lift is never a watcher that reads as armed.</p>
+      <p>A later review of this section found that claim true of the streaming arm and false of the
+      single-event one: <code>crew watch --once</code> claimed the seat with no resolution check anywhere on its
+      path, so a host whose backend directory was off the project's PATH could arm a seat-holder that read as
+      live and could lift nothing from it — a posture defect rather than a silent launch failure, because
+      dispatch resolves at launch on the same host and refuses before writing anything. The single-event arm now
+      refuses through the same check, before the seat is claimed. A case enters the <code>--once</code> path with
+      the backend directory absent from the PATH handed to the call and asserts both the refusal and that no lock
+      file appears under <code>crew/watch</code>, with a positive control showing that the same call does take
+      the seat once the backend resolves; with the refusal disabled that case is the only one in its file that
+      fails. The count stated above was also wrong in one direction and is corrected here: the lane-availability
+      probe at <code>reckon/crew/resumption.py:234</code> is a fourth <code>launch_plan</code> construction site,
+      deliberately left unwrapped because it probes a capability rather than launching a run — it reports
+      <code>unavailable</code> loudly and writes no pointer, stream or stderr, which is why the property this
+      section claims still holds there.</p>
+      <table>
+        <thead><tr><th>Surface</th><th>Case</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>dispatch</td><td>backend directory off the plan's PATH</td><td>refused, naming the binary and the PATH; no pointer, and no run directory</td></tr>
+          <tr><td>resume</td><td>backend directory off the plan's PATH</td><td>refused; the pointer's bytes are unchanged and the run directory is empty</td></tr>
+          <tr><td>watch</td><td>a routable backend missing from the project's PATH</td><td>refused at arm time; the watch seat directory is never created</td></tr>
+          <tr><td>launch plan</td><td>backend present</td><td><code>argv[0]</code> is absolute and keeps the launcher's own name</td></tr>
+        </tbody>
+      </table>
+      <p>The refusal precedes every write. That ordering was <em>not</em> true of the resume path as found: the
+      pointer was mutated with the context fit before the launch plan was built, so a refusal there would have
+      landed after the pointer write. The reorder is what the resume case pins, by comparing the pointer's bytes
+      before and after the refusal rather than asserting only on the message.</p>
+      <p>The path is made absolute without being canonicalised, and that distinction was found by the population
+      rather than by reading: resolving a launcher installed as <code>bin/codex</code> symlinked to
+      <code>codex.js</code> followed the link, so the run recorded <code>codex.js</code>, the dialect is selected
+      by the command's name, and the run's own stream could no longer be read back — a run made unreadable
+      rather than unrunnable. Three cases outside the new files caught it; the linked launcher now has its own
+      case.</p>
+    </section>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; A worker that exits before its first turn is one launch failure</h2>
+      <p>The reaper knew the child had exited and read that exit against nothing. A run whose stream file is
+      empty when its process is gone is a launch failure, not a worker turn: it is recorded once on the run with
+      the exit status, the argv and the stderr tail, the pointer moves to <code>launch-failed</code>, and the
+      automatic lift refuses that phase until a person resumes or completes the run. The hand-typed resume is
+      deliberately left ungated, so the phase is clearable by the person who repaired the environment.</p>
+      <p>The figure places the two outcomes of a launch beside the path each one takes.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/launch-path.png"
+      alt="A launch plan is resolved; a missing backend refuses and writes nothing, while a found one launches; the reaper reads the stream size on exit and an empty stream records one failure and stops the lift loop."
+      style="width:100%;max-width:1100px"></p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Backend exits 127 immediately, stream empty</td><td>launch-failure records on the run: <strong>1</strong>, exit status <strong>127</strong>, argv equal to the launched argv</td></tr>
+          <tr><td>Second reaper tick</td><td>phase unchanged, record count still <strong>1</strong> — no relaunch</td></tr>
+          <tr><td>Backend writes a turn, then exits 127 (control)</td><td><strong>0</strong> records; the phase stays <code>working</code></td></tr>
+          <tr><td>Automatic lift of a <code>launch-failed</code> run</td><td>refused with the phase and the exit status named; the launcher is never called and no <code>resume-*</code> file appears</td></tr>
+          <tr><td>Fleet reading with one live <code>launch-failed</code> run</td><td><code>actionable_runs</code> 1, <code>actionable_classifications</code> <code>["launch-failed"]</code></td></tr>
+        </tbody>
+      </table>
+      <p>The control case is the one that makes the first meaningful: it runs the same spawn and the same reaper
+      on a backend whose stream is not empty, and asserts no record appears. It also waits for the reaper to have
+      actually consumed the child, so it cannot pass on a process that was never reaped. With the emptiness guard
+      removed, that control fails — which is how the guard was shown to be the thing the first case rests on. The
+      reaper's exit status is converted from the raw wait status before it is recorded, so a process that exited
+      127 records <code>127</code> rather than <code>32512</code>.</p>
+      <p>A later review found the once-only guard load-bearing and unpinned by these cases. The end-to-end cases
+      show one record per launch, but the once-ness they measure comes from the pid being consumed by
+      <code>os.waitpid</code> before a second tick can reach the recorder — not from the guard inside the
+      recorder. Removing the guard's phase check leaves all four pre-existing cases green while a direct probe
+      that records twice for one launch turns red, which is how the guard was shown to be what the node's cases
+      were not resting on. A case now reaches the recorder twice for one launch without waiting on a reap and
+      asserts one record and one phase, so a second reaper or a handover edge that re-records is caught rather
+      than silently double-counted.</p>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 470" style="width:100%;max-width:1040px" role="img"
+           aria-label="Both the streaming and single-event arming arms pass through a backend resolution check before the watch seat is claimed; a missing backend refuses with no lock file. On the recording path the reaper's first tick records one launch failure, and a second recording for the same launch returns the pointer unchanged."
+           font-family="Helvetica, Arial, sans-serif" font-size="13">
+        <rect width="1040" height="470" fill="#ffffff"/>
+        <text x="24" y="30" font-size="15" font-weight="bold" fill="#111">Where the watch seat is refused, and where a second recording is stopped</text>
+        <text x="24" y="62" font-size="13" font-weight="bold" fill="#111">A — arming: both entry points reach the same seat</text>
+        <rect x="24" y="78" width="180" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="114" y="95" text-anchor="middle" fill="#111">streaming arm</text>
+        <text x="114" y="110" text-anchor="middle" fill="#555" font-size="11">crew watch / --follow</text>
+        <rect x="24" y="140" width="180" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="114" y="157" text-anchor="middle" fill="#111">single-event arm</text>
+        <text x="114" y="172" text-anchor="middle" fill="#555" font-size="11">crew watch --once</text>
+        <rect x="250" y="108" width="200" height="42" rx="6" fill="#fff7e6" stroke="#b8860b"/>
+        <text x="350" y="126" text-anchor="middle" fill="#111">resolve every routable backend</text>
+        <text x="350" y="141" text-anchor="middle" fill="#555" font-size="11">refuses before any write</text>
+        <rect x="500" y="108" width="170" height="42" rx="6" fill="#e9f6ec" stroke="#2e7d43"/>
+        <text x="585" y="126" text-anchor="middle" fill="#111">claim the seat</text>
+        <text x="585" y="141" text-anchor="middle" fill="#555" font-size="11">crew/watch/*.lock</text>
+        <line x1="204" y1="98" x2="250" y2="120" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="204" y1="160" x2="250" y2="140" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="450" y1="129" x2="500" y2="129" stroke="#2e7d43" marker-end="url(#g)"/>
+        <line x1="350" y1="108" x2="350" y2="72" stroke="#b8860b" marker-end="url(#y)"/>
+        <text x="360" y="70" fill="#8a6100" font-size="11">missing backend — refuse, no lock file</text>
+        <text x="690" y="126" fill="#555" font-size="11">the single-event arm previously reached the</text>
+        <text x="690" y="141" fill="#555" font-size="11">seat with no check on its path</text>
+        <text x="24" y="228" font-size="13" font-weight="bold" fill="#111">B — recording: the guard, not the reap, is what makes it once</text>
+        <rect x="24" y="248" width="150" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="99" y="265" text-anchor="middle" fill="#111">worker exits</text>
+        <text x="99" y="280" text-anchor="middle" fill="#555" font-size="11">stream empty</text>
+        <rect x="220" y="248" width="150" height="40" rx="6" fill="#eef4fb" stroke="#3b6ea5"/>
+        <text x="295" y="265" text-anchor="middle" fill="#111">reaper tick</text>
+        <text x="295" y="280" text-anchor="middle" fill="#555" font-size="11">reads the exit status</text>
+        <rect x="416" y="248" width="210" height="40" rx="6" fill="#fff7e6" stroke="#b8860b"/>
+        <text x="521" y="265" text-anchor="middle" fill="#111">record once — phase guard</text>
+        <text x="521" y="280" text-anchor="middle" fill="#555" font-size="11">phase stays launch-failed</text>
+        <rect x="672" y="248" width="150" height="40" rx="6" fill="#e9f6ec" stroke="#2e7d43"/>
+        <text x="747" y="265" text-anchor="middle" fill="#111">one record</text>
+        <text x="747" y="280" text-anchor="middle" fill="#555" font-size="11">lift stops</text>
+        <line x1="174" y1="268" x2="220" y2="268" stroke="#3b6ea5" marker-end="url(#a)"/>
+        <line x1="370" y1="268" x2="416" y2="268" stroke="#b8860b" marker-end="url(#y)"/>
+        <line x1="626" y1="268" x2="672" y2="268" stroke="#2e7d43" marker-end="url(#g)"/>
+        <rect x="416" y="322" width="210" height="40" rx="6" fill="#fdecec" stroke="#b23b3b"/>
+        <text x="521" y="339" text-anchor="middle" fill="#111">a second recording for one launch</text>
+        <text x="521" y="354" text-anchor="middle" fill="#555" font-size="11">guard returns the pointer unchanged</text>
+        <line x1="521" y1="322" x2="521" y2="292" stroke="#b23b3b" marker-end="url(#r)"/>
+        <text x="536" y="378" fill="#8a2b2b" font-size="11">with the guard removed this path double-records, and no</text>
+        <text x="536" y="393" fill="#8a2b2b" font-size="11">end-to-end case that waits on the reap can see it</text>
+        <defs>
+          <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#3b6ea5"/></marker>
+          <marker id="g" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2e7d43"/></marker>
+          <marker id="y" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b8860b"/></marker>
+          <marker id="r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b23b3b"/></marker>
+        </defs>
+      </svg>
+      <p><code>launch-failed</code> is added to the states the follower needs action on, which places it under the
+      blocked bucket rather than the working bucket, and <code>classify_pointer</code> renders it as its own
+      classification carrying the failure count and the last cause. Its classification is also in the actionable
+      set the drain reading counts, which it was not: the state had a classification and a recovery verb and was
+      then left out of the set that count reads, so a run that occupied a lane appeared in no count at all — the
+      same defect as the working bucket, one layer over. The measured reading with one such run is
+      <code>actionable_runs: 1</code> with <code>actionable_classifications: ["launch-failed"]</code>.</p>
+      <p>What remains open is a width question and not a correctness one: the fleet counter's fixed block has four
+      buckets — working, blocked, unpromoted, queued — and no bucket of its own for an infrastructure fault, so the
+      number a reader sees sits under blocked. Adding a fifth bucket changes a deliberately fixed-width column and
+      is left for the plan owner rather than decided here.</p>
+    </section>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; The watcher is a process, and the command that starts one carries its environment</h2>
+      <p>Two incidents on 2026-09-19 set the shape. A project ran for an hour with no watcher process while
+      dispatches kept being admitted, because a session follower was armed and the admission path read the
+      follower. Separately, a watcher unit ran for seven hours whose <code>PATH</code> did not contain the
+      backend's directory, so every lift it attempted died at exec — the unit was alive and none of its work
+      could start.</p>
+      <p>The figure places the two decisions beside each other: what an <code>--ensure</code> call does with the
+      unit it finds on disk, and which of the two registration facts carries which meaning.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/watcher-as-a-service.png"
+      alt="Left: ensure renders the unit, then branches on what is on disk — no unit writes and starts, an unchanged active unit starts nothing, a rewritten unit is restarted — and every branch ends in a registration naming the unit, while the seat stays unclaimed until a process takes it. Right: watcher_live is read from the process table by watch_state, the unit name is written into the registration by the claiming watcher, a follower contributes to delivery only, and the unit carries an absolute ExecStart and a PATH built from the directories the backends resolve in."
+      style="width:100%;max-width:1160px"></p>
+      <p><code>reckon crew watch --ensure</code> is the command the refusal will teach. It renders a systemd user
+      unit for the project and reconciles it against what is already on disk: with no unit it writes one and
+      starts it; with an unchanged unit that is already active it starts nothing and reports
+      <code>started nothing</code>; with a rewritten unit it restarts onto the new definition. The count of
+      service starts is the measure of idempotency, and it is one across the first two cases together.</p>
+      <p>The unit carries the environment rather than inheriting it. <code>ExecStart</code> is the resolved
+      absolute executable, obtained as a sibling of the running interpreter and falling back to the one
+      <code>reckon</code> on <code>PATH</code>, and the <code>Environment="PATH=…"</code> line is built from the
+      directories this project's routable backends resolve in, unioned with the ambient <code>PATH</code> and
+      ordered so the backend dirs come first. That is exactly the fact the seven-hour unit was missing, and it is
+      why the test asserts the backend directory appears in the unit's PATH <em>line</em> while the same directory
+      is absent from the ambient <code>PATH</code> — the ambient value cannot pass the assertion in its place.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>An ensure on a host with no unit</td><td><code>started: true</code>, one start, the unit's PATH line carries the backend's own directory (absent from ambient <code>PATH</code>)</td></tr>
+          <tr><td>A second ensure, same config</td><td><code>started: false</code>, <code>unit_changed: false</code>, detail reads <strong>started nothing</strong>; still exactly one start recorded</td></tr>
+          <tr><td>A third ensure after the backend directory changes</td><td><code>unit_changed: true</code>, one further start, issued as a <em>restart</em> rather than a start</td></tr>
+          <tr><td>The registration after ensure</td><td><code>{"registered": true, "reason": "written", "unit": "reckon-watch-&lt;project&gt;.service"}</code>, read back through <code>watch_state()["unit"]</code></td></tr>
+          <tr><td><code>watcher_live</code> immediately after ensure</td><td><code>false</code> — ensure writes a unit and does not take the seat, so a service that never comes up cannot read as a watcher</td></tr>
+          <tr><td>A watcher started under a unit</td><td>the seat record it writes carries <code>unit: "reckon-watch-&lt;project&gt;.service"</code>, taken from <code>RECKON_WATCH_UNIT</code></td></tr>
+          <tr><td>The ensure line</td><td><code>reckon crew watch --ensure --project sample</code>, and <code>watch_state()["ensure_line"]</code> returns the same string</td></tr>
+        </tbody>
+      </table>
+      <p>Five control facts make the measurements mean something, each a mutation of the change with its red log
+      kept beside the green one. Dropping the backend directories from the derived <code>PATH</code> fails the
+      environment test alone. Making the start unconditional fails the second-ensure case. Making the start
+      depend only on the service being inactive — never restarting onto a rewritten unit — fails the changed-unit
+      case. Writing no unit name in the registration fails the registration test. Removing the unit recording in
+      the seat claim fails the claiming-watcher test. Each mutation turns exactly its own test red, which is how
+      each test was shown to rest on the line it names. With the change in place the six tests pass, and the gate
+      adds no failure to its population.</p>
+      <p><strong>What this change does not reach.</strong> The plan's first done-when — a dispatch into a project
+      with a live follower and no watcher process is refused naming the ensure command — is not landed here. The
+      refusal is raised by <code>WatcherRequired</code> in <code>reckon/crew/node.py</code> and the precondition
+      is read in <code>reckon/crew/dispatch.py</code>, where <code>_ensure_watch_producer</code> auto-starts a
+      producer and the guard consults the follower's attach state; both files are outside this node's write
+      scope. What exists for that half is its interface: <code>ensure_watcher_service</code>,
+      <code>watcher_ensure_line</code>, and <code>watch_state()["ensure_line"]</code>, all in
+      <code>reckon/crew/runs.py</code>. Repointing <code>_watch_arming_line</code> in scope instead was rejected
+      because the passing visibility test asserts that line's current value, so the change would have added a
+      failure rather than removed one.</p>
+      <p><strong>The dispatch-side refusal landed 2026-09-19</strong> at <code>5ec236d1</code>, over
+      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/node.py</code> and
+      <code>tests/test_crew_dispatch_watcher_required.py</code>. The admission precondition now reads
+      <code>watcher_live</code> from the watcher's own state: <code>_ensure_watch_producer</code> reports the state
+      it observed rather than raising, and the guard raises <code>WatcherRequired</code> when that state carries no
+      live watcher process, before it asks the separate question of whether this session hears what the watcher
+      writes. The refusal names the durable repair, taken from <code>watch_state()["ensure_line"]</code> rather
+      than composed a second time, and it reads
+      <em>project 'sample' has no live crew watcher process; start one with `reckon crew watch --ensure --project
+      sample`, which is safe to run against a watcher that is already up, then attach this session to it with
+      `reckon crew follow --project sample --session …`</em>.</p>
+      <p>Two cases pin it, both entered through <code>crew.dispatch</code> with the dispatching session's delivery
+      registered as a coordinator registers it, and both under the <code>arms_watch_producer</code> marker so the
+      real guard runs rather than the suite's default waiver. A live follower with an ended producer is refused,
+      the ensure command appears in the refusal's text, and the refused run created no pointer; the same dispatch
+      with a genuinely running registered watcher process is admitted unchanged, with <code>watcher_live</code>
+      true and the registered pid on the record. Each has its own mutation and its red log: removing the
+      liveness check makes the refusal case report <strong>DID NOT RAISE WatcherRequired</strong> while the
+      positive control stays green (<code>red-watcher-liveness-not-checked.log</code>), and naming the ephemeral
+      arming line instead of the ensure line fails the refusal case's text assertion alone
+      (<code>red-refusal-names-the-arming-line.log</code>). Gate, run once to
+      <code>reports/reckon/s18-takeover/crpc-dispatch-refuses-an-unwatched-project/gate.log</code>: <strong>6
+      failed, 108 passed, exit 1</strong>, against the same <strong>6 failed</strong> ids at base
+      <code>de1413f6</code> — a <code>diff</code> of the two <code>FAILED</code> sets is empty, so the node adds no
+      failure and the two added passes are its own cases. The six are untouched drift outside this node's change:
+      two visibility and three lifetime cases construct a node with no specification level, and one recovery case
+      fails on the pytest temporary directory being refused as a git worktree.</p>
+    </section>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; A terminal list naming a live state, and a lift that re-parks unchanged</h2>
+      <p>Measured 2026-09-19 on <code>r-20260919T111944475334-cco-review-repairs</code>. The run's manifest
+      declared a <code>squeue</code> probe whose first branch prints <code>RUNNING</code> while the job is still
+      queued, and listed <code>RUNNING</code> among its <code>wait_terminal</code> values. The condition
+      therefore reported terminal on every sweep of a job that had not started, and the recovery watcher lifted
+      the run thirty times in one afternoon — <code>resume-1</code> through <code>resume-30</code> in the run
+      directory, most of them producing a 0-byte stream. The second half is what made the first repeat: each
+      re-park rewrote the manifest, and the lift was keyed to the file's modification time, so every rewrite
+      read as a brand-new condition.</p>
+      <p>The figure places the two decisions beside each other — which tokens the reader refuses, and which
+      lift key stops a loop that has come back unchanged.</p>
+      <p><img src="/reckon/figures/crew-runtime-positive-controls/wait-key-decision.png"
+      alt="Left: the probe text is read for a squeue-guarded branch; a token that branch prints and that appears in wait_terminal is refused with the token named. Right: a lift keyed to the manifest mtime re-lifts a re-parking worker, while a lift keyed to the declaration marks a wait-key defect and stops."
+      style="width:100%;max-width:1160px"></p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>The measured cco stanza, <code>RUNNING</code> under <code>wait_terminal</code></td><td><code>valid: false</code>, the reason names <strong>RUNNING</strong>; <code>classify_pointer</code> renders it as <code>manifest_error</code></td></tr>
+          <tr><td>The repaired stanza, same probe, <code>RUNNING</code> removed</td><td><code>valid: true</code>, <code>error: ""</code>, terminal list unchanged</td></tr>
+          <tr><td>Live state spelled <code>running</code> / <code>Pending</code> / <code>WAITING</code></td><td>refused in each case, the offending spelling named</td></tr>
+          <tr><td>A probe whose live branch prints <code>STILL-QUEUED</code></td><td>refused with <strong>STILL-QUEUED</strong> named — the branch is read, not a fixed vocabulary matched</td></tr>
+          <tr><td>A probe with no live branch (control)</td><td><code>valid: true</code>; its token means what the declaration says it means</td></tr>
+          <tr><td>Declaration lifted once, then re-parked unchanged</td><td><code>wait_key_defect</code> set after one cycle; the second sweep returns no lift with reason <code>already-resumed-for-this-condition</code></td></tr>
+          <tr><td>Declaration edited after the defect</td><td>defect cleared, and the next sweep lifts</td></tr>
+        </tbody>
+      </table>
+      <p>Three control facts make the refusals mean something. The repaired stanza still reads, so the refusal
+      is the token and not the probe. The probe with no live branch is left alone, so the reader is not refusing
+      every conditional probe. And a first lift still happens, so the re-park marker is a second-cycle verdict
+      rather than a blanket stop.</p>
+      <p>Each new test fails against a declared mutation of the change, and both red logs sit beside the green
+      one. With the live-state refusal removed, the gate reads <strong>6 failed, 4 passed</strong>: the four
+      refusals above fail while the repaired-stanza, no-live-branch, first-lift and cleared-declaration controls
+      pass — the controls are what show the four failures are the guard and not an accident of the fixtures.
+      With the declaration key reverted to the manifest mtime, the gate reads <strong>2 failed, 8 passed</strong>:
+      exactly the two re-park cases fail and the eight controls pass, which is how the key was shown to be the
+      thing the re-park detection rests on.</p>
+      <p><strong>What this change does not reach.</strong> The lift itself runs in
+      <code>reckon/crew/resumption.py</code>, outside this node's write scope. Keying the signature to the
+      declaration makes that module's existing duplicate guard stop a re-parked unchanged declaration, which is
+      the observable the plan asks for; but recording the probe <em>output</em> that lifted a wait, and comparing
+      a re-park against it literally, are not implemented here. Two consequences belong to whoever next touches
+      that module: the guard's detail string still reads that a rewritten waiting manifest creates a new
+      condition, which is no longer true of a declaration-keyed signature; and a probe whose output changes while
+      its declaration does not is, under this key, still a single condition. Both are carried as follow-ons
+      rather than quietly claimed.</p>
+    </section>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; The skill points at the ensure command</h2>
+      <p>One file carries the change: <code>skills/reckon-ship/SKILL.md</code>. The command reaches a
+      coordinator from three places in it, because those are the three where a coordinator decides what to do
+      about a watcher — the <code>watcher-required</code> row of the dispatch refusal table, the producer
+      paragraph that explains what the refusal is answering, and the command block that lists the producer, the
+      follower and the ensure call together.</p>
+      <p><strong>The manual instruction that was present, and what replaced it.</strong> The section describes
+      prose telling a coordinator to export the backend directory and restart watcher units by hand. That
+      recipe is not in <code>skills/reckon-ship</code> at the base revision <code>52724ac9</code>. The search
+      is a case-insensitive pass for <code>export</code>, <code>PATH=</code>, <code>systemctl</code>,
+      <code>user unit</code>, <code>watcher unit</code>, <code>by hand</code> and <code>restart the
+      watcher</code> over every file under the directory: it returns no hit on the recipe, and the two
+      <code>by hand</code> rows it does return are unrelated (<code>effort-routing.md</code> on applying
+      routing thresholds manually, <code>sprint-orchestration.md</code> on hand-composing a delegation). The
+      same command returns the known-present <code>watcher-required</code> prose, so the instrument is aimed
+      rather than empty. The manual instruction actually present is the refusal table's <em>inspect the
+      reported watcher state</em>, and that is what is replaced: the table now names
+      <code>reckon crew watch --ensure --project P</code> as the repair, taken from the command the runtime's
+      own refusal carries in <code>watch_state()["ensure_line"]</code>. The non-reproduction is recorded rather
+      than papered over, because a section written against prose that has since been removed will otherwise be
+      dispatched again.</p>
+      <p><strong>The pointer is not dangling.</strong> The command the skill now names exists and resolves to
+      exactly the string the skill carries: <code>watcher_ensure_line("sample")</code> returns
+      <code>reckon crew watch --ensure --project sample</code>, and the option's own help states the
+      idempotency the skill repeats — "a second call on a live, unchanged unit reports it and starts
+      nothing".</p>
+      <p><strong>Gate.</strong> <code>tests/test_doccheck.py</code>,
+      <code>tests/test_skill_contracts.py</code> and <code>tests/test_skill_contract_parity.py</code> — the plan
+      gate plus every test file whose name mentions skill — run once to
+      <code>reports/reckon/s18-takeover/crpc-skills-point-at-the-ensure-command/head-gate.log</code>:
+      <strong>2 failed, 92 passed, exit 1</strong> at head against the same <strong>2 failed, 92
+      passed</strong> at base <code>52724ac9</code>, with the <code>FAILED</code> lists identical
+      (<code>diff</code> empty). Both failures are pre-existing and neither touches this change:
+      <code>test_ship_skill_states_one_monitor_per_session</code> asserts a phrase the skill no longer carries,
+      and in failing it quotes the file's own text — which is the positive control that the suite reads
+      <code>SKILL.md</code> as data rather than asserting against a fixture — and
+      <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> fails identically at base. No
+      test asserts the ensure line the skill now carries, so this node claims no coverage of the new prose;
+      the reader that does consume the file is the one the failure above demonstrates.</p>
+    </section>
+
+    <section id="s6">
+      <h2>&sect;6 &mdash; The repository comes from the project's mount, not from the caller's shell</h2>
+      <p>The incident this section records: two nodes were dispatched for one project from a shell whose working
+      directory was a different project's checkout, so the dispatch cut its worktrees from the repository
+      enclosing the caller. One worker oriented and found none of its declared write paths; the other was
+      stopped before it acted. The project's mount is the authority, so a caller naming no repository is given
+      the mount and a named repository resolving elsewhere is refused before any worktree, pointer or ledger row
+      exists.</p>
+      <p><code>reckon/crew/dispatch.py</code> gains two functions. <code>project_mount_repository(project)</code>
+      answers a project's repository root from the single mounted-project map every other scope resolution
+      already consults, rather than a second spelling of the same map. <code>resolve_project_repository(project,
+      repo, flag="--repo")</code> returns the mount when no repository is named, admits a named repository whose
+      <code>repository_identity</code> equals the mount's — a linked worktree shares the mount's git common
+      directory, so it is one repository under two paths, which is what lets a coordinator dispatch from inside
+      a worktree — and otherwise refuses naming both resolved roots and the flag. <code>dispatch()</code>
+      resolves through it, <code>plan_dispatch()</code> runs the same resolution for a dry run so the dry verdict
+      matches the real one, and <code>resume_plan()</code> resolves the run's recorded repository from the
+      project's mount before the ledger and budget lookups. <code>reckon/crew/resumption.py</code> does the same
+      at the point a resume rebuilds its launch, and <code>reckon/crew/promotion.py</code> resolves before
+      writing, ahead of the per-run commit check so a repository defect is reported as itself rather than as a
+      missing commit further down.</p>
+      <p><strong>The gate.</strong> <code>tests/test_crew_dispatch_watcher_required.py</code>,
+      <code>tests/test_crew_launch_resolution.py</code>, <code>tests/test_crew_recovery.py</code> and
+      <code>tests/test_crew_repository_from_the_project.py</code>, run once to
+      <code>reports/reckon/s18-takeover/crpc-repository-from-the-project/gate.log</code>: <strong>1 failed, 104
+      passed, exit 1</strong>. The failure set difference against base <code>025a22ff</code>'s
+      <code>crpc-dispatch-refuses-an-unwatched-project/gate.log</code> is empty: the one failure,
+      <code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, is in the base set
+      with the same text (the pytest temporary directory is refused as a git worktree), and the base log's other
+      five failures are in the watch-lifetime and watch-visibility files, which this gate's population does not
+      name. The five new cases are the added passes.</p>
+      <p><strong>Five declared mutations, five red logs.</strong> Each new test was reddened by a mutation of the
+      change it pins, and each red log is kept beside the green one in the report directory. Reverting
+      <code>dispatch()</code> to the caller's enclosing repository fails
+      <code>test_a_dispatch_naming_no_repository_is_cut_from_the_project_mount</code>; removing the
+      identity comparison from <code>resolve_project_repository</code> fails
+      <code>test_a_worktree_of_the_mount_is_admitted</code>; removing the refusal in
+      <code>resolve_project_repository</code> fails the cross-repository dispatch case; dropping the resolution
+      from <code>resumption._resume</code> fails the resume case; and dropping it from
+      <code>promotion.complete</code> fails the promotion case. The shared refusal mutation reddens the
+      dispatch, resume and promotion cases together, which is the same guard answering on three surfaces rather
+      than three guards that happen to agree.</p>
+      <p><strong>What this change does not reach.</strong> Two surfaces the plan's Files paragraph names are
+      not fully covered.
+      <code>reckon/cli.py::_repo_root</code> pre-resolves the repository enclosing the caller and passes that
+      resolved path into <code>crew.dispatch</code>, so the CLI path can never arrive with no repository named —
+      the library boundary is correct and the incident is fixed end-to-end only once the CLI passes the raw flag
+      through. That file is outside this node's write scope. And the Files paragraph names
+      <code>reckon/crew/runs.py</code> for member registration, but no member or roster code lives there: member
+      registration is <code>reckon/ledger.py::register_member</code> reached through
+      <code>routing.py</code>, so that surface could not be changed inside the granted fence. Both are recorded
+      as follow-ons.</p>
+      <p id="s6-cli"><strong>The command line passes the repository choice through, unnamed
+      (2026-09-19).</strong> The library boundary above was correct while <code>reckon/cli.py</code> defeated it:
+      <code>_repo_root(repo)</code> resolved the repository enclosing the caller and passed that path in at both
+      call sites — the real dispatch and the dry run — so a command-line dispatch could never arrive with no
+      repository named. Both now pass the flag value through unchanged, <code>None</code> when it is absent, so
+      the mount default applies; an explicit <code>--repo</code> still reaches
+      <code>resolve_project_repository</code>, which admits a worktree of the mount and refuses a different
+      repository exactly as before. The <code>--repo</code> help text now states the mount default rather than
+      the enclosing repository. <code>tests/test_crew_cli_repository.py</code> builds two temporary mounts and
+      invokes the command-line entry point from inside the second one with no flag, stubbing only the process
+      spawn and the watch seat, and asserts the cut worktree's <code>repository_identity</code> equals the
+      project's mount.</p>
+      <p><strong>The gate.</strong> <code>tests/test_crew_repository_from_the_project.py</code> and
+      <code>tests/test_crew_cli_repository.py</code>, run once to
+      <code>reports/reckon/s18-takeover/crpc-cli-passes-the-raw-repository/gate.log</code>:
+      <strong>6 passed, exit 0</strong>. <strong>The declared mutation.</strong> Restoring
+      <code>repo=_repo_root(repo)</code> at the dispatch call site reddens exactly the new case, and the
+      failure quotes the refusal naming the caller's checkout (<code>basalt</code>) and the mount
+      (<code>amber</code>) — kept at
+      <code>crpc-cli-passes-the-raw-repository/negative-control.log</code>. <strong>The follow-up's second
+      question.</strong> Member registration needs no equivalent change: it resolves through
+      <code>ledger_path(project, root)</code>, which with no <code>root</code> uses the project's registered
+      state path rather than the caller's directory, and it writes no worktree.</p>
+    </section>
+
+    <section id="s7">
+      <h2>&sect;7 &mdash; A node that writes a check declares the mutation it fails against</h2>
+      <p>The failure this section answers: a guard, assertion or test whose author never named the mutation it
+      must fail against is a check that passed by not exercising anything. Three of those landed in one week, each
+      green under its own gate, and each found by an independent reviewer rather than by the gate it was supposed
+      to serve. The trigger is therefore the node's <em>declared write paths</em> containing a test file, not
+      prose mined from the done-when, so the refusal rests on a structured field a dispatcher can read.</p>
+      <figure>
+        <img src="/reckon/figures/crew-runtime-positive-controls/declared-negative-control-flow.png"
+             alt="Two pipelines. Dispatch: a declared write path contains a test file, so the node must declare
+                  its negative control; with no declaration the dispatch is refused naming the field, with a
+                  declaration it dispatches. Promotion: a passing gate on such a node must name a red log whose
+                  content names the declared mutation; a missing, unreadable or unrelated log is refused naming
+                  the declaration, a matching log records the row verdict matched, and a declaration of
+                  none with a reason records the row verdict none-recorded.">
+        <figcaption>The declared negative control, at dispatch and at promotion.</figcaption>
+      </figure>
+      <p><code>reckon/crew/node.py</code> carries the evaluation and the composed text: <code>is_test_path</code>
+      recognises a test-naming basename (<code>test_*.py</code>, <code>*_test.py</code>, <code>*.test.*</code>,
+      <code>*.spec.*</code>) or an enclosing <code>test</code>/<code>tests</code> directory, and
+      <code>negative_control_finding</code> returns a finding naming the <code>negative_control</code> field and
+      the test path that triggered it. <code>reckon/crew/dispatch.py</code> appends that finding inside
+      <code>plan_dispatch</code>, immediately after <code>validate_node</code>, so a triggering node without a
+      declaration is refused before any worktree, live pointer or ledger row exists — the same way a missing
+      specification level is refused. The declaration travels as the new structured field
+      <code>TaskNode.negative_control</code>, emitted by <code>as_dict</code> into the live pointer and read back
+      through both rebuild paths, so promotion tests a field rather than re-deriving intent from the brief.</p>
+      <p><code>reckon/crew/promotion.py</code>'s <code>_require_declared_negative_control</code> is the second
+      surface. It resolves the manifest's <code>negative_control_log</code> against the manifest's own directory,
+      refuses when the field is absent, when the named log cannot be read, and when the log's text does not name
+      the declared mutation — a failing log for an unrelated reason is not the negative control, so the
+      declaration is matched against the log's content rather than against its existence. The recorded row
+      carries <code>negative_control</code> beside <code>impl_move</code>, with a verdict of
+      <code>matched</code>, <code>none-recorded</code> or <code>exempt</code> and the reason, so an audit reads
+      the outcome without reopening the run. A declaration of <code>none: &lt;reason&gt;</code> is the explicit
+      escape for a check no mutation can redden, and it is recorded rather than refused; a bare
+      <code>none</code> with no reason is refused naming that requirement.</p>
+      <p><strong>The gate.</strong> <code>tests/test_crew_repository_from_the_project.py</code>,
+      <code>tests/test_crew_dispatch_watcher_required.py</code>, <code>tests/test_crew_launch_resolution.py</code>,
+      <code>tests/test_crew_recovery.py</code> and the new
+      <code>tests/test_crew_declared_negative_control.py</code>, run once to
+      <code>reports/reckon/s18-takeover/crpc-declared-negative-control/gate.log</code>: <strong>1 failed, 112
+      passed, exit 1</strong>. The same population at base <code>fc15e7a7</code>, whose log is
+      <code>reports/reckon/s18-takeover/crpc-repository-from-the-project/gate.log</code>, gives <strong>1 failed,
+      104 passed</strong>. The failure <em>set</em> difference is empty: the one failure,
+      <code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, is in the base set with
+      the same text (the pytest temporary directory is refused as a git worktree), and the eight added passes are
+      this node's new cases.</p>
+      <p><strong>Eight cases, three declared mutations.</strong> The eight cases cover the dispatch refusal naming
+      the field and creating nothing, the same node admitted once it declares its mutation, the promotion refusal
+      naming the declared mutation when the manifest carries no log, the refusal of a log whose failure is for
+      another reason, the admitted red log that names the mutation with the row's <code>matched</code> verdict read
+      back from the ledger, the <code>none</code> declaration recorded with its reason, the bare
+      <code>none</code> refused, and a node writing no test path exempt. Each mutation was applied and run, and
+      each red log is kept beside the green one in the report directory with a header line naming the mutation:
+      removing the dispatch refusal reddens the missing-declaration case alone; removing the log-content match
+      reddens the unrelated-log case alone; and removing the promotion guard wholesale reddens the six
+      promotion-side cases together, which is one guard answering on each surface rather than several that happen
+      to agree.</p>
+      <p><strong>What this change does not reach.</strong> <code>reckon/crew/prompts.py</code>, which emits the
+      manifest template a worker reads, does not yet name <code>negative_control_log</code>, so a worker learns
+      the field from its node brief alone and a manifest that omits it is refused with the field named. That file
+      is outside this node's write scope and is recorded as a follow-on.</p>
+      <p><strong>The interface gap is closed.</strong> Both remainders reached every reader that way only
+      through the library record; neither was reachable from the command line. <code>reckon/cli.py</code>'s
+      <code>crew dispatch</code> now carries <code>--negative-control</code>, assigned to
+      <code>TaskNode.negative_control</code> before <code>plan_dispatch</code> judges the node, so the
+      refusal above is discharged from the command a coordinator runs; its one-line gloss names the field as
+      the mutation the node's checks must fail against and admits <code>none: &lt;reason&gt;</code>.
+      <code>reckon/crew/prompts.py</code>'s emitted manifest template now names
+      <code>negative_control_log</code> beside <code>tests</code> and <code>test_logs</code>, with the same
+      gloss, so the promotion refusal is legible from the contract handed to a worker rather than only from
+      its brief.</p>
+      <p><strong>The check that saw it.</strong> One throwaway node whose declared write path is a test file
+      was dispatched <code>--dry-run</code> through the real command line three times, with
+      <code>PYTHONPATH</code> pinned to this worktree so the edited command was the one exercised
+      (<code>reckon.cli.__file__</code> resolved inside the worktree, not the main checkout). Without the
+      option the dispatch exits <strong>2</strong> and refuses with a single finding,
+      <code>negative_control</code>, whose detail names both the field and the triggering test path. With
+      <code>--negative-control "&lt;mutation&gt;"</code> the same node resolves at exit <strong>0</strong>
+      with no findings, and the returned node record carries the declaration it was given. With
+      <code>--negative-control "none: &lt;reason&gt;"</code> it resolves likewise, so the explicit escape
+      reaches the interface rather than only the library. The rendered template was read back and the
+      <code>negative_control_log:</code> line confirmed present between <code>test_logs</code> and
+      <code>baseline_suite</code>. The three dispatch outputs, the rendered template, and the gate log are
+      under <code>reports/reckon/s18-takeover/crpc-expose-the-negative-control-on-dispatch/</code>. The
+      cases that pin the interface are the follow-on test node's; this node writes no test file, which is
+      what makes it dispatchable under the trigger it exists to satisfy.</p>
+      <p><strong>The interface is pinned by cases, not by a dry run.</strong> The option that sets the declaration
+      and the template line that names the log field landed together, verified only by a throwaway dry run because
+      the node that added them was forbidden a test file. <code>tests/test_crew_negative_control_interface.py</code>
+      now holds five cases over two properties, each entering where a caller enters: the real
+      <code>crew dispatch</code> command through Click's runner, and <code>compose_prompt</code> for the contract a
+      worker is handed. The dispatch cases assert that a test-writing node's <code>negative_control</code> finding
+      is its <em>only</em> finding and names both the field and the triggering path, that
+      <code>--negative-control "&lt;mutation&gt;"</code> resolves at exit 0 with the declaration carried on the
+      returned node record, and that <code>none: &lt;reason&gt;</code> resolves likewise. The template cases assert
+      the emitted <code>negative_control_log:</code> line sits between <code>test_logs</code> and
+      <code>baseline_suite</code>, glossed as the red log of the declared mutation.</p>
+      <p><strong>Each property fails under its own declared removal.</strong> Removing the
+      <code>--negative-control</code> option from the dispatch command reddens the two declaration-carrying cases
+      alone, the refusal case staying green, which shows the refusal never rested on the option while the
+      discharge does. Removing the template line reddens the two template cases alone. Both mutations were applied
+      in a scratch copy of the tree, so no source outside the new test file was touched, and each red log sits
+      beside the green one in the report directory with a header carrying the declared mutation verbatim — the
+      same string promotion matches against the log's content, so the deliverable discharges its own check. Gate:
+      <code>tests/test_crew_declared_negative_control.py</code> and the new file, run once to
+      <code>reports/reckon/s18-takeover/crpc-pin-the-negative-control-interface/gate.log</code>:
+      <strong>13 passed, exit 0</strong>.</p>
+      <p><strong>The naming convention is stated where it is read, not only enforced.</strong> Promotion's
+      guard matches the declared mutation against the red log's <em>content</em>, so a genuine failing run that
+      does not name the mutation is refused as a failure for some other reason. That requirement was enforced
+      from the day it landed while being written down nowhere a worker reads, and three nodes answered it three
+      different ways — a <code>MUTATION</code> header, a <code>MUTATION DECLARED</code> header, and no header at
+      all, the last refused at promotion until it was resumed to add one. The convention is now stated on both
+      surfaces a worker meets. <code>reckon/crew/prompts.py</code>'s manifest template gloss beside
+      <code>negative_control_log</code> states that the log's first line repeats the declared mutation verbatim,
+      so the requirement arrives with the contract the worker is handed — before the gate, not at it.
+      <code>reckon/crew/promotion.py</code>'s refusal states the same remedy while keeping the detail it already
+      carried, naming both the declared mutation and the resolved log path, so the refusal says what it wants
+      rather than only what is missing.</p>
+      <p><strong>The cases, and the mutation that reddens them.</strong>
+      <code>tests/test_crew_negative_control_header.py</code> holds one case per surface, each entering where a
+      reader reaches it: the template case reads the emitted prompt through <code>compose_prompt</code> and
+      asserts the gloss carries the first-line requirement, and the refusal case drives a promotion whose
+      manifest names a red log failing for an unrelated reason and asserts the refusal carries both the
+      pre-existing detail (the declared mutation and the log path) and the new remedy. One declared mutation —
+      removing the first-line sentence from the template gloss and from the refusal — reddens both cases, each
+      for its own sentence, and its red log is kept beside the green one at
+      <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/first_line_sentence_removed.red.log</code>,
+      whose own first line repeats the declared mutation verbatim, which is the convention this change
+      documents and therefore the log discharges the match it describes. Gate:
+      <code>tests/test_crew_declared_negative_control.py</code>,
+      <code>tests/test_crew_negative_control_interface.py</code> and the new file, run once to
+      <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
+      <strong>15 passed, exit 0</strong> against 13 at base <code>6b506e78</code>, the two added passes being
+      this node's cases.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
+      to <code>reports/reckon/s18-takeover/crpc-launch-resolution-and-failure-record-2/gate.log</code>:
+      <strong>9 failed, 170 passed, exit 1</strong>. The same population at base
+      <code>e0a8a967</code> gives <strong>9 failed, 161 passed</strong> — the nine added passes are the new
+      cases, and the failure <em>sets</em> are identical, so the node adds no failures. The nine pre-existing
+      failures are unrelated to the launch path (strictly, the resolution and reaper cases are the only ones
+      touching the changed lines and all of them pass).</p>
+      <p>An earlier run of the same gate added three failures, all from the canonicalisation defect above; they
+      are the measurement that found it, and they pass now.</p>
+      <p>&sect;4's gate is the recovery population plus the wait files —
+      <code>tests/test_crew_recovery.py</code>, <code>tests/test_crew_wait_stanza_validation.py</code> and
+      <code>tests/test_wait_marker_is_not_a_stub.py</code> — run once to
+      <code>reports/reckon/s18-takeover/crpc-wait-stanza-validation/gate.log</code>: <strong>1 failed, 138
+      passed, exit 1</strong>. The same population at base <code>ec46d14d</code> gives <strong>1 failed, 128
+      passed</strong>; the ten added passes are the new cases and the failure <em>id</em> is identical
+      (<code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code>, which fails on the
+      pytest temporary directory being refused as a git worktree and touches nothing on the wait path), so the
+      node adds no failures. Both mutations' red logs are in the same report directory.</p>
+      <p>The closure of the review's three findings is gated on the launch, recovery, wait and watch
+      populations — <code>tests/test_crew_launch_resolution.py</code>,
+      <code>tests/test_crew_launch_failure.py</code>, <code>tests/test_crew_recovery.py</code>,
+      <code>tests/test_crew_wait_stanza_validation.py</code> and every <code>tests/test_*watch*.py</code> — run
+      once to <code>reports/reckon/s18-takeover/crpc-arming-and-once-only-findings/gate.log</code>:
+      <strong>9 failed, 137 passed, exit 1</strong> at head, against <strong>9 failed, 135 passed</strong> at
+      base <code>ae589f5b</code>, with the failure <em>sets</em> identical (<code>diff</code> of the two
+      <code>FAILED</code> lists empty) — the two added passes are this node's new cases and no failure is added.
+      The nine pre-existing failures are unrelated to the change: each appears identically at base, none is in
+      the two launch files, and they are recorded rather than triaged here. Two mutations were run as negative
+      controls and both red logs are kept beside this record: disabling the single-event arming refusal fails
+      only <code>test_the_once_watch_arm_refuses_the_seat_when_a_routable_backend_is_missing</code>, and
+      removing the recorder's phase guard leaves the four pre-existing launch-failure cases green while the new
+      double-recording case fails.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -3,12 +3,14 @@ from __future__ import annotations
 import argparse
 import ast
 import ctypes
+import dataclasses
 import fcntl
 import json
 import os
 import re
 import select
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -17,9 +19,9 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
-from reckon import _backends, _store, capability, ledger
+from reckon import _backends, _store, capability, flight, ledger
 from reckon.calibration import agent_configuration_key
 from reckon.crew.node import (
     BudgetHold,
@@ -39,7 +41,11 @@ from reckon.crew.node import (
     _SAFE_ID,
     _TERMINAL_RUN_PHASES,
     normalize_section,
+    negative_control_finding,
     parse_duration,
+    placement_query_undeclared,
+    placement_requirement_node_local,
+    placement_requirement_unmet,
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt
@@ -88,9 +94,14 @@ from reckon.crew.runs import (
     new_run_id,
     pointer_path,
     process_alive,
+    placement_job_alive,
     read_pointer,
+    record_process_alive,
     reports_dir,
     run_dir,
+    scheduler_job_reason,
+    scheduler_job_state,
+    scheduler_kill_class,
     project_watch_visibility,
     watch_state,
     watch_stream_path,
@@ -123,6 +134,58 @@ _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
 # than refuse: short shared facts are the desired way to point back to a plan,
 # and making an advisory overlap check block dispatch would invite disabling it.
 DONE_WHEN_PLAN_TEXT_SPAN_WORDS = 23
+
+
+def project_mount_repository(project: str) -> Path | None:
+    """Return the repository root registered for one project's docs mount.
+
+    The answer comes from the same mounted-project map every other scope
+    resolution consults, so a project's mount has one definition rather than a
+    second spelling here.
+    """
+    for repository, projects in mounted_repository_projects().items():
+        if project in projects:
+            return repository
+    return None
+
+
+def resolve_project_repository(
+    project: str, repo: str | Path | None, *, flag: str = "--repo"
+) -> Path:
+    """Return the repository root one project's work is written in.
+
+    The project's registered mount decides it, never the repository enclosing
+    the caller's working directory. A caller that names no repository is given
+    the mount, because a dispatch run from another checkout otherwise cuts its
+    worktree from the wrong repository and the worker then finds none of its
+    declared write paths. A named repository is admitted when it resolves to
+    the same repository as the mount — a linked worktree shares the mount's git
+    common directory, so it is one repository under two paths, which is what
+    lets a coordinator dispatch from inside a worktree. Anything else is
+    refused before a worktree, pointer or ledger row exists, naming both
+    resolved roots and the flag so the caller can correct one of them.
+    """
+    mount = project_mount_repository(project)
+    if repo is None:
+        if mount is None:
+            raise CrewError(
+                f"project {project!r} has no registered mount, so {flag} must "
+                "name the repository its work is written in"
+            )
+        return mount
+    named = Path(repo).expanduser().resolve()
+    if mount is None:
+        return named
+    if repository_identity(named) == repository_identity(mount):
+        # One repository under two paths: the mount is the canonical root, and
+        # the caller's worktree names the same repository rather than a second
+        # one, so the work is still cut from the mount.
+        return mount
+    raise CrewError(
+        f"{flag} {named} is not the repository registered for project "
+        f"{project!r} ({mount}); the project's mount decides where its work is "
+        f"written, so name {mount} or omit {flag}"
+    )
 
 
 def _normalised_words(text: str) -> tuple[list[str], list[str]]:
@@ -672,7 +735,13 @@ def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
 def _ensure_watch_producer(
     project: str, *, session: str | None = None
 ) -> dict[str, Any]:
-    """Return the live producer, starting at most one across concurrent calls."""
+    """Return the watcher state, starting at most one producer across calls.
+
+    The returned state reports whether a producer is live rather than raising
+    when one cannot be brought up: admission is the caller's decision, and the
+    caller is also the only place that holds the session whose delivery is a
+    separate question from the watcher's liveness.
+    """
     arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
     arming_lock.parent.mkdir(parents=True, exist_ok=True)
     with arming_lock.open("a+b") as handle:
@@ -707,7 +776,7 @@ def _ensure_watch_producer(
             if supervisor.poll() is not None:
                 break
             time.sleep(0.05)
-        raise WatcherRequired(project, state)
+        return watch_state(project, session=session)
 
 
 @dataclass(frozen=True)
@@ -1955,6 +2024,138 @@ def _path_is_tmpfs(path: str | Path) -> bool:
     return bool(best and best[1] in {"tmpfs", "ramfs"})
 
 
+# A declared endpoint is probed before launch, so the probe is bounded: a slow
+# or absent router must refuse the placement rather than hold the dispatch open.
+_REQUIREMENT_PROBE_TIMEOUT_SECONDS = 3.0
+
+
+def _is_node_local_path(path: str | Path) -> bool:
+    """Whether a path lives on this node's own storage rather than shared.
+
+    The per-user runtime directory is named first because it is the case that
+    reads as present: it exists on every node, so a launch against it succeeds
+    and the worker then finds different bytes on the node it runs on. The mount
+    table is the general answer beneath it, covering any tmpfs the host mounts
+    for scratch.
+    """
+    text = str(Path(str(path)).expanduser())
+    if text == "/run/user" or text.startswith("/run/user/"):
+        return True
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime:
+        runtime_root = str(Path(runtime).expanduser())
+        if text == runtime_root or text.startswith(runtime_root.rstrip("/") + "/"):
+            return True
+    return _path_is_tmpfs(text)
+
+
+def _endpoint_answers(endpoint: str) -> tuple[bool, str]:
+    """Whether a host:port endpoint accepts a connection, and why not.
+
+    Bounded, because the check is a precondition of the launch rather than part
+    of it: a router that is slow to answer must refuse the placement rather
+    than hold the dispatch open.
+    """
+    host, separator, port_text = str(endpoint).strip().rpartition(":")
+    if not separator or not host:
+        return False, "not a host:port endpoint"
+    try:
+        port = int(port_text)
+    except ValueError:
+        return False, f"{port_text!r} is not a port"
+    try:
+        with socket.create_connection(
+            (host, port), timeout=_REQUIREMENT_PROBE_TIMEOUT_SECONDS
+        ):
+            return True, "reachable"
+    except OSError as exc:
+        return False, f"{host}:{port} refused the connection — {exc}"
+
+
+def check_placement_requirements(
+    placement: Mapping[str, Any] | None, *, backend_name: str
+) -> None:
+    """Refuse a placement before launch when something it declares is invisible.
+
+    Coordinator-side and ahead of every side effect, because the check decides
+    whether the launch is worth making: a requirement the target node cannot
+    see fails inside the worker and reads as a worker defect. A node-side check
+    would need the node to start, which is the thing being refused.
+
+    Only the declaration is read — no scheduler is invoked and no job is
+    submitted — so a dry run reaches the verdict a real dispatch reaches. A
+    backend declaring no placement is untouched, which keeps every backend
+    that declares none launching exactly as before.
+    """
+    if not isinstance(placement, Mapping) or not placement:
+        return
+    scheduler = str(placement.get("scheduler") or "")
+    queries = flight.placement_scheduler_queries(placement)
+    if scheduler and set(queries) != {"state_query", "reason_query"}:
+        raise CrewError(
+            placement_query_undeclared(backend=backend_name, scheduler=scheduler)
+        )
+    for name, path, endpoint in _placement_requirement_targets(placement):
+        if path is None and endpoint is None:
+            raise CrewError(
+                placement_requirement_unmet(
+                    backend=backend_name,
+                    placement=placement,
+                    name=name,
+                    detail="the requirement declares neither a path nor an endpoint",
+                )
+            )
+        if path is not None:
+            if _is_node_local_path(path):
+                raise CrewError(
+                    placement_requirement_node_local(
+                        backend=backend_name,
+                        placement=placement,
+                        name=name,
+                        path=path,
+                    )
+                )
+            if not Path(path).expanduser().exists():
+                raise CrewError(
+                    placement_requirement_unmet(
+                        backend=backend_name,
+                        placement=placement,
+                        name=name,
+                        detail=f"path {path!r} does not exist",
+                    )
+                )
+            continue
+        assert endpoint is not None
+        reachable, why = _endpoint_answers(endpoint)
+        if not reachable:
+            raise CrewError(
+                placement_requirement_unmet(
+                    backend=backend_name,
+                    placement=placement,
+                    name=name,
+                    detail=f"endpoint {endpoint!r} is unreachable — {why}",
+                )
+            )
+
+
+def _placement_requirement_targets(
+    placement: Mapping[str, Any],
+) -> Iterable[tuple[str, str | None, str | None]]:
+    """Yield each declared requirement as (name, path, endpoint).
+
+    An entry declaring neither target is yielded with both absent rather than
+    skipped, so a malformed declaration is refused by the caller instead of
+    silently passing a check it never ran.
+    """
+    for index, entry in enumerate(flight.placement_requirement_entries(placement)):
+        if not isinstance(entry, Mapping):
+            continue
+        name = str(entry.get("name") or f"requirement {index + 1}")
+        path = str(entry["path"]) if entry.get("path") else None
+        endpoint = str(entry["endpoint"]) if entry.get("endpoint") else None
+        yield name, path, endpoint
+
+
 def _resolved_write_paths(
     backend: Mapping[str, Any], *, run_directory: Path
 ) -> list[str]:
@@ -2083,6 +2284,12 @@ def plan_dispatch(
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
+    # A dry run must reach the verdict the real dispatch reaches, and the real
+    # dispatch refuses a repository that is not the project's mount, so the
+    # same resolution runs here. A caller that named no repository keeps its
+    # ``None``: only the dispatch path turns that into the mount.
+    if repo is not None and project_mount_repository(project) is not None:
+        repo = resolve_project_repository(project, repo)
     requested_backend = str(backend_override or default_backend_override or "").strip()
     # The configured local lane, named here so a ``--local`` dispatch has one
     # concrete backend to agree or disagree with. The CLI has already merged it
@@ -2164,6 +2371,12 @@ def plan_dispatch(
                 "expected 'cli' or 'in-harness'",
             )
         )
+    # A placement's declared requirements are checked here rather than at
+    # launch, so a dry run reports what a real dispatch would and the refusal
+    # lands before a worktree, a pointer or a job exists. A requirement the
+    # target node cannot see fails inside the worker and reads as a worker
+    # defect, which is the reading this refuses to hand anyone.
+    check_placement_requirements(backend.get("placement"), backend_name=backend_name)
     # Local is a property of where the dispatch actually landed, not of the
     # flag the caller passed: a request that resolved onto another backend — a
     # budget fallback, or a lane the caller named alongside the flag — is not a
@@ -2202,6 +2415,16 @@ def plan_dispatch(
     verdict = validate_node(
         node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
     )
+    # A node whose scope includes a test file writes a check, and a check whose
+    # author never named the mutation it must fail against is a guard that
+    # passed by not exercising anything. The trigger is the declared write path
+    # rather than the done-when prose, so the refusal rests on a structured
+    # field the dispatcher can read.
+    control_finding = negative_control_finding(node)
+    if control_finding is not None:
+        verdict = NodeValidation(
+            ok=False, findings=[*verdict.findings, control_finding]
+        )
     if not execution_fit.allowed:
         verdict = NodeValidation(
             ok=False,
@@ -2437,6 +2660,7 @@ def shadow_source(
         spec_level=str(definition.get("spec_level") or primary.get("spec_level") or ""),
         done_when=str(definition["done_when"]),
         write_paths=[str(path) for path in definition.get("write_paths") or ()],
+        negative_control=str(definition.get("negative_control") or ""),
         estimated_hours=definition.get("estimated_hours"),
         requires_decisions=[
             str(key) for key in definition.get("requires_decisions") or ()
@@ -2706,7 +2930,7 @@ def dispatch(
     *,
     node: TaskNode,
     project: str,
-    repo: str | Path,
+    repo: str | Path | None,
     config: Mapping[str, Any],
     session: str,
     wave: str = "",
@@ -2760,8 +2984,12 @@ def dispatch(
     supervisor as its live parent, so it remains valid after the dispatching
     process exits. A watch override records both the arming command and the
     liveness observed at the dispatch gate.
+
+    The repository is the project's own mount, resolved before any worktree,
+    pointer or ledger row exists, so a dispatch run from another checkout
+    cannot cut its worktree from that checkout.
     """
-    repo_root = Path(repo).resolve()
+    repo_root = resolve_project_repository(project, repo)
     worktree_identity = str(worktree_session or session)
     shadow_lineage = (
         dict(lineage_override)
@@ -3080,6 +3308,13 @@ def dispatch(
         watch_override = True
     if watch_required and not watch_override:
         dispatch_watch = _ensure_watch_producer(project, session=session)
+        # The watcher requirement is answered by the process, read from the
+        # watcher's own state — never by a session's follower, which is how a
+        # project with no watcher process at all kept admitting dispatches. A
+        # refusal here teaches the command that starts a durable watcher, which
+        # is idempotent, so it is safe to run against one already up.
+        if not dispatch_watch["watcher_live"]:
+            raise WatcherRequired(project, dispatch_watch)
         # A producer exists now. Whether this session hears what it writes is a
         # separate fact, and the only one that decides if the finished run gets
         # noticed, so it is checked before a worktree exists.
@@ -3236,6 +3471,12 @@ def dispatch(
             "task": None,
             "pid": None,
             "argv": None,
+            # The harness the launch resolves to, recorded explicitly rather
+            # than left to be read off argv[0]: a placed launch prefixes the
+            # scheduler onto the argv, so its first word names the scheduler and
+            # a later reader reconstructing the backend from it would translate
+            # the wrong lane.
+            "command": None,
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
@@ -3259,16 +3500,22 @@ def dispatch(
 
         if launch_kind == "cli":
             try:
-                plan = _backends.launch_plan(
-                    backend_name=backend_name,
-                    backend=backend,
-                    prompt=prompt,
-                    worktree=worktree["path"],
-                    manifest_path=node.manifest_path,
-                    writable_directories=resolution.sandbox_write_roots or (),
-                    final_message_path=str(final_path),
-                    resume_session=reuse_session,
+                plan = resolve_launch_executable(
+                    _backends.launch_plan(
+                        backend_name=backend_name,
+                        backend=backend,
+                        prompt=prompt,
+                        worktree=worktree["path"],
+                        manifest_path=node.manifest_path,
+                        writable_directories=resolution.sandbox_write_roots or (),
+                        final_message_path=str(final_path),
+                        resume_session=reuse_session,
+                    )
                 )
+                # Read before the placement wraps the plan: the harness is
+                # argv[0] here, and after the wrap argv[0] is the scheduler.
+                harness_command = str(plan.argv[0]) if plan.argv else None
+                plan = apply_backend_placement(plan, backend)
                 spawn = launcher or _spawn
                 spawned_pid = spawn(
                     plan,
@@ -3276,16 +3523,42 @@ def dispatch(
                     stderr_path=stderr_path,
                     prompt_path=prompt_path,
                 )
-            except (_backends.BackendError, OSError) as exc:
+            except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             spawned_start_time = _process_start_time(spawned_pid)
+            placement = flight.placement_for(backend)
+            job_id, job_id_status = placement_job_id(placement, run_id=run_id)
             record.update(
                 {
                     "pid": spawned_pid,
                     "pid_start_time": spawned_start_time,
                     "argv": list(plan.argv),
+                    "command": harness_command,
                     "dialect": plan.dialect,
                     "session_resumed": _launched_prior_session(plan) is not None,
+                    # A placed launch is charged to a scheduler job rather than
+                    # to the coordinator's own login slice, so the job is the
+                    # process identity a liveness read needs; it is recorded
+                    # beside the pid, from which it is not derivable.
+                    "job_id": job_id,
+                    # The queries the placement declares are carried onto the
+                    # record with it: a liveness read happens long after the
+                    # configuration that launched the run may have changed, and
+                    # the record is the only place the placement was ever
+                    # recorded. A record that keeps the wrapper without its
+                    # query cannot be asked about its own job.
+                    "placement": (
+                        None
+                        if placement is None
+                        else {
+                            "scheduler": str(placement["scheduler"]),
+                            "options": [
+                                str(item) for item in placement.get("options") or ()
+                            ],
+                            "job_id_status": job_id_status,
+                            **flight.placement_scheduler_queries(placement),
+                        }
+                    ),
                 }
             )
         else:
@@ -3353,12 +3626,186 @@ if __name__ == "__main__":
 # no corpse exists for that probe to misread. Owned by the process that called
 # :func:`_spawn`, because only the parent may wait on a child.
 _LAUNCHED_WORKERS: set[int] = set()
+# What each launched pid was launched as, so a reap can judge the exit against
+# the run it belongs to. A pid is only ever in both this map and the set above
+# together; the map is popped with the pid.
+_LAUNCHED_WORKER_RUNS: dict[int, dict[str, Any]] = {}
 _LAUNCHED_WORKERS_LOCK = threading.Lock()
 _LAUNCHED_WORKERS_WAKE = threading.Event()
 # The reaper thread, once started, behind the same lock as the set it guards.
 # A mutable holder rather than a rebound global so the start-once guard can
 # record it without a module-level reassignment.
 _LAUNCHED_WORKER_REAPER: dict[str, threading.Thread | None] = {"thread": None}
+
+
+# The stream file a launch writes its turn records into. A launch that produced
+# no byte of it never reached a model: the process is gone, so there is no turn
+# to wait for and no session to reuse, and the run is stopped rather than
+# retried. Named as a phase so every reader of the pointer sees the same thing.
+LAUNCH_FAILED_PHASE = "launch-failed"
+
+# How much of the failed launch's stderr is kept on the run. Enough for a
+# traceback or an exec diagnostic, bounded so a chatty backend cannot grow a
+# pointer without limit.
+_LAUNCH_FAILURE_STDERR_BYTES = 2048
+
+
+def _launched_worker_record(
+    plan: _backends.LaunchPlan, log_path: Path, stderr_path: Path
+) -> dict[str, Any] | None:
+    """Describe a launched worker, or None when its stream names no run.
+
+    The stream path is ``<run dir>/<turn>.jsonl``, so the run it belongs to is
+    the directory's name. A launch outside a run directory — a lane probe —
+    hands back None and is reaped exactly as before.
+    """
+    run_id = Path(log_path).parent.name
+    if not run_id or Path(log_path).parent != run_dir(run_id):
+        return None
+    return {
+        "run_id": run_id,
+        "stream_path": str(log_path),
+        "stderr_path": str(stderr_path),
+        "argv": list(plan.argv),
+        "backend": plan.backend,
+    }
+
+
+def _placement_job_state(
+    placement: Mapping[str, Any] | None, job_id: Any
+) -> str | None:
+    """The scheduler's state for a placed job, or None when it cannot be read."""
+    if not placement:
+        return None
+    try:
+        return scheduler_job_state(placement, job_id)
+    except (OSError, CrewError):
+        return None
+
+
+def _placement_job_alive(
+    placement: Mapping[str, Any] | None, job_id: Any
+) -> bool | None:
+    """Whether a placed job is still in the system, or None when unread."""
+    if not placement:
+        return None
+    try:
+        return placement_job_alive({"placement": placement, "job_id": job_id})
+    except (OSError, CrewError):
+        return None
+
+
+def _placed_record_identity(run_id: str) -> tuple[dict[str, Any] | None, Any]:
+    """The placement and job id a run's pointer carries, reading it once.
+
+    A reap holds nothing but the launched plan, so the run's own pointer is the
+    only place the placement was ever recorded. A pointer that cannot be read —
+    reclaimed between the reap and this question — answers no placement, which
+    leaves the reap on its original empty-stream rule.
+    """
+    try:
+        pointer = read_pointer(run_id)
+    except CrewError:
+        return None, None
+    placement = pointer.get("placement")
+    if not isinstance(placement, Mapping) or not placement:
+        return None, None
+    return dict(placement), pointer.get("job_id")
+
+
+def _launch_failure_record(
+    launched: Mapping[str, Any],
+    *,
+    exit_status: int,
+    placement: Mapping[str, Any] | None = None,
+    job_id: Any = None,
+) -> dict[str, Any]:
+    """The one record written for a launch that exited before any turn.
+
+    A placed launch is charged to a scheduler job, so its exit status is the
+    scheduler client's rather than the worker's and the payload log, not that
+    status, is what decides whether the work ran; the job's own terminal state
+    and reason are recorded beside it. A job the scheduler ended at a time or
+    memory limit is named distinctly, because resubmitting it unchanged fails
+    the same way.
+    """
+    stderr_tail = ""
+    try:
+        raw = Path(str(launched["stderr_path"])).read_bytes()
+        stderr_tail = raw[-_LAUNCH_FAILURE_STDERR_BYTES:].decode("utf-8", "replace")
+    except OSError:
+        stderr_tail = ""
+    state = _placement_job_state(placement, job_id)
+    reason = scheduler_job_reason(placement, job_id)
+    kind = scheduler_kill_class(state, reason) or "launch-failed"
+    record = {
+        "recorded_at": _utc_now(),
+        "kind": kind,
+        "backend": str(launched.get("backend") or ""),
+        "exit_status": exit_status,
+        "argv": list(launched.get("argv") or ()),
+        "stderr_tail": stderr_tail,
+        "stream_path": str(launched.get("stream_path") or ""),
+    }
+    if placement:
+        record["scheduler_state"] = state
+        record["scheduler_reason"] = reason
+    return record
+
+
+def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
+    """Record one launch failure on its run, and stop its lift loop.
+
+    A worker that exited with an empty stream is not a worker turn: no model
+    was reached, so there is nothing to resume from and nothing the lift loop
+    can usefully retry. Recording happens once per failure and the phase stops
+    a further lift until a person resumes or completes the run, which is what
+    breaks the measured loop of one 0-byte stream every two minutes.
+    """
+    stream = Path(str(launched.get("stream_path") or ""))
+    try:
+        size = stream.stat().st_size
+    except OSError:
+        # A stream that was never created is the same fact as an empty one.
+        size = 0
+    # The payload log, not the step's exit status, decides whether the work ran:
+    # a placed launch's exit status belongs to the scheduler client, and a step
+    # the scheduler reports COMPLETED can still have aborted before reaching a
+    # model. A non-empty stream is a turn that ran whatever the status says.
+    if size:
+        return
+    run_id = str(launched.get("run_id") or "")
+    if not run_id:
+        return
+    placement, job_id = _placed_record_identity(run_id)
+    # The pid that finished is the scheduler client, not the worker, so a job
+    # still in the system means the worker has not ended and there is no failure
+    # to record yet. Only a job that has left the queue is judged.
+    if placement and _placement_job_alive(placement, job_id) is True:
+        return
+    record = _launch_failure_record(
+        launched,
+        exit_status=exit_status,
+        placement=placement,
+        job_id=job_id,
+    )
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        phase = str(pointer.get("phase") or "")
+        if phase == LAUNCH_FAILED_PHASE or phase in _TERMINAL_RUN_PHASES:
+            return pointer
+        pointer["phase"] = LAUNCH_FAILED_PHASE
+        failures = list(pointer.get("launch_failures") or ())
+        failures.append(record)
+        pointer["launch_failures"] = failures
+        return pointer
+
+    try:
+        _mutate_pointer(run_id, mutation)
+    except CrewError:
+        # The pointer was reclaimed between the reap and the write; there is
+        # no run left to mark, which is not this reaper's failure to report.
+        return
 
 
 def _reap_launched_workers() -> None:
@@ -3374,7 +3821,7 @@ def _reap_launched_workers() -> None:
         pending = list(_LAUNCHED_WORKERS)
     for pid in pending:
         try:
-            got, _status = os.waitpid(pid, os.WNOHANG)
+            got, status = os.waitpid(pid, os.WNOHANG)
         except ChildProcessError:
             with _LAUNCHED_WORKERS_LOCK:
                 _LAUNCHED_WORKERS.discard(pid)
@@ -3384,6 +3831,11 @@ def _reap_launched_workers() -> None:
         if got:
             with _LAUNCHED_WORKERS_LOCK:
                 _LAUNCHED_WORKERS.discard(pid)
+                launched = _LAUNCHED_WORKER_RUNS.pop(pid, None)
+            if launched is not None:
+                _record_launch_failure(
+                    launched, exit_status=os.waitstatus_to_exitcode(status)
+                )
 
 
 def _worker_reaper_loop() -> None:
@@ -3455,8 +3907,15 @@ def _export_launched_workers_for_reexec() -> None:
     """
     with _LAUNCHED_WORKERS_LOCK:
         outstanding = sorted(_LAUNCHED_WORKERS)
+        carried = {
+            str(pid): dict(_LAUNCHED_WORKER_RUNS[pid])
+            for pid in outstanding
+            if pid in _LAUNCHED_WORKER_RUNS
+        }
     if outstanding:
-        os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(outstanding)
+        os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(
+            {"pids": outstanding, "runs": carried}
+        )
     else:
         os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, None)
 
@@ -3475,11 +3934,22 @@ def _adopt_launched_workers_from_reexec() -> None:
     if not raw:
         return
     try:
-        pids = [int(pid) for pid in json.loads(raw)]
+        payload = json.loads(raw)
     except (TypeError, ValueError):
         return
+    # A bare pid list is the older carrier; the mapping is the current one.
+    if isinstance(payload, dict):
+        pids = [int(pid) for pid in payload.get("pids") or ()]
+        runs_carried = payload.get("runs") or {}
+    else:
+        pids = [int(pid) for pid in payload]
+        runs_carried = {}
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.update(pid for pid in pids)
+        for pid in pids:
+            entry = runs_carried.get(str(pid))
+            if isinstance(entry, dict):
+                _LAUNCHED_WORKER_RUNS[pid] = dict(entry)
         adopted = bool(_LAUNCHED_WORKERS)
         if adopted:
             _LAUNCHED_WORKERS_WAKE.set()
@@ -3505,6 +3975,186 @@ def _launched_prior_session(plan: _backends.LaunchPlan | None) -> str | None:
     if str(session) not in [str(token) for token in plan.argv]:
         return None
     return carried
+
+
+class LaunchResolutionError(CrewError):
+    """A backend command could not be resolved against the launching PATH."""
+
+
+def launch_search_path(environment: Mapping[str, str] | None = None) -> str:
+    """Return the PATH a launch will search: the plan's environment, then ours."""
+    merged = {**os.environ, **(environment or {})}
+    return str(merged.get("PATH") or os.defpath)
+
+
+def resolve_launch_executable(
+    plan: _backends.LaunchPlan,
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> _backends.LaunchPlan:
+    """Return the plan with argv[0] replaced by an absolute executable path.
+
+    The launch inherits the PATH of whoever started it, so a watcher armed
+    without the backend directory execs a bare name, dies at exec and leaves an
+    empty stream that reads as a worker turn. Resolving at plan construction
+    makes the launch either runnable or an explicit refusal, and the refusal
+    names the binary and the PATH that was searched so the repair is a command
+    rather than an investigation.
+
+    ``environment`` is the overlay the launch will run with; absent, the plan's
+    own environment is used, which is what every construction site passes.
+    """
+    merged = {
+        **os.environ,
+        **(plan.environment if environment is None else environment),
+    }
+    searched = str(merged.get("PATH") or os.defpath)
+    binary = str(plan.argv[0]) if plan.argv else ""
+    resolved = shutil.which(binary, path=searched) if binary else None
+    if not resolved:
+        raise LaunchResolutionError(
+            f"backend command {binary!r} cannot be resolved on the PATH this "
+            f"launch would search: {searched} — install it or add its directory "
+            "to PATH, then retry; nothing has been launched"
+        )
+    # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
+    # to ``codex.js`` must still be exec'd under the name the launch was
+    # configured with, because that name is how the command's dialect is
+    # selected and how the run records what it ran.
+    resolved = os.path.abspath(resolved)
+    return dataclasses.replace(plan, argv=[resolved, *plan.argv[1:]])
+
+
+def apply_backend_placement(
+    plan: _backends.LaunchPlan, backend: Mapping[str, Any]
+) -> _backends.LaunchPlan:
+    """Prefix an already-resolved launch with its backend's declared placement.
+
+    The resolved argv is carried through unchanged behind the scheduler
+    invocation, so the absolute executable, the environment, and the stdin,
+    stdout and stderr paths the launch was built with are the ones that run.
+    The scheduler executable is resolved against the same PATH the launch
+    searches, because an unresolvable wrapper would die at exec and leave an
+    empty stream that reads as a worker turn — the failure the launch resolution
+    above exists to turn into an explicit refusal.
+
+    A backend declaring no placement is returned untouched, which is what keeps
+    an undeclared backend launching as a child of the coordinator exactly as it
+    does today.
+    """
+    from reckon import flight
+
+    placement = flight.placement_for(backend)
+    if placement is None:
+        return plan
+    searched = launch_search_path(plan.environment)
+    scheduler = str(placement["scheduler"])
+    found = shutil.which(scheduler, path=searched)
+    if not found:
+        raise LaunchResolutionError(
+            f"the declared placement names scheduler {scheduler!r}, which cannot "
+            f"be resolved on the PATH this launch would search: {searched} — "
+            "install it or add its directory to PATH, then retry; nothing has "
+            "been launched"
+        )
+    prefix = [
+        os.path.abspath(found),
+        *[str(item) for item in placement.get("options") or ()],
+    ]
+    return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
+
+
+# How long a declared job-id probe is given to answer, and how many times it is
+# retried. The scheduler assigns the identifier as the job is admitted, so a
+# probe read in the same instant as the spawn can precede the assignment.
+_PLACEMENT_PROBE_TIMEOUT_SECONDS = 10
+_PLACEMENT_PROBE_ATTEMPTS = 3
+
+
+def placement_job_id(
+    placement: Mapping[str, Any] | None,
+    *,
+    run_id: str,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> tuple[str | None, str]:
+    """Ask the scheduler which job a placed launch became.
+
+    Returns the identifier and a status naming what happened, because a
+    placement that reaches a job always identifies it while one that cannot
+    must say so rather than record a fabricated id. ``{run}`` in the probe
+    argument vector is replaced by the run id, which is how a probe addresses
+    the job it is asking about without reckon knowing any scheduler's own
+    vocabulary.
+    """
+    if not placement:
+        return None, "no-placement"
+    probe = placement.get("job_id_probe")
+    if not probe:
+        return None, "no-probe-declared"
+    argv = [str(token).replace("{run}", run_id) for token in probe]
+    run = runner or subprocess.run
+    last = ""
+    for attempt in range(_PLACEMENT_PROBE_ATTEMPTS):
+        try:
+            completed = run(
+                argv,
+                capture_output=True,
+                text=True,
+                timeout=_PLACEMENT_PROBE_TIMEOUT_SECONDS,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            last = f"probe failed to run — {exc}"
+        else:
+            for token in str(completed.stdout or "").split():
+                if token.isdigit():
+                    return token, "recorded"
+            last = (
+                "probe answered no identifier "
+                f"(exit {completed.returncode})"
+            )
+        if attempt + 1 < _PLACEMENT_PROBE_ATTEMPTS:
+            time.sleep(1.0)
+    return None, last or "probe answered no identifier"
+
+
+def assert_routable_backends_resolvable(
+    project: str,
+    config: Mapping[str, Any],
+) -> list[dict[str, str]]:
+    """Refuse when any backend this project can route to has no executable.
+
+    A watcher that cannot resolve a backend it may be asked to lift is a
+    watcher that reads as armed and silently loses every park it lifts, so the
+    check runs before the registration is taken rather than at the first lift.
+    """
+    resolved: list[dict[str, str]] = []
+    from reckon import flight
+
+    for name in sorted((config.get("backends") or {}), key=str):
+        backend = (config.get("backends") or {})[name] or {}
+        if backend.get("launch") != "cli":
+            continue
+        command = str(backend.get("command") or "")
+        if not command:
+            continue
+        environment = flight.expand_backend_environment(str(name), backend)
+        path = launch_search_path(environment)
+        found = shutil.which(command, path=path)
+        if not found:
+            raise LaunchResolutionError(
+                f"project {project!r} routes to backend {name!r} whose command "
+                f"{command!r} cannot be resolved on the PATH the launch would "
+                f"search: {path} — install it or add its directory to PATH, "
+                "then arm the watcher again; it is not armed"
+            )
+        resolved.append(
+            {
+                "backend": str(name),
+                "command": command,
+                "executable": os.path.abspath(found),
+            }
+        )
+    return resolved
 
 
 def _spawn(
@@ -3543,6 +4193,9 @@ def _spawn(
         )
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
+        launched = _launched_worker_record(plan, log_path, stderr_path)
+        if launched is not None:
+            _LAUNCHED_WORKER_RUNS[process.pid] = launched
     _LAUNCHED_WORKERS_WAKE.set()
     _ensure_launched_worker_reaper()
     return process.pid
@@ -3602,7 +4255,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["manifest_file_present"] = manifest_file_present
         record["manifest_fresh"] = manifest_fresh
         record["manifest_present"] = manifest_fresh
-        record["process_alive"] = process_alive(record.get("pid"))
+        record["process_alive"] = record_process_alive(record, process_alive)
         record["observed_at"] = _utc_now()
         stopped = record.get("phase") == "stopped"
 
@@ -3900,20 +4553,31 @@ def _backend_settings(
     """Rebuild the settings a recorded run's stream is read with.
 
     Two authorities carry different parts of the rebuild, and dropping either
-    corrupts the reading. The recorded argv is the ground truth for the command,
-    so a run stays observable after its config layer changes. The configured
-    lane supplies the window, the model and the effort, without which a
-    stream-announced window substitutes as the utilisation's denominator and a
-    resumed turn launches without its recorded model. The two are merged rather
-    than one derived from the other, and a value the row recorded itself wins
-    the merge: the row is the authority for what it was measured against, which
-    a fresh config lookup cannot answer for a run already in flight.
+    corrupts the reading. The recorded command is the ground truth for the
+    harness, so a run stays observable after its config layer changes. The
+    configured lane supplies the window, the model and the effort, without
+    which a stream-announced window substitutes as the utilisation's
+    denominator and a resumed turn launches without its recorded model. The two
+    are merged rather than one derived from the other, and a value the row
+    recorded itself wins the merge: the row is the authority for what it was
+    measured against, which a fresh config lookup cannot answer for a run
+    already in flight.
     """
     backends = (config or {}).get("backends") or {}
     configured = backends.get(record.get("backend"))
     argv = record.get("argv")
-    if isinstance(argv, list) and argv:
-        settings: dict[str, Any] = {"launch": "cli", "command": argv[0]}
+    # The harness is read from the record's own explicit field rather than from
+    # argv[0]. A placed launch prefixes the scheduler onto the argv, so the
+    # first word of a placed run's argv names the scheduler, and a reader
+    # taking the harness from it translates the wrong lane — the launch itself
+    # succeeded, and only the identity a later reader infers is wrong. A record
+    # written before the field existed falls back to argv[0], which is the
+    # harness for every launch that was not placed.
+    command = str(record.get("command") or "").strip()
+    if not command and isinstance(argv, list) and argv:
+        command = str(argv[0])
+    if command:
+        settings: dict[str, Any] = {"launch": "cli", "command": command}
     elif isinstance(configured, Mapping):
         settings = dict(configured)
     else:
@@ -3921,6 +4585,14 @@ def _backend_settings(
             f"run {record.get('run_id')!r} records no argv and its backend is not "
             "in the supplied config, so its stream cannot be read"
         )
+    # The identity the launch resolved to, recorded beside the command. It is
+    # consulted when the command's own stem names no dialect, which is the case
+    # a placed run produces; a record naming only its lane still resolves.
+    identity = str(record.get("dialect") or "").strip() or str(
+        record.get("backend") or ""
+    ).strip()
+    if identity:
+        settings.setdefault("dialect", identity)
     for key in ("usable_input_window", "model", "effort"):
         if isinstance(configured, Mapping) and configured.get(key) is not None:
             settings.setdefault(key, configured[key])
@@ -3952,9 +4624,19 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if process_alive(record.get("pid")) is True:
+    if record_process_alive(record, process_alive) is True:
         raise CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
+        )
+    # The ledger and budget lookups below run against the project's own mount,
+    # so a run recorded in another repository is refused here and a run whose
+    # record names none falls back to the mount rather than to whatever
+    # checkout the resuming session happens to stand in.
+    resume_project = str(record.get("project") or "")
+    resume_root = record.get("repo")
+    if resume_project and project_mount_repository(resume_project) is not None:
+        resume_root = resolve_project_repository(
+            resume_project, resume_root, flag="the run's recorded repository"
         )
     # The pointer is a cache. A stream may already carry the captured session
     # while the next observation has not folded it into that cache yet.
@@ -3963,8 +4645,8 @@ def resume_plan(
     session = resolve_session(
         run_id,
         record=record,
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
+        project=resume_project,
+        root=resume_root,
     )
     session_id = str(session.get("session_id") or "")
     if not session["resolved"]:
@@ -3974,8 +4656,8 @@ def resume_plan(
         )
     backend = _backend_settings(record, config)
     verdict = _budget_verdict(
-        project=str(record.get("project") or ""),
-        root=record.get("repo"),
+        project=resume_project,
+        root=resume_root,
         config=config,
         backend_name=str(record.get("backend") or ""),
         backend=backend,
@@ -3984,6 +4666,20 @@ def resume_plan(
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
     backend.setdefault("sandbox", record.get("sandbox"))
+    # The plan is built — and its executable resolved — before anything is
+    # written, so an unresolvable backend refuses a resume exactly as it
+    # refuses a dispatch: no pointer field, no advice file, no stream.
+    plan = resolve_launch_executable(
+        _backends.launch_plan(
+            backend_name=str(record.get("backend") or ""),
+            backend=backend,
+            prompt=advice,
+            worktree=str(record.get("worktree") or "."),
+            manifest_path=str(record.get("manifest_path") or ""),
+            writable_directories=record.get("sandbox_write_roots") or (),
+            resume_session=str(session_id),
+        )
+    )
     # A resumption reuses the recorded session and never re-verifies that the
     # session's context window fits the repository it is resumed into; only a
     # fresh dispatch runs that check. The pointer must say so explicitly, or a
@@ -4004,15 +4700,7 @@ def resume_plan(
             },
         },
     )
-    return _backends.launch_plan(
-        backend_name=str(record.get("backend") or ""),
-        backend=backend,
-        prompt=advice,
-        worktree=str(record.get("worktree") or "."),
-        manifest_path=str(record.get("manifest_path") or ""),
-        writable_directories=record.get("sandbox_write_roots") or (),
-        resume_session=str(session_id),
-    )
+    return plan
 
 
 def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
@@ -4033,6 +4721,7 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         manifest_path=str(
             data.get("manifest_path") or record.get("manifest_path") or ""
         ),
+        negative_control=str(data.get("negative_control") or ""),
         estimated_hours=data.get("estimated_hours"),
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
     )
@@ -4325,15 +5014,17 @@ def change_lane(
     }
     target_plan: _backends.LaunchPlan | None = None
     if target_launch == "cli":
-        target_plan = _backends.launch_plan(
-            backend_name=resolution.backend,
-            backend=backend,
-            prompt=prompt,
-            worktree=str(record.get("worktree") or "."),
-            manifest_path=str(record.get("manifest_path") or ""),
-            writable_directories=resolution.sandbox_write_roots or (),
-            final_message_path=str(final_path),
-            resume_session=session_id if continued else None,
+        target_plan = resolve_launch_executable(
+            _backends.launch_plan(
+                backend_name=resolution.backend,
+                backend=backend,
+                prompt=prompt,
+                worktree=str(record.get("worktree") or "."),
+                manifest_path=str(record.get("manifest_path") or ""),
+                writable_directories=resolution.sandbox_write_roots or (),
+                final_message_path=str(final_path),
+                resume_session=session_id if continued else None,
+            )
         )
     preview: dict[str, Any] = {
         "run_id": run_id,
@@ -4363,7 +5054,7 @@ def change_lane(
             f"run {run_id!r} is attached to live harness task {record['task']!r}; "
             "cancel it in that harness before changing backend"
         )
-    if source_launch == "cli" and process_alive(record.get("pid")) is True:
+    if source_launch == "cli" and record_process_alive(record, process_alive) is True:
         _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
 
     directory.mkdir(parents=True, exist_ok=True)
