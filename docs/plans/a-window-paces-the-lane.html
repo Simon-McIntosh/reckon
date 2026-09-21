@@ -303,7 +303,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     as a figure taken this instant.</p>
 
     <figure>
-      <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Five lanes collapse into two declared groups: four codex lanes into one wallet whose position is codex-astra's freshest 14% reading at age 0 s, and codex-spark into its own wallet at 88% and age 6.7 days. An undeclared codex-terra joins no group.">
+      <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Six lanes and three declarations, each drawn as a connector: the four sol-family lanes codex, codex-astra, codex-terra and codex-luna into one wallet whose position is codex-astra's freshest 14% reading at age 0 s; codex-spark onto a wallet of its own at 88% and age 6.7 days; and codex-orphan, declaring no wallet, joining no group and holding no position.">
       <figcaption>The declared slot alone groups; the freshest member alone supplies the figure, with its own age.</figcaption>
     </figure>
 
@@ -313,8 +313,21 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     never to fall back to zero when nothing can be aged; and the module is asserted to expose no
     per-backend position entry point. The declared mutation &mdash; reporting the first member carrying
     an ageing reading instead of the one with the newest observation stamp, applied to a scratch copy of
-    the package &mdash; reddens four of the twelve tests. Full record:
-    <a href="/plan/reckon/a-window-paces-the-lane-landed">the landed evidence record</a>.</p>
+    the package &mdash; reddens 4 of the 14 tests at the head of this correction, against 12 passing at the
+    base revision with none added failing. Full record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#group-position">the landed evidence record</a>.</p>
+
+    <p><strong>Review closure.</strong> An independent review of the node that first landed this module
+    recorded five findings, and all five are closed. The fixture's undeclared control had reused a lane
+    belonging to the asserted wallet, so the wallet held three members while the comment and the figure
+    claimed four and the five-lane census only appeared to be asserted &mdash; the control is now its own
+    backend and membership is asserted by counting resolved members. The figure drew three connectors
+    into a wallet its own label called four lanes and drew the fourth lane as undeclared &mdash; it now
+    draws one connector per lane to its declaration, with the undeclared lane in its own dashed box, and
+    the alt text says six lanes. The landed-record link used the plan route instead of the typed evidence
+    route. The figure, previously an unintended fifth changed path, is now named in the node's declared
+    write fence. <code>GroupPosition.observed_at</code> declared only a string while the code path copies
+    an epoch number through; the annotation and a field-type assertion now agree with the path.</p>
 
     <p><strong>Not in this node.</strong> Nothing in the lanes view or the pacing path is rewired here:
     the re-query of a reading past its shelf life, and the rendering of a lane whose figure came from a
