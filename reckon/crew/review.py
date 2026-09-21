@@ -34,6 +34,8 @@ and folding them into that predicate would mark every one of them incomplete.
 It also records the production call sites the reviewer verified against the
 change. A literal ``CALL_SITES: none`` is an explicit zero; an omitted line is
 left absent so a missing measurement cannot be mistaken for a measured zero.
+A label with no usable value is also left absent, but carries a machine-readable
+emission state so a partial answer is not confused with an omitted question.
 
 The parser is on the live path, not a library awaiting a caller: dispatch and
 runs resolve the review store through :func:`review_store_root`,
@@ -167,6 +169,9 @@ def parse_review(text: str) -> dict[str, Any]:
       explicit ``CALL_SITES: none`` records an empty list and zero; an omitted
       line leaves both keys absent because omission and zero are different
       claims.
+    - ``call_sites_emission`` — ``"empty"`` when the reviewer emitted the
+      label but supplied no site, whitespace, or only separators. The count
+      remains absent in this state because the line measured nothing.
     - ``findings`` — a list of ``{"file", "line", "text"}``.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
@@ -184,6 +189,7 @@ def parse_review(text: str) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     call_sites: list[str] = []
     call_sites_seen = False
+    call_sites_emission: str | None = None
     for raw in text.splitlines():
         line = raw.strip()
         match = _SCORE_RE.match(line)
@@ -214,10 +220,15 @@ def parse_review(text: str) -> dict[str, Any]:
         if match:
             call_sites_seen = True
             value = match.group(1).strip()
-            if value.lower() != "none":
-                call_sites = [
-                    site.strip() for site in value.split(",") if site.strip()
-                ]
+            if value.lower() == "none":
+                call_sites_emission = "none"
+            else:
+                call_sites = [site.strip() for site in value.split(",") if site.strip()]
+                if call_sites:
+                    call_sites_emission = "sites"
+                else:
+                    call_sites_seen = False
+                    call_sites_emission = "empty"
             continue
         match = _FIND_RE.match(line)
         if match:
@@ -252,6 +263,8 @@ def parse_review(text: str) -> dict[str, Any]:
     if call_sites_seen:
         record["call_sites"] = call_sites
         record["call_site_count"] = len(call_sites)
+    if call_sites_emission == "empty":
+        record["call_sites_emission"] = call_sites_emission
     return record
 
 

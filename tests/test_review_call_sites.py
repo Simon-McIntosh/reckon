@@ -27,12 +27,40 @@ def test_none_call_sites_is_an_explicit_parseable_zero() -> None:
     record = review_module.parse_review(_dimension_scores() + "\nCALL_SITES: none")
     assert record["call_sites"] == []
     assert record["call_site_count"] == 0
+    assert "call_sites_emission" not in record
 
 
 def test_omitted_call_sites_is_absent_rather_than_zero() -> None:
     record = review_module.parse_review(_dimension_scores())
     assert "call_sites" not in record
     assert "call_site_count" not in record
+    assert "call_sites_emission" not in record
+
+
+def test_empty_call_site_emissions_are_absent_and_filterable() -> None:
+    omitted = review_module.parse_review(_dimension_scores())
+    records = {
+        "empty": review_module.parse_review(_dimension_scores() + "\nCALL_SITES:"),
+        "whitespace": review_module.parse_review(
+            _dimension_scores() + "\nCALL_SITES:   "
+        ),
+        "delimiters": review_module.parse_review(
+            _dimension_scores() + "\nCALL_SITES: , ,"
+        ),
+    }
+
+    for record in records.values():
+        assert "call_sites" not in record
+        assert "call_site_count" not in record
+        assert record["call_sites_emission"] == "empty"
+
+    assert "call_sites_emission" not in omitted
+    incomplete = [
+        record
+        for record in [*records.values(), omitted]
+        if record.get("call_sites_emission") == "empty"
+    ]
+    assert incomplete == list(records.values())
 
 
 def test_zero_count_can_be_filtered_without_matching_prose() -> None:

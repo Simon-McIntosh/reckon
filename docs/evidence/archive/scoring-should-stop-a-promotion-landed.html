@@ -442,14 +442,29 @@
     call-site list and its integer count only when the line is present, preserving the
     distinction between an explicit zero and an omitted measurement.</p>
     <table>
-      <caption>The three parse states remain machine-distinguishable.</caption>
+      <caption>Measured zero, missing measurement, and incomplete emission remain machine-distinguishable.</caption>
       <thead><tr><th>Emission</th><th>Stored fields</th><th>Meaning</th></tr></thead>
       <tbody>
         <tr><td><code>CALL_SITES: reckon/crew/promotion.py:_require_review_waiver, reckon/crew/recovery.py:_review_is_complete</code></td><td><code>call_sites</code> has two entries; <code>call_site_count = 2</code></td><td>two production call sites were verified</td></tr>
         <tr><td><code>CALL_SITES: none</code></td><td><code>call_sites = []</code>; <code>call_site_count = 0</code></td><td>the reviewer measured that no production call site was found</td></tr>
         <tr><td>line omitted</td><td>both keys are absent</td><td>no call-site measurement was emitted; this is not zero</td></tr>
+        <tr><td><code>CALL_SITES:</code>, whitespace only, or separators only</td><td>both measurement keys are absent; <code>call_sites_emission = "empty"</code></td><td>the reviewer began the emission but supplied no measurable value</td></tr>
       </tbody>
     </table>
+    <p><strong>Empty is not zero.</strong> At base <code>2d6e5121</code>, the literal
+    <code>none</code>, an empty value, whitespace only, and separators only all stored
+    <code>call_sites = []</code> and <code>call_site_count = 0</code>; an omitted line
+    stored neither key, while a known production site stored count 1. Commit
+    <code>68514d4f</code> reserves the explicit zero for the literal <code>none</code>.
+    The other three shapes now omit both measurement keys and carry
+    <code>call_sites_emission = "empty"</code>, so readers can filter incomplete answers
+    without treating them as silence.</p>
+    <p><strong>Guard receipt.</strong> The focused gate reports <strong>6 passed</strong>.
+    In an isolated archive of the committed tree, restoring measured-zero storage for an empty
+    emission produced <strong>1 failed, 5 passed</strong> at
+    <code>test_empty_call_site_emissions_are_absent_and_filterable</code>; the archive import
+    resolved under its own root and the committed parser remained byte-identical before and after
+    the control. Receipt: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T150156962762-an-empty-call-sites-emission-is-not-a-measured-zero/negative-control-empty-call-sites.log</code>.</p>
     <p><strong>Falsifiers and compatibility.</strong> The existing prompt falsifier in
     <code>tests/test_review_scoring.py</code> was extended rather than duplicated to require the
     call-site vocabulary, the non-optional wording, and the test-file exclusion. New
