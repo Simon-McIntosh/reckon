@@ -177,6 +177,23 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     unknown, asserted for a fleet whose newest streams carry no window at all, and asserted not to
     fall back to zero or to one in that case.</p>
 
+    <p><strong>Landed 2026-09-21.</strong> The reader is
+    <code>reckon/crew/window_reading.py</code>. It returns each reported period's utilisation
+    together with the observation age of the reading that carried it, or an explicit unknown whose
+    accessor yields <code>None</code> rather than a number. Its tests are
+    <code>tests/test_window_reading.py</code>; the commit is insert-only and changes no existing
+    call path. The clause-by-clause assertions are as the section states them, and two controls
+    carry the measure beyond the reader's own convenience: a window the provider reports as
+    <code>0.0</code> is asserted to come back as <code>0.0</code>, so the never-zero rule is about
+    the unknown reading rather than about a figure; and one fixture uses the trailing
+    <code>Z</code> stamp the fleet actually writes, since a parser handling only offsets would age
+    every real reading as unknown while every conveniently written fixture still passed. Read
+    against five real fleet streams the reader returns figures for four, and unknown for one whose
+    only occurrence of <code>unifiedWindows</code> sits in a worker's prose rather than in a
+    rate-limit event. The reader has no caller yet; the sections that consume it are separate
+    nodes. Evidence:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed">the window reader, landed</a>.</p>
+
     <h2 id="s5b">&sect;5b &mdash; Four lanes, one wallet, and a figure that is never re-read</h2>
 
     <p><strong>The lanes do not hold independent budgets and reckon does not know it.</strong>
