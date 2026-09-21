@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-impl" content="0.55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -205,10 +205,13 @@
 
     <p><strong>Constraint from the reuse map, and it decides what the figure is derived
     from.</strong> Both halves of the arithmetic already exist:
-    <code>reckon/ledger.py:_worker_seconds</code> (<code>:1959</code>) derives seconds from a
-    row's <code>dispatched_at</code> and <code>completed_at</code>, and
-    <code>reckon/crew/summary.py:concurrency_bounds</code> (<code>:397</code>) already derives
-    width from occupancy. Only the emission is missing. <strong>Do not emit the stored
+    <code>reckon/ledger.py:_worker_seconds</code> derives seconds from a row's
+    <code>dispatched_at</code> and <code>completed_at</code>, and
+    <code>reckon/crew/summary.py:concurrency_bounds</code> already derives width from
+    occupancy. Only the emission is missing. (Both are named by symbol rather than by line
+    deliberately: the line numbers this paragraph first carried were exact when written and
+    one of them was stale within the hour, moved by this very section's own landing. A
+    citation into a file the plan is about to change should name what does not move.) <strong>Do not emit the stored
     <code>wall_seconds</code> field.</strong> Measured at <code>dc39dad5</code>, it equals
     <code>completed_at</code> minus <code>dispatched_at</code> on 564 of 1156 rows, so on
     nearly half the ledger it is a different quantity from the one a reader asking for
@@ -427,7 +430,7 @@
     <div class="r-comment-body"><p><strong>The derivation landed and no reader can see it yet.</strong> <code>reckon/crew/summary.py:run_rows</code> derives each row's wall time from its own <code>dispatched_at</code> and <code>completed_at</code> and its width from the runs in flight at that stamp, with five cases green and the declared mutation reddening three of them. But a word-boundary search at the merged head returns exactly three references — the definition and two in its own test. <strong>It has no production caller</strong>, so <code>crew ledger --view records</code> and <code>crew(view="summary")</code> still emit neither figure.</p><p><strong>The fence was mine and it was drawn too tight.</strong> The node was scoped to <code>summary.py</code> and its test, while the wiring it needs lives in <code>reckon/cli.py</code>, <code>reckon/ledger.py</code> and <code>reckon/mcp_views.py</code>. A done-when asking for behaviour in an ungranted file is unsatisfiable, so the worker landed the in-fence half and named the files the follow-on needs, which is the correct response to a brief like that. The remaining node is the wiring, and the executable denominator grows from eight to nine to hold it.</p><p><strong>This is the same shape §9's reconnaissance found one layer over</strong> — a correct function that nothing calls. Worth noticing twice in one session: the reuse map keeps identifying surfaces that exist and are unreachable, which suggests the recurring gap in this codebase is wiring rather than mechanism.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260921T142336254234-the-summary-read-emits-wall-time-and-width" data-who="reckon-ship" data-when="2026-09-21T15:52:59.726Z">
-    <div class="r-comment-body"><p>summary.run_rows derives per-node wall time from each row&#x27;s own stamps and width from the runs in flight at that stamp, never from the stored wall_seconds field; green and falsified, but with no production caller it reaches no reader until the wiring node lands</p></div>
+    <div class="r-comment-body"><p>summary.run_rows derives per-node wall time from each row's own stamps and width from the runs in flight at that stamp, never from the stored wall_seconds field; green and falsified, but with no production caller it reaches no reader until the wiring node lands</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-verify-gate-has-half-of-what-the-fleet-gate-needs" data-who="" data-when="">
     <div class="r-comment-body"><p><strong>The gap is now specified rather than suspected, and it is half a capability rather than a missing one.</strong></p><p>The reporting coordinator corrected their own claim before I asked: they never ran <code>verify-gate</code> and had it fail. They read <code>crew --help</code>, saw <em>"re-run one run's gate at the integrated revision"</em>, and judged from the description. An unexecuted search, stated as such.</p><p>Checked here. <code>verify-gate</code> <strong>reads the run's stored gate command from its committed ledger row</strong> and re-runs that command at <code>--revision</code> against <code>--checkout-path</code>, patching the report back onto the row. Its options are project, run, checkout-path, revision, timeout. There is <strong>no suite label and no baseline revision</strong>.</p><p>So it already owns the harder half — re-running at the merged head and recording the verdict against the run rather than only printing it. What it cannot do is run something <em>wider</em> than the node's own gate, or compare against a baseline. Those are exactly the two things the hand-check needed.</p><p><strong>What the hand-check was</strong>, five times, each as one srun job on a debug partition against the main checkout at the merged head: an SDCC build; a fast preset configured, built and run under the UNIT label; a VALIDATION ctest run; and the sorted failing-rail names compared by <code>comm -13</code> against a baseline built the same way in a fresh detached worktree at the pre-merge head. It caught a compile error no per-node gate could see — a symbol declared only under a test macro — because a node's gate measures its own diff and an integration break is a property of the merged head. Logs under <code>reports/ship-s13/gates/</code>.</p><p>The coordinator's own summary is the section's requirement: <em>if verify-gate can take a suite label and a baseline revision rather than the run's own gate command, that is the whole hand-check.</em></p></div>
