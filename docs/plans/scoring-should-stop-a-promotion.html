@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -357,6 +357,56 @@
     <p><strong>So the rule is an ordering rule, not a quality rule: promote last.</strong> The
     contrast above is the whole measurement and reproduces for nothing —
     <code>test -f ~/.config/reckon/crew/live/&lt;run&gt;.json</code> before and after a promote.</p>
+
+    <h2 id="s2f">§2f — The gate is narrower than the work it is meant to gate</h2>
+
+    <p>§2 landed and has been live across the fleet for three hours. In that time it refused
+    exactly one promotion — <em>this coordinator's own</em> — while sixteen runs promoted past it
+    with <strong>no waiver recorded anywhere</strong>. That is not sessions routing around it. The
+    guard has four conjunctive conditions and missing any one is a silent bypass that needs no
+    waiver and leaves no trace.</p>
+
+    <pre><code>unreviewed = (
+    verdict == "passed"
+    and role == "implement"
+    and classification == "scoring"
+    and not (review and review.get("status") == "parsed")
+)</code></pre>
+
+    <table>
+      <caption>Why the gate did not fire, over every run dispatched fleet-wide since it landed.</caption>
+      <thead><tr><th>Reason</th><th>Runs</th><th>Correct?</th></tr></thead>
+      <tbody>
+        <tr><td><code>role == "review"</code></td><td>8</td><td>yes — a reviewer is not gated on having a review</td></tr>
+        <tr><td><code>verdict != "passed"</code></td><td>3</td><td>yes — a failing gate has its own refusal</td></tr>
+        <tr><td><strong>role was <code>documentation</code>, <code>test</code> or <code>investigate</code></strong></td><td><strong>4</strong></td><td><strong>no</strong></td></tr>
+        <tr><td>covered, and still promoted unreviewed</td><td><strong>1</strong></td><td><strong>no</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The role restriction is the wide hole.</strong> A <code>test</code> node writing test
+    files, a <code>documentation</code> node writing docs and an <code>investigate</code> node
+    writing a report all promote unreviewed, and none needs a waiver, because the guard does not
+    apply to them. The gate was keyed to a role name when the property that matters is
+    <em>whether the run writes a repository path</em>.</p>
+
+    <p><strong>The classification condition is the quiet hole.</strong> <code>scoring</code> is
+    reached only when the manifest status is the exact literal <code>complete</code>;
+    <code>TERMINAL_MANIFEST_STATUSES</code> is <code>{blocked, complete, failed}</code>. Three runs
+    on imas-efit today were classified <code>unreadable</code> on statuses like
+    <code>awaiting-orchestrator-review</code> and <code>implemented-not-closed</code>. <strong>A
+    worker writing a plausible synonym exempts its own run from review without knowing it</strong>,
+    and the one covered run that promoted unreviewed — an <code>implement</code> run with a passing
+    gate, completed an hour after the guard landed, with no stored review and no waiver — is that
+    shape.</p>
+
+    <p><strong>Done when</strong> the guard keys on a run writing a repository path rather than on
+    the role name, asserted for <code>test</code>, <code>documentation</code> and
+    <code>investigate</code> runs that change a tracked file, and asserted <em>not</em> to fire for
+    one that changes none; an unrecognised manifest status is refused at promotion naming the
+    status and the accepted vocabulary, rather than silently declassifying the run, asserted with
+    each of the three observed strings; and the review role stays exempt, asserted, since that
+    exemption is the one that is correct.</p>
 
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
