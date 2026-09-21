@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.995">
-<meta name="plan-version" content="37">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="38">
 </head>
 <body>
   <main class="plan-doc">
@@ -363,6 +363,189 @@
     <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
     <strong>15 passed, exit 0</strong>.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s7">&sect;7 landed</a>.</p>
+    <h2 id="s8">&#167;8 &mdash; The fleet counter's blocked bucket says when its number is an infrastructure fault</h2>
+    <p>Carried out of &#167;2. A run in <code>launch-failed</code> is counted correctly &mdash; it is in
+    <code>NEEDS_ACTION</code> and the drain reading counts it under its own classification &mdash; but the fleet
+    counter block in <code>reckon/crew/ticker.py</code> has four cells (<code>_CELLS</code> plus
+    <code>_WAIT_CELL</code>), so its number arrives under <code>b</code>. A coordinator reads that as a run
+    wanting a decision when what happened is that the launcher never ran. The number is right and the reading
+    it invites is wrong.</p>
+    <p><strong>Decision, locked by the coordinator 2026-09-21: the reason clause carries it, and the block
+    keeps four cells.</strong> The alternative considered was a fifth cell. It is refused because the block's
+    width is a measured constraint rather than an accident &mdash; the module's own comment records that each
+    label was cut to one character so the reason clause stays readable on every pane this workstation measures,
+    and a fifth cell takes that width back from the cell a reader is actually trying to read. The reason clause
+    is also the mechanism this module already used for exactly this defect one layer down: <code>unknown</code>
+    once counted as blocked while the line rendered without a reason, so the number said something needed
+    attention and the line did not say what. The repair then was to make the line say what, not to add a
+    column, and the same repair applies here. Nothing about the classification changes; only what the line says
+    about it.</p>
+    <p><strong>Done when.</strong> A fleet reading holding one <code>launch-failed</code> run and one ordinary
+    <code>blocked</code> run renders a blocked count of 2 whose reason clause names the launch failure as an
+    infrastructure fault distinctly from the blocked run's own reason, so a reader can tell from the line alone
+    which part of the number is which; the counter block still renders four cells and the same width it renders
+    today, which is the negative half &mdash; a change that widens the block fails this; and a reading with no
+    <code>launch-failed</code> run renders a reason clause carrying no launch-failure wording, so the clause
+    reports a fault rather than always mentioning one. Pinned by cases in a new test file. The declared
+    mutation is applied to the working tree, the named cases are observed to fail, the red log is recorded with
+    the mutation verbatim on its first line, and the mutation is reverted before the commit.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/ticker.py</code> and a new
+    <code>tests/test_fleet_counter_launch_failure.py</code>. A node taking this section is granted both, and
+    nothing else: the classification and the drain count are already correct and are not to be touched.</p>
+
+    <h2 id="s9">&#167;9 &mdash; The watcher unit is written so a watcher that exits is brought back</h2>
+    <p>Measured 2026-09-20. The unit &#167;3 writes carries <code>Type=simple</code> with
+    <code>Restart=on-failure</code>, so a watcher that exits zero is never restarted, and both project units
+    read inactive while their projects held live runs &mdash; three times in one afternoon. The control &#167;3
+    landed asserts that a watcher is a process rather than a flag; a unit that runs once degrades it to a
+    process that ran. The unit text exists twice, at <code>reckon/crew/runs.py</code> and
+    <code>reckon/service.py</code>, which is its own defect: a one-word repair applied to one copy leaves the
+    claim false wherever the other is generated.</p>
+    <p><strong>Done when.</strong> Every unit this repository generates for a watcher carries
+    <code>Restart=always</code> with a short <code>RestartSec</code>, asserted by reading the rendered unit text
+    from each generator rather than by grepping the source; a case enumerates the generators so a third copy
+    added later fails rather than passing unnoticed; and no generated unit still carries
+    <code>Restart=on-failure</code>, which is the negative half and is a separate assertion from the first. The
+    declared mutation is applied, the named cases are observed to fail, the red log is recorded with the
+    mutation verbatim on its first line, and the mutation is reverted before the commit.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/runs.py</code>, <code>reckon/service.py</code> and a new
+    <code>tests/test_watcher_unit_restart.py</code>. The refusal wording that should distinguish <em>a unit
+    exists and is not running</em> from <em>no watcher is live</em> is composed in
+    <code>reckon/crew/node.py</code>, which is held by another session's run and is therefore outside this
+    node's fence; it is carried as a follow-on rather than attempted.</p>
+
+    <h2 id="s10">&#167;10 &mdash; Arming a watcher survives a service manager that cannot be reached</h2>
+    <p>Measured the same day and dependent on &#167;9's file, so it follows it rather than running beside it.
+    <code>systemctl --user daemon-reload</code> failed with connection refused after a client restart, which
+    left <code>reckon crew watch --ensure</code> raising rather than arming; the remedy that worked was
+    starting the watcher as a plain background process. An arming command that cannot arm when the service
+    manager is unreachable is a control with one point of failure, which is the shape this plan exists to
+    remove.</p>
+    <p><strong>Done when.</strong> <code>ensure_watcher_service</code> against a fake service manager that
+    raises connection-refused on its bus call arms a watcher by the fallback path and reports which path it
+    took and why, rather than raising; the reported path is a field a caller can read rather than only prose;
+    and against a reachable manager the same call still takes the service path and reports that, which is the
+    negative half &mdash; a fallback that fires when the bus is healthy fails this. Pinned by cases using the
+    fake service manager the existing watcher-ensure tests already use, so no test touches the real account
+    home. The declared mutation is applied, the named cases are observed to fail, the red log is recorded with
+    the mutation verbatim on its first line, and the mutation is reverted before the commit.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/runs.py</code> and a new
+    <code>tests/test_watcher_arming_fallback.py</code>.</p>
+
+    <h2 id="s11">&#167;11 &mdash; The red-log field is a path, and the contract a worker reads says so</h2>
+    <p>Four workers wrote <code>negative_control_log</code> four ways in three projects, none matching another:
+    a path followed by an em dash and a sentence, twice; a mapping of <code>declared:</code>,
+    <code>log:</code> and <code>result:</code> sub-keys; and a markdown heading with the path beneath it. Each
+    is a reasonable reading of a field whose gloss is a long description inside the placeholder, so a worker
+    filling it emits the path and then the description. All four were refused at promotion and all four were
+    unblocked by a coordinator editing the worker's manifest by hand, hours after the worker's process had
+    ended. Stating the convention more loudly is what two earlier landings on this plan already tried; this
+    section does the half that is cheap and unambiguous &mdash; make the template say the value is a path and
+    nothing else, and give the commentary a field of its own to go in.</p>
+    <p><strong>Done when.</strong> The manifest template <code>reckon/crew/prompts.py</code> emits says
+    <code>negative_control_log</code> is the path alone, with no other text on the line, and emits a
+    <code>negative_control_note</code> line beside it as where an explanation goes; the gloss no longer carries
+    the long description inside the placeholder that invites the sentence, which is the negative half and is
+    asserted as an absence rather than inferred from the first assertion; and the existing first-line
+    convention the template already states survives unchanged, asserted so this node cannot silently drop it.
+    Pinned by cases entering through <code>compose_prompt</code>, which is where a worker's contract is
+    actually rendered. The declared mutation is applied, the named cases are observed to fail, the red log is
+    recorded with the mutation verbatim on its first line, and the mutation is reverted before the commit.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/prompts.py</code> and a new
+    <code>tests/test_negative_control_log_is_a_path.py</code>. The reading side &mdash; making the guard accept
+    the shapes workers produce, and replacing the verbatim match &mdash; is in
+    <code>reckon/crew/promotion.py</code>, which is held by another session's run and is outside this fence; it
+    is carried as a follow-on. This node changes no guard, so a manifest refused today is still refused after
+    it; what changes is that a worker is told the shape before it writes one.</p>
+
+    <h2 id="s12">&#167;12 &mdash; An appended decision keeps its question and its options</h2>
+    <p>Measured 2026-09-20 while recording a real decision. An append to the decisions target, with the key
+    given both as the operation's own argument and inside the item, returns <code>ok</code> and writes a
+    decision block whose question paragraph holds the KEY rather than the question text, and with no options
+    element at all. The context paragraph survives, which is what makes it silent: the decision renders, and a
+    reader sees reasoning under a heading that is a slug with nothing to choose between. Omitting the outer key
+    is not an alternative &mdash; the call is then refused outright &mdash; so there is no spelling of this
+    operation that preserves a decision. A decision nobody can answer is worse than none, because the roadmap
+    counts it open and the lead sees a question that is not one.</p>
+    <p><strong>Done when.</strong> An append of a decision carrying a question and two or more options, written
+    and then read back through this repository's own reader, yields that question text and every option value;
+    the written block's question paragraph does not equal the key, which is the negative half and is the thing
+    that was observed &mdash; asserting the question is present would pass on the defect if the key happened to
+    read like a question, so it is asserted as an inequality against the key as well as an equality against the
+    question; and an append whose item carries no options still succeeds, so the repair does not make options
+    mandatory. Pinned by a case that writes to a temporary plan under a temporary state directory and asserts
+    the real state directory is untouched afterwards. The declared mutation is applied, the named cases are
+    observed to fail, the red log is recorded with the mutation verbatim on its first line, and the mutation is
+    reverted before the commit.</p>
+    <p><strong>Files.</strong> <code>reckon/_store.py</code>, <code>reckon/_plan_html.py</code> and a new
+    <code>tests/test_append_decision_keeps_its_question.py</code>. The append reaches the decisions target
+    around <code>reckon/_store.py</code>'s <code>append</code> handling; whether the loss happens there or in
+    the HTML writer is for the node to establish rather than assume, which is why both are granted.</p>
+
+    <h2 id="s13">&#167;13 &mdash; A resolved launcher is checked against an origin that is serving</h2>
+    <p>Measured 2026-09-20, and it is one step past the control &#167;1 landed. This workstation carries two
+    launchers named <code>clive</code>: the canonical one at
+    <code>/work/projects/imas_gpu/agents/clive</code> targeting the standing router origin, and a stale copy
+    under a user directory targeting an origin nothing has served for some time. Neither directory is on the
+    default <code>PATH</code> in this harness, so &#167;1's control correctly refused an unarmed watcher and
+    named the missing command &mdash; and the repair then put the wrong directory on <code>PATH</code>. Every
+    check downstream passed: the command resolved, the launch succeeded, a pid was recorded, and the banner
+    printed the right model name, because reckon passes <code>--model</code> explicitly so the launcher's own
+    endpoint auto-detect never runs. The worker then spent three minutes on ten API retries and died with a
+    connection refused, leaving an abandoned run and an empty manifest. The lane document and the endpoints
+    document were both accurate throughout; nothing read either against the launcher that was actually
+    resolved.</p>
+    <p><strong>What is open here, and it is the node's work rather than the coordinator's.</strong> The cheapest
+    honest form of the check is to ask the launcher which origin it would use rather than parse its
+    configuration, then probe that origin for a cheap liveness answer under a short timeout. Whether the
+    launcher can be asked, what it costs, and what an unreachable origin should be distinguished from &mdash; a
+    refusal, a warning, or a degraded reading &mdash; are for the node to establish and to say plainly. A
+    probe that cannot be made cheap and reliable is a finding worth having, not a failure: record what was
+    measured and what it would cost, and deliver the narrower thing that does work.</p>
+    <p><strong>Done when.</strong> A reachability check exists as a callable in its own module that, given a
+    backend whose configuration declares an <code>endpoints_document</code> and a resolved launcher path,
+    returns a result naming the resolved path, the origin it determined, and whether that origin answered
+    within a stated timeout; a launcher resolving to an origin that answers returns a serving result, and one
+    resolving to an origin that refuses the connection returns a refusal result carrying both the path and the
+    origin, which is the pair whose absence cost a dead worker; a backend declaring no endpoints document
+    returns a not-applicable result rather than a refusal, which is the negative half &mdash; a check that
+    refuses a backend it was never meant to judge fails this; and the timeout is honoured, asserted against an
+    origin that never answers rather than only against one that does. No test opens a socket to a real origin:
+    the origin is supplied by the test. The declared mutation is applied, the named cases are observed to fail,
+    the red log is recorded with the mutation verbatim on its first line, and the mutation is reverted before
+    the commit.</p>
+    <p><strong>Files.</strong> A new <code>reckon/crew/serving_origin.py</code> and a new
+    <code>tests/test_serving_origin.py</code>. Wiring the check into the pre-launch path is deliberately NOT in
+    this node: that path is <code>reckon/crew/dispatch.py</code>, which is held by another session's run. This
+    node delivers the check and its refusal shape; the wiring is carried as a follow-on, and the node states in
+    its manifest what the calling site will need.</p>
+
+    <h2 id="s14">&#167;14 &mdash; Why the orphaned-watcher replacement case is red, and which of the case or the path is wrong</h2>
+    <p>Found while verifying an unrelated landing at the merged head.
+    <code>tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused</code> fails on
+    <code>main</code>, and it is not new &mdash; it failed identically at the parent of that merge and at the
+    parent of the worker-signal repair, so it pre-dates both. Its sibling in the same module passes. It matters
+    more than an ordinary red because of what it proves: this plan's watcher control rests on a watcher being a
+    live process that is <em>replaced</em> when it dies, and that case is the one asserting the replacement
+    path works rather than refusing. A coordinator reading the suite sees one failure among nineteen passes and
+    moves on; what the failure says is that the mechanism this plan added may not recover an orphaned watcher.
+    Over one afternoon watchers on both projects needed hand restarting several times and the units went
+    inactive rather than restarting &mdash; the symptom this case would catch if it were green.</p>
+    <p><strong>Done when.</strong> A report at the named path states the revision at which the case first went
+    red and how that revision was established; states whether the case or the replacement path is wrong and
+    gives the evidence for that verdict rather than an opinion; and, if the path is wrong, says what a
+    coordinator should have seen instead of a silently absent watcher, and names the files and the smallest
+    change a repair would take. The report distinguishes what was observed from what was inferred, and it
+    records the failing assertion's actual and expected values verbatim rather than summarising them. If the
+    case is wrong, the report says what it was trying to assert and why that is no longer the right assertion.
+    This node changes no repository file and runs no repair: the report is the deliverable, and the repair is a
+    separate node that reads it.</p>
+    <p><strong>Files.</strong> The report at
+    <code>reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md</code>, which is this
+    node's exclusive write scope. Reading is unrestricted; <code>reckon/crew/runs.py</code> is being written by
+    another node in this same wave, so the report names the revision it read rather than assuming the file is
+    still as it found it.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
@@ -465,7 +648,7 @@
     </article>
 <article class="r-fu" data-id="f-crpc-four-workers-four-shapes-and-a-defeatable-match" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="ship-s13-20260916" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Two more red-log shapes from a third project, and the verbatim match is defeatable by the coordinator it blocks</h4>
-    <div class="r-fu-body"><p>Instances three and four of the shape problem, measured 2026-09-21 in imas-efit, independent of each other and of the two already recorded. They change the diagnosis.</p><p>The two recorded instances both wrote <code>negative_control_log</code> as a path followed by prose, which reads as workers appending explanation to a field that invites it. Today's two wrote neither of those shapes and neither matched the other. One wrote a <strong>mapping of sub-keys</strong> &mdash; <code>declared:</code>, <code>log:</code>, <code>result:</code>, with a nested <code>second_control:</code> block carrying a second, genuinely independent control. The other wrote a <strong>markdown heading</strong>, <code>## negative_control_log</code>, with the path on its own line and the declaration in prose beneath. Both are reasonable readings of a field whose name says <code>log</code> and whose gloss is one sentence; both carry strictly more information than the guard wants; both were refused; both were unblocked by a coordinator editing the worker's manifest by hand, hours after the worker's process had ended.</p><p>Four workers, four shapes, zero agreement: path-plus-em-dash-plus-sentence twice, a sub-key mapping, a heading. That is not workers being careless with a clear contract. It is a field whose shape is under-determined by everything a worker reads, so each one invents a shape and the guard accepts exactly one. Stating the convention more loudly is what the two recorded instances already tried; the evidence now says the remedy is on the reading side &mdash; accept the shapes workers actually produce (a scalar, a mapping carrying a <code>log</code> key, a heading followed by a path), or validate the manifest at write time while the worker still has a turn in which to fix it.</p><p>Separately, and this bears on <code>f-crpc-the-verbatim-match-costs-more-than-it-catches</code> rather than on the shape: <strong>the verbatim match is defeatable in the one direction that matters, by the person it blocks.</strong> Today's first instance had a real control &mdash; the declared mutation applied as a pytest plugin, 3 failed and 20 passed, both target cases among the failures &mdash; and a log whose first line was a faithful paraphrase rather than the declaration. The cheapest way past the refusal is to paste the declaration into the log, which adds no evidence and is indistinguishable afterwards from a control that was always correctly labelled. This coordinator re-ran the mutation instead and recorded in the manifest that there are two runs and why, but nothing in the surface would tell a reader which of those two things happened. A check that can be satisfied by editing its own input is not measuring what it defends, and it is refusing sound controls while doing so: the existing followup counts eight refused and none caught; these make ten and none.</p><p>Suggested shape for the repair, offered for the design rather than as a decision. Drop the verbatim substring test and replace it with the two facts the guard can verify independently of any wording: the control run's exit status is non-zero, and its failure set differs from the baseline's. Keep the declaration on the node record where it already lives and print it beside the log in the promotion output, so a reader judges the match. A human comparing a declaration with a red log is a better instrument for <em>is this the right mutation</em> than a substring test, and unlike the substring test it cannot be satisfied by rewording.</p><p>Evidence: <code>reports/ship-s13/manifests/preflight-tvals.md</code> and <code>preflight-acceptance.md</code> in the imas-efit crew store, each with its pre-repair copy kept beside it as <code>*.pre-repair</code>; the re-run control at <code>preflight-tvals/negative_control_declared_empty_ramp.log</code> with its plugin and runner preserved under <code>preflight-tvals/negctl/</code>; and the two promotions carrying the repairs in their outcomes.</p></div>
+    <div class="r-fu-body"><p>Instances three and four of the shape problem, measured 2026-09-21 in imas-efit, independent of each other and of the two already recorded. They change the diagnosis.</p><p>The two recorded instances both wrote <code>negative_control_log</code> as a path followed by prose, which reads as workers appending explanation to a field that invites it. Today's two wrote neither of those shapes and neither matched the other. One wrote a <strong>mapping of sub-keys</strong> — <code>declared:</code>, <code>log:</code>, <code>result:</code>, with a nested <code>second_control:</code> block carrying a second, genuinely independent control. The other wrote a <strong>markdown heading</strong>, <code>## negative_control_log</code>, with the path on its own line and the declaration in prose beneath. Both are reasonable readings of a field whose name says <code>log</code> and whose gloss is one sentence; both carry strictly more information than the guard wants; both were refused; both were unblocked by a coordinator editing the worker's manifest by hand, hours after the worker's process had ended.</p><p>Four workers, four shapes, zero agreement: path-plus-em-dash-plus-sentence twice, a sub-key mapping, a heading. That is not workers being careless with a clear contract. It is a field whose shape is under-determined by everything a worker reads, so each one invents a shape and the guard accepts exactly one. Stating the convention more loudly is what the two recorded instances already tried; the evidence now says the remedy is on the reading side — accept the shapes workers actually produce (a scalar, a mapping carrying a <code>log</code> key, a heading followed by a path), or validate the manifest at write time while the worker still has a turn in which to fix it.</p><p>Separately, and this bears on <code>f-crpc-the-verbatim-match-costs-more-than-it-catches</code> rather than on the shape: <strong>the verbatim match is defeatable in the one direction that matters, by the person it blocks.</strong> Today's first instance had a real control — the declared mutation applied as a pytest plugin, 3 failed and 20 passed, both target cases among the failures — and a log whose first line was a faithful paraphrase rather than the declaration. The cheapest way past the refusal is to paste the declaration into the log, which adds no evidence and is indistinguishable afterwards from a control that was always correctly labelled. This coordinator re-ran the mutation instead and recorded in the manifest that there are two runs and why, but nothing in the surface would tell a reader which of those two things happened. A check that can be satisfied by editing its own input is not measuring what it defends, and it is refusing sound controls while doing so: the existing followup counts eight refused and none caught; these make ten and none.</p><p>Suggested shape for the repair, offered for the design rather than as a decision. Drop the verbatim substring test and replace it with the two facts the guard can verify independently of any wording: the control run's exit status is non-zero, and its failure set differs from the baseline's. Keep the declaration on the node record where it already lives and print it beside the log in the promotion output, so a reader judges the match. A human comparing a declaration with a red log is a better instrument for <em>is this the right mutation</em> than a substring test, and unlike the substring test it cannot be satisfied by rewording.</p><p>Evidence: <code>reports/ship-s13/manifests/preflight-tvals.md</code> and <code>preflight-acceptance.md</code> in the imas-efit crew store, each with its pre-repair copy kept beside it as <code>*.pre-repair</code>; the re-run control at <code>preflight-tvals/negative_control_declared_empty_ramp.log</code> with its plugin and runner preserved under <code>preflight-tvals/negctl/</code>; and the two promotions carrying the repairs in their outcomes.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls</pre>
     </article>
 </section>
@@ -509,6 +692,9 @@
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260919T174236310536-readback-of-crew-runtime-positive-controls" data-who="reckon-ship" data-when="2026-09-19T17:50:52.348Z">
     <div class="r-comment-body"><p>Read-back found that sections 2, 6 and 7 named no file, the same defect that stopped the watcher node, and that section 3 named its decisive files only retrospectively; also that the attempts column read zero against four landing summaries, that the implementation scalar is not derivable from the section states, and that no followup opened sections 5, 6 or 7. All acted on before dispatch.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-20260921T1235-denominator-grew" data-who="reckon-ship" data-when="2026-09-21T12:35:00+00:00">
+    <div class="r-comment-body">impl moved from 0.995 to 0.5 because the executable denominator grew, not because work was lost. Seven open followups were folded in as sections 8 through 14 under the followup-drain rule, so the plan now declares fourteen executable sections of which seven are done. Sections 1 through 7 are reclassified done; their landed summaries are unchanged.</div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
 </div>
@@ -535,6 +721,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260919T191328574077-crpc-state-the-red-log-header" data-who="reckon-ship" data-when="2026-09-19T19:22:52.066Z">
     <div class="r-comment-body"><p>The manifest template and the promotion refusal both state that the red log first line repeats the declared mutation verbatim, so the refusal carries its own remedy. The improved refusal then refused this very node for paraphrasing its declaration, which is the control working on its author.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260921T1235-counter-bucket-decision" data-who="reckon-ship" data-when="2026-09-21T12:35:00+00:00">
+    <div class="r-comment-body">Decision locked: the fleet counter keeps four cells and the blocked bucket's reason clause names a launch failure as an infrastructure fault. A fifth cell was considered and refused — the block's one-character labels are a measured width constraint recorded in the module itself, and the reason clause is the mechanism this module already used when `unknown` counted as blocked while the line said nothing about why. The classification and the drain count are unchanged; only what the line says about the number changes. Rationale in full in the section prose.</div>
 </div>
 </section>
 </main>
