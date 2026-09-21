@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1512,14 +1512,43 @@
     catches and a gate does not: not wrongness the author could have tested for, but the gap
     between what the change does and what its author believed it did.</p>
 
-    <p><strong>The cause behind that last row is not what it was first reported as, and the true
-    one is worse.</strong> The session that found it has since withdrawn the claim that the store
-    truncated the record: it did not check whether the reviewer was still running when it read the
-    file, and it has since watched five reviewers write these records progressively — <strong>using
-    the canonical record path itself as a scratchpad</strong>. So the 46-character finding was
-    probably a mid-write read rather than a parser that stopped early. The finding it recovered is
-    unaffected and so is the repair: <code>parsed</code> must mean the parse consumed the whole
-    output either way.</p>
+    <p><strong>That last row was retracted and then reinstated, and the reinstatement is the
+    instructive half.</strong> The session that found it withdrew the claim on the grounds that it
+    had not checked whether the reviewer was still running — it had since watched five reviewers
+    use the canonical record path as a scratchpad, so a mid-write read was a live alternative it
+    could not exclude. It then opened the record properly and the alternative died, because the
+    settling fact was inside the file it had been holding all along:</p>
+
+    <table>
+      <caption>One stored review record, two fields, read at the same moment.</caption>
+      <thead><tr><th>Field</th><th>Length</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td><code>findings[0].text</code></td><td>46 chars</td>
+            <td><q>the expected card-query vector is derived from</q> — cut mid-sentence</td></tr>
+        <tr><td><code>raw_text</code></td><td>8,509 chars</td>
+            <td>the same finding, <strong>complete</strong>, naming the constant, the field
+            substitution and the measured suite result</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>A mid-write read truncates <code>raw_text</code> too, or leaves the findings absent
+    altogether.</strong> A complete <code>raw_text</code> beside a truncated parsed field can only
+    be the parser. So the original claim stands, the mechanism is the parse and not the writer, and
+    the repair is unchanged: <code>parsed</code> must mean the parse consumed the whole output.</p>
+
+    <p>Two things follow that are worth more than the verdict. <strong>The recovery is cheap and
+    nobody knew it</strong>: a coordinator meeting a truncated finding reads <code>raw_text</code>
+    from the same record, rather than opening the cited source file as the finder did. And
+    <strong>the rate is measured rather than assumed</strong> — one suspect finding across 246
+    stored records on this workstation, which is what makes a terminal-punctuation heuristic
+    affordable in the first place.</p>
+
+    <p><strong>The retraction itself is the finding to keep.</strong> A true claim was withdrawn
+    because an alternative could not be ruled out, while the record that ruled it out was already
+    open. That is the day's pattern wearing its most respectable disguise: not overclaiming, but
+    <em>underclaiming</em> — and it is harder to catch, because retracting reads as rigour. The
+    check is the same one in both directions: before changing a verdict, ask what in the artifact
+    already in hand would settle it.</p>
 
     <p><strong>What replaces it is a defect with no heuristic available.</strong> The canonical
     path has <em>no atomic write and no in-progress marker</em>, so every intermediate state it
@@ -2077,7 +2106,7 @@
     <div class="r-comment-body"><p>Landed locally at <code>7a18dd2f</code>. Dispatch now grants a plan's figure topic directory beside its plan file and cumulative evidence record; two nodes on that plan share the directory, while two explicit claims on one filename inside it still refuse with the owner named. The focused four-case test passes. Removing the topic grant makes three cases fail and one remain passing; the source was restored byte-for-byte after that declared control.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record" data-who="reckon-ship" data-when="2026-09-21T15:14:40Z">
-    <div class="r-comment-body"><p>every node is granted its plan&#x27;s figure topic directory alongside the plan file and the evidence record, so a node obeying the graphics mandate is inside its fence; measured five times in one day across two sessions as an accept-path or a review-flagged scope violation; review 98</p></div>
+    <div class="r-comment-body"><p>every node is granted its plan's figure topic directory alongside the plan file and the evidence record, so a node obeying the graphics mandate is inside its fence; measured five times in one day across two sessions as an accept-path or a review-flagged scope violation; review 98</p></div>
 </div>
 </section>
 </main>
