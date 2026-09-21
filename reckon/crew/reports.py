@@ -47,7 +47,7 @@ import os
 import re
 import tempfile
 from collections.abc import Iterable, Iterator
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any, TypedDict
 
 import yaml
@@ -944,6 +944,8 @@ def audit_manifest(
     node: TaskNode | None = None,
     *,
     suite_armed: bool = False,
+    worktree: Path | None = None,
+    repository: Path | None = None,
 ) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
     try:
@@ -1016,7 +1018,9 @@ def audit_manifest(
         stray = sorted(
             path
             for path in manifest["changed_paths"]
-            if not path_within_declared_scope(path, declared)
+            if not path_within_declared_scope(
+                path, declared, worktree=worktree, repository=repository
+            )
         )
         if stray:
             findings.append(
@@ -1030,7 +1034,13 @@ def _normalized_scope_path(text: Any) -> PurePosixPath:
     return PurePosixPath(str(text).strip())
 
 
-def path_within_declared_scope(changed: Any, declared: Iterable[str]) -> bool:
+def path_within_declared_scope(
+    changed: Any,
+    declared: Iterable[str],
+    *,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> bool:
     """Return whether a changed path is contained by a declared write root.
 
     Containment is the rule promotion applies when it audits a delivered run,
@@ -1041,13 +1051,44 @@ def path_within_declared_scope(changed: Any, declared: Iterable[str]) -> bool:
     drift between the two checks this function exists to remove. A changed
     path is in scope when it equals a declared path or lies beneath one, so
     both a file declaration and a directory declaration are honoured.
+
+    A declaration may be written absolutely, naming a directory or file by its
+    path on disk. Comparing such a declaration literally would never match the
+    repository-relative path a manifest records, so a scope dispatch granted
+    absolutely would read as stray here and as in-scope at promotion. Each
+    declaration is therefore resolved into a repository-relative root against
+    the worktree and the repository before the comparison, which is the same
+    mapping promotion applies — a declaration naming a location outside the
+    repository resolves to no root and so rejects a repository path at both
+    surfaces. The worktree defaults to the working directory, which is where
+    the write-time audit runs.
     """
+    tree = Path.cwd() if worktree is None else Path(worktree)
+    repo = tree if repository is None else Path(repository)
     target = _normalized_scope_path(changed)
-    for raw_root in declared:
-        root = _normalized_scope_path(raw_root)
+    for root in _declared_scope_roots(declared, worktree=tree, repository=repo):
         if target == root or root in target.parents:
             return True
     return False
+
+
+def _declared_scope_roots(
+    declared: Iterable[str], *, worktree: Path, repository: Path
+) -> tuple[PurePosixPath, ...]:
+    """Resolve declared write paths into repository-relative roots.
+
+    Delegates to the mapping promotion already applies so both surfaces judge a
+    declaration the same way rather than growing a second rule that can drift
+    from it. The import is deferred because promotion imports this module.
+    """
+    from reckon.crew.promotion import _repository_scope_paths
+
+    return tuple(
+        PurePosixPath(root.as_posix())
+        for root in _repository_scope_paths(
+            declared, worktree=worktree, repository=repository
+        )
+    )
 
 
 def report_log_paths_under_temp_root(

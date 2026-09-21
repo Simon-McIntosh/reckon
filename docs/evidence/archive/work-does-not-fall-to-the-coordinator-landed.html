@@ -1296,6 +1296,85 @@
     <code>~/.config/reckon/crew/runs/r-20260921T171122683919-the-two-scope-tests-agree-on-a-granted-directory/</code>
     (<code>negative-control.log</code>, <code>after-suite.log</code>).</p>
   </section>
+
+  <section id="a-declaration-is-resolved-before-it-is-compared">
+    <h2>&sect;9 &mdash; A declaration is resolved before it is compared</h2>
+
+    <p><strong>Moving a check earlier gave it a stricter contract than the one it was moved
+    from.</strong> The write-time manifest audit was installed so a worker learns of a stray path
+    while it still holds the pen. It judged a declared write path by exact membership, while
+    <code>promotion._outside_declared_scope</code> judges containment and says so in its own
+    docstring. Where dispatch granted a directory the two agreed; where dispatch granted a
+    <em>directory written as an absolute path</em>, the audit resolved nothing and the two
+    disagreed on every file beneath it. The refusal then reached the worker, which is the
+    improvement the earlier node installed, and it was a refusal the worker could not act on
+    correctly: obeying it meant editing a manifest promotion would have accepted.</p>
+
+    <p><strong>Reproduced at base <code>71462872</code> before the repair, through both entry
+    points with one changed path and one declaration.</strong> An absolute directory declaration
+    inside the repository: the write-time audit reports the changed path stray while the
+    promotion check accepts it. An absolute file declaration inside the repository: the same
+    disagreement. An absolute declaration naming a location outside the repository, and a
+    relative directory declaration: both surfaces already agree, the first rejecting and the
+    second accepting. The disagreement is therefore specific to an absolute declaration that
+    resolves into the repository &mdash; an acceptance suppressed at the earlier surface, not a
+    rejection invented at the later one.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/declaration-resolution.svg"
+           alt="One dispatch declaring an absolute directory path, with a changed path recorded repository-relative. Before: the write-time audit compares literally and reports the changed path stray, red, while the promotion check resolves the declaration and accepts it, green, so the two disagree. A resolution strip shows the absolute declaration resolving under the repository to a repository-relative root that is then compared. After: the same resolved root is compared at both surfaces and both accept. A footnote records that restoring the literal compare reddens all five absolute inside-repository pairs while the seven relative pairs and the outside-repository rejection control stay green, and that a declaration naming a location outside the repository resolves to no root so both surfaces reject a repository path.">
+      <figcaption>Where the resolution belongs, and what a literal compare does without it.</figcaption>
+    </figure>
+
+    <p><strong>The repair is the resolution, taken from the surface that already had it.</strong>
+    <code>path_within_declared_scope</code> (<code>reckon/crew/reports.py</code>) now maps each
+    declared path into a repository-relative root before comparing, delegating to the mapping
+    promotion already applies rather than growing a second rule that can drift from it.
+    <code>audit_manifest</code> accepts the worktree and repository that mapping needs, defaulting
+    to the working directory, which is where the write-time audit runs. A declaration naming a
+    location outside the repository resolves to no root, so it rejects a repository path at both
+    surfaces rather than at only one.</p>
+
+    <p><strong>Proven by the two surfaces agreeing on inputs built for the disagreement.</strong>
+    <code>tests/test_write_scope_agreement.py</code> gains a table of five absolute declarations
+    naming locations inside the repository &mdash; a directory bare, a directory nested, a
+    directory trailing-slashed, a file, and the <code>tests</code> directory &mdash; each paired
+    with a changed path beneath it and each asserted equal between
+    <code>reports.audit_manifest</code> and <code>promotion._outside_declared_scope</code>. Two
+    named cases assert the directions directly: a changed path under an absolute inside
+    declaration is accepted by both, and an absolute declaration outside the repository rejects a
+    repository path in both. The seven relative-declaration pairs are unchanged and still pass.
+    The file is <strong>17 passed</strong>.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation restores the literal
+    compare, resolving nothing. Applied, the file reddens
+    <code>6 failed, 11 passed</code>: all five absolute inside-repository pairs and the named
+    inside case. The eleven that stay green are the seven relative pairs, the three relative named
+    cases and the outside-repository rejection control &mdash; a rejection is not flipped by
+    removing a resolution step, so the control is correctly unmoved and the table is the part that
+    measures the repair. The mutation sits verbatim on the red log's first line, and the source
+    was restored to the committed content.</p>
+
+    <p><strong>The six pre-existing failures in the collateral cohort are attributed by
+    non-reachability, not by a red base.</strong> The focused cohort &mdash; the manifest, audit
+    and scope tests of <code>tests/test_crew.py</code>, plus <code>test_gate_evidence.py</code>,
+    <code>test_manifest_parse_format.py</code>, <code>test_manifest_check_command.py</code> and
+    this file &mdash; is <strong>6 failed, 165 passed</strong>. All six sit in
+    <code>tests/test_crew.py</code> at lines 1373, 2483, 3247 and 3362, which exercise
+    <code>plan_dispatch</code> and the worktree and manifest lifecycle. The changed predicate has
+    exactly one caller, <code>audit_manifest</code>, whose only production caller is
+    <code>crew check-manifest</code>; none of the six tests reaches it, and the six tests that do
+    reach it, at lines 4509 to 4553, pass. A failure cannot be caused by a predicate no path in
+    the failing test invokes.</p>
+
+    <p>Changed paths: <code>reckon/crew/reports.py</code>,
+    <code>tests/test_write_scope_agreement.py</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/declaration-resolution.svg</code>.
+    Commit <code>2c8aa281</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/</code>
+    (<code>logs/gate.txt</code>, <code>logs/negative-control.txt</code>,
+    <code>logs/cohort-focused.txt</code>).</p>
+  </section>
   </main>
 </body>
 </html>
