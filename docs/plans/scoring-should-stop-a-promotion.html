@@ -223,6 +223,27 @@
     the checklist items; and the median wall time of the reviews dispatched in §5 is recorded
     against a stated bound.</p>
 
+    <p><strong>What one review was worth, measured before this plan was implemented.</strong>
+    The first independent review dispatched on imas-ambix, 2026-09-21, took about ten minutes
+    on a free lane and returned two defects with file, line and reproduction. The second is
+    an inert parameter — a card reader accepting a timeout it never passes on, demonstrated
+    by calling it with a fifty-millisecond timeout against a two-second command and measuring
+    2.07 seconds. The first is worse and is the reason this section exists:</p>
+
+    <p>The node was required to map card indices through <code>SLURM_STEP_GPUS</code>,
+    <em>"asserted against a fixture where the two differ"</em>. It did exactly that, and its
+    gate was green. The reviewer read the launch path instead of the fixture and found that
+    the serve is submitted with <code>sbatch</code> and runs its engine inline in the batch
+    step — no <code>srun</code> anywhere in the generator — and SLURM does not set that
+    variable for a batch step. <strong>The measure was satisfied and the code could never
+    work in production.</strong> A coordinator had hand-verified the same node and passed it.</p>
+
+    <p>That is the failure a self-scored gate cannot catch by construction, because the gate
+    and the fixture were written by the same worker from the same misunderstanding. It also
+    bounds what a done-when can do: a measure naming a fixture tests the fixture, and only a
+    reader who goes to the call site tests the claim. Ten minutes of a lane that costs
+    nothing bought a defect four hand-verifications had already passed over.</p>
+
     <h2 id="s5">§5 — Dogfood: this plan's own back half is reviewed</h2>
 
     <p>From this section onward, every node of this plan is promoted only with a stored
