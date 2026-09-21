@@ -805,6 +805,18 @@ nothing has been launched</code></pre>
     </section>
 
     <section id="s13">
+      <p><strong>The reuse question, appended by the coordinator 2026-09-21.</strong> The plan asks a node
+      authoring new machinery here to state why <code>reckon/flight.py</code>'s existing endpoints reader could
+      not be reused. That clause was committed at <code>31c976a4</code>, three minutes <em>after</em> this
+      node's base <code>26d6df25</code> was cut, so it was never in the worktree the worker read and the
+      omission is the coordinator's rather than the worker's. The answer is nonetheless verifiable from the
+      diff without reopening the run: <code>reckon/crew/serving_origin.py</code> reads no endpoints document at
+      all. It consults <code>endpoints_document</code> only as a presence test that opts a backend into the
+      check, and the module's own docstring states the reason the reader could not have served &mdash; an
+      endpoints document cannot establish which origin a particular executable selects, which is the entire
+      question this section exists to answer. There is one reader of that document in the tree, in
+      <code>reckon/flight.py</code>, and this change does not add a second.</p>
+
       <h2>&sect;13 &mdash; A resolved launcher reports its origin before a bounded HTTP probe</h2>
       <p><strong>Implemented, awaiting coordinator review:</strong> commit <code>9ea06319</code> adds
       <code>reckon/crew/serving_origin.py</code> and <code>tests/test_serving_origin.py</code> at base
