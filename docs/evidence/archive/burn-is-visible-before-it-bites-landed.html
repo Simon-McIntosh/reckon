@@ -645,6 +645,77 @@
     three states then measured as measured, and the no-window case's absence of a
     meter became a real reading rather than a coincidence.</p>
   </section>
+
+  <section id="capture-gate-recapture">
+    <h2>The capture gate recaptured at the shipped head</h2>
+
+    <p>The section names one gate as its evidence, and this anchor is the durable
+    record of running it: both files together, once, against the main checkout's
+    interpreter with the working directory set to the main checkout. Result
+    <strong>exit 0, 9 passed, 0 failed</strong>. The containment half walked the
+    Crew surface at both widths with no surface deferred and no real-surface
+    violation, so the clause the section names holds; the owed-captures half is
+    discussed below, and the green result does not cover this plan's captures.</p>
+
+    <table>
+      <thead>
+        <tr><th>field</th><th>value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>exit status</td><td>0</td></tr>
+        <tr><td>passed / failed</td><td>9 / 0</td></tr>
+        <tr><td>head at run start</td><td><code>4b5eae00</code></td></tr>
+        <tr><td>interpreter</td><td><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> (CPython 3.14.2)</td></tr>
+        <tr><td>working directory</td><td><code>/home/ITER/mcintos/Code/reckon</code></td></tr>
+        <tr><td>package resolved from</td><td><code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code> — the main checkout, not a worktree</td></tr>
+        <tr><td>Crew row at 1374</td><td>walked, <code>#crew</code>, ready selector <code>.r-crew-list article</code></td></tr>
+        <tr><td>Crew row at 1920</td><td>walked, <code>#crew</code>, ready selector <code>.r-crew-list article</code></td></tr>
+        <tr><td>surfaces not measured</td><td>none, at either width</td></tr>
+        <tr><td>log (sha256)</td><td><code>328376fbf109aecc7046c39fc3f94760b87e52674a6bbaed376a44a51ce85bd3</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Why the run is pinned by its inputs and not by a commit sha.</strong>
+    The head moved continuously while this node ran, because a wave was landing:
+    six distinct values were observed inside roughly ten minutes. Chasing a
+    quiescent head is not achievable under that, so the recorded run is the one
+    whose inputs were hashed as a set before and after the run — both test files,
+    both harnesses, the bootstrap script, <code>docs/index.html</code>,
+    <code>docs/ui</code>, <code>docs/_shared</code>, this plan's figure directory,
+    this plan's page, <code>docs/state/reckon</code>, <code>reckon/</code> and
+    <code>pyproject.toml</code>. That set hashed identically before and after
+    (<code>412c5bd8</code>), and no measured input path changed across the
+    bracketed window, so the head moved only on paths the gate does not read.</p>
+
+    <figure>
+      <img src="/reckon/figures/burn-is-visible-before-it-bites/capture-gate/head-timeline.png"
+           alt="Timeline of five gate attempts in observation order against ten observed head revisions; the four earlier attempts are grey or orange and the recorded fifth attempt is green, spanning 4b5eae00 to 8a6fecb2 where every file the gate reads was byte-identical before and after the run">
+      <figcaption>Five attempts against a moving head, in observation order rather
+      than wall clock. Only the last held its inputs still; the fourth caught a
+      figure re-promotion mid-window.</figcaption>
+    </figure>
+
+    <h3>The green result does not open this plan's captures, and here is the measurement</h3>
+
+    <p>The gate's two halves do not cover the same thing. The containment half
+    genuinely measured the Crew surface. The owed-captures half does <em>not</em>
+    read this plan at all: <code>_PLAN_CAPTURE_SPECS</code> in
+    <code>tests/test_spa_owed_captures.py</code> rosters <code>fleet-home</code>,
+    <code>graph-derived-schedule</code>, <code>spa-shell-scope-and-visibility</code>
+    and <code>artifact-feeds-and-reader</code>, and this plan's index is not among
+    them. The roster was checked positively, not assumed from an absence: the
+    four rostered ids were collected from the run, and this plan's id is absent
+    from them. So the six captures this plan owns could vanish and the named gate
+    would still report green.</p>
+
+    <p>This is the same gap the capture node recorded when it landed, and it is
+    still open at the measured head. It is recorded here rather than repaired
+    because the roster lives under <code>tests/</code>, outside this node's write
+    paths. Nothing about the six captures is in doubt — they exist at their
+    recorded widths and the index is complete — but the section's own done-when
+    cites the gate as the evidence for the captures, and on this measurement the
+    gate does not reach them.</p>
+  </section>
 </main>
 </body>
 </html>
