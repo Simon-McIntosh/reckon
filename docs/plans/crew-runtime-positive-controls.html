@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.643">
-<meta name="plan-version" content="40">
+<meta name="plan-impl" content="0.714">
+<meta name="plan-version" content="41">
 </head>
 <body>
   <main class="plan-doc">
@@ -820,7 +820,10 @@
     <div class="r-comment-body">Gate passed: 23 cases, exit 0; the declared mutation reddened 8 of them, run on SLURM all_debug after the login-node attempt showed 4 timing failures from process startup. Independent review 96/100 (durability 20, evidence 20, scope 20, fit 19, goal fidelity 17). The single finding is that the record did not name the existing endpoints reader — a clause committed at 31c976a4, three minutes after this node's base 26d6df25 was cut, so it never reached the worker; answered by coordinator append rather than charged to the run. Not wired into the pre-launch path: reckon/crew/dispatch.py is held by another session, and the launcher itself exposes no safe origin-only query, which is carried as a follow-on.</div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260921T123858966184-launcher-is-checked-against-a-serving-origin" data-who="reckon-ship" data-when="2026-09-21T12:54:27Z">
-    <div class="r-comment-body"><p>the reachability check lands with 23 cases and its declared mutation reddening 8; review 96/100, its one finding a record gap from a requirement committed after the node&#x27;s base, answered by coordinator append</p></div>
+    <div class="r-comment-body"><p>the reachability check lands with 23 cases and its declared mutation reddening 8; review 96/100, its one finding a record gap from a requirement committed after the node's base, answered by coordinator append</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-20260921T1605-orphan-diagnosis-landed" data-who="reckon-ship" data-when="2026-09-21T16:05:00+02:00">
+    <div class="r-comment-body">Gate passed: the verdict is that the case is wrong, not the replacement path — the fixture omits spec_level, so validation refuses before the watcher is armed, and the observed failure is a CrewError rather than an assertion. Boundary established experimentally, not from commit titles: d5811b20 red against parent 319db8de green, mainline d312c5bc green against merge 8041fd4e red, four archived snapshots on SLURM all_debug with test and dispatch blobs identical across all four. Independent review 83/100, and its durability score of 6 is a correct criticism: the positive control that carries the verdict was supplied in memory and its driver reached disk only as a transient stream item, so the decisive half is not reproducible by a later reader while the boundary half is. That is not repaired by preserving the plugin; the node orphan-case-declares-its-specification-level converts it into a durable negative-controlled case in tests/test_crew_orphan.py.</div>
 </div>
 </section>
 </main>
