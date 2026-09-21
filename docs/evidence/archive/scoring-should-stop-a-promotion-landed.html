@@ -801,6 +801,18 @@
     and <strong>1</strong> file needing formatting. Additional receipts are
     <code>review-before.log</code>, <code>review-focused.log</code>, <code>review-base.log</code>,
     <code>review-negative-control.log</code>, and <code>review-gates.json</code> in the same run directory.</p>
+    <p><strong>Receipt fixture integration repair.</strong> Local commit
+    <code>3fa2e51f7964bad8154b1edca16c7586d78a6166</code> explicitly initialises an empty
+    ledger in the temporary repository fixture and includes it in the seed commit. Production
+    promotion and ledger guards are unchanged. The combined main checkout at
+    <code>039e2c78</code> reproduced <strong>7 failed / 5 passed</strong> before this fixture
+    repair using its root interpreter and repository-root <code>PYTHONPATH</code>:
+    the seven receipt cases encountered the absent-ledger refusal before append.
+    The amended fixture against the original base promotion module still gives
+    <strong>10 failed / 2 passed</strong>. Receipts: <code>merged-before.log</code> and
+    <code>fixture-base.log</code> in the same run directory. Verification after repair in
+    main is pending integration of the fixture commit or extension of the worker's
+    worktree-only write fence; no worktree result is substituted for that measurement.</p>
   </section>
 </main>
 </body>
