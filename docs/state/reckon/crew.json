@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T18:34:54",
+  "updated": "2026-09-21T18:35:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -231773,6 +231773,398 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table",
+        "plan": "background-agent-fitness-and-dispatch-scope",
+        "section": "\u00a72e",
+        "node": "member-liveness-tests-do-not-read-the-host-process-table",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1299,
+                "cached_input_tokens": 477812,
+                "input_tokens": 479113,
+                "output_tokens": 438,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 479551,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "The defect is first reproduced and the reproduction pasted into the manifest: at the current head, tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run passes only because pid 4242 is occupied by another user's process, so reckon.crew.node.member_in_flight_verdict reports it alive - os.kill(4242, 0) raises PermissionError, which the liveness helper treats as alive, while ps -p 4242 shows nothing. Demonstrate the dependence by calling member_in_flight_verdict on a pointer whose pid is one that provably does not exist (allocate it by reading /proc/sys/kernel/pid_max or by forking and reaping, and assert os.kill raises ProcessLookupError) and showing the verdict flips to blocks False. Then repair every member-guard test that supplies a literal pid so its outcome no longer depends on the host: the tests must control liveness explicitly rather than hope a number is free or taken, by injecting or monkeypatching the liveness helper, or by using a pid the test itself proves absent in the same breath. tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run and every test in tests/test_member_guard_counts_live_processes.py pass, and a new assertion fails if any of them would change verdict when the chosen pid's occupancy changes - state in the manifest how that assertion would catch a regression. Ruff check and format over exactly the staged paths add no findings beyond the same paths at the base revision, with both counts pasted into the manifest as digits.",
+          "estimated_hours": 0.8,
+          "goal": "Make the member-guard tests independent of whether an arbitrary pid happens to be occupied on the host, which they became when the dispatch guard started consulting process liveness",
+          "id": "member-liveness-tests-do-not-read-the-host-process-table",
+          "lane_declaration": {
+            "backend": "codex-luna",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T14:49:01Z",
+            "read_at": "2026-09-21T14:49:02Z",
+            "resolved_backend": "codex-luna",
+            "utilisation_pct": 24.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table/manifest.md",
+          "negative_control": "restore a literal pid whose liveness is whatever the host happens to say, replacing the explicitly controlled liveness in the member-guard tests; tests/test_member_guard_counts_live_processes.py must fail",
+          "plan": "background-agent-fitness-and-dispatch-scope",
+          "requested_backend": "codex-luna",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72e",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew.py",
+            "tests/test_member_guard_counts_live_processes.py",
+            "docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html",
+            "docs/plans/background-agent-fitness-and-dispatch-scope.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-mcp-reach",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-21T14:49:34Z",
+        "completed_at": "2026-09-21T15:55:32Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 3958,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 3958,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "ca9434550cfb2cda9b132d47bdd1c166965a9cbf",
+        "commits": [
+          "b9ccab9cd03f4b19324c46d4aa31396f3fe426e6",
+          "a16aec5beccab8824df864531c9792d8c9663584",
+          "13c45f3012bb29747d3f6867ee2ed1c3b05cadf6",
+          "546942ff87228796e2fad2a1254a6117388fbee8"
+        ],
+        "changed_lines": {
+          "added": 77,
+          "removed": 6,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run tests/test_member_guard_counts_live_processes.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table/focused-after-assertion.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c471-9d21-7fa3-9543-e7f6664c6e09",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 25993728,
+            "cached_input_tokens_cumulative": 25993728,
+            "input_tokens": 26316019,
+            "input_tokens_cumulative": 26316019,
+            "output_tokens": 67301,
+            "output_tokens_cumulative": 67301,
+            "reasoning_output_tokens": 23229,
+            "reasoning_output_tokens_cumulative": 23229
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T15:55:32Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 28.0,
+              "resets_at": 1790575133,
+              "observed_at": "2026-09-21T15:55:32Z"
+            }
+          ],
+          "notional_cost_usd": 5.344,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-luna",
+            "input_per_million": 0.2,
+            "output_per_million": 1.2,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 703,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2774,
+              "log_fresh": false,
+              "manifest_commits": [
+                "681771db720457af44af42bf95a42ae757bb62b0",
+                "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+                "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "03a4cfe7a657167b7d95949a8023644bfba99546bb9aeb2dc35fccd0d5f95516",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route --gate <verdict> --commit 681771db720457af44af42bf95a42ae757bb62b0 --commit c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54 --commit 930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+              "node": "a-paraphrased-control-has-a-recorded-route",
+              "phase": "working",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 2808,
+              "terminal_at": "2026-09-21T14:02:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-paraphrased-control-has-a-recorded-route"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 1274,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1335,
+              "log_fresh": false,
+              "manifest_commits": [
+                "8a3ebe90",
+                "40c428d9",
+                "377fd131",
+                "4312179d"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "f63ee05b247470c35f3bbb37ee2675874d636fb3cfc56c3ec04920cc3cd6e1c2",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict --gate <verdict> --commit 8a3ebe90 --commit 40c428d9 --commit 377fd131 --commit 4312179d",
+              "node": "the-dispatch-guard-consults-the-liveness-verdict",
+              "phase": "starting",
+              "plan": "background-agent-fitness-and-dispatch-scope",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 1419,
+              "terminal_at": "2026-09-21T14:25:40Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-dispatch-guard-consults-the-liveness-verdict"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1500,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 644,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1348,
+              "log_fresh": false,
+              "manifest_commits": [
+                "b7dcd488"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "e33324be03809bd463588a0d0b55a1d0591bb32f304be00532672b8feb91cbf6",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T141531467381-declared-sweep-removal-mutation-reddens-the-reflex/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T141531467381-declared-sweep-removal-mutation-reddens-the-reflex --gate <verdict> --commit b7dcd488",
+              "node": "declared-sweep-removal-mutation-reddens-the-reflex",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T141531467381-declared-sweep-removal-mutation-reddens-the-reflex",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 1398,
+              "terminal_at": "2026-09-21T14:26:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/declared-sweep-removal-mutation-reddens-the-reflex"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 10,
+            "evidence": 10,
+            "fit": 20,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 78
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 25993728,
+          "cumulative_input_tokens": 52309747,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 90530
+        },
+        "follow_on_paths": [
+          "test_crew.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/member-liveness-tests-do-not-read-the-host-process-table",
+          "session_id": "01a0c471-9d21-7fa3-9543-e7f6664c6e09",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T15:55:32Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.45,
+        "impl_move": {
+          "plan": "background-agent-fitness-and-dispatch-scope",
+          "at_dispatch": 0.45,
+          "at_complete": 0.52,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_crew.py",
+            "tests/test_member_guard_counts_live_processes.py"
+          ],
+          "declaration": "restore a literal pid whose liveness is whatever the host happens to say, replacing the explicitly controlled liveness in the member-guard tests; tests/test_member_guard_counts_live_processes.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table/negative-control-declared-host-pid.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144859487077-member-liveness-tests-do-not-read-the-host-process-table/negative-control-declared-host-pid.log",
+          "reason": "the declared mutation ran; my declaration named a stale file. I wrote 'in the member-guard tests; tests/test_member_guard_counts_live_processes.py must fail' when the literal lived only there, and a later round moved it into tests/test_crew.py, where the worker correctly applied it. The discriminator is which test failed: test_double_dispatch_refuses_a_member_with_a_non_terminal_run, which fails exactly when a host-dependent literal replaces os.getpid(), and nothing else produces that. The log's first line is the declaration truncated before its trailing clause, so the substring compare cannot match"
+        },
+        "tool_steps": 57.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -232057,6 +232449,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1949
+    "_version": 1950
   }
 }
