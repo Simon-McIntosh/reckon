@@ -999,11 +999,15 @@ def _shared_landing_paths(
     project: str,
     authority: Mapping[str, Any],
 ) -> set[Path]:
-    """Return the plan file and cumulative evidence record for this node.
+    """Return the plan file, evidence record and figure topic for this node.
 
     Every node on a plan appends its landing record to its plan section
-    and its evidence anchor to the cumulative evidence record, so those two
-    repository paths are shared by all of them rather than owned by any one.
+    and its evidence anchor to the cumulative evidence record. The plan-owned
+    figure topic is shared for the same reason: each node may illustrate its
+    landing record without needing a scope outside its dispatch grant. Files
+    within that directory remain exclusive claims, so two nodes cannot replace
+    the same rendered artifact. These three repository paths are shared by all
+    plan nodes rather than owned by any one.
     Resolved absolutely so the exclusive-claim machinery recognises them in
     whichever repository carries the plan. The grant is advisory: a plan that
     cannot be resolved contributes no plan-file path, and the evidence record
@@ -1017,7 +1021,8 @@ def _shared_landing_paths(
     except (KeyError, TypeError, ValueError):
         return set()
     paths: set[Path] = {
-        (docs_dir / "evidence" / "archive" / f"{node.plan}-landed.html").resolve()
+        (docs_dir / "evidence" / "archive" / f"{node.plan}-landed.html").resolve(),
+        (docs_dir / "figures" / node.plan).resolve(),
     }
     from reckon.resources import resolve_resource
 
@@ -1087,10 +1092,11 @@ def _candidate_scope_entries(
     shared = _shared_landing_paths(node, project=project, authority=authority)
     if not shared:
         return entries
-    # The plan file and cumulative evidence record are write claims every node
-    # on the plan holds, so they cannot be exclusive to one of them: exclusivity
-    # would admit only the first of two concurrent nodes and the merge that
-    # reconciles their appends would never be reached. They are exempted from
+    # The plan file, cumulative evidence record and plan-owned figure topic are
+    # write claims every node on the plan holds, so they cannot be exclusive to
+    # one of them: exclusivity would admit only the first of two concurrent nodes
+    # and the merge that reconciles their appends would never be reached. Files
+    # inside the figure topic stay exclusive. The shared paths are exempted from
     # the exclusive-claim machinery, never from the declared write scope.
     return [entry for entry in entries if entry[2].resolve() not in shared]
 
@@ -1152,8 +1158,11 @@ def _live_conflict_rows(
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
+    shared = _shared_landing_paths(node, project=project, authority=authority)
     conflicts: list[dict[str, Any]] = []
     for claim in claims:
+        if claim.absolute_path.resolve() in shared:
+            continue
         paths = [
             {"left_path": path, "right_path": claim.path}
             for repository, path, absolute, _declared, _derived_from in candidates
@@ -1191,8 +1200,11 @@ def _raise_repository_scope_conflict(
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
     )
+    shared = _shared_landing_paths(node, project=project, authority=authority)
     for _repository, candidate, absolute, _declared, _derived_from in candidates:
         for claim in claims:
+            if claim.absolute_path.resolve() in shared:
+                continue
             if _repository != claim.repository or not _scopes_overlap(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
