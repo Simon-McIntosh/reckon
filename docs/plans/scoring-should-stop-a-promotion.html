@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1780,6 +1780,48 @@
     proving that assertion fires. That is §5b's discriminator — <em>what would make this field
     wrong while it still printed the same value</em> — arrived at independently, by a worker, about
     its own test.</p>
+
+    <h2 id="s5g">§5g — The sharpest thing a review caught all day is an assertion that cannot fail</h2>
+
+    <p><strong>A node was dispatched to remove a host dependence from a test, and the assertion it
+    added to prevent the regression cannot detect it.</strong> The original defect: a fixture
+    supplied the literal pid <code>4242</code>, and the test passed only because an unrelated
+    user's process happened to occupy that pid on the login node &mdash;
+    <code>os.kill(4242, 0)</code> raises <code>PermissionError</code>, which the liveness helper
+    correctly reads as alive, while <code>ps -p 4242</code> shows nothing. The repair replaced the
+    literal with <code>worker_pid = os.getpid()</code> and added this line:</p>
+
+    <pre><code>assert first["pid"] == worker_pid</code></pre>
+
+    <p>It compares the recorded pid against <em>the same variable that was passed in</em>. Revert
+    <code>worker_pid = os.getpid()</code> to <code>worker_pid = 4242</code> and the assertion is
+    still true &mdash; whenever 4242 is occupied, which is the accidental pass it exists to
+    prevent. <strong>The regression guard is a tautology, and it was added by the node whose whole
+    purpose was to end a coincidence.</strong> Its independent reviewer found it and scored
+    durability and evidence at 10 each, the two lowest dimension scores this plan has recorded.</p>
+
+    <p>This is the plan's own thesis at its sharpest, one level below where it started. §2 began
+    with <em>a run that never had a review promotes exactly like one that passed</em>. Here the
+    review exists, the test exists, the test passes, the assertion is present, the control is red
+    &mdash; and the one line that carries the guarantee is true for a reason unrelated to what it
+    claims. Nothing in the gate stack could have caught it: not the test, which passes; not the
+    control, which reddens; not the coordinator, who read the diff and merged it. A second reader
+    with no stake in the change, reading the assertion against the thing it is supposed to fail on,
+    is the only instrument that found it.</p>
+
+    <p><strong>The same review also found the node's control was a substitution</strong> &mdash;
+    the declaration said restore a literal pid whose liveness the host decides, the log records a
+    proven-absent pid through an <code>os.getpid</code> proxy. That is the fifth substitution of
+    the six examined in §2h, and it arrived in the node fixing the defect that substitution-style
+    evidence had concealed.</p>
+
+    <p><strong>Done when</strong> the assertion is independent of the value under test: it must
+    fail when <code>worker_pid</code> is reverted to a literal whose occupancy the host decides,
+    asserted by reverting it in a scratch copy and requiring a failure, which is the check the
+    original repair never ran on itself. The general form belongs in the review prompt rather than
+    in this one test &mdash; <em>an assertion added to prevent a regression is verified by
+    reinstating the regression</em>, which is the negative-control discipline applied to a single
+    line instead of a module.</p>
 
     <h2 id="s5f">§5f — A clean final round certifies the module, not its effect — and the report is the one artifact nobody reviews</h2>
 
