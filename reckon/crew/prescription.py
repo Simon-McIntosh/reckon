@@ -7,6 +7,18 @@ mutation, and a thirty-minute fence. This module states that rule once, as a
 judgement over a node record, so a dispatcher and its callers read one
 definition rather than restating the ruling in prose that drifts from it.
 
+The public surface is ``judge_prescribed(node)`` and one tuple of property
+names, and no other callable: the helpers deciding which declared paths count
+as artifacts are private, because a caller that wants the verdict reads the
+verdict rather than reassembling it from its parts.
+
+The two admission properties are exact rather than approachable. The
+one-artifact property is a cardinality of exactly one, not an upper bound, so a
+node declaring none is refused as one declaring two is. And a numeric gate is a
+number bound to a measurable outcome *and* the value the gate was measured
+against, never token co-occurrence — "before editing, read the 2026 note"
+carries a digit and a baseline word and states no gate.
+
 Purity is deliberate. The ruling is a property of the node record and nothing
 else, so the verdict is computable before any worktree, plan file or flight
 configuration exists: a dispatcher can refuse an unprescribed node the moment
@@ -29,8 +41,8 @@ from reckon.crew.node import (
 )
 
 # The five properties the ruling names, in the order it names them. Order is
-# part of the contract a reader meets: a node producing more than one artifact
-# is refused before its gate is judged.
+# part of the contract a reader meets: a node producing other than exactly one
+# artifact is refused before its gate is judged.
 PRESCRIBED_PROPERTIES = (
     "one-artifact",
     "file-and-line",
@@ -46,13 +58,31 @@ PRESCRIBED_PROPERTIES = (
 # satisfy it.
 FILE_LINE_RE = re.compile(r"[A-Za-z0-9_][\w.+-]*(?:/[\w.+-]+)*\.[A-Za-z0-9_]+:\d+")
 
-# A gate's before value is stated when the measure names the baseline it was
-# measured against. A bare count with no baseline reads as a target rather than
-# a delta, so the verdict cannot tell a node that moved a number from one that
-# merely aims at one.
-BASELINE_RE = re.compile(
-    r"\b(?:before|baseline|previously|currently|existing|measured|"
-    r"was|were|at present|pre-change)\b",
+# A gate quantity: a count attached to the outcome it counts. The number and
+# the noun must be adjacent, so a number beside an unrelated noun ("read the
+# 2026 note") is not a gate. Exit codes and percentages stand alone because
+# there the number is the whole measure.
+GATE_QUANTITY_RE = re.compile(
+    r"\b\d+\s+(?:new\s+|failing\s+|passing\s+|skipped\s+|xfailed\s+|"
+    r"erroring\s+)?(?:tests?|failures?|errors?|assertions?|checks?|passes|"
+    r"skips?|xfails?|cases?)\b"
+    r"|\bexits?\s+(?:with\s+)?\d+"
+    r"|\b\d+\s*(?:%|percent)\b",
+    re.IGNORECASE,
+)
+
+# A baseline value: the number the gate was measured against, introduced or
+# followed by the word marking it as a prior measurement. The digit is
+# required in the same sentence, so a baseline word used as an instruction
+# ("before editing, ...") states no before value at all. A gate is the pair,
+# never either half: co-occurrence is what let the false positives through.
+_BASELINE_LEAD = (
+    r"(?:down[ ]from|up[ ]from|before|baseline|previously|currently|formerly|"
+    r"was|were|measured|pre-change|existing|prior|against|from)"
+)
+BASELINE_VALUE_RE = re.compile(
+    _BASELINE_LEAD + r"\b[^.;\n]{0,40}?\b\d+\b"
+    r"|\b\d+\b[^.;\n]{0,40}?\b" + _BASELINE_LEAD + r"\b",
     re.IGNORECASE,
 )
 
@@ -63,7 +93,7 @@ MAX_FENCE_SECONDS = 30 * 60
 _NONE_PREFIX = f"{NEGATIVE_CONTROL_NONE}:"
 
 
-def is_landing_path(path: str, plan: str) -> bool:
+def _is_landing_path(path: str, plan: str) -> bool:
     """Return whether a write path is a plan's shared landing record.
 
     Every node on a plan appends its landing record to the evidence record and
@@ -83,7 +113,7 @@ def is_landing_path(path: str, plan: str) -> bool:
     return name == f"{plan}.html" and "plans" in parts[:-1]
 
 
-def artifact_paths(node: TaskNode) -> list[str]:
+def _artifact_paths(node: TaskNode) -> list[str]:
     """Return the declared write paths that are the node's own artifacts.
 
     A test file is the check beside an artifact rather than a second artifact,
@@ -93,7 +123,7 @@ def artifact_paths(node: TaskNode) -> list[str]:
     return [
         str(path)
         for path in node.write_paths
-        if not is_test_path(str(path)) and not is_landing_path(str(path), node.plan)
+        if not is_test_path(str(path)) and not _is_landing_path(str(path), node.plan)
     ]
 
 
@@ -112,14 +142,22 @@ def judge_prescribed(node: TaskNode) -> dict[str, Any]:
         failures.append(prop)
         detail[prop] = reason
 
-    artifacts = artifact_paths(node)
-    if len(artifacts) > 1:
-        fail(
-            "one-artifact",
-            f"the node names {len(artifacts)} non-test artifacts "
-            f"({', '.join(artifacts)}); a prescribed node is one artifact, so "
-            "split it into one node per artifact",
-        )
+    artifacts = _artifact_paths(node)
+    if len(artifacts) != 1:
+        if artifacts:
+            fail(
+                "one-artifact",
+                f"the node names {len(artifacts)} non-test artifacts "
+                f"({', '.join(artifacts)}); a prescribed node is exactly one "
+                "artifact, so split it into one node per artifact",
+            )
+        else:
+            fail(
+                "one-artifact",
+                "the node names no non-test artifact; a prescribed node is "
+                "exactly one artifact, so name the single path the change lands "
+                "in rather than leaving the scope open",
+            )
 
     located = f"{node.goal}\n{node.done_when}"
     if not FILE_LINE_RE.search(located):
@@ -130,12 +168,14 @@ def judge_prescribed(node: TaskNode) -> dict[str, Any]:
             "the change rather than searching for it",
         )
 
-    if not re.search(r"\d", node.done_when) or not BASELINE_RE.search(node.done_when):
+    if not GATE_QUANTITY_RE.search(node.done_when) or not BASELINE_VALUE_RE.search(
+        node.done_when
+    ):
         fail(
             "numeric-gate",
             "the done-when states no numeric gate with its before value; name "
-            "the count the gate produces and the baseline it is measured "
-            "against, so a reader can tell a moved number from an aimed one",
+            "the count the gate produces and the value it was measured against, "
+            "so a reader can tell a moved number from an aimed one",
         )
 
     declaration = str(node.negative_control or "").strip()
