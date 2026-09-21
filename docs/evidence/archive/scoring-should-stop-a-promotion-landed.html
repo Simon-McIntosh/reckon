@@ -179,6 +179,50 @@
     repository-wide backlog that is its own commit, so the delivered diff carries the exemption
     and its tests and nothing else.</p>
   </section>
+  <section id="s2f-gate-follows-the-writing">
+    <h2>The gate follows the writing, and a synonym cannot declassify a run</h2>
+    <p><strong>Defect, reproduced at the base.</strong> The guard as §2 landed carried
+    <code>role == "implement"</code> among the conjunction, so a <code>test</code>,
+    <code>documentation</code> or <code>investigate</code> run that committed a tracked file
+    promoted with no review and no waiver. The classification arm had the second hole: it is
+    reached only when the manifest status is the exact literal <code>complete</code>, so a
+    writer choosing <code>awaiting-orchestrator-review</code> or
+    <code>implemented-not-closed</code> had its run classified <code>unreadable</code> and
+    promoted as though accepted.</p>
+    <figure>
+      <img src="/reckon/figures/gate-coverage/holes-and-closures.svg" alt="Two panels. Left, the conditions as section 2 landed: the role arm and the exact-status arm are the two marked holes, leaking to promotes-unreviewed and to classified-unreadable, with sixteen of seventeen runs escaping. Right, the conditions after this change: the role arm is replaced by role-is-implement-or-changed-a-tracked-path, and an unrecognised manifest status is refused by name before the classification is consulted.">
+      <figcaption>The two escapes and their closures. A missed conjunction is not an error condition — it is a promotion that leaves no trace, which is why the arms are shown as the gate rather than as checks around it.</figcaption>
+    </figure>
+    <p><strong>What changed.</strong> <code>changed_repository</code> — whether the run's own
+    manifest names a path inside its own repository — is now an alternative to the role name,
+    so the gate keys on the writing rather than on the label the writer chose.
+    <code>_require_recognised_manifest_status</code> runs at the same point as
+    <code>_require_commit_for_changed_manifest</code>, before the classification is consulted,
+    and re-raises the reader's own <code>ManifestParseError</code> naming the rejected status
+    and the accepted vocabulary from <code>TERMINAL_MANIFEST_STATUSES</code>. The exemption for
+    the <code>review</code> role is retained and asserted: a reviewer's deliverable is the
+    review it writes, so it is not gated on having one.</p>
+    <p><strong>Coverage, and the one existing test it moved.</strong> The 15-file promotion
+    cohort (184 tests, the files that reach <code>promotion.complete</code>) ran at <strong>18
+    failed / 166 passed</strong> against this node's own base revision
+    <code>ee622294</code> and <strong>19 failed / 165 passed</strong> at the change, so exactly
+    one test changed state and no test that was passing for its own subject now fails for the
+    gate: <code>tests/test_crew_test_role.py::test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion</code>.
+    That run is <em>still refused</em> — its behaviour is the behaviour this change intends —
+    but the review refusal now arrives before the verifier-source refusal, so the assertion on
+    the message <code>verifier may read</code> no longer matches. It sits outside this node's
+    write fence and is named as a follow-on rather than repaired here.</p>
+    <p><strong>Evidence that could have failed.</strong> The declared negative control replaces
+    <code>changed_repository = bool(_manifest_repository_paths(record))</code> with
+    <code>changed_repository = False</code>, applied to a scratch copy of this commit
+    (<code>git archive HEAD</code>) so the worktree's source is never mutated. All three
+    parametrisations of <code>test_a_role_writing_a_tracked_file_is_refused_without_a_review</code>
+    fail with <code>Failed: DID NOT RAISE CrewError</code>, naming that the path arm — and not
+    merely the role arm — is load-bearing. The mutation is repeated verbatim on the first line
+    of the log. <code>reckon/crew/promotion.py</code> is byte-identical to its committed blob
+    (sha256 <code>037ea9f9c2cf4fa879ebd489f2c4e87c4080e7401fb243703e3abc9ab02c2c20</code>) and
+    <code>git status --porcelain</code> in the worktree is empty.</p>
+  </section>
 </main>
 </body>
 </html>
