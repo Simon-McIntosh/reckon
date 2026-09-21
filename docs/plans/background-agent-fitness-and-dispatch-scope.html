@@ -288,6 +288,29 @@
     the reason, asserted by reading the field back; and <code>crew resume</code> still resolves a
     session for a run whose member holds no matching entry, asserted by calling the resolver.</p>
 
+    <h3>Landed — stage one, stop the lookup</h3>
+    <p>
+      <code>reckon/crew/dispatch.py</code> at <code>3b8d349</code>. A stored session now resolves
+      only when the coordinator session recorded as owning it is the session dispatching now, in
+      both branches: the configuration-keyed <code>sessions</code> entry and the legacy entry reached
+      through the bare <code>session_id</code> plus <code>session_model</code> fields. The capture
+      path records the dispatching coordinator session beside the entry it writes, keyed as the
+      session is; an entry recording no owner is foreign, because nothing proves it belongs to the
+      session dispatching now. The withholding is written to the run as <code>session_withheld</code>
+      naming the session, its recorded owner and the reason, so a peer whose worker starts a fresh
+      conversation can read why.
+    </p>
+    <p>
+      Gate: <code>tests/test_worker_session_is_session_scoped.py</code>, 13 test functions, 13 passed,
+      0 failed. Negative control (delete the owning-session comparison so a foreign session resolves
+      again): 8 failed, 5 passed, then reverted byte-identical. The 15-file promotion cohort still
+      fails exactly 18, its measured before value. Three cases in
+      <code>tests/test_crew_session_keying.py</code> assert the replaced behaviour — they dispatch
+      each node from a different coordinator session — and are reported rather than edited, being
+      outside this node's write scope. Full anchor:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#session-ownership">session ownership, landed record</a>.
+    </p>
+
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
     review a gated promotion requires must re-derive at least one number the node claims from the

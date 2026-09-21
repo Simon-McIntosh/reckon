@@ -125,6 +125,127 @@
       produces two source artifacts still fails <code>one-artifact</code>.
     </p>
 
+  <h2 id="session-ownership">Session ownership — a stored conversation does not outlive the session that opened it</h2>
+    <p>
+      Node <code>worker-session-is-session-scoped</code> (§2d, stage one: stop the lookup). An
+      earlier record established that 252 of 259 roster session entries are owned by another
+      coordinator session, and that the median roster session is around 525,000 tokens against the
+      local lane's 480,000-token usable window — so the reuse path was already broken at the
+      median, not merely wasteful. This node makes ownership load-bearing: a stored session is
+      returned only when the coordinator session recorded as owning it is the session dispatching
+      now.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 720 300" role="img" aria-label="Resolution flow: capture records the owning coordinator session beside the stored session; resolution returns the session only when the recorded owner equals the dispatching session, and otherwise records the withholding on the run." width="100%" style="max-width:720px">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"></path>
+          </marker>
+        </defs>
+        <g font-family="sans-serif" font-size="12" fill="#222">
+          <rect x="16" y="20" width="200" height="64" rx="6" fill="#eef4fb" stroke="#7aa0c8"></rect>
+          <text x="26" y="42">capture (_capture_member_session)</text>
+          <text x="26" y="60">writes sessions[key] = session</text>
+          <text x="26" y="76">and session_owners[key] = coordinator</text>
+
+          <rect x="16" y="150" width="200" height="64" rx="6" fill="#eef4fb" stroke="#7aa0c8"></rect>
+          <text x="26" y="172">roster entry</text>
+          <text x="26" y="190">sessions / session_owners</text>
+          <text x="26" y="206">keyed by agent configuration</text>
+
+          <rect x="270" y="150" width="180" height="64" rx="6" fill="#fdf6e6" stroke="#c8a24a"></rect>
+          <text x="280" y="172">resolution</text>
+          <text x="280" y="190">config-keyed branch</text>
+          <text x="280" y="206">legacy branch</text>
+
+          <rect x="490" y="60" width="214" height="66" rx="6" fill="#e8f6ec" stroke="#4f9a63"></rect>
+          <text x="500" y="82">owner == dispatching session</text>
+          <text x="500" y="100">session returned, argv carries</text>
+          <text x="500" y="116">its resume token</text>
+
+          <rect x="490" y="200" width="214" height="80" rx="6" fill="#fbecec" stroke="#c46a6a"></rect>
+          <text x="500" y="222">owner differs, or is absent</text>
+          <text x="500" y="240">session withheld; run records</text>
+          <text x="500" y="256">session_withheld {session,</text>
+          <text x="500" y="272">owner, reason}, argv has none</text>
+
+          <line x1="116" y1="84" x2="116" y2="150" stroke="#666" marker-end="url(#arrow)"></line>
+          <line x1="216" y1="182" x2="270" y2="182" stroke="#666" marker-end="url(#arrow)"></line>
+          <line x1="450" y1="170" x2="490" y2="110" stroke="#666" marker-end="url(#arrow)"></line>
+          <line x1="450" y1="196" x2="490" y2="238" stroke="#666" marker-end="url(#arrow)"></line>
+        </g>
+      </svg>
+      <figcaption>
+        The ownership gate. Both stored-session branches pass through it, because closing either
+        one alone leaves the other resuming a conversation across sessions.
+      </figcaption>
+    </figure>
+
+    <h3>Gate measure, as executed</h3>
+    <ul>
+      <li><strong>Focused gate.</strong> <code>pytest -p no:cacheprovider -q
+        tests/test_worker_session_is_session_scoped.py</code> → <strong>13 passed, 0 failed</strong>
+        (13 test functions; the ruling requires at least 8). Both branches are asserted separately:
+        the configuration-keyed entry and the legacy entry reached through the bare
+        <code>session_id</code> plus <code>session_model</code> fields. An entry recording no owner
+        is asserted foreign in both. A same-session entry is asserted returned in both. The capture
+        path is asserted to write the owner by reading the roster back after a synthesised capture.
+        A dispatch to a member holding only foreign entries is asserted against the
+        <em>launched argv</em> — <code>"resume" not in dispatched["argv"]</code> — and its run is
+        asserted to carry <code>session_withheld</code> naming the session, its owner and a reason.
+        <code>reckon.crew.resumption.resolve_session</code> is asserted to resolve the session from a
+        synthesised run pointer, so the recovery path is independent of the roster.</li>
+      <li><strong>The reverse direction.</strong>
+        <code>test_a_dispatch_to_a_member_owning_its_session_still_resumes</code> dispatches to a
+        member whose entry is owned by the dispatching session and asserts the session id is
+        returned <em>and</em> that its token follows <code>resume</code> in the argv — the rule
+        narrows the lookup rather than disabling reuse.</li>
+      <li><strong>No collateral change.</strong> The 15-file promotion cohort recorded at
+        <code>~/.config/reckon/crew/reports/unreviewed-promotion-exposure.md</code> fails exactly
+        <strong>18</strong>, its measured before value, with this change in the tree
+        (<code>18 failed, 166 passed</code>), and the failing id set is identical to the one
+        measured before the change.</li>
+    </ul>
+
+    <h3>Negative control, as executed</h3>
+    <p>
+      The declared mutation — <em>delete the owning-session comparison from
+      _session_for_configuration so a foreign session resolves again;
+      tests/test_worker_session_is_session_scoped.py must fail</em> — was applied by removing the
+      recorded-owner guard that <code>_session_for_configuration</code> delegates to, and the
+      focused gate was observed to fail: <strong>8 failed, 5 passed</strong>. The eight failures are
+      the foreign-owner and no-owner cases of both branches, the two withholding-detail cases and
+      the two dispatch cases — every case that asserts a session is <em>not</em> returned. The
+      mutation was then reverted and <code>reckon/crew/dispatch.py</code> restored byte-identical
+      (sha256 <code>098254f1b97ae1658acaacdffdb840e3410d8dedf172b8621d89e553c286ed13</code>). Red log:
+      <code>~/.config/reckon/crew/runs/r-20260921T081647775273-worker-session-is-session-scoped/negative-control.log</code>.
+    </p>
+
+    <h3>Negative findings on the way</h3>
+    <ul>
+      <li><strong>Three tests encode the replaced behaviour.</strong>
+        <code>tests/test_crew_session_keying.py</code> dispatches its nodes from a
+        <em>different</em> coordinator session each call (<code>session=f"coordinator-{'{sequence}'}"</code>),
+        so three cases assert that a session captured by one coordinator session is resumed by
+        another — the defect this node closes. They are outside this node's write scope and are
+        reported rather than edited: <code>test_two_dispatches_at_the_same_configuration_resume_one_session</code>,
+        <code>test_changed_effort_starts_fresh_and_both_sessions_remain_reusable</code>,
+        <code>test_legacy_model_key_reuses_when_capture_configuration_matches</code>. Each needs its
+        dispatch session held constant (or its expectation inverted) before the suite is green.</li>
+      <li><strong>The bare <code>member add --session</code> path stops resuming</strong> by design:
+        a session set that way records no owner, so no dispatch can prove it. This is the same
+        statement as the no-owner case above, recorded here because
+        <code>tests/test_crew_members.py</code> exercises that path and already fails three cases at
+        this base revision for an unrelated reason (a node contract requiring a declared
+        specification level), so the behaviour change there is not currently observable.</li>
+      <li><strong>Ownership is not preserved by roster re-registration.</strong>
+        <code>reckon.ledger.register_member</code> rebuilds an entry from a fixed field list and does
+        not carry <code>session_owners</code>, so a later <code>member add</code> makes an owned entry
+        foreign. The failure direction is safe (a fresh conversation, never a resumed foreign one),
+        and the write is outside this node's scope.</li>
+    </ul>
+
   </main>
 </body>
 </html>
