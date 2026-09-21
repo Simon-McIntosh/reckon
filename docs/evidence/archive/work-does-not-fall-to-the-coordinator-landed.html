@@ -1179,6 +1179,65 @@
     <code>mutation-red.log</code> (mutation verbatim on line 1), <code>tests-green.log</code>.</p>
   </section>
 
+  <section id="the-filter-order-case-separates-the-orders">
+    <h2>&sect;5 &mdash; The filter-order case can tell the two orders apart</h2>
+
+    <p><strong>The case existed and could not fail.</strong> The wiring record above holds a
+    filtered read to the width measured over every committed row, "a read counting width after
+    applying its filter would report the width of the selection". The case asserting that held
+    for both orders, because the fixture's selected plan was
+    <code>alpha = {early, disagreeing}</code> and those two runs were dispatched at the same
+    instant, so each covered the other: the fleet's count and the selection's count were both
+    <code>2</code>. A read that filtered first, then counted, passed the case built to exclude it.</p>
+
+    <p><strong>The fixture now separates the orders.</strong> The row sharing
+    <code>early</code>'s dispatch instant, <code>disagreeing</code>, holds another plan, and the
+    selected <code>alpha</code> carries <code>early</code> and the stamp-less
+    <code>no-dispatch</code>. At 10:00 the fleet held two measured runs; the selection holds
+    one. The case asserts the fleet's figure at that instant, <code>2</code>, and derives from the
+    same fixture that the selection's own count is <code>1</code>, so it reddens whether the read
+    reports the selection's figure or a later fixture edit removes the difference it rests on.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/filter-order-case-separates-the-orders.svg"
+           alt="A timeline of the five fixture runs: early and disagreeing both span 10:00, but
+                disagreeing holds another plan, so the width at early's dispatch instant is 2 for
+                the fleet and 1 for the alpha selection; no-completion never measured an end, and
+                no-dispatch carries no dispatch stamp so its width is absent."
+           width="960" height="400" style="max-width:100%;height:auto">
+      <figcaption>Both runs in flight at 10:00, one of them outside the selected plan. That is the
+      whole of the discrimination.</figcaption>
+    </figure>
+
+    <p><strong>The probe, which is the fixture's own reading.</strong> A driver stages the fixture
+    through the case's own repository helper, reads the selected rows at the surface, and counts
+    both orders independently from the fixture's stamps. <code>early</code> reports
+    <code>pre-filter=2 post-filter=1 surface=2</code>, with the covering rows named
+    <code>pre_spans=[early, disagreeing]</code> and <code>post_spans=[early]</code>;
+    <code>no-dispatch</code> is <code>None</code> on both because it has no dispatch stamp. The
+    probe exits non-zero unless at least one selected row separates the orders, so it is a check
+    on the fixture rather than a transcript of it.</p>
+
+    <p><strong>Declared mutation: filter by plan first, then recount the width over the selection.</strong>
+    Applied to <code>read_records</code> alone — the rows are narrowed by plan and the width is then
+    recomputed from the surviving rows' own stamps, instead of deriving over every committed row and
+    selecting afterwards — it reddens exactly the filter-order case:
+    <code>1 failed, 8 passed</code>, the assertion reading <code>assert 1 == 2</code> with the
+    surface returning the selection's figure. Every other case reads unfiltered, so none of them sees
+    the reversal. The mutation is verbatim on the red log's first line, and
+    <code>reckon/ledger.py</code> was restored byte-identically (sha256
+    <code>4fdfe08d…</code> before and after); the green run is the same tree with the mutation
+    reverted, <code>9 passed</code>.</p>
+
+    <p><strong>What this does not claim.</strong> This measures the case's own discrimination and the
+    file's state at this revision. The merged head belongs to a separately dispatched test node, and
+    no product file changed here: the only committed path is the test module, whose nine cases are
+    the same nine. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/</code>
+    — <code>green.log</code>, <code>probe.log</code>, <code>probe.py</code>,
+    <code>negative_control.log</code> (mutation verbatim on line 1).</p>
+  </section>
+
   <section id="the-two-write-scope-tests-agree">
     <h2>&sect;9 &mdash; The write-time and promotion-time write-scope tests agree</h2>
 
