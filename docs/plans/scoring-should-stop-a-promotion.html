@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1337,6 +1337,35 @@
       landing contract requires its own append-only plan and cumulative-evidence records, while
       section closure and followup resolution remain coordinator-owned.</p>
     </div>
+    <p class="landed-summary"><strong>Landed</strong> (<code>11e14c8e</code>, <code>21b5de42</code>, <code>3c4e0326</code>): the prompt now
+    states the reading bound — the goal, the done-when, the declared paths, the manifest and
+    the diff, and, as a bound on that list, three exclusions: do not re-derive the
+    implementation, do not re-run the full suite, do not review code the node did not touch.
+    Each of those five read targets now carries its own <code>ITEM</code> verdict line, and
+    <code>parse_review</code> records one verdict per item, names any item that is absent, and
+    withholds the item aggregate rather than computing it over the items that were present. The
+    five scored dimensions keep their own completeness predicate: a review with all five
+    dimension scores and no item verdicts still returns <code>True</code> from
+    <code>_review_is_complete</code>, asserted by calling it, because the 147 stored reviews
+    and live scoring runs predate the item lines. The module docstring's claim that the review
+    is unwired is corrected.</p>
+
+    <p><strong>Measured.</strong> 28 tests pass across the two files, and the six things the
+    node's measure names are each asserted. The reading-bound half of the contract was
+    falsified: replacing the third exclusion with an instruction to review the whole repository
+    turned <code>test_review_prompt_contract.py</code> red
+    (<code>1 failed, 9 passed</code>), and the phrase was restored before the commit. Ruff
+    <code>check</code> over the four staged paths reports 0 findings against 0 at base, and
+    <code>format</code> reports the same two pre-existing files unformatted at base and at the
+    landed tree — no finding added. The prompt's bound is the mechanism this section asked for;
+    whether it actually shortens a real review remains §5's measurement.</p>
+
+    <p><em>Recovered at session close.</em> This summary was written by the superseded parallel
+    attempt in the <code>review-prompt-per-item-verdicts</code> worktree and left uncommitted
+    there; the work it describes landed from a different worktree under the three commits above,
+    which is why its original citation of <code>3d8234c6</code> &mdash; a commit that never
+    reached <code>main</code> &mdash; has been corrected here.</p>
+
     <h2 id="s4b">§4b — Which lane this plan's own work runs on</h2>
 
     <p>An interim ruling of 2026-09-21, recorded in
