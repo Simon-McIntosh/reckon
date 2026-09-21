@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -419,6 +419,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260921T1147-local-lane-capacity" data-who="reckon-ship" data-when="2026-09-21T11:47:00Z">
+    <div class="r-comment-body">THE FREE LANE'S CEILING, MEASURED BY CROSSING IT RATHER THAN BY ASKING. Three readings of the published lane document inside 90 minutes, while this session loaded the lane deliberately. At 10:16Z: running 15, concurrent_requests 18, headroom 3, kv 0.390, mean_context 106,441, waiting 0. At 11:37Z: running 14, concurrent_requests 18, headroom 4, kv 0.378, mean_context 107,563, waiting 0. At 11:46Z, after this session had seven workers on the lane: running 13, concurrent_requests 17, headroom 4, kv 0.384, mean_context 113,387, WAITING 2. So the ceiling on this serve today is around 17 to 18 concurrent requests, and the observable that announced the crossing was waiting leaving zero -- not running, not headroom, and not occupancy, which barely moved across all three. That is the section's locked scarcity signal confirmed in use rather than in argument. TWO PROPERTIES THE READINGS SHOW THAT A SINGLE NUMBER WOULD HIDE. The ceiling itself moved, 18 to 17, while the fleet was getting smaller in worker count, because concurrent_requests is pool divided by mean_context and mean_context rose 106k to 113k as workers aged into their own sessions. So a headroom figure read at dispatch decays with no event to observe, and an orchestrator that caches one is over-subscribed later while believing it has room. And running fell from 15 to 13 across the same span in which the lane started queueing, which means worker count and lane pressure moved in OPPOSITE directions -- the clearest available demonstration that a worker census cannot govern this lane. THE CONSEQUENCE FOR THIS SECTION. The bar reads window state for the metered clocks, and it needs the same treatment here: the free lane's admission evidence is waiting and preemptions, read with occupancy for context, re-read per wave rather than carried. A recommendation to send work local is only as good as the freshness of the reading behind it, which is the same shelf-life rule section 5b applies to the metered side.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
