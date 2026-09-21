@@ -297,6 +297,42 @@
     resumption, which merges rather than replaces the pointer.</p>
     <p><strong>Measure:</strong> the coordinator&rsquo;s merged-head verification, because the worker&rsquo;s own cohort gate was killed mid-baseline by a lane checkpoint swap and it never obtained a figure. Focused cohort over <code>test_backend_reconstruction_settings.py</code>, <code>test_crew_promotion.py</code>, <code>test_backend_observation.py</code>, <code>test_crew_routes.py</code> and <code>test_budget.py</code>: <strong>164 passed / 1 failed</strong> at base <code>748a7a5d</code>, <strong>170 passed / 1 failed</strong> at the merged head &mdash; the same failing id both sides (<code>test_fitting_and_unbounded_backends_dispatch_without_context_refusal</code>), so <strong>6 tests added and 0 failures added</strong>. The worker separately recorded its own six tests passing before the gate began.</p>
   </section>
+  <section id="cache-age-at-every-entry-point">
+    <h2>A cached reading carries its age wherever a caller reads the figure</h2>
+    <p>Verified 2026-09-21 at base <code>5a3372c2</code>, commit <code>70871208</code>.
+    The requirement was recorded as prose in the plan and its behaviour already held
+    at that base. <code>cached_account_budget</code> in <code>reckon/_backends.py</code>
+    returns the figure with the copy's <code>fetch_stamp</code> and a numeric
+    <code>fetch_age_seconds</code> as sibling fields of the same block, so the age is
+    reachable without parsing the detail string; a copy whose stamp cannot be dated
+    yields an unknown block with <code>utilisation_pct</code> None and no figure in any
+    structure it returns. The direct reproduction before any change: a fixture stamped
+    five hours old returned <code>fetch_age_seconds</code> 18000.0 beside
+    <code>utilisation_pct</code> 53.0, while the same fixture with an unparseable stamp
+    returned <code>headroom: unknown</code>. <code>reckon/_backends.py</code> is
+    therefore unchanged by this node.</p>
+    <p><strong>What was missing was the case, not the behaviour.</strong> The
+    pre-existing cohort asserted the age at the reader and the lanes view but never
+    reached it as a field the way a renderer would, and never pinned the copy to a
+    temporary path. <code>tests/test_cached_account_age.py</code> adds nine cases: the
+    age asserted as a field and consistent with the copy's own stamp at both the cache
+    reader and the probe entry point; four stamp shapes &mdash; absent, unparseable,
+    wrongly typed, unzoned &mdash; asserted to leave the reading unknown with no
+    structure moving a figure and no prose percentage; a live reading asserted
+    unmarked, so the change is not a blanket suppression; and the fixture written at a
+    path the environment resolves with the real cache copy asserted byte-identical
+    afterwards, because an isolated read does not prove an isolated write.</p>
+    <p><strong>Measure:</strong> 9 passed, exit 0 at base <code>5a3372c2</code>, run
+    with the repository's root interpreter as
+    <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cached_account_age.py</code>.
+    The negative control applies the node's declared mutation &mdash; removing the
+    <code>fetch_age_seconds</code> assignment so the age survives only inside the
+    detail string &mdash; to a scratch copy whose module resolution was proved to be
+    the scratch tree before the run (<code>reckon._backends.__file__</code> resolved
+    under the scratch root). That reddens 3 of the 9 and leaves 6 green, so the guard
+    is shown to fire rather than merely present; the log's first line repeats the
+    declared mutation, and it sits beside the manifest.</p>
+  </section>
 </main>
 </body>
 </html>
