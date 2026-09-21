@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-21">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees; tests run against the main checkout's environment reached through PYTHONPATH, with pytest -p no:cacheprovider; negative controls run in scratch copies of the same tree">
-  <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99">
-  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py">
+  <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,9ca9e963">
+  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py,docs/figures/a-window-paces-the-lane/group-position.svg">
   <title>A Window Paces The Lane — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -28,7 +28,7 @@
 
 
   <figure>
-    <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Five lanes collapse into two declared groups: four codex lanes into one wallet whose position is codex-astra's freshest 14% reading at age 0 s, and codex-spark into its own wallet at 88% and age 6.7 days. An undeclared codex-terra joins no group, and no entry point takes a backend name.">
+    <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Six lanes and three declarations, each drawn as a connector: the four sol-family lanes codex, codex-astra, codex-terra and codex-luna into one wallet whose position is codex-astra's freshest 14% reading at age 0 s; codex-spark onto a wallet of its own at 88% and age 6.7 days; and codex-orphan, declaring no wallet, joining no group and holding no position. No entry point takes a backend name.">
     <figcaption>Grouping comes from the declared slot alone, and a position is the group's freshest member reading carried with that member's own age.</figcaption>
   </figure>
 
@@ -56,23 +56,51 @@
       <caption>What the node asserted, and where the assertion is made.</caption>
       <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
       <tbody>
-        <tr><td>Five lanes resolve to exactly two declared groups from the config slot; a mistyped slot name never groups</td><td><code>test_grouping_reads_the_declared_slot_from_resolved_config</code></td></tr>
+        <tr><td>Six lanes resolve to exactly two declared groups from the config slot: four sol-family members counted into one wallet beside a genuinely undeclared backend, so the census is counted, not named; a mistyped slot name never groups</td><td><code>test_grouping_reads_the_declared_slot_from_resolved_config</code>, <code>test_every_grouped_lane_resolves_to_exactly_one_group</code>, <code>test_a_mistyped_slot_name_never_groups</code></td></tr>
         <tr><td>An undeclared backend is left ungrouped</td><td><code>test_a_backend_declaring_no_group_is_left_ungrouped</code></td></tr>
         <tr><td>The position is the freshest member, which is last in declaration order</td><td><code>test_position_is_the_freshest_member_not_the_first_declared</code></td></tr>
         <tr><td>Its age is that member's own, not the group's oldest</td><td><code>test_position_carries_the_freshest_members_own_age</code></td></tr>
         <tr><td>An undated member never outranks a dated sibling</td><td><code>test_an_undated_member_never_outranks_a_dated_one</code></td></tr>
         <tr><td>No ageable member reports unobserved with no age, never a zero</td><td><code>test_no_member_can_be_aged_reports_unobserved_and_never_zero</code></td></tr>
         <tr><td>No per-backend position entry point exists, and a lane name is refused</td><td><code>test_module_exposes_no_per_backend_position_entry_point</code>, <code>test_position_requires_a_declared_group_so_no_per_lane_position_exists</code></td></tr>
+      <tr><td>The public field type admits the epoch-number stamp the position copies through, asserted against the annotation and the stored value</td><td><code>test_the_public_field_type_admits_the_epoch_stamp_its_own_path_stores</code>, <code>test_epoch_and_iso_stamps_are_aged_in_the_same_frame</code></td></tr>
       </tbody>
     </table>
 
     <p><strong>Evidence.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider
-    -q tests/test_budget_group.py</code> → <strong>12 passed</strong>. The red log at
-    <code>~/.config/reckon/crew/reports/reckon/group-position-is-its-freshest-member/freshest_member_replaced_by_first.red.log</code>
+    -q tests/test_budget_group.py</code> → <strong>14 passed</strong> at the head of the correction below,
+    against <strong>12 passed</strong> at the base revision, with no test added failing. The red log at
+    <code>~/.config/reckon/crew/reports/reckon/close-the-review-findings-on-the-group-position/negative_control_first_member_mutation.red.log</code>
     records the declared mutation — returning the first member carrying an ageing reading instead of
     the member with the newest observation stamp — applied to a scratch copy of the package, where
-    <strong>4 tests fail</strong>, including the two naming the freshest member and its age. The module
-    under test in that run resolved to the scratch copy, printed beside the run.</p>
+    <strong>4 of 14 tests fail</strong>: the two naming the freshest member and its age, the epoch test, and
+    the order-stability test. The scratch copy is kept under that reports directory rather than in a
+    temporary one, so the run it records remains inspectable after the node lands. The module under test
+    in that run resolved to the scratch copy, printed as the run's first line.</p>
+    <p><strong>Census control.</strong> The freshness mutation above proves the freshness property, which
+    was already proven by the node that first landed the module; it does not exercise the census
+    correction. The correction's own control restores the defective fixture in a scratch copy of the
+    fixed tree &mdash; <code>codex-terra</code> reused as the undeclared backend while still listed among
+    the four sol-family lanes &mdash; and requires the membership-count assertion to fail. It does:
+    <code>assert 3 == 4</code> at <code>test_grouping_reads_the_declared_slot_from_resolved_config</code>,
+    and <code>assert 4 == (4 + 1)</code> at <code>test_every_grouped_lane_resolves_to_exactly_one_group</code>,
+    2 failed of 14. The count therefore sees the defect it was written for, which a fixture naming three
+    lanes, or a lane tuple shrunk to match, would have hidden. Log:
+    <code>~/.config/reckon/crew/reports/reckon/close-the-review-findings-on-the-group-position/negative_control_fixture_census_reuse.red.log</code>.</p>
+
+
+    <p><strong>Review closure.</strong> An independent review of the node that first landed this module
+    recorded five findings, each closed by the correction commit. The fixture's undeclared control had
+    reused a lane belonging to the asserted wallet, so the wallet held three members while the comment
+    and the figure both claimed four, and the census only appeared to assert five lanes: the control is
+    now its own backend and membership is asserted by counting resolved members. The figure drew three
+    connectors into a wallet its own label called four lanes, and drew the fourth lane as undeclared:
+    it now draws four connectors into that wallet, each of the six lanes to its declaration, with the
+    genuinely undeclared lane in a dashed box of its own. The landed-record link used the plan route
+    rather than the typed evidence route. The figure is now named in the node's declared write fence
+    instead of arriving as an unintended fifth path. The <code>observed_at</code> annotation admitted
+    only a string while the code path copies an epoch number through unchanged: the annotation admits a
+    number and a field-type assertion now holds the contract to the path.</p>
 
     <p><strong>Boundary of this node.</strong> The re-query of a reading past its shelf life, and the
     rendering of a lane whose figure came from a shared account probe, belong to the sections that
