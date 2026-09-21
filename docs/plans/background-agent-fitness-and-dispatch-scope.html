@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -222,6 +222,71 @@
     lane with session reuse, member choice is a capacity decision and not a bookkeeping one, and a
     coordinator that always reaches for the same familiar members will meet this refusal on a node
     that is in no way at fault.</p>
+
+    <h2 id="s2d">§2d — A worker's conversation must not outlive the session that opened it</h2>
+
+    <p><strong>The defect.</strong> <code>_session_for_configuration</code> in
+    <code>reckon/crew/dispatch.py</code> keys a roster member's stored session by <em>agent
+    configuration alone</em> — backend, model, effort, sandbox. There is no coordinator-session
+    component, so any dispatch to that member, by any session, on any day, resumes that
+    conversation. A second, legacy branch does the same through the bare
+    <code>session_id</code> plus <code>session_model</code> fields, which is why removing the
+    <code>sessions</code> map alone would not close it.</p>
+
+    <table>
+      <caption>Measured on this workstation, 2026-09-21.</caption>
+      <tbody>
+        <tr><td>committed runs carrying a session id</td><td>1,133</td></tr>
+        <tr><td>runs that resumed an existing session</td><td>373 (33%)</td></tr>
+        <tr><td><strong>runs that resumed a session first used on an earlier day</strong></td><td><strong>191 (17%)</strong></td></tr>
+        <tr><td>age of the resumed session</td><td>median 5 days, max 20</td></tr>
+        <tr><td>most-reused single session</td><td>29 distinct nodes since 2026-08-12</td></tr>
+        <tr><td>roster session entries owned by another coordinator session</td><td>252 of 259</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>At the median the reuse path is already broken, not merely wasteful.</strong> The
+    281 sessions this roster points at occupy <strong>1,012 MB</strong> on disk: median
+    <strong>2.10 MB</strong>, max <strong>28.76 MB</strong>. At roughly four characters per token
+    the median conversation is around 525,000 tokens, against the local lane's declared 480,000-token
+    usable window. <em>The median roster session cannot be resumed at all.</em> That is the
+    mechanism behind the measured refusal: a 12,050-byte prompt rejected at admission in 166&nbsp;ms
+    with <code>"Prompt is too long"</code>, on a session four days old.</p>
+
+    <p><strong>The record is carrying two unrelated jobs.</strong> A member is a concurrency token —
+    dispatch refuses a member holding a non-terminal run — and a conversation pointer. The first
+    duplicates a stronger mechanism that already exists: the scope registry refuses containing or
+    contained write-path claims and names the owning run, which protects the thing that actually
+    collides. The second is redundant with the run record, because <code>crew resume</code> resolves
+    a session from the run's pointer, stream or ledger row and <em>never</em> from the roster. So
+    removing the conversation half costs no recovery path.</p>
+
+    <p><strong>Rollout is staged, because several fleets are in flight and share this installed
+    code.</strong> Each stage is safe for a running wave: a live worker has already launched and is
+    unaffected, and the only change a peer sees is that its next dispatch to a familiar member opens
+    a fresh conversation.</p>
+
+    <ol>
+      <li><strong>Stop the lookup.</strong> A stored session resolves only when its owning
+      coordinator session is the dispatching one; both branches obey it. This makes all 252 foreign
+      entries inert without writing to shared state, so nothing is deleted and nothing is lost.
+      <strong>The withholding is recorded on the run</strong> rather than being silent, because a
+      peer whose worker suddenly starts fresh must be able to read why.</li>
+      <li><strong>Stop the writing.</strong> The capture path stops adding entries once the lookup
+      ignores foreign ones, leaving only same-session entries the run records already carry.</li>
+      <li><strong>Decide whether the roster survives</strong> as a pure concurrency token or is
+      replaced by the scope registry plus an explicit concurrency target. That is a design call
+      taken on the evidence above, not folded into the repair.</li>
+    </ol>
+
+    <p><strong>Done when</strong> stage one holds: a stored session whose owner is another
+    coordinator session is not returned, asserted for the configuration-keyed branch and the legacy
+    <code>session_id</code> branch separately, because either alone leaves the other resuming; a
+    same-session entry is still returned, asserted; a dispatch whose member carries only foreign
+    entries produces a launch whose argv contains no resume token, asserted against the launch plan
+    rather than against the stored record; the run records the withheld session with its owner and
+    the reason, asserted by reading the field back; and <code>crew resume</code> still resolves a
+    session for a run whose member holds no matching entry, asserted by calling the resolver.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
