@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T18:31:08",
+  "updated": "2026-09-21T18:33:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -230890,6 +230890,341 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a74",
+        "node": "granted-landing-paths-are-not-charged-as-read-context",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 587,
+                "cached_input_tokens": 574319,
+                "input_tokens": 574908,
+                "output_tokens": 313,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 575221,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "Reproduce first and paste the figures into the manifest. In reckon/crew/routing.py, _context_file_inputs charges every entry of node.write_paths at full file size, and reckon/crew/dispatch.py _grant_landing_write_paths appends the plan file and the cumulative evidence record to node.write_paths before that runs, so a node that names neither is charged for both. Measured on nova 2026-09-21: a report-only investigate node with no source path in its goal or done-when was refused twice at estimated_tokens 1392411, of which repository_file_tokens 1342019, the breakdown naming docs/evidence/archive/cut-cell-current-attribution-landed.html at 4290256 bytes and the plan file at 406806 bytes, neither declared nor mentioned. Show the same shape locally with a synthesised plan whose evidence record is large. Then: the paths added by _grant_landing_write_paths are excluded from the read-context estimate while remaining in the write scope, distinguished by provenance rather than by matching their names, so a node that DECLARES the plan file or the evidence record itself is still charged for it; tests/test_context_estimate_excludes_granted_paths.py passes and asserts that a node declaring neither is charged zero tokens for both, that a node declaring the evidence record explicitly is charged for it, that the grant still appears in the node's write_paths so the exclusive-claim machinery is unchanged, and that the emitted breakdown distinguishes granted entries from declared ones by a field a reader can filter on rather than by prose. Ruff check and format over exactly the staged paths add no findings beyond the same paths at the base revision, with both counts pasted into the manifest as digits.",
+          "estimated_hours": 0.8,
+          "goal": "Stop the context estimator charging a node for the landing paths the dispatcher grants it, which are append targets the worker never reads and which refuse a whole lane on mature plans",
+          "id": "granted-landing-paths-are-not-charged-as-read-context",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T15:26:04Z",
+            "read_at": "2026-09-21T15:26:06Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 26.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context/manifest.md",
+          "negative_control": "charge the granted landing paths as read context again, restoring the full write_paths sweep in _context_file_inputs; tests/test_context_estimate_excludes_granted_paths.py must fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/routing.py",
+            "tests/test_context_estimate_excludes_granted_paths.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-mcp-tool-names",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-21T15:27:15Z",
+        "completed_at": "2026-09-21T16:28:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 3689,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 3689,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "b946e1b00531d55cffc691e8d60c5f0627839b06",
+        "commits": [
+          "9b5b069eb959bb3ba453722b58df100fa5ae99c5",
+          "b83af9ba8721fbd9e264197129c57777a3329fc8"
+        ],
+        "changed_lines": {
+          "added": 187,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_context_estimate_excludes_granted_paths.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context/context-estimate-after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c494-204d-7ce2-9f2c-6ba8d230504d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 14012928,
+            "cached_input_tokens_cumulative": 14012928,
+            "input_tokens": 14276572,
+            "input_tokens_cumulative": 14276572,
+            "output_tokens": 46595,
+            "output_tokens_cumulative": 46595,
+            "reasoning_output_tokens": 13086,
+            "reasoning_output_tokens_cumulative": 13086
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T16:28:44Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 29.0,
+              "resets_at": 1790575134,
+              "observed_at": "2026-09-21T16:28:44Z"
+            }
+          ],
+          "notional_cost_usd": 29.1123,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 703,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 5015,
+              "log_fresh": false,
+              "manifest_commits": [
+                "681771db720457af44af42bf95a42ae757bb62b0",
+                "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+                "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "03a4cfe7a657167b7d95949a8023644bfba99546bb9aeb2dc35fccd0d5f95516",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route --gate <verdict> --commit 681771db720457af44af42bf95a42ae757bb62b0 --commit c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54 --commit 930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+              "node": "a-paraphrased-control-has-a-recorded-route",
+              "phase": "working",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 5048,
+              "terminal_at": "2026-09-21T14:02:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-paraphrased-control-has-a-recorded-route"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1500,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 785,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1862,
+              "log_fresh": false,
+              "manifest_commits": [
+                "d6c15105782a5b973a3e17d7036b4ad982547f86"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "c31516acf6115c718abcfb48a16496333b280094da8c2502c94ab0c16899deeb",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144155963632-declared-absent-versus-zero-mutation-reddens-the-call-sites-test/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T144155963632-declared-absent-versus-zero-mutation-reddens-the-call-sites-test --gate <verdict> --commit d6c15105782a5b973a3e17d7036b4ad982547f86",
+              "node": "declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T144155963632-declared-absent-versus-zero-mutation-reddens-the-call-sites-test",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 1935,
+              "terminal_at": "2026-09-21T14:54:26Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/declared-absent-versus-zero-mutation-reddens-the-call-sites-test"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 8,
+            "evidence": 16,
+            "fit": 12,
+            "goal_fidelity": 8,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 64
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 14012928,
+          "cumulative_input_tokens": 28289500,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 59681
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/granted-landing-paths-are-not-charged-as-read-context",
+          "session_id": "01a0c494-204d-7ce2-9f2c-6ba8d230504d",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T16:28:44Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.56,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.56,
+          "at_complete": 0.62,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_context_estimate_excludes_granted_paths.py"
+          ],
+          "declaration": "charge the granted landing paths as read context again, restoring the full write_paths sweep in _context_file_inputs; tests/test_context_estimate_excludes_granted_paths.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context/negative-control-context-grant.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context/negative-control-context-grant.log",
+          "reason": "paraphrase, verified before waiving. The declaration says charge the granted landing paths as read context again by restoring the full write_paths sweep; the log's first line says replace the computed dispatcher-grant identity check with if False so landing paths are charged. Same effect by the same route - disabling the grant check restores the sweep. The discriminator is which tests failed: both of the file's tests, including test_explicit_landing_input_remains_chargeable_after_the_other_grants, which only reddens when granted paths become chargeable again"
+        },
+        "tool_steps": 36.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -231174,6 +231509,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1946
+    "_version": 1947
   }
 }
