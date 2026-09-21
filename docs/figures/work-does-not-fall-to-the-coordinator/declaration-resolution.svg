@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470"
+     font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <rect width="980" height="470" fill="#fbfbfc"/>
+
+  <text x="24" y="30" font-size="16" font-weight="600" fill="#1b1f24">
+    A declared write path is resolved before it is compared
+  </text>
+  <text x="24" y="50" fill="#5a6472">
+    One dispatch, one declaration, two surfaces. The declaration is absolute; the changed path a manifest records is repository-relative.
+  </text>
+
+  <!-- Declaration panel -->
+  <rect x="24" y="70" width="272" height="150" rx="8" fill="#ffffff" stroke="#d5dae1"/>
+  <text x="40" y="94" font-weight="600" fill="#1b1f24">What the dispatch declares</text>
+  <text x="40" y="122" fill="#5a6472">declared (absolute):</text>
+  <text x="40" y="140" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">/repo/docs/figures/topic</text>
+  <text x="40" y="170" fill="#5a6472">changed (as recorded):</text>
+  <text x="40" y="188" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">docs/figures/topic/scope.svg</text>
+  <text x="40" y="212" fill="#8a94a3" font-size="12">A literal string compare never matches these.</text>
+
+  <!-- Before panel -->
+  <rect x="316" y="70" width="300" height="150" rx="8" fill="#fff5f5" stroke="#f0c2c2"/>
+  <text x="332" y="94" font-weight="600" fill="#8c2c2c">Before &mdash; literal compare</text>
+
+  <rect x="332" y="106" width="268" height="34" rx="5" fill="#ffffff" stroke="#e6b8b8"/>
+  <text x="344" y="128" fill="#1b1f24">write-time audit</text>
+  <text x="580" y="128" text-anchor="end" font-weight="600" fill="#c0392b">stray</text>
+
+  <rect x="332" y="146" width="268" height="34" rx="5" fill="#ffffff" stroke="#e6b8b8"/>
+  <text x="344" y="168" fill="#1b1f24">promotion check</text>
+  <text x="580" y="168" text-anchor="end" font-weight="600" fill="#1e8449">in scope</text>
+
+  <text x="332" y="202" font-weight="600" fill="#c0392b">DISAGREE &mdash; the worker is sent to repair a manifest promotion accepts.</text>
+
+  <!-- After panel -->
+  <rect x="636" y="70" width="320" height="150" rx="8" fill="#f4fbf6" stroke="#bfe3cb"/>
+  <text x="652" y="94" font-weight="600" fill="#1e6b3f">After &mdash; resolved first</text>
+
+  <rect x="652" y="106" width="288" height="34" rx="5" fill="#ffffff" stroke="#c6e3d0"/>
+  <text x="664" y="128" fill="#1b1f24">write-time audit</text>
+  <text x="928" y="128" text-anchor="end" font-weight="600" fill="#1e8449">in scope</text>
+
+  <rect x="652" y="146" width="288" height="34" rx="5" fill="#ffffff" stroke="#c6e3d0"/>
+  <text x="664" y="168" fill="#1b1f24">promotion check</text>
+  <text x="928" y="168" text-anchor="end" font-weight="600" fill="#1e8449">in scope</text>
+
+  <text x="652" y="202" font-weight="600" fill="#1e6b3f">AGREE &mdash; one resolution, applied at both surfaces.</text>
+
+  <!-- Resolution strip -->
+  <rect x="24" y="244" width="932" height="86" rx="8" fill="#ffffff" stroke="#d5dae1"/>
+  <text x="40" y="268" font-weight="600" fill="#1b1f24">The resolution step, applied to each declaration</text>
+
+  <rect x="40" y="280" width="270" height="36" rx="5" fill="#f2f5f9" stroke="#d5dae1"/>
+  <text x="52" y="303" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">/repo/docs/figures/topic</text>
+  <text x="322" y="303" fill="#5a6472">resolves under the repo &#8594;</text>
+  <rect x="512" y="280" width="200" height="36" rx="5" fill="#eef7f1" stroke="#bfe3cb"/>
+  <text x="524" y="303" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">docs/figures/topic</text>
+  <text x="726" y="303" fill="#5a6472">compared against the changed path</text>
+
+  <!-- Footnote -->
+  <text x="24" y="360" font-weight="600" fill="#1b1f24">Falsified, and controlled</text>
+  <text x="24" y="382" fill="#5a6472">
+    Restoring the literal compare reddens all five absolute inside-repository pairs and the named inside case,
+  </text>
+  <text x="24" y="400" fill="#5a6472">
+    while the seven relative pairs and the outside-repository rejection control stay green &#8212; the mutation cannot flip a rejection.
+  </text>
+  <text x="24" y="422" fill="#5a6472">
+    A declaration naming a location <tspan font-weight="600">outside</tspan> the repository resolves to no root, so both surfaces reject a repository path.
+  </text>
+  <text x="24" y="444" fill="#8a94a3" font-size="12">
+    Seven relative declarations unchanged. Resolution is promotion's own mapping, so the two surfaces share one implementation rather than two that drift.
+  </text>
+</svg>
