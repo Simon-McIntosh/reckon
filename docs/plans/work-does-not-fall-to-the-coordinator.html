@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-impl" content="0.25">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -443,6 +443,9 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
 </div>
 <div class="r-comment" data-section="s9" data-id="c-a-validator-exists-and-has-no-caller" data-who="reckon-ship" data-when="2026-09-21T13:45:00+00:00">
     <div class="r-comment-body"><p><strong>Gate passed, and the reconnaissance changes what the build node is.</strong> A write-time check does not need a new validator: <code>reckon/crew/reports.py:audit_manifest</code> (<code>:941</code>) already takes manifest <em>text</em> plus the <code>TaskNode</code> and returns findings rather than raising, which is exactly the shape a refusal addressed to a worker needs. It has <strong>no production caller</strong> — verified on main, where every reference outside its own definition is the crew facade re-export at <code>reckon/crew.py:193</code> and four test modules. Reusing it creates its first production caller, and that wiring is the node, not the validator.</p><p><strong>The field that caused both refusals is absent from the reader's schema.</strong> <code>negative_control_log</code> appears zero times in <code>reports.py</code>, so <code>_MANIFEST_SCHEMA</code> (<code>:120</code>) never coerces it and <code>reckon/crew/promotion.py:_require_declared_negative_control</code> (<code>:3047</code>, called at <code>:3417</code>) is the only code that gives the field meaning. Measured census: the dispatch template carries 22 keys against the schema's 18, the six unseen being <code>checkpoint</code>, <code>negative_control_log</code>, <code>resume_brief</code>, <code>wait_condition</code>, <code>wait_probe</code> and <code>wait_terminal</code>.</p><p><strong>Both recorded refusal shapes reproduce at <code>31c976a4</code>.</strong> The mapping shape parses to a dict, the guard's <code>str()</code> renders it as a path, and the refusal reads <em>"which cannot be read"</em>; the heading shape is absent from the parse entirely and the refusal reads <em>"carries no negative_control_log path"</em>. Both are correct by the contract and unreachable by the writer, which is the gap this section names.</p><p><strong>Constraint the build node inherits:</strong> the check must not become a second implementation of the <code>negative_control_log</code> contract. Promotion delegates to a shared helper, or the schema and the audit extend to cover the field — not both independently. §9 stays open pending that node.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260921T123329168721-reuse-map-for-the-unbuilt-hand-compensations" data-who="reckon-ship" data-when="2026-09-21T14:18:48.562Z">
+    <div class="r-comment-body"><p>reuse map for sections 3, 4 and 5: _write_shadow_patch (promotion.py:1175) plus run_dir (runs.py:69) are the durable-artifact shape section 3 needs, synthesize_landed_record (evidence.py:244) already composes the record section 4 hand-authors, and _worker_seconds (ledger.py:1959) plus concurrency_bounds (summary.py:397) already hold section 5&#x27;s arithmetic</p></div>
 </div>
 </section>
 </main>
