@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.882">
-<meta name="plan-version" content="74">
+<meta name="plan-impl" content="0.889">
+<meta name="plan-version" content="75">
 </head>
 <body>
   <main class="plan-doc">
@@ -898,6 +898,31 @@
     <code>reckon/crew/promotion.py</code>; that file is held by another session's run and the reading-side
     change is carried as a follow-on rather than attempted here.</p>
 
+    <h2 id="s18">&#167;18 &mdash; A promoted commit is one the repository has</h2>
+    <p>Measured 2026-09-21 on this plan's own &#167;17 node. Its manifest recorded
+    <code>7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1</code> as a landed commit. That object does not exist. The
+    commit the node actually wrote is <code>7892cb69128523ac598e02f62babaf56b6b71c17</code> &mdash; the same
+    eight-character prefix, a different remainder. Forty hexadecimal characters, the right shape, and nothing
+    behind it.</p>
+    <p>It was caught because <code>git merge</code> has to resolve the object it is given. Nothing on the
+    promotion path does: a commit sha reaches the ledger row as text. Had the merge not needed to resolve it,
+    the repository's committed record of what landed would now cite, permanently, a commit no one can find
+    &mdash; a row that reads as evidence and points at nothing, which is this plan's subject in its purest
+    form. A width or character-class check does not help and is the trap: the fabricated value passes both.
+    Only asking the repository does.</p>
+    <p><strong>Done when.</strong> Promotion refuses a run whose cited commit does not resolve to an object in
+    the repository it is landing against, naming the sha and the repository; a case asserts a run citing the
+    measured fabricated value is refused while the same run citing the real commit is admitted, so the refusal
+    is shown to turn on resolvability rather than on formatting; a case asserts a short but resolvable sha is
+    admitted, which is the negative half and stops the check from becoming a length rule; and a case asserts a
+    promotion citing no commit at all, with the deliberate no-commit declaration, is unaffected. The declared
+    mutation is applied, the named cases are observed to fail, and the red log is recorded with the mutation
+    verbatim on its first line.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/promotion.py</code> and a test file. The file is held by
+    another session's run at the time this section was written, so the section is authored and left
+    dispatchable rather than dispatched; whoever takes it should confirm the claim first by running
+    <code>git cat-file -t</code> on both values above, which is how it was established.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
@@ -1181,8 +1206,12 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20260921T165023093261-review-of-wait-shape-failure-is-attributed-to-a-base" data-who="reckon-ship" data-when="2026-09-21T17:36:27.094Z">
     <div class="r-comment-body"><p>independent review of the wait-shape failure attribution</p></div>
+</div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree" data-who="reckon-ship" data-when="2026-09-21T17:45:17Z">
     <div class="r-comment-body"><p>the manifest template now says what makes a gate log evidence: the gate-commit gloss on <code>tests:</code> requires the command that actually ran rather than a template with an unsubstituted placeholder, and the <code>test_logs:</code> gloss requires the log's first line to name the revision it ran at, the tree and the command. Four cases enter through <code>compose_prompt</code>; the declared mutation reddens the sentence's own case at 1 failed / 3 passed, and two pre-existing lint findings on <code>reckon/crew/prompts.py</code> are unchanged at base and head (delta zero). The gate-command negative half was shown to fire separately, so the guard is known to fire rather than merely to pass. This node changes no guard and no reading side: refusing at promotion a gate log whose first line names no revision is the stronger form, held by another run, and is carried as a follow-on.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-20260921T1952-gate-log-contract-landed" data-who="reckon-ship" data-when="2026-09-21T19:52:00+02:00">
+    <div class="r-comment-body">Gate passed: 32 cases across the new file and both sibling prompt-contract files, exit 0, with the declared mutation reddening 1. The template now says the recorded gate command is the one that ran and never a template carrying an unsubstituted placeholder, and that a gate log's first line names the revision it ran at, the tree and the command. Landing it surfaced a sharper defect than the four that opened the section: this node's own manifest cited 7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1 as a landed commit and that object does not exist, the real one being 7892cb69128523ac598e02f62babaf56b6b71c17 — same eight-character prefix, fabricated remainder. It was caught only because git merge resolves the object it is given; nothing on the promotion path does, so the ledger would have carried a permanent citation to a commit nobody can find. Carried as section 18.</div>
 </div>
 </section>
 </main>
