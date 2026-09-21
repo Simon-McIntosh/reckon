@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.938">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 </head>
 <body>
   <main class="plan-doc">
@@ -1097,6 +1097,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260921T153628158498-arming-survives-an-unreachable-service-bus" data-who="reckon-ship" data-when="2026-09-21T16:13:24.746Z">
     <div class="r-comment-body"><p>arming survives a service manager that cannot be reached and reports which path it took; 17 passed exit 0, declared mutation reddened 2, and two cases beyond the brief carry it: a unit the manager genuinely refuses still raises, and a fallback that could not start a watcher does not report success. Review 95/100 with three findings carried as work: service_active is reported False on a path where it was never measured; the evidence record lists classifier markers that do not match the tuple in the code; and the recorded verification conditions do not reproduce the recorded result, because they omit the PATH element the actual run used and following them gives 4 failed 1 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260921T164538056417-review-of-arming-survives-an-unreachable-service-bus" data-who="reckon-ship" data-when="2026-09-21T17:21:21.438Z">
+    <div class="r-comment-body"><p>independent review stored and parsed for r-20260921T153628158498-arming-survives-an-unreachable-service-bus</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-20260921T1912-wait-shape-landed" data-who="reckon-ship" data-when="2026-09-21T19:12:00+02:00">
     <div class="r-comment-body">Gate passed: 11 cases including both guards that §4's refusals still hold, and the declared mutation reddened 6. The single failure in the wider population was attributed to the base by its own measurement node: tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion fails identically at base ca943455 and head 5e9dde39 with an empty failure-set difference, the base taken by git archive into a temporary tree. Review 84/100, and its third finding is why section 16 exists rather than this section closing the plan: the case named for the derived condition asserts the probe and never the terminal, and emptying the derived terminal records terminal=false from resumption.py even with every path present, so the sweep that lifts a parked run would never fire for a file condition. The reader accepts a wait the sweep does not lift. The cause is two probe implementations — recovery.py returns early on files and never runs the argument vector its docstring claims every wait runs through, while the sweep carries its own. A contract with two readers is a record with two spellings: the tested one and the live one differ and nothing reports it.</div>
