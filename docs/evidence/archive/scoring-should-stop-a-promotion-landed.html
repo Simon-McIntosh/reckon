@@ -221,6 +221,37 @@
     node: this change closes the write that loses the rows.</p>
   </section>
 
+  <section id="s2d-absent-ledger-refusal">
+    <h2>A promotion cannot initialise an absent ledger</h2>
+    <p><strong>Defect reproduced before repair.</strong> At the node base revision,
+    <code>ledger.load</code> read an absent path as version <strong>0</strong> with empty
+    collections. A write of one promoted row then succeeded at version <strong>1</strong>.
+    In the same receipt, the established count guard correctly refused a current write shrinking
+    a real ledger from <strong>1,267</strong> rows to <strong>1</strong>. The difference showed
+    the blind spot: count-based guards cannot reject the first write when absence has already
+    been interpreted as an empty project.</p>
+    <p><strong>What changed.</strong> <code>ledger.append_run</code> now refuses before the
+    shadow-store append whenever the resolved ledger path is absent, naming both that path and
+    the run store as the independent authority holding every promoted run. A caller can initialise
+    a genuinely new project only with <code>allow_create=True</code>. A present envelope whose
+    <code>members</code> or <code>runs</code> collection is not a list now raises
+    <code>LedgerError</code>; malformed history can no longer collapse into an empty roster and
+    run list.</p>
+    <p><strong>Evidence that could fail.</strong>
+    <code>tests/test_a_promotion_never_creates_a_ledger.py</code> reports
+    <strong>4 passed</strong>: refusal of an absent promotion, explicit initialisation at version
+    1, and malformed <code>members</code> and <code>runs</code> envelopes. Removing the
+    absent-ledger refusal in an isolated scratch copy turns the refusal test red with
+    <code>DID NOT RAISE LedgerError</code>, then leaves the committed source untouched. Ruff
+    check output counts are <strong>15 at base and 15 after</strong>; format deviations are
+    <strong>1 at base and 1 after</strong>, all from the pre-existing ledger file.</p>
+    <p><strong>Delivery.</strong> Commit <code>89a574d2</code> changes
+    <code>reckon/ledger.py</code> and the focused test. Receipts are retained in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/</code>.
+    Rebuilding a damaged ledger from the run store remains a separate recovery path; this change
+    prevents a promotion from creating the condition that needs it.</p>
+  </section>
+
   <section id="s3-review-reflex-sweep">
     <h2>The reflexive sweep: the review a scoring run already composed</h2>
     <p><strong>Measure.</strong> The reflex only earns its name when it fires on the path a healthy
