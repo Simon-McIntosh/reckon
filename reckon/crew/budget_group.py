@@ -33,8 +33,9 @@ class GroupPosition:
 
     ``member`` and ``reading`` name the backend whose observation the position
     rests on, and that observation itself.  ``observed_at`` is the stamp exactly
-    as the reading carried it; ``age_seconds`` is its age at the moment this
-    position was computed.  Both are ``None`` when no member reading carries a
+    as the reading carried it, in whichever form the reading stored it — an
+    ISO-8601 string or an epoch number — and ``age_seconds`` is its age at the
+    moment this position was computed.  Both are ``None`` when no member reading carries a
     stamp that can be aged — the state is then ``unobserved`` rather than a
     zero, because absence of an observation is not an observation of absence.
     """
@@ -43,7 +44,7 @@ class GroupPosition:
     members: tuple[str, ...]
     member: str | None
     reading: Mapping[str, Any] | None
-    observed_at: str | None
+    observed_at: str | int | float | None
     age_seconds: float | None
     state: str
 

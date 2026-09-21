@@ -9,21 +9,26 @@ one lane's share of a shared wallet can be computed as a position.
 from __future__ import annotations
 
 import inspect
+import typing
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from reckon.crew import budget_group as bg
 
-# Four lanes on one subscription plus a fifth on a separate one, mirroring the
-# declared configuration this position replaces per-lane readings for.
+# The four lanes one subscription serves, the lane on a separate subscription,
+# and a sixth backend declaring no group at all.  The undeclared control is its
+# own backend rather than a lane borrowed from the grouped four, so the census
+# below counts a genuine five grouped lanes and not four.
+SOL_FAMILY_LANES = ("codex", "codex-astra", "codex-terra", "codex-luna")
+SEPARATE_LANE = "codex-spark"
+UNDECLARED_LANE = "codex-orphan"
+
 SOL_FAMILY_CONFIG = {
     "backends": {
-        "codex": {"budget_group": "codex-main"},
-        "codex-astra": {"budget_group": "codex-main"},
-        "codex-terra": {"budget_group_typo": "codex-main"},
-        "codex-luna": {"budget_group": "codex-main"},
-        "codex-spark": {"budget_group": "spark"},
+        **{lane: {"budget_group": "codex-main"} for lane in SOL_FAMILY_LANES},
+        SEPARATE_LANE: {"budget_group": "spark"},
+        UNDECLARED_LANE: {"command": "codex"},
     }
 }
 
@@ -35,13 +40,15 @@ def _stamp(age: timedelta) -> str:
 
 
 def test_grouping_reads_the_declared_slot_from_resolved_config():
-    """Two declared groups, not five lanes. A typo in the slot name never groups."""
+    """Two declared groups hold every grouped lane, counted rather than named."""
     groups = bg.declared_groups(SOL_FAMILY_CONFIG)
 
-    assert list(groups) == ["codex-main", "spark"]
     assert len(groups) == 2
-    assert groups["codex-main"] == ["codex", "codex-astra", "codex-luna"]
-    assert groups["spark"] == ["codex-spark"]
+    assert len(groups["codex-main"]) == len(SOL_FAMILY_LANES) == 4
+    assert len(groups["spark"]) == 1
+    assert sum(len(members) for members in groups.values()) == len(SOL_FAMILY_LANES) + 1
+    assert len(bg.ungrouped(SOL_FAMILY_CONFIG)) == 1
+    assert UNDECLARED_LANE not in groups["codex-main"]
 
 
 def test_a_backend_declaring_no_group_is_left_ungrouped():
@@ -60,20 +67,29 @@ def test_a_backend_declaring_no_group_is_left_ungrouped():
     assert bg.ungrouped(config) == ("orphan", "blank")
 
 
-def test_every_member_resolves_to_exactly_one_group():
-    """Every declared backend appears in one group, and no backend in two."""
+def test_a_mistyped_slot_name_never_groups():
+    """A misspelt slot key declares nothing, so its backend stays ungrouped."""
+    config = {
+        "backends": {
+            "solo": {"budget_group": "codex-main"},
+            "typo": {"budget_group_typo": "codex-main"},
+        }
+    }
+
+    assert bg.declared_groups(config) == {"codex-main": ["solo"]}
+    assert bg.ungrouped(config) == ("typo",)
+
+
+def test_every_grouped_lane_resolves_to_exactly_one_group():
+    """Every grouped lane appears in one group, and none in two."""
     groups = bg.declared_groups(SOL_FAMILY_CONFIG)
     placement = {
         member: group for group, members in groups.items() for member in members
     }
 
-    assert set(placement) == {
-        "codex",
-        "codex-astra",
-        "codex-luna",
-        "codex-spark",
-    }
-    assert all(member not in bg.ungrouped(SOL_FAMILY_CONFIG) for member in placement)
+    assert len(placement) == len(SOL_FAMILY_LANES) + 1
+    assert not set(placement) & set(bg.ungrouped(SOL_FAMILY_CONFIG))
+    assert UNDECLARED_LANE not in placement
 
 
 def test_position_is_the_freshest_member_not_the_first_declared():
@@ -195,6 +211,26 @@ def test_epoch_and_iso_stamps_are_aged_in_the_same_frame():
 
     assert position.member == "iso"
     assert position.age_seconds == pytest.approx(60.0)
+
+    epoch_only = bg.group_position(
+        "one-wallet", config, {"epoch": readings["epoch"]}, now=NOW
+    )
+
+    assert epoch_only.member == "epoch"
+    assert isinstance(epoch_only.observed_at, (int, float))
+    assert epoch_only.age_seconds == pytest.approx(3600.0)
+
+
+def test_the_public_field_type_admits_the_epoch_stamp_its_own_path_stores():
+    """The dataclass contract admits a number, not only an ISO-8601 string.
+
+    The position copies the member's stamp through unchanged, so a numeric
+    stamp reaches this public field on a supported input; the annotation must
+    admit it or the declared type contradicts the code path.
+    """
+    hints = typing.get_type_hints(bg.GroupPosition)
+
+    assert set(typing.get_args(hints["observed_at"])) >= {str, int, float, type(None)}
 
 
 def test_position_requires_a_declared_group_so_no_per_lane_position_exists():
