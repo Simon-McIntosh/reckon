@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 330" role="img" aria-label="One wait declaration is read by two readers. The classifier's reader answers a file condition by looking for the declared paths and returns a row; it never runs the argument vector and nothing lifts there. The sweep's reader runs the argument vector the declaration derives, falls back to the probe's exit status when the vector prints nothing, and its terminal field is the only verdict that offers a parked run to the resume loop: exit 0 with every path present lifts, exit 1 with one path absent leaves the run waiting.">
+  <style>
+    .box { fill:#1d2430; stroke:#3b6ea5; stroke-width:1.4px; }
+    .ok { fill:#16241b; stroke:#2e7d43; stroke-width:1.6px; }
+    .no { fill:#2a1a1a; stroke:#b23b3b; stroke-width:1.4px; }
+    .label { fill:#dfe6ef; font:12px sans-serif; }
+    .note { fill:#9fb0c4; font:11px sans-serif; }
+    .edge { stroke:#8b98a8; stroke-width:1.3px; fill:none; }
+    .root { fill:#241f2d; stroke:#7a5fa5; stroke-width:1.6px; }
+  </style>
+
+  <rect class="root" x="12" y="126" width="186" height="70" rx="6"/>
+  <text class="label" x="26" y="150">status: waiting</text>
+  <text class="label" x="26" y="168">wait_file: 3 paths</text>
+  <text class="note" x="26" y="185">a file condition, no probe written</text>
+
+  <path class="edge" d="M198 161 H 250"/>
+  <text class="note" x="200" y="153">one declaration</text>
+
+  <path class="edge" d="M250 161 V 62 H 296"/>
+  <path class="edge" d="M250 161 V 262 H 296"/>
+
+  <rect class="box" x="296" y="26" width="230" height="76" rx="6"/>
+  <text class="label" x="310" y="50">classifier's reader</text>
+  <text class="label" x="310" y="68">stat each declared path</text>
+  <text class="note" x="310" y="86">returns before any vector runs</text>
+
+  <rect class="box" x="296" y="224" width="230" height="76" rx="6"/>
+  <text class="label" x="310" y="248">sweep's reader</text>
+  <text class="label" x="310" y="266">test -e a -a -e b -a -e c</text>
+  <text class="note" x="310" y="284">prints nothing &#8594; falls back to exit:&lt;code&gt;</text>
+
+  <path class="edge" d="M526 64 H 578"/>
+  <rect class="box" x="578" y="26" width="230" height="76" rx="6"/>
+  <text class="label" x="592" y="50">wait_condition_state: met</text>
+  <text class="label" x="592" y="68">wait_observed: present</text>
+  <text class="note" x="592" y="86">a row a person reads; nothing lifts here</text>
+
+  <path class="edge" d="M526 246 H 578"/>
+  <text class="note" x="528" y="238">terminal = true</text>
+  <rect class="ok" x="578" y="212" width="230" height="68" rx="6"/>
+  <text class="label" x="592" y="236">exit 0, every path present</text>
+  <text class="note" x="592" y="254">offered to the resume loop</text>
+  <text class="note" x="592" y="272">the only verdict that lifts a park</text>
+
+  <path class="edge" d="M411 300 V 316 H 578"/>
+  <rect class="no" x="578" y="304" width="230" height="24" rx="6"/>
+  <text class="label" x="592" y="321">exit 1, one path absent &#8594; still waiting</text>
+</svg>

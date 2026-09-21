@@ -866,6 +866,36 @@
     <code>tests/test_wait_shapes.py</code>. Whether the two probe implementations should become one is a
     design question this node may answer either way, provided it says which it chose and why; what it may not
     do is leave them described as one while they behave differently.</p>
+    <p><strong>Landed 2026-09-21.</strong> Commit <code>f901f4b1</code> at base <code>27184f74</code>. The
+    section's premise was measured before it was repaired, and it does not hold at base: a live pointer
+    declaring <code>wait_file</code> over three existing paths is offered to the resume loop by the real sweep
+    (<code>checked 1, resumed [r-repro], skipped []</code>), and the same pointer with one path withheld is
+    left waiting. So the defect the section names is a mutation that the gate could not see, not a live one —
+    the reader that lifts was reading the derived vector correctly and nothing pinned it. <strong>The choice:
+    the two readers stay separate</strong>, because a row for a person needs a tri-state naming the missing
+    paths while the sweep needs a boolean verdict, and the sweep's reader is the one that must honour the
+    <code>exit:&lt;code&gt;</code> fallback the worker protocol documents for a vector that prints nothing;
+    merging them would drop one of the two. Both docstrings now state which reader runs the argument vector
+    and which answers a file condition by stat, so the two are no longer described as one. The duplicated path
+    scan in the classifier's reader is removed. <strong>Three cases</strong> are added to
+    <code>tests/test_wait_shapes.py</code>: a three-path condition whose paths all exist is lifted, entering
+    at <code>resumption.sweep</code> because the sweep is what lifts; the same wait with one path absent is
+    reported still waiting, which is the negative half; and the sweep's <code>terminal</code> field is asserted
+    true by name when every path exists. <strong>Negative control:</strong> the declared mutation
+    <code>make the sweep derive terminal=false for a file condition whose paths all exist in
+    reckon/crew/resumption.py</code> was applied and the gate reported 2 failed, 18 passed, exit 1 — exactly
+    the two named cases, with the negative half green — and the mutation is absent from the commit.
+    <strong>Gate:</strong> <code>tests/test_wait_shapes.py</code> 17 pass unchanged, 20 with the new cases;
+    the eleven wait-declaration suites 136 passed; the three sweep-consumer suites 46 passed. Evidence:
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s16">&sect;16 landed</a>.</p>
+    <figure>
+      <img src="/reckon/figures/crew-runtime-positive-controls/two-readers-one-declaration.svg"
+        alt="One wait declaration read by two readers: the classifier's reader answers a file condition by looking for the declared paths and returns a row, and never runs the argument vector; the sweep's reader runs the vector the declaration derives and falls back to its exit status when it prints nothing, and its terminal field is the only verdict that lifts a park — exit 0 with every path present offers the run to the resume loop, exit 1 with one path absent leaves it waiting.">
+      <figcaption>Only one of the two readers lifts a run, and every case for a file condition stopped at the
+      other one — which is why the lift could stop working with the gate green. The cases this node adds enter
+      at the sweep, and the one that withholds a path is what separates a lift from a function that always
+      answers true.</figcaption>
+    </figure>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
