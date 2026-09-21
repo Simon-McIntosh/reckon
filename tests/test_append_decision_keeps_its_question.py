@@ -159,6 +159,56 @@ def test_the_written_question_paragraph_is_not_the_key(setup):
     assert values == OPTIONS
 
 
+def test_a_null_option_value_is_refused_not_stored_as_its_string(setup):
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(
+        project,
+        {"question": QUESTION, "options": [{"value": None, "label": "none"}]},
+    )
+    assert r["ok"] is False, r
+    # The refusal names the offending option rather than the collection.
+    assert "{'value': None, 'label': 'none'}" in json.dumps(r), r
+
+    # Nothing landed, so the read-back cannot present ``None`` as selectable.
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert KEY not in data.get("decisions", {})
+
+
+def test_an_empty_option_value_is_still_refused(setup):
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(project, {"question": QUESTION, "options": [{"value": ""}]})
+    assert r["ok"] is False, r
+
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert KEY not in data.get("decisions", {})
+
+
+def test_two_valid_option_objects_read_back_as_both_values(setup):
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(
+        project,
+        {
+            "question": QUESTION,
+            "options": [
+                {"value": "unix socket", "label": "Unix socket"},
+                {"value": "tcp loopback", "label": "TCP loopback"},
+            ],
+        },
+    )
+    assert r["ok"] is True, r
+
+    data, _ = _store_module.read_plan(project, "plan-a")
+    decision = data["decisions"][KEY]
+    assert decision["choices"] == OPTIONS
+    assert list(decision["option_labels"]) == OPTIONS
+
+
 def test_appended_decision_without_options_still_succeeds(setup):
     docs_dir, _, project = setup
     _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
