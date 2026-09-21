@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="54">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1325,6 +1325,75 @@
     <p><strong>Nine of these were made in one day across three sessions by readers who knew the
     rule.</strong> That is the argument for a mechanical check rather than a habit: the failure
     needs no carelessness, only a plausible adjacent field that happens to be populated.</p>
+
+    <p><strong>The cause behind that last row is not what it was first reported as, and the true
+    one is worse.</strong> The session that found it has since withdrawn the claim that the store
+    truncated the record: it did not check whether the reviewer was still running when it read the
+    file, and it has since watched five reviewers write these records progressively — <strong>using
+    the canonical record path itself as a scratchpad</strong>. So the 46-character finding was
+    probably a mid-write read rather than a parser that stopped early. The finding it recovered is
+    unaffected and so is the repair: <code>parsed</code> must mean the parse consumed the whole
+    output either way.</p>
+
+    <p><strong>What replaces it is a defect with no heuristic available.</strong> The canonical
+    path has <em>no atomic write and no in-progress marker</em>, so every intermediate state it
+    passes through is indistinguishable from a finished verdict to anything that reads it —
+    including §2's gate, which keys on exactly this field. Three states caught at the canonical
+    path with a live writer behind each:</p>
+
+    <table>
+      <caption>Intermediate states observed at the canonical review path, each with a live writer.</caption>
+      <thead><tr><th>What the file held</th><th>How it reads to the gate</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>131 bytes of invalid JSON, mid-expression</td>
+          <td>unreadable — the honest failure, and the only one of the three that is</td>
+        </tr>
+        <tr>
+          <td>placeholder findings (<code>{"F": 1}, {"F": 2}, {"F": 3}</code>)</td>
+          <td><code>status: parsed</code>, total 85 — a complete-looking verdict with no content</td>
+        </tr>
+        <tr>
+          <td>the <em>previous round's</em> record, restored by a reviewer recovering from its own
+          clobber</td>
+          <td>well-formed, <code>parsed</code>, plausible — and naming the wrong revision with the
+          wrong findings, for several minutes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>A rename closes the first two and not the third, and the third is the dangerous
+    one.</strong> Writing to a temporary sibling and renaming is atomic, so a reader gets either
+    the old complete record or the new one and never an intermediate — that ends the invalid JSON
+    and the placeholders outright. But <em>the old complete record is state three</em>. Atomicity
+    makes the file always-valid; it does not make it always-current, and a reader arriving mid-write
+    still gets a well-formed <code>parsed</code> verdict, correctly keyed, true of a revision that
+    is no longer the head.</p>
+
+    <p>So state three is not a write-discipline problem at all. It is indistinguishable from the
+    ordinary case §5c describes — a run that has moved on since its last review — and the mid-write
+    version merely makes it transient enough to be mistaken for a race. The two fixes are
+    different and this plan already holds both: the rename ends states one and two, and §5c's
+    staleness refusal, comparing the record's revision against the run's head, ends state three.
+    Neither substitutes for the other.</p>
+
+    <p>One thing the incident argues for directly: that reviewer recovered from its own clobber by
+    reading a peer's <code>&lt;run&gt;.at-&lt;sha&gt;.json</code> preservation copy, made all day
+    as private bookkeeping against the overwrite defect. Those copies were not merely an audit
+    trail — they were the only recovery path when a writer destroyed the canonical file. Keying by
+    revision makes that recovery a property of the store rather than one session's habit.</p>
+
+    <p><strong>Done when</strong> the review store writes to a temporary sibling and renames, and a
+    record whose write did not complete leaves no partial file at the canonical path, asserted by
+    failing a write midway and requiring the path to be absent or to still hold the prior record,
+    never a truncated one. <strong>The falsifier must be stated over a run whose head has moved</strong>,
+    because the obvious one does not discriminate: "every observation is absent or finished" passes
+    with the rename alone while state three still promotes, the prior record being finished. So:
+    a reader polls the canonical path during a write, on a run whose head has advanced since the
+    stored record, and <em>every</em> observation must be either absent or a record whose recorded
+    revision equals the run's head. That formulation fails unless both the rename and §5c's
+    staleness refusal are in place, which is the point — a single check cannot close both states
+    and a falsifier that passes with one of them is worse than none.</p>
 
     <h2 id="s5c">§5c — A review describes a revision, and nothing records which</h2>
 
