@@ -327,6 +327,8 @@ def test_a_shortfall_promotion_completes_and_reports_on_the_record(
             "0",
             "--gate-log-path",
             "/durable/shortfall.log",
+            "--waive-unreviewed-promotion",
+            "the fixture measures the shortfall report, not the review gate",
         ],
     )
 
