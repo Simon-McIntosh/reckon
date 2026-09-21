@@ -165,6 +165,7 @@ def _node(home: Path) -> crew.TaskNode:
         plan="delivery",
         section="guard",
         done_when="pytest tests/test_crew_orphan.py passes",
+        spec_level="guided",
         write_paths=["reckon/next.py"],
         time_budget="20m",
         manifest_path=str(home / "manifest.md"),
@@ -197,10 +198,10 @@ def test_an_orphaned_watcher_is_replaced_rather_than_refused(
     lets a stale seat outlive every session that cared — measured at four days in
     one project. Arming therefore replaces it.
 
-    This test used to substitute the orphan-aware `watch_state` into the dispatch
-    module and then assert the refusal it produced, so it asserted a property of
-    a function dispatch never calls: it passed green while production admitted.
-    Nothing is patched here.
+    Nothing is patched here. Substituting the orphan-aware `watch_state` into the
+    dispatch module asserts a property of a function dispatch never calls, which
+    passes while production admits — the green reads as proof of a refusal the
+    dispatch path does not depend on.
     """
     pid, watcher = _spawn_orphan_watcher("proj", tmp_path, orphan_processes)
     assert watcher["pid"] == pid
