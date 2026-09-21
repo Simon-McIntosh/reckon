@@ -2418,6 +2418,52 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit(result, pretty)
 
 
+@crew.command(name="check-manifest")
+@click.option("--run", "run_id", required=True, help="Run id whose manifest to check.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_check_manifest(run_id, pretty):
+    """Judge a delivered manifest against its own node while its writer can fix it.
+
+    The promotion contract reads the same manifest hours after the worker's
+    process has ended, when the only party who can satisfy a finding is a
+    coordinator editing an artifact it did not author. This reads the run's
+    live pointer, rebuilds the node it records and reports the audit findings,
+    so the refusal reaches whoever still holds the pen.
+    """
+    from reckon.crew.dispatch import _recorded_task_node
+    from reckon.crew.runs import read_pointer
+
+    crew_module, _ = _crew_modules()
+    try:
+        record = read_pointer(run_id)
+        node = _recorded_task_node(record)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    manifest_path = str(node.manifest_path or "")
+    text = ""
+    if not manifest_path:
+        findings = [f"run {run_id} records no manifest path to check"]
+    else:
+        try:
+            text = Path(manifest_path).read_text(encoding="utf-8")
+        except OSError as exc:
+            findings = [f"manifest {manifest_path!r} could not be read: {exc}"]
+        else:
+            findings = list(crew_module.audit_manifest(text, node)["findings"])
+    _emit(
+        {
+            "ok": not findings,
+            "run_id": run_id,
+            "node": node.id,
+            "manifest_path": manifest_path,
+            "findings": findings,
+        },
+        pretty,
+    )
+    if findings:
+        raise click.exceptions.Exit(1)
+
+
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
