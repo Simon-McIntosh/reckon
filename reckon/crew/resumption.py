@@ -692,7 +692,23 @@ def _resume(
 def _run_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Run a waiting manifest's argument vector without invoking a shell."""
+    """Run a waiting manifest's argument vector without invoking a shell.
+
+    This is the sweep's reader and the only one whose verdict lifts a run: the
+    ``terminal`` field it returns is what ``sweep`` branches on before it offers
+    a parked run to the resume loop. A file condition reaches it as the vector
+    ``reckon/crew/recovery._wait_file_probe`` derives from the declared paths,
+    and that vector prints nothing and exits 0 exactly when every path exists,
+    so the observed state falls back to ``exit:<code>`` and matches the derived
+    ``exit:0`` terminal.
+
+    The classifier's reader, ``reckon/crew/recovery._run_wait_condition_probe``,
+    is a different implementation: it answers a file condition by looking for
+    the paths themselves, never runs a vector, and returns a tri-state for a
+    row rather than a verdict. A change here decides whether a park lifts; a
+    change there decides what a row says. They must agree on the answer, and
+    nothing makes them agree but the declaration they both read.
+    """
     worktree = Path(str(record.get("worktree") or "."))
     try:
         completed = subprocess.run(

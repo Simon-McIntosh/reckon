@@ -1476,13 +1476,20 @@ def _wait_terminal_names_no_probe_state(terminal: Sequence[str]) -> str:
 
 
 def _wait_file_probe(files: Sequence[str]) -> list[str]:
-    """The shell-free argument vector a file condition executes.
+    """The shell-free argument vector a file condition derives.
 
-    A file condition is read through the same single path every other wait
-    uses -- one argument vector, run without a shell -- so the reader that
-    answers the condition and the sweep that lifts a parked run need no second
-    machinery for it. ``test -e`` per path joined by ``-a`` exits 0 exactly
-    when every declared path exists.
+    The vector is the shape a file condition takes so it reads like every other
+    wait: ``test -e`` per path joined by ``-a`` exits 0 exactly when every
+    declared path exists, and the terminal the declaration needs is the
+    ``exit:0`` sentinel that exit status prints.
+
+    Two readers exist, and only one of them runs this vector. The sweep's
+    reader in ``reckon/crew/resumption.py`` executes it and is what decides a
+    lift, so this vector is the load-bearing half for a park. The classifier's
+    reader -- ``_run_wait_condition_probe`` below -- answers a file condition by
+    looking for the paths themselves and returns before any vector runs, so a
+    row can name which paths are still missing. The two agree on the answer and
+    not on the mechanism; nothing here is run by the classifier.
     """
     argv = ["test"]
     for index, path in enumerate(files):
@@ -1581,7 +1588,6 @@ def _wait_file_condition_observation(
         return candidate if candidate.is_absolute() else root / candidate
 
     missing = [path for path in files if not _resolved(path).exists()]
-    missing = [path for path in files if not _resolved(path).exists()]
     if missing:
         return {
             "state": "pending",
@@ -1601,7 +1607,26 @@ def _wait_file_condition_observation(
 def _run_wait_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, str]:
-    """Read a declared condition through a short, shell-free probe."""
+    """Answer a declared condition for a classifier row, as a tri-state.
+
+    This is the classifier's reader, not the sweep's. Two things separate them,
+    and both are deliberate:
+
+    * A file condition is answered here by looking for each declared path, so
+      the row can name the ones still missing, and this function returns before
+      any argument vector runs. The vector the declaration derives is run by
+      the sweep's reader in ``reckon/crew/resumption.py`` -- the reader that
+      decides whether a park lifts -- and not here.
+    * A vector that prints nothing and exits is a terminal state only for the
+      sweep's reader, which falls back to ``exit:<code>`` as the worker
+      protocol documents. Here an empty answer is ``unknown``: a classifier row
+      is read by a person, and reporting a state the probe never printed would
+      have the row assert more than the probe said.
+
+    The two are therefore not one implementation under two names, and a caller
+    must not treat them as interchangeable: a verdict from here reaches a
+    reader, a verdict from the sweep's reader lifts a run.
+    """
     files = [str(path) for path in (wait.get("files") or ())]
     if files:
         return _wait_file_condition_observation(record, files)
@@ -1927,8 +1952,15 @@ def _manifest_wait(
     waits for a job's log far more often than for a scheduler to report that
     the job left the queue. It names one path or an array of paths, and its
     probe and terminal are derived from those paths rather than declared, so
-    the one argument-vector reader both answers the condition and lifts the run
-    it parks.
+    the declaration reads as a wait in the same shape as any other. Two
+    readers then answer it, and they are not one implementation: the sweep's
+    reader in ``reckon/crew/resumption.py`` runs the derived vector and its
+    ``exit:0`` sentinel and is the one that lifts a park, while
+    ``_run_wait_condition_probe`` below looks for the paths directly and
+    returns a row naming the ones still missing. Both must read the same
+    declaration, and a case in ``tests/test_wait_shapes.py`` pins the lift
+    through the sweep because a case that stops at the classifier's reader
+    cannot show a run is ever resumed.
 
     A probe that is present but unreadable is refused by naming the shapes the
     reader does accept, and never reduced to the absence of a probe: a worker
