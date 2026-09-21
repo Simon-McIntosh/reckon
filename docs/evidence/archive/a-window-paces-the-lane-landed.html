@@ -14,7 +14,7 @@
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees; tests run against the main checkout's environment reached through PYTHONPATH, with pytest -p no:cacheprovider; negative controls run in scratch copies of the same tree">
   <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,9ca9e963">
-  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py,docs/figures/a-window-paces-the-lane/group-position.svg">
+  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py,docs/figures/a-window-paces-the-lane/group-position.svg,reckon/budget.py,tests/test_preflight_pace.py,docs/figures/a-window-paces-the-lane/preflight-bar-lanes.svg">
   <title>A Window Paces The Lane — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -679,6 +679,11 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       utilisation, an elapsed time and an emitted ceiling; who reads the two clocks off a
       served stream, and the age that reading carries, is the reader's own section. The
       effective-ceiling input is likewise supplied rather than derived here.</li>
+      <li><strong>Wire the reading to a caller.</strong> The pre-flight now accepts a window
+      reading and a ready set, but nothing reads a run's stream into the first or supplies the
+      second, so the <code>crew preflight</code> command still reports every declared group
+      unknown. The command surface and the MCP views are where a reader reaches this, and neither
+      is in the write paths this node held.</li>
     </ul>
   </section>
 
@@ -780,6 +785,146 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     repository records most often. The measure ranges over this node's own change only; a merged-head
     verification is a separately dispatched node's job.</p>
   </section>
+
+  <section id="s6-preflight-pace">
+    <h2>&sect;6 &mdash; The pace is visible before a wave opens</h2>
+
+    <p>The section's premise is that a governor nobody can see is a governor nobody trusts, so the
+    pace has to be readable before a wave is committed to rather than discovered in a refusal.
+    <code>budget.preflight</code> now carries a <code>groups</code> key, one entry per declared
+    budget group, built by <code>budget.group_pace</code>. Each entry holds both metered clocks with
+    the age of each reading, the allowance <code>reckon/crew/pace.py</code> derives from the week the
+    group has to last, and the bar <code>reckon/crew/bar.py</code> draws for a stated ready set.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/preflight-bar-lanes.svg" alt="The bar's four outcome regions across the five-hour window fill: a prescribed band below a score of 0.25 that is send-local at every fill; a send-metered region at or above the rising bar while the window has room; the 0.15 band immediately below the bar as a split; and hold below that. The worked ready set is plotted at a half-filled window where the bar is 0.50: prescribed 0.10 send-local, clears 0.50 send-metered, close-call 0.40 split, too-open 0.30 hold. With no reading there is no fill, so nothing above 0.25 is decided at all.">
+    </figure>
+
+    <h3>The measure, and what it reads</h3>
+
+    <p><strong>Asserted from the payload, never from the summary.</strong> Every case reads the
+    returned mapping's fields. The summary is prose a reader parses; the payload is what a caller
+    routes on, and a test against the rendered string would pass while the field a caller reads was
+    absent.</p>
+
+    <p><strong>Each clock carries its own observation age, including a fresh one.</strong> A reading
+    three seconds old reports an age of three seconds, so a reader never has to infer that a missing
+    age means a current reading &mdash; the inference that turns an absence into a measurement.</p>
+
+    <p><strong>One wallet, one reading.</strong> A group is read once, from its newest dated member,
+    because lanes sharing a wallet hold one allowance between them and a per-lane figure would report
+    each share as though it were the whole. An undated reading does not compete: a figure that cannot
+    be aged cannot be told from a current one. The allowance is not re-derived here &mdash; the test
+    recomputes it from the emitted clocks through <code>pace.allowance_for_group</code> and compares,
+    so a curve restated inside the payload would show as a mismatch.</p>
+
+    <p><strong>The bar is drawn against the five-hour clock, not the week.</strong> The two clocks
+    are set to disagree in the fixture, because only one of them fills. The bar's value is asserted
+    equal to <code>bar.recommend(fill, score)</code> rather than to a literal, so the curve stays the
+    module's.</p>
+
+    <p><strong>Four outcomes, and the buckets partition the set.</strong> A ready node is named with
+    the bar's own verdict &mdash; <code>send-metered</code>, <code>send-local</code>,
+    <code>split</code>, <code>hold</code> &mdash; and the four buckets are asserted to partition the
+    stated set exactly, so a node cannot be silently dropped from every bucket. Each node keeps its
+    own group's bar, because a wave's nodes are judged against the wallet they will spend.</p>
+
+    <p><strong>Prescription is judged before the window.</strong> A node whose shape is read off its
+    own record is local at every fill, so its outcome is the same at every fill and is therefore
+    decidable with no reading at all. Its <code>window_fill</code> is still reported unread and its
+    <code>decided_by</code> says <code>prescription</code>, which keeps "we read a window" apart from
+    "no window could have changed this". A node with open-endedness left to invent is
+    <code>undecided</code>, with no verdict, rather than judged against a fabricated empty
+    window.</p>
+
+    <p><strong>A malformed ready set is refused.</strong> A node naming an undeclared group raises
+    with the declared groups named; an unscored node raises. A ready node silently missing from the
+    admitted set is the failure a pre-flight exists to prevent, so it is refused rather than
+    skipped.</p>
+
+    <h3>Unknown is not a zero, applied to a second quantity</h3>
+
+    <p>A group no reading reached reports <code>state: unknown</code>, <code>None</code> for both
+    clocks' utilisation, both ages and every derived allowance field, and an explicit reason. The
+    assertion is two-sided &mdash; the figures are absent <em>and</em> not <code>0.0</code> &mdash;
+    because a zero utilisation reads as an empty window and would admit everything, which is exactly
+    the substitution <code>budget.py</code> already refuses for a hold. The rule is the module's
+    first rule applied to a second quantity, not a new one.</p>
+
+    <p>The partial case is kept distinguishable from the empty one: where the weekly clock was read
+    but its reset stamp cannot be placed in the week, the measured utilisation is still carried and
+    only the derivation is withheld, with the reason naming what is missing. A spend that cannot be
+    placed in the week is a different report from a group nothing reached, and collapsing them would
+    lose a measurement to save a line.</p>
+
+    <p>The command's payload was asserted to be unchanged apart from the addition: the field set is
+    compared against the pre-existing names plus <code>groups</code> alone, and a run naming a window
+    and a ready set is asserted to leave the hold decision, the held and clear backend lists and the
+    resume figures byte-identical to a run naming neither. The pace is added to the pre-flight, not
+    substituted for any part of it.</p>
+
+    <h3>Gate</h3>
+
+    <p><code>pytest -q tests/test_preflight_pace.py</code> &mdash; <strong>21 passed</strong>, exit 0.
+    The changed module plus every test file that imports it (<code>test_budget</code>,
+    <code>test_budget_group</code>, <code>test_bar</code>, <code>test_window_reading</code>,
+    <code>test_hold</code>, <code>test_burn_admission</code>,
+    <code>test_budget_evidence_scope</code>, <code>test_binding_window</code>,
+    <code>test_ceiling_holds_regardless_of_burn</code>) &mdash; <strong>3 failed, 191 passed</strong>
+    in 18.6 s.</p>
+
+    <p><strong>The three are not this change, and the instrument that says so is the base
+    revision.</strong> The module's own suite is <strong>3 failed, 67 passed</strong> both after the
+    change and at <code>f13607a2</code> in a scratch tree where <code>group_pace</code> does not
+    exist &mdash; fifteen lines copied from the worktree with the package's current contents replaced
+    by the base revision, and <code>hasattr(module, "group_pace")</code> printed as
+    <code>False</code> before the run. Both figures are identical, so the delta is zero. All three
+    are sandbox collisions rather than logic: one refuses with <em>uncommitted roster content at
+    docs/state/proj/crew.json</em> and two refuse to remove a worktree <em>claimed by live
+    runs</em>.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation.</strong> Substituting a zero for an unread clock's utilisation
+    &mdash; so a group nothing reached reports <code>0.0</code> rather than unknown &mdash; applied
+    to a scratch copy of the fixed tree at exactly one site. The named test fails with
+    <code>assert 0.0 is None</code>, which is the intended assertion rather than an error elsewhere.
+    The log's first line repeats the declared mutation verbatim; its sha256 is recorded beside it;
+    <em>the scratch tree's own <code>budget.__file__</code> and the run's working directory are
+    printed inside the log</em> before the pytest output, because the failure mode this control
+    guards against is a scratch tree that was never loaded. A mutation that fails to apply would
+    leave the named test passing, so the number of substituted sites is asserted to be one rather
+    than assumed.</p>
+
+    <p><strong>A second control, because a green assertion proves nothing on its own.</strong> The
+    linter found a defect in this work that the tests did not: <code>dict.fromkeys(groups, [])</code>
+    hands every key the same list object, so every group's bar judged the whole ready set. The first
+    version of the guarding test read <code>recommendations[0]</code> of each group, which is the
+    same node under either behaviour, and passed. The test now names each group's members, the defect
+    was put back into a scratch copy, and the guarding assertion fails on it
+    (<code>assert ['on-sol', 'on-other'] == ['on-sol']</code>). Both controls are recorded under the
+    reports directory rather than a temporary path, each with its sha256 beside it.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Nothing supplies the windows yet.</strong> <code>preflight</code> takes them as an
+      implementation-supplied mapping, and the <code>crew preflight</code> command passes neither a
+      window nor a ready set, so a command-line run reports every declared group unknown. The caller
+      is outside this node's write paths, and until it exists the capability is proven at the module
+      boundary while the surface a reader reaches is unchanged &mdash; the gap this repository
+      records most often.</li>
+      <li><strong>The provider ceiling is deliberately unread.</strong> A five-hour window's own
+      capacity is not published as a share of the weekly budget, so <code>provider_ceiling</code>
+      stays <code>None</code> and the allowance is limited by the derivation alone. A guessed
+      ceiling would silently cap every group.</li>
+      <li><strong>The second half of the section's measure is not here.</strong> One week of
+      committed rows reproducing the pace curve and the lane split needs a week of rows to exist;
+      this node asserts the curve and the split against injected readings only.</li>
+      <li><strong>The measure ranges over this node's own change.</strong> A merged-head
+      verification is a separately dispatched node's job.</li>
+    </ul>
+  </section>
 </main>
 </body>
-</html>
+</html>...

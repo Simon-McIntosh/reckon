@@ -36,6 +36,15 @@ node and cancels nothing; the nodes stay ready. It reports which backend, at wha
 utilisation, and when that resets — because a hold that looks like silence is
 indistinguishable from a crashed orchestrator, and because the reset time is what
 lets the wave resume without a human.
+
+A pre-flight also names the pace it is judging a wave inside, so a coordinator
+reads it before committing rather than discovering it in a refusal. Per declared
+budget group it reports both metered clocks with the age of each reading, the
+allowance derived from the week that group has to last, and the bar a stated
+ready set is judged against — each figure carried with the observation it came
+from, because a utilisation that cannot be aged cannot be told from a current
+one. A group no reading reached reports unknown for its clocks and its allowance
+rather than a zero, which is the first rule above applied to a second quantity.
 """
 
 from __future__ import annotations
@@ -46,6 +55,9 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
+from reckon.crew import bar as bar_module
+from reckon.crew import budget_group, window_reading
+from reckon.crew import pace as pace_module
 from reckon.crew.refusals import format_refusal
 
 # What a pre-flight is deciding about. The two differ only in whether the resume
@@ -1399,8 +1411,10 @@ def preflight(
     probe_runner: Callable[[Any], Mapping[str, Any] | None] | None = None,
     lane_probe_runner: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
     | None = None,
+    windows: Mapping[str, Any] | None = None,
+    ready: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Decide, per backend, whether a wave may open.
+    """Decide, per backend, whether a wave may open, and at what pace.
 
     This is an observational check. Command paths that act on its verdict call
     :func:`record_checks`; read-only surfaces return the report without
@@ -1415,6 +1429,12 @@ def preflight(
     is tracked per backend: one backend being spent must not stop ready nodes
     that would run somewhere else. A held backend and a clear one in the same
     report is the normal case, not an edge one.
+
+    ``windows`` and ``ready`` add the pace beside the hold: per declared budget
+    group, both metered clocks with each reading's age, the derived allowance and
+    the bar the stated ready set is judged against — see :func:`group_pace`. Both
+    are optional, and a wave that names neither still gets the hold decision and
+    a group block reading unknown, which is what absence of a signal means.
     """
     moment = _now(now)
     policy_block = policy(config)
@@ -1519,7 +1539,343 @@ def preflight(
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
+    report["groups"] = group_pace(config, windows=windows, ready=ready, now=moment)
     report["summary"] = summary(report)
+    return report
+
+
+# The metered clocks a served stream carries, paired with the role each plays in
+# a group's pace. The five-hour figure is the window that fills, so it is what
+# the bar is drawn against; the seven-day figure is the week the allowance
+# divides, so it is what the derivation reads.
+CLOCK_FIVE_HOUR = "five_hour"
+CLOCK_SEVEN_DAY = "seven_day"
+
+# Whether a group's pace was read. ``OBSERVED`` carries a figure and the age of
+# the observation behind it; ``UNKNOWN`` is the explicit absence of one, and is
+# never a zero. Named rather than spelled inline because the difference is the
+# whole point: an unread utilisation and a measured 0.0 must not look alike in
+# the payload, since the first admits nothing and the second admits everything.
+OBSERVED = "observed"
+UNKNOWN = "unknown"
+
+
+def _window_value(source: object, *, moment: datetime) -> window_reading.WindowReading:
+    """Resolve one injected window reading, reading a stream source if given.
+
+    The pre-flight takes no view on where a reading comes from. A caller hands
+    it one per backend, either already read — a
+    :class:`~reckon.crew.window_reading.WindowReading` — or as a stream source
+    the reader can open. A source that cannot be read yields the reader's own
+    explicit unknown rather than raising.
+    """
+    if isinstance(source, window_reading.WindowReading):
+        return source
+    return window_reading.read_windows(source, now=moment)
+
+
+def _clock(reading: window_reading.WindowReading, period: str) -> dict[str, Any]:
+    """One metered clock as plain data, carrying its own observation age.
+
+    The age is reported even when the reading is seconds old, so a reader never
+    has to treat a missing age as evidence of a fresh one. An unknown clock
+    reports ``None`` for both its figure and its age rather than a zero: absence
+    of a signal is not a position, and a zero utilisation would read as an empty
+    window and admit everything.
+    """
+    figure = reading.figure(period)
+    if figure is None:
+        return {
+            "period": period,
+            "state": UNKNOWN,
+            "utilisation": None,
+            "age_seconds": None,
+            "observed_at": None,
+            "resets_at": None,
+        }
+    return {
+        "period": period,
+        "state": OBSERVED,
+        "utilisation": float(figure.utilisation),
+        "age_seconds": (
+            None if figure.age_seconds is None else float(figure.age_seconds)
+        ),
+        "observed_at": figure.observed_at.isoformat(),
+        "resets_at": figure.resets_at,
+    }
+
+
+def _freshest_reading(
+    members: Iterable[str],
+    windows: Mapping[str, Any],
+    *,
+    moment: datetime,
+) -> tuple[str, window_reading.WindowReading] | None:
+    """Return a group's newest dated reading, and the member that supplied it.
+
+    A group is one wallet, so it is read once: the member carrying the newest
+    observation speaks for the group, and a member that supplied nothing or an
+    undated reading does not compete. A figure that cannot be aged cannot be
+    told from a current one.
+    """
+    freshest: tuple[datetime, str, window_reading.WindowReading] | None = None
+    for member in members:
+        source = windows.get(member)
+        if source is None:
+            continue
+        reading = _window_value(source, moment=moment)
+        if not reading.known or reading.observed_at is None:
+            continue
+        if freshest is None or reading.observed_at > freshest[0]:
+            freshest = (reading.observed_at, member, reading)
+    if freshest is None:
+        return None
+    return freshest[1], freshest[2]
+
+
+def _elapsed_hours(clock: Mapping[str, Any], *, moment: datetime) -> float | None:
+    """How far into the week a clock stands, or ``None`` if it cannot say.
+
+    The remaining time comes from the window's own reset stamp, so the elapsed
+    figure is measured from the same origin as the weekly clock the allowance
+    divides. A clock with no readable reset cannot place itself in the week, and
+    an invented elapsed time would move the allowance as much as a real one.
+    """
+    resets_at = _parse_stamp(clock.get("resets_at"))
+    if resets_at is None:
+        return None
+    remaining = (resets_at - moment).total_seconds() / 3600.0
+    return max(0.0, pace_module.WEEK_HOURS - remaining)
+
+
+def _unknown_allowance(
+    group: str, reason: str, *, utilisation: float | None = None
+) -> dict[str, Any]:
+    """A group's allowance where none could be derived, as an explicit absence.
+
+    Every derived field is ``None`` rather than zero, so an allowance nobody
+    could compute is not mistaken for one that came back empty. A zero allowance
+    is a real and load-bearing value — a spent week earns exactly that — and the
+    two must stay distinguishable in the payload.
+
+    ``utilisation`` is carried through when a reading supplied one, because that
+    figure *was* measured: a week spent past its pace but whose reset stamp could
+    not be placed is a different report from a week nothing reached, and the
+    reason string says which. Only the derivation is withheld, and a withheld
+    derivation is never rendered as a zero.
+    """
+    allowance: dict[str, Any] = {"group": group, "state": UNKNOWN, "reason": reason}
+    allowance.update(
+        {
+            "utilisation": utilisation,
+            "elapsed_hours": None,
+            "drain_hours": None,
+            "remaining_budget": None,
+            "remaining_windows": None,
+            "pace_multiple": None,
+            "derived": None,
+            "provider_ceiling": None,
+            "effective_limit": None,
+            "limited_by": None,
+        }
+    )
+    return allowance
+
+
+def _group_allowance(
+    group: str,
+    clocks: Mapping[str, Mapping[str, Any]],
+    config: Mapping[str, Any],
+    *,
+    moment: datetime,
+) -> dict[str, Any]:
+    """Derive a group's five-hour allowance from the week it has to last.
+
+    The weekly clock supplies the fraction already spent and, through its own
+    reset stamp, how far into the week the group stands; those two figures are
+    enough for the derivation. The provider ceiling is left unread because a
+    five-hour window's own capacity is not published as a share of the weekly
+    budget, and a guessed ceiling would silently cap the allowance.
+    """
+    week = clocks[CLOCK_SEVEN_DAY]
+    if week["state"] != OBSERVED:
+        return _unknown_allowance(
+            group, "the group's weekly clock was not read, so nothing divides"
+        )
+    elapsed = _elapsed_hours(week, moment=moment)
+    if elapsed is None:
+        return _unknown_allowance(
+            group,
+            "the group's weekly clock carries no readable reset, so it cannot "
+            "be placed in the week",
+            utilisation=week["utilisation"],
+        )
+    reading = pace_module.GroupReading(
+        group=group,
+        utilisation=week["utilisation"],
+        elapsed_hours=elapsed,
+    )
+    return pace_module.allowance_for_group(reading, config=config).as_dict()
+
+
+def _group_bar(
+    clocks: Mapping[str, Mapping[str, Any]],
+    ready: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Judge a stated ready set against the group's five-hour fill.
+
+    The bar rises with the window that fills, so the five-hour utilisation is
+    the fill it is drawn against. Each node keeps the bar's own four outcomes —
+    ``send-metered``, ``send-local``, ``split``, ``hold`` — because a verdict
+    naming the lane is what a coordinator routes on, and one send covering both
+    lanes cannot say "route this local".
+
+    A node whose group has no read window is undecided, with no verdict and no
+    fill, rather than judged against a fabricated empty window. The one
+    exception is prescribed work: the bar decides prescription *before* it
+    consults the window, so a maximally prescribed node's outcome is the same at
+    every fill and is therefore decidable with no window at all. Its
+    ``decided_by`` says so, which keeps "we read a window" and "no window could
+    have changed this" distinguishable in the record, while ``window_fill`` is
+    still reported as unread because a fill never observed is not a measurement.
+    """
+    five = clocks[CLOCK_FIVE_HOUR]
+    fill = five["utilisation"] if five["state"] == OBSERVED else None
+
+    recommendations: list[dict[str, Any]] = []
+    admitted: list[dict[str, Any]] = []
+    split: list[str] = []
+    held: list[str] = []
+    undecided: list[str] = []
+    for node in ready:
+        name = str(node["name"])
+        score = float(node["score"])
+        if fill is None and score > bar_module.PRESCRIBED_MAX:
+            recommendations.append(
+                {
+                    "name": name,
+                    "score": score,
+                    "state": UNKNOWN,
+                    "verdict": None,
+                    "window_fill": None,
+                    "bar": None,
+                    "margin": None,
+                    "decided_by": None,
+                }
+            )
+            undecided.append(name)
+            continue
+        # Any fill returns the same outcome for a prescribed score, which is
+        # what makes that verdict decidable with no window read.
+        judged = bar_module.recommend(0.0 if fill is None else fill, score)
+        prescribed = score <= bar_module.PRESCRIBED_MAX
+        recommendations.append(
+            {
+                "name": name,
+                "score": score,
+                "state": OBSERVED,
+                "verdict": judged.verdict,
+                "window_fill": fill,
+                "bar": None if fill is None else judged.bar,
+                "margin": None if fill is None else judged.margin,
+                "decided_by": "prescription" if prescribed else "window",
+            }
+        )
+        if judged.verdict in (bar_module.SEND_METERED, bar_module.SEND_LOCAL):
+            admitted.append({"name": name, "verdict": judged.verdict})
+        elif judged.verdict == bar_module.SPLIT:
+            split.append(name)
+        else:
+            held.append(name)
+
+    return {
+        "window_fill": fill,
+        "state": five["state"],
+        "recommendations": recommendations,
+        "admitted": admitted,
+        "split": split,
+        "held": held,
+        "undecided": undecided,
+    }
+
+
+def group_pace(
+    config: Mapping[str, Any],
+    *,
+    windows: Mapping[str, Any] | None = None,
+    ready: Iterable[Mapping[str, Any]] = (),
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Report the pace of every declared budget group, one entry each.
+
+    One entry per declared group and never one per lane: lanes sharing a wallet
+    hold one allowance between them, and a figure computed per lane would report
+    each share as though it were the whole. Membership comes from the declared
+    ``budget_group`` slot in resolved flight config, which is the same authority
+    the position and the hold read.
+
+    ``windows`` maps a backend name to its window reading — either an already
+    read :class:`~reckon.crew.window_reading.WindowReading` or something the
+    reader can open — and a group no member reading reached reports unknown
+    rather than zero. ``ready`` states the nodes a wave would open with, each a
+    mapping of ``name``, ``group`` and ``score``, the score being that node's
+    open-endedness. A node naming a group that is not declared is refused rather
+    than dropped, because a ready node silently missing from the admitted set is
+    exactly the failure a pre-flight exists to prevent.
+    """
+    moment = _now(now)
+    readings = windows if isinstance(windows, Mapping) else {}
+    groups = budget_group.declared_groups(config)
+    empty = window_reading.WindowReading()
+
+    # A list per group rather than one list shared by every key: the shared form
+    # gives each group the same list object, so every node would be judged
+    # against every group's bar.
+    nodes_by_group: dict[str, list[Mapping[str, Any]]] = {name: [] for name in groups}
+    for node in ready:
+        if not isinstance(node, Mapping):
+            # A malformed ready set is one caller error, not two, so it is
+            # refused as one kind: the command's refusal path handles ValueError.
+            raise ValueError(  # noqa: TRY004
+                f"a ready node must be a mapping, not {node!r}"
+            )
+        name = node.get("name")
+        group = node.get("group")
+        score = node.get("score")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"a ready node needs a name, not {name!r}")
+        if group not in groups:
+            declared = ", ".join(groups) or "none"
+            raise ValueError(
+                f"ready node {name!r} names group {group!r}, which is not a "
+                f"declared budget group (declared groups: {declared})"
+            )
+        if isinstance(score, bool) or not isinstance(score, (int, float)):
+            raise ValueError(  # noqa: TRY004
+                f"ready node {name!r} needs an open-endedness score, not {score!r}"
+            )
+        nodes_by_group[str(group)].append(node)
+
+    report: list[dict[str, Any]] = []
+    for group, members in groups.items():
+        freshest = _freshest_reading(members, readings, moment=moment)
+        member = None if freshest is None else freshest[0]
+        reading = empty if freshest is None else freshest[1]
+        clocks = {
+            period: _clock(reading, period)
+            for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY)
+        }
+        report.append(
+            {
+                "group": group,
+                "members": list(members),
+                "member": member,
+                "state": OBSERVED if freshest is not None else UNKNOWN,
+                "clocks": clocks,
+                "allowance": _group_allowance(group, clocks, config, moment=moment),
+                "bar": _group_bar(clocks, nodes_by_group[group]),
+            }
+        )
     return report
 
 
