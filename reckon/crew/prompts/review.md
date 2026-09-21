@@ -76,6 +76,14 @@ being unreported. A review that omits an item, or emits it empty, has that
 item named absent, and its item count is withheld rather than taken over the
 items that are present.
 
+Every review must also emit one `CALL_SITES` line. This requirement is not optional.
+List the production call sites you verified the change against as a
+comma-separated list, or emit the literal `CALL_SITES: none` when you found no
+production call site. Production means runtime code that can reach the change;
+the node's own test files do not count as production call sites. An omitted
+`CALL_SITES` line is absent evidence, not a measured zero, so do not replace a
+missing line with `none`.
+
 Every dimension must receive a SCORE line. A review that omits one is marked
 incomplete; the missing dimension is reported as absent rather than silently
 scored zero.
@@ -88,6 +96,7 @@ VERDICT done_when: the done_when names tests/test_review_scoring.py; the manifes
 VERDICT write_paths: read the manifest's declared paths; every path in the diff is inside them.
 VERDICT manifest: read; it states tests/test_review_scoring.py passed and names its log.
 VERDICT diff: read commit by commit against the base; three files changed, all inside the declared scope.
+CALL_SITES: reckon/crew/promotion.py:_require_review_waiver, reckon/crew/recovery.py:_review_is_complete
 SCORE goal_fidelity: 18
 JUSTIFICATION goal_fidelity: reckon/crew/review.py:41 stores the review under the configuration directory, outside any run directory and any worktree.
 SCORE evidence: 15

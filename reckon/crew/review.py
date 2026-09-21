@@ -31,6 +31,10 @@ not enter the completeness predicate a promotion reads (see
 dimensions: reviews stored before this line existed carry no item verdicts,
 and folding them into that predicate would mark every one of them incomplete.
 
+It also records the production call sites the reviewer verified against the
+change. A literal ``CALL_SITES: none`` is an explicit zero; an omitted line is
+left absent so a missing measurement cannot be mistaken for a measured zero.
+
 The parser is on the live path, not a library awaiting a caller: dispatch and
 runs resolve the review store through :func:`review_store_root`,
 ``reckon/crew/promotion.py`` reduces a stored record to the ledger block it
@@ -127,6 +131,7 @@ _JUST_RE = re.compile(
 _VERDICT_RE = re.compile(
     r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
+_CALL_SITES_RE = re.compile(r"^CALL_SITES\s*:\s*(.*)$", re.IGNORECASE)
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
 
 
@@ -157,6 +162,11 @@ def parse_review(text: str) -> dict[str, Any]:
       total: a count over the items that happen to be present reads as a
       review that checked fewer, which is indistinguishable from one that
       skipped one.
+    - ``call_sites`` and ``call_site_count`` — the production call sites the
+      reviewer verified against the change and their parseable count. An
+      explicit ``CALL_SITES: none`` records an empty list and zero; an omitted
+      line leaves both keys absent because omission and zero are different
+      claims.
     - ``findings`` — a list of ``{"file", "line", "text"}``.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
@@ -172,6 +182,8 @@ def parse_review(text: str) -> dict[str, Any]:
     justifications: dict[str, str] = {}
     item_verdicts: dict[str, str] = {}
     findings: list[dict[str, str]] = []
+    call_sites: list[str] = []
+    call_sites_seen = False
     for raw in text.splitlines():
         line = raw.strip()
         match = _SCORE_RE.match(line)
@@ -198,6 +210,15 @@ def parse_review(text: str) -> dict[str, Any]:
             if item in REVIEW_ITEMS and verdict:
                 item_verdicts[item] = verdict
             continue
+        match = _CALL_SITES_RE.match(line)
+        if match:
+            call_sites_seen = True
+            value = match.group(1).strip()
+            if value.lower() != "none":
+                call_sites = [
+                    site.strip() for site in value.split(",") if site.strip()
+                ]
+            continue
         match = _FIND_RE.match(line)
         if match:
             ref, finding_text = match.group(1), match.group(2).strip()
@@ -216,7 +237,7 @@ def parse_review(text: str) -> dict[str, Any]:
         status = "parsed"
         total = sum(scores.values()) if not absent else None
     item_aggregate = None if absent_items else len(item_verdicts)
-    return {
+    record = {
         "status": status,
         "scores": scores,
         "absent": absent,
@@ -228,6 +249,10 @@ def parse_review(text: str) -> dict[str, Any]:
         "total": total,
         "raw_text": text,
     }
+    if call_sites_seen:
+        record["call_sites"] = call_sites
+        record["call_site_count"] = len(call_sites)
+    return record
 
 
 # ── The durable store ───────────────────────────────────────────────────────
