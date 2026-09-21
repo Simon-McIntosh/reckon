@@ -632,6 +632,53 @@
     <code>routing.py</code> both at base and after; the new test has zero findings,
     and both paths pass Ruff format.</p>
   </section>
+  <section id="s4-parser-mutation-reddens">
+    <h2>The parser's absent-item branch is dropped at the merged head, and the contract test reddens</h2>
+    <p><strong>The declared mutation was not the one the log showed.</strong> The run that landed the reading bound and the per-item verdicts declared a negative control on the parser it built — an item verdict that is omitted from a review must be named absent, and the item aggregate withheld rather than taken over the items present — and the red log it recorded was produced by deleting the prompt's reading-bound section instead. Both mutations redden the same file, so the recorded evidence was real; but it was evidence about the prompt text, not about the branch the declaration describes, and a passing suite never shows a branch is load-bearing. The declared mutation was therefore applied at the merged head and its own red log written to the first path, with the prompt-mutation log preserved verbatim beside it.</p>
+    <table>
+      <thead><tr><th>Mutation</th><th>Applied to</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Drop the absent-item branch (<code>absent_items</code> and <code>item_aggregate</code>)</td><td><code>parse_review</code> in <code>reckon/crew/review.py</code> at merged head <code>650b1da3</code></td><td>1 failed, 3 passed</td></tr>
+        <tr><td>Delete the <em>How much to read</em> section</td><td><code>reckon/crew/prompts/review.md</code>, at the revision its own run recorded</td><td>1 failed, 3 passed</td></tr>
+        <tr><td>None (merged head, unmutated)</td><td>—</td><td>4 passed</td></tr>
+      </tbody>
+    </table>
+    <p><strong>What the dropped branch was, and what its absence does.</strong> Two lines in <code>parse_review</code> carried the whole rule: <code>absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]</code> and <code>item_aggregate = None if absent_items else len(item_verdicts)</code>. Replacing them with <code>absent_items: list[str] = []</code> and <code>item_aggregate = len(item_verdicts)</code> makes an omitted item verdict silently ignored: nothing is named absent, and the aggregate is computed over whatever verdicts arrived instead of being withheld. A review that skipped one of the five targets then reads exactly like one that reported all five — the same defect the reading bound and the per-item emission existed to close, restored at the one place that records it.</p>
+    <p><strong>Which test reddens, and why that is the right one.</strong> Exactly one: <code>test_a_dimension_only_review_is_still_complete_for_promotion</code> fails on <code>assert record["absent_items"] == list(review_module.REVIEW_ITEMS)</code>, reporting <code>[] == ['goal', 'done', ..., 'diff']</code> — the five names the mutation stopped producing. The other three pass and should: the reading-bound test reads the prompt file, the docstring test reads the module source, and the missing-dimension test reads <code>record["absent"]</code>, the dimension axis the branch never touched. So the red is aimed at the branch that changed and at nothing else, which is what makes it a control rather than a coincidence.</p>
+    <p><strong>The earlier log, preserved rather than overwritten.</strong> <code>negative-control.log</code> was copied verbatim to <code>negative-control-prompt-mutation.log</code> before the declared run wrote the first path, and <code>diff</code> between copy and original reported no difference (sha256 <code>6e449336f1de6f888a54b6cc7d1bf4fd80644ba053c0d1249d3fca5d8e9d4210</code> on both, 1537 bytes). The two paths now differ deliberately: the copy holds the prompt-deletion evidence under the name that identifies it, and the first path holds the declared red log whose first line repeats the declared mutation verbatim (<code>in the parser, drop the branch that names an absent checklist-item verdict and withholds the item aggregate, so an omitted item verdict is silently ignored; tests/test_review_prompt_contract.py must fail</code>).</p>
+    <p><strong>The scratch tree, and the revert.</strong> The mutation was applied only in a scratch copy of the merged tree at <code>650b1da3</code> (a <code>tar</code> copy of the worktree excluding <code>.git</code>, <code>.venv</code> and <code>.env</code>), so the worktree's own source was never mutated. The module had to resolve to the scratch rather than to the worktree or to the editable install in the shared environment, and the resolution was probed before the run rather than assumed: <code>env -C &lt;scratch&gt; PYTHONPATH=&lt;scratch&gt; python -c "import reckon.crew.review as r; print(r.__file__)"</code> printed <code>/tmp/parser-mutation-scratch-660d357e/reckon/crew/review.py</code>. <code>reckon/crew/review.py</code> is byte-identical to the head blob <code>bc295b6239f56c648ab28af359109fa31131cc46</code> before and after (sha256 <code>75e6fa32363728c3232ea54ef5739b7635da48ee9c0df85e0c5775949fe19f19</code>, equal to the digest of <code>git show HEAD:reckon/crew/review.py</code>), and <code>git status --porcelain</code> in the worktree is empty.</p>
+    <p><strong>Gate.</strong> The named file passes unmutated at the merged head (<strong>4 passed</strong>) and fails under the declared mutation (<strong>1 failed, 3 passed</strong>, exit 1), which is the required direction: a control that reddens nothing would show only that the suite runs. The wider cohort this plan's sibling node reported is unchanged and untouched here — this node reads no other test file.</p>
+  </section>
+
+  <section id="s4-declared-omission-mutation">
+    <h2>An omitted call-site measurement must remain absent</h2>
+    <p><strong>Defect reproduced with the mutation this node actually declared.</strong> A fresh
+    <code>git archive HEAD</code> copy was materialised under the worker scratchpad. In that copy,
+    <code>parse_review</code> was changed so <code>call_sites</code> and
+    <code>call_site_count</code> were written unconditionally. Consequently, a review that omitted
+    <code>CALL_SITES</code> acquired <code>[]</code> and <code>0</code>, making no reported
+    measurement indistinguishable from the explicit <code>CALL_SITES: none</code> measurement.</p>
+    <table>
+      <thead><tr><th>Scratch-tree state</th><th>Focused test result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>HEAD, no mutation</td><td>5 passed; exit 0</td><td>The focused receipt is aimed and imports the archived source.</td></tr>
+        <tr><td>Unconditional call-site keys</td><td>2 failed, 3 passed; exit 1</td><td>Both omitted-line assertions reject treating absence as zero.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The red failures are specific.</strong>
+    <code>test_omitted_call_sites_is_absent_rather_than_zero</code> and
+    <code>test_legacy_record_without_call_sites_remains_complete</code> both fail because
+    <code>call_sites</code> is present. The negative receipt's first line is the declared mutation
+    verbatim, and both receipts begin by showing <code>import reckon</code> resolving inside the
+    archive rather than from the assigned worktree. The durable baseline receipt is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared-baseline.log</code>;
+    the declared-mutation receipt is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/logs/negative-control-declared.log</code>.</p>
+    <p><strong>Isolation.</strong> The assigned worktree was clean after the archive-based run;
+    neither <code>reckon/crew/review.py</code> nor any other tracked source path in that worktree
+    was mutated for the control. This node records the red evidence only; merged-head verification
+    belongs to its separately scoped gate.</p>
+  </section>
 </main>
 </body>
 </html>
