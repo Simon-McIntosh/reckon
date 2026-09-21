@@ -568,6 +568,22 @@
     both option values after the change. The evidence anchor is in
     <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
 
+    <p class="landed-summary"><strong>Repair landed 2026-09-21 &mdash; the null option value, the first of the
+    two findings carried out of the review.</strong> The helper already promised to refuse an option with no
+    usable value, and it did not: an option object carrying a JSON null for its value was read as if the key
+    were absent, and the fallback then stringified it, so the option landed spelled <code>None</code> &mdash;
+    four characters, truthy &mdash; and the emptiness check below could not see it. The reproduction is one
+    line: <code>_decision_options_as_choices([{"value": None}])</code> returned
+    <code>(['None'], {'None': 'None'})</code>. The read now distinguishes a null from a missing key and refuses
+    it naming the option; a mapping whose key is null is refused by the same guard, since it stringified
+    identically. Three cases were added: the null object value is refused and nothing lands, an empty option
+    value is still refused as it was before so the repair narrows nothing, and a decision whose two option
+    objects carry values still reads back both. The declared mutation &mdash; restore the pre-repair reads and
+    delete both null guards &mdash; reddens the null case alone (1 failed, 5 passed under mutation) with the
+    other five green, which is the receipt that the repair is narrow. Verified in the worktree's own package,
+    not only by assertion. The evidence anchor is in
+    <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A resolved launcher is checked against an origin that is serving</h2>
     <p>Measured 2026-09-20, and it is one step past the control &#167;1 landed. This workstation carries two
     launchers named <code>clive</code>: the canonical one at
