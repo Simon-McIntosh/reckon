@@ -1647,7 +1647,10 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
         )
         if restored.returncode == 0:
             continue
-        relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+        try:
+            relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+        except ValueError:
+            continue
         present = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
         if present.returncode == 0:
             continue
@@ -1657,7 +1660,11 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
 
 @contextmanager
 def _report_written_ledger_row(run_id: str):
-    """Keep the append receipt visible when a later landing operation fails."""
+    """Keep the append receipt visible when a later landing operation fails.
+
+    Exceptions escaping this span lose their type, which is safe only while no
+    typed exception handler can be reached by an exception raised within it.
+    """
     try:
         yield
     except Exception as exc:

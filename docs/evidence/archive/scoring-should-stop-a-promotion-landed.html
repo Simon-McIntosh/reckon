@@ -755,6 +755,21 @@
     <p><strong>Boundary:</strong> local commits only. This repair was not promoted and
     <code>crew complete</code> was not run on this node. Combined-head verification and
     integration remain coordinator-owned; this evidence does not close the driving followup.</p>
+    <p><strong>Independent review amendments.</strong> A path that cannot be resolved under
+    the checkout is preserved: <code>relative_to</code> raising <code>ValueError</code> now
+    continues the best-effort rollback. The new outside-path test reproduced the unguarded
+    <code>ValueError</code> replacing the staging error, then passed with the outside file's
+    contents unchanged and <code>could not stage the landing writes</code> retained.
+    The receipt wrapper's docstring now states that exceptions lose their type and this is
+    safe only while no typed handler is reachable for exceptions raised within the span.</p>
+    <p>The expanded focused file reports <strong>12 passed</strong> (previously 11);
+    against the original base module it reports <strong>10 failed / 2 passed</strong>
+    (previously 9 / 2). The declared rollback mutation reports <strong>3 failed / 9 passed</strong>
+    (previously 2 / 9). The real held-index-lock and failure-before-append tests are retained.
+    Ruff remains <strong>11</strong> findings, <strong>13</strong> concise output lines,
+    and <strong>1</strong> file needing formatting. Additional receipts are
+    <code>review-before.log</code>, <code>review-focused.log</code>, <code>review-base.log</code>,
+    <code>review-negative-control.log</code>, and <code>review-gates.json</code> in the same run directory.</p>
   </section>
 </main>
 </body>

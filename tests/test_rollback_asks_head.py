@@ -73,6 +73,19 @@ def test_path_absent_from_head_is_dropped(repository, monkeypatch):
     assert not _git(repository, "ls-files", "--", str(created)).stdout.strip()
 
 
+def test_path_outside_checkout_survives_with_staging_error(repository):
+    outside = repository.parent / "outside.txt"
+    outside.write_text("unrelated content\n")
+
+    with pytest.raises(promotion.CrewError, match="could not stage the landing writes"):
+        promotion._commit_landing_writes(
+            run_id="outside", verdict="passed", checkout=repository, paths=[outside]
+        )
+
+    assert outside.is_file()
+    assert outside.read_text() == "unrelated content\n"
+
+
 def test_real_index_lock_preserves_head_path(repository, monkeypatch):
     tracked = repository / "tracked file.txt"
     tracked.write_text("landing content\n")
