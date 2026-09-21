@@ -558,6 +558,15 @@ Three rules follow, and they cost one line each at authoring time:
   need their own measure — "no module outside the new one still defines the
   superseded helper" is a grep, and it is the only thing that makes a
   de-duplication node falsifiable.
+- **Put the negative control IN the done-when, not only in `--negative-control`.**
+  The flag records the mutation a node's checks must fail against, and recording
+  it is not running it. Measured 2026-09-21 across one five-node wave: three of
+  four workers wrote good code and green tests and never executed the mutation
+  their own dispatch declared, so their guards were assertions rather than
+  evidence and every one was refused at promotion. The declaration was in each
+  prompt; it was absent from each measure. Write the execution into the
+  done-when — "the declared mutation is applied, the named check is observed to
+  fail, and the log is recorded" — and it happens on the first pass.
 - **Spend the lane's cheapness on more nodes, not bigger ones.** A free lane
   invites broad nodes and should not. Node width is also a capacity property:
   a lane's concurrency is its token pool divided by the mean context its
