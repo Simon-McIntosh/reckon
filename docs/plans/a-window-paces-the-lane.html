@@ -81,7 +81,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <p><strong>The best five-hour estimate to start the week with is the fixed point of that
     formula</strong>, which is simply the nominal share: <code>5 / D</code>. At
     <code>D</code>&nbsp;=&nbsp;156&nbsp;h that is <strong>3.205% of the weekly budget per five-hour
-    window</strong>, over 31.2 windows.</p>
+    window</strong>, over 31.2 windows &mdash; <strong>3.526%</strong> once the multiple is applied, which is the figure the on-pace case asserts against.</p>
 
     <p><strong>The pace multiple sits on top of that, and it is why the week ends drained rather
     than merely spent.</strong> Locked at a single value of <code>1.1</code> applied to both clocks,
@@ -93,13 +93,15 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     hardcode.</p>
 
     <table>
-      <caption>The allowance tracking up and down. Computed, not illustrative.</caption>
+      <caption>The allowance tracking up and down, with the locked pace multiple of 1.1 folded in.
+      Computed, not illustrative &mdash; recomputed 2026-09-21 after a review measured the module
+      directly and found this table still printing the pre-multiple figures.</caption>
       <thead><tr><th>Group state</th><th>Used</th><th>Elapsed</th><th>Allowance per 5&nbsp;h window</th><th>vs nominal</th></tr></thead>
       <tbody>
-        <tr><td>ahead of pace, early</td><td>30%</td><td>24 h</td><td>2.65%</td><td>0.83&times; &mdash; throttles</td></tr>
-        <tr><td>exactly on pace</td><td>31%</td><td>48 h</td><td>3.21%</td><td><strong>1.00&times;</strong></td></tr>
-        <tr><td>behind, late in the week</td><td>50%</td><td>120 h</td><td>6.94%</td><td>2.17&times; &mdash; opens up</td></tr>
-        <tr><td><strong>measured now</strong></td><td><strong>14%</strong></td><td><strong>3.75 h</strong></td><td><strong>2.82%</strong></td><td>observed burn is <strong>18.7% per window &mdash; 6.6&times; the allowance</strong></td></tr>
+        <tr><td>ahead of pace, early</td><td>30%</td><td>24 h</td><td>2.917%</td><td>0.83&times; nominal &mdash; throttles</td></tr>
+        <tr><td>exactly on pace</td><td>31%</td><td>48 h</td><td>3.514%</td><td><strong>1.00&times;</strong> &mdash; against a multiplied nominal of 3.526%</td></tr>
+        <tr><td>behind, late in the week</td><td>50%</td><td>120 h</td><td>7.639%</td><td>2.17&times; nominal &mdash; opens up</td></tr>
+        <tr><td><strong>measured that morning</strong></td><td><strong>14%</strong></td><td><strong>3.75 h</strong></td><td><strong>3.107%</strong></td><td>observed burn was <strong>18.7% per window &mdash; 6.0&times; the allowance</strong></td></tr>
       </tbody>
     </table>
 
