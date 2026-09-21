@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -399,6 +399,39 @@
     and the one covered run that promoted unreviewed — an <code>implement</code> run with a passing
     gate, completed an hour after the guard landed, with no stored review and no waiver — is that
     shape.</p>
+
+    <p><strong>This is not an audit gap. A solver regression reached <code>develop</code> through
+    it.</strong> Measured on imas-efit, 2026-09-21: <strong>eleven of thirty-four promoted-passed
+    runs (32%) exempted themselves</strong>, across nine distinct status strings — none of them
+    wrong as English.</p>
+
+    <table>
+      <caption>The nine observed strings, and the one that cost something.</caption>
+      <thead><tr><th>Group</th><th>Strings observed</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td>not terminal</td><td><code>in-progress</code>, <code>waiting</code></td><td>the run reads unfinished, so nothing looks for a review</td></tr>
+        <tr><td><strong>terminal but awaiting someone</strong></td><td><code>done</code>, <code>awaiting-orchestrator-review</code>, <code>implemented-not-closed</code></td><td><strong>the more dangerous group</strong> — the work is finished and its author believes they have handed over</td></tr>
+        <tr><td>no manifest at all</td><td>three runs</td><td>currently handled by fallthrough; must be decided explicitly</td></tr>
+      </tbody>
+    </table>
+
+    <p><code>diverted-xpoint-saddle-positions</code> wrote <code>status: waiting</code>, exempted
+    itself, and was promoted. Its change moved the ITER corsica LCFS by <strong>0.637 m against a
+    0.5 m Hausdorff gate</strong>, with the X-point displaced 0.46 m. A suite-wide integration gate
+    caught it hours later; it was reverted at <code>9095a765</code>.</p>
+
+    <p><strong>The counterfactual is demonstrated rather than hoped for</strong>, because the review
+    eventually ran. It found the activation path exactly — the change makes
+    <code>xpointCount</code> reach 2 on a single-null slice, feeding <code>separatrixGeometry</code>
+    case 2 — and it found that the node's own evidence could not support its claim, since the
+    saddle count is logged inside the step loop while the counter is cleared at the top of every
+    pass, so a line from one Picard iterate says nothing about the state after another. The node had
+    honestly declared its publish branch ran at count zero; the review established the gap was wider
+    than declared. <strong>The only stage positioned before the merge was the review, and a status
+    string exempted it.</strong></p>
+
+    <p>So the defect is not that unreviewed work goes unaudited afterwards. <em>The exemption
+    removes the one check standing before the damage.</em></p>
 
     <p><strong>Done when</strong> the guard keys on a run writing a repository path rather than on
     the role name, asserted for <code>test</code>, <code>documentation</code> and
