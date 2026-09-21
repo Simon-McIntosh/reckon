@@ -445,6 +445,59 @@
     of granting a directory would also close it, but it moves the fix away from the contract
     and into the caller, which is the drift this section already warns about.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21 &mdash; the check command now supplies
+    the scope it resolves against.</strong> The resolution step landed on the audit and the
+    command that calls it still handed it nothing: <code>crew check-manifest</code> invoked
+    <code>audit_manifest(text, node)</code> with no worktree and no repository, and both default
+    to the process working directory. So the agreement the resolution step installed held only
+    when the caller happened to stand in the run's worktree. A coordinator running the check
+    from anywhere else resolved an absolute declaration against the wrong tree and read every
+    changed path stray &mdash; the same late-refusal harm, aimed at the caller one layer up.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/check-manifest-scope-source.svg"
+           alt="One run pointer holding a worktree and a repository, and one absolute directory declaration.
+                Before: the scope is read from the working directory, so a caller in the run worktree
+                resolves the declaration and reports no finding, while a caller elsewhere resolves it under
+                neither tree and reports every changed path stray — the two disagree. After: the scope is
+                read from the run pointer's worktree and repo fields and passed into audit_manifest, so both
+                callers report no finding. A footnote records that dropping the two arguments to fall back to
+                the working directory reddens all three new cases and leaves the six existing ones green,
+                three failed against six passed.">
+      <figcaption>Where the scope comes from, and why a caller-dependent reading of one manifest is
+      the disagreement the shared mapping exists to remove.</figcaption>
+    </figure>
+
+    <p><strong>The repair reads the two fields the pointer already holds.</strong>
+    <code>crew check-manifest</code> now takes <code>worktree</code> and <code>repo</code> from
+    the run's live pointer, the same fields <code>promotion._outside_declared_scope</code> reads
+    from its record, and passes them through to <code>audit_manifest</code>. Nothing in the
+    resolution mapping moved; the command was given the arguments it was already documented to
+    accept. A pointer that records neither field still falls back to the working directory,
+    which is the behaviour a run without a worktree had.</p>
+
+    <p><strong>Proven by three cases that enter through the CLI and stand outside both
+    trees.</strong> A fixture writes a run whose worktree and repository are two distinct
+    directories, with the fence declared absolutely &mdash; <code>src</code> under the worktree
+    and <code>lib</code> under the repository &mdash; so a case can tell which tree a declaration
+    was resolved against. One case invokes the command from a directory that is neither and
+    asserts no finding; one adds a changed path under no declaration and asserts the finding
+    names exactly that path and none of the declared ones; one invokes from two different
+    directories and asserts both readings are the same. The file is <strong>9 passed</strong>,
+    the six existing cases unchanged.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation drops the two
+    arguments so the resolution falls back to <code>Path.cwd()</code>. Applied, the file reddens
+    <code>3 failed, 6 passed</code>: all three new cases fail while all six existing cases pass,
+    and under the mutation the outside caller reports every changed path stray. The undeclared-
+    path case was tightened for this &mdash; asserting the finding names exactly the stray path,
+    not merely that it appears among the findings &mdash; because the looser form stayed green
+    under the mutation. The mutation sits verbatim on the red log's first line and
+    <code>reckon/cli.py</code> was restored to the committed content, verified by an empty
+    <code>git diff</code> at that path. This gate measures only this node's own change; the
+    merged head is a separately dispatched node's measurement. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-check-command-supplies-the-scope-it-resolves-against">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">

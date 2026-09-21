@@ -2429,6 +2429,15 @@ def crew_check_manifest(run_id, pretty):
     coordinator editing an artifact it did not author. This reads the run's
     live pointer, rebuilds the node it records and reports the audit findings,
     so the refusal reaches whoever still holds the pen.
+
+    The scope test resolves declared write paths against the run's own worktree
+    and repository, read from the live pointer, because a declaration naming a
+    location absolutely only maps to the repository-relative path a manifest
+    records when it is resolved against the tree that run worked in. Resolving
+    against the caller's working directory instead would judge the same
+    manifest differently depending on where the check was invoked from, which
+    is the drift between this check and promotion that the shared mapping
+    exists to remove.
     """
     from reckon.crew.dispatch import _recorded_task_node
     from reckon.crew.runs import read_pointer
@@ -2449,7 +2458,13 @@ def crew_check_manifest(run_id, pretty):
         except OSError as exc:
             findings = [f"manifest {manifest_path!r} could not be read: {exc}"]
         else:
-            findings = list(crew_module.audit_manifest(text, node)["findings"])
+            worktree = Path(record["worktree"]) if record.get("worktree") else None
+            repository = Path(record["repo"]) if record.get("repo") else worktree
+            findings = list(
+                crew_module.audit_manifest(
+                    text, node, worktree=worktree, repository=repository
+                )["findings"]
+            )
     _emit(
         {
             "ok": not findings,
