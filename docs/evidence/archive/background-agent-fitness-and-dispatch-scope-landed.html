@@ -385,6 +385,42 @@
       other §2e nodes land.
     </p>
 
+    <h3 id="member-liveness-test-fixtures">Member-guard test fixtures — occupancy-independent PID evidence</h3>
+    <p>
+      Node <code>member-liveness-tests-do-not-read-the-host-process-table</code> (§2e) removed
+      arbitrary host-PID assumptions from the member guard tests. At the assigned base, the
+      named-member regression passed with <code>pid=4242</code> only because this host returned an
+      empty <code>ps -p 4242</code> result while <code>os.kill(4242, 0)</code> raised
+      <code>PermissionError(EPERM)</code>; the liveness helper therefore classified that unrelated
+      PID as <code>alive</code> and the test passed accidentally. The same verdict call with
+      <code>pid=4198400</code>, selected as <code>pid_max + 4096</code>, first proved
+      <code>os.kill(pid, 0)</code> raised <code>ProcessLookupError</code> and then returned
+      <code>blocks=False</code>, <code>liveness="gone"</code>.
+    </p>
+    <ul>
+      <li><strong>Focused gate.</strong> The named dispatch regression plus every test in
+        <code>tests/test_member_guard_counts_live_processes.py</code> ran with
+        <code>pytest -p no:cacheprovider -q</code>: <strong>14 passed, 0 failed, exit 0</strong>.</li>
+      <li><strong>Controlled fixtures.</strong> The dispatch test now uses <code>os.getpid()</code>
+        and asserts the recorded PID is that value. Gone-worker fixtures call
+        <code>_absent_pid()</code>, which asserts <code>ProcessLookupError</code> before returning;
+        foreign-host fixtures use the current process PID but never judge it because the recorded
+        host differs.</li>
+      <li><strong>Negative control.</strong> The declared mutation was
+        <em>replace the test controlled worker PID with a PID proven absent on this host</em>.
+        The resulting run exited 1: the second dispatch reached its launcher and failed at
+        <code>the member must not be launched</code>. Receipt:
+        <code>/tmp/member-liveness-negative-control.log</code>.</li>
+      <li><strong>Lint and format.</strong> Ruff check over the two exact changed test paths had
+        <strong>14</strong> findings at the assigned base and <strong>14</strong> after the change;
+        formatting had <strong>0</strong> files requiring changes at both revisions. The findings
+        are the repository's pre-existing test backlog.</li>
+    </ul>
+    <p>
+      The landing is <code>b9ccab9c</code>. This worker changed only the two test files and leaves
+      production dispatch wiring and terminal plan state to their respective owners.
+    </p>
+
   </main>
 </body>
 </html>
