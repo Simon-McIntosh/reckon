@@ -380,6 +380,57 @@
     and committed source hashes. No section status or driving followup is closed here;
     merged-head verification and manifest write-time validation remain separate work.</p>
   </section>
+
+  <section id="record-shape-refusals-and-lane">
+    <h2>The gate refused four promotions on record shape, and every failure that day was on one lane</h2>
+    <p><strong>What was measured.</strong> Four runs whose work was sound &mdash; green gate, genuinely
+    red control, commit an ancestor of <code>HEAD</code> with its content present at that head &mdash;
+    were refused promotion on the shape of their manifest. Each for a different reason, and no two
+    the same defect.</p>
+    <table>
+      <caption>Each row: the refusal, the field that caused it, and what was on disk at the same moment.</caption>
+      <thead><tr><th>Run</th><th>Field</th><th>What was on disk</th></tr></thead>
+      <tbody>
+        <tr><td><code>review-reflex-fires-on-the-sweep</code></td>
+            <td><code>status: implemented-locally</code>, outside the closed vocabulary, making the whole manifest unreadable</td>
+            <td>nine tests green; the control reddening its named test and reverting byte-identical against a recorded <code>sha256</code></td></tr>
+        <tr><td><code>promotion-write-cannot-shrink-the-ledger</code></td>
+            <td><code>negative_control_log:</code> empty</td>
+            <td>the control log beside the manifest in the same run directory, exit 1 on the named test</td></tr>
+        <tr><td><code>member-guard-counts-live-processes</code></td>
+            <td>the path plus a parenthetical quoting the log's own first line, so it never resolved as a path</td>
+            <td>a red control log &mdash; under <code>/tmp</code>, which does not survive</td></tr>
+        <tr><td><code>review-gate-covers-every-writing-run</code></td>
+            <td>naming the first of the worker's two control logs, whose mutation the node never declared</td>
+            <td>a second log carrying the declared mutation verbatim, reddening the fence with five failures</td></tr>
+      </tbody>
+    </table>
+    <p><strong>How each was repaired.</strong> By coordinator hand-edit of the worker's manifest, because
+    the worker had ended before the field was read. Every edit preserved the original as
+    <code>manifest.md.as-written-by-worker</code> beside it and added a
+    <code>*_corrected_by_coordinator:</code> line stating what changed, why, and what was verified
+    independently &mdash; the log's first line, the test counts, <code>merge-base --is-ancestor</code>
+    <em>and</em> a grep of <code>HEAD:&lt;path&gt;</code> for a marker the change introduced. Two of the
+    four were not paraphrases but substitutions: the node had declared one mutation and the worker ran
+    another. Those were not waived; the declared mutation was run separately in an isolated
+    <code>git archive HEAD</code> copy, with the import proven to resolve inside the scratch tree.</p>
+    <p><strong>The lane finding, measured the same afternoon.</strong> A peer session sampled the locally
+    served pool three times over one minute: <code>running=30</code> against a computed ceiling of
+    <code>concurrent_requests=22</code>, <code>waiting=0</code> &mdash; serving 36% over its own document
+    with nothing queueing. Under that load it degrades rather than refusing. Four runs of this session
+    on that lane emitted turns and tool calls and produced nothing at all: no commit, no uncommitted
+    edit, clean worktree at base, and <strong>no <code>is_error</code> record in any stream</strong>.
+    They were reconciled as <code>infrastructure-failure</code> rather than as node defects. Every run
+    moved to a metered lane with <code>crew redispatch</code> afterwards completed; the review reflex
+    recomposed one review onto the saturated lane twice inside two minutes, because it passes
+    <code>local=True</code> and nothing carries the previous failure forward.</p>
+    <p><strong>Durable receipts.</strong> Each repaired manifest and its unaltered original sit side by
+    side in the run directories named above; the separately-run declared controls are
+    <code>logs/negative-control-declared.log</code> and
+    <code>logs/negative-control-declared-baseline.log</code> in the same directories. No section status
+    is closed here: the write-time manifest validation and the reflex's lane selection are recorded as
+    done-whens in &sect;2j and &sect;4b and remain open.</p>
+  </section>
 </main>
 </body>
 </html>
