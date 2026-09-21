@@ -658,6 +658,131 @@
     (nine tests, each building a throwaway repository and a temporary crew home). Changed
     product paths: <code>reckon/crew/routing.py</code> and <code>reckon/ledger.py</code>.</p>
   </section>
+
+  <section id="the-composer-reads-the-report-a-run-delivered">
+    <h2>§4 — A landed record composes from the report a run delivered</h2>
+
+    <p><strong>The gap.</strong> The composer had one source: the ledger row. A row whose
+    run landed no commits carries no <code>commits</code>, no <code>tests_added</code> and
+    no <code>changed_lines</code>, because an investigate node's deliverable is a report on
+    disk rather than a diff — so <code>_run_rows</code> rendered a row of dashes and the
+    section was empty. That is the state in which a coordinator authors the evidence record
+    by hand, writing the evidence for work it is also judging. This section records the
+    second source: the report the run itself delivered.</p>
+
+    <p>Commit <code>1f12f4bf</code> adds a report-backed source to
+    <code>reckon/evidence.py</code> and nothing else. The ledger row already carries
+    <code>manifest_path</code>; the run's manifest names the durable paths it delivered; and
+    the composer now reads that manifest through the existing
+    <code>reckon.crew.reports.parse_manifest</code> rather than through a second reader, so
+    the manifest contract stays declared in one place. A run whose deliverable is readable is
+    cited by path with its content reproduced under
+    <code>&lt;article class="landed-report"&gt;</code>; a run that landed no commits and
+    named no readable report is stated as such under
+    <code>landed-report-unreadable</code>, because an anchored section with no content reads
+    as work that landed nothing rather than as a record that could not be composed.</p>
+
+    <figure>
+      <svg viewBox="0 0 960 300" width="960" height="300" role="img"
+           aria-label="Two sources for one section: a commit-bearing row is composed from the ledger row by _run_rows, and a commit-less row is composed from the manifest the run left, and a readable path in it is cited with its content while an unreadable one is stated as an absence. Both reach the module's single document renderer.">
+        <defs>
+          <marker id="ev-arw" markerWidth="10" markerHeight="8" refX="9" refY="4"
+                  orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#555"/></marker>
+        </defs>
+        <style>
+          .ev-bx{fill:#f7f7f7;stroke:#666;stroke-width:1.2}
+          .ev-hd{font:bold 12px sans-serif;fill:#111}
+          .ev-tx{font:12px sans-serif;fill:#333}
+          .ev-arw{stroke:#555;stroke-width:1.2;fill:none;marker-end:url(#ev-arw)}
+        </style>
+        <rect class="ev-bx" x="16" y="16" width="456" height="84" rx="6"/>
+        <text class="ev-hd" x="32" y="38">commit-bearing row</text>
+        <text class="ev-tx" x="32" y="58">the ledger row already carries the record:</text>
+        <text class="ev-tx" x="32" y="76">_run_rows renders commits, gate, tests, time</text>
+        <rect class="ev-bx" x="488" y="16" width="456" height="84" rx="6"/>
+        <text class="ev-hd" x="504" y="38">commit-less row</text>
+        <text class="ev-tx" x="504" y="58">read the manifest at record.manifest_path,</text>
+        <text class="ev-tx" x="504" y="76">take the first readable path it names in</text>
+        <text class="ev-tx" x="504" y="94">artifacts · orientation_write_paths · changed_paths</text>
+        <rect class="ev-bx" x="488" y="124" width="456" height="84" rx="6"/>
+        <text class="ev-tx" x="504" y="146">readable path — cite it, reproduce the report</text>
+        <text class="ev-tx" x="504" y="166">no readable path — say so, rather than leaving</text>
+        <text class="ev-tx" x="504" y="184">an anchored section with no content</text>
+        <rect class="ev-bx" x="16" y="232" width="928" height="52" rx="6"/>
+        <text class="ev-hd" x="32" y="254">_render_document — the module's only document renderer</text>
+        <text class="ev-tx" x="32" y="272">→ docs/evidence/archive/&lt;plan&gt;-landed.html</text>
+        <line class="ev-arw" x1="244" y1="100" x2="244" y2="232"/>
+        <line class="ev-arw" x1="716" y1="100" x2="716" y2="124"/>
+        <line class="ev-arw" x1="716" y1="208" x2="716" y2="232"/>
+      </svg>
+      <figcaption>One renderer, two sources: the row composes a commit-bearing run, and the
+      report the run left composes a commit-less one. The branch is on
+      <code>record.get("commits")</code>, so a run that has commits is composed exactly as
+      it was before.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Before the source</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Commit-less run whose report is on disk</td><td>section rendered the row's
+        dashes; the report was cited nowhere</td><td>path cited and content reproduced inside
+        the section, under <code>landed-report</code></td></tr>
+        <tr><td>Commit-less run with no readable report</td><td>a blank section, which reads as
+        work that landed nothing</td><td><code>landed-report-unreadable</code> states that no
+        record could be composed, and why</td></tr>
+        <tr><td>Commit-bearing run</td><td>composed from the ledger row</td><td>byte-identical:
+        its manifest's report content is never cited</td></tr>
+        <tr><td>Document renderers in <code>reckon/evidence.py</code></td><td>one</td><td>one
+        — asserted by an AST walk over the module, so a second composer fails the gate</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The declared mutation reddened the gate</h3>
+    <p>The declared mutation is <em>remove the report-backed source so the composer falls back
+    to ledger rows only</em>, applied in a scratch copy of the fixed tree by deleting the
+    report pass from <code>_render_document</code> and changing nothing else. Under it the
+    focused file reported <strong>2 failed, 2 passed</strong>: the two report-backed
+    assertions reddened with the paths and content absent from the section, while the
+    ledger-row case and the single-renderer case stayed green — so the red is the declared
+    mutation rather than a failure for another reason. The log is
+    <code>negative-control.log</code> in this run's directory, with the mutation verbatim on
+    its first line.</p>
+    <p><strong>A first attempt at that log was invalid and was discarded.</strong> The module
+    resolution it printed reported <em>is scratch: False</em>, because <code>python -c</code>
+    puts the working directory first on <code>sys.path</code> and the worktree shadowed the
+    scratch copy. The re-run resolved from a neutral working directory with the scratch tree
+    on <code>PYTHONPATH</code>, printed <em>is scratch: True</em>, and only that run's failure
+    count is recorded here.</p>
+
+    <h3>Gate, and what it does not cover</h3>
+    <p>The focused gate is <code>tests/test_evidence_from_report.py</code> together with the
+    pre-existing <code>tests/test_evidence_synthesis.py</code>: <strong>9 passed</strong> in
+    2.81s. The four new cases enter through
+    <code>synthesize_landed_record</code> rather than a private helper, and the base-side
+    figure for the report-backed behaviour is zero coverage rather than a lower count —
+    the report-backed source did not exist, so nothing covered it. What the gate does not
+    cover is stated rather than implied: it measures this node's own change, not the merged
+    result, and the merged result is verified by a separately dispatched test node. The
+    existing five synthesis cases pass unchanged, and the composer's output for a
+    commit-bearing run is asserted to stay byte-identical by a case whose report content
+    is deliberately marked not-to-be-cited and is asserted absent from the whole
+    document.</p>
+
+    <h3>Residue, recorded rather than smoothed over</h3>
+    <p>Ranging the manifest reader over the workstation's own committed ledger rows moved a
+    large share of previously unresolvable commit-less rows to resolving, and the remainder
+    is three honest shapes rather than a parsing defect: manifests deleted with the
+    <code>/run/user</code> tree they lived in, run directories that no longer exist, and
+    <code>artifacts</code> values written as prose (<code>path — description</code>) rather
+    than as a path. Each of those now reaches the reader as a stated absence naming the
+    candidate it could not read, which is a truthful section; none of them is cited as a
+    report. A flow sequence a worker wrote can also survive the parse as one literal string,
+    and that case is decoded rather than treated as a single impossible path.</p>
+    <p>Changed product path: <code>reckon/evidence.py</code>. Regression coverage:
+    <code>tests/test_evidence_from_report.py</code> (four tests, each building a throwaway
+    repository, a temporary crew home and the run directory the manifest cites). Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T142607348054-the-landed-record-composes-from-a-run-report/</code>.</p>
+  </section>
   </main>
 </body>
 </html>
