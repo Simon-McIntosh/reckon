@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T23:02:51",
+  "updated": "2026-09-21T23:24:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -250584,6 +250584,244 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a76",
+        "node": "the-preflight-names-the-pace-before-a-wave-opens",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1587,
+                "cached_input_tokens": 956596,
+                "input_tokens": 958185,
+                "output_tokens": 583,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 958768,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "371936ba-c8c3-4c56-951a-abbaeb2a5a49",
+            "session_id": "ship-budget-20260921"
+          },
+          "done_when": "reckon crew preflight emits, per declared budget group, the five-hour and seven-day utilisations each WITH ITS OBSERVATION AGE, the derived allowance from reckon/crew/pace.py, and the current bar from reckon/crew/bar.py, asserted from the emitted payload rather than from a formatted string; given a stated ready set of nodes with their open-endedness scores it names which the bar would admit and to WHICH LANE, using the four verdicts send-metered, send-local, split and hold rather than a binary; a group whose reading is unknown is asserted to emit unknown for its clocks and its allowance and NOT a zero or a default, since absence of a signal is not evidence of exhaustion and that rule already holds in the budget fence; the emitted ages are asserted present even when a reading is fresh, so a reader never has to infer that a missing age means current; the existing preflight payload fields are asserted unchanged so this adds rather than replaces; the declared mutation is applied to a scratch copy, the named test is observed to FAIL, and that log is written under the reports directory with its sha256 recorded beside it, never under /tmp, /dev/shm or /run/user. SCOPE NOTE: this node covers only the first half of the section's done-when. The second half, that one week of committed rows reproduces the pace curve and the lane split without reading a stream, needs a week of data and belongs to section 9.",
+          "estimated_hours": null,
+          "goal": "The pre-flight prints both clocks with their ages, the current bar, and which of a stated ready set the bar would admit.",
+          "id": "the-preflight-names-the-pace-before-a-wave-opens",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T17:52:47Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens/manifest.md",
+          "negative_control": "make the preflight emit a zero allowance for a group whose reading is unknown instead of unknown; the unknown-is-not-zero assertion in tests/test_preflight_pace.py must fail",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_preflight_pace.py",
+            "docs/plans/a-window-paces-the-lane.html",
+            "docs/figures/a-window-paces-the-lane",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "pace-preflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T17:53:01Z",
+        "completed_at": "2026-09-21T18:29:34.536Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2185,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2193,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f13607a28a1c99f29d82b0d506d18bf722634c34",
+        "commits": [
+          "2e32a5586bfaf5c2fd295414bd876e7dc48ef27f",
+          "cfbdb5f810edabac8dbfae3419ca46ebd8b0b0e8"
+        ],
+        "changed_lines": {
+          "added": 5427,
+          "removed": 3,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_preflight_pace.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.local/share/reckon/gate-logs/ship-budget-20260921/preflight-pace-merged-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens/manifest.md",
+        "scope_changed": false,
+        "session_id": "96b1863b-190e-43c0-945e-3d54abd63ef9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16581752,
+            "input_tokens_cumulative": 16581752,
+            "output_tokens": 101111,
+            "output_tokens_cumulative": 101111,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T18:29:34.536Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 14,
+            "fit": 19,
+            "goal_fidelity": 17,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 87
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16915168,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2189.278,
+          "generated_tokens": 120083,
+          "generation_seconds": 2015.351,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.8,
+          "machine_seconds": 173.927,
+          "peak_input_tokens": 166829,
+          "tokens_per_second": 59.58,
+          "wall_tokens_per_second": 54.85
+        },
+        "follow_on_paths": [
+          "reckon/cli.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/the-preflight-names-the-pace-before-a-wave-opens",
+          "session_id": "96b1863b-190e-43c0-945e-3d54abd63ef9",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T18:29:34.536Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.73,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": 0.73,
+          "at_complete": 0.8,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_preflight_pace.py"
+          ],
+          "declaration": "make the preflight emit a zero allowance for a group whose reading is unknown instead of unknown; the unknown-is-not-zero assertion in tests/test_preflight_pace.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-preflight-names-the-pace-before-a-wave-opens/negative_control_unknown_as_zero.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-preflight-names-the-pace-before-a-wave-opens/negative_control_unknown_as_zero.red.log",
+          "reason": "The worker's recorded control is a SUBSTITUTION, not a paraphrase: the declaration names a zero ALLOWANCE for a group whose reading is unknown, while the log's first line names substituting a zero for an unread clock's UTILISATION. Those are different fields - utilisation is an input, allowance is derived - so the recorded control does not evidence the declaration. Rather than waive on the worker's word the coordinator ran the DECLARED mutation: _unknown_allowance in reckon/budget.py emits 0.0 where it emitted None, applied in a scratch copy whose reckon.budget was asserted to resolve there. Positive control FIRST on the same unmutated tree: 21 passed. Mutated: 3 failed, 18 passed, and the failures include test_an_unread_group_reports_unknown_clocks_and_allowance_and_never_zero, the assertion the declaration names. Coordinator's control log with the declaration as its first line and the positive count beside it: /home/ITER/mcintos/.local/share/reckon/gate-logs/ship-budget-20260921/preflight-pace-negative-control.log. Separately, the independent review found the manifest quotes sha256 10e7f2c9 for the worker's control log while the file and its sidecar both hash to d390d35e and agree with each other - so the artefact is sound and the manifest's transcription of it is wrong. The worker's control is therefore a real red log under a mis-transcribed hash, and the declared mutation is independently shown to be a functioning control."
+        },
+        "tool_steps": 147.0,
+        "orientation_input_tokens": 3250517.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -250868,6 +251106,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2023
+    "_version": 2024
   }
 }
