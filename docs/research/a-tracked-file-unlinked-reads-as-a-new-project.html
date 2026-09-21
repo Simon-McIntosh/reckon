@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="a-tracked-file-unlinked-reads-as-a-new-project">
+  <meta name="plan-title" content="A Tracked File Unlinked Reads As A New Project">
+  <meta name="plan-summary" content="A promotion's rollback unlinked the tracked ledger, the next promotion read its absence as a fresh project, and every guard passed relative to that empty view: 1263 runs and 350 members replaced by one row, with the surface reporting success throughout.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="scoring-should-stop-a-promotion,work-does-not-fall-to-the-coordinator,a-worker-is-charged-to-a-job">
+  <title>A Tracked File Unlinked Reads As A New Project | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What happened</h2>
+
+    <p>At <strong>20:04:10</strong> on 2026-09-21 a routine promotion wrote
+    <code>docs/state/reckon/crew.json</code> as a <strong>new store at version 1</strong>, replacing
+    1,263 run records and 350 roster members with a single row. It raised no error.
+    <code>crew complete</code> returned <code>{"already_promoted": false, …}</code> — indistinguishable
+    from a successful append. Five further promotions from four sessions then appended to the empty
+    store, so the loss grew by a row each time until the hold.</p>
+
+    <p><strong>Every live surface agreed with the empty store.</strong> <code>crew member list</code>
+    returned <code>{"members": [], "ok": true}</code>; <code>crew(view="drain")</code> counted against
+    it. All confident, well-formed and wrong. Only git held the history.</p>
+
+    <table>
+      <caption>The ledger through the incident, read from git.</caption>
+      <thead><tr><th>Commit</th><th>Time</th><th>Runs</th><th>Members</th><th>Version</th></tr></thead>
+      <tbody>
+        <tr><td><code>dde1292f</code></td><td>20:02:24</td><td>1263</td><td>350</td><td>2007</td></tr>
+        <tr><td><code>dfbe67e5</code></td><td>20:04:10</td><td><strong>1</strong></td><td><strong>0</strong></td><td><strong>1</strong></td></tr>
+        <tr><td>restore</td><td>—</td><td>1267</td><td>350</td><td>2008</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">§2 — Three defects, each alone survivable</h2>
+
+    <p>The chain needed all three. Each was found by a different session, and none of the three
+    could see the whole of it alone.</p>
+
+    <table>
+      <caption>The causal chain, in the order it fired.</caption>
+      <thead><tr><th></th><th>Defect</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1</strong></td>
+            <td>A failure raised <em>after</em> the ledger append does not say the append happened.
+            <code>crew complete</code> printed <q>could not stage the landing writes</q> and exited 0,
+            with the row already written.</td>
+            <td>Invited a retry. Produced a duplicate row.</td></tr>
+        <tr><td><strong>2</strong></td>
+            <td><code>_restore_landing_writes</code> (<code>promotion.py:1626</code>) infers <em>this
+            path was created by this promotion</em> from <code>git restore</code> returning non-zero,
+            then unlinks it. With <code>index.lock</code> held, <code>git restore</code> exits 128.</td>
+            <td>Unlinked the <strong>tracked</strong> ledger and plan file together — the call site
+            passes both in one list, which is why those two and no others.</td></tr>
+        <tr><td><strong>3</strong></td>
+            <td><code>load()</code> returns an empty store at version 0 for an absent path, because
+            <q>an absent ledger is the ordinary state of a project that has run no workers yet</q>.</td>
+            <td>Every guard passed relative to that empty view; the atomic write landed the fresh
+            store cleanly.</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Defect 2 is the sharp one:</strong> the failure that triggers the rollback and the
+    failure of the rollback have <em>one shared cause</em> — a held index — so the destructive branch
+    fires exactly where its premise is least true. The docstring already names the hazard
+    (<q>Recovery is best-effort because the refusal that triggers it … can itself block these git
+    calls</q>) and unlinks anyway.</p>
+
+    <p><strong>No guard failed.</strong> Against an empty store, <code>current_view</code> is
+    <code>0 == 0</code>; the roster guard finds nothing to drop; the run-count guard compares
+    <code>1 &lt; 0</code>. Each behaved exactly as written.</p>
+
+    <h2 id="s3">§3 — One shape, four times</h2>
+
+    <p>Each defect substitutes a cheap adjacent fact for the one actually needed, which is the same
+    shape catalogued across the plans this record informs.</p>
+
+    <table>
+      <caption>What the code asked, against what it needed to know.</caption>
+      <thead><tr><th>It asked</th><th>It needed</th></tr></thead>
+      <tbody>
+        <tr><td><code>git restore</code> returned non-zero</td><td>does HEAD carry this path</td></tr>
+        <tr><td>the file is absent</td><td>has this project no history, or is its history unavailable</td></tr>
+        <tr><td>a later step failed</td><td>did the ledger append succeed</td></tr>
+        <tr><td><code>already_promoted: false</code></td><td>is this run in the store I should be appending to</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Recovery, and what it cost</h2>
+
+    <p>Restored from <code>dde1292f</code> with the post-reset promotions re-applied: 1,263 + 4 =
+    <strong>1,267 runs</strong>, 350 members, 20 holds, version 2008 — set above both the last good
+    2007 and the empty store's 7 so a stale writer raises <code>VersionConflict</code> rather than
+    racing. Validated through reckon's own envelope reader: zero duplicate run ids, zero duplicate
+    member ids.</p>
+
+    <p>Four rather than five, because one post-reset row was a <strong>duplicate</strong> — the same
+    run promoted twice, the copies differing only in <code>store_write</code>. The shadow SQLite
+    store had refused the second write with a <code>UNIQUE</code> violation at the time, so a second
+    authority independently rejected the row the dedupe dropped.</p>
+
+    <p><strong>No work was lost.</strong> Every commit was in git throughout; what was lost was the
+    ledger's account of it, for one hour and fifty-five minutes.</p>
+
+    <p>Landed by ordinary <code>git commit</code>, never through <code>crew complete</code>, because
+    the defect being repaired lives on the promote path: <strong>promoting the repair runs the
+    repair's own target.</strong></p>
+
+    <h2 id="s5">§5 — Scope: this is not reckon-only</h2>
+
+    <p>The code is in the installed <code>reckon</code> package, shared by every registered project.
+    Five other ledgers exist on this workstation and all were intact when checked; <strong>two are
+    larger than the one that was hit</strong>.</p>
+
+    <table>
+      <caption>Project ledgers on this workstation at the time of the incident.</caption>
+      <thead><tr><th>Project</th><th>Runs</th><th>Members</th><th>Size</th></tr></thead>
+      <tbody>
+        <tr><td>nova</td><td>1,603</td><td>949</td><td>11.4 MB</td></tr>
+        <tr><td>imas-codex</td><td>1,346</td><td>665</td><td>8.8 MB</td></tr>
+        <tr><td>reckon <em>(affected)</em></td><td>1,263</td><td>350</td><td>11.9 MB</td></tr>
+        <tr><td>imas-ambix</td><td>430</td><td>251</td><td>2.8 MB</td></tr>
+        <tr><td>imas-efit</td><td>46</td><td>97</td><td>0.5 MB</td></tr>
+        <tr><td>imas-standard-names</td><td>7</td><td>3</td><td>0.07 MB</td></tr>
+      </tbody>
+    </table>
+
+    <p>Exposure rises with concurrent sessions per checkout and git activity in it, because both
+    raise the chance of a contended index. reckon's own checkout was simply the busiest: three
+    coordinators promoting and three followers sweeping against one file. <strong>Fixing it once in
+    the package protects all of them.</strong></p>
+
+    <h2 id="s6">§6 — The repairs</h2>
+
+    <p><strong>The rollback asks HEAD instead of inferring.</strong> Unlink only when a direct query
+    says HEAD does not carry the path, never from an unrelated return code. <em>The test that must
+    fail against today's code asserts a path PRESENT in HEAD survives a restore that failed for an
+    unrelated reason</em> — written the obvious way round, that a path absent from HEAD is dropped,
+    it passes while preserving the defect.</p>
+
+    <p><strong>A failure after the append names it</strong>: <q>the ledger row for the run is already
+    written; do not re-promote</q>. One clause, and attempt 1 would have stopped there.</p>
+
+    <p><strong>A promotion never creates a ledger.</strong> Appending to a project's history and
+    initialising a new project are different operations and should not share a path; initialising
+    becomes an explicit argument rather than a fallback from absence. The same collapse applies to a
+    malformed envelope, which is read as an empty project today.</p>
+
+    <p><strong>Sequencing, agreed across three sessions:</strong> restore, then fix, then resume —
+    and <em>the ledger repair is not a licence to resume</em>. Only the rollback repair is: after it,
+    a deletion stops being catastrophic, but without it files still vanish silently and the next
+    contended <code>git add</code> starts round three.</p>
+
+    <h2 id="s7">§7 — How it was found</h2>
+
+    <p>Not by any surface. Every live read agreed with the empty store; the promotion that caused it
+    reported success; the two sessions that promoted afterwards had no reason to suspect anything.
+    It was found by a session comparing the committed file against git history, and the causal chain
+    was assembled from three sessions' partial views — one holding the deleter's mechanism, one the
+    absent-read half, and one the transcript showing why a retry was the correct response to the message
+    it was given.</p>
+
+    <p><strong>Each session was wrong about part of it.</strong> A mid-write window was proposed and
+    withdrawn when the envelope write proved already atomic. Eight hypotheses died across the day.
+    The account here survived because each was checked against the artifact rather than argued.</p>
+
+  </main>
+</body>
+</html>
