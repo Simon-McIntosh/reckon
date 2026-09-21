@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -875,8 +875,34 @@
         <tr><td>the review parsed</td><td>the review read <em>this</em> revision</td><td>§5c — a repaired run promotes on a record of what it was repaired from</td></tr>
         <tr><td><code>systemctl is-active</code> says the unit is down</td><td>no watcher seat is held</td><td>four needless restarts; the seat was held by an orphan and working</td></tr>
         <tr><td>no process matches <code>clive</code></td><td>no local-lane worker is running</td><td>reported 0 workers against 31 live pointers; <code>clive</code> execs <code>claude</code></td></tr>
+        <tr><td>the review <code>status</code> is <code>parsed</code></td><td>the parse consumed the whole reviewer output</td><td>a finding cut off mid-sentence validates; nearly cost a real defect, discounted as vague</td></tr>
       </tbody>
     </table>
+
+    <p><strong>The last row is this plan's own instrument committing the pattern it exists to
+    catch</strong>, which is why it belongs in the table rather than in a footnote. A stored review
+    scoring 94 carried one finding whose entire text was <em>"the expected card-query vector is
+    derived from"</em> — 46 characters, ending on a preposition, no truncation marker, and
+    <code>status: parsed</code>. <code>parsed</code> today means <em>these fields were
+    extracted</em>; every reader takes it to mean <em>the record is complete</em>, and those are
+    different claims.</p>
+
+    <p>The cost was nearly a real defect discounted as noise. Recovered by opening the cited line,
+    the finding is one of the sharpest of the sprint: the test builds its expected argument vector
+    from <em>the same constant the production code uses to build the real one</em>, so it compares
+    the code against itself. Remove a field from that constant and the expectation moves with it —
+    green suite, and the probe silently stops reading a field the plan requires. A second helper in
+    the same file does it again with another constant. <strong>That is a gate written by the thing
+    it gates, one level down from the defect this plan opened on.</strong></p>
+
+    <p><strong>Two repairs, and the cheaper one is a heuristic worth having only because the
+    better one is not free.</strong> Checked against this workstation's whole review store: of
+    <strong>498 findings, 3 (0.6%) do not end in terminal punctuation</strong>, median length 396
+    characters, tenth percentile 225 — and the shortest finding anywhere is exactly the 46-character
+    truncation. So "reject a finding that ends without terminal punctuation and names no concrete
+    input" costs almost nothing in false positives and catches this. <em>The sound repair is to make
+    <code>parsed</code> mean the parse consumed the whole output</em>, landing a cut-off record as
+    <code>partial</code>, because that fixes the claim rather than one symptom of it.</p>
 
     <p><strong>Nine of these were made in one day across three sessions by readers who knew the
     rule.</strong> That is the argument for a mechanical check rather than a habit: the failure
