@@ -502,6 +502,42 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <em>not</em> hold; and a borrowed probe reading is asserted never to become a group's position,
     the measure already written into <code>burn-is-visible-before-it-bites</code> §5.</p>
 
+    <h3 id="s7-hold-carries-its-evidence">Landing &mdash; a hold is refused without its evidence</h3>
+
+    <p><strong>Landed 2026-09-21.</strong> <code>reckon/crew/hold.py</code> carries a <code>Hold</code>
+    whose constructor raises <code>MissingHoldEvidenceError</code> for each omitted fact separately,
+    naming the field on the exception rather than leaving a blank field where a reader expects a
+    figure. A figure of <code>0.0</code> and an age of <code>0</code> are measurements and are kept.</p>
+
+    <p><strong>The re-query and the asymmetry.</strong> <code>hold_from_position</code> resolves a
+    group's position through <code>staleness.resolve_configured_reading</code>, so a figure past its
+    configured shelf life is re-queried and the hold carries the figure the probe returned rather than
+    the one that provoked the question. A re-query that cannot answer leaves the serving state
+    <code>unknown</code>, and a hold is <em>not</em> produced — the asymmetry §7 names, asserted both
+    ways in one test: the reader is shown to yield <code>unknown</code> for the same input the hold
+    path then declines to hold on.</p>
+
+    <p><strong>The borrowed figure and the ceiling.</strong> A position's reading names, under
+    <code>source</code>, the pool it was observed from. Where that pool is not the held group the
+    figure is borrowed and no hold is produced, however far above the ceiling it reads and whether or
+    not a re-query could have replaced it. A figure that does not reach the ceiling, a position whose
+    group is unnamed, and a position carrying no figure are likewise not holds, each with its own
+    test so the four refusals are not collapsed into one.</p>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q tests/test_hold.py</code> &mdash;
+    <strong>13 passed</strong>; the wider gate over the consumed modules, <code>tests/test_hold.py
+    tests/test_staleness.py tests/test_budget_group.py</code> &mdash; <strong>33 passed</strong>. The
+    declared mutation &mdash; bypassing the shelf-life re-query so the hold reports the position's own
+    figure &mdash; applied to a scratch copy of the package reddens the named test
+    (<code>assert [] == [1]</code>, the probe was never asked). Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s7-hold-carries-its-evidence">the landed
+    evidence record</a>.</p>
+
+    <p><strong>Not in this node.</strong> Nothing calls <code>hold.py</code> yet: the dispatch path
+    that would refuse a wave on this hold is rewired by the sections that consume it, so the module is
+    proven while the call site a reader reaches is unchanged. Commit
+    <code>3094ce26</code>.</p>
+
     <h2 id="s8">&sect;8 &mdash; The pattern that is not blocked</h2>
 
     <p>The dispatch pattern that never meets a hold falls out of the two sections above, and it is

@@ -553,6 +553,105 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       effective-ceiling input is likewise supplied rather than derived here.</li>
     </ul>
   </section>
+
+  <section id="s7-hold-carries-its-evidence">
+    <h2>&sect;7 &mdash; A hold carries the evidence that produced it</h2>
+
+    <p>The plan's premise is that a governor holding on a figure it cannot vouch for is worse than
+    none, because the hold looks identical either way. The landed mechanism makes the hold a record
+    that cannot be built without its evidence, and refuses the three ways a hold can look real while
+    resting on nothing.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 240" role="img" aria-label="Decision flow for a hold" width="100%">
+        <rect x="10" y="95" width="170" height="55" rx="6" fill="#eef" stroke="#446"></rect>
+        <text x="95" y="116" text-anchor="middle" font-size="12">group position</text>
+        <text x="95" y="134" text-anchor="middle" font-size="11">reading: figure, age, pool</text>
+        <line x1="180" y1="122" x2="228" y2="122" stroke="#446"></line>
+        <polygon points="228,122 218,117 218,127" fill="#446"></polygon>
+        <rect x="228" y="88" width="180" height="70" rx="6" fill="#efe" stroke="#484"></rect>
+        <text x="318" y="110" text-anchor="middle" font-size="12">pool == group?</text>
+        <text x="318" y="128" text-anchor="middle" font-size="11">no → borrowed, refuse</text>
+        <line x1="408" y1="122" x2="456" y2="122" stroke="#484"></line>
+        <polygon points="456,122 446,117 446,127" fill="#484"></polygon>
+        <rect x="456" y="88" width="180" height="70" rx="6" fill="#efe" stroke="#484"></rect>
+        <text x="546" y="110" text-anchor="middle" font-size="12">age ≤ shelf life?</text>
+        <text x="546" y="128" text-anchor="middle" font-size="11">no → ask the probe</text>
+        <line x1="636" y1="122" x2="684" y2="122" stroke="#484"></line>
+        <polygon points="684,122 674,117 674,127" fill="#484"></polygon>
+        <rect x="600" y="10" width="150" height="55" rx="6" fill="#fee" stroke="#844"></rect>
+        <text x="675" y="31" text-anchor="middle" font-size="12">hold</text>
+        <text x="675" y="49" text-anchor="middle" font-size="11">all four facts present</text>
+        <rect x="456" y="180" width="260" height="50" rx="6" fill="#fee" stroke="#844"></rect>
+        <text x="586" y="200" text-anchor="middle" font-size="12">unknown, or below ceiling, or undated</text>
+        <text x="586" y="218" text-anchor="middle" font-size="11">→ no hold</text>
+        <line x1="546" y1="158" x2="546" y2="180" stroke="#844"></line>
+        <polygon points="546,180 541,170 551,170" fill="#844"></polygon>
+        <line x1="546" y1="88" x2="546" y2="65" stroke="#484"></line>
+        <line x1="546" y1="65" x2="600" y2="38" stroke="#484"></line>
+        <polygon points="600,38 590,36 594,44" fill="#484"></polygon>
+      </svg>
+      <figcaption>A borrowed figure is refused before the age is considered; a stale figure is
+      re-queried; a re-query that cannot answer, a figure below the ceiling, or one that cannot be
+      aged produces no hold.</figcaption>
+    </figure>
+
+    <p><strong>Commit</strong> <code>3094ce26</code>, <code>reckon/crew/hold.py</code> and
+    <code>tests/test_hold.py</code>. Gate <code>pytest -q tests/test_hold.py</code> &mdash;
+    <strong>13 passed</strong>; the gate over the consumed modules, <code>tests/test_hold.py
+    tests/test_staleness.py tests/test_budget_group.py</code> &mdash; <strong>33 passed</strong>.</p>
+
+    <p><strong>The four omissions, each refused on its own.</strong> One parametrised test drops
+    each of the four facts in turn and requires <code>MissingHoldEvidenceError</code>; the assertion
+    is on the exception's <code>field</code> attribute, so nothing depends on the wording of a
+    message and no test inspects a formatted hold. A second test fixes a figure under the omission
+    check: a figure of <code>0.0</code> and an age of <code>0</code> are measurements and are
+    accepted, which is what makes "missing means <code>None</code>, never falsy" an assertion rather
+    than a convention.</p>
+
+    <p><strong>The re-query is not unconditional and the hold rests on what comes back.</strong> A
+    reading inside its shelf life is held on with the probe never called &mdash; the forbidden probe
+    in that test raises if it is asked, so the assertion that the re-query is bounded fails loudly
+    rather than passing silently. A reading 2.4 hours old with a probe answering <code>97</code> over
+    a stale <code>80</code> yields a hold whose figure is <code>97</code>, which is what makes "hold
+    on what comes back" observable.</p>
+
+    <p><strong>Unknown does not hold, and the refusal is shown to rest on the unknown state.</strong>
+    The test drives the staleness reader with the same input first and asserts its serving state is
+    <code>unknown</code>, then calls the hold path and asserts no hold &mdash; so the refusal cannot
+    be passing for an unrelated reason. The stale figure is <code>95</code>, above the ceiling of
+    <code>90</code>: it would hold if unknown were read as exhaustion, which is the plan's asymmetry
+    stated as a measurement rather than a preference.</p>
+
+    <p><strong>A borrowed figure never becomes the group's position.</strong> A reading whose
+    <code>source</code> names <code>codex-main</code> sits in a <code>spark</code> group's position
+    above the ceiling, inside its shelf life; no hold is produced and the probe is never asked. A
+    reading whose pool is not stated at all is likewise not owned and is not adopted on trust &mdash;
+    a figure that cannot be shown to belong to the group is treated as unscoped rather than assumed
+    to belong. An unobserved position and a figure below the ceiling complete the set, each asserted
+    separately.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation bypasses the shelf-life re-query and
+    reports the position's own figure. Applied to a scratch copy of the package and the test file,
+    the named test <code>test_a_stale_reading_is_requeried_and_the_holds_figure_is_the_probes</code>
+    <strong>fails</strong> (<code>assert [] == [1]</code>, the probe was never asked); the unmutated
+    twin of the same scratch tree <strong>passes</strong>. The log's first line repeats the mutation
+    verbatim, and it is written under the reports directory rather than a temporary path.</p>
+
+    <p><strong>Method note, because it reddened nothing the first time.</strong> The first control
+    run reported the named test passing under the mutation. The cause was the instrument, not the
+    mutation: pytest prepends the working directory to the scratch run's path, so the scratch tree
+    imported the worktree's package and the mutation was never exercised. Running the scratch with
+    its own working directory made the control redden. A control that passes can mean the mutation is
+    wrong or that the mutated copy was never loaded, and only the second failure mode is invisible
+    from the outside.</p>
+
+    <p><strong>What this does not claim.</strong> Nothing calls <code>hold.py</code> yet. The dispatch
+    path that would refuse a wave on this hold belongs to the sections that consume it, so the
+    mechanism is proven while the call site a reader reaches is unchanged &mdash; the gap this
+    repository records most often. The measure ranges over this node's own change only; a merged-head
+    verification is a separately dispatched node's job.</p>
+  </section>
 </main>
 </body>
 </html>
