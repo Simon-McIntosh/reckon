@@ -229,7 +229,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <p><strong>Done when</strong> the bar is one pure function of window state, asserted monotonic
     over the whole window domain rather than at transitions a continuous bar does not have, and
-    asserted at both extremes; each of the three outcomes is returned at its own boundary, asserted
+    asserted at both extremes; each of the four outcomes is returned at its own boundary, asserted
     separately, since a bar that can only send or hold has silently become the switch this section
     rejects; a maximally prescribed node is asserted to return send-local at EVERY window fill
     including a full one, which is the assertion the first implementation failed and the one that
@@ -239,6 +239,50 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     unprescribed work there is the failure the fitness evidence already records; and the
     recommendation for one fixed node is asserted to move from send to hold as the window fills,
     which is the only assertion that proves the bar reads window state at all.</p>
+
+    <div class="r-comment-body">
+      <p><strong>Landed 2026-09-21, commit <code>ea8d38f5</code>.</strong> The bar is
+      <code>reckon/crew/bar.py</code>, one pure function of a window fill and a node's
+      open-endedness score, returning <code>send-metered</code>, <code>send-local</code>,
+      <code>split</code> or <code>hold</code>. <code>tests/test_bar.py</code> is the gate:
+      <strong>19 passed, exit 0</strong>, the module asserted to resolve to the worktree copy.
+      Evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s3-the-bar">the
+      bar, landed</a>.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/bar-recommendation.svg"
+             alt="Left: the (fill, score) plane shaded by verdict, with the smoothstep bar rising from 0 to 1 and the prescribed ceiling at 0.25. Right: three fixed nodes across the window domain — score 0.0 stays send-local at every fill, score 0.5 travels metered then split then hold, and score 1.0 stays metered until the full window where it is held.">
+        <figcaption>Rendered from the module itself. The prescribed band is local at every
+        fill, which is the property the corrected vocabulary exists to make assertable.</figcaption>
+      </figure>
+
+      <p><strong>The two assertions the inverted policy failed are the two the gate leads
+      with.</strong> A maximally prescribed node is <code>send-local</code> at every fill
+      sampled across the bar's whole domain, a completely full window included; a
+      maximally open-ended node at that same full window is <code>hold</code> and explicitly
+      not either send. The order in the decision function is the policy: prescription is
+      judged before the bar, because at the ceiling the bar sits above every prescribed
+      score and a node judged by the bar alone falls through it into hold.</p>
+
+      <p><strong>The routing check is closed rather than blocklisted.</strong> The field set
+      of the returned type is asserted to be exactly
+      <code>{verdict, bar, score, window_fill, margin, override}</code>, so a field added to
+      carry a routing fails whatever it is called, where a list of the lanes spelled today
+      passes one spelled tomorrow. The bar rises monotonically, asserted at 201 points; the
+      clamp is driven below zero and above one; and an override in each direction is recorded
+      with the bar's own verdict left intact.</p>
+
+      <p><strong>The declared mutation was applied to a scratch copy and the named test
+      observed to fail there</strong> &mdash; <code>3 failed, 16 passed</code>, the
+      send-local-at-every-fill case among them, with the run resolving to the
+      scratch tree rather than this one. The red log is under the reports directory; its
+      first line repeats the declared mutation verbatim.</p>
+
+      <p><strong>Not this node.</strong> Nothing calls the bar yet, and the score is supplied
+      by the caller rather than derived here, which is what lets a synthesised node be judged
+      with no repository, plan or flight configuration. The pre-flight line that prints the
+      bar and the record that logs the chosen lane belong to the section above.</p>
+    </div>
 
     <h2 id="s4">&sect;4 &mdash; Reserve the bookends, or the repairs starve</h2>
 

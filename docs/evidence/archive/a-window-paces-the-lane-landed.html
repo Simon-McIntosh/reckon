@@ -565,6 +565,106 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     layer that would carry it is validated before any of this code sees it.</p>
   </section>
 
+  <section id="s3-the-bar">
+    <h2>&sect;3 &mdash; The bar names the lane, and never holds a prescribed node</h2>
+
+    <p><strong>Commit <code>ea8d38f5</code>.</strong> The module is
+    <code>reckon/crew/bar.py</code> and its gate is <code>tests/test_bar.py</code>;
+    both are new, so the baseline is an empty file set and all nineteen cases are
+    this change's own. <code>pytest -q tests/test_bar.py</code> &mdash;
+    <strong>19 passed, exit 0</strong>, through the repository's root environment with the
+    module asserted to resolve to the worktree copy of <code>reckon.crew.bar</code>
+    (<code>/home/&hellip;/the-bar-names-which-lane-it-recommends/reckon/crew/bar.py</code>)
+    rather than to a sibling checkout.</p>
+
+    <p><strong>Four verdicts replace the single <code>send</code> that covered
+    both lanes.</strong> <code>send-metered</code> is a node that clears the bar with
+    room left in the window; <code>send-local</code> is a node the free lane executes
+    as written; <code>split</code> is a close call in the band below the bar; and
+    <code>hold</code> is a node too open-ended for the free lane, or one the full window
+    has no room left for. The order of the tests in the one decision
+    function is the policy: prescription is judged <em>before</em> the bar, because at a
+    full window the bar sits at its ceiling above every prescribed score and a node
+    judged by the bar alone falls through it into hold.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/bar-recommendation.svg"
+           alt="Left: the (fill, score) plane shaded by verdict, with the smoothstep bar and the prescribed ceiling at 0.25. Right: three fixed nodes swept across the window domain — score 0.0 stays send-local at every fill, score 0.5 travels metered then split then hold, and score 1.0 stays metered until the full window where it is held.">
+      <figcaption>Rendered from the module itself, so the figure cannot drift from the
+      decision it depicts: the prescribed band is local at every fill, and a middling node
+      travels metered &rarr; split &rarr; hold as the window fills.</figcaption>
+    </figure>
+
+    <p><strong>The bar is a smoothstep in the fill and is asserted monotone at 201
+    points</strong>, not at transitions a continuous bar does not have. It is
+    <code>fill&sup2;(3 &minus; 2&middot;fill)</code>: zero at an empty window, one at its
+    ceiling, flat at both ends and steepest in the middle. One fixed score therefore
+    travels from an admitted metered send at an empty window through the near-bar band to
+    a hold at a full one, which is the only assertion that proves the bar reads window
+    state at all.</p>
+
+    <p><strong>The two assertions the rejected implementation inverted are pinned
+    separately.</strong> A maximally prescribed node (score 0.0) is
+    <code>send-local</code> at every fill sampled across the whole domain including a
+    completely full window, asserted as a set of one over 201 fills and then again at the
+    ceiling alone. A maximally open-ended node (score 1.0) at that same full window is
+    <code>hold</code> and explicitly not either send, which is the other half of the same
+    inversion. And <code>hold</code> is asserted to be decided by the score with the fill
+    held constant at 0.85: varying only the score produces both outcomes, and every held
+    score is above the prescribed ceiling.</p>
+
+    <p><strong>No routing is checked against the type's own field names rather than a
+    blocklist of lane spellings.</strong> The field set of <code>Recommendation</code> is
+    closed to <code>{verdict, bar, score, window_fill, margin, override}</code>, so a field
+    added to carry a routing fails the check whatever it is called &mdash; where a blocklist
+    of the lanes spelled today would pass a lane spelled tomorrow, which the review of the
+    rejected node found. The two string fields are additionally asserted to hold only a
+    verdict.</p>
+
+    <p><strong>The clamp branch is driven in both directions, since no case exercised it
+    before.</strong> A fill of &minus;0.4 comes back with <code>window_fill</code> 0.0 and
+    <code>bar</code> 0.0 and the verdict of an empty window; a fill of 1.6 comes back with
+    1.0 and 1.0 and the verdict of a full one. And an orchestrator override in each
+    direction is recorded rather than refused: a hold overridden toward the free lane and a
+    metered send overridden toward hold each keep the bar's own <code>verdict</code>
+    untouched while <code>override</code> and <code>effective</code> carry the decision; a
+    value outside the four outcomes is a caller error, not a decision against the bar.</p>
+
+    <h3>The negative control</h3>
+    <p>The declared mutation is <em>&ldquo;restore hold as the verdict for a maximally
+    prescribed node at a full window; the send-local-at-every-fill assertion in
+    tests/test_bar.py must fail&rdquo;</em>. It was applied to a scratch copy of the
+    package at <code>~/.config/reckon/crew/reckon-reports-scratch/bar-negative-control</code>
+    by making the prescription short-circuit fall through to <code>HOLD</code> at a full
+    window, and the gate was run against that copy with the module asserted to resolve
+    there:</p>
+    <p><code>3 failed, 16 passed</code> &mdash; the named
+    <code>test_a_maximally_prescribed_node_is_never_held_at_any_fill</code> among them,
+    failing on <code>assert {'hold', 'send-local'} == {'send-local'}</code>, plus the
+    prescribed-boundary and four-outcomes cases. The red log is
+    <code>negative-control-bar-hold-at-full-window.log</code> in
+    <code>~/.config/reckon/crew/reports/the-bar-names-which-lane-it-recommends/</code>. Its
+    first line repeats the declared mutation verbatim, and it records both the scratch
+    module resolution and the worktree one, so a reader can see the two trees are
+    different.</p>
+
+    <h3>What this does not claim</h3>
+    <ul>
+      <li><strong>Nothing calls it yet.</strong> The pre-flight line that prints the bar,
+      the record that logs the chosen lane, and the wiring of a consumed window reading
+      into a fill are the sections that consume this; no call path is changed here.</li>
+      <li><strong>The score is supplied, not computed here.</strong> The module takes
+      whatever score its caller passes and imports nothing from the prescription
+      judgement, so a synthesised node can be judged with no repository, plan or flight
+      config. The caller that derives the score from a node record is a separate
+      landing.</li>
+      <li><strong>The prescribed ceiling and the near-bar band are policy values chosen in
+      this module</strong> (0.25 and 0.15), not measurements. Both are named constants with
+      their reading stated beside them; neither has been calibrated against a lane
+      survey.</li>
+    </ul>
+  </section>
+
   <section id="follow-ons">
     <h2>Follow-ons</h2>
     <ul>
