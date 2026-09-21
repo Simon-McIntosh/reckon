@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T16:33:18",
+  "updated": "2026-09-21T16:38:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -218306,6 +218306,304 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72j",
+        "node": "review-of-a-paraphrased-control-has-a-recorded-route",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 466,
+                "cached_input_tokens": 307181,
+                "input_tokens": 307649,
+                "output_tokens": 371,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 308020,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "the review for r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route stores a parsed record scoring all 5 dimensions in the range 0..20",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+          "id": "review-of-a-paraphrased-control-has-a-recorded-route",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T14:07:49Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route/manifest.md",
+          "negative_control": "",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72j",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "session-0cf29778881411ed5f0b",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-21T14:08:21Z",
+        "completed_at": "2026-09-21T14:17:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 571,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 571,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "059692f4f67415931801dc957fc0c61ccb3ea0e7",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "the review record was parsed and stored",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "7ba39cece0fcfa416292c7f95d926f8a8bb20c1833f7f60e350068ff2b67d940"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route/manifest.md",
+        "scope_changed": false,
+        "session_id": null,
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet on the new lane",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T14:17:52Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "missing_rollout"
+          }
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "lane-change",
+          "lanes": [
+            {
+              "changed_at": "2026-09-21T14:10:21Z",
+              "detail": "starting fresh because the session cannot follow the move from harness 'claude' to 'codex'",
+              "from_backend": "clive",
+              "from_harness": "claude",
+              "reason": "the review reflex pins every automatic review to the local lane, which a peer measured at 30 concurrent against a computed ceiling of 22 with zero queueing; four of this session's runs there emitted turns and produced nothing",
+              "session": "fresh",
+              "session_id": "eaec133c-df6c-4d2f-af3a-5a0f8df67e84",
+              "session_source": "pointer",
+              "to_backend": "codex-luna",
+              "to_harness": "codex"
+            }
+          ],
+          "root_run_id": "r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 1714,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 16477,
+              "log_fresh": false,
+              "manifest_commits": [
+                "45242ed9fd14ea1be32d9fab08aed17a837df1d5",
+                "40df4dfd0314f839714806c77cb00d1d6ea4d67e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "5663a37686580d81e20df5e18086ae564712adfa5221db460fb8ac1cafdb96f8",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T090441654915-member-guard-counts-live-processes/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T090441654915-member-guard-counts-live-processes --gate <verdict> --commit 45242ed9fd14ea1be32d9fab08aed17a837df1d5 --commit 40df4dfd0314f839714806c77cb00d1d6ea4d67e",
+              "node": "member-guard-counts-live-processes",
+              "phase": "complete",
+              "plan": "background-agent-fitness-and-dispatch-scope",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T090441654915-member-guard-counts-live-processes",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 3640,
+              "terminal_at": "2026-09-21T13:07:25Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/member-guard-counts-live-processes"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1781,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 3581,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 14379,
+              "log_fresh": false,
+              "manifest_commits": [
+                "53d40c57"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "d1d739b687ee9003c2a800d4c323eb2852534a3ecab1c849307950fa882734ce",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T090837876644-review-reflex-fires-on-the-sweep/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T090837876644-review-reflex-fires-on-the-sweep --gate <verdict> --commit 53d40c57",
+              "node": "review-reflex-fires-on-the-sweep",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T090837876644-review-reflex-fires-on-the-sweep",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 2543,
+              "terminal_at": "2026-09-21T13:25:42Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-reflex-fires-on-the-sweep"
+            }
+          ]
+        },
+        "review": null,
+        "follow_on_paths": [
+          "reckon/cli.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "lane-change",
+        "attempt": 2,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "a review node changes no repository path; the stored review record is the sole deliverable",
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.5,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 1.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -218590,6 +218888,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1898
+    "_version": 1899
   }
 }
