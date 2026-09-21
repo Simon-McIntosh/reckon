@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1724,12 +1724,30 @@
     a worker having done nothing, a claim that no review records its revision when five spellings of
     that field exist across 151 records, and the released-members figure above.</p>
 
-    <p><strong>The errors are not random in direction.</strong> Both sessions' mistakes ran toward
-    <em>overstating a defect</em>, because a surprising reading is what prompts a report in the first
-    place; a cheap instrument that answers instantly and answers a different question is the
-    mechanism in every case. No gate here catches that. The nearest thing that works is stating the
-    check beside the claim so the recipient can re-derive it in one step instead of none — which
-    does not stop the author being wrong and does make being wrong detectable.</p>
+    <p><strong>The errors are not random in direction, and the cause is the channel rather than the
+    reporter.</strong> Eleven wrong claims across the two sessions, every one overstating a defect,
+    none saying <em>this is fine</em>. That is not eleven coin flips. An instrument that agrees with
+    expectation produces no report at all, so <strong>the reporting channel samples almost
+    exclusively from surprise</strong> — and surprise is precisely where a cheap instrument's error
+    shows up. The bias lives in what gets reported, not in how either session reads.</p>
+
+    <p><strong>Two of the eleven were not independent, and the compounding has the same shape in
+    both sessions.</strong> A first claim went unchallenged, and the second arrived <em>more</em>
+    confident for it: one session's corrupt-record report read invalid JSON as another instance of
+    a truncation defect it had already asserted that morning, rather than as a file mid-write; this
+    one restated a token-accounting error with more force an hour after the first went unanswered.
+    <em>An unchallenged claim does not stay a claim — it becomes the frame the next observation is
+    read through.</em> So silence from a recipient is the absence of a check, not the result of one,
+    which is this plan's own substitution pattern applied to the people using it.</p>
+
+    <p><strong>The practice that follows inverts the instinct.</strong> The threshold for reaching
+    for a second instrument should <em>rise</em> with how surprising the reading is — a startling
+    number feels like it demands a fast report and is the one that most needs re-deriving first.
+    All eleven were startling. No gate catches this and one should not be invented, because the
+    report's reader is a person and a mechanism that let the author skip the person is the failure
+    mode rather than the fix. What can be stated is the falsifier: <strong>a report whose check
+    cannot be re-run from what the report contains has not stated its check</strong>, however much
+    prose surrounds it.</p>
 
     <p><strong>Done when</strong> the review prompt requires a sixth emission naming the production
     call sites the reviewer reached the change through, with <code>none</code> as an explicit value;
