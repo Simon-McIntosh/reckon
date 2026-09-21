@@ -491,6 +491,40 @@ def _stamp_refusal(*, lane: str, refused_at: str, returns_at: str) -> dict[str, 
     return {"status": "written"}
 
 
+def binding_window(
+    lane: str, *, store_path: str | Path | None = None
+) -> dict[str, Any]:
+    """Report which quota window binds a lane, read from its stamped refusals.
+
+    A lane that publishes no quota reading is constrained by whichever window
+    keeps refusing it, and only the refusals it could not avoid emitting can
+    say which. Those stamps are the durable rows :func:`_stamp_refusal` writes,
+    so this reads the store rather than any live probe: the reading survives the
+    run directory and the account surface that neither outlives the refusal.
+
+    Two refusals about one short window's period apart are a reset crossing —
+    the short window returned and the lane refused anyway, so the weekly window
+    is what binds. Two far apart show a lane that was served after the short
+    window returned and drained it again, so the short window binds. A single
+    refusal distinguishes neither and reports ``undetermined`` rather than
+    naming a window. The store is a lower bound rather than a census, since a
+    refusal that never surfaced as a log-derived rate-limit event is never
+    stamped, which is what makes that third state load-bearing.
+
+    The store carries every lane's refusals in one table; only the records whose
+    own lane matches ``lane`` are read; another lane's refusals never place this
+    one's window. ``store_path`` overrides the store location and defaults to
+    the same one :func:`_stamp_refusal` writes through, so a caller that stamps
+    and a caller that reads reach the same rows.
+    """
+    from reckon import run_store
+    from reckon.crew.lane_evidence import infer_binding_window
+
+    with run_store.RunStore(store_path) as store:
+        stamps = store.refusal_stamps()
+    return infer_binding_window(stamps, lane)
+
+
 def _readings(
     project: str,
     *,
