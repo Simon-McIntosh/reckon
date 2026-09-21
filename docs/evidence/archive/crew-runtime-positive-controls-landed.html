@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Crew Runtime Positive Controls — landed evidence">
   <meta name="plan-summary" content="Every launch resolves its backend to an absolute path before writing, and a launch that dies before its first turn is one recorded failure that stops the lift.">
   <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
-  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7">
-  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816">
-  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7 crew-runtime-positive-controls#s8">
+  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816,3d927b88">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png,tests/test_fleet_counter_launch_failure.py">
   <meta name="plan-recorded-at" content="2026-09-19">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment, login node">
@@ -573,6 +573,100 @@ nothing has been launched</code></pre>
       <code>reports/reckon/s18-takeover/crpc-state-the-red-log-header/gate.log</code>:
       <strong>15 passed, exit 0</strong> against 13 at base <code>6b506e78</code>, the two added passes being
       this node's cases.</p>
+    </section>
+
+    <section id="s8">
+      <h2>&sect;8 &mdash; The blocked bucket names the infrastructure fault</h2>
+      <p>One source file carries the change, <code>reckon/crew/ticker.py</code>, beside the new
+      <code>tests/test_fleet_counter_launch_failure.py</code>. The row renders a state cell, four counter cells
+      and a reason clause; three cells ahead of nothing else a reader scans, and the clause is the counter's only
+      free text and the only place the line can say what kind of stop a number is.</p>
+      <p><strong>The mechanism, and why one state could alone reach it.</strong> The state cell is
+      <code>STATE</code> columns wide and the state word is elided to fit it. The clause's allow-list &mdash;
+      which states may explain themselves, and the set beside it for waits, help and unwritten records &mdash;
+      was tested against the word as the <em>cell</em> renders it. <code>launch-failed</code> is thirteen
+      characters, the only word the classifier emits that is longer than the cell is wide, so it arrives at the
+      clause's gate as <code>launch-fa&hellip;</code>; membership then fails against a set holding
+      <code>launch-failed</code> and the clause returns the empty string. The number renders, the reason does
+      not, and nothing in the fleet was affected but this one state.</p>
+
+      <figure class="r-figure">
+        <svg viewBox="0 0 760 270" width="100%" role="img"
+             aria-label="The clause's gate tested against the elided state word, which drops the clause, and against the whole word, which returns it">
+          <style>
+            .mono { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+            .lbl  { font: 600 11px system-ui, -apple-system, sans-serif; }
+            .cap  { font: 11px system-ui, -apple-system, sans-serif; }
+          </style>
+          <text class="lbl" x="20" y="18">1 &middot; The state word as the classifier emits it</text>
+          <rect x="20" y="28" width="150" height="26" rx="3" fill="none"
+                stroke="currentColor" stroke-opacity="0.45"/>
+          <text class="mono" x="30" y="46">launch-failed</text>
+          <path d="M95 54 L95 74" stroke="currentColor" stroke-opacity="0.45" fill="none"/>
+          <text class="cap" x="104" y="70">elide to the 10-column cell</text>
+          <text class="lbl" x="20" y="100">2 &middot; What the state cell shows</text>
+          <rect x="20" y="110" width="150" height="26" rx="3" fill="none"
+                stroke="currentColor" stroke-opacity="0.45"/>
+          <text class="mono" x="30" y="128">launch-fa&hellip;</text>
+          <text class="lbl" x="250" y="18">3 &middot; The clause's gate, read against each form</text>
+          <rect x="250" y="28" width="230" height="44" rx="3" fill="none"
+                stroke="currentColor" stroke-opacity="0.45"/>
+          <text class="cap" x="260" y="46">the gate keys on the rendered form</text>
+          <text class="mono" x="260" y="63">in NEEDS_ACTION?</text>
+          <path d="M480 50 L520 50" stroke="currentColor" stroke-opacity="0.45" fill="none"/>
+          <text class="cap" x="528" y="46">not in the set &rarr; the clause is empty,</text>
+          <text class="cap" x="528" y="62">so 0w&middot;2b&middot;0u carries no reason</text>
+          <rect x="250" y="96" width="230" height="44" rx="3" fill="none"
+                stroke="currentColor" stroke-opacity="0.45"/>
+          <text class="cap" x="260" y="114">the gate keys on the whole word</text>
+          <text class="mono" x="260" y="131">in NEEDS_ACTION?</text>
+          <path d="M480 118 L520 118" stroke="currentColor" stroke-opacity="0.45" fill="none"/>
+          <text class="cap" x="528" y="114">in the set &rarr; the clause carries the cause,</text>
+          <text class="cap" x="528" y="130">or the fault itself with no cause recorded</text>
+          <text class="lbl" x="20" y="180">4 &middot; The row before and after, both readings holding one launch-failed and one blocked run</text>
+          <text class="mono" x="20" y="206">before  north   launch-fa&hellip;   0w&middot; 2b&middot; 0u&middot; 1q        &mdash;</text>
+          <text class="mono" x="20" y="228">after   north   launch-fa&hellip;   0w&middot; 2b&middot; 0u&middot; 1q   resume: the launch for&hellip;</text>
+          <text class="mono" x="20" y="250">after   south   blocked       0w&middot; 2b&middot; 0u&middot; 1q   decide: the worker manifest reports&hellip;</text>
+        </svg>
+        <figcaption>The four cells do not move in either reading; the third and fourth rows differ only in the
+        clause, so the block's width is the negative half of the section's measure rather than something the
+        repair adjusts.</figcaption>
+      </figure>
+
+      <p>Reproduced through the producer's own path &mdash; <code>_fleet_counts</code> &rarr;
+      <code>_watch_transition</code> &rarr; <code>Ticker.render</code> &mdash; rather than a hand-built event, so
+      the reading is about what a follower emits rather than about a fixture. The two rows of one reading were
+      indistinguishable by their counters and one of them said nothing at all, which is the section's own
+      precedent one layer down: <code>unknown</code> once counted as blocked while its clause was empty, and the
+      number said something needing attention without the line saying what.</p>
+      <p><strong>The repair.</strong> The gate reads the state word whole and the cell keeps the elided form, so
+      the number and the cause reach the pane together while an ordinary blocked run's own reason is unchanged. A
+      record carrying the state with no cause is the section's negative half: the clause then names the fault
+      itself rather than rendering a number explained by nothing, which keeps the line honest without depending
+      on the classifier's sentence being present. The classification does not move &mdash;
+      <code>launch-failed</code> is still in <code>NEEDS_ACTION</code> and <code>_bucket_of</code> still returns
+      the blocked bucket for it &mdash; and the block still renders four cells at <code>STATS</code> columns,
+      pinned as a literal.</p>
+      <p><strong>The gate and its delta.</strong> <code>tests/test_fleet_counter_launch_failure.py</code>, five
+      cases: the reading names the launch failure the number counts and the two rows are distinguishable; the
+      block keeps four cells and the pane's width on every row; a reading with no launch-failed run carries no
+      launch wording; a no-cause record still names the fault; and the bucket is unchanged. Run with the
+      fleet-counter populations to
+      <code>reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/gate-head.log</code>:
+      <strong>5 failed, 288 passed</strong>, against the base revision <code>5 failed, 283 passed</code> at
+      <code>gate-base.log</code> in the same directory, with the failure <em>sets</em> identical so no failure is added and
+      the added passes are the new cases. The base was taken with <code>git archive</code> into a separate tree
+      and the same population run in both, so the delta is against a stated revision rather than an absolute
+      count.</p>
+      <p><strong>The declared negative control.</strong> The mutation reverts the clause's gate to the rendered
+      elided atom, which is the defect itself; the named cases it reddens are the launch-failure naming case and
+      the no-cause case &mdash; two of the clause cases &mdash; while the width, absence and bucket cases stay
+      green, so the mutation reddens the clause and nothing else. Both logs are kept beside this record in
+      <code>reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/</code>:
+      <code>red.log</code> opens with the declared mutation verbatim, and <code>green.log</code> is the re-run
+      after the revert, five passed. The directory is where this plan's other nodes kept theirs. It sits beside
+      the main checkout rather than inside this node's two granted records, so it is an artifact rather than a
+      repository path, chosen over <code>/tmp</code> because promotion refuses a control log that resolves there.</p>
     </section>
 
     <section id="s9">
