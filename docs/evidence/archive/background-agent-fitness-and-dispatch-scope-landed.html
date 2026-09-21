@@ -411,6 +411,14 @@
         The resulting run exited 1: the second dispatch reached its launcher and failed at
         <code>the member must not be launched</code>. Receipt:
         <code>/tmp/member-liveness-negative-control.log</code>.</li>
+      <li><strong>Complete-file literal audit.</strong> At the same archived revision, the
+        unmutated <code>tests/test_crew.py</code> population measured <strong>183 passed, 21
+        failed</strong>; forcing every remaining literal <code>4242</code> through a scratch
+        liveness helper that reported <code>gone</code> measured <strong>183 passed, 21
+        failed</strong>. The failure-ID comparison was <strong>0 added, 0 removed</strong>, so
+        none of the remaining literals reaches a liveness-sensitive assertion.
+        Receipts: <code>/tmp/member-liveness-measure-baseline.log</code> and
+        <code>/tmp/member-liveness-measure-mutated.log</code>.</li>
       <li><strong>Lint and format.</strong> Ruff check over the two exact changed test paths had
         <strong>14</strong> findings at the assigned base and <strong>14</strong> after the change;
         formatting had <strong>0</strong> files requiring changes at both revisions. The findings
