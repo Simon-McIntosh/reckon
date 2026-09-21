@@ -190,6 +190,63 @@
     withdrawn when the envelope write proved already atomic. Eight hypotheses died across the day.
     The account here survived because each was checked against the artifact rather than argued.</p>
 
+    <h2 id="s8">§8 — The repairs held in the field, and one of them shipped a regression</h2>
+
+    <p><strong>The chain was validated the same evening by an event nobody arranged.</strong> A live
+    promotion hit a genuine <code>.git/index.lock</code> collision on the real ledger, with a plan file
+    in the same rollback list &mdash; the original trigger, unforced, on the production path. Every
+    repair fired:</p>
+
+    <table>
+      <thead><tr><th>Artefact</th><th>State after the failure</th></tr></thead>
+      <tbody>
+        <tr><td><code>docs/state/reckon/crew.json</code></td><td>present, mode 600, 1275 rows / 350 members</td></tr>
+        <tr><td>the plan HTML in the same <code>paths</code> list</td><td>present, mode 644 &mdash; the restore having written it</td></tr>
+        <tr><td>the promotion's error</td><td>named the written row and said not to re-promote, rather than inviting the retry</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Provenance of the table above:</strong> the row and member counts and the file modes were read at that moment by the session whose promotion hit the lock, not by this record's author. They are corroborated rather than re-measured &mdash; a later independent reading of the same ledger gives 1277 runs against the same 350 members, consistent with two promotions having landed in between. A third session reproduced the same outcome four times independently, also reported rather than observed here. That is all three defects
+    exercised together under the original trigger, which no constructed test could have arranged &mdash;
+    a synthesised contention is one the author designed and therefore already understood. What still
+    failed was the landing commit, so the row was committed by hand and pushed; the row is the thing
+    that must not be lost.</p>
+
+    <p><strong>The third repair shipped a regression, and its shape is the incident's own one level
+    up.</strong> Making <code>append_run</code> refuse an absent ledger closed the fail-open read, but
+    the guard keyed on file absence &mdash; which is true both of a ledger that was deleted and of a
+    project that never had one. Those are the two cases this incident turns on, and the guard could not
+    tell them apart. <em>The file is not there</em> stood in for <em>this project has no history</em>,
+    exactly as <em>restore returned non-zero</em> had stood in for <em>the path is absent from
+    HEAD</em>.</p>
+
+    <p>It also closed with no door. The refusal named <code>allow_create=True</code> as the remedy;
+    no production caller passes it, no command-line flag exposes it, and nothing in the package creates
+    a project's first <code>crew.json</code>. So a genuinely new project's first promotion refused, and
+    the refusal pointed the operator at a Python keyword argument they could not reach. Existing
+    projects were unaffected because their files exist, which is why no fleet noticed. Measured over
+    the same fifteen promotion and ledger test files:</p>
+
+    <table>
+      <thead><tr><th>Revision</th><th>failed</th><th>passed</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>73392943</code>, before the guard</td><td>8</td><td>231</td></tr>
+        <tr><td>head <code>bd2a5438</code>, after it</td><td>116</td><td>139</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Those 108 were not failures the fail-open had been concealing.</strong> They were correct
+    behaviour the guard now forbade, across a candidate set of ninety-two files &mdash; every test that
+    promotes into a synthesised repository. The standing rule is to measure what a suite was resting on
+    before closing a fail-open guard; the rule that was missing is to ask what legitimate case the
+    closed guard forbids, and whether its remedy can be reached by anyone.</p>
+
+    <p>The fix asks git whether the ledger path was ever tracked in the repository receiving the
+    promotion. Tracked-then-unlinked is this incident; never-existed is a new project. That beats adding
+    an operator flag, because a flag can be passed wrongly and a tracked-ness query cannot &mdash; and it
+    is the sentence this record is named for, turned into a question the code asks instead of an
+    inference it draws.</p>
+
   </main>
 </body>
 </html>
