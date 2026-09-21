@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T17:38:27",
+  "updated": "2026-09-21T17:40:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -225116,6 +225116,244 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T123854882600-appended-decision-keeps-its-question",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a712",
+        "node": "appended-decision-keeps-its-question",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3898,
+                "cached_input_tokens": 293441,
+                "input_tokens": 297341,
+                "output_tokens": 923,
+                "reasoning_output_tokens": 105,
+                "total_tokens": 298264,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "cases in tests/test_append_decision_keeps_its_question.py append a decision carrying a question and 2 options, read it back through this repository own reader, and assert the question text and both option values are present; a separate assertion requires the written question not to equal the key; another case asserts an append whose item carries no options still succeeds; every case writes to a temporary plan under a temporary state directory and asserts the real state directory is untouched afterwards; the declared mutation is applied, tests/test_append_decision_keeps_its_question.py is observed to fail, and the red log is recorded with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "an appended decision is written with its question text and every option value rather than with the key and no options",
+          "id": "appended-decision-keeps-its-question",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T12:38:58Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/manifest.md",
+          "negative_control": "restore the append decisions branch in reckon/_store.py to write the key as the question and drop the options",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_store.py",
+            "reckon/_plan_html.py",
+            "tests/test_append_decision_keeps_its_question.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "decision-append",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T12:40:11Z",
+        "completed_at": "2026-09-21T13:43:01.645Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3757,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3770,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+        "commits": [
+          "8d3ca874bfe859b4a9d0827146619bc63e5dfc40",
+          "e7d0d2d85565219c3882d5cbb354676c46245ff2"
+        ],
+        "changed_lines": {
+          "added": 319,
+          "removed": 1,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/appended-decision-keeps-its-question /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_append_decision_keeps_its_question.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/green-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/manifest.md",
+        "scope_changed": false,
+        "session_id": "e7d39fcd-21ae-40cd-8568-13e82abf8781",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9901873,
+            "input_tokens_cumulative": 9901873,
+            "output_tokens": 47191,
+            "output_tokens_cumulative": 47191,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T13:43:01.645Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 18,
+            "fit": 18,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9901873,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3764.763,
+          "generated_tokens": 47191,
+          "generation_seconds": 3558.774,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 31.0,
+          "machine_seconds": 205.989,
+          "peak_input_tokens": 148585,
+          "tokens_per_second": 13.26,
+          "wall_tokens_per_second": 12.53
+        },
+        "follow_on_paths": [
+          "docs/figures/crew-runtime-positive-controls/",
+          "tests/test_edit_plan.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/appended-decision-keeps-its-question",
+          "session_id": "e7d39fcd-21ae-40cd-8568-13e82abf8781",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T13:43:01.645Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.5,
+          "at_complete": 0.8,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_append_decision_keeps_its_question.py"
+          ],
+          "declaration": "restore the append decisions branch in reckon/_store.py to write the key as the question and drop the options",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/negative-control.log"
+        },
+        "tool_steps": 99.0,
+        "orientation_input_tokens": 1926783.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -225400,6 +225638,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1924
+    "_version": 1925
   }
 }

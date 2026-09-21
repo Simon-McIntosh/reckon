@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.8">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 </head>
 <body>
   <main class="plan-doc">
@@ -928,6 +928,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260921T1738-decision-append-landed" data-who="reckon-ship" data-when="2026-09-21T17:38:00+02:00">
     <div class="r-comment-body">Gate passed with a proper delta: 3 failed and 75 passed at head, identical row for row at base, the base measured from the base blob in a scratch copy. The root cause is a vocabulary mismatch rather than a lost write — the read view hands a caller question and options while the stored block speaks title and choices, so a caller echoing back what it just read landed a block whose question fell back to the key and which carried no options. Independent review 96/100 on codex after three local-lane turns ended without writing the record. Two findings are carried as a repair node rather than closed here: an option object whose value is JSON null is stringified to the literal None before the empty check, so malformed input is stored as a selectable option instead of being refused as the helper promises; and the real-state-untouched guard fingerprints only relative paths and byte counts, so a same-size rewrite compares equal and the assertion can report untouched after content changed.</div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260921T123854882600-appended-decision-keeps-its-question" data-who="reckon-ship" data-when="2026-09-21T13:43:01.645Z">
+    <div class="r-comment-body"><p>an appended decision keeps its question and every option; the cause was a vocabulary mismatch between the read view (question, options) and the stored block (title, choices); 3 failed 75 passed at head and identical row for row at base; review 96/100 on codex, its two findings carried as a repair node</p></div>
 </div>
 </section>
 </main>
