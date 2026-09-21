@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -407,6 +407,89 @@
     status and the accepted vocabulary, rather than silently declassifying the run, asserted with
     each of the three observed strings; and the review role stays exempt, asserted, since that
     exemption is the one that is correct.</p>
+
+    <h2 id="s2g">§2g — One gate per kind of work, selected by what the run produced</h2>
+
+    <p>§2f widens one gate. That is the substrate and not the design: a single rubric asked of
+    every node is either too loose for code or too heavy for a report. <strong>An implementation
+    and an investigation fail in different ways, so they need different reviews and different
+    gates.</strong> The design below is shaped by three constraints together — catch as much as
+    possible, stay quick enough to be reflexive, and run at high concurrency on the free lane.</p>
+
+    <p><strong>Selection is by artifact, never by role name.</strong> That is the lesson of §2f: a
+    role is a routing label a coordinator chose, while what a run <em>wrote</em> is a fact. A run
+    that changed a tracked source file gets the implementation profile whatever its role was called.
+    A run that changed only a report gets the investigation profile. The two are not exclusive: a
+    run that wrote source, a test and a figure is judged by three profiles.</p>
+
+    <table>
+      <caption>Profiles. Each names the failure it exists to catch, taken from what reviews have actually found here rather than from what seemed thorough.</caption>
+      <thead><tr><th>Profile</th><th>Selected when the run changed</th><th>Its one decisive check</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>implementation</strong></td>
+          <td>a tracked source path</td>
+          <td><em>Reachability.</em> Does the new path execute under a registered test, does a value survive the boundary it crosses, does a log line offered as evidence gate the thing it is offered for. Three of three defects found on imas-ambix were things the diff did not reach.</td>
+        </tr>
+        <tr>
+          <td><strong>test</strong></td>
+          <td>a tracked test path</td>
+          <td><em>The declared mutation is the applied one.</em> Two of two multi-part nodes here declared one control and applied a different, adjacent one. Replay the declaration; require red for the stated reason; require the replay to run rather than die in collection.</td>
+        </tr>
+        <tr>
+          <td><strong>investigation</strong></td>
+          <td>only an untracked report or no path</td>
+          <td><em>Citations resolve and say what is claimed.</em> Re-open a sample of the report's anchors; require an absence claim to carry a positive control, since an absence and an unaimed instrument return the same empty result.</td>
+        </tr>
+        <tr>
+          <td><strong>document</strong></td>
+          <td>a plan, evidence or prose path</td>
+          <td><em>Every number is traceable and none of it rots.</em> A recorded absolute that moves on its own is a fuse; a pointer to a renamed anchor is worse than none.</td>
+        </tr>
+        <tr>
+          <td><strong>figure</strong></td>
+          <td>an image under a figures directory</td>
+          <td><em>It is not a picture of a table</em>, and its labels clear contrast. §6 owns this one; it needs a lane that can read an image.</td>
+        </tr>
+        <tr>
+          <td><strong>repair</strong></td>
+          <td>anything, when the run closes another run's findings</td>
+          <td><em>What the repair introduced.</em> Measured across three repair pairs: 11 of 11 findings closed, and 5 new found, 2 of them created or left unprotected by the repair itself. Roughly a fifth of repairs need this.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Gates are element checks, not score thresholds.</strong> A threshold invites tuning
+    and turns a review into a number to beat; the score stays, for calibration and lane comparison,
+    and gates nothing. A promotion is refused when a selected profile has no stored review, or when
+    the stored review is missing an element the profile requires. That also makes the refusal
+    legible: it names the profile and the missing element rather than a figure.</p>
+
+    <p><strong>The dimensions are per profile, and one of the current five is already ink.</strong>
+    Measured over twelve reviews on imas-ambix, correlation against total: <code>evidence</code>
+    0.86, <code>durability</code> 0.84, <code>goal_fidelity</code> 0.69,
+    <code>scope_discipline</code> 0.51, <code>fit</code> 0.53. <code>fit</code> never leaves 16–19
+    and has the smallest spread on the page — it carries almost no ranking information and should be
+    dropped or redefined. <code>scope_discipline</code> scores similarly by correlation and must be
+    <em>kept</em>: its shape is one 15 against everything else 18–20, so it is a rare-fire detector
+    behaving correctly, and retiring it on correlation would remove the wrong one. <strong>A flat
+    dimension is ink; a silent one may be a detector.</strong></p>
+
+    <p><strong>What keeps the load down.</strong> One review per run per selected profile, never one
+    per file. Each profile reads a bounded set and is refused the rest, as §4 already requires.
+    Profiles that do not apply cost nothing — most runs select one. The free lane carries 64
+    concurrent, so a twenty-node wave reviews inside a single ten-minute window rather than
+    serially; <em>concurrency is what makes a per-kind review cheaper than one heavy rubric</em>,
+    not more expensive.</p>
+
+    <p><strong>Done when</strong> profile selection is computed from a run's changed paths and
+    asserted for each of the six against a synthesised run, including a run selecting more than one
+    and a run selecting none; each profile's required elements are declared in one place that the
+    prompt and the parser both read, asserted by the falsifier that already pins prompt against
+    schema; a promotion is refused naming the profile and the missing element rather than a score,
+    asserted per profile; the review role stays exempt; and the wall time of one wave's reviews is
+    recorded against the ten-minute bound with its concurrency, because a design justified by
+    concurrency has to show it.</p>
 
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
