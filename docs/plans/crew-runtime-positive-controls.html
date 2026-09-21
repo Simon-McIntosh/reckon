@@ -634,6 +634,28 @@
     changed and the driving followup remains open for coordinator disposition.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s14">Diagnosis evidence and report</a>.</p>
 
+    <p><strong>Fixture repair landed 2026-09-21, commit <code>58ae0425</code>.</strong> The case that
+    asserted the replacement path now reaches it. The diagnosis's smallest supported repair is in:
+    the dispatch fixture in <code>tests/test_crew_orphan.py</code> declares
+    <code>spec_level=&quot;guided&quot;</code>, so validation admits the node and dispatch reaches the
+    watcher arming path instead of refusing. No production file changed, and the replacement
+    assertions the diagnosis found appropriate are untouched.</p>
+
+    <p><strong>The gate, and the control that can fail for its own reason.</strong>
+    <code>pytest tests/test_crew_orphan.py</code> at the repair's head gives <strong>2 passed, exit
+    0</strong> with nothing patched: the case spawns a watcher whose supervisor is gone, asserts the
+    seat is held with <code>observer_alive</code> false, dispatches, and then asserts the seat comes
+    back under a <em>different</em> pid with a live observer before releasing it. The declared mutation
+    &mdash; bypass orphan replacement: the orphan branch of <code>_ensure_watch_producer</code> returns
+    the state instead of unwatching and arming a replacement &mdash; was applied to a scratch copy of
+    the fixed tree and gives <strong>1 failed, 1 passed, exit 1</strong>, the sibling still green. The
+    failing assertion is the one the case exists for:
+    <code>assert replacement[&quot;pid&quot;] != pid</code> &mdash; <code>assert 2671527 != 2671527</code>
+    &mdash; so the case reddens for its own reason rather than at validation, which is what makes it a
+    positive control. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s14">Repair
+    evidence, the declared mutation and the red log receipt</a>. This node changes no runtime
+    behaviour, so it makes no claim about systemd restart or service-manager fallback.</p>
+
     <h2 id="s15">&#167;15 &mdash; A wait the reader does not understand is refused by name, and a file condition has a shape</h2>
     <p>Three workers wrote the wait block three wrong ways in one hour on 2026-09-20, each with the right key
     names and a value the reader discards. The first wrote a list of <code>{kind, path}</code> objects for a

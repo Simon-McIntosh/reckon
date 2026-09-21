@@ -675,6 +675,39 @@ nothing has been launched</code></pre>
       the four historical logs, <code>history_probe.py</code>, <code>history-driver.log</code>,
       <code>history-results.json</code> and <code>history-blobs.json</code>. Only the report and these prose
       landing additions are repository deliverables; no test or runtime repair is claimed.</p>
+      <p><strong>Fixture repair landed 2026-09-21 at <code>58ae0425</code>.</strong> The diagnosis's
+      smallest supported repair is in: the dispatch fixture in <code>tests/test_crew_orphan.py</code>
+      now declares <code>spec_level=&quot;guided&quot;</code>, which is the level the dispatch fixtures
+      across this suite use. Not one production file changed, because none was wrong &mdash; the
+      diagnosis is confirmed rather than re-litigated, and the replacement assertions it found
+      appropriate are untouched.</p>
+      <p><strong>The case now reaches the replacement path, observed.</strong> At <code>58ae0425</code>,
+      <code>PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest tests/test_crew_orphan.py
+      -p no:cacheprovider -q</code> gives <strong>2 passed, exit 0</strong>. Both cases run against the
+      real replacement path with nothing patched: the orphan case spawns a watcher whose supervisor is
+      gone (<code>observer_alive</code> false), and the case asserts the seat comes back held under a
+      <em>different</em> pid with <code>observer_alive</code> true, then releases it.</p>
+      <p><strong>The control can fail for its own reason.</strong> The declared mutation bypasses orphan
+      replacement &mdash; the orphan branch of <code>_ensure_watch_producer</code> returns the state
+      instead of unwatching and arming a replacement &mdash; and it was applied to a scratch copy of the
+      <em>fixed</em> tree (<code>git archive HEAD</code> into <code>/tmp/redlog-scratch</code>, no tracked
+      file edited, module resolution confirmed as
+      <code>/tmp/redlog-scratch/reckon/crew/dispatch.py</code>). Result: <strong>1 failed, 1 passed,
+      exit 1</strong>, the sibling case still green, so the mutation reddens only the case it names.
+      The failing assertion, verbatim:</p>
+      <p><code>assert replacement["pid"] != pid, "the orphan was replaced, not reused"</code><br>
+      <code>AssertionError: the orphan was replaced, not reused</code><br>
+      <code>assert 2671527 != 2671527</code></p>
+      <p>That is the assertion the case exists for &mdash; the same pid survives rather than being
+      swapped out &mdash; so the case is a positive control, not an assertion that cannot fail. Under
+      the mutated path a dead watcher is retained and a dispatch proceeds over it, which is the stale
+      seat measured at four days in one project.</p>
+      <p><strong>Receipts.</strong> Driver and logs under
+      <code>~/.config/reckon/crew/runs/r-20260921T140323647770-orphan-case-declares-its-specification-level/</code>:
+      <code>negative_control.log</code> (first line the declared mutation verbatim),
+      <code>gate.log</code>, and <code>reproduce.sh</code> holding the exact commands.
+      The <code>I001</code> import-sort finding in the edited test file is pre-existing and unchanged
+      by this node: three findings at the base revision and three at the head of this repair.</p>
     </section>
 
     <section id="s12">
