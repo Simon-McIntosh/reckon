@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -203,6 +203,28 @@
     prompt and absent from their measure. <strong>A reviewer asked for a summary will skip
     items in exactly the same way, and a clean summary is indistinguishable from a thorough
     one.</strong> Per-item verdicts make the skipping visible; a summary hides it.</p>
+
+    <p><strong>Completeness for promotion stays the five dimensions, and this is a
+    cross-project constraint rather than a preference.</strong>
+    <code>_review_is_complete</code> (<code>reckon/crew/recovery.py</code>) is what separates
+    <code>promotable</code> from <code>scoring</code>, and it tests the five dimension
+    scores. There are 147 reviews already stored across four projects and live
+    <code>scoring</code> runs in other sessions right now; folding item verdicts into that
+    predicate would mark every one of them incomplete and — once §2's refusal is in the
+    installed code — refuse promotions in projects this plan never touched. So the item
+    verdicts are <em>recorded</em> and their absence is <em>named</em>, exactly as an absent
+    dimension is named today, and the aggregate is withheld rather than taken over the items
+    that happen to be present. That is what "rejected rather than scored over fewer items"
+    asks for, and it is the half that makes skipping visible; requiring them is the
+    <em>prompt's</em> job, in the reviewer's own done-when, where it binds new reviews
+    without rewriting the meaning of old ones.</p>
+
+    <p><strong>One stale line to correct in passing.</strong>
+    <code>reckon/crew/review.py</code>'s module docstring still reads "Nothing here is wired
+    into dispatch, promotion, recovery or the ticker". That was true when it was written and
+    is now false — <code>promotion.py</code>, <code>dispatch.py</code> and
+    <code>recovery.py</code> all call into it. The file is inside this section's fence, so
+    the sentence is corrected here rather than left to mislead the next reader.</p>
 
     <p><strong>The checklist items are the five read targets</strong> the prompt already
     enumerates — goal, done_when, declared write paths, manifest, diff — not the five
