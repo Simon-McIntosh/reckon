@@ -1515,6 +1515,72 @@ def _apply_sprint_status(
         working["active_sprint_id"] = None
 
 
+def _decision_options_as_choices(options: Any) -> tuple[list[str], dict[str, str]]:
+    """Normalise a caller's option spelling to ``(values, value -> label)``.
+
+    Accepts the shapes a JSON caller produces: a list of strings, a list of
+    objects carrying ``value`` (optionally ``label``), and a mapping of value
+    to label. An unrecognised shape is refused rather than dropped, because a
+    silently discarded option is the same defect this normalisation closes.
+    """
+    values: list[str] = []
+    labels: dict[str, str] = {}
+    if isinstance(options, list):
+        for entry in options:
+            if isinstance(entry, dict):
+                value = entry.get("value", entry.get("label", ""))
+                label = entry.get("label", value)
+            elif isinstance(entry, str):
+                value = entry
+                label = entry
+            else:
+                raise OpError(
+                    f"decision option {entry!r} is neither a string nor an object"
+                )
+            value = str(value)
+            if not value:
+                raise OpError("decision option carries no 'value'")
+            values.append(value)
+            labels[value] = str(label)
+        return values, labels
+    if isinstance(options, dict):
+        for value, label in options.items():
+            values.append(str(value))
+            labels[str(value)] = str(value if label is None else label)
+        return values, labels
+    raise OpError(
+        "decision 'options' must be a list of values or a mapping of value to label"
+    )
+
+
+def _decision_as_stored(item: Any) -> dict:
+    """Fold the read view's decision spelling onto the stored block.
+
+    The open-decisions view hands a caller ``question`` and ``options``, while
+    the stored block speaks ``title`` and ``choices``. A caller echoing back the
+    decision it just read therefore used to land a block whose question
+    paragraph fell back to the key and which rendered no options at all: the
+    append returned ok and the decision was unanswerable. Both spellings are
+    accepted here so a round trip through the view preserves the decision.
+    """
+    if not isinstance(item, dict):
+        return {}
+    stored = dict(item)
+    question = stored.pop("question", None)
+    if not stored.get("title") and question:
+        stored["title"] = question
+    options = stored.pop("options", None)
+    if options is not None and not stored.get("choices"):
+        values, labels = _decision_options_as_choices(options)
+        stored["choices"] = values
+        if labels:
+            stored["option_labels"] = {
+                **labels,
+                **(stored.get("option_labels") or {}),
+            }
+    return stored
+
+
 def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     target = op.get("target")
     if not target or not isinstance(target, str):
@@ -1638,7 +1704,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         decisions = working.setdefault("decisions", {})
         if key in decisions:
             raise OpError(f"decision {key!r} already exists")
-        decisions[key] = item if isinstance(item, dict) else {}
+        decisions[key] = _decision_as_stored(item)
         return
     raise OpError(f"unsupported plan append target {target!r}")
 
