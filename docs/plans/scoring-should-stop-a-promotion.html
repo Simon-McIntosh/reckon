@@ -145,6 +145,22 @@
     sweep that stops at the first refusal would make one unavailable lane look like a quiet
     one.</p>
 
+    <p><strong>The sweep must waive the unreconciled-runs fence, or it deadlocks on the
+    very runs it exists to clear.</strong> A run awaiting review is an unreconciled run, and
+    once it passes the grace window the fence refuses new dispatches for the whole project
+    until the backlog is reconciled — while the reconciling action for each of those runs is
+    the review dispatch the fence is refusing. Measured 2026-09-21 on imas-ambix: three runs
+    in <code>scoring</code>, each carrying a <code>next_action</code> that was its own review
+    dispatch, and that dispatch refused with exit 6 naming those same three runs as the
+    reason. The remedy was the thing the fence blocked.</p>
+
+    <p>So the reflex passes <code>--allow-unreconciled-runs</code>, and the waiver it records
+    is honest rather than a loophole: the backlog genuinely must remain, because clearing it
+    is what the dispatch does. A review run must also never itself count toward that backlog
+    for its own source run, or the second review of a wave is refused by the first. Both
+    properties need a test, because both failures look like an idle fleet rather than an
+    error.</p>
+
     <p><strong>One defect is already there to fix.</strong> The sweep's own refusal
     accumulator in <code>dispatch_awaiting_reviews</code> appends a generator expression
     rather than the report, so a refused review is recorded as an unreadable object and the
