@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T19:12:20",
+  "updated": "2026-09-21T19:14:02",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -236559,6 +236559,315 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T153816252702-the-bar-names-which-lane-it-recommends",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a73",
+        "node": "the-bar-names-which-lane-it-recommends",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1098,
+                "cached_input_tokens": 791319,
+                "input_tokens": 792419,
+                "output_tokens": 490,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 792909,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "371936ba-c8c3-4c56-951a-abbaeb2a5a49",
+            "session_id": "ship-budget-20260921"
+          },
+          "done_when": "reckon/crew/bar.py returns one of four verdicts named send-metered, send-local, split and hold, replacing the three-outcome vocabulary whose single send covered two opposite lanes; a MAXIMALLY PRESCRIBED node is asserted to return send-local at every window fill sampled across the whole domain INCLUDING a completely full window, which is the assertion the previous implementation failed by returning hold there; a maximally open-ended node at a full window is asserted to return hold and NOT send, which is the other half of the same inversion; hold is asserted to depend on the node's score and not on the fill, by holding the fill constant and varying only the score; the bar is asserted monotonic over the window domain sampled at many points; the returned value is asserted to carry no backend name by checking the type's OWN FIELD NAMES rather than a blocklist of current lane spellings, since a lane spelled outside such a list would pass; the clamp branch for a fill outside zero to one is asserted by a case, since no case exercised it before; an orchestrator override in each direction is asserted recorded rather than refused; the declared mutation is applied to a scratch copy, the named test is observed to FAIL, and that log is written under the reports directory and never under /tmp, /dev/shm or /run/user",
+          "estimated_hours": null,
+          "goal": "A continuous bar over window state names which lane it recommends, and never holds a prescribed node.",
+          "id": "the-bar-names-which-lane-it-recommends",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T15:38:18Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T153816252702-the-bar-names-which-lane-it-recommends/manifest.md",
+          "negative_control": "restore hold as the verdict for a maximally prescribed node at a full window; the send-local-at-every-fill assertion in tests/test_bar.py must fail",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/bar.py",
+            "tests/test_bar.py",
+            "docs/plans/a-window-paces-the-lane.html",
+            "docs/figures/a-window-paces-the-lane",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "pace-bar-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T15:39:03Z",
+        "completed_at": "2026-09-21T17:12:23Z",
+        "completed_at_source": "promotion_time",
+        "worker_seconds": null,
+        "worker_seconds_source": "unavailable",
+        "wall_seconds": 5600,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "35b5b86abde1bb2f0f13b69834b8fb02c79882a6",
+        "commits": [
+          "ea8d38f519eb843c7e35b4dd105ebc04f709f4be",
+          "4aa549a6ec6706f62691ea1d0c5aff71467b46b0"
+        ],
+        "changed_lines": {
+          "added": 2507,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": 19,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_bar.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/the-bar-names-which-lane-it-recommends/gate-tests-test-bar.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T153816252702-the-bar-names-which-lane-it-recommends/manifest.md",
+        "scope_changed": false,
+        "session_id": null,
+        "budget": {
+          "cost_usd": null,
+          "detail": "no event log yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T17:12:23Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 1669,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3817,
+              "log_fresh": false,
+              "manifest_commits": [
+                "9ca9e96354fd04967383e509b7938d24e1b8a324",
+                "3e2197cedcaaa72fa21eb6922cc81ea70eb11537",
+                "6ce0374d"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "e312173fa4ddc0a7d2be8b0e10622c6d375683010aa180b5e4d18d5372eeed68",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T121739986977-close-the-review-findings-on-the-group-position/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-window-paces-the-lane --section '\u00a75b' --role review --spec-level exact --node review-of-close-the-review-findings-on-the-group-position --goal 'attach an independent review to run r-20260921T121739986977-close-the-review-findings-on-the-group-position' --done-when 'the review for r-20260921T121739986977-close-the-review-findings-on-the-group-position stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T121739986977-close-the-review-findings-on-the-group-position.json --time-budget 30m --session ship-budget-20260921 --allow-unreconciled-runs --local",
+              "node": "close-the-review-findings-on-the-group-position",
+              "phase": "working",
+              "plan": "a-window-paces-the-lane",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T121739986977-close-the-review-findings-on-the-group-position",
+              "session": "ship-budget-20260921",
+              "terminal_age_seconds": 3930,
+              "terminal_at": "2026-09-21T14:33:05Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/close-the-review-findings-on-the-group-position"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 6656,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 8456,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1201,
+              "log_fresh": false,
+              "manifest_commits": [
+                "bedd7050"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "fff07bdb8176faf43d69276e88ef69ed940d240ffca9acdee65bc25b6fda12cc",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T125652058236-the-meter-is-captured-in-all-three-states/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a73' --role review --spec-level exact --node review-of-the-meter-is-captured-in-all-three-states --goal 'attach an independent review to run r-20260921T125652058236-the-meter-is-captured-in-all-three-states' --done-when 'the review for r-20260921T125652058236-the-meter-is-captured-in-all-three-states stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T125652058236-the-meter-is-captured-in-all-three-states.json --time-budget 30m --session ship-budget-20260921 --allow-unreconciled-runs --local",
+              "node": "the-meter-is-captured-in-all-three-states",
+              "phase": "working",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T125652058236-the-meter-is-captured-in-all-three-states",
+              "session": "ship-budget-20260921",
+              "terminal_age_seconds": 1305,
+              "terminal_at": "2026-09-21T15:16:53Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/the-meter-is-captured-in-all-three-states"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "follow_on_paths": [
+          "bar.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.55,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": 0.55,
+          "at_complete": 0.73,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_bar.py"
+          ],
+          "declaration": "restore hold as the verdict for a maximally prescribed node at a full window; the send-local-at-every-fill assertion in tests/test_bar.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/the-bar-names-which-lane-it-recommends/negative-control-bar-hold-at-full-window.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/the-bar-names-which-lane-it-recommends/negative-control-bar-hold-at-full-window.log"
+        },
+        "tool_steps": null,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -236843,6 +237152,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1975
+    "_version": 1976
   }
 }
