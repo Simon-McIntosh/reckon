@@ -524,7 +524,7 @@ def _row_moment(record: Mapping[str, Any], key: str) -> datetime | None:
     if not isinstance(raw, str) or not raw.strip():
         return None
     try:
-        moment = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+        moment = datetime.fromisoformat(raw.strip())
     except ValueError:
         return None
     return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)

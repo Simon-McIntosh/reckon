@@ -96,7 +96,13 @@ def test_ledger_fixture_is_untouched_by_the_read(tmp_path):
     """The read leaves the repository it read from unchanged."""
 
     rows = _read(tmp_path)
-    assert set(rows) == {"early", "disagreeing", "no-completion", "alone", "no-dispatch"}
+    assert set(rows) == {
+        "early",
+        "disagreeing",
+        "no-completion",
+        "alone",
+        "no-dispatch",
+    }
     before = (tmp_path / "docs").exists()
     assert before is False  # the real docs directory is never the fixture's
     assert (tmp_path / "repo" / "docs" / "state" / PROJECT / "crew.json").is_file()
