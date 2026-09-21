@@ -554,6 +554,51 @@
     negative-control logs are retained in the node run directory. This node records
     the landing only; it does not resolve the plan followup or close the section.</p>
   </section>
+  <section id="control-shapes-and-the-discriminator">
+    <h2>Three shapes of negative-control evidence, and the one discriminator that separates them</h2>
+    <p><strong>What was measured.</strong> Every negative-control log produced for this plan was read
+    against its node's declared mutation &mdash; eight in all, by reading the log's first line and
+    then the set of tests it reddened. They fall into three shapes that the promotion refusal cannot
+    tell apart, and that need opposite remedies.</p>
+    <table>
+      <caption>Each row: what the node declared, what its log records having run, and the shape.</caption>
+      <thead><tr><th>Node</th><th>Declared</th><th>Log records</th><th>Shape</th></tr></thead>
+      <tbody>
+        <tr><td>review gate covers every writing run</td><td>restore the <code>role == 'implement'</code> equality</td><td>set <code>changed_repository = False</code></td><td>substitution</td></tr>
+        <tr><td>member guard counts live processes</td><td>make <em>unknown</em> liveness release the member</td><td><code>blocks=True</code> for every non-terminal phase</td><td>substitution</td></tr>
+        <tr><td>review reflex fires on the sweep</td><td>remove the review pass from <code>sweep</code></td><td>set <code>unreconciled_override=False</code></td><td>substitution</td></tr>
+        <tr><td>the reviewer names the call sites</td><td>make an omitted emission record zero</td><td>remove the requirement from the prompt</td><td>substitution</td></tr>
+        <tr><td>member-liveness tests do not read the host</td><td>restore a literal pid whose liveness the host decides</td><td>replace the controlled pid with a proven-absent one</td><td>substitution</td></tr>
+        <tr><td>promotion write cannot shrink the ledger</td><td>remove the shrink refusal</td><td>replace the length comparison with <code>if False</code></td><td>paraphrase</td></tr>
+        <tr><td>an empty call-sites emission</td><td>make an empty value record zero again</td><td>make an empty emission record a measured zero</td><td>paraphrase</td></tr>
+        <tr><td>the dispatch guard consults liveness</td><td>revert the guard to a phase-only test</td><td><em>replace</em> the phase-only guard with the liveness refusal</td><td>inverted label</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Five substitutions, two paraphrases, one inverted label.</strong> So the verbatim check
+    is not mostly catching wording &mdash; it is catching <em>a weaker control than the node
+    specified</em>, which is what a declaration exists to prevent. Every substitution was resolved by
+    running the declared mutation in an isolated <code>git archive HEAD</code> copy with the import
+    proven to resolve inside the scratch tree; only the three non-substitutions were waived, each with
+    its equivalence stated on the promoted row.</p>
+    <p><strong>The discriminator ignores the prose and settled all eight:</strong> <em>which test
+    failed, and what would have to be true of the code for that test to fail.</em> A declaration and a
+    log can both misdescribe the mutation; the failing test set cannot. The inverted label is the worst
+    of the three to read, because trusting it teaches the reverse of what happened while the evidence
+    beneath it is sound &mdash; that node's manifest asserted its log <q>begins with the declared
+    mutation</q> when the log began with its opposite.</p>
+    <p><strong>A related trap, found by review inside the repair for another.</strong> An assertion
+    added to prevent a regression is verified by <em>reinstating the regression</em>.
+    <code>assert first["pid"] == worker_pid</code> compared the recorded value against the variable
+    passed in, so reverting that variable to the literal left the assertion true &mdash; a tautology,
+    written by the node whose purpose was ending a coincidence. Repaired to assert against an
+    independent source and proven by restoring the literal in a scratch archive: <strong>1 failed,
+    exit 1</strong>.</p>
+    <p><strong>Durable receipts.</strong> Each node's declared-mutation log sits beside its
+    substituted original in the run directory, under <code>logs/negative-control-declared.log</code>
+    with the baseline beside it; the coordinator's corrections are recorded in each manifest as
+    <code>negative_control_log_corrected_by_coordinator</code>, with the worker's unaltered manifest
+    preserved as <code>manifest.md.as-written-by-worker</code>.</p>
+  </section>
 </main>
 </body>
 </html>
