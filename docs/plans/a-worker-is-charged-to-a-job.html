@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -438,6 +438,57 @@ manifest is classified distinctly from one carrying no terminal record at all, a
 synthesised stream of each shape, and the verdict for the first names redispatch while the verdict
 for the second names resume; and the verdict text for the first no longer says the process is gone
 without qualification, since it ended, asserted on the emitted string.</p>
+
+<p><strong>The stall cluster is a named constant, and it refutes every hypothesis two sessions
+produced about it, including both of theirs and one of this plan's.</strong>
+<code>DEFAULT_WATCH_STALL_WINDOW = "15m"</code> at <code>reckon/crew/node.py:47</code>, read by
+<code>_derive_state</code> in <code>reckon/crew/recovery.py</code>, which emits
+<code>state = "stalled"</code> with <code>detail = f"stream quiet for {quiet}s"</code>. Seven
+stalls measured across two sessions and seven unrelated nodes: <strong>901, 902, 902, 903, 908,
+909</strong> and one outlier at 1,243. Five inside a seven-second band is a threshold plus a poll
+interval, not a phenomenon.</p>
+
+<table>
+<caption>Three hypotheses, and what refuted each.</caption>
+<thead><tr><th>Hypothesis</th><th>Refuted by</th></tr></thead>
+<tbody>
+<tr><td>lane congestion past the knee</td><td>a stall at <strong>12</strong> running, well under the measured knee of 22</td></tr>
+<tr><td>a hung worker</td><td>that same run's process being <strong>alive</strong> and continuing to work after the flag</td></tr>
+<tr><td>the print-mode turn-end failure recorded above</td><td>those carry clean terminal records; these have live processes. It holds for its own two cases and does not generalise here</td></tr>
+</tbody>
+</table>
+
+<p>The supported reading is the dullest available: <strong>a worker on this lane is routinely quiet
+for fifteen minutes while thinking, and the watcher calls that stalled.</strong></p>
+
+<p><strong>The cost is not the label, it is that a coordinator acted on it.</strong> Five runs were
+resumed on the strength of the word, every one a live working process, and two then reported
+<code>complete</code> while restating prior state &mdash; which is what interrupting a thinking
+worker and telling it to finish would produce. So an earlier report that <q>resuming does not
+work</q> was at least partly <em>caused by the resume</em> rather than observed by it, and is
+corrected here rather than left standing.</p>
+
+<p><strong>Two remedies, and the cheap one needs no measurement.</strong> Lengthening the window or
+making it lane-aware requires knowing how long a worker legitimately thinks on this lane, which
+nobody has measured. Emitting <strong><code>quiet for 902s, threshold 900s</code></strong> instead
+of the word <code>stalled</code> costs one format string and would have prevented all five
+unnecessary resumes, because a reader sees a comparison against a setting and decides, rather than
+receiving a verdict.</p>
+
+<p><strong>That is the same shape as three other surfaces measured the same day</strong>, which is
+why it is worth more than a configuration bump: <code>stalled</code> for a worker that is thinking,
+<code>promoted</code> for a run that was discarded, <code>headroom: unknown</code> for a document
+that was readable, and <code>concurrent_requests</code> for a figure nothing consumes. <em>Each
+states a conclusion the surface is not entitled to, and in each case the raw number beside its
+threshold would have been both cheaper and truer.</em></p>
+
+<p><strong>Done when</strong> the quiet-stream verdict emits the observed figure and the threshold
+it was compared against rather than a bare classification, asserted on the emitted string for a
+run just over the window and one just under; the word <code>stalled</code> no longer appears as the
+whole explanation where a live process is recorded, asserted; and the window constant is named in
+the emission so a reader can see which setting produced the comparison without opening the source.
+<em>Note for whoever takes this:</em> <code>reckon/crew/recovery.py</code> was claimed by a
+concurrent node at the time of writing, so check the live scopes before dispatching.</p>
 
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
