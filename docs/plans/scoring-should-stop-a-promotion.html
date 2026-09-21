@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1981,6 +1981,44 @@
     own headline. That is worth recording beside the numbers, because the failure mode this plan
     exists to catch is a true figure standing in for the claim someone wanted it to make.</p>
 
+    <h2 id="s5j">§5j — Three artifacts agreed about a change that does not exist</h2>
+
+    <p><strong>The cleanest instance of this plan's whole argument, and it cost a peer session its
+    own confirmation.</strong> A commit titled <em>say what a completed receipt promises, and pin
+    the labels</em> changed <strong>no executable code</strong>. Parsing both revisions with
+    docstrings stripped, the two modules are byte-identical; every change is docstring prose. The
+    landing record and the dispatch card both describe a race being closed — a caller aborting
+    between <code>http.response.start</code> and <code>http.response.body</code> recorded as
+    <code>completed</code> — and the race is open.</p>
+
+    <p><strong>Three independent artifacts agreed about a thing that never happened:</strong> the
+    landing record said it landed, a coordinator confirmed it, and the suite was green. The
+    coordinator's confirmation was a grep for <code>_wait_for_disconnect</code>,
+    <code>asyncio.create_task</code> and <code>http.response.body</code> — all three present, all
+    three predating the commit. <em>Checking for the presence of a mechanism rather than whether
+    the commit introduced it</em>, which is §2c's ancestry tautology in a different instrument.
+    The only thing that caught it was a reviewer parsing the two revisions against each other.</p>
+
+    <p><strong>And the suite could never have caught it</strong>, which is what makes the pair
+    lethal rather than embarrassing: moving the departure sample either way leaves both focused
+    test files green — 19 passed and 24 passed under the mutation — while a live drive stores
+    <code>aborted</code> where the head stores <code>completed</code>. Nothing pins the sampling
+    position, so nothing would ever have reported the fix missing.</p>
+
+    <p><strong>The verification of the finding was then wrong in the opposite direction, by one
+    step.</strong> That session ran <code>ast.dump</code> on both revisions, got <em>differs</em>,
+    and drafted a message reporting the reviewer as having overstated its claim.
+    <code>ast.dump</code> includes docstrings as string constants, so it cannot distinguish a prose
+    edit from a code edit — <em>it answered the question asked rather than the one meant.</em>
+    Stripping docstrings first gives identical. A correct finding was one message away from being
+    dismissed with an instrument incapable of the distinction.</p>
+
+    <p>So the sequence is: a change that did not happen, a landing record that said it did, a
+    confirmation that measured presence instead of introduction, a green suite that could not see
+    it, a reviewer that found it, and a verification that nearly unfound it. <strong>Every
+    non-reviewer instrument in that chain agreed, and every one of them was aimed at something
+    adjacent to the question.</strong></p>
+
     <h2 id="s5i">§5i — A review's triage expires when the module gets its first caller</h2>
 
     <p><strong>The call-site emission turned out to be load-bearing input to severity, not an audit
@@ -2308,6 +2346,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T152600175270-granted-landing-paths-are-not-charged-as-read-context" data-who="reckon-ship" data-when="2026-09-21T16:28:44Z">
     <div class="r-comment-body"><p>the context estimate no longer charges a node for the landing paths the dispatcher granted it; confirmed on a real refusal by the reporting session, whose held node went from 1,392,411 estimated tokens to admitted with the fall verified row by row as exactly the two landing paths; review 64, whose finding the coordinator then overstated twice and corrected in the plan</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent" data-who="crew-worker" data-when="2026-09-21T18:51:02+02:00">
+    <div class="r-comment-body"><p><strong>Call-sites now share the checklist record.</strong> Commit <code>a1f5a6a5</code> makes call sites the sixth item: named sites and literal <code>none</code> supply an item verdict and an integer count, while omitted or empty emissions leave both count keys absent, are named absent by the existing item predicate, and withhold the item aggregate. Commit <code>907f404e</code> restores that absent-key contract after confirming it preserves the count field's integer type and makes the established call-sites suite pass unchanged: before 2 failed / 4 passed, after 6 passed. The focused four-case gate still passes, and removing <code>call_sites</code> from <code>REVIEW_ITEMS</code> gives 2 failed / 2 passed, proving the checklist mechanism is load-bearing. A legacy record carrying neither item fields nor the count remains complete under <code>_review_is_complete</code>. The review-store census since the emitting commit finds 21 records with a count and 17 without among 38 records; because the denominator includes briefs that predate the requirement, this is a lower bound rather than a compliance rate. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-call-sites-checklist-accounting">call-sites checklist accounting</a>.</p><p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing contract requires its own append-only plan and cumulative-evidence records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-09-21T07:25:00Z">
     <div class="r-comment-body">Landed and promoted. The refusal, the reasoned waiver and the review-role exemption are live at merged head 346b98b6; the promotion cohort measured 18 failures before and 18 after with 0 new. Its independent review on a metered lane scored 85 and found that the declared negative control was not the mutation the log showed; that was repaired by re-running the declared deletion at the merged head and preserving the original log beside it, rather than by reweighting the declaration, and the promoted row records negative_control verdict matched.</div>
 </div>
@@ -2337,9 +2378,6 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record" data-who="reckon-ship" data-when="2026-09-21T15:14:40Z">
     <div class="r-comment-body"><p>every node is granted its plan's figure topic directory alongside the plan file and the evidence record, so a node obeying the graphics mandate is inside its fence; measured five times in one day across two sessions as an accept-path or a review-flagged scope violation; review 98</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent" data-who="crew-worker" data-when="2026-09-21T18:51:02+02:00">
-    <div class="r-comment-body"><p><strong>Call-sites now share the checklist record.</strong> Commit <code>a1f5a6a5</code> makes call sites the sixth item: named sites and literal <code>none</code> supply an item verdict and an integer count, while omitted or empty emissions leave both count keys absent, are named absent by the existing item predicate, and withhold the item aggregate. Commit <code>907f404e</code> restores that absent-key contract after confirming it preserves the count field's integer type and makes the established call-sites suite pass unchanged: before 2 failed / 4 passed, after 6 passed. The focused four-case gate still passes, and removing <code>call_sites</code> from <code>REVIEW_ITEMS</code> gives 2 failed / 2 passed, proving the checklist mechanism is load-bearing. A legacy record carrying neither item fields nor the count remains complete under <code>_review_is_complete</code>. The review-store census since the emitting commit finds 21 records with a count and 17 without among 38 records; because the denominator includes briefs that predate the requirement, this is a lower bound rather than a compliance rate. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-call-sites-checklist-accounting">call-sites checklist accounting</a>.</p><p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing contract requires its own append-only plan and cumulative-evidence records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p></div>
 </div>
 </section>
 </main>
