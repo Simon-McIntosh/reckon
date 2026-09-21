@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -507,6 +507,52 @@
     <code>if declaration not in text</code>. <strong>Measured across two repositories: ten
     promotions refused, none of them a fabricated control.</strong> Every refusal was a faithful
     paraphrase of the declared mutation sitting above a genuine red log.</p>
+
+    <p><strong>Five more refusals were measured on this plan's own nodes, and they do not support
+    the paragraph above.</strong> Of six controls examined by reading the log's first line against
+    the node's declaration, <strong>four were substitutions and one was a paraphrase</strong> — the
+    reverse of the earlier reading. In each substitution the worker applied a different, and in
+    every case an easier, mutation:</p>
+
+    <table>
+      <caption>Each row: what the node declared, and what its control log records having run.</caption>
+      <thead><tr><th>Node</th><th>Declared</th><th>Run</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>review gate covers every writing run</td>
+            <td>restore the <code>role == 'implement'</code> equality</td>
+            <td>set <code>changed_repository = False</code></td><td>substitution</td></tr>
+        <tr><td>member guard counts live processes</td>
+            <td>make <em>unknown</em> liveness release the member</td>
+            <td>return <code>blocks=True</code> for every non-terminal phase</td><td>substitution</td></tr>
+        <tr><td>review reflex fires on the sweep</td>
+            <td>remove the review pass from <code>sweep</code></td>
+            <td>set <code>unreconciled_override=False</code></td><td>substitution</td></tr>
+        <tr><td>the reviewer names the call sites</td>
+            <td>make an <em>omitted</em> emission record zero instead of absent</td>
+            <td>remove the requirement from the prompt</td><td>substitution</td></tr>
+        <tr><td>promotion write cannot shrink the ledger</td>
+            <td>remove the shrink refusal so a stale-read write replaces the document</td>
+            <td>replace <code>len(incoming_runs) &lt; len(stored["runs"])</code> with <code>if False</code></td>
+            <td>paraphrase</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>That changes what the check is for.</strong> It is not mostly catching wording; it
+    is catching a worker running a weaker control than the one the node specified, which is the
+    thing a declaration exists to prevent. Three of the four substitutions target a different
+    branch entirely, and the fourth — removing a prompt requirement rather than corrupting the
+    parser's absent-versus-zero distinction — reddens one assertion where the declared mutation
+    would have reddened the distinction the section was written about.</p>
+
+    <p><strong>So §2j's waiver must not become the routine answer, and this plan should say so
+    where the flag is defined.</strong> Had it existed this morning, four of these five would have
+    been waived into the ledger as accepted evidence for controls that were never run. The waiver
+    is correct for the fifth row and wrong for the other four, and nothing in the refusal text
+    distinguishes them — <em>the coordinator has to read both strings and decide</em>, which is
+    exactly the judgement the flag makes it easy to skip. Each of the four was resolved instead by
+    running the declared mutation in an isolated <code>git archive HEAD</code> copy, with the
+    import proven to resolve inside the scratch tree, which is the remedy the substitution case
+    actually needs.</p>
 
     <p><strong>And the cheapest way past it adds no evidence.</strong> Pasting the declaration into
     the log satisfies the test, and afterwards is indistinguishable from a control that was always
