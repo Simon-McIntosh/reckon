@@ -528,6 +528,54 @@ Check that the configured local backend resolves before dispatching:
 reckon flight --project P --pretty
 ```
 
+#### The done-when is the specification, and on this lane that is literal
+
+**A worker is graded on the measure, not on the prose around it.** Anything a
+goal claims that its done-when does not measure is work the node will not do,
+and no amount of intent in the goal recovers it.
+
+Measured 2026-09-21: a node whose GOAL named three call sites that must resolve
+through a new shared module, and whose DONE-WHEN named two of them, landed
+exactly two. The third kept its duplicate. The worker was not wrong — it
+implemented the measure and then named the gap in its own follow-ons, which is
+the correct behaviour. The defect was in the node.
+
+That failure is available on any backend. What makes it worth its own rule here
+is the shape of a locally served lane: it tends to implement the stated measure
+precisely and does not infer the unstated. That is a virtue exactly when the
+measure is complete, and a trap exactly when it is not — so the coordinator's
+share of the work moves from steering to specifying.
+
+Three rules follow, and they cost one line each at authoring time:
+
+- **Every claim in the goal appears in the done-when as something that emits
+  evidence.** If the goal names three call sites, the done-when names three.
+  Read the pair back before dispatch and ask which sentence of the goal is
+  unmeasured; that sentence is what will be missing.
+- **State the negative.** A done-when that asserts only what must now exist
+  cannot see what should have stopped existing: a test proving the new module
+  works passes just as well while the old duplicate sits beside it. Removals
+  need their own measure — "no module outside the new one still defines the
+  superseded helper" is a grep, and it is the only thing that makes a
+  de-duplication node falsifiable.
+- **Spend the lane's cheapness on more nodes, not bigger ones.** A free lane
+  invites broad nodes and should not. Node width is also a capacity property:
+  a lane's concurrency is its token pool divided by the mean context its
+  workers carry, so an over-large node costs width twice — it cannot run beside
+  its siblings, and while it runs it consumes the pool that would have carried
+  them. One module and one fixture per node keeps both the specification and
+  the fleet tractable.
+
+**Read a lane's published capacity as advisory, not as a ceiling.** A lane
+document may divide its pool by an occupancy target well below one; that target
+is a guard against preemption, not a measurement of what the hardware will
+carry. Measured on this workstation the same day: a coordinator held its fleet
+at two workers against a published headroom of zero, while the lane's own
+figures put a full pool at roughly thirty-nine concurrent and the operator's
+experience at twenty-four, with no retraction, pause or preemption ever
+recorded. Before treating a headroom figure as a stop, read what it was derived
+from and whether the pressure it guards against has ever been observed.
+
 ### 4. Dispatch workers
 
 Pre-flight the routing surface once per session with `reckon flight --project P`:
