@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -383,6 +383,55 @@
       <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#member-in-flight-liveness">§2e landed</a>
       (commit <code>45242ed9</code>).
     </p>
+
+    <h2 id="s2f">§2f — The lane reading is discarded whole, and the roster is invisible at the refusal</h2>
+
+    <p>§2e found stale <code>phase</code> holding members. Two further causes were measured on
+    imas-efit the same morning, and <strong>together they made a coordinator report a saturation
+    that did not exist</strong> — it ran one node at a time for an entire session against a lane
+    whose own document said otherwise.</p>
+
+    <p><strong>An all-or-nothing reader throws away six measured fields because a seventh is
+    null.</strong> <code>_lane_reading_unknown</code> in <code>reckon/crew/dispatch.py:1890</code>
+    returns eight fields as <code>unknown</code> whenever any single precondition fails. The live
+    document at the time of writing:</p>
+
+    <pre><code>state "measured"   sizing_verdict "usable"   settling false
+running 12   waiting 0   concurrent_requests 16   headroom 4
+mean_context 119203   observed_at "2026-09-21T09:57:09Z"
+binding_observed: null          &larr; the only absent field</code></pre>
+
+    <p>read back as <code>headroom: unknown, state: unknown, mean_context: unknown,
+    observed_at: null</code>, with a detail line reading <em>"lane document carries no
+    'binding_observed'"</em> — <strong>true, and about the wrong field.</strong> This is the
+    substitution class again, in the surface a coordinator consults to decide how wide to open:
+    <em>a true statement about an adjacent field standing in for the question asked.</em> The
+    headroom is not unimplemented; it is computed, published every 30 seconds, and discarded.</p>
+
+    <p><strong>The refusal that follows names a flag and not the fact.</strong> A coordinator
+    dispatching without <code>--member</code> gets an auto-derived session member and the second
+    dispatch refuses <code>member-in-flight</code>. On that project <code>crew member list</code>
+    returned <strong>97 members, all free</strong> — 88 on the local harness, 60 with role
+    <code>implement</code>. The refusal names <code>--member &lt;free-member&gt;</code> without
+    saying that a large free roster exists, so the reading it invites is <em>the lane is full</em>.
+    Combined with the discarded reading, the coordinator sees <code>headroom: unknown</code> beside
+    <code>member-in-flight</code> and concludes what any reasonable reader would.</p>
+
+    <p><strong>So the 9-of-64 gap had three causes, not one.</strong> Stale <code>phase</code>
+    holding members; the auto-created member being one per <em>session</em> rather than per run; and
+    the lane reading discarded on a null field. Each alone is survivable. Together they present as
+    a saturated lane, which is why the coordinator's conclusion was reasonable and wrong.</p>
+
+    <p><strong>Done when</strong> a lane document is reported field by field, each present value
+    carried and each absent one marked absent, asserted against the live document shape above with
+    <code>binding_observed</code> null and everything else populated — requiring
+    <code>headroom</code> to read 4 rather than <code>unknown</code>; the
+    <code>binding_observed</code> caveat is confined to the binding claim, asserted by checking it
+    does not appear in the headroom detail; the <code>member-in-flight</code> refusal names a free
+    member of the required role, asserted against a roster holding one, since
+    <code>crew member list</code> already has the answer at the moment of refusal; and
+    <code>crew observe</code> is not recommended without a run id in a refusal that cannot supply
+    one, asserted by checking the refusal's own remedy is runnable as written.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
