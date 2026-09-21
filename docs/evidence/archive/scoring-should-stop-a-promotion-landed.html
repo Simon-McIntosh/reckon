@@ -179,6 +179,47 @@
     repository-wide backlog that is its own commit, so the delivered diff carries the exemption
     and its tests and nothing else.</p>
   </section>
+
+  <section id="s2d-ledger-write-cannot-shrink">
+    <h2>A ledger write cannot shrink the committed record</h2>
+    <p><strong>What landed.</strong> <code>ledger.write</code> now refuses a write whose run count
+    is below the stored one, naming both counts, and names the run store as the refusal's recovery.
+    A promotion only ever appends a run, so a reduction is by construction a lost read: the writer
+    prepared its payload from a snapshot older than the file it wrote back. The roster refusal
+    already guarded the member axis by id; it now names the member counts it moves the ledger
+    between as well.</p>
+    <figure>
+      <img src="/reckon/figures/ledger-write-cannot-shrink/guard_flow.svg" alt="Left: one promote commit taking a project's ledger from 110 runs and 87 members to a single row. Right: ledger.write comparing incoming and stored counts, refusing with both counts and the run store named; the appending and patching shapes write normally.">
+      <figcaption>The measured write and the guard that refuses its shape. The run store keeps
+      every promoted run independently of the file, so the rows a truncated ledger lost are still
+      recoverable.</figcaption>
+    </figure>
+    <p><strong>Nine tests, one file.</strong>
+    <code>tests/test_ledger_write_cannot_shrink.py</code> asserts the run-count reduction refused
+    naming both counts, the member-count reduction refused the same way as its own test, the
+    measured incident's single write (110 runs and 87 members to one row, both axes), a write
+    omitting the <code>runs</code> key, the two-writer concurrency shape, and the healthy shapes —
+    an appending promotion and a same-count patch — still succeed, since a guard that blocks the
+    healthy path is removed rather than kept.</p>
+    <p><strong>The negative control, and its revert.</strong> The declared mutation made the
+    run-count refusal unreachable (<code>if current_view and len(incoming_runs) &lt;
+    len(stored["runs"]):</code> &rarr; <code>if False:</code>) and
+    <code>test_a_write_that_reduces_the_run_count_is_refused</code> failed with
+    <code>DID NOT RAISE LedgerError</code>. The red log's first line repeats the declared mutation
+    verbatim. <code>reckon/ledger.py</code> is byte-identical before and after the mutation (sha256
+    <code>6071e6e4535ee87d344396d165a8b880e09fb453a0f698b615b1f0f41bc901e1</code>), the marker
+    occurs 0 times, and <code>git status --porcelain</code> shows no source change beyond this
+    node's own delivered files.</p>
+    <p><strong>Delta against base.</strong> The 15-file promotion cohort named in the exposure
+    report ran <strong>18</strong> failures and 166 passed — unchanged from the recorded before
+    value. The directly adjacent set (<code>test_ledger.py</code>, the two roster suites, member
+    registration and reaping, <code>test_run_store.py</code>) ran 4 failed and 146 passed, and all
+    four failures reproduce identically at the base revision, so none is this change's.</p>
+    <p><strong>The recovery path is named, not yet built.</strong> The refusal points at the run
+    store, which holds every promoted run independently of the ledger file. The rebuild that
+    restores a truncated ledger from that store is a separate deliverable and is not part of this
+    node: this change closes the write that loses the rows.</p>
+  </section>
 </main>
 </body>
 </html>

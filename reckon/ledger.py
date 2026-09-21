@@ -671,6 +671,18 @@ def dropped_member_ids(stored: Any, incoming: Any) -> list[str]:
     return sorted(_roster_ids(stored) - _roster_ids(incoming))
 
 
+def _run_store_location() -> str:
+    """The run store's path, named in a refusal as the recovery for a loss.
+
+    Resolved lazily and imported inside the call so an ordinary ledger write
+    carries no dependency on the store module; only a refusal that must name
+    the recovery pays for it.
+    """
+    from reckon import run_store
+
+    return str(run_store.store_path())
+
+
 def write(
     project: str,
     data: Mapping[str, Any],
@@ -700,6 +712,17 @@ def write(
     current roster. Reporting a membership difference drawn from a stale view
     would aim the caller at the wrong remedy.
 
+    A write that would take the committed run count below what the stored
+    ledger holds is refused, naming both counts. A promotion only ever
+    appends, so a reduction is by construction a lost read rather than an
+    edit — the shape that carried one project's ledger from 110 runs and 87
+    members down to a single row in one promote commit. The run store keeps
+    every promoted run independently of this file, so the refusal names it as
+    the recovery. Like the roster check, this one answers to the version
+    check: a write prepared against a version the ledger has moved past is
+    refused for that reason, and the version conflict is what a concurrent
+    writer must act on.
+
     ``commit`` states at the call site that the caller is committing the roster
     change it is making: the retirement the write records is committed at once,
     under a subject naming the members it dropped, rather than waiting to ride
@@ -714,19 +737,30 @@ def write(
     """
     path = ledger_path(project, root)
     incoming_members = list(data.get("members", []))
+    incoming_runs = list(data.get("runs", []))
     stored, stored_version = load(project, root)
+    current_view = expected_version == stored_version
     dropped = (
-        dropped_member_ids(stored["members"], incoming_members)
-        if expected_version == stored_version
-        else []
+        dropped_member_ids(stored["members"], incoming_members) if current_view else []
     )
     if dropped and not allow_member_removal:
         raise LedgerError(
             f"refusing to write the ledger for {project!r}: this write drops "
             f"roster member(s) {', '.join(dropped)} that the stored roster "
-            "holds, which is how a roster empties itself without anyone "
-            "asking; pass allow_member_removal=True when the removal is "
-            "intended"
+            f"holds, taking the member count from {len(stored['members'])} to "
+            f"{len(incoming_members)}, which is how a roster empties itself "
+            "without anyone asking; pass allow_member_removal=True when the "
+            "removal is intended"
+        )
+    if current_view and len(incoming_runs) < len(stored["runs"]):
+        raise LedgerError(
+            f"refusing to write the ledger for {project!r}: this write takes "
+            f"the committed run count from {len(stored['runs'])} to "
+            f"{len(incoming_runs)}, and a promotion only ever appends, so a "
+            f"reduction is by construction a lost read rather than an edit; "
+            f"the run store at {_run_store_location()} holds every promoted "
+            "run independently of this file and is the recovery for a ledger "
+            "that has already lost rows"
         )
     if commit and not dropped:
         raise LedgerError(

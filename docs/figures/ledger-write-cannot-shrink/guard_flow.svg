@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" width="960" height="380" font-family="system-ui, sans-serif" font-size="13" fill="#22303c">
+  <rect x="0" y="0" width="960" height="380" fill="#ffffff"/>
+  <text x="24" y="30" font-size="15" font-weight="600">The measured write (left) and the guard that refuses its shape (right)</text>
+
+  <!-- Left panel: the incident bars -->
+  <g transform="translate(24,64)">
+    <text x="0" y="0" font-size="13" font-weight="600">docs/state/imas-efit/crew.json</text>
+    <text x="0" y="18" fill="#5a6b7b">one promote commit, 62 insertions(+), 22233 deletions(-)</text>
+
+    <!-- runs bars -->
+    <text x="0" y="56" font-weight="600">runs</text>
+    <rect x="52" y="42" width="220" height="18" fill="#2f6f9f"/>
+    <text x="282" y="56" fill="#22303c">110</text>
+    <rect x="330" y="42" width="2" height="18" fill="#c0392b"/>
+    <text x="340" y="56" fill="#c0392b">1</text>
+
+    <!-- members bars -->
+    <text x="0" y="92" font-weight="600">members</text>
+    <rect x="52" y="78" width="174" height="18" fill="#2f6f9f"/>
+    <text x="236" y="92" fill="#22303c">87</text>
+    <rect x="330" y="78" width="2" height="18" fill="#c0392b"/>
+    <text x="340" y="92" fill="#c0392b">0</text>
+
+    <text x="0" y="126" fill="#5a6b7b">both collections fall in the same write, so a lost read replaces the</text>
+    <text x="0" y="144" fill="#5a6b7b">whole document rather than appending to it.</text>
+
+    <text x="0" y="178" fill="#5a6b7b">the run store keeps the rows: 4548 runs, 147 of them this project's,</text>
+    <text x="0" y="196" fill="#5a6b7b">against the 37 the regrown ledger carries &#8212; so the loss is recoverable.</text>
+  </g>
+
+  <!-- Right panel: guard flow -->
+  <g transform="translate(552,60)">
+    <rect x="0" y="18" width="150" height="34" rx="6" fill="#eef4f9" stroke="#2f6f9f"/>
+    <text x="75" y="39" text-anchor="middle">ledger.write(project, data)</text>
+
+    <line x1="75" y1="52" x2="75" y2="78" stroke="#2f6f9f" marker-end="url(#a)"/>
+
+    <rect x="0" y="78" y2="78" width="150" height="50" rx="6" fill="#fff" stroke="#2f6f9f"/>
+    <text x="75" y="98" text-anchor="middle">incoming count &lt;</text>
+    <text x="75" y="116" text-anchor="middle">stored count?</text>
+
+    <line x1="0" y1="103" x2="-60" y2="103" stroke="#2f6f9f" marker-end="url(#a)"/>
+    <text x="-66" y="98" text-anchor="end" fill="#2f6f9f">no</text>
+    <text x="-66" y="120" text-anchor="end" fill="#5a6b7b">append / patch</text>
+    <line x1="-140" y1="103" x2="-220" y2="103" stroke="#2f6f9f" marker-end="url(#a)"/>
+    <rect x="-360" y="86" width="140" height="34" rx="6" fill="#eef7ee" stroke="#3f8f4f"/>
+    <text x="-290" y="107" text-anchor="middle">written</text>
+
+    <line x1="75" y1="128" x2="75" y2="152" stroke="#c0392b" marker-end="url(#b)"/>
+    <text x="82" y="145" fill="#c0392b">yes</text>
+
+    <rect x="-140" y="152" width="290" height="86" rx="6" fill="#fdf0ee" stroke="#c0392b"/>
+    <text x="-130" y="174" font-weight="600" fill="#c0392b">refused: LedgerError</text>
+    <text x="-130" y="194">&#8220;committed run count from 110 to 1 &#8230;&#8221;</text>
+    <text x="-130" y="212">&#8220;&#8230;member count from 87 to 0&#8230;&#8221;</text>
+    <text x="-130" y="230">names the run store as the recovery</text>
+  </g>
+
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#2f6f9f"/>
+    </marker>
+    <marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+</svg>
