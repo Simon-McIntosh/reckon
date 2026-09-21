@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -316,6 +316,42 @@ the check it fixes; liveness that cannot be established &mdash; no pid, or a poi
 host is not this one &mdash; is reported unknown and does <em>not</em> stall, asserted separately for
 both; and one placed step prints <code>/proc/self/cgroup</code> showing the job cgroup, settling the
 containment premise by observation rather than by the account-stack inference above.</p>
+
+<p><strong>Liveness is necessary and it is not sufficient, because a process can be alive and the
+lane can be the reason it is producing nothing.</strong> Measured 2026-09-21 by a peer session
+sampling the locally served pool three times over one minute: <code>running=30</code> against a
+computed ceiling of <code>concurrent_requests=22</code>, <code>waiting=0</code>. Nothing was
+queueing; the pool was serving 36% over its own document's figure. It does not refuse under that
+load, it degrades &mdash; two runs last emitted a line about their own output coming out garbled
+before going quiet, and no stream carried an <code>is_error</code> record at all.</p>
+
+<p>So <code>stalled</code> is being emitted for two conditions whose correct operator responses are
+opposite: <em>this node is stuck, resume it</em> and <em>this fleet is over its ceiling, let it
+drain</em>. Resuming into the second does not work and the evidence is direct &mdash; one node
+stalled, resumed and stalled again, each attempt spending a turn to arrive at the same place.</p>
+
+<p><strong>A stream census separates the bands cheaply, and one candidate discriminator is already
+dead.</strong> Over 250 runs in one day's shared store, a peer found four runs with exactly one
+turn, zero tool use and a single text block whose content <em>is</em> the diagnosis &mdash;
+verbatim, <code>API Error: Connection refused</code> and <code>Prompt is too long</code>. That
+shape is mechanically detectable and its text can go straight into the verdict; "prompt is too
+long" in particular is an admission refusal that currently dissolves into the generic abandoned
+bucket, which is where a coordinator's sizing error goes to be forgotten. A second band &mdash;
+real turns, real tool use, nothing produced, no error text &mdash; is the degradation signature,
+and it is the one that cannot be told from a node defect without the lane counts. A third
+candidate, the share of turns emitting only thinking, looked strong on that band at 31&ndash;36%
+until the same census over known-healthy runs returned 33&ndash;35%: indistinguishable, and dead.
+It is recorded because it was plausible enough to build on.</p>
+
+<p><strong>Done when</strong> a verdict distinguishes a quiet node from a quiet node on a lane over
+its own ceiling, asserted by offering a synthesised lane document whose <code>running</code> meets
+or exceeds its <code>concurrent_requests</code> and requiring the verdict to name the lane rather
+than the node, and by the paired case where the same node is quiet on a lane with headroom and the
+verdict names the node; a run whose stream is one turn, zero tool uses and one text block is
+classified from that text rather than as abandoned, asserted for both observed messages; and the
+lane counts are read from the document the preflight already opens rather than from a stored
+classification, because a stored classification carries no observation time and a stale verdict is
+indistinguishable from a current one.</p>
 
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
