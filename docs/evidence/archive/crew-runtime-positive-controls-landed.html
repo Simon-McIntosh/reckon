@@ -575,6 +575,50 @@ nothing has been launched</code></pre>
       this node's cases.</p>
     </section>
 
+    <section id="s14">
+      <h2>Orphaned watcher replacement diagnosis</h2>
+      <p><strong>Observed 2026-09-21 at <code>26d6df25680ac385446f9db0c86f339ddb57fece</code>;
+      report committed at <code>9980886e</code>.</strong>
+      <a href="https://github.com/Simon-McIntosh/reckon/blob/9980886e/reports/reckon/crew-runtime-positive-controls/orphaned-watcher-replacement.md">Read the diagnosis and exact failure excerpts</a>.
+      The red case raises <code>CrewError</code> for an omitted <code>spec_level</code> before reaching
+      watcher replacement. Its actual field is <code>''</code>; declaring <code>exact</code> satisfies
+      validation. No failing assertion pair exists in the observed traceback, so the report records the
+      exception verbatim rather than inventing assertion values.</p>
+      <table>
+        <thead><tr><th>Observed revision or control</th><th>Orphan module result</th><th>Exit</th></tr></thead>
+        <tbody>
+          <tr><td><code>319db8de</code>, introducing change's parent</td><td>2 passed</td><td>0</td></tr>
+          <tr><td><code>d5811b20</code>, specification declaration required</td><td>1 failed, 1 passed</td><td>1</td></tr>
+          <tr><td><code>d312c5bc</code>, mainline merge's first parent</td><td>2 passed</td><td>0</td></tr>
+          <tr><td><code>8041fd4e</code>, mainline integration</td><td>1 failed, 1 passed</td><td>1</td></tr>
+          <tr><td><code>26d6df25</code>, assigned current base</td><td>1 failed, 1 passed</td><td>1</td></tr>
+          <tr><td>Same base, only fixture declaration supplied in memory</td><td>1 replacement case passed</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Observed method.</strong> The missing-specification diagnostic was traced with
+      <code>git log -S</code>, then both parent/change pairs were executed from temporary
+      <code>git archive</code> snapshots on <code>all_debug</code>. All four snapshots carry the same
+      test blob and dispatch blob. The current in-memory control wraps only the test's node factory to
+      supply <code>spec_level=&quot;exact&quot;</code>; the real orphan process, replacement path, assertions
+      and teardown remain in use. It passes the changed-PID, living-observer, live-watcher and released-seat
+      assertions. This proves the measurement can observe a successful replacement, while the unmodified
+      red demonstrates that the specification guard fires.</p>
+      <p><strong>Inference and remaining work.</strong> The persistent red begins at
+      <code>d5811b20</code> and enters main at <code>8041fd4e</code>; earlier intermittent failures were
+      not surveyed. The fixture needs an explicit specification declaration in
+      <code>tests/test_crew_orphan.py</code>. Its replacement assertion remains valid, and no production
+      replacement repair is supported by these observations. The fixture repair and a mutation proving its
+      replacement assertion can fail belong to a separate node. The systemd restart and unavailable-bus
+      incidents are outside this test's reach. This diagnosis does not close them or its own driving followup.</p>
+      <p><strong>Durable receipts.</strong> The report lists every command, full revision, exact exception
+      and log under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/</code>:
+      <code>current-orphan.log</code>, <code>declared-spec-probe.log</code>, <code>fixture-contract.log</code>,
+      the four historical logs, <code>history_probe.py</code>, <code>history-driver.log</code>,
+      <code>history-results.json</code> and <code>history-blobs.json</code>. Only the report and these prose
+      landing additions are repository deliverables; no test or runtime repair is claimed.</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
       <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
