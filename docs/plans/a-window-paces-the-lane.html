@@ -153,15 +153,27 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     two:</p>
 
     <ul>
-      <li><strong>Send it.</strong> The node clears the bar for the metered lane, or sits far enough
-      below it that the free lane will execute it as specified.</li>
+      <li><strong>Send it metered.</strong> The node clears the bar, and the window has the room.</li>
+      <li><strong>Send it local.</strong> The node sits below the bar because it is prescribed
+      enough that the free lane will execute it as specified. <em>A prescribed node is never held
+      at any window fill</em> &mdash; that is the whole point of having a free lane, and it is the
+      assertion that keeps this outcome from collapsing into the one below it.</li>
       <li><strong>Split it.</strong> The node is near the bar because it is carrying more than one
-      deliverable. Two smaller nodes both clear it, and both dispatch now &mdash; which is the
-      cheapest of the three outcomes and the one a binary switch cannot express.</li>
+      deliverable. Two smaller nodes both clear it, and both dispatch now &mdash; the cheapest of
+      the four outcomes and the one a binary switch cannot express.</li>
       <li><strong>Hold it.</strong> The node is open-ended enough that it is better left
       undispatched than sent to the free lane to be done badly. An unmetered lane makes a bad node
-      cheap, not good, and a wrong answer that cost nothing still has to be found and undone.</li>
+      cheap, not good, and a wrong answer that cost nothing still has to be found and undone.
+      <em>Hold is a property of the node, never of the window.</em></li>
     </ul>
+
+    <p><strong>Four outcomes rather than three, corrected 2026-09-21 after the first
+    implementation inverted the policy.</strong> The section originally named send, split and hold,
+    with <em>send</em> defined as clearing the bar for the metered lane <em>or</em> sitting far
+    enough below it for the free lane. One verdict covering two opposite lanes left no way to say
+    "route this local", and the node built against it returned <code>hold</code> for a maximally
+    prescribed node at a full window while returning <code>send</code> for a maximally open-ended
+    one &mdash; and asserted that as intended. The vocabulary, not the worker, was the defect.</p>
 
     <p>The orchestrator may decide against the recommendation in either direction, and the bar
     records that it was overridden rather than preventing it. The recommendation also moves as the
