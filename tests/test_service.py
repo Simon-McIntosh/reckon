@@ -1,10 +1,16 @@
 """Unit rendering and installation for the systemd user service."""
 
+import re
 from pathlib import Path
 
 import pytest
 
 from reckon import service
+
+# An exited unit is worth a brief pause before the manager brings it back, but
+# not long enough that an exited process stays down for a meaningful fraction
+# of a minute.
+MAX_RESTART_DELAY_SECONDS = 30
 
 
 @pytest.fixture
@@ -21,11 +27,14 @@ def test_unit_runs_serve_on_the_requested_port(executable: Path):
     assert f"ExecStart={executable} serve --port 8766" in unit
 
 
-def test_unit_restarts_on_failure_and_installs_into_the_default_target(
+def test_unit_restarts_always_and_installs_into_the_default_target(
     executable: Path,
 ):
     unit = service.render_unit(executable=executable)
-    assert "Restart=on-failure" in unit
+    assert "Restart=always" in unit
+    delay = re.search(r"^RestartSec=(\d+)$", unit, re.MULTILINE)
+    assert delay is not None, unit
+    assert int(delay.group(1)) <= MAX_RESTART_DELAY_SECONDS
     assert "WantedBy=default.target" in unit
 
 
