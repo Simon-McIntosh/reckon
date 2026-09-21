@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T21:49:05",
+  "updated": "2026-09-21T22:26:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -246546,6 +246546,300 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a75",
+        "node": "the-filter-order-case-can-tell-the-two-orders-apart",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2876,
+                "cached_input_tokens": 472628,
+                "input_tokens": 475506,
+                "output_tokens": 1001,
+                "reasoning_output_tokens": 347,
+                "total_tokens": 476507,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260921"
+          },
+          "done_when": "tests/test_derived_figures_reach_a_reader.py carries a filter-order case whose fixture makes the pre-filter and post-filter widths DIFFERENT for at least one selected row, the case asserts the pre-filter value, the whole file still passes, and a recorded probe shows the two counts differing for that fixture so the case is demonstrably discriminating; and the declared mutation is applied, that case is observed to fail under it while the rest of the file still passes, and the red log is recorded in the run directory with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "Replace the filter-order case fixture in the derived-figures test with one whose width differs before and after the plan filter, so the case can distinguish the two orders.",
+          "id": "the-filter-order-case-can-tell-the-two-orders-apart",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T17:43:36Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/manifest.md",
+          "negative_control": "move the width derivation below the plan filter in reckon/ledger.py so width is counted over the selected rows instead of over all runs in flight at the dispatch stamp",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_derived_figures_reach_a_reader.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-monitor-invocation",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T17:43:49Z",
+        "completed_at": "2026-09-21T18:02:46.251Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1126,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1137,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "5c7f5538ae459fe3298c272bbd6f63c03491e681",
+        "commits": [
+          "937b8e042dbf33883a42b049ab9586f55233a096",
+          "2124271d36862e9d6d328c10ecabf0c913d066ee"
+        ],
+        "changed_lines": {
+          "added": 192,
+          "removed": 12,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_derived_figures_reach_a_reader.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the filter-order case now separates the two orders: its fixture makes the pre-filter and post-filter widths differ, so the mutation that counts width over the selected rows reddens exactly that case, where previously both orders produced the same value and the case could not fail for the right reason",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/manifest.md",
+        "scope_changed": false,
+        "session_id": "a8112be8-0668-4bdb-9eaa-0c9ebaec4e9b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8610980,
+            "input_tokens_cumulative": 8610980,
+            "output_tokens": 49064,
+            "output_tokens_cumulative": 49064,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T18:02:46.251Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1393,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 4093,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2089,
+              "log_fresh": false,
+              "manifest_commits": [
+                "8310dc5d87a8ab33e5bba8df73762c8b2bbab7a7 (test",
+                "1 file",
+                "+128 -6)",
+                "faca8b3c (docs",
+                "3 files",
+                "+177 -0)",
+                "eef6d40c (docs",
+                "2 files",
+                "+32 -0)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "bb107734a8997ea1dbcbe2565ef82f24228341325bd43c4adc3e6f40656f1921",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan work-does-not-fall-to-the-coordinator --section '\u00a79' --role review --spec-level exact --node review-of-the-check-command-test-proves-its-own-isolation --goal 'attach an independent review to run r-20260921T160010767690-the-check-command-test-proves-its-own-isolation' --done-when 'the review for r-20260921T160010767690-the-check-command-test-proves-its-own-isolation stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation.json --time-budget 45m --session ship-cdocw-20260921 --allow-unreconciled-runs --local",
+              "node": "the-check-command-test-proves-its-own-isolation",
+              "phase": "starting",
+              "plan": "work-does-not-fall-to-the-coordinator",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T160010767690-the-check-command-test-proves-its-own-isolation",
+              "session": "ship-cdocw-20260921",
+              "terminal_age_seconds": 2135,
+              "terminal_at": "2026-09-21T17:08:07Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-check-command-test-proves-its-own-isolation"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 99
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8610980,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1133.169,
+          "generated_tokens": 49064,
+          "generation_seconds": 1068.961,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 31.7,
+          "machine_seconds": 64.208,
+          "peak_input_tokens": 152289,
+          "tokens_per_second": 45.9,
+          "wall_tokens_per_second": 43.3
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-filter-order-case-can-tell-the-two-orders-apart",
+          "session_id": "a8112be8-0668-4bdb-9eaa-0c9ebaec4e9b",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T18:02:46.251Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.7,
+          "at_complete": 0.77,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_derived_figures_reach_a_reader.py"
+          ],
+          "declaration": "move the width derivation below the plan filter in reckon/ledger.py so width is counted over the selected rows instead of over all runs in flight at the dispatch stamp",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T174334604139-the-filter-order-case-can-tell-the-two-orders-apart/negative_control.log",
+          "reason": "a paraphrase of the declared mutation, not a substitution: the declaration said move the width derivation below the plan filter so width is counted over the selected rows, and the log's first line states the same change as the code operation that implements it. It reddens exactly the filter-order case with assert 1 == 2 while the other eight stay green, which is the discrimination the node exists to create - before this change both orders produced 2 and the case could not tell them apart."
+        },
+        "tool_steps": 81.0,
+        "orientation_input_tokens": 1387044.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -246830,6 +247124,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2008
+    "_version": 2009
   }
 }
