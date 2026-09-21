@@ -344,6 +344,11 @@
     this node. Anchor:
     <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-ledger-write-cannot-shrink">s2d-ledger-write-cannot-shrink</a>.</p>
 
+    <div class="r-comment" data-section="s2d" data-id="c-run-r-20260921T195859674086-a-promotion-never-creates-a-ledger" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Absent-ledger promotion refusal landed.</strong> Commit <code>89a574d2</code> makes <code>ledger.append_run</code> refuse an absent resolved ledger before it can append to the shadow run store, naming the file path and the run store as the independent authority that holds every promoted run. A genuinely new project must now state <code>allow_create=True</code>; malformed present <code>members</code> or <code>runs</code> collections are refused rather than silently read as an empty project. The pre-repair receipt shows an absent write succeeding at version <strong>1</strong> while the existing guard correctly refuses a current real ledger from <strong>1,267</strong> rows to <strong>1</strong>. The focused gate reports <strong>4 passed</strong>; deleting the absent-ledger refusal in an isolated copy makes the guard test red with <code>DID NOT RAISE LedgerError</code>. Ruff check is <strong>15 → 15</strong> and format deviations are <strong>1 → 1</strong>. Full record: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-absent-ledger-refusal">absent-ledger refusal evidence</a>.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
+    </div>
+
     <h2 id="s2e">§2e — Promotion destroys the path a finding needs</h2>
 
     <p>The three arguments for §2's refusal so far are all about the <em>score</em>: an unreviewed
