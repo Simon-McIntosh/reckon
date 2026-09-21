@@ -1496,13 +1496,24 @@ def _named_repository_files(node: TaskNode) -> list[str]:
 
 
 def _context_file_inputs(
-    repo: Path, node: TaskNode
+    repo: Path, node: TaskNode, authority: Mapping[str, Any] | None
 ) -> tuple[int, dict[str, list[dict[str, Any]]]]:
-    """Measure unique readable files named by scope or node declaration."""
+    """Measure unique repository reads, retaining dispatcher-grant provenance."""
 
     counted: set[Path] = set()
+    granted_paths: set[Path] = set()
+    plan = authority.get("plan") if isinstance(authority, Mapping) else None
+    project = plan.get("project") if isinstance(plan, Mapping) else None
+    if project:
+        # ``dispatch`` imports this module to resolve a plan, so this stays
+        # local to keep the routing import graph acyclic.
+        from reckon.crew.dispatch import _shared_landing_paths
 
-    def describe(raw: str) -> dict[str, Any]:
+        granted_paths = _shared_landing_paths(
+            node, project=str(project), authority=authority
+        )
+
+    def describe(raw: str, *, declared_read: bool) -> dict[str, Any]:
         candidate = Path(raw).expanduser()
         resolved = (
             candidate if candidate.is_absolute() else repo / candidate
@@ -1513,8 +1524,11 @@ def _context_file_inputs(
             "bytes": 0,
             "estimated_tokens": 0,
             "counted": False,
+            "provenance": "declared",
             "status": "missing",
         }
+        if not declared_read and resolved in granted_paths:
+            record["provenance"] = "granted"
         if not resolved.is_relative_to(repo):
             record["status"] = "outside-repository"
             return record
@@ -1528,19 +1542,25 @@ def _context_file_inputs(
             record["status"] = "directory" if resolved.is_dir() else "missing"
             return record
         tokens = _tokens_for_bytes(byte_count)
+        chargeable = record["provenance"] == "declared"
         record.update(
             {
                 "bytes": byte_count,
                 "estimated_tokens": tokens,
-                "counted": resolved not in counted,
+                "counted": chargeable and resolved not in counted,
                 "status": "file",
             }
         )
-        counted.add(resolved)
+        if chargeable:
+            counted.add(resolved)
         return record
 
-    write_paths = [describe(str(path)) for path in node.write_paths]
-    named_files = [describe(path) for path in _named_repository_files(node)]
+    write_paths = [
+        describe(str(path), declared_read=False) for path in node.write_paths
+    ]
+    named_files = [
+        describe(path, declared_read=True) for path in _named_repository_files(node)
+    ]
     all_inputs = [*write_paths, *named_files]
     file_tokens = sum(
         int(item["estimated_tokens"]) for item in all_inputs if item["counted"]
@@ -1572,7 +1592,9 @@ def _context_fit_verdict(
     standing_tokens, standing = _standing_context_input(
         repo, resolution.backend_settings
     )
-    file_tokens, files = _context_file_inputs(repo, resolution.node)
+    file_tokens, files = _context_file_inputs(
+        repo, resolution.node, resolution.authority
+    )
     estimated_tokens = standing_tokens + file_tokens
     shortfall_tokens = max(0, estimated_tokens - window_tokens)
     return {
