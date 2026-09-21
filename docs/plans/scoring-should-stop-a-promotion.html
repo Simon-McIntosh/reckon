@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -239,6 +239,23 @@
     were faithful, and both real instances are mode 1.</strong> The content-marker half is what
     catches what actually happens here; the ancestry half guards a case this repository has not
     produced. Both stay, and neither is described as the other.</p>
+
+    <p><strong>The prospective and retrospective checks are not two spellings of one idea, and the
+    difference decides what each must declare.</strong> The retrospective scan compares the merge
+    result against <em>the branch's whole content</em> for a path, so it is symmetric by
+    construction: a dropped addition and an undone deletion are the same measurement — the merge
+    does not match the branch here — and neither needs its own case. The prospective sweep cannot
+    do that, because at promotion time there is a revision and a target head but no branch to diff
+    against wholesale. It asks whether a <em>marker</em> is present, which means it has to be told
+    in advance whether presence or absence is the passing answer. <strong>That asymmetry is the
+    entire reason the removal assertion exists</strong>, and it is a property of the cheaper check
+    rather than an oversight in it.</p>
+
+    <p>Both controls are built and fire: a merge dropping an added file and reverting an edited
+    one, and a merge restoring a file the branch deleted and a line the branch removed. Should it
+    ever be cheap for the sweep to diff against the promoted head wholesale, it becomes symmetric
+    too and the removal assertion falls out of it — a larger change than the one specified here,
+    and the marker form works today.</p>
 
     <p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, and a new test file.</p>
 
