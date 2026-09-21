@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T14:14:12",
+  "updated": "2026-09-21T14:17:07",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -202267,6 +202267,251 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T101909656497-group-position-is-its-freshest-member",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a75b",
+        "node": "group-position-is-its-freshest-member",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3027,
+                "cached_input_tokens": 215368,
+                "input_tokens": 218397,
+                "output_tokens": 2174,
+                "reasoning_output_tokens": 798,
+                "total_tokens": 220571,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "371936ba-c8c3-4c56-951a-abbaeb2a5a49",
+            "session_id": "ship-budget-20260921"
+          },
+          "done_when": "reckon/crew/budget_group.py resolves backends into declared budget groups from resolved flight config rather than from lane names, asserted with the sol-family backends and spark resolving to exactly two groups and an undeclared backend left ungrouped; a group's position equals its freshest member reading and carries that member's observation age, asserted where the freshest member is not the first in declaration order; the position function accepts a group identifier and is asserted to have no per-backend entry point, so a per-lane position cannot be computed; the declared mutation is applied to a scratch copy, the named test is observed to FAIL, and that log is written to the negative-control path",
+          "estimated_hours": null,
+          "goal": "A quota position is computed once per declared budget group from its freshest member reading, never per lane.",
+          "id": "group-position-is-its-freshest-member",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T10:19:11Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T101909656497-group-position-is-its-freshest-member/manifest.md",
+          "negative_control": "MUTATION: in reckon/crew/budget_group.py group_position, return the first member carrying an ageing reading instead of the member with the newest observation stamp, so the position reported is no longer the group's freshest member.",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75b",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/budget_group.py",
+            "tests/test_budget_group.py",
+            "docs/plans/a-window-paces-the-lane.html",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "pace-group",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T10:19:48Z",
+        "completed_at": "2026-09-21T10:55:07.803Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2108,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2119,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b",
+        "commits": [
+          "4ef8356fc630038d299b2526abdc2c57845987eb",
+          "e219aa99036eaac85da3786c5ebadeaf7bf31023"
+        ],
+        "changed_lines": {
+          "added": 644,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget_group.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gp-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T101909656497-group-position-is-its-freshest-member/manifest.md",
+        "scope_changed": true,
+        "session_id": "595b2225-d8af-4f7f-8558-81e3769b5d0b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7980017,
+            "input_tokens_cumulative": 7980017,
+            "output_tokens": 37748,
+            "output_tokens_cumulative": 37748,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T10:55:07.803Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 17,
+            "goal_fidelity": 19,
+            "scope_discipline": 15
+          },
+          "absent": [],
+          "total": 85
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7980017,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2113.413,
+          "generated_tokens": 37748,
+          "generation_seconds": 1980.223,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 27.9,
+          "machine_seconds": 133.19,
+          "peak_input_tokens": 133733,
+          "tokens_per_second": 19.06,
+          "wall_tokens_per_second": 17.86
+        },
+        "follow_on_paths": [
+          "tests/test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal",
+          "reckon/mcp_views.py:691",
+          "/tmp/gp-preexisting.log.",
+          "reckon/mcp_views.py's"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/figures/a-window-paces-the-lane/group-position.svg",
+            "reason": "the standing instruction to illustrate a landing record carries no write scope and the fence named no figures path; a coordinator defect, accepted rather than discarded"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/group-position-is-its-freshest-member",
+          "session_id": "595b2225-d8af-4f7f-8558-81e3769b5d0b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T10:55:07.803Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": null,
+          "at_complete": 0.18,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_budget_group.py"
+          ],
+          "declaration": "MUTATION: in reckon/crew/budget_group.py group_position, return the first member carrying an ageing reading instead of the member with the newest observation stamp, so the position reported is no longer the group's freshest member.",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/group-position-is-its-freshest-member/freshest_member_replaced_by_first.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/group-position-is-its-freshest-member/freshest_member_replaced_by_first.red.log"
+        },
+        "tool_steps": 88.0,
+        "orientation_input_tokens": 1608701.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -202551,6 +202796,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1801
+    "_version": 1802
   }
 }
