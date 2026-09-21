@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1447,7 +1447,7 @@
         <tr><td>the review parsed</td><td>the review read <em>this</em> revision</td><td>§5c — a repaired run promotes on a record of what it was repaired from</td></tr>
         <tr><td><code>systemctl is-active</code> says the unit is down</td><td>no watcher seat is held</td><td>four needless restarts; the seat was held by an orphan and working</td></tr>
         <tr><td>no process matches <code>clive</code></td><td>no local-lane worker is running</td><td>reported 0 workers against 31 live pointers; <code>clive</code> execs <code>claude</code></td></tr>
-        <tr><td>a write path <em>matches</em> a granted path</td><td>the dispatcher granted it</td><td>a node declaring the evidence record itself is charged 0 for a 4&nbsp;MB file it will read; found by review at 64, the day's lowest</td></tr>
+        <tr><td>a write path <em>matches</em> a granted path</td><td>the dispatcher granted it</td><td>found by review at 64; the coordinator then <strong>overstated it twice</strong> &mdash; see the correction below, which is the better finding</td></tr>
         <tr><td>the stream is quiet for 900s</td><td>the worker is stalled</td><td>five live thinking workers resumed on the word; two then restated prior state, which the interruption produced</td></tr>
         <tr><td>the review <code>status</code> is <code>parsed</code></td><td>the parse consumed the whole reviewer output</td><td>a finding cut off mid-sentence validates; nearly cost a real defect, discounted as vague</td></tr>
       </tbody>
@@ -1907,6 +1907,55 @@
     <p>The qualification came from the session that produced the data, unprompted and against its
     own headline. That is worth recording beside the numbers, because the failure mode this plan
     exists to catch is a true figure standing in for the claim someone wanted it to make.</p>
+
+    <h2 id="s5h">§5h — A reproduction you build yourself tests your understanding, not the defect</h2>
+
+    <p><strong>A reviewer reported a real proxy defect; the coordinator then overstated it twice
+    inside ninety minutes, on a fix three parties had already watched work.</strong> The finding:
+    the context estimator excludes granted landing paths by <em>path identity</em>, so it cannot
+    tell a path the dispatcher appended from one the node declared. True, and worth a 64 &mdash;
+    the day's lowest review score.</p>
+
+    <p>What the coordinator did next was build a reproduction. It took thirty seconds, produced a
+    startling number &mdash; <em>zero tokens charged for a four-megabyte file</em> &mdash; and was
+    relayed to a peer inside two minutes as a warning to plan around. The probe used
+    <code>done_when="d"</code>. Measured afterwards with a brief resembling a real node:</p>
+
+    <table>
+      <caption>The same declared evidence path, under two briefs.</caption>
+      <thead><tr><th>Node</th><th>Charged</th></tr></thead>
+      <tbody>
+        <tr><td>declares the path in <code>write_paths</code> <strong>and names it</strong> in goal or done_when</td><td>17,997 &mdash; correct</td></tr>
+        <tr><td>declares it in <code>write_paths</code> only, brief never mentions it</td><td>0 &mdash; the real, narrower gap</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The placeholder bypassed the route the design uses.</strong> The read-charge runs off
+    <code>_named_repository_files</code> over <code>goal + done_when</code>: the brief states what
+    will be <em>read</em>, <code>write_paths</code> states what may be <em>written</em>. So a write
+    path was never evidence of reading, charging it was the original overreach, and the merged
+    change moved toward the design rather than away from it. The test asserting exactly this passes
+    at <code>HEAD</code> &mdash; and the next worker round was about to rewrite it to assert the
+    coordinator's mistake, which is how an error becomes a regression test.</p>
+
+    <p><strong>The rule, and it is the sharpest one this plan has produced about its own
+    practice:</strong> <em>a reproduction you construct tests your understanding of the defect, not
+    the defect.</em> The peer's field case &mdash; a real node, a real refusal, a real brief &mdash;
+    was the honest instrument and was already in hand. A self-built probe is a surprise generator
+    with no denominator: it will confirm whatever shape the builder already believes, and it does so
+    fast enough to be relayed before doubt arrives.</p>
+
+    <p>Three parties had confirmed the fix worked before any of this &mdash; the author, the
+    coordinator, and the reporting session measuring a real refusal row by row. None could have seen
+    the reviewer's defect, because their node declared neither file, which is exactly where the
+    proxy and the truth agree. <strong>Confirmation by people who want the fix to work checks the
+    case the fix was built for; a reader comparing the implementation against the stated property
+    checks the case nobody thought of.</strong> That is this plan's whole argument, arriving through
+    its own execution rather than through its premise.</p>
+
+    <p><strong>Open question, recorded rather than fixed.</strong> A write-path declaration the brief
+    never mentions used to be charged and now is not. Arguable both ways, and a design call rather
+    than something to settle inside a thirty-five minute node.</p>
 
     <h2 id="s5g">§5g — The sharpest thing a review caught all day is an assertion that cannot fail</h2>
 
