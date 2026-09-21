@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T09:35:42",
+  "updated": "2026-09-21T09:36:19",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -198357,6 +198357,210 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T070627466570-review-of-prescription-check-for-a-lane",
+        "plan": "background-agent-fitness-and-dispatch-scope",
+        "section": "\u00a73",
+        "node": "review-of-prescription-check-for-a-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1716,
+                "cached_input_tokens": 389528,
+                "input_tokens": 391246,
+                "output_tokens": 1670,
+                "reasoning_output_tokens": 766,
+                "total_tokens": 392916,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "the review file at the named path stores a parsed record with a SCORE and a JUSTIFICATION line for each of the five dimensions in reckon/crew/review.py:43, every score an integer 0..20. The review must additionally return an explicit verdict on the one interpretation the worker flagged for review rather than deciding silently: it implemented the ruling's 'one artifact' as 'at most one non-test path, excluding the plan file and the cumulative evidence record', on the ground that a literal reading would refuse every node dispatched on a plan including itself. State whether that exclusion is right, and whether judge_prescribed applied to its own dispatch record returns prescribed True, by calling it. Report three reachability findings rather than diff correctness: whether every one of the five property names in PRESCRIBED_PROPERTIES is reachable as a failure under some input, whether the module's reuse of node.py's NEGATIVE_CONTROL_NONE agrees with the brief's own wording about a bare none with no colon, and whether any existing caller would now be judged unprescribed. It re-runs the node's gate at the merged head 346b98b6 and records the observed result, and confirms the negative-control log reddens the fence tests and not others. Every finding names a file and a line",
+          "estimated_hours": null,
+          "goal": "Attach an independent review to run r-20260921T065134568209-prescription-check-for-a-lane, which landed on the local lane and is unpromoted",
+          "id": "review-of-prescription-check-for-a-lane",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T07:06:28Z",
+            "read_at": "2026-09-21T07:06:29Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 8.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070627466570-review-of-prescription-check-for-a-lane/manifest.md",
+          "negative_control": "none: a review node writes only its own stored review record and commits no test, so no mutation of product code could make its record fail",
+          "plan": "background-agent-fitness-and-dispatch-scope",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "20m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T065134568209-prescription-check-for-a-lane.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "codex-d",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-21T07:06:41Z",
+        "completed_at": "2026-09-21T07:19:05Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 744,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 744,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "aa3c5ac61b28bd545c81e4ba6f8740e7c0cf3666",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "parse the stored review and require five dimensions, no absent, and recovery._review_is_complete True",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070627466570-review-of-prescription-check-for-a-lane/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070627466570-review-of-prescription-check-for-a-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c2c9-d595-7953-b0be-078efb4d61e8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7145216,
+            "cached_input_tokens_cumulative": 7145216,
+            "input_tokens": 7303274,
+            "input_tokens_cumulative": 7303274,
+            "output_tokens": 27019,
+            "output_tokens_cumulative": 27019,
+            "reasoning_output_tokens": 9963,
+            "reasoning_output_tokens_cumulative": 9963
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T07:19:05Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 9.0,
+              "resets_at": 1790575133,
+              "observed_at": "2026-09-21T07:19:05Z"
+            }
+          ],
+          "notional_cost_usd": 29.7535,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 7145216,
+          "cumulative_input_tokens": 14448490,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 36982
+        },
+        "follow_on_paths": [
+          "node.py",
+          "plan/node"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "a review node's deliverable is its stored review record outside the repository; it changes no tracked path by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-of-prescription-check-for-a-lane",
+          "session_id": "01a0c2c9-d595-7953-b0be-078efb4d61e8",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T07:19:05Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.0,
+        "impl_move": {
+          "plan": "background-agent-fitness-and-dispatch-scope",
+          "at_dispatch": 0.0,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 93.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -198641,6 +198845,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1767
+    "_version": 1768
   }
 }
