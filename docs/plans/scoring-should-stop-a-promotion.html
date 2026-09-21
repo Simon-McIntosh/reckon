@@ -1251,6 +1251,21 @@
     <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T142050484334-call-sites-emission" data-who="crew-worker" data-when="2026-09-21">
       <p><strong>Production call-site measurement landed in <code>57ed30ee</code>.</strong> The review prompt now requires the non-optional <code>CALL_SITES</code> line, defines production as runtime code that can reach the change, excludes the node's own test files, and distinguishes the literal <code>CALL_SITES: none</code> from an omitted line. <code>parse_review</code> stores <code>call_sites</code> and integer <code>call_site_count</code> only when the line is emitted; <code>none</code> becomes <code>[]</code> and <code>0</code>, while omission leaves both keys absent. The extended prompt falsifier and the new call-site tests passed in the 32-test focused gate, including filtering synthesised records by <code>call_site_count == 0</code> and calling <code>_review_is_complete</code> on a record with no call-site key. The declared negative control removed the prompt requirement and made <code>tests/test_review_scoring.py</code> fail 1 test with 22 passing; the restored prompt is byte-equivalent to the committed implementation. Receipt: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/negative-control-call-sites.log</code>. Cumulative anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-production-call-sites">production-call-sites</a>.</p>
     </div>
+    <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T152600175270-granted-landing-path-context" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Landing-path context accounting landed.</strong> Commit <code>9b5b069e</code>
+      derives the shared landing identities from <code>_shared_landing_paths</code> inside
+      <code>routing._context_file_inputs</code>, avoiding an import cycle and excluding only
+      dispatcher-granted plan, evidence, and figure-topic targets from read-context tokens.
+      The write scope is unchanged. A 4,000,000-byte synthetic evidence record previously
+      charged 1,142,919 tokens to a node that named neither file; it now charges zero for
+      those targets. A file explicitly named as a read input remains charged and is emitted
+      as <code>provenance: declared</code>, while grants are filterable as
+      <code>provenance: granted</code>. The focused test passes; disabling the computed
+      identity exclusion reddens both cases. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-granted-landing-path-context">granted landing targets</a>.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+      landing contract requires its own append-only plan and cumulative-evidence records, while
+      section closure and followup resolution remain coordinator-owned.</p>
+    </div>
     <h2 id="s4b">§4b — Which lane this plan's own work runs on</h2>
 
     <p>An interim ruling of 2026-09-21, recorded in
