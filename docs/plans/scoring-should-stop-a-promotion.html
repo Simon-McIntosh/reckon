@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="77">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1907,6 +1907,43 @@
     <p>The qualification came from the session that produced the data, unprompted and against its
     own headline. That is worth recording beside the numbers, because the failure mode this plan
     exists to catch is a true figure standing in for the claim someone wanted it to make.</p>
+
+    <h2 id="s5i">§5i — A review's triage expires when the module gets its first caller</h2>
+
+    <p><strong>The call-site emission turned out to be load-bearing input to severity, not an audit
+    field, and nobody designed it that way.</strong> On its first use outside this session a
+    reviewer emitted <code>CALL_SITES: none</code> and triaged <em>all four</em> of its findings as
+    follow-on &mdash; including one that reads as serious on its face: a compressed roll aborts the
+    entire ingest pass, so a directory holding <code>serve.jsonl</code> beside
+    <code>serve.jsonl.2.gz</code> ingests nothing at all.</p>
+
+    <p>That triage is <em>correct today</em>, because nothing in production constructs the reader.
+    It becomes wrong the moment the wire node lands. <strong>So a finding's severity is a function
+    of the call-site count at the time of review, and a review's triage therefore expires when the
+    module gets its first caller &mdash; and nothing re-triages on that event.</strong> A gate that
+    refuses on blocking findings will silently change its verdicts once callers exist, without any
+    review being re-run and without anything recording that the ground moved.</p>
+
+    <p>This is the same defect as the stale review in §5c, one level up: there the record described
+    a revision that no longer exists, here the record describes a <em>reachability</em> that no
+    longer holds. Both are records that were true when written and become false without being
+    touched, and the call-site count is what makes the second one detectable: a stored review
+    carrying <code>call_site_count: 0</code> against a module that now has callers is a mechanical
+    comparison, not a judgement. <strong>That is the re-triage trigger, and it costs one query.</strong></p>
+
+    <p><strong>The reviewer also read the plan unprompted, and that should not be encouraged.</strong>
+    Its finding cites the plan file and line to check whether the absence of callers was intended —
+    which is the adjudication §5f deliberately placed <em>outside</em> the reviewer. The brief asked
+    only for the count. It is worth knowing reviewers will reach for the plan, and worth not
+    building on: a reviewer that reads the plan is a reviewer the plan can mislead, and the
+    count-versus-intent comparison belongs in a gate where both halves are visible and neither is
+    supplying the other's context.</p>
+
+    <p><strong>Done when</strong> a stored review's <code>call_site_count</code> is compared against
+    the module's current caller count at promotion, and a run whose reviewed count was zero while
+    callers now exist is refused with both figures named, asserted with a synthesised record and a
+    tree that gained a caller after it was written; and the refusal names re-review rather than a
+    waiver, because the finding severities themselves are what went stale.</p>
 
     <h2 id="s5h">§5h — A reproduction you build yourself tests your understanding, not the defect</h2>
 
