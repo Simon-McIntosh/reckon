@@ -425,6 +425,19 @@
       (commit <code>45242ed9</code>).
     </p>
 
+    <p class="landed-summary">
+      <strong>§2e declared-control confirmation — unknown liveness must remain a refusal.</strong>
+      The existing red receipt records a different phase-only mutation, so it cannot establish the
+      mutation this node declared. An archived copy of the current tree instead changed only the
+      <code>unknown</code> verdict in <code>member_in_flight_verdict</code> to release its member.
+      The unmutated focused gate passed <strong>13 passed, 0 failed</strong>; the declared mutation
+      failed <strong>3 failed, 10 passed</strong> (exit 1): the no-pid and foreign-host pointers no
+      longer blocked, and the refusal loop no longer raised for either unknown shape. Both receipts
+      show <code>reckon</code> importing from the archived tree, not a checkout. The archive was
+      never merged or written back. Full record:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#member-in-flight-declared-mutation">§2e declared-control evidence</a>.
+    </p>
+
     <p><strong>The remainder costs everything the landing was for, and the number is worth
     stating.</strong> The node's own review measured it: the production guard at
     <code>reckon/crew/dispatch.py:3241</code> still tests only

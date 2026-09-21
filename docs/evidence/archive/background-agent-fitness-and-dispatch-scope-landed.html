@@ -310,6 +310,27 @@
       <code>~/.config/reckon/crew/runs/r-20260921T090441654915-member-guard-counts-live-processes/negative_control.log</code>.
     </p>
 
+    <h3 id="member-in-flight-declared-mutation">Declared-control confirmation</h3>
+    <p>
+      The earlier receipt applied a phase-only mutation, which is different from this node's declared
+      control and therefore cannot prove it. At committed revision
+      <code>7d7e563c1edbe7f9ee160c2b54ff2ab1c6ea9f35</code>, this node materialised an isolated archive
+      and first ran <code>tests/test_member_guard_counts_live_processes.py</code> unchanged:
+      <strong>13 passed, 0 failed, exit 0</strong>. The archive's import receipt resolves
+      <code>reckon</code> under the archive directory, so the command did not silently exercise a
+      checkout. It then changed only the non-terminal <code>unknown</code> return from
+      <code>blocks=True</code> to <code>blocks=False</code>: “make unknown liveness release the member
+      instead of blocking it in the member guard; tests/test_member_guard_counts_live_processes.py
+      must fail”. The focused gate then produced <strong>3 failed, 10 passed, exit 1</strong>.
+      The failures are the no-recorded-pid assertion, the foreign-host assertion, and the refusal
+      loop that must raise for every blocking state. This directly proves that treating unknown as
+      release is rejected by the guard. Baseline receipt:
+      <code>~/.config/reckon/crew/runs/r-20260921T090441654915-member-guard-counts-live-processes/logs/negative-control-declared-baseline.log</code>.
+      Declared red receipt:
+      <code>~/.config/reckon/crew/runs/r-20260921T090441654915-member-guard-counts-live-processes/logs/negative-control-declared.log</code>.
+      The archive was not written back, so the worktree source remains unmodified.
+    </p>
+
     <h3>What this node did not do</h3>
     <p>
       The predicate is the guard's decision, but the dispatch call site is not yet switched to it:
