@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -432,6 +432,46 @@ binding_observed: null          &larr; the only absent field</code></pre>
     <code>crew member list</code> already has the answer at the moment of refusal; and
     <code>crew observe</code> is not recommended without a run id in a refusal that cannot supply
     one, asserted by checking the refusal's own remedy is runnable as written.</p>
+
+    <h2 id="s2g">§2g — Naming the file is what refuses the node</h2>
+
+    <p><strong>The context estimator charges every file <em>mentioned</em> in a node's goal or
+    done-when at its full size, whether the worker will open it or not.</strong>
+    <code>_NAMED_REPOSITORY_FILE</code> in <code>reckon/crew/routing.py:48</code> matches anything
+    shaped like a path, <code>_named_repository_files</code> scans
+    <code>goal + done_when</code>, and <code>_context_file_inputs</code> adds the result to the
+    declared write paths before comparing against the lane window.</p>
+
+    <p><strong>So the prescribed shape taxes itself.</strong> "One artifact, the file and line
+    named" is the core of a prescribed node, and naming the file is what inflates its estimate —
+    to the point of refusal. Three fleets measured this independently on the same day:</p>
+
+    <table>
+      <caption>The same discipline, charged three ways. Every figure measured 2026-09-21.</caption>
+      <thead><tr><th>Fleet</th><th>What happened</th></tr></thead>
+      <tbody>
+        <tr><td>imas-codex</td><td>naming <code>imas_codex/standard_names/graph_ops.py</code> cost <strong>326,217 tokens</strong> and refused the node at 498,387 against a 480,000 window; writing the module dotted dropped the same node to <strong>172,170</strong></td></tr>
+        <tr><td>nova</td><td>two single-file figure nodes refused at <strong>627,867</strong> and <strong>530,778</strong>, each declaring one renderer, one test and three images</td></tr>
+        <tr><td>reckon</td><td>9 live pointers charged <strong>307,734 tokens across 15 mentions</strong> for files never declared — including this plan's own corrective node, charged <strong>43,807</strong> for citing <code>promotion.py</code> and its test in a done-when</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Two of those fleets were blocked on exactly the work the ruling routes local.</strong>
+    A node is admitted or refused by <em>how a file was spelled</em> rather than by what it will
+    read, and a large module can never be a declared write path at all.</p>
+
+    <p><strong>What is already right, and should not be broken fixing this.</strong> Deduplication
+    works: a path appearing as both a write path and a prose mention is counted once. A declared
+    <em>directory</em> is recorded <code>counted: false</code> rather than walked. The defect is
+    narrower than it looks — it is the premise that a citation implies a read.</p>
+
+    <p><strong>Done when</strong> a file named only in prose is not charged, asserted with a node
+    whose done-when cites a large module it does not declare, requiring the estimate to match the
+    same node with the citation removed; a declared write path is still charged, asserted, so the
+    fix does not blind the check; the dedup and directory behaviours above are pinned by tests so
+    the repair cannot regress them; and the refusal reports which inputs it counted and their
+    sizes, because today an inflated estimate and a genuinely oversized node are indistinguishable
+    at the point of refusal.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
