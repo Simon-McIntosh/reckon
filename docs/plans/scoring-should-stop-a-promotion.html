@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1346,6 +1346,76 @@
     <p><strong>Nine of these were made in one day across three sessions by readers who knew the
     rule.</strong> That is the argument for a mechanical check rather than a habit: the failure
     needs no carelessness, only a plausible adjacent field that happens to be populated.</p>
+
+    <p><strong>This plan's own eight nodes are now all reviewed, and the verdicts are the honest
+    answer to whether the reflex is worth its cost.</strong> Eight parsed records between 87 and
+    100, fourteen findings. What they caught, one row per node, at the highest-value finding each:</p>
+
+    <table>
+      <caption>Every node this plan landed, its review total, and the sharpest thing that review
+      found. Three of the eight are defects in the gate this plan itself shipped.</caption>
+      <thead><tr><th>Node</th><th>Total</th><th>The finding that mattered</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>reading bound and item verdicts</td><td>100</td>
+          <td>no defect — reachability confirmed at the merged head by calling the predicate, plus
+          a caller census over seven <code>parse_review</code> call sites in five unchanged files</td>
+        </tr>
+        <tr>
+          <td>declared mutation reddens the refusal test</td><td>94</td>
+          <td>the declared mutation sits after a <code>mutation: </code> prefix where the done-when
+          required it to <em>be</em> the first line; and the receipts were written to
+          <code>/tmp</code>, which does not survive</td>
+        </tr>
+        <tr>
+          <td>review gate covers every writing run</td><td>93</td>
+          <td>the manifest-status refusal is parametrised over three literal synonyms while the
+          live fleet carries <strong>at least five more</strong> non-vocabulary values — measured
+          the same day that <code>implemented-locally</code> made a whole manifest unreadable</td>
+        </tr>
+        <tr>
+          <td>worker session is session scoped</td><td>93</td>
+          <td>the new test carries node and plan fixture identities in source, against the
+          repository's own naming rules</td>
+        </tr>
+        <tr>
+          <td>prescription checks refuse what they were passing</td><td>92</td>
+          <td>a direct call with <code>negative_control="none"</code> still returns prescribed
+          <code>True</code>, because the check only rejects the <code>none:</code> prefix — a
+          fail-open surviving inside the node that was closing fail-opens</td>
+        </tr>
+        <tr>
+          <td>promotion write cannot shrink the ledger</td><td>90</td>
+          <td>the guard compares run <em>counts</em> where its sibling compares <em>ids</em>, so a
+          write substituting every row for a different one of the same length passes unrefused</td>
+        </tr>
+        <tr>
+          <td>review reflex fires on the sweep</td><td>88</td>
+          <td>a sweep whose only review outcome is a refusal or an awaiting-lane result writes
+          nothing to the append-only recovery log — so the reviews that did <em>not</em> launch are
+          exactly the ones with no record</td>
+        </tr>
+        <tr>
+          <td>member guard counts live processes</td><td>87</td>
+          <td>the production dispatch guard never calls the new verdict at all; with 39 of 52 live
+          pointers non-terminal, the members this landing released is <strong>zero</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The last row is the one that settles the question.</strong> That node shipped a
+    function, thirteen passing tests, a red control and a review scoring 87, and changed nothing —
+    because nothing on the dispatch path calls it. Its own section had said the wire-up was the
+    remainder; the coordinator reported the behaviour as delivered anyway. No gate in this plan
+    would have caught it and no coordinator reading the manifest did. <em>The independent reader
+    did</em>, in one line, by grepping for callers. That is the whole argument for the reflex, and
+    it is worth more than the eight totals above it.</p>
+
+    <p>Two of the other rows are the same shape one level down — a fail-open inside the node closing
+    fail-opens, and a synonym list shorter than the fleet it is meant to cover — and two are naming
+    violations the repository's own rules forbid, which no test asserts. That is the mix a review
+    catches and a gate does not: not wrongness the author could have tested for, but the gap
+    between what the change does and what its author believed it did.</p>
 
     <p><strong>The cause behind that last row is not what it was first reported as, and the true
     one is worse.</strong> The session that found it has since withdrawn the claim that the store
