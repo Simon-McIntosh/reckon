@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.45">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -424,6 +424,24 @@
       <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#member-in-flight-liveness">§2e landed</a>
       (commit <code>45242ed9</code>).
     </p>
+
+    <p><strong>The remainder costs everything the landing was for, and the number is worth
+    stating.</strong> The node's own review measured it: the production guard at
+    <code>reckon/crew/dispatch.py:3241</code> still tests only
+    <code>pointer.get("phase") not in _TERMINAL_RUN_PHASES</code>, and
+    <code>refuse_member_in_flight</code> has no caller anywhere outside its own test file — grep
+    returns two hits, both in <code>tests/test_member_guard_counts_live_processes.py</code>. With
+    39 of 52 live pointers non-terminal at the time of measurement, <strong>the number of members
+    released by this landing is zero</strong>, not the figure a coordinator reading the landing
+    would infer.</p>
+
+    <p>Recording it plainly because the section was honest and the reader was not: the landing
+    states the wire-up is the remainder, and a coordinator still reported the behaviour as
+    delivered. That is the shape this repository keeps producing — a function, a passing gate and a
+    scoring review, all true, standing in for a caller that does not exist. The remainder is
+    dispatched as <code>the-dispatch-guard-consults-the-liveness-verdict</code>, whose done-when
+    enters through <code>crew.dispatch.dispatch</code> rather than calling the helper, and asserts
+    the grep count so the wiring cannot regress to a direct phase test.</p>
 
     <h2 id="s2f">§2f — The lane reading is discarded whole, and the roster is invisible at the refusal</h2>
 
