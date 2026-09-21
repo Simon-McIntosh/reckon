@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="Scoring Should Stop A Promotion">
+  <meta name="plan-summary" content="The reviewer is reachable only from an error path, and a run that never had a review promotes exactly like one that passed.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-standalone" content="Repairs a review path this repository already ships; it consumes no other plan&#x27;s evidence and gates none.">
+  <title>Scoring Should Stop A Promotion | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The reviewer works, and only an error path asks for it</h2>
+
+    <p>The independent review is built and it is good. <code>reckon/crew/review.py</code>
+    carries the schema, parser and durable store; <code>prompts/review.md</code> carries the
+    checklist; <code>dispatch_review_for_run</code> composes and launches the review a
+    scoring run has already specified for itself; and
+    <code>tests/test_scoring_dispatches_its_review.py</code> pins the behaviour, including
+    that an unavailable lane is recorded rather than swallowed. <strong>147 reviews are
+    stored across four projects</strong>, and they are thorough: a sample reproduces the
+    node's gate first-hand, replays the declared mutation at head and at base, diffs the
+    landed scope against the declared write paths, and scans the added lines for banned
+    labels.</p>
+
+    <p><strong>None of that fires on a healthy run.</strong> The classification
+    <code>scoring</code> is defined as complete-but-unreviewed — the record's own words are
+    <em>"no independent review is attached"</em> — and two facts follow from where it is
+    read:</p>
+
+    <ul>
+      <li><strong>The reflex is reachable only through <code>reckon crew recover</code></strong>,
+      whose docstring describes it as classifying pointers left by an interrupted session.
+      A coordinator on the ordinary path goes dispatch → observe → complete and never calls
+      it. The second entry point, <code>dispatch_awaiting_reviews</code>, is written and
+      documented as "the reflex's entry point" and <strong>has no caller and no test</strong>.</li>
+      <li><strong><code>reckon crew complete</code> promotes a run in <code>scoring</code>
+      without refusing.</strong> The classification names the missing review and nothing
+      consults it at the moment the run becomes committed evidence.</li>
+    </ul>
+
+    <p><strong>Measured 2026-09-21 on imas-ambix.</strong> A five-node wave plus two earlier
+    nodes were dispatched, verified by hand, and promoted. The project holds three stored
+    reviews, the newest from 2026-09-17: <strong>not one node of that sprint was
+    reviewed</strong>, and its committed ledger carries zero review-role runs. Every node was
+    promoted past a classification that existed to stop it. The same coordinator ran
+    <code>recover</code> twice — at the start of each resumed session, when the runs were
+    still <code>running</code> — so the only trigger fired at the only times it could do
+    nothing.</p>
+
+    <p>This is the failure the review module was written to prevent, stated in its own
+    docstring: <em>"a promoted run today carries a gate the worker wrote itself, which is
+    why gate pass sits at 1.00 on every lane in the committed ledger and cannot separate one
+    lane from another."</em> The gate remains self-scored not because the second opinion is
+    missing, but because the only door to it is marked <em>recovery</em>.</p>
+
+    <svg viewBox="0 0 700 150" width="100%" role="img"
+         aria-label="The promotion path passes beside the scoring state rather than through it; only the recover path reaches the reviewer."
+         style="max-width:700px;font-family:system-ui,-apple-system,sans-serif">
+      <text x="8" y="16" font-size="12" fill="#555">the path a healthy run takes</text>
+      <rect x="8" y="26" width="92" height="30" fill="none" stroke="#c8c8cc"/>
+      <text x="22" y="46" font-size="13" fill="#1a1a1a">dispatch</text>
+      <path d="M100 41 L140 41" stroke="#1a1a1a" stroke-width="1" marker-end="url(#a)"/>
+      <rect x="140" y="26" width="92" height="30" fill="none" stroke="#c8c8cc"/>
+      <text x="158" y="46" font-size="13" fill="#1a1a1a">observe</text>
+      <path d="M232 41 L272 41" stroke="#1a1a1a" stroke-width="1" marker-end="url(#a)"/>
+      <rect x="272" y="26" width="92" height="30" fill="none" stroke="#c8c8cc"/>
+      <text x="288" y="46" font-size="13" fill="#1a1a1a">complete</text>
+      <path d="M364 41 L404 41" stroke="#1a1a1a" stroke-width="1" marker-end="url(#a)"/>
+      <rect x="404" y="26" width="104" height="30" fill="none" stroke="#1a1a1a"/>
+      <text x="418" y="46" font-size="13" font-weight="600" fill="#1a1a1a">promoted</text>
+      <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6"
+        orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#1a1a1a"/></marker></defs>
+
+      <text x="8" y="98" font-size="12" fill="#555">where the reviewer lives</text>
+      <rect x="140" y="106" width="92" height="30" fill="none" stroke="#c8c8cc" stroke-dasharray="3 3"/>
+      <text x="152" y="126" font-size="13" fill="#777">recover</text>
+      <path d="M232 121 L272 121" stroke="#777" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a)"/>
+      <rect x="272" y="106" width="92" height="30" fill="none" stroke="#0b6e4f"/>
+      <text x="288" y="126" font-size="13" fill="#0b6e4f">scoring</text>
+      <path d="M364 121 L404 121" stroke="#0b6e4f" stroke-width="1" marker-end="url(#a)"/>
+      <rect x="404" y="106" width="104" height="30" fill="none" stroke="#0b6e4f"/>
+      <text x="418" y="126" font-size="13" fill="#0b6e4f">review runs</text>
+      <text x="520" y="126" font-size="12" fill="#777">reached only by an error path</text>
+    </svg>
+    <p><em>Promotion passes beside the scoring state rather than through it. The reviewer
+    exists, is tested, and sits on a branch a healthy run never takes.</em></p>
+
+    <h2 id="s2">§2 — Promotion refuses a run that was never reviewed</h2>
+
+    <p>Make the classification load-bearing at the one moment it matters. A passing
+    <code>implement</code> run whose pointer classifies as <code>scoring</code> is refused by
+    <code>reckon crew complete</code>, naming the review that is missing and the command that
+    produces it — the same shape as the refusals that already guard the negative control, the
+    declared scope and the impl move.</p>
+
+    <p>A refusal that cannot be overridden becomes a reason to stop using the tool, so it
+    carries an explicit waiver that records <em>why</em> on the promoted row, exactly as
+    <code>--no-impl-change</code> and <code>--accept-path</code> do. An unreviewed promotion
+    then remains possible and remains visible, which is the difference between a discipline
+    and an obstacle.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>,
+    <code>reckon/cli.py</code>, <code>tests/test_crew_promotion_requires_review.py</code> (new).</p>
+
+    <p><strong>Done when</strong> promoting a passing implement run with no stored review is
+    refused and the refusal names both the run and the review command; the same promotion
+    with the waiver succeeds and the promoted ledger row carries the waiver reason; a run
+    whose review is stored promotes unchanged; a review-role run is never itself gated on
+    having a review; and the repository's own lint and test gates pass.</p>
+
+    <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
+
+    <p>Give <code>dispatch_awaiting_reviews</code> the caller its docstring already assumes.
+    The sweep is idempotent by construction — a run whose review is stored or in flight is
+    left alone — so it is safe to call from a cadence rather than from a repair.</p>
+
+    <p>The natural site is the follower's existing periodic sweep, which already resumes runs
+    whose external wait has ended: a session watching its own fleet is exactly the thing that
+    should notice a run has entered scoring. Calling it there means the review is dispatched
+    by the same mechanism that tells the coordinator the run finished, rather than by the
+    coordinator remembering.</p>
+
+    <p>The refusal path stays as designed: a scope, member, follower, context-fit or budget
+    refusal is reported against the run and the sweep continues to the rest of the fleet. A
+    sweep that stops at the first refusal would make one unavailable lane look like a quiet
+    one.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/recovery.py</code>,
+    <code>reckon/crew/follow.py</code>, <code>tests/test_review_reflex_sweep.py</code> (new).</p>
+
+    <p><strong>Done when</strong> a run entering scoring while a follower is armed has its
+    review dispatched without any command being issued, asserted; the sweep run twice over
+    the same fleet dispatches exactly one review per run, asserted; a refusal on one run
+    leaves the others dispatched, asserted; and <code>dispatch_awaiting_reviews</code> has
+    the test coverage it currently lacks entirely.</p>
+
+    <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
+
+    <p>A review nobody waits for is as useless as one nobody asks for. The checklist in
+    <code>prompts/review.md</code> is thorough and it must stay discriminating while
+    finishing in a few minutes, because a reflex that adds half an hour to every landing
+    will be waived away.</p>
+
+    <p>Two changes, in tension, and both required. <strong>Bound the work:</strong> the
+    reviewer reads the goal, the done-when, the declared paths, the manifest and the diff —
+    it does not re-derive the implementation, re-run the full suite, or review code the node
+    did not touch. <strong>Enumerate the verdicts:</strong> every checklist item carries an
+    explicit verdict, and the reviewer's own done-when requires that every item has one.</p>
+
+    <p>The second is not bureaucracy, it is the lesson this repository's own fleet taught on
+    2026-09-21: three of four workers in one wave skipped a step that was declared in their
+    prompt and absent from their measure. <strong>A reviewer asked for a summary will skip
+    items in exactly the same way, and a clean summary is indistinguishable from a thorough
+    one.</strong> Per-item verdicts make the skipping visible; a summary hides it.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/prompts/review.md</code>,
+    <code>tests/test_review_prompt_contract.py</code> (new).</p>
+
+    <p><strong>Done when</strong> a parsed review carries a verdict for every checklist item
+    and a review missing one is rejected by the parser rather than scored over fewer items;
+    the falsifier that already checks the prompt names every schema dimension is extended to
+    the checklist items; and the median wall time of the reviews dispatched in §5 is recorded
+    against a stated bound.</p>
+
+    <h2 id="s5">§5 — Dogfood: this plan's own back half is reviewed</h2>
+
+    <p>From this section onward, every node of this plan is promoted only with a stored
+    review, produced by the machinery §2 and §3 have just wired. The plan therefore tests its
+    own repair with the only evidence that counts — whether the thing works when something
+    real depends on it.</p>
+
+    <p>This is also the first measurement of §4's bound. The reviews dispatched here are the
+    sample: their wall times, their findings, and how many of those findings a human would
+    have wanted are what say whether a reflexive review is worth its latency. A wave in which
+    every review returns clean and fast is a result; so is one in which reviews are slow
+    enough to be waived, and that result must be recorded rather than absorbed.</p>
+
+    <p><strong>Done when</strong> every node from this section on carries a stored, parsed
+    review at promotion with no waiver used; the review wall times are recorded with their
+    median; and any finding a review raised that the coordinator acted on is named, because a
+    review that never changed an outcome has not yet earned its place.</p>
+
+    <h2 id="s6">§6 — A reviewer that can see the figure</h2>
+
+    <p>The text reviewer reads a diff. It cannot open a rendered figure, and the figure rules
+    this repository enforces are visual ones: legible at a glance, high data-ink, no gradients
+    or decorative fills, text that clears contrast on its background, and — the rule most
+    often broken — <em>never an image of what is naturally a table</em>.</p>
+
+    <p>A separate figure-review role reads the rendered artifact and judges it against those
+    rules. It reports defects and obvious failures, and it has exactly one thing it may
+    write: <strong>the figure's caption</strong>. A caption is the one part of a figure that
+    is prose about the image rather than the image itself, and it is the part most often left
+    as a restatement of the title. Everything else the reviewer finds is flagged for the
+    node that drew it, on the same flag-never-fix rule the text reviewer follows: a reviewer
+    that redraws becomes a second author with no reviewer, and its findings stop being
+    falsifiable because the evidence moved.</p>
+
+    <p><strong>This role requires a lane that can read an image.</strong> That is a capability
+    requirement, not a preference: a text-only lane cannot serve it at all, and routing it to
+    one would produce a confident review of a file the reviewer never saw. The role therefore
+    declares the requirement and dispatch refuses a lane that does not meet it, in the same
+    way a context-fit refusal already rejects a node too large for its window. Which lane
+    satisfies it is a runtime routing choice and is deliberately not fixed here.</p>
+
+    <p>The trigger is narrow on purpose: a node is figure-reviewed when its landed diff
+    touches an image under a figures directory. Most nodes never are, so the cost falls only
+    where a figure exists.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/figure_review.py</code> (new),
+    <code>reckon/crew/prompts/figure-review.md</code> (new),
+    <code>reckon/crew/recovery.py</code>,
+    <code>tests/test_figure_review.py</code> (new).</p>
+
+    <p><strong>Done when</strong> a node whose diff adds or changes an image under a figures
+    directory has a figure review dispatched and no other node does, asserted; the role is
+    refused on a lane that cannot read an image, with the refusal naming the capability
+    rather than the lane; the reviewer's only write is the caption, asserted by diffing its
+    commit; a figure that is a table of text is flagged rather than accepted, asserted
+    against a fixture that is one; and the repository's lint and test gates pass.</p>
+
+    <h2 id="s7">§7 — Sequencing</h2>
+
+    <table>
+      <caption>Node order and the reason each waits.</caption>
+      <thead><tr><th>Node</th><th>Runs after</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>§2 promotion refuses</td><td>—</td><td>Independent; makes the gap visible immediately</td></tr>
+        <tr><td>§3 reflex on the healthy path</td><td>§2</td><td>Refusing before dispatching would block every landing</td></tr>
+        <tr><td>§4 prompt bound and per-item verdicts</td><td>§3</td><td>Needs reviews actually flowing to measure against</td></tr>
+        <tr><td>§5 dogfood</td><td>§4</td><td>It is the measurement of §2 to §4</td></tr>
+        <tr><td>§6 figure review</td><td>§2</td><td>Shares the refusal shape; otherwise independent of §3 to §5</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>§2 must land before §3.</strong> Wiring the reflex first would dispatch
+    reviews nobody consults; refusing first, with the waiver available, makes every
+    unreviewed promotion visible from the first landing and lets the waiver rate measure how
+    badly the reflex is needed.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="unreviewed-promotion" data-choice="refuse-with-waiver" data-by="Simon McIntosh" data-when="2026-09-21">
+    <p class="r-dec-q">What happens when a passing run has no stored review?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-with-waiver">refuse, with a recorded waiver</button>
+      <button class="r-opt" data-value="warn-only">warn and promote</button>
+      <button class="r-opt" data-value="refuse-hard">refuse with no override</button>
+      </p>
+    <p class="r-dec-rat">A warning is read once and then never; a refusal with no
+        override becomes a reason to stop using the tool. A recorded waiver keeps the
+        unreviewed promotion possible and keeps it visible, which is what separates a
+        discipline from an obstacle — and the waiver rate is itself the measurement of how
+        much the reflex is needed.</p>
+    </div>
+<div class="r-dec" data-key="figure-reviewer-writes" data-choice="caption-only" data-by="Simon McIntosh" data-when="2026-09-21">
+    <p class="r-dec-q">May the figure reviewer change the figure?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="caption-only">caption only; everything else is flagged</button>
+      <button class="r-opt" data-value="flag-only">flag everything, write nothing</button>
+      <button class="r-opt" data-value="redraw">redraw what it finds wrong</button>
+      </p>
+    <p class="r-dec-rat">A reviewer that redraws becomes a second author with no
+        reviewer, and its findings stop being falsifiable because the evidence moved. The
+        caption is the exception because it is prose about the image rather than the image,
+        it is the part most often left as a restatement of the title, and rewriting it
+        cannot disguise a defect in what it describes.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ssp-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship scoring-should-stop-a-promotion" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Wire the review a healthy run never reaches — §2 first</h4>
+    <div class="r-fu-body">The reviewer is built, tested and producing good work: 147 stored reviews across four projects. It is reachable only through crew recover, which an uninterrupted coordinator never calls, and crew complete promotes a run classified 'scoring' — meaning complete-but-unreviewed — without refusing. Measured on imas-ambix 2026-09-21: a seven-node sprint promoted every node past that classification, with zero review-role runs in its ledger. §2 makes the refusal, §3 gives the reflex a caller on the healthy path, §4 bounds the checklist and requires a verdict per item, §5 dogfoods the result on this plan's own back half, and §6 adds a figure reviewer on a lane that can read an image.</div>
+    <pre class="r-fu-prompt">/reckon-ship scoring-should-stop-a-promotion</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
