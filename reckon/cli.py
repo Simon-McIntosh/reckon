@@ -2784,6 +2784,16 @@ def _ledger_module():
     ),
 )
 @click.option(
+    "--waive-unreviewed-promotion",
+    default="",
+    metavar="REASON",
+    help=(
+        "Promote a passing implement run without its independent review and "
+        "record why the review requirement is being waived. Refused when the "
+        "run is not awaiting review."
+    ),
+)
+@click.option(
     "--accept-path",
     "accepted_paths",
     type=(str, str),
@@ -2824,6 +2834,7 @@ def crew_complete(
     waive_suite_delta,
     waive_boundary_refusal,
     waive_resume_path,
+    waive_unreviewed_promotion,
     accepted_paths,
     no_impl_change,
     pretty,
@@ -2862,6 +2873,7 @@ def crew_complete(
             suite_delta_waiver=waive_suite_delta,
             boundary_waiver=waive_boundary_refusal,
             resume_waiver=waive_resume_path,
+            review_waiver=waive_unreviewed_promotion,
             accepted_paths=dict(accepted_paths),
             no_impl_change=no_impl_change,
         )

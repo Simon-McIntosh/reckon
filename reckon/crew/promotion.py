@@ -1966,6 +1966,42 @@ def _require_resume_waiver(
     )
 
 
+def _require_review_waiver(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    classification: str,
+    review: Mapping[str, Any] | None,
+    review_action: str,
+    waiver_reason: str,
+) -> dict[str, str] | None:
+    """Refuse an unreviewed implement promotion unless its reason is recorded."""
+    role = str(record.get("role") or "")
+    reason = str(waiver_reason).strip()
+    unreviewed = (
+        verdict == "passed"
+        and role == "implement"
+        and classification == "scoring"
+        and not (review and review.get("status") == "parsed")
+    )
+    if unreviewed:
+        if reason:
+            return {"reason": reason}
+        raise CrewError(
+            f"run {run_id!r} is classified scoring because no complete independent "
+            f"review is stored. Produce it with `{review_action}`, or promote anyway "
+            "with --waive-unreviewed-promotion REASON stating why this run may land "
+            "without review"
+        )
+    if reason:
+        raise CrewError(
+            f"run {run_id!r} has no unreviewed promotion for "
+            f"--waive-unreviewed-promotion {reason!r} to waive"
+        )
+    return None
+
+
 def complete(
     run_id: str,
     *,
@@ -1984,6 +2020,7 @@ def complete(
     suite_delta_waiver: str = "",
     boundary_waiver: str = "",
     resume_waiver: str = "",
+    review_waiver: str = "",
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
     no_impl_change: str = "",
@@ -2042,6 +2079,16 @@ def complete(
 
         classified = classify_pointer(record)
         classification_name = str(classified.get("classification") or "")
+        reviewed = _review_row_block(landing_project, run_id)
+        review_waived = _require_review_waiver(
+            run_id,
+            record,
+            verdict=verdict,
+            classification=classification_name,
+            review=reviewed,
+            review_action=str(classified.get("next_action") or ""),
+            waiver_reason=review_waiver,
+        )
         candidate_remedy = classified.get("resume_remedy")
         resume_remedy = (
             dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None
@@ -2100,6 +2147,8 @@ def complete(
             boundary_waiver=boundary_waiver,
             resume_remedy=resume_remedy,
             resume_waived=resume_waived,
+            reviewed=reviewed,
+            review_waived=review_waived,
             recoverable_session=recoverable_session,
             discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
@@ -3021,6 +3070,8 @@ def _complete_locked(
     boundary_waiver: str = "",
     resume_remedy: Mapping[str, str] | None = None,
     resume_waived: Mapping[str, str] | None = None,
+    reviewed: Mapping[str, Any] | None = None,
+    review_waived: Mapping[str, str] | None = None,
     recoverable_session: Mapping[str, str] | None = None,
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
@@ -3304,7 +3355,6 @@ def _complete_locked(
     # five dimension scores and their total survive the loss of the crew
     # configuration home. The store keeps the verbatim text and findings; the
     # row keeps the compact block that joins to the run which earned it.
-    reviewed = _review_row_block(project, run_id)
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -3392,6 +3442,8 @@ def _complete_locked(
         run["resume_waiver"] = dict(resume_waived)
         if discard_resume_worktree:
             run["resume_waiver"]["worktree_discarded"] = True
+    if review_waived is not None:
+        run["review_waiver"] = dict(review_waived)
     if worktree_retention is not None:
         run["worktree_retention"] = dict(worktree_retention)
     watch_override = record.get("watch_override")
