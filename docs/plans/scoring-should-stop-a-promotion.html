@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -539,6 +539,47 @@
     named like one, does not count as a declaration, with the concrete input."</em> A generic
     "review this repair" would have confirmed the fix and scored it well, <em>because the fix is
     correct</em>.</p>
+
+    <p><strong>The brief is the binding constraint on what a review finds, and there is now a
+    four-node measurement of it.</strong> The same defect — an expectation derived from the very
+    constant it exists to pin, so the test moves with the thing it checks and cannot fail —
+    appeared in four unrelated modules by four different authors:</p>
+
+    <table>
+      <caption>One defect, four independent authors, each demonstrated by mutation.</caption>
+      <thead><tr><th>Node</th><th>The expectation is built from</th><th>Mutation that stays green</th></tr></thead>
+      <tbody>
+        <tr><td><code>node-probe</code></td><td><code>CARD_QUERY_FIELDS</code></td><td>drop a field</td></tr>
+        <tr><td><code>scrape-fixture</code></td><td><code>GAUGE_SERIES</code> / <code>COUNTER_SERIES</code></td><td>pop a key</td></tr>
+        <tr><td><code>receipt-records</code></td><td><code>SELF_ANSWERED_UPSTREAM</code></td><td>change the sentinel</td></tr>
+        <tr><td><code>telemetry-store</code></td><td><code>TIER_WINDOW_SECONDS[tier]</code></td><td><code>TIER_HOUR</code> 3600 &rarr; 1800</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>A reviewer found it once. The other three were found because it was written into the
+    next brief.</strong> None of those reviewers would have gone looking unprompted — they were
+    checking the fixes they were sent to check, and one round returned exactly the two items its
+    brief named and nothing else. That is either excellent targeting or evidence that the brief
+    bounds the finding, and it is both.</p>
+
+    <p><strong>So the rule is stronger than accumulating the profiles: a finding on one node is a
+    checklist line for every node still in flight, propagated immediately rather than at the next
+    profile revision.</strong> The cost is one sentence per brief; the yield here was three real
+    defects in modules nobody had reason to suspect.</p>
+
+    <p><strong>And propagation has a hard limit that belongs on the record.</strong> It reaches
+    nodes not yet dispatched, because <code>crew resume</code> refuses a run whose process is alive
+    — measured here today when a finding arrived mid-flight and could not be given to the worker it
+    concerned. So "immediately" means <em>at the next dispatch</em>, and closing that gap is
+    <code>a-live-worker-can-be-reached</code> §4, which this plan now has a second reason to want.</p>
+
+    <p><strong>Two more for the catalogue, both the same family.</strong> A control receipt whose
+    restoration check runs <em>before</em> the restore, so it prints <code>restored
+    byte-identically: NO</code> unconditionally while the manifest claims the opposite — a line
+    that cannot report success, sitting in a log offered as evidence. And a worker turn that
+    emitted one sentence, ended, and reported <code>result: success</code> having changed nothing:
+    <strong>23 stream records against 1,890–5,302 for every other turn on that node</strong>, with
+    the ledger reading <code>complete</code>.</p>
 
     <p><strong>And the profiles accumulate from findings rather than being authored once.</strong>
     Twice today a specific instruction beat a general one, and in both cases the productive
