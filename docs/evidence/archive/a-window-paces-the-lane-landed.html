@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane-landed">
+  <meta name="plan-title" content="A window paces the lane — landed evidence">
+  <meta name="plan-summary" content="The five-hour allowance is now derived from the group's unspent weekly budget and the five-hour windows left before a configured drain deadline, biased by a configured pace multiple, and cut to the provider ceiling when that is tighter. The derivation is in scope; declaring its two tunables as flight keys is not, and is recorded as the unmet half.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-verifies" content="reckon:a-window-paces-the-lane#s2">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-environment" content="Linux workstation; Python 3.14 and the repository's own virtualenv; detached git worktree; the focused test file run through the root environment's interpreter">
+  <meta name="plan-commits" content="6fa4a99c">
+  <meta name="plan-artifacts" content="reckon/crew/pace.py,tests/test_pace.py">
+  <title>A window paces the lane — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A window paces the lane — landed evidence</h1>
+    <p class="plan-summary">One section, one derivation, one declaration it could not reach.
+    The allowance is no longer a configured cap: it falls out of the week's remaining budget
+    and the windows left before the drain deadline, so it throttles a group that is ahead and
+    opens up for one that is behind, with no gain term and no memory of how the week has gone.</p>
+  </header>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; The pace function, on two clocks</h2>
+    <p><strong>Commit <code>6fa4a99c</code>.</strong> Gate
+    <code>tests/test_pace.py</code> &mdash; <strong>19 passed, exit 0</strong>, run through the
+    repository's root environment with the module asserted to resolve to the worktree copy of
+    <code>reckon.crew.pace</code> rather than to a sibling checkout, because a run that imports
+    another tree's module measures the wrong revision. The two files are
+    <code>reckon/crew/pace.py</code> and <code>tests/test_pace.py</code>; both are new, so the
+    gate's baseline is an empty file set and every one of the nineteen is this change's own.</p>
+
+    <p>The allowance for a declared budget group is</p>
+    <pre><code>remaining_budget  = 1 - utilisation
+remaining_windows = (D - elapsed) / 5h
+allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code></pre>
+    <p>with <code>D</code> the weekly period less a configured lead time, and the provider's own
+    five-hour ceiling applied last as a separate number. The last window before the deadline is
+    asked for whatever remains rather than for a share, so the deadline itself cannot construct
+    a hidden <code>None</code> through a denominator of zero. A ceiling that could not be read
+    is not a ceiling: the effective limit falls back to the derived share, because absence of a
+    signal is not evidence of absent headroom.</p>
+
+    <figure>
+      <svg viewBox="0 0 880 190" width="100%" height="190" role="img"
+           aria-label="Schematic of one weekly window: elapsed time, the remaining windows up to the drain deadline D, and the lead time between D and the weekly reset.">
+        <title>The week, the drain deadline, and the windows the allowance is divided across</title>
+        <text x="70" y="30" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#3a3d44">allowance_5h = pace_multiple &#215; (1 &#8722; utilisation) / ((D &#8722; elapsed) / 5h)</text>
+        <rect x="86.5" y="100" width="660.7" height="18" fill="#2f6fd0" fill-opacity="0.12"></rect>
+        <rect x="747.2" y="100" width="62.8" height="18" fill="#6e7282" fill-opacity="0.20"></rect>
+        <text x="100" y="114" font-size="11" fill="#3a3d44">remaining windows (D &#8722; elapsed) / 5 = 30.45 now</text>
+        <text x="778.6" y="114" font-size="11" text-anchor="middle" fill="#3a3d44">lead 12 h</text>
+        <line x1="70" y1="120" x2="810" y2="120" stroke="#6e7282" stroke-width="1"></line>
+        <line x1="86.5" y1="94" x2="86.5" y2="134" stroke="#6e7282" stroke-width="1" stroke-dasharray="4 3"></line>
+        <line x1="747.2" y1="94" x2="747.2" y2="134" stroke="#2f6fd0" stroke-width="2"></line>
+        <line x1="70" y1="120" x2="70" y2="126" stroke="#6e7282"></line>
+        <line x1="281.4" y1="120" x2="281.4" y2="126" stroke="#6e7282"></line>
+        <line x1="598.6" y1="120" x2="598.6" y2="126" stroke="#6e7282"></line>
+        <line x1="810" y1="120" x2="810" y2="126" stroke="#6e7282"></line>
+        <text x="86.5" y="88" font-size="12" fill="#3a3d44">now, 3.75 h</text>
+        <text x="743" y="88" font-size="12" text-anchor="end" fill="#2f6fd0">drain deadline D = 156 h</text>
+        <text x="70" y="144" font-size="11" fill="#6e7282">0 h</text>
+        <text x="281.4" y="144" font-size="11" text-anchor="middle" fill="#6e7282">48 h</text>
+        <text x="598.6" y="144" font-size="11" text-anchor="middle" fill="#6e7282">120 h</text>
+        <text x="810" y="144" font-size="11" text-anchor="end" fill="#6e7282">weekly reset 168 h</text>
+        <text x="70" y="176" font-size="11" fill="#6e7282">The allowance divides the unspent budget across the remaining windows; the lead is time the week is meant to spend drained rather than mid-window with work queued.</text>
+      </svg>
+      <figcaption>Schematic, not a measurement: the same shape holds for any group's reading.
+      The two tunables are the lead between <code>D</code> and the reset, and the multiple
+      leaning the curve above linear.</figcaption>
+    </figure>
+    <p><em>Figure note: the graphic is inline SVG rather than a PNG under
+    <code>docs/figures/</code>, which is the usual placement, because this node's write paths
+    cover only the two source files and this record.</em></p>
+
+    <h3>The measure</h3>
+    <p>Four states are named in the test before they are asserted, and the shape that separates
+    them is the derivation's own rather than four literals: ahead of pace returns less than the
+    multiple times nominal, behind returns more, exhausted returns nothing. The on-pace case is
+    <em>constructed</em> &mdash; utilisation is set to <code>elapsed / D</code> &mdash; and then
+    asserted to equal <code>pace_multiple &#215; (5 / D)</code> with both sides computed in the
+    test, so the equality is the self-consistency proof rather than a number that would keep
+    passing after the formula moved.</p>
+
+    <table>
+      <caption>Read off the gate's own states, with <code>D</code> = 168 h &minus; 12 h = 156 h
+      and the multiple at 1.1. The comparison column is the multiple times the nominal share.</caption>
+      <thead><tr><th>State</th><th>Used</th><th>Elapsed</th><th>Allowance</th><th>vs multiple &#215; nominal</th></tr></thead>
+      <tbody>
+        <tr><td>ahead</td><td>30%</td><td>24 h</td><td>2.917%</td><td>0.83&#215; &mdash; throttles</td></tr>
+        <tr><td>on pace</td><td>30.77%</td><td>48 h</td><td>3.526%</td><td><strong>1.00&#215;</strong> &mdash; the equality</td></tr>
+        <tr><td>behind</td><td>50%</td><td>120 h</td><td>7.639%</td><td>2.17&#215; &mdash; opens up</td></tr>
+        <tr><td>exhausted</td><td>100%</td><td>48 h</td><td>0.000%</td><td>&mdash; nothing left to spend</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The two tunables are each asserted to move the allowance, and separately.</strong>
+    A doubled multiple scales the derived share exactly and leaves <code>drain_hours</code>
+    alone; a longer lead closes the deadline and raises the share while leaving the recorded
+    multiple alone. A third case asserts the pair is load-bearing in every returned allowance
+    by retuning the multiple to 7.0 and reading it back off the returned record, which is what
+    &sect;9 needs of a row that is meant to tune the setting later. The ceiling comparison is
+    asserted in both directions &mdash; one reading where the derived share is the tighter of the
+    two, one where the provider ceiling is &mdash; and a third reading asserts that an unread
+    ceiling leaves the derived share in force rather than holding at zero.</p>
+
+    <h3>The negative control</h3>
+    <p>Declared mutation, quoting the node: <em>&ldquo;drop the pace multiple so the allowance
+    returns the bare nominal share on pace; tests/test_pace.py must fail&rdquo;</em>. It is a
+    single token in <code>derived = remaining_budget * multiple / windows</code>, applied to a
+    scratch copy of the committed package and run from a neutral working directory, because
+    <code>python -c</code> and pytest both put the working directory first on the import path
+    and a mutant run started inside the worktree re-imports the unmutated module &mdash; observed
+    on the first attempt, where the resolved path was the worktree's own. The second run
+    resolved to the scratch copy and
+    <strong>4 failed, 15 passed, exit 1</strong>: the on-pace equality, the case asserting a
+    changed multiple moves the allowance, the retuned-multiple case at every named state, and
+    the deadline case. Red log, first line the declared mutation verbatim:
+    <code>negative-control.log</code> in the run directory
+    <code>r-20260921T114139745979-allowance-tracks-the-week</code>.</p>
+
+    <h3>What could not be landed in scope</h3>
+    <p><strong>The declaration, not the derivation.</strong> Both tunables are read from the
+    <code>budget</code> block of resolved flight config, which is what makes them data rather
+    than constants. For an operator to set either, the flight schema must carry the slots:
+    <code>BudgetConfig</code> in <code>reckon/schema/flight.yaml</code> enumerates a fixed slot
+    list, <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>
+    are generated from it by <code>scripts/regen_flight_schema.py</code>, and the model is
+    <code>extra=&quot;forbid&quot;</code> &mdash; so a <code>budget.pace_multiple</code> written
+    into any layer today is rejected as an unknown key rather than silently ignored or
+    honoured. Those three files plus the shipped defaults are outside this node's write paths,
+    so the half that remains is four declarations and a regeneration; until they land, the
+    documented pair in <code>pace.py</code> is what applies and neither key is settable.</p>
+    <p>This is recorded rather than worked around deliberately: reading an undeclared key from
+    the mapping would look identical in the tests and fail open in production, because the
+    layer that would carry it is validated before any of this code sees it.</p>
+  </section>
+
+  <section id="follow-ons">
+    <h2>Follow-ons</h2>
+    <ul>
+      <li><strong>Declare the two pace keys.</strong> Add <code>drain_lead_hours</code> or
+      equivalent and <code>pace_multiple</code> to <code>BudgetConfig</code> in
+      <code>reckon/schema/flight.yaml</code>, set the shipped pair in
+      <code>reckon/schema/flight-defaults.yaml</code>, and regenerate
+      <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>.
+      Then the two key-change assertions can be made against resolved flight config instead of
+      a plain mapping.</li>
+      <li><strong>The reading is not this node's.</strong> <code>pace.py</code> takes a
+      utilisation, an elapsed time and an emitted ceiling; who reads the two clocks off a
+      served stream, and the age that reading carries, is the reader's own section. The
+      effective-ceiling input is likewise supplied rather than derived here.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
