@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Crew Runtime Positive Controls — landed evidence">
   <meta name="plan-summary" content="Every launch resolves its backend to an absolute path before writing, and a launch that dies before its first turn is one recorded failure that stops the lift.">
   <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
-  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7 crew-runtime-positive-controls#s8">
-  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816,3d927b88">
-  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png,tests/test_fleet_counter_launch_failure.py">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s1 crew-runtime-positive-controls#s2 crew-runtime-positive-controls#s7 crew-runtime-positive-controls#s8 crew-runtime-positive-controls#s10">
+  <meta name="plan-commits" content="8c5062d2,d0e64fa2,48f99ad7,80a45368,f16ad10f,4dcecff1,b99e25f4,2de00ffd,b3a90816,3d927b88,851249ed,5a068617">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/crew/resumption.py,reckon/crew/ticker.py,tests/test_crew_launch_resolution.py,tests/test_crew_launch_failure.py,docs/figures/crew-runtime-positive-controls/launch-path.png,reckon/crew/node.py,reckon/crew/promotion.py,tests/test_crew_declared_negative_control.py,docs/figures/crew-runtime-positive-controls/declared-negative-control-flow.png,tests/test_fleet_counter_launch_failure.py,tests/test_watcher_arming_fallback.py,docs/figures/crew-runtime-positive-controls/watcher-arming-fallback.png">
   <meta name="plan-recorded-at" content="2026-09-19">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment, login node">
@@ -1036,6 +1036,78 @@ nothing has been launched</code></pre>
       and decides how to surface <code>unknown</code> alongside refusals. The check is deliberately not
       connected to <code>reckon/crew/dispatch.py</code> in this node. Plan lifecycle metadata and the driving
       followup remain unchanged for coordinator adjudication.</p>
+    </section>
+
+    <section id="s10">
+      <h2>&sect;10 &mdash; Arming a watcher survives a service manager that cannot be reached</h2>
+      <p><strong>Implemented:</strong> commits <code>851249ed</code> and <code>5a068617</code> at base
+      <code>a42b3f8626539fb0c771cd7c876a89266dbb023b</code>, changing
+      <code>reckon/crew/runs.py</code> and adding
+      <code>tests/test_watcher_arming_fallback.py</code>.</p>
+      <p><strong>Reproduction before implementation.</strong> The pre-change behaviour is reproduced in this
+      node's own red log rather than asserted from the plan's account of it: with the fallback disabled so the
+      bus failure re-raises, the connection-refused case dies at the fake manager's bus call with
+      <code>reckon.service.ServiceError: systemctl --user daemon-reload failed: Failed to connect to bus:
+      Connection refused</code> and the run exits 1. That is exactly what the field failure produced &mdash;
+      <code>reckon crew watch --ensure</code> raising and arming nothing, leaving the project unwatched.</p>
+      <p><strong>The change.</strong> <code>ensure_watcher_service</code> now separates the calls that touch no
+      bus from the ones that do: the unit is still rendered and written first, and the manager calls
+      (<code>active</code>, <code>start</code>, the lingering check) sit under a handler that arms by the
+      process path when the failure means the bus is unreachable, and re-raises otherwise. The process path is
+      <code>reckon.crew.dispatch</code>'s <code>_ensure_watch_producer</code> &mdash; the producer the
+      dispatch path already arms through &mdash; so the fallback is one watcher implementation rather than a
+      second: it takes the seat once, replaces a seat whose supervisor has died, and reports liveness rather
+      than raising. The classifier <code>_service_manager_unreachable</code> matches only the markers an
+      absent manager produces (<code>failed to connect to bus</code>, <code>connection refused</code>, the
+      removed socket, and the launcher's <code>is not available on this host</code>), so a unit the manager
+      refused on its merits still raises and its refusal still reaches a person.</p>
+      <p><strong>The field a caller reads.</strong> The result carries <code>path</code>, and
+      <code>fallback_reason</code> when it fell back; the sentence in <code>detail</code> is left to carry the
+      explanation. <code>reckon/cli.py</code>'s <code>watch --ensure</code> already emits
+      <code>{"ok": True, **result}</code>, so both fields reach a caller with no change outside this node's
+      fence. In the fallback, <code>started</code> reports whether a watcher is live after the attempt rather
+      than whether an arming call was issued, so a producer that could not start one reads as
+      <code>watcher_live: false</code> with the reason beside it instead of a silent success.</p>
+      <figure>
+        <img src="/reckon/figures/crew-runtime-positive-controls/watcher-arming-fallback.png"
+             alt="Two arming paths from ensure_watcher_service: a reachable bus takes the service path and
+                  reports path service; an unreachable bus arms the watcher as a plain process and reports
+                  path fallback with the bus failure as its reason, while a refusal the manager makes on the
+                  unit's merits re-raises.">
+      </figure>
+      <p><strong>Verification.</strong> The scoped command is
+      <code>python -m pytest -p no:cacheprovider -q tests/test_watcher_arming_fallback.py
+      tests/test_crew_watch_ensure.py tests/test_watcher_unit_restart.py</code>, with the root environment's
+      interpreter and this worktree on <code>PYTHONPATH</code>: <strong>17 passed, exit 0</strong>. Five cases
+      are new; the other twelve are the watcher files this change's module already carried, unchanged and
+      still passing. Ruff lint and format checks pass for both changed paths. Every case runs against a fake
+      manager and an injected producer, so no unit reaches the account home, no process is started and no
+      systemd manager need exist on the host. The two halves are both asserted: the connection-refused manager
+      arms by the fallback path and reports <code>path: "fallback"</code>, and a reachable manager still takes
+      the service path and reports <code>path: "service"</code> with the producer raising if it is called, so
+      the negative half fails on the fallback firing.</p>
+      <p><strong>Negative control, applied and removed.</strong> The declared mutation is
+      <code>make ensure_watcher_service raise on a connection-refused bus call instead of taking the fallback
+      path in reckon/crew/runs.py</code>. It was applied by making
+      <code>_service_manager_unreachable</code> answer no, so the bus failure re-raises as it did before the
+      change. The gate then reported <strong>2 failed, 3 passed in 1.33 seconds</strong>, exit 1: the
+      connection-refused arming case and the case where a fallback producer could not start a watcher, and
+      neither service-path case moved. The mutation is absent from both commits. The red log's first line
+      repeats the declaration verbatim.</p>
+      <p><strong>Durable receipts.</strong> The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T153628158498-arming-survives-an-unreachable-service-bus/</code>.
+      It contains <code>negative-control.log</code> (first line the declared mutation verbatim),
+      <code>manifest.md</code>, and the figure's rendering script. The manifest carries both delivery commits
+      and every changed path.</p>
+      <p><strong>Scope of this proof.</strong> The process arming is exercised through an injected producer and
+      through one case that resolves the default and asserts it calls the dispatch producer; the spawn itself
+      is not started by any case, by design. Whether the fallback holds at the merged head, and whether a
+      fallback-armed watcher satisfies the dispatch precondition, belong to the separately dispatched test
+      node.</p>
+      <p><strong>Follow-ons.</strong> None required by this section. Carried for a later reader: the refusal
+      text a project sees when no watcher is live does not yet distinguish a watcher armed by the fallback
+      from one armed by the service, which is a wording change in <code>reckon/crew/node.py</code> and outside
+      this fence.</p>
     </section>
   </main>
 </body>
