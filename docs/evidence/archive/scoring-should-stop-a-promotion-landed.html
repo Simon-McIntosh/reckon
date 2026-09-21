@@ -431,6 +431,45 @@
     is closed here: the write-time manifest validation and the reflex's lane selection are recorded as
     done-whens in &sect;2j and &sect;4b and remain open.</p>
   </section>
+
+  <section id="s4-production-call-sites">
+    <h2>Every review names the production call sites it verified</h2>
+    <p><strong>What landed.</strong> Commit <code>57ed30ee</code> extends the review emission
+    contract with a required <code>CALL_SITES</code> line. The prompt requires a comma-separated
+    list of production call sites reached while verifying the change, or the literal
+    <code>CALL_SITES: none</code> when no production call site was found. It explicitly excludes
+    the node's own test files and says the requirement is not optional. The parser stores the
+    call-site list and its integer count only when the line is present, preserving the
+    distinction between an explicit zero and an omitted measurement.</p>
+    <table>
+      <caption>The three parse states remain machine-distinguishable.</caption>
+      <thead><tr><th>Emission</th><th>Stored fields</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>CALL_SITES: reckon/crew/promotion.py:_require_review_waiver, reckon/crew/recovery.py:_review_is_complete</code></td><td><code>call_sites</code> has two entries; <code>call_site_count = 2</code></td><td>two production call sites were verified</td></tr>
+        <tr><td><code>CALL_SITES: none</code></td><td><code>call_sites = []</code>; <code>call_site_count = 0</code></td><td>the reviewer measured that no production call site was found</td></tr>
+        <tr><td>line omitted</td><td>both keys are absent</td><td>no call-site measurement was emitted; this is not zero</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Falsifiers and compatibility.</strong> The existing prompt falsifier in
+    <code>tests/test_review_scoring.py</code> was extended rather than duplicated to require the
+    call-site vocabulary, the non-optional wording, and the test-file exclusion. New
+    <code>tests/test_review_call_sites.py</code> cases parse a list, parse the explicit zero,
+    distinguish omission, filter synthesised records by the integer count without inspecting
+    prose, and call <code>reckon.crew.recovery._review_is_complete</code> on a record with no
+    call-site key. The latter remains <code>True</code> for the five-dimension legacy shape;
+    call-site evidence is recorded for new reviews but does not change promotion completeness.</p>
+    <p><strong>Measured gate.</strong> The focused command over
+    <code>tests/test_review_call_sites.py</code>, <code>tests/test_review_scoring.py</code> and
+    <code>tests/test_review_prompt_contract.py</code> returned <strong>32 passed</strong> in
+    1.33 seconds. Ruff check reported zero findings on the three staged Python paths. Ruff
+    format reported two pre-existing unformatted files (<code>reckon/crew/review.py</code> and
+    <code>tests/test_review_scoring.py</code>) both before and after, while the new test file was
+    already formatted. The declared negative control removed the <code>CALL_SITES</code> prompt
+    block in the working tree; <code>tests/test_review_scoring.py</code> then returned
+    <strong>1 failed, 22 passed</strong>, with the first log line repeating the mutation. The
+    prompt was restored before commit; the receipt is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/negative-control-call-sites.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>

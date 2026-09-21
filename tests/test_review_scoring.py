@@ -90,6 +90,10 @@ def test_prompt_is_read_from_disk_at_call_time_and_names_every_dimension(
             f"checklist item {item} has no VERDICT emission in the prompt"
         )
     assert "every checklist item needs a verdict" in loaded.lower()
+    assert "call_sites:" in loaded.lower()
+    assert "call_sites: none" in loaded.lower()
+    assert "not optional" in loaded.lower()
+    assert "test files do not count as production call sites" in loaded.lower()
     probe = tmp_path / "prompt.md"
     monkeypatch.setattr(review_module, "_PROMPT_PATH", probe)
     probe.write_text("first load\n", encoding="utf-8")
