@@ -1807,6 +1807,12 @@ def runs(
     usable completion timestamp cannot satisfy that filter. ``limit`` selects
     the most recently promoted matching records while preserving their stored
     order.
+
+    This is the raw stored row, byte for byte as committed. A reader asking how
+    long a node ran must not take the ``wall_seconds`` here for the span between
+    its own stamps: :func:`read_records` derives that figure, and its answer
+    carries it. Callers here depend on the stored shape, so the derivation is
+    left off.
     """
     records, _version = read_records(
         project,
@@ -1814,6 +1820,7 @@ def runs(
         plan=plan,
         since=since,
         limit=limit,
+        with_figures=False,
     )
     return records
 
@@ -1825,10 +1832,32 @@ def read_records(
     plan: str | None = None,
     since: str | None = None,
     limit: int | None = None,
+    with_figures: bool = True,
 ) -> tuple[list[dict[str, Any]], int]:
-    """Read selected completed runs and their ledger version once."""
+    """Read selected completed runs and their ledger version once.
+
+    ``with_figures`` adds the two questions a reader puts to a completed node:
+    ``wall_seconds``, the span between that row's own ``dispatched_at`` and
+    ``completed_at`` stamps, and ``width_at_start``, the number of runs whose
+    own measured span covers the row's dispatch instant. The stored field
+    carrying the first name is never passed through — on nearly half the ledger
+    it is a different quantity from the span — so a row whose stored value
+    disagrees reports the stamp-derived one, and a figure the stamps cannot
+    support is ``None`` rather than zero. Width is counted over every committed
+    row before the selection below narrows it, because how wide the fleet was at
+    a dispatch instant is a property of that moment rather than of the rows
+    being selected.
+
+    ``with_figures=False`` is the raw promotion-order read, which is what
+    :func:`runs` returns; callers depend on the exact stored row there.
+    """
     data, version = load(project, root)
-    records = list(data["runs"])
+    if with_figures:
+        from reckon.crew import summary
+
+        records = summary.run_rows(project, root=root)
+    else:
+        records = list(data["runs"])
     selected_plan = str(plan or "").strip()
     if selected_plan:
         records = [
