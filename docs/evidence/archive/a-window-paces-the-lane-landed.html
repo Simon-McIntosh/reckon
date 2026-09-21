@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane-landed">
+  <meta name="plan-title" content="A window paces the lane — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for a-window-paces-the-lane. One anchor per material outcome, accumulating as nodes land.">
+  <meta name="plan-evidence-for" content="a-window-paces-the-lane">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees">
+  <title>A window paces the lane — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A window paces the lane — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="lane-reading-degrades-field-by-field">
+    <h2>A lane reading degrades field by field</h2>
+
+    <p>Landed 2026-09-21, commit <code>abbce128</code>. <code>reckon/crew/lane_document.py</code>
+    reads one published lane document and resolves every field it carries on its own, so a missing
+    precondition costs its own field and never the whole document. Before this, the reader that
+    carried a lane reading into a dispatch resolved the document wholesale: the first field that
+    did not parse returned <code>unknown</code> for the entire carry, and four fields the document
+    actually publishes &mdash; <code>running</code>, <code>waiting</code>,
+    <code>concurrent_requests</code> and <code>kv_occupancy</code> &mdash; were never surfaced at
+    all.</p>
+
+    <p><strong>The defect reproduced before it was repaired.</strong> A serving lane publishes its
+    occupancy under <code>_instant</code> keys beside a <code>null</code> binding and a
+    <code>null</code> mean context, with <code>state: measured</code> beside them. Driving the
+    existing reader with that real shape at a fixed instant:</p>
+
+    <pre>old carry (dispatch._lane_reading_carry):
+  {"headroom": "unknown", "mean_context": "unknown", "state": "unknown",
+   "observed_at": null, "binding_observed": "unknown", "age_seconds": null,
+   "detail": "lane document carries no numeric 'headroom'"}
+
+new carry (lane_document.read_lane_document):
+  {"headroom": 96, "running": 0, "waiting": 0, "concurrent_requests": 96,
+   "kv_occupancy": 0.0, "state": "measured", "observed_at": "2026-09-15T21:47:23Z",
+   "mean_context": "unknown", "stale": false, "age_seconds": 10,
+   "unknown_fields": ["mean_context"]}</pre>
+
+    <p>The sharpest form is a document whose <code>headroom</code> is present and numeric and whose
+    <code>mean_context</code> alone is <code>null</code>: the old reader discarded a document that
+    carried a real headroom of <code>96</code> and a real run count of <code>0</code>, returning
+    <code>unknown</code> for both, because one sibling did not resolve.</p>
+
+    <table>
+      <caption>Each field the reader resolves on its own, the keys that may carry it, and what a
+        document copied from the real shape yields.</caption>
+      <thead><tr><th>Field</th><th>Document keys</th><th>Real shape</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>headroom</code></td><td><code>headroom</code>, <code>headroom_instant</code></td><td>96</td><td><code>96</code> (a number)</td></tr>
+        <tr><td><code>running</code></td><td><code>running</code></td><td>0</td><td><code>0</code> (a measurement, kept distinct from unknown)</td></tr>
+        <tr><td><code>waiting</code></td><td><code>waiting</code></td><td>0</td><td><code>0</code></td></tr>
+        <tr><td><code>concurrent_requests</code></td><td><code>concurrent_requests</code>, <code>concurrent_requests_instant</code></td><td>96</td><td><code>96</code></td></tr>
+        <tr><td><code>mean_context</code></td><td><code>mean_context</code>, <code>mean_context_instant</code></td><td><code>null</code></td><td><code>unknown</code> (this one field only)</td></tr>
+        <tr><td><code>kv_occupancy</code></td><td><code>kv_occupancy</code></td><td>0.0</td><td><code>0.0</code></td></tr>
+        <tr><td><code>state</code></td><td><code>state</code></td><td><code>measured</code></td><td><code>measured</code></td></tr>
+        <tr><td><code>observed_at</code></td><td><code>observed_at</code></td><td>a stamp</td><td>the stamp, with its age beside it</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Freshness travels with the figure.</strong> A reading older than the document's own
+    <code>suggested_shelf_life_seconds</code> keeps its age and a <code>stale</code> marker: it is
+    neither dropped nor presented as current. A figure the document withholds under its
+    <code>withheld</code> block stays <code>unknown</code>: a figure the lane declined to publish
+    as its own is not read as one.</p>
+
+    <h3>Negative control</h3>
+    <p>The declared mutation restores the whole-document collapse &mdash; a short-circuit returning
+    the all-unknown report as soon as any one field fails to resolve &mdash; applied to a scratch
+    copy:</p>
+
+    <pre>mutation: insert `if unknown_fields: return blank_report(detail="one field did not resolve")` after the per-field loop
+named test: tests/test_lane_document.py::test_null_binding_leaves_the_other_fields_as_the_numbers_carried
+result: FAILED — assert isinstance(report["headroom"], (int, float))
+        + where False = isinstance('unknown', (int, float))</pre>
+
+    <p>The failure is the defect itself: <code>headroom</code> returned <code>unknown</code> because
+    the null <code>mean_context</code> sibling took it down. Log:
+    <code>negative-control-lane-document.log</code> in the node's run directory.</p>
+
+    <h3>Gate</h3>
+    <p><code>pytest tests/test_lane_document.py</code> &mdash; <strong>14 passed</strong>. The
+    reader is asserted never to raise on an absent, unreadable, non-JSON, non-object or undecodable
+    document, returning all-unknown instead, because a dispatch consults it outside a
+    <code>try</code> block. <code>ruff check</code> and <code>ruff format --check</code> clean on
+    both files.</p>
+  </section>
+</main>
+</body>
+</html>
