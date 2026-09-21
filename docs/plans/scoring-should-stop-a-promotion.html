@@ -205,6 +205,23 @@
     leaves the others dispatched, asserted; and <code>dispatch_awaiting_reviews</code> has
     the test coverage it currently lacks entirely.</p>
 
+    <p><strong>A review is evidence about a revision, and acting on it invalidates it.</strong>
+    The ordinary loop is: review finds defects, worker repairs them, run promotes. After the
+    repair the stored review describes code that no longer exists, so the promotion attaches
+    a verdict reached on different bytes. Measured 2026-09-21: a node reviewed at 89 with
+    five findings repaired all five and added three commits; its stored review still reads as
+    that run's review, and nothing anywhere compares the two revisions.</p>
+
+    <p>The schema already carries <code>commits_read</code>, and the reviewer that produced
+    this record left it null — so even the detectable case was not detected. Two properties
+    follow. The reviewer <strong>must</strong> record the revision it read, and a null there
+    is an unparseable review rather than a scored one, because a verdict whose subject is
+    unknown cannot be checked against anything. And promotion <strong>must</strong> compare
+    that revision against the run's head: equal promotes, moved is reported, and the
+    coordinator either re-reviews or records why the repair does not need one. Silently
+    attaching a stale verdict is worse than having no review, because it reads as
+    independent evidence and is not.</p>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in
