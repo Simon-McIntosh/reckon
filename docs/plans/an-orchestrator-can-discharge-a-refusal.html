@@ -23,8 +23,8 @@
   <title>An Orchestrator Can Discharge A Refusal | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="8">
 <meta name="plan-impl" content="0.5">
 </head>
 <body>
@@ -294,6 +294,60 @@
     the node and the session, and says so explicitly when the file is unclaimed
     &mdash; because "no claim" is the answer that lets an orchestrator proceed and
     is currently indistinguishable from not having looked.</p>
+
+    <h2 id="s6b">&sect;6b &mdash; A discharge that erases what it discharged</h2>
+
+    <p>The sections above ask whether a refusal names a way through. This one asks
+    what the way through <em>records</em>, and the answer is currently: nothing that
+    distinguishes an authorised act from the act the guard exists to catch.</p>
+
+    <p><strong>Reported from imas-efit, 2026-09-21, with its reproduction.</strong> A run
+    is dispatched with <code>--write-path A --write-path B</code>. It refuses on a scope
+    boundary, correctly. The coordinator extends its scope through
+    <code>crew resume --advice</code>, naming C and D. The worker writes C and D. At
+    <code>crew complete</code> the boundary guard refuses:</p>
+
+    <pre><code>run '...' changed paths outside its declared write scope:
+tests/CMakeLists.txt, tests/data-manifest.json.
+Retry with --accept-path PATH REASON for each deliberate companion path</code></pre>
+
+    <p>The paths were deliberate and authorised. The run's recorded claim simply never
+    learned about it: <code>write_paths</code> is captured once at dispatch
+    (<code>reckon/crew/node.py:469</code> and <code>:492</code>) and nothing on the resume
+    path updates it, so an advice-granted extension and a genuine boundary violation are
+    the same fact at promotion time. The reporting run was
+    <code>r-20260918T080928315298-curate-input-redundant-transform-removal</code>, which
+    refused three times, correctly each time.</p>
+
+    <p><strong>The ergonomics are the smaller half.</strong> <code>--accept-path</code> is
+    the same escape hatch for both cases, so a coordinator who extended scope legitimately
+    and one waving through a genuine sprawl produce <em>identical ledger rows</em>. Any
+    later reader — a fitness audit that scores scope sprawl as a defect class, a
+    calibration pass, a human asking what happened — sees one shape where there were two
+    events. That is the same failure this plan names elsewhere: a stable record whose
+    referent has moved, and a true statement standing in for the one that was needed.</p>
+
+    <p><strong>Two shapes, and they are not equivalent.</strong> Either the resume path
+    records the granted extension on the run so the guard reads the current claim rather
+    than the dispatch-time one; or <code>--accept-path</code> gains a second form that
+    says an authorised extension is being recorded rather than a violation waived. The
+    first is cleaner because it removes the discrepancy instead of annotating it, and it
+    also makes the extension visible to the scope registry while the run is still live —
+    which is where a concurrent peer needs it. The second is cheaper. <strong>Whichever
+    lands, the ledger must keep which of the two it was</strong>, because that is the
+    fact the current row destroys and the only one that makes the repair worth
+    doing.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/node.py</code>,
+    <code>reckon/crew/resumption.py</code>, <code>reckon/crew/promotion.py</code>,
+    and the test file covering the scope boundary.</p>
+
+    <p><strong>Done when</strong> a run whose scope was extended through
+    <code>crew resume --advice</code> promotes without <code>--accept-path</code>, asserted;
+    a run that wrote a path nobody granted is still refused, asserted, because a repair
+    that opens the guard is worse than the defect; and the promoted rows of those two runs
+    differ in a named field, asserted by reading both rows back — the distinction the
+    current record cannot express.</p>
 
     <h2 id="s7">&sect;7 &mdash; What this plan does not own</h2>
 
