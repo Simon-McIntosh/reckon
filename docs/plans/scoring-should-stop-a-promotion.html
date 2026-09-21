@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -646,6 +646,50 @@
     the refusal and the promoted row; and the manifest field accepts each of the four observed
     shapes or refuses them <em>when the worker writes it</em> rather than at promotion, because
     that is the moment the only party who can fix it still exists.</p>
+
+    <h2 id="s2k">§2k — The gate demands the check that produced it, and accepts one that cannot run</h2>
+
+    <p><strong>§2's own refusal says a passing gate requires the check that produced it. It does not
+    require that check to be runnable, and this coordinator filled the field fifteen times with a
+    command that is not.</strong> Measured over this plan's own promoted rows:</p>
+
+    <table>
+      <caption>Gate commands recorded on this session's 17 promoted rows.</caption>
+      <thead><tr><th>Shape</th><th>Rows</th><th>Re-runnable here</th></tr></thead>
+      <tbody>
+        <tr><td>bare <code>pytest …</code></td><td><strong>15</strong></td><td>no</td></tr>
+        <tr><td>explicit interpreter</td><td>2</td><td>yes</td></tr>
+      </tbody>
+    </table>
+
+    <p>The bare form resolves to <code>~/.local/bin/pytest</code>, a Python too old for this
+    codebase's <code>type</code> statements, so it dies with a <code>SyntaxError</code> before
+    collecting anything and returns pytest's usage-error status 4. The surface then does exactly
+    what it should: <code>crew verify-gate</code> re-ran one of those commands at the merged head
+    and recorded <code>integrated_verdict: failed</code> against a node whose tests pass. <em>The
+    tool was right and the data was wrong.</em></p>
+
+    <p><strong>Each of the fifteen was written while shortening a command for readability inside a
+    <code>--gate-command</code> argument</strong>, which is how the field stops being evidence and
+    becomes a claim about evidence &mdash; the same class as a control log under <code>/tmp</code>,
+    a manifest whose author has ended, and a <code>parsed</code> status that means a parser ran. The
+    gates did pass; they were run with the right interpreter. What the row records is something a
+    later reader cannot reproduce, which is the one property the field exists to carry.</p>
+
+    <p>This is a second cause for a defect already open on
+    <code>a-worker-is-charged-to-a-job</code> as <code>f-awcj-a-gate-command-must-be-runnable</code>,
+    where the recorded command described its file set in angle brackets instead of listing it. That
+    instance was a placeholder; this one is an <em>interpreter</em>, which is worse because the
+    command looks perfectly well-formed. Both produce a row asserting a regression that never
+    happened, attached to a node that was clean.</p>
+
+    <p><strong>Done when</strong> a gate command that cannot be executed is refused at promotion
+    rather than recorded, asserted by offering a command whose first token does not resolve on
+    <code>PATH</code> and one that resolves to an interpreter which cannot import the package under
+    test; the refusal names the token it could not resolve, so the author sees which word is the
+    problem; and a promoted row carries the resolved absolute path of the interpreter that ran the
+    gate rather than the string the coordinator typed, since that is the thing a later re-run needs
+    and it is knowable at promotion.</p>
 
     <h2 id="s2j">§2j — The gate reads a record written by a process that no longer exists</h2>
 
