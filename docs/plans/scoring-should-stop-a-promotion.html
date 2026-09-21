@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -176,13 +176,13 @@
     are ancestors of <code>main</code>. Two of them assert work that is not in the tree:</p>
 
     <table>
-      <caption>Four promotions, one reachability verdict, two different truths.</caption>
-      <thead><tr><th>Promotion</th><th>Ancestor of main</th><th>Content in main</th></tr></thead>
+      <caption>Which sha you ask about decides whether the defect is visible at all.</caption>
+      <thead><tr><th>Promotion</th><th>Promote commit is ancestor of main</th><th>Promoted <em>work</em> is ancestor of main</th><th>Content in main</th></tr></thead>
       <tbody>
-        <tr><td><code>engine-names</code></td><td>yes</td><td>yes</td></tr>
-        <tr><td><code>request-receipts</code></td><td>yes</td><td>yes</td></tr>
-        <tr><td><code>telemetry-index</code></td><td>yes</td><td><strong>no</strong> — <code>main:imas_ambix/agent/telemetry_index.py</code> does not exist</td></tr>
-        <tr><td><code>bench-single-owner</code></td><td>yes</td><td><strong>no</strong> — <code>main:…/bench.py</code> still declares the duplicate the node removed, twice</td></tr>
+        <tr><td><code>engine-names</code></td><td>yes</td><td>yes</td><td>yes</td></tr>
+        <tr><td><code>request-receipts</code></td><td>yes</td><td>yes</td><td>yes</td></tr>
+        <tr><td><code>telemetry-index</code></td><td>yes</td><td><strong>no</strong> — head <code>823e4041</code>, 4 commits ahead</td><td><strong>no</strong> — <code>main:imas_ambix/agent/telemetry_index.py</code> does not exist</td></tr>
+        <tr><td><code>bench-single-owner</code></td><td>yes</td><td><strong>no</strong> — head <code>5d8ce3d9</code>, 2 commits ahead</td><td><strong>no</strong> — <code>main:…/bench.py</code> still declares the duplicate the node removed, twice</td></tr>
       </tbody>
     </table>
 
@@ -191,18 +191,65 @@
     deleted them, and no surface reports the gap. The coordinator who produced it did not notice
     across two nodes.</p>
 
-    <p><strong>The reachability column is the trap, not the diagnosis.</strong> It reads
-    <em>yes</em> for all four, which is why the obvious check cannot find this: the user-global
-    rules already name it for merges — a commit being reachable is not the fact anyone needs, and
-    the fact anyone needs is whether the content is in the head. Promotion has the same exposure
-    and no equivalent check.</p>
+    <p><strong>The middle column is the whole design constraint, and an earlier revision of this
+    section got it wrong.</strong> It first reported ancestry as <em>yes</em> for all four, because
+    it asked about the <code>promote(...)</code> commits. Those are ancestors of <code>main</code>
+    <em>by construction</em> — promotion wrote them there. Asking about the revision that was
+    actually promoted gives <em>no</em> for both failing nodes. So: <strong>if promotion records
+    its own promote commit as the revision, the ancestry half of the sweep is a tautology and can
+    never fail</strong>, for any failure mode. It must record the run's head.</p>
+
+    <p><strong>Two distinct failure modes, and the sweep needs both paths live.</strong></p>
+
+    <ul>
+      <li><strong>Never merged.</strong> The work is not an ancestor and the content is absent.
+      Both instances above are this. It fails on the ancestry half — but only when ancestry is
+      measured on the right sha.</li>
+      <li><strong>Merged then dropped.</strong> The work <em>is</em> an ancestor and the content is
+      still absent, because a merge conclusion committed an index that reverted it. This is the
+      hazard the user-global rules describe. It passes ancestry and fails on the content marker,
+      which is why the marker half is not redundant.</li>
+    </ul>
+
+    <p>The removal case sits inside the second mode and is the quietest of all: where the change
+    <em>deleted</em> something, a marker-present check finds nothing wrong, so the assertion has to
+    require the removed marker's <em>absence</em>. <code>bench-single-owner</code> is exactly that
+    shape.</p>
+
+    <p><strong>One mode has an instance and the other is prophylactic, and the section says which
+    rather than implying both.</strong> The second mode was looked for rather than assumed: across
+    the last 40 merges of the repository where both instances arose, every path the branch changed
+    since the merge base and main did not was compared against the merge result.</p>
+
+    <table>
+      <caption>Searching for a merged-then-dropped instance, with the instrument checked first.</caption>
+      <tbody>
+        <tr><td>merges scanned</td><td>40</td></tr>
+        <tr><td>merges with branch-only paths actually compared</td><td>38</td></tr>
+        <tr><td>branch-only paths checked</td><td>220</td></tr>
+        <tr><td><strong>merges dropping branch-only content</strong></td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The zero is trustworthy because the instrument was aimed before it was believed: a detector
+    that skipped every merge returns the same number, so the 38-of-40 comparison count is reported
+    beside it, the two skips are merges with no branch-only path at all, paths both sides changed
+    are excluded as genuine conflict resolutions rather than counted, and the same comparison was
+    shown to fire on a known-absent case as a positive control. <strong>So the merges that happened
+    were faithful, and both real instances are mode 1.</strong> The content-marker half is what
+    catches what actually happens here; the ancestry half guards a case this repository has not
+    produced. Both stay, and neither is described as the other.</p>
 
     <p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, and a new test file.</p>
 
-    <p><strong>Done when</strong> a promotion records the head it expects its work to land in, and
-    a sweep asserts both halves against that head — the promoted revision is an ancestor, <em>and</em>
-    a marker the change introduced is present — reporting a promotion whose ancestry passes while
-    its marker is absent, asserted against a synthesised repository reproducing exactly that pair;
+    <p><strong>Done when</strong> a promotion records <em>the run's own head</em> as the promoted
+    revision — asserted directly, because recording the promote commit instead makes the next
+    clause unfalsifiable — and a sweep asserts both halves against the target head: the promoted
+    revision is an ancestor, <em>and</em> a marker the change introduced is present. The sweep
+    reports a promotion whose work is not an ancestor, asserted against a synthesised repository in
+    that state, <em>and</em> one whose ancestry passes while its marker is absent, asserted against
+    a second repository reproducing exactly that pair, so neither failure mode rests on the other's
+    test;
     a promotion whose content did land reports nothing, asserted, because a check that fires on the
     healthy case is a check nobody keeps; and the negative half is covered too — a change whose
     purpose was a <em>removal</em> is asserted by requiring the removed marker's absence, since a
@@ -605,6 +652,39 @@
     learn all five spellings of §5c; and "which review is current" is a revision comparison. The
     <code>.first-review.json</code> files now sitting in the store are evidence of the defect, not
     a naming convention to adopt — the store should do this itself.</p>
+
+    <h2 id="s5e">§5e — The number this plan should be judged on</h2>
+
+    <p>One node, followed to the end, is the cleanest statement of what the mechanism is worth.
+    <code>node-probe</code> on imas-ambix closed <strong>three defects</strong>. Every one was
+    found by a review. <strong>None was found by the coordinator</strong>, who hand-verified each
+    repair. And <em>two of the three were caused or left by a repair that had been hand-verified</em>
+    — the second was introduced by the fix for the first, and the third by the fix for the
+    second.</p>
+
+    <table>
+      <caption>node-probe, three rounds. The right-hand column is the plan's argument.</caption>
+      <thead><tr><th>Round</th><th>Score</th><th>Found by hand</th><th>Found by review</th></tr></thead>
+      <tbody>
+        <tr><td>original</td><td>86</td><td>0 of 2</td><td>2</td></tr>
+        <tr><td>after repair</td><td>94</td><td>0 of 1</td><td>1 (caused by the repair)</td></tr>
+        <tr><td>after second repair</td><td>—</td><td>0 of 1</td><td>1 (caused by that repair)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Coordinator hand-verification caught none of three; the review path caught all
+    three.</strong> That is the claim this plan should stand or fall on, and it is narrower and
+    more falsifiable than "unreviewed work is bad": the thing measured is the substitute, not the
+    absence.</p>
+
+    <p><strong>The worker's own account of why the third survived is the sharpest statement of the
+    principle on this page</strong>, and it came from the lane the fitness plan is about:
+    <em>"asserting against the signature passes against a call that never used it, which is how the
+    unreachable figure survived the repair that introduced it."</em> The fix was to read the bound
+    each command was actually invoked with, from a recording runner, and to carry a negative control
+    proving that assertion fires. That is §5b's discriminator — <em>what would make this field
+    wrong while it still printed the same value</em> — arrived at independently, by a worker, about
+    its own test.</p>
 
     <h2 id="s6">§6 — A reviewer that can see the figure</h2>
 
