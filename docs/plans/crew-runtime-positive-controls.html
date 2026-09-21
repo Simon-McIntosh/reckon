@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.867">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 </head>
 <body>
   <main class="plan-doc">
@@ -923,6 +923,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260921T123849771261-red-log-field-is-a-path-in-the-template" data-who="reckon-ship" data-when="2026-09-21T13:25:17+00:00">
     <div class="r-comment-body"><p>The manifest template now states that <code>negative_control_log</code> is the path alone with nothing else on the line, carries its applicability clause as prose rather than as a long description inside the placeholder, and emits a <code>negative_control_note</code> line beside it for the commentary a worker used to append. Three cases enter through <code>compose_prompt</code>: the path-alone statement with the note line beside it, the absence of the description that invited a trailing sentence, and the survival of the first-line convention the template already stated. The declared mutation — removing the note line — was applied to a scratch copy of the fixed tree, the template case reddened (<code>1 failed, 3 passed</code>) with the log's first line repeating the mutation verbatim, and the mutation never touched the committed tree. Focused gate: 58 passed across the six prompt modules, no added lint findings. The reading side named in the section, in <code>reckon/crew/promotion.py</code>, is outside this fence and remains a follow-on.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260921T134121423276-review-of-red-log-field-is-a-path-in-the-template" data-who="reckon-ship" data-when="2026-09-21T15:21:35.986Z">
+    <div class="r-comment-body"><p>independent review stored and parsed for its reviewed run</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20260921T1552-serving-origin-landed" data-who="reckon-ship" data-when="2026-09-21T15:52:00+02:00">
     <div class="r-comment-body">Gate passed: 23 cases, exit 0; the declared mutation reddened 8 of them, run on SLURM all_debug after the login-node attempt showed 4 timing failures from process startup. Independent review 96/100 (durability 20, evidence 20, scope 20, fit 19, goal fidelity 17). The single finding is that the record did not name the existing endpoints reader — a clause committed at 31c976a4, three minutes after this node's base 26d6df25 was cut, so it never reached the worker; answered by coordinator append rather than charged to the run. Not wired into the pre-launch path: reckon/crew/dispatch.py is held by another session, and the launcher itself exposes no safe origin-only query, which is carried as a follow-on.</div>
