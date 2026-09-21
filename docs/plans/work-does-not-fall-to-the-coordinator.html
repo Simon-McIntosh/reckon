@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-impl" content="0.55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -585,6 +585,9 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
 </div>
 <div class="r-comment" data-section="s3" data-id="c-a-third-coordinator-copied-a-log-by-hand" data-who="reckon-ship" data-when="2026-09-21T14:35:00+00:00">
     <div class="r-comment-body"><p><strong>A third instance, measured in this session, of the compensation this section names.</strong> The investigation node for §6 read its positive control from stdout and kept no file, so its cited check would have resolved to nothing. Promotion correctly refused a passing gate with no evidence, and the only remedy available was for the coordinator to re-run the check and write the log into the run directory by hand before citing it — which is what happened.</p><p>The section's premise also still holds at the merged head: <code>reckon/crew/promotion.py</code> contains zero copy operations today, so <code>--gate-log-path</code> continues to record where a log lies rather than preserving it. The count of coordinators independently inventing this compensation is now three, across three sessions.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-a-review-run-reconciles-and-nobody-makes-its-evidence" data-who="reckon-ship" data-when="2026-09-21T16:30:00+00:00">
+    <div class="r-comment-body"><p><strong>Correction to a claim this plan carries.</strong> The open followup states that <em>a review run cannot be reconciled at all</em>, so the unreconcilable backlog accrues one per node reviewed. Tested directly today and it is not true: <code>crew complete --no-commit</code> with gate evidence reconciled a review run cleanly, its pointer is gone and its record sits in the committed ledger. Acting on the stale claim is itself what grows the backlog, because a coordinator who believes reviews cannot be reconciled does not try.</p><p><strong>What is true is narrower and belongs to §3.</strong> A review run has no gate of its own and nothing produces evidence for it, so the promotion contract's evidence requirement can only be met by the coordinator writing the check and its log by hand. That is what happened here: a five-line script confirming the record parses, carries five dimensions and scores them in range, captured into the run directory purely so the row could cite something durable.</p><p><strong>Running total for this session alone: the coordinator hand-produced a gate log four times</strong> — twice for investigate nodes whose positive controls printed to stdout, once for this review, and once re-running a check after a worker kept no file. Every one is the compensation this section exists to remove, and none of them needed a coordinator.</p></div>
 </div>
 </section>
 </main>
