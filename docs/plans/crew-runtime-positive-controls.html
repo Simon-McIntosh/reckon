@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.667">
-<meta name="plan-version" content="44">
+<meta name="plan-impl" content="0.733">
+<meta name="plan-version" content="45">
 </head>
 <body>
   <main class="plan-doc">
@@ -882,6 +882,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20260921T125357405625-review-of-orphaned-watcher-replacement-diagnosis" data-who="reckon-ship" data-when="2026-09-21T14:40:31.845Z">
     <div class="r-comment-body"><p>review of the orphan diagnosis: 83/100 with durability 6 for an in-memory positive control whose driver did not reach disk; parser controls confirm a dropped dimension reads absent, an out-of-range score is refused and scoreless text is unparsed</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260921T1658-watcher-unit-landed" data-who="reckon-ship" data-when="2026-09-21T16:58:00+02:00">
+    <div class="r-comment-body">Gate passed: 6 cases, exit 0, with the declared mutation reddening 2. Both unit generators move together and a tree scan for a [Service] stanza asserts the covered set equals the declared one, so a third copy added later fails rather than passing unnoticed. The consequence the node reported rather than hid — tests/test_service.py asserting the policy this change removed — was landed as a paired repair before either was pushed, and the pair reports 17 passed exit 0 together. Independent review 90/100; its finding is that docs/AGENTS.md still states Restart=on-failure covers crashes and names that policy for the server unit, so a document now describes a value no generated unit carries. That is a real stale-documentation defect introduced by this change and is dispatched as its own node rather than left in the record.</div>
 </div>
 </section>
 </main>
