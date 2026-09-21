@@ -244,6 +244,102 @@
     first line repeats that mutation verbatim, so a log that went red for any
     other reason would be refused.</p>
   </section>
+
+  <section id="s5b-requery">
+    <h2>&sect;5b.i &mdash; The re-query, and what it returns when it cannot answer</h2>
+
+    <p>The plan's premise for this section is a view that hands back a 2.4-hour-old receipt and a
+    6.7-day-old one as though they were positions. A five-hour window rolls over several times
+    inside 2.4 hours, so an old figure is a statement about a window that has already closed. The
+    landed mechanism decides, per reading, whether the figure and the age it carries are enough
+    to report it, or whether the lane's own probe must be asked again.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 210" role="img" aria-label="Decision flow for a reading" width="100%">
+        <rect x="10" y="80" width="150" height="50" rx="6" fill="#eef" stroke="#446"></rect>
+        <text x="85" y="100" text-anchor="middle" font-size="12">reading + observed_at</text>
+        <text x="85" y="118" text-anchor="middle" font-size="12">(figure, age)</text>
+        <line x1="160" y1="105" x2="215" y2="105" stroke="#446"></line>
+        <polygon points="215,105 205,100 205,110" fill="#446"></polygon>
+        <rect x="215" y="70" width="180" height="70" rx="6" fill="#efe" stroke="#484"></rect>
+        <text x="305" y="95" text-anchor="middle" font-size="12">age ≤ shelf life?</text>
+        <text x="305" y="115" text-anchor="middle" font-size="11">(undated ⇒ no)</text>
+        <line x1="395" y1="105" x2="450" y2="105" stroke="#446"></line>
+        <polygon points="450,105 440,100 440,110" fill="#446"></polygon>
+        <rect x="450" y="10" width="255" height="45" rx="6" fill="#efe" stroke="#484"></rect>
+        <text x="577" y="30" text-anchor="middle" font-size="12">yes → report as position</text>
+        <text x="577" y="46" text-anchor="middle" font-size="11">probe NOT called · requeried=false</text>
+        <rect x="450" y="150" width="255" height="55" rx="6" fill="#fee" stroke="#844"></rect>
+        <text x="577" y="170" text-anchor="middle" font-size="12">no → ask the lane's probe</text>
+        <text x="577" y="187" text-anchor="middle" font-size="11">figure → report probe's figure</text>
+        <text x="577" y="201" text-anchor="middle" font-size="11">no answer → old figure + age + unknown</text>
+        <line x1="305" y1="70" x2="305" y2="32" stroke="#484"></line>
+        <line x1="305" y1="32" x2="450" y2="32" stroke="#484"></line>
+        <polygon points="450,32 440,27 440,37" fill="#484"></polygon>
+        <line x1="305" y1="140" x2="305" y2="177" stroke="#844"></line>
+        <line x1="305" y1="177" x2="450" y2="177" stroke="#844"></line>
+        <polygon points="450,177 440,172 440,187" fill="#844"></polygon>
+      </svg>
+      <figcaption>The reading is reported as a position only inside the figure's shelf life;
+      otherwise the probe is asked, and a probe that cannot answer leaves the old figure with the
+      age that disqualifies it.</figcaption>
+    </figure>
+
+    <p><strong>Commit</strong> <code>0fc81fc</code>, 161 insertions across the module and its
+    tests. Gate <code>pytest -q tests/test_staleness.py</code> &mdash;
+    <strong>8 passed</strong>.</p>
+
+    <p><strong>Reading inside its shelf life.</strong> The reading is returned as a position with
+    its own serving state and <code>requeried=false</code>, and the probe is never called. The
+    test supplies a probe whose body raises, so a call that should not happen fails loudly rather
+    than passing silently &mdash; the assertion is that the re-query is <em>not</em>
+    unconditional, which a test written without that guard could not show.</p>
+
+    <p><strong>Reading past its shelf life.</strong> The probe is asked once; its figure and
+    provenance are what the caller reports, with <code>requeried=true</code>.</p>
+
+    <p><strong>A re-query that fails.</strong> Two failure shapes are driven &mdash; a probe that
+    raises, and a probe that returns <em>no figure</em> &mdash; and both must not be read as a
+    measurement. The old figure survives with its age and a serving state of
+    <code>unknown</code>: neither a fresh-looking number nor nothing. That the returned
+    <code>used_percent</code> is the old value and not the probe's is what makes "not a
+    fresh-looking number" an assertion rather than a hope.</p>
+
+    <p><strong>An undated reading is not trusted.</strong> A reading with no observation time
+    cannot be shown to be inside any shelf life, so it is re-queried like a stale one; if that
+    also fails, its age is reported as unknown rather than invented. This is the plan's
+    <em>carry the age with the figure</em> rule applied at the one point it must be.</p>
+
+    <p><strong>The shelf life is a flight key, and its change moves behaviour.</strong> The
+    resolver reads <code>budget.evidence_shelf_life_minutes</code> through the same
+    <code>budget.policy</code> the fence uses, and the test drives two resolved configs differing
+    only in that key: a 90-minute-old reading re-queries at a 60-minute shelf life and is trusted
+    at 180. The test asserts the resolved key values before asserting the behaviour, so a config
+    plumbing error cannot masquerade as a passing boundary.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation replaces the inside-shelf-life
+    guard with <code>if False:</code>, so every reading re-queries unconditionally. Applied to a
+    scratch copy of the package and the test file, the named test
+    <code>test_reading_inside_its_shelf_life_does_not_requery</code> <strong>fails</strong>
+    (<code>assert True is False</code> at the <code>requeried</code> check); the unmutated twin of
+    the same scratch tree <strong>passes</strong>. The log's first line repeats the mutation
+    verbatim.</p>
+  </section>
+
+  <section id="residue">
+    <h2>What this record does not claim</h2>
+    <p>The module is proven and nothing calls it. <code>reckon/mcp_views.py</code>, where
+    <code>serving_state: stale</code> is composed and still not acted on, is a peer node's write
+    scope, so this node could not wire the resolver into the surface. Until the resolver is
+    called from the lanes view, a stale figure is still emitted as a position at the surface and
+    this section's defect is closed only in the module that owns the mechanism &mdash; the exact
+    gap this repository has recorded most often, where a capability lands in the module holding
+    the mechanism while the call site a reader reaches stays unchanged. It is recorded under
+    <code>follow_ons</code> in the node manifest.</p>
+    <p>The measure ranges over this node's own change only. Verifying the merged result is a
+    separately dispatched test node's job; the gate above is one worktree, not the fleet.</p>
+  </section>
+
 </main>
 </body>
 </html>

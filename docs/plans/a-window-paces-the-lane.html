@@ -333,6 +333,39 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <p><strong>Not in this node.</strong> Nothing in the lanes view or the pacing path is rewired here:
     the re-query of a reading past its shelf life, and the rendering of a lane whose figure came from a
     shared account probe, belong to the sections that consume this position.</p>
+    <h3 id="s5b-requery">&sect;5b.i &mdash; A stale reading is re-queried, and a failed re-query says so</h3>
+
+    <p><strong>The mechanism landed as <code>reckon/crew/staleness.py</code></strong> (commit
+    <code>0fc81fc</code>). A reading observed inside its configured shelf life is returned as a
+    position without touching the probe, so the re-query is not unconditional and a live figure
+    is never disturbed. A reading past its shelf life &mdash; or one carrying no observation time
+    to age it &mdash; asks the lane's probe for a fresh figure, and the probe's figure is what
+    the caller reports. The shelf life is the flight key
+    <code>budget.evidence_shelf_life_minutes</code>, the same key the budget fence already reads,
+    so the two agree about when evidence stops speaking for now.</p>
+
+    <p><strong>A re-query that cannot answer does not erase the reading and does not invent
+    one.</strong> A probe that raises, or that answers with no figure, has not answered: the old
+    figure is returned with the age that disqualifies it and a serving state of
+    <code>unknown</code>, so a caller can neither mistake it for a current figure nor read a
+    failed probe as full or as nothing. That is the plan's asymmetry stated operationally &mdash;
+    absence of a signal is not exhaustion, and it is equally not headroom.</p>
+
+    <p><strong>The gate.</strong> <code>pytest -q tests/test_staleness.py</code> &mdash;
+    <strong>8 passed</strong>, six of them the required behaviours: the stale reading's probe
+    figure wins and the probe is called once; a refused re-query (raising and empty-answer)
+    returns the old figure with its age and <code>unknown</code>; an answer without a figure is a
+    failed re-query; a reading inside its shelf life never calls the probe at all; an undated
+    reading is re-queried rather than trusted; and the flight key moves the boundary, with a
+    90-minute reading re-querying at a 60-minute shelf life and not at 180.</p>
+
+    <p><strong>What this does not yet do, and it is the residual this section still owes.</strong>
+    Nothing calls the module yet. Wiring the resolver into the lanes view is outside this node's
+    write scope (<code>reckon/mcp_views.py</code> is claimed by a peer node), so
+    <code>serving_state: stale</code> is still emitted and still not acted on at the surface until
+    that wiring lands. The bare function is proven; the call site a reader reaches is not yet
+    changed, which is this repository's most frequently recorded failure mode. It is named under
+    follow_ons in the node's manifest rather than papered over here.</p>
 
     <h2 id="s7">&sect;7 &mdash; A block must be real, and most of today's were not</h2>
 
