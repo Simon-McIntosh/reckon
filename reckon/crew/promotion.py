@@ -31,7 +31,7 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
-from reckon.crew.reports import parse_manifest
+from reckon.crew.reports import ManifestParseError, parse_manifest
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
@@ -1966,6 +1966,74 @@ def _require_resume_waiver(
     )
 
 
+def _fresh_manifest(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Parse a run's manifest when it is present and fresh, else None.
+
+    The two guards below key on what the worker wrote, so both must read the
+    same file. A run with no manifest, or one whose manifest postdates the
+    reason the run is being judged, is left to the arms that read its absence;
+    an unparseable file is a delivery defect with its own refusal.
+    """
+    manifest_present, fresh = _manifest_freshness(record)
+    if not manifest_present or not fresh:
+        return None
+    try:
+        parsed = parse_manifest(
+            Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        )
+    except (OSError, KeyError, ValueError):
+        return None
+    return dict(parsed)
+
+
+def _manifest_repository_paths(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The paths a run's manifest declares inside the run's own repository.
+
+    This is the question the review gate asks — did the run change the
+    repository a reviewer would have to read? — answered from the same field
+    the commit-for-changed-manifest guard reads, and by the same resolution
+    rule, so the two refusals cannot disagree about what a run wrote. A
+    manifest that names no path, or only paths outside the repository, is a
+    run that changed nothing there.
+    """
+    manifest = _fresh_manifest(record)
+    if manifest is None or _prose_changed_paths_name_no_paths(manifest):
+        return ()
+    return _changed_paths_inside_repository(manifest, record)
+
+
+def _require_recognised_manifest_status(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse a promotion whose manifest carries no status the reader accepts.
+
+    The status vocabulary is the reader's, not the worker's, and the review
+    gate reaches a completed run only through the exact word ``complete``. So a
+    worker that writes a plausible synonym — ``awaiting-orchestrator-review``,
+    ``implemented-not-closed``, a bare ``done`` — exempts its own run from that
+    review without any signal it has done so: the reader refuses the file, the
+    classifier falls through to a reading keyed on a dead process, and the run
+    then promotes as though its status had said something the reader accepts.
+
+    The reader's own refusal already names the rejected word and the recognised
+    vocabulary, so it is carried forward here rather than re-derived, and the
+    run id is put in front of it so the refusal names the run it is about. A
+    manifest that is absent or not fresh has no verdict to judge and is left to
+    the arms that read its absence.
+    """
+    manifest_present, fresh = _manifest_freshness(record)
+    if not manifest_present or not fresh:
+        return
+    try:
+        text = Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+    except (OSError, KeyError):
+        return
+    try:
+        parse_manifest(text)
+    except ManifestParseError as refusal:
+        raise ManifestParseError(
+            f"run {run_id!r} cannot be promoted: {refusal}"
+        ) from refusal
+
+
 def _require_review_waiver(
     run_id: str,
     record: Mapping[str, Any],
@@ -1976,13 +2044,28 @@ def _require_review_waiver(
     review_action: str,
     waiver_reason: str,
 ) -> dict[str, str] | None:
-    """Refuse an unreviewed implement promotion unless its reason is recorded."""
-    role = str(record.get("role") or "")
+    """Refuse an unreviewed promotion of a run that changed the repository.
+
+    The gate follows the writing, not the role name: a passing run that
+    changed a path inside its own repository has produced work a reviewer must
+    read, whatever role carried it — a test node writing test files, a
+    documentation node writing docs and an investigate node writing a report
+    all leave the repository altered. The implement role stays gated whether or
+    not its manifest names a path, so an implement run that declares no change
+    is still refused rather than slipping through on its silence. The review
+    role is exempt, because the review it wrote for another run is its own
+    deliverable and a review of it is what §3 exists to prevent.
+    """
+    from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
+
+    role = _pointer_role(record)
     reason = str(waiver_reason).strip()
+    changed_repository = bool(_manifest_repository_paths(record))
     unreviewed = (
         verdict == "passed"
-        and role == "implement"
         and classification == "scoring"
+        and role != REVIEW_ROLE
+        and (role == "implement" or changed_repository)
         and not (review and review.get("status") == "parsed")
     )
     if unreviewed:
@@ -2063,6 +2146,7 @@ def complete(
                 landing_project, root, flag="--checkout-path"
             )
         _require_commit_for_changed_manifest(run_id, record)
+        _require_recognised_manifest_status(run_id, record)
         if _is_shadow(record) and commit_list:
             raise CrewError(
                 f"shadow run {run_id!r} is commitless evidence; --commit is refused"
