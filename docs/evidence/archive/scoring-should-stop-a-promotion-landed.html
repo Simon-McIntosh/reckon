@@ -782,6 +782,19 @@
     <code>fixture-base.log</code> in the same run directory. Verification after repair in
     main is pending integration of the fixture commit or extension of the worker's
     worktree-only write fence; no worktree result is substituted for that measurement.</p>
+    <p><strong>Main-checkout verification completed.</strong> The fixture repair is integrated;
+    its test blob is <code>d5959c118175c79d16b5022c9b84209ca358f79c</code>. At main revision
+    <code>8286a6e2fe2c672b40dd7ab8f8a4ad391bdea383</code>, the independently executed focused
+    file reports <strong>12 passed in 2.72 seconds, exit 0</strong>, using
+    <code>PYTHONPATH=/home/ITER/mcintos/Code/reckon</code> and
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/reckon/tests/test_rollback_asks_head.py</code>
+    with main as the working directory. The same main checkout with the original base promotion
+    module substituted reports <strong>10 failed / 2 passed in 2.99 seconds, exit 1</strong>.
+    The real held-index-lock and failure-before-append controls remain intact. Import paths
+    resolve under main, and the revision plus source/test hashes are unchanged across both runs.
+    This closes the previously pending focused integration measurement; no full suite or
+    promotion was run. Receipts: <code>merged-after.log</code>, <code>merged-base.log</code>,
+    and <code>merged-verification.json</code> in the same run directory.</p>
   </section>
 </main>
 </body>
