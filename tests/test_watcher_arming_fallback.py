@@ -153,6 +153,34 @@ def test_a_unit_the_manager_refuses_still_raises(
         )
 
 
+def test_the_default_arming_is_the_producer_the_dispatch_path_arms(
+    monkeypatch,
+) -> None:
+    """The fallback's own arming is the dispatch producer, not a second implementation.
+
+    Every other case injects a producer, so this is the one that would notice the
+    default drifting to another seam: the dispatch path's producer is the one
+    that takes the seat, so wiring-is-proved here without starting anything.
+    """
+    import importlib
+
+    # Imported by module rather than by attribute: ``reckon.crew`` exposes a
+    # function named ``dispatch``, which an attribute import would bind instead
+    # of the module the fallback resolves its producer through.
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    seen: list[str] = []
+
+    def fake_producer(project: str) -> dict:
+        seen.append(project)
+        return {"project": project, "watcher_live": True}
+
+    monkeypatch.setattr(dispatch_module, "_ensure_watch_producer", fake_producer)
+
+    assert runs._arm_watcher_as_process("sample")["watcher_live"] is not None
+    assert seen == ["sample"]
+
+
 def test_a_fallback_that_could_not_start_a_watcher_does_not_report_success(
     service_home: Path, tmp_path: Path
 ) -> None:
