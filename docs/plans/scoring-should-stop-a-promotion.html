@@ -1277,6 +1277,21 @@
     <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T150156962762-empty-call-sites-are-absent" data-who="crew-worker" data-when="2026-09-21">
       <p><strong>Incomplete call-site emissions no longer masquerade as a measured zero.</strong> At base <code>2d6e5121</code>, <code>CALL_SITES:</code>, whitespace-only and delimiter-only values all produced the same <code>call_sites=[]</code> and <code>call_site_count=0</code> record as literal <code>CALL_SITES: none</code>; an omitted line had neither key, and a known production site recorded count 1. Commit <code>68514d4f</code> keeps zero exclusively for literal <code>none</code>. The three incomplete forms now leave both measurement keys absent and expose <code>call_sites_emission="empty"</code>, which a reader can filter to distinguish a partial answer from omission. The focused gate reports 6 passed. The declared mutation restoring empty-value zero storage fails <code>test_empty_call_site_emissions_are_absent_and_filterable</code> (1 failed, 5 passed) in an isolated archive whose import resolves under the archive; the committed parser is byte-identical before and after. Receipt: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T150156962762-an-empty-call-sites-emission-is-not-a-measured-zero/negative-control-empty-call-sites.log</code>. Cumulative anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-production-call-sites">production-call-sites</a>.</p>
       <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker carries the append-only landing record in its own worktree; shared lifecycle state, followup resolution and terminal status remain with the coordinator.</p>
+
+    <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T152600175270-granted-landing-path-context" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Landing-path context accounting landed.</strong> Commit <code>9b5b069e</code>
+      derives the shared landing identities from <code>_shared_landing_paths</code> inside
+      <code>routing._context_file_inputs</code>, avoiding an import cycle and excluding only
+      dispatcher-granted plan, evidence, and figure-topic targets from read-context tokens.
+      The write scope is unchanged. A 4,000,000-byte synthetic evidence record previously
+      charged 1,142,919 tokens to a node that named neither file; it now charges zero for
+      those targets. A file explicitly named as a read input remains charged and is emitted
+      as <code>provenance: declared</code>, while grants are filterable as
+      <code>provenance: granted</code>. The focused test passes; disabling the computed
+      identity exclusion reddens both cases. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4-granted-landing-path-context">granted landing targets</a>.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+      landing contract requires its own append-only plan and cumulative-evidence records, while
+      section closure and followup resolution remain coordinator-owned.</p>
     </div>
     <h2 id="s4b">§4b — Which lane this plan's own work runs on</h2>
 

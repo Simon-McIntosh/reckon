@@ -599,6 +599,39 @@
     <code>negative_control_log_corrected_by_coordinator</code>, with the worker's unaltered manifest
     preserved as <code>manifest.md.as-written-by-worker</code>.</p>
   </section>
+
+  <section id="s4-granted-landing-path-context">
+    <h2>Granted landing targets no longer consume read context</h2>
+    <p><strong>Defect reproduced.</strong> A synthesised plan with a
+    <strong>4,000,000-byte</strong> cumulative-evidence record received its plan,
+    evidence, and figure-topic paths through
+    <code>_grant_landing_write_paths</code>. Before the repair,
+    <code>_context_file_inputs</code> charged the plan and evidence files as if the
+    worker had read them: <strong>1,142,919 repository-file tokens</strong> for a
+    node that named neither in its goal or done-when.</p>
+    <p><strong>What changed.</strong> The estimator now calls
+    <code>dispatch._shared_landing_paths</code> inside its function body using the
+    resolved dispatch authority. That keeps the import graph acyclic while deriving
+    the exact shared-target identities from the same helper that grants them. The
+    emitted breakdown labels those write-scope entries
+    <code>provenance: granted</code>, leaves them in <code>write_paths</code>, and
+    records <code>counted: false</code>.</p>
+    <table>
+      <caption>The two distinct declarations remain visible in the estimate.</caption>
+      <thead><tr><th>Node input</th><th>Landing paths in write scope</th><th>Charged repository tokens</th><th>Breakdown</th></tr></thead>
+      <tbody>
+        <tr><td>Neither landing file named as a read input</td><td>plan and evidence present</td><td><strong>0</strong></td><td><code>provenance: granted</code>, <code>counted: false</code></td></tr>
+        <tr><td>Evidence file named in the done-when</td><td>plan and evidence present</td><td><strong>1,142,858</strong></td><td>write target remains <code>granted</code>; named input is <code>declared</code> and counted</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> The focused two-case test passes.
+    Replacing the computed identity check with <code>if False</code> makes both cases
+    fail (2 failed), restoring the 1,142,919-token overcharge and removing the
+    filterable grant provenance. The mutation was reverted before commit
+    <code>9b5b069e</code>. Ruff check reports 12 findings on
+    <code>routing.py</code> both at base and after; the new test has zero findings,
+    and both paths pass Ruff format.</p>
+  </section>
 </main>
 </body>
 </html>
