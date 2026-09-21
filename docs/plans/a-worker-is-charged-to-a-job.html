@@ -25,8 +25,8 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-20">
-<meta name="plan-version" content="23">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="24">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -263,6 +263,60 @@ schema is outside this node's write scope; a placement whose wrapper is unlisted
 probe rather than being misread. No placed run was executed here, so the query is exercised against an
 injected runner; verifying it against a real job belongs to the proving run the coordinator owns.</p>
 </div>
+<h2 id="s2b">&#167;2b &mdash; The stall verdict already has liveness in scope and does not read it</h2>
+
+<p>&#167;2 says liveness must follow the job. Before that can be true it has to follow
+<em>anything</em>, and today it follows a quiet stream. In <code>classify_pointer</code>
+(<code>reckon/crew/recovery.py</code>) the variable <code>alive</code> is read from the row three
+lines above the stall branch and used for another case; <strong>the stall verdict never consults
+it</strong>:</p>
+
+<pre><code>alive = row.get("process_alive")          # in scope
+...
+if quiet &gt; stall_seconds:
+    wait = _stall_wait_reason(pointer)
+    if wait is not None:   state = WAITING_STATUS
+    else:                  state = "stalled"   &lt;- never asks whether it is alive</code></pre>
+
+<p>So a worker running a long test cohort &mdash; no stream output, live pid &mdash; is declared
+stalled. <strong>Measured three times on 2026-09-21</strong>, quiet windows of 901, 904 and 1578
+seconds, every one a worker that was alive and went on to deliver; one had already written its
+manifest and committed. The comment above the branch reasons about "an alive worker sitting in a
+bounded wait" while the code never establishes aliveness. Each misfire cost a reconciliation and
+invited the interruption of working work.</p>
+
+<p><strong>This is the substitution the member guard closed</strong>, now in the surface that
+decides whether to interrupt a worker rather than whether to admit one: <em>a quiet stream standing
+in for a hung process.</em> A recognised wait already pauses rather than stalls; a live process in
+an unrecognised long operation should too. The distinction that matters is not which waits we can
+name, but whether anything is running.</p>
+
+<p><strong>And it is why &#167;2's premise is load-bearing rather than tidy.</strong> Today's
+liveness is a host-local <code>os.kill</code> on a recorded pid. Under a placement the worker's pid
+is on another node, so that call answers about the wrong process &mdash; this plan's own words,
+<em>a pid on another host is not a process</em>. The job id is the handle that survives the move,
+which makes fixing the stall now and following the job later one repair at two depths.</p>
+
+<p><strong>Measured on this cluster by the imas-ambix coordinator, and recorded because it decides
+whether &#167;2's premise holds.</strong> <code>pam_slurm_adopt</code> sits in the <em>account</em>
+stack of <code>/etc/pam.d/sshd</code> rather than the session stack, so an ssh connection to a node
+where the account holds an allocation is authorised but <strong>not adopted</strong> into the job
+cgroup: <code>/proc/self/cgroup</code> reads a user slice while the job cgroup holds only the job's
+own pids. An <code>srun --overlap --jobid</code> step is a real job step and does land in the job
+cgroup. <em>So containment and reaping follow a placed step and do not follow an ssh session</em>
+&mdash; the premise is safe for the mechanism this plan uses and false for the one it does not.
+Also measured: the compute node's user slice carries no <code>cpu.max</code>, so the four-core
+ceiling is a login-node drop-in that does not exist there, and placement buys the ceiling escape
+even without containment.</p>
+
+<p><strong>Done when</strong> a quiet stream with a live process is not reported stalled, asserted
+with a synthesised pointer whose stream is older than the window and whose pid is alive; a quiet
+stream with a gone process still reaches a terminal verdict, asserted, so the repair does not blind
+the check it fixes; liveness that cannot be established &mdash; no pid, or a pointer whose recording
+host is not this one &mdash; is reported unknown and does <em>not</em> stall, asserted separately for
+both; and one placed step prints <code>/proc/self/cgroup</code> showing the job cgroup, settling the
+containment premise by observation rather than by the account-stack inference above.</p>
+
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
     in zero seconds, and speed was the wrong axis: the objection is that concurrency then means submitting
