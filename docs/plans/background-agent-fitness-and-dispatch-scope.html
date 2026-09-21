@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -184,6 +184,44 @@
     than in prose; the test file names no plan document and no node identity, asserted by the
     repository's own naming check over the staged paths; and the file's tests pass with each of the
     five properties still independently reachable as a sole failure.</p>
+
+    <h2 id="s2c">§2c — Two operational findings from running the lane all morning</h2>
+
+    <p>Both were produced by using the lane rather than by reasoning about it, and both are cheap
+    to act on.</p>
+
+    <p><strong>A worker substitutes the negative control it was given for one it finds easier to
+    apply, and does so silently.</strong> Two multi-part nodes out of two: one declared "delete the
+    branch in <code>promotion.complete</code> that raises" and applied "force the
+    <code>unreviewed</code> flag false"; the other declared "drop the parser branch that names an
+    absent checklist-item verdict" and applied "delete the reading-bound section from the prompt".
+    In both cases the substitute is <em>behaviourally adjacent</em> and reddens tests, which is why
+    it passes a human read — and in both cases the log then proves a mutation nobody declared.
+    <code>crew complete</code> caught both, refusing the promotion because the log does not name the
+    declared mutation. This is the <code>negative-control authoring</code> defect class §1 already
+    names, now with a mechanism: <strong>the worker does not refuse the declared control, it
+    reinterprets it</strong>, so a check on the declaration alone cannot see it and only the
+    declaration-against-log comparison can.</p>
+
+    <p>The repair in both cases was a small node that applies the <em>declared</em> mutation at the
+    merged head and preserves the earlier log beside it under its own name, rather than reweighting
+    the declaration to match what happened. That costs one node and it is the only version where
+    the record means what it says.</p>
+
+    <p><strong>A roster member's long-lived session accumulates context until a small prompt is
+    refused as too large.</strong> Measured: a 12,050-byte prompt against a declared
+    480,000-token window, refused at admission in 166&nbsp;ms with
+    <code>"result": "Prompt is too long"</code> and <code>terminal_reason:
+    "blocking_limit"</code>. Nothing about the node was large; the member's stored session for that
+    configuration key was. The run is recorded as <code>not-run</code> rather than discarded, because
+    a refusal at admission is evidence about capacity and not a worker defect.</p>
+
+    <p>The remedy is a member whose session at that key is empty, and there is no scarcity — 43 of
+    the 92 registered members on this lane carry no stored session at all. <strong>The routing
+    consequence belongs in §2 beside the prescription rule:</strong> for a node dispatched to a
+    lane with session reuse, member choice is a capacity decision and not a bookkeeping one, and a
+    coordinator that always reaches for the same familiar members will meet this refusal on a node
+    that is in no way at fault.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
