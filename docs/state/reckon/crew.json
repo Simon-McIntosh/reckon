@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T23:29:05",
+  "updated": "2026-09-21T23:31:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -251080,6 +251080,392 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T195859674086-a-promotion-never-creates-a-ledger",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72d",
+        "node": "a-promotion-never-creates-a-ledger",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1834,
+                "cached_input_tokens": 910785,
+                "input_tokens": 912621,
+                "output_tokens": 378,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 912999,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "Reproduce first and paste the figures into the manifest. At the current head reckon.ledger.load returns an empty store at version 0 for an absent path, because an absent ledger is read as a project that has run no workers yet. A promotion preparing a write against that reading computes current_view as expected_version 0 equalling stored_version 0, so the roster guard finds nothing to drop against an empty roster and the run-count guard compares one incoming row against zero stored rows and passes. Show it: point a write at a path that does not exist and show it succeeds at version 1, beside the same code correctly refusing to shrink a real store of 1267 runs when the view is current. Then tests/test_a_promotion_never_creates_a_ledger.py passes and asserts three things. A promotion write that finds no ledger file at the resolved path is refused with a LedgerError naming the run store as the independent authority that holds every promoted run, rather than creating a store. Initialising a genuinely new project's ledger remains possible through an explicit argument that says so, asserted by calling that path and getting a store, so initialising is a deliberate act rather than a fallback from absence. And an envelope whose members or runs key is not a list is refused rather than silently read as an empty project, asserted against such a file, because that fallback collapses a malformed read into a fresh start in the same way. Ruff check and format over exactly the staged paths add no findings beyond the same paths at the base revision, with both counts pasted as digits. DO NOT PROMOTE THIS NODE and do not run crew complete on it: the rollback on the promote path deletes tracked files and is not yet repaired. Land by ordinary git commit of the named paths only.",
+          "estimated_hours": 1.0,
+          "goal": "Refuse a promotion that finds no ledger file, instead of letting it write a fresh store over a project's history",
+          "id": "a-promotion-never-creates-a-ledger",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T19:59:00Z",
+            "read_at": "2026-09-21T19:59:02Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 30.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/manifest.md",
+          "negative_control": "let a promotion write create a ledger again when the resolved path is absent; tests/test_a_promotion_never_creates_a_ledger.py must fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72d",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_a_promotion_never_creates_a_ledger.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-rate-config",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-21T19:59:14Z",
+        "completed_at": "2026-09-21T20:10:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 697,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 697,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "dd09c6d7a1b2f42f78a28d01445ffb2f1d9104e3",
+        "commits": [
+          "89a574d25a5aca909681fa6c52431c1645c89706",
+          "3cae6100fdce2d260b65eb58fb7f3f77ae067b0f"
+        ],
+        "changed_lines": {
+          "added": 143,
+          "removed": 5,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_never_creates_a_ledger.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-gates/ledger-guard-at-merged-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "a promotion no longer reads an absent ledger as a new project; its review scored 83 and independently found both halves of the regression this guard shipped, which a follow-on node repaired by asking git whether the path was ever tracked",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c58d-2012-7ff0-bfe0-1d9735c44782",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7254528,
+            "cached_input_tokens_cumulative": 7254528,
+            "input_tokens": 7494091,
+            "input_tokens_cumulative": 7494091,
+            "output_tokens": 28724,
+            "output_tokens_cumulative": 28724,
+            "reasoning_output_tokens": 8289,
+            "reasoning_output_tokens_cumulative": 8289
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T20:10:51Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 30.0,
+              "resets_at": 1790575133,
+              "observed_at": "2026-09-21T20:10:51Z"
+            }
+          ],
+          "notional_cost_usd": 15.3329,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 703,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 21362,
+              "log_fresh": false,
+              "manifest_commits": [
+                "681771db720457af44af42bf95a42ae757bb62b0",
+                "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+                "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "03a4cfe7a657167b7d95949a8023644bfba99546bb9aeb2dc35fccd0d5f95516",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route --gate <verdict> --commit 681771db720457af44af42bf95a42ae757bb62b0 --commit c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54 --commit 930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+              "node": "a-paraphrased-control-has-a-recorded-route",
+              "phase": "blocked",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 21395,
+              "terminal_at": "2026-09-21T14:02:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-paraphrased-control-has-a-recorded-route"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 350,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 10689,
+              "log_fresh": false,
+              "manifest_commits": [
+                "a1f5a6a5",
+                "7e11d0bd",
+                "907f404e",
+                "bbe46b10"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "e4ba5fbcb96dae5f54990063ecf5a7b2d77de5bb0c7cf2b708a75435d0abf14d",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent --gate <verdict> --commit a1f5a6a5 --commit 7e11d0bd --commit 907f404e --commit bbe46b10",
+              "node": "an-unanswered-checklist-item-is-countable-not-silent",
+              "phase": "working",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 10707,
+              "terminal_at": "2026-09-21T17:00:39Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/an-unanswered-checklist-item-is-countable-not-silent"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "elapsed_seconds": 36,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 11017,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_derived": false,
+              "manifest_digest": "c9a8703e84b26b3df73cd30e5a6ed73766d300f87011a6d44fcf975ab04a83d3",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-an-unanswered-checklist-item-is-countable-not-silent",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 10393,
+              "terminal_at": "2026-09-21T17:05:52Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-of-an-unanswered-checklist-item-is-countable-not-silent"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 12,
+            "fit": 16,
+            "goal_fidelity": 20,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 83
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 7254528,
+          "cumulative_input_tokens": 14748619,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 37013
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-promotion-never-creates-a-ledger",
+          "session_id": "01a0c58d-2012-7ff0-bfe0-1d9735c44782",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T20:10:51Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.66,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.66,
+          "at_complete": 0.7,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_a_promotion_never_creates_a_ledger.py"
+          ],
+          "declaration": "let a promotion write create a ledger again when the resolved path is absent; tests/test_a_promotion_never_creates_a_ledger.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/negative-control-absent-ledger.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/negative-control-absent-ledger.log",
+          "reason": "paraphrase, not substitution, and the equivalence is measured rather than asserted. Declared: let a promotion write create a ledger again when the resolved path is absent. Recorded: remove the absent-ledger refusal so a promotion can create a fresh ledger. Removing the refusal IS letting the write create a ledger when the path is absent, and the discriminator that ignores the prose agrees: the reddened test is test_a_promotion_refuses_to_create_an_absent_ledger, the exact assertion both wordings target, against 4 passed unmutated in the same node. Both halves are on disk under the run directory, not a volatile path."
+        },
+        "tool_steps": 48.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -251364,6 +251750,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2025
+    "_version": 2026
   }
 }
