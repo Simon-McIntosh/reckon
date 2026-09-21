@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
@@ -236,7 +236,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-atl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-atl-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-08" data-recommends-skill="" data-resolved-at="2026-09-21T21:01:38+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Start with the advisory and the local measurement together</h4>
     <div class="r-fu-body"><p>§2 and §5 are independent and should run in the same wave. §2 is
           buildable now, because the projected exhaustion it reports is already computed by the
@@ -250,6 +250,12 @@
           §2 is dispatched; the other two decisions can be settled by the nodes that
           implement them.</p></div>
     <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
+    <p class="r-fu-outcome">The advisory half landed: a dispatch onto a lane whose projected exhaustion precedes the work horizon now carries the utilisation, the burn multiple, the projected exhaustion and the reset on its payload, unasked and without a second probe, and the resolved backend is identical with and without it. Commit abfee217, merged at bd2a5438, gate 9 cases green at the merged head, negative control red under both the worker's mutation and the declared one. The local measurement half did not run in the same wave: it is gated, because the deployment's declared context window does not agree with what the endpoint serves and a ceiling curve drawn against a window that does not exist measures nothing. The concurrency figure it needs is now settled at 19 concurrent against an aggregate throughput knee near 22, recorded on the section with the correction that the throughput knee and the cache cliff are one curve rather than two limits.</p>
+    </article>
+<article class="r-fu" data-id="f-20260921T210138951945" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The advisory has no reader outside the payload object — §3 next</h4>
+    <div class="r-fu-body"><p>The independent review of the advisory node found the half that the payload test could not see: <strong>the live dispatch record assembles <code>lane_declaration</code> and <code>lane_reading</code> and omits <code>lane_advisory</code></strong>, so the ledger read and the cheaper-lane clause are computed on every emitting real dispatch and discarded, with no reader anywhere in <code>reckon/</code> outside <code>as_dict</code>. The deferral is this plan's, but the cost is paid on the path that cannot show it.</p><p>That is §3's deliverable and it is the next node: the advisory reaches the live pointer and the promoted ledger row, which is also what the locked delivery-point decision requires, since a follower line is the channel that reaches a coordinator without being asked and the payload alone was disproven rather than untested.</p><p>The review's second finding belongs with it because it is the same surface: the insufficient-evidence clause reports a sample shortfall against a floor of ten while naming a count the reader can already see is met, because <code>input_samples</code> counts the real shortfall at dispatch and is never carried into the message.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
