@@ -21,8 +21,21 @@ nothing else, and when a dimension is missing the total is withheld rather
 than silently taken over fewer dimensions — a total computed over four is a
 lower score indistinguishable from a worse one.
 
-Nothing here is wired into dispatch, promotion, recovery or the ticker. This
-node only exposes the functions those call sites will use.
+Alongside the dimensions, the parser records one verdict per checklist item —
+the five read targets the prompt enumerates — and names any item that carries
+none, by the same rule: an item with no verdict is reported as absent and the
+item count is withheld rather than taken over the items that happen to be
+present. The item verdicts are recorded and their absence named, but they do
+not enter the completeness predicate a promotion reads (see
+:func:`reckon.crew.recovery._review_is_complete`), which stays the five
+dimensions: reviews stored before this line existed carry no item verdicts,
+and folding them into that predicate would mark every one of them incomplete.
+
+The parser is on the live path, not a library awaiting a caller: dispatch and
+runs resolve the review store through :func:`review_store_root`,
+``reckon/crew/promotion.py`` reduces a stored record to the ledger block it
+writes, and ``reckon/crew/recovery.py`` decides ``promotable`` from the
+parsed dimensions. A change here changes what all of them store or decide.
 """
 
 from __future__ import annotations
@@ -49,6 +62,21 @@ REVIEW_DIMENSIONS: tuple[str, ...] = (
 )
 
 REVIEW_MAX_SCORE = 20
+
+# ── The checklist: five read targets, one verdict each ──────────────────────
+# These mirror the "What to read" list in prompts/review.md, and that file
+# states that every one of them needs a VERDICT line. A reviewer that skips an
+# item and summarises the rest produces a record indistinguishable from a
+# thorough one unless the omission is named, which is what this list is for.
+# The mirror is checked by the same falsifier that checks the dimension names.
+
+REVIEW_ITEMS: tuple[str, ...] = (
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+)
 
 # The prompt is a versioned, diffable file rather than a string inside this
 # module, so editing it is a text change rather than a code change. It is read
@@ -83,6 +111,7 @@ def load_review_prompt() -> str:
 
 # ── The parser ──────────────────────────────────────────────────────────────
 # The emitted form the prompt asks for is one line per element:
+#     VERDICT <item>: <one sentence saying what was read and what was found>
 #     SCORE <dimension>: <integer 0..20>
 #     JUSTIFICATION <dimension>: <one sentence citing a path or a line>
 #     FINDING <file>:<line> <what is wrong and why it matters>
@@ -94,6 +123,9 @@ _SCORE_RE = re.compile(
 )
 _JUST_RE = re.compile(
     r"^JUSTIFICATION\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
+)
+_VERDICT_RE = re.compile(
+    r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
 
@@ -116,6 +148,15 @@ def parse_review(text: str) -> dict[str, Any]:
     - ``scores`` — dimension to score, for the dimensions that were emitted.
     - ``absent`` — schema dimensions with no recognised SCORE line.
     - ``justifications`` — dimension to its one-sentence justification.
+    - ``item_verdicts`` — checklist item to the verdict sentence it carried,
+      for the items that were emitted with text.
+    - ``absent_items`` — checklist items with no recognised VERDICT line, or
+      with one carrying no text: a line that says nothing is not a verdict.
+    - ``item_aggregate`` — how many checklist items carried a verdict, when
+      every item did, otherwise ``None``. Withheld on the same rule as the
+      total: a count over the items that happen to be present reads as a
+      review that checked fewer, which is indistinguishable from one that
+      skipped one.
     - ``findings`` — a list of ``{"file", "line", "text"}``.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
@@ -129,6 +170,7 @@ def parse_review(text: str) -> dict[str, Any]:
     """
     scores: dict[str, int] = {}
     justifications: dict[str, str] = {}
+    item_verdicts: dict[str, str] = {}
     findings: list[dict[str, str]] = []
     for raw in text.splitlines():
         line = raw.strip()
@@ -149,6 +191,13 @@ def parse_review(text: str) -> dict[str, Any]:
             if dimension in REVIEW_DIMENSIONS:
                 justifications[dimension] = match.group(2).strip()
             continue
+        match = _VERDICT_RE.match(line)
+        if match:
+            item = match.group(1).lower()
+            verdict = match.group(2).strip()
+            if item in REVIEW_ITEMS and verdict:
+                item_verdicts[item] = verdict
+            continue
         match = _FIND_RE.match(line)
         if match:
             ref, finding_text = match.group(1), match.group(2).strip()
@@ -159,17 +208,22 @@ def parse_review(text: str) -> dict[str, Any]:
                 )
             continue
     absent = [dim for dim in REVIEW_DIMENSIONS if dim not in scores]
+    absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]
     if not scores:
         status = "unparsed"
         total = None
     else:
         status = "parsed"
         total = sum(scores.values()) if not absent else None
+    item_aggregate = None if absent_items else len(item_verdicts)
     return {
         "status": status,
         "scores": scores,
         "absent": absent,
         "justifications": justifications,
+        "item_verdicts": item_verdicts,
+        "absent_items": absent_items,
+        "item_aggregate": item_aggregate,
         "findings": findings,
         "total": total,
         "raw_text": text,
@@ -266,6 +320,12 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
     produced scores keeps a status other than ``"parsed"`` with empty scores,
     so it reads unlike an absent review and unlike a parsed review whose
     dimensions genuinely measure zero.
+
+    The checklist item verdicts are deliberately not carried here. This block
+    is what a promotion and a lane comparison read, and both are defined on
+    the five dimensions alone; the item verdicts are recorded in the stored
+    record instead. A ledger block that gained a second, non-comparable set of
+    fields would change what those readers mean without changing their code.
     """
     if record is None:
         return None
