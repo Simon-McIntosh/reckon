@@ -325,6 +325,25 @@
     synthesised ledger and rebuilding it to its original row count. The two concurrent writers of
     the measured incident are the test's fixture, not a hypothetical.</p>
 
+    <p><strong>Refusal landed.</strong> <code>ledger.write</code> refuses a write whose run count is
+    below the stored one, naming both counts, and names the run store as the recovery; the roster
+    refusal now names the member counts it moves the ledger between. Asserted in
+    <code>tests/test_ledger_write_cannot_shrink.py</code>:
+    9 tests, 0 failures — covering the run-count refusal naming both counts, the member-count
+    refusal asserted separately, the measured incident's single write (110 runs and 87 members to
+    one row), a write omitting the <code>runs</code> key, the two-writer concurrency shape (the
+    second refused, every row left present), and the two healthy shapes (an appending promotion and
+    a same-count patch) still succeeding. The declared negative control makes the run-count refusal
+    unreachable and reddens <code>test_a_write_that_reduces_the_run_count_is_refused</code>
+    (<code>DID NOT RAISE LedgerError</code>), its log's first line repeating the mutation verbatim;
+    <code>reckon/ledger.py</code> is byte-identical before and after
+    (sha256 <code>6071e6e4535ee87d344396d165a8b880e09fb453a0f698b615b1f0f41bc901e1</code>). The
+    15-file promotion cohort measures 18 failures before and 18 after, and four failures in the
+    adjacent ledger suite reproduce identically at base, so none is this change's. The rebuild path
+    — restoring a truncated ledger from the run store — is named in the refusal but is not part of
+    this node. Anchor:
+    <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-ledger-write-cannot-shrink">s2d-ledger-write-cannot-shrink</a>.</p>
+
     <h2 id="s2e">§2e — Promotion destroys the path a finding needs</h2>
 
     <p>The three arguments for §2's refusal so far are all about the <em>score</em>: an unreviewed
