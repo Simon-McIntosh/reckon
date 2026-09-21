@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="10">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="12">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 </head>
 <body>
@@ -353,6 +353,54 @@
     review at promotion with no waiver used; the review wall times are recorded with their
     median; and any finding a review raised that the coordinator acted on is named, because a
     review that never changed an outcome has not yet earned its place.</p>
+
+    <h2 id="s5b">§5b — What the reviews actually caught, and what that means for the checklist</h2>
+
+    <p><strong>The hit rate is the argument for the feature.</strong> Reported from imas-efit,
+    2026-09-21: seven solver merges, every one of which the coordinator had hand-read the diff of
+    before merging and promoted. Six independent reviews were dispatched against that work; the
+    first to land returned <strong>three defective, two overstated, two real</strong>. Five of
+    seven carried something the coordinator missed on work it had personally audited. The claim
+    this plan rests on is therefore not that unreviewed work is bad — it is that
+    <em>coordinator self-audit is measurably not a substitute for it</em>, which is a stronger
+    and more falsifiable claim.</p>
+
+    <p><strong>None of the three defects was in the diff's correctness, and that reshapes §4's
+    checklist.</strong> All three were in what the diff did not reach, and a reviewer reading only
+    the changed lines would have missed every one:</p>
+
+    <ul>
+      <li><strong>An absence.</strong> A test rail authored three days earlier was never
+      registered — its own listfile said the directory was not yet reachable and named the missing
+      <code>add_subdirectory</code> line. Eleven merges later a grep found three self-references
+      and no wiring. Nothing in any diff was wrong; the defect was a line never added. The rail in
+      question was the one written to catch a silently disconnected mechanism, so the rail written
+      to detect disconnection was itself disconnected.</li>
+      <li><strong>A crossing.</strong> A Fortran change carried a second saddle's psi; the review
+      traced it into C++ and found the boundary value stamped over every X-point node, discarding
+      the exact quantity the carrier transports — with a comment two lines below acknowledging
+      that secondary X-points sit at a different psi. Both files were correct in isolation.</li>
+      <li><strong>A structure.</strong> A <code>write</code> inside an <code>if</code> with the
+      logging call outside it, so a stale buffer is re-logged on the ordinary path. The diff reads
+      fine line by line.</li>
+    </ul>
+
+    <p><strong>So the checklist's strongest item is reachability, not correctness.</strong> Does
+    the change's new path execute under any registered test; if the node offers a log line as
+    evidence, does that line's emission point gate the thing it is offered as evidence for; does a
+    value cross a module or language boundary intact. In the reported case the node's own record
+    claimed "the line's presence is itself the gate on the carrier" and the reviewer showed it
+    gates the recording rather than the publish — and the publish branch had never executed,
+    because both available rails converge on the same mode.</p>
+
+    <p><strong>The discriminator worth writing into the prompt, because it generalises every
+    instance in this plan.</strong> Before a field is allowed to carry a conclusion, ask <em>what
+    would make it wrong while still printing the same value</em>. A review status of
+    <code>parsed</code> survives a skeleton review. A fresh stream mtime survives a worker writing
+    nothing useful. A <code>plan-slug</code> meta survives on a document that is not a plan. A
+    dry-run <code>ok</code> survives a dispatch that cannot run. The five dimension scores survive
+    a reviewer that skipped four of the five things it was told to read — which is the whole
+    reason §4 requires a verdict per item.</p>
 
     <h2 id="s6">§6 — A reviewer that can see the figure</h2>
 
