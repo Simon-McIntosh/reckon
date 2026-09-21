@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1546,6 +1546,9 @@
     <div class="r-comment-body">Landed, awaiting promotion. The guard now keys on a run writing a repository path rather than on the role name, and an unrecognised manifest status is refused by name before the classification is consulted; the review-role exemption is retained and asserted. tests/test_review_gate_coverage.py holds 16 test functions and 22 cases, all passing, covering test, documentation and investigate runs that change a tracked file (each separately, all refused), runs of those roles that change nothing (not refused), a run with no recorded role but a changed path (refused), a review-role run that changed a tracked file (still exempt), the unchanged implement behaviour, and the status refusal for each of awaiting-orchestrator-review, implemented-not-closed and done naming the accepted vocabulary. The 15-file promotion cohort ran 18 failed / 166 passed at this node's base ee622294 and 19 failed / 165 passed after; the single moved test is tests/test_crew_test_role.py::test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion, still refused but now by the review gate before the verifier-source gate, so its message assertion no longer matches — outside this node's write fence, named as a follow-on. Declared negative control (changed_repository forced False, applied to a scratch copy of HEAD): all three cases of test_a_role_writing_a_tracked_file_is_refused_without_a_review fail DID NOT RAISE. promotion.py byte-identical to its committed blob.</div>
 </div>
 <div class="r-comment" data-section="§2f" data-id="c-run-r-20260921T124613847771-declared-role-equality-mutation-reddens-the-gate" data-who="reckon-ship" data-when="2026-09-21T12:52:01.045Z">
+    <div class="r-comment-body"><p>no work produced; the run degraded silently on the local lane, which a peer measured at 30 concurrent against a computed ceiling of 22 with zero queueing at the same hour</p></div>
+</div>
+<div class="r-comment" data-section="§5c" data-id="c-run-r-20260921T090942172410-a-review-records-the-revision-it-read" data-who="reckon-ship" data-when="2026-09-21T09:15:54.194Z">
     <div class="r-comment-body"><p>no work produced; the run degraded silently on the local lane, which a peer measured at 30 concurrent against a computed ceiling of 22 with zero queueing at the same hour</p></div>
 </div>
 </section>
