@@ -311,6 +311,44 @@ injected runner; verifying it against a real job belongs to the proving run the 
     refuses the worker that would exceed it, naming the limit and its measured basis rather than a core count;
     and the reservation's size and the roster's limit are both recorded with the wave that measured them.</p>
 
+<div class="r-note" data-reckon="landed" data-node="awcj-one-reservation-held-once-and-steps-that-never-queue" data-when="2026-09-20">
+<p><strong>Outcome — one reservation held once, published where every session reads it, and steps placed into it.</strong>
+Commit <code>1ace8694</code>. <code>reckon/crew/placement.py</code> holds a single allocation with
+<code>salloc --no-shell</code> at the locked size (32 cores, 128 GB) and publishes its job id into the shared
+crew state under the crew home, so the id is read by every session rather than held in the one that ran the
+command. A second <code>ensure</code> calls a held reservation reported and submits nothing; a record whose job
+has left the system is superseded rather than reported as held. <code>reckon crew placement --ensure</code> is
+the surface, mirroring <code>reckon crew watch --ensure</code>, with the report branch reading the published
+record. <code>apply_backend_placement</code> in <code>reckon/crew/dispatch.py</code> resolves that published id
+and prefixes the launch as an <code>srun --overlap --jobid=&lt;id&gt;</code> step, so a host with no reservation
+published keeps the backend's declared wrapping unchanged — the fallback that keeps every existing case true.</p>
+<p><strong>The property one session cannot show.</strong>
+<code>test_two_sessions_place_two_workers_as_steps_in_one_reservation</code> drives an ensure call and a dispatch
+under each of two session ids against a fake scheduler and asserts, on the scheduler's own call log, exactly one
+<code>salloc</code> and exactly two <code>--overlap</code> steps under the one job id. A design that held one
+reservation per dispatcher would satisfy every single-session case and fail this one, which is why the case is
+written with two.</p>
+<p><strong>The cap, and the axis it names.</strong> Because <code>--overlap</code> enforces nothing inside the
+allocation, the roster is the only remaining ceiling, so the admission check in <code>dispatch.py</code> refuses a
+dispatch past it. The refusal names the cap of twenty-five and the quantity it was sized against — resident
+memory per worker against the reservation's reserved memory — never a core count, because counting cores would
+raise it on the axis that does not bind. Pinned by
+<code>test_the_roster_refuses_the_worker_past_the_cap_on_the_memory_axis</code> and, at admission,
+<code>test_the_dispatch_admission_refuses_past_the_roster_cap</code>.</p>
+<p><strong>Gate, and the delta.</strong> <code>tests/test_crew_placement.py
+tests/test_crew_watch_ensure.py tests/test_crew_runs_scope.py
+tests/test_crew_placement_reservation.py</code> — <strong>17 passed, exit 0</strong> at base
+<code>7072ecfd</code> over the three files present there, and <strong>25 passed, exit 0</strong> at the landed
+head over the four: eight cases added, no failing id on either side. Ruff findings over the changed modules are
+unchanged from base, so the change adds none. The declared mutation (make the second ensure call hold a second
+reservation) reddens exactly the two cases that assert one reservation across two sessions and leaves the other
+six green.</p>
+<p><strong>What this node did not do, and now the wave's.</strong> No reservation has been held on the cluster
+from this work, so the real job id, the queue wait and the per-worker resident memory across a wave are
+unmeasured; the roster cap moves on that last reading rather than on a core count. The reservation size and the
+roster limit are recorded with the measurement each was sized on in the evidence anchor. Verifying the merged
+result belongs to a separately dispatched test node.</p>
+</div>
 <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
     <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
     them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.

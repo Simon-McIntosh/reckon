@@ -412,6 +412,34 @@ def _live_runs_on_backend(backend_name: str) -> list[dict[str, Any]]:
     ]
 
 
+def _refuse_over_reservation_roster(
+    backend: Mapping[str, Any], occupying: list[dict[str, Any]]
+) -> None:
+    """Refuse a dispatch past the placement reservation's roster cap.
+
+    The cap is the roster's alone: under ``--overlap`` the scheduler enforces
+    nothing inside the allocation, so the only thing standing between the
+    reservation and an oversubscribed node is this check. It applies to a
+    backend whose workers are placed into the reservation and only while a
+    reservation is actually held — an unplaced backend has no roster of ours,
+    and a host with no reservation has nothing to oversubscribe.
+    """
+    from reckon import flight
+    from reckon.crew import placement as placement_module
+
+    if flight.placement_for(backend) is None:
+        return
+    if not placement_module.read_reservation():
+        return
+    refusal = placement_module.reservation_roster_refusal(len(occupying))
+    if refusal is None:
+        return
+    occupying_ids = [
+        str(pointer.get("run_id") or "unknown") for pointer in occupying
+    ]
+    raise CrewError(f"{refusal} Occupying runs: {', '.join(occupying_ids) or 'none'}.")
+
+
 def _refuse_over_concurrency_ceiling(
     backend_name: str, backend: Mapping[str, Any]
 ) -> None:
@@ -443,17 +471,21 @@ def _refuse_over_concurrency_ceiling(
         backend, occupancy=len(occupying), login_slice=summary.read_login_slice()
     )
     binding = summary.binding_bound(bounds)
-    if binding is None or binding.admits_one_more:
-        return
-    run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
-    raise CrewError(
-        format_refusal(
-            "D09",
-            summary.bound_refusal_text(
-                binding, backend_name=backend_name, occupying=run_ids
-            ),
+    if binding is not None and not binding.admits_one_more:
+        run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
+        raise CrewError(
+            format_refusal(
+                "D09",
+                summary.bound_refusal_text(
+                    binding, backend_name=backend_name, occupying=run_ids
+                ),
+            )
         )
-    )
+    # A placed backend's workers run inside the one reservation, so the roster
+    # cap is a second ceiling and the only one nothing enforces on our behalf:
+    # under --overlap the scheduler admits whatever is asked, which makes the
+    # cap a real limit rather than a formality.
+    _refuse_over_reservation_roster(backend, occupying)
 
 
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
@@ -4054,10 +4086,22 @@ def apply_backend_placement(
             "install it or add its directory to PATH, then retry; nothing has "
             "been launched"
         )
-    prefix = [
-        os.path.abspath(found),
-        *[str(item) for item in placement.get("options") or ()],
-    ]
+    from reckon.crew import placement as placement_module
+
+    options = [str(item) for item in placement.get("options") or ()]
+    reservation = placement_module.read_reservation()
+    if reservation and placement_module.reservation_alive(reservation):
+        # The reservation is held and its job id is published, so this worker
+        # runs inside it as an overlapping step rather than as an allocation of
+        # its own. The id is resolved from the shared state rather than taken on
+        # the command line, which is what makes one reservation shared by every
+        # session instead of one per dispatcher.
+        prefix = [
+            os.path.abspath(found),
+            *placement_module.step_prefix(str(reservation["job_id"]), options),
+        ]
+    else:
+        prefix = [os.path.abspath(found), *options]
     return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
 
 

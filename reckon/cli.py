@@ -2263,6 +2263,55 @@ def crew_unwatch(project, pretty):
     _emit({"ok": True, **result}, pretty)
 
 
+@crew.command(name="placement")
+@click.option(
+    "--ensure",
+    is_flag=True,
+    help=(
+        "Hold this host's placement reservation and return, instead of "
+        "reporting one. Idempotent: a reservation already held and still in "
+        "the system is reported and nothing is submitted."
+    ),
+)
+@click.option(
+    "--session",
+    default=None,
+    help="Session asking for the reservation; recorded with it when first held.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_placement(ensure, session, pretty):
+    """Report or hold the one reservation every session places workers into.
+
+    One reservation held once, published into the shared crew state, is what
+    keeps concurrency a matter of sizing an allocation rather than of
+    submitting more of them. Workers then run inside it as steps, so the
+    cluster queue sees one entry for the reservation and never sees a step.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    if ensure:
+        try:
+            result = runs_module.ensure_placement_reservation(session=session)
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit({"ok": True, **result}, pretty)
+        return
+    from reckon.crew import placement as placement_module
+
+    record = placement_module.read_reservation()
+    _emit(
+        {
+            "ok": True,
+            "job_id": (record or {}).get("job_id"),
+            "held": bool(record),
+            "record": record,
+            "ensure_line": runs_module.placement_ensure_line(),
+        },
+        pretty,
+    )
+
+
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
