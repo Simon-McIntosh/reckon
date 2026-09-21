@@ -23,8 +23,8 @@
   <title>A Fleet Display That Cannot Lie | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="490">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="491">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -423,6 +423,52 @@
       every clean-and-ahead tree as retained rather than disposable, and by this section
       carrying a disposition for all nine.
     </p>
+
+    <h2 id="s9b">&#167;9b &mdash; A coordinator lost two finished pieces in its own fleet, because no surface reports unlanded work</h2>
+
+    <p>&#167;9 says unlanded commits are owned by nobody. <strong>Measured again on 2026-09-21,
+    from the coordinator's side rather than the sweep's</strong>, and the point is that the person
+    who dispatched the work could not see it either.</p>
+
+    <p>A session ran twelve nodes. Two delivered, committed and were never merged &mdash;
+    <code>review-gate-covers-every-writing-run</code> (<code>b650bbec</code>, 16 test functions, 22
+    cases, 0 failures) and <code>prescription-checks-refuse-what-they-were-passing</code>
+    (<code>3b7dbf66</code>). Both were work the lead had asked for by name. The coordinator found
+    them only when asked for a status report, roughly two hours after they landed.</p>
+
+    <p><strong>Nothing lied; every surface answered a different question.</strong></p>
+
+    <table>
+      <caption>What each surface said about a delivered, unmerged run.</caption>
+      <thead><tr><th>Surface</th><th>Reported</th><th>Question it answers</th></tr></thead>
+      <tbody>
+        <tr><td><code>crew list</code> / <code>view="live"</code></td><td><code>scoring</code></td><td>is a review attached — <em>not</em> is the work safe</td></tr>
+        <tr><td>the follower's ticker</td><td><code>→ unpromoted</code></td><td>a transition happened</td></tr>
+        <tr><td>the posture line</td><td>counts by phase</td><td>how many are in each bucket</td></tr>
+        <tr><td><strong>anything at all</strong></td><td><strong>nothing</strong></td><td><strong>is this commit on the primary branch</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>So the gap is not that the fleet view is wrong, but that merge state is absent from
+    it.</strong> A run's classification describes its <em>review</em> lifecycle; a coordinator
+    reading <code>scoring</code> learns nothing about whether the diff exists anywhere but a
+    worktree. That is this plan's own class &mdash; a true statement standing in for the one that
+    was needed &mdash; and it is the reason &#167;9's nine commits accumulated without anyone
+    choosing to let them.</p>
+
+    <p><strong>The fact is cheap and already computed elsewhere.</strong> &#167;9 names the
+    predicate: a clean working tree plus a nonempty <code>git log main..HEAD</code>. The same pair
+    answers the coordinator's question, and the run record already carries the commit and the
+    worktree path.</p>
+
+    <p><strong>Done when</strong> the live view reports, per run, whether its recorded commits are
+    reachable from the project's primary branch, asserted for the three states that differ &mdash;
+    delivered and merged, delivered and unmerged, delivered with no commit at all &mdash; because
+    the third is the one &#167;9 shows is indistinguishable today; the follower's posture line
+    carries an <em>unlanded</em> count beside its working, blocked and unpromoted buckets, asserted
+    to be non-zero against a synthesised fleet holding one unmerged delivery; and a session ending
+    with unlanded commits in its own worktrees cannot report a clean close without naming them,
+    asserted, since that is the moment the loss becomes permanent.</p>
 
     <h2 id="s10">&#167;10 &mdash; A gate can be recorded as passed beside a log that failed</h2>
     <p>
