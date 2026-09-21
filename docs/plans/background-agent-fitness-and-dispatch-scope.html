@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -310,6 +310,60 @@
       outside this node's write scope. Full anchor:
       <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#session-ownership">session ownership, landed record</a>.
     </p>
+
+    <h2 id="s2e">§2e — Count live processes against the concurrency limit, not stale fields</h2>
+
+    <p><strong>The local lane is not saturated; it is held by bookkeeping.</strong> Measured
+    2026-09-21 across every project on this workstation:</p>
+
+    <table>
+      <caption>Where the lane's capacity actually went.</caption>
+      <tbody>
+        <tr><td>live run pointers, all projects</td><td>44</td></tr>
+        <tr><td>whose worker process is still alive</td><td>16</td></tr>
+        <tr><td><strong>whose process is gone but which still hold a member</strong></td><td><strong>28</strong></td></tr>
+        <tr><td>clive-lane pointers</td><td>31 — <strong>9 alive</strong>, 22 held</td></tr>
+        <tr><td>clive members registered / lane ceiling</td><td>92 / 64</td></tr>
+      </tbody>
+    </table>
+
+    <p>Nine working workers against a declared ceiling of sixty-four, and neither the member count
+    nor the lane ceiling is the binding constraint. <code>MemberInFlight</code> refuses when a
+    pointer's <code>phase</code> is outside <code>{stopped, complete, failed}</code>, and
+    <code>phase</code> lags until something folds the stream — twelve of those pointers read
+    <code>working</code> and sixteen read <code>starting</code> while their own manifests said
+    otherwise. <strong>The capacity was held by a stale field, not by a running worker.</strong></p>
+
+    <p><strong>The correct predicate is process liveness, and the trap is what to do when it cannot
+    be established.</strong> A live pointer carries no hostname, so <code>os.kill</code> from
+    another login node answers about a pid that is not the one recorded and fabricates both
+    verdicts. So liveness is three-valued, and only one of the three may release a member:</p>
+
+    <table>
+      <thead><tr><th>Liveness</th><th>Blocks the member?</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>alive, host matches</td><td>yes</td><td>a worker is running</td></tr>
+        <tr><td><strong>gone, host matches</strong></td><td><strong>no</strong></td><td>this is the case that recovers the lane</td></tr>
+        <tr><td>unknown — no pid, or a different host</td><td>yes, and reported as unknown</td><td>releasing here would double-dispatch a member whose worker is alive elsewhere</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Refreshing is the action on expiry, never discarding.</strong> A pointer whose
+    process is gone has its phase folded from its own manifest, which releases the member at once.
+    Discarding it would have destroyed, today, <strong>fifteen delivered runs and five stored
+    reviews</strong> — including the three imas-ambix nodes that closed eleven findings this
+    morning. <em>Process gone</em> is a true statement standing in for <em>work abandoned</em>, and
+    it was false for twenty-seven of twenty-eight cases.</p>
+
+    <p><strong>Done when</strong> the member guard consults three-valued process liveness rather
+    than <code>phase</code> alone, asserted for each of the three states with a synthesised pointer,
+    including that <em>unknown</em> still blocks; a pointer whose process is gone on the recording
+    host has its phase folded from its manifest by the sweep rather than being discarded, asserted
+    against a synthesised delivered run whose review must survive; <code>crew(view="live")</code>
+    reports held-by-a-gone-process as its own count beside occupancy, asserted, because the 9-of-64
+    gap above is currently invisible to every surface; and the lane's free capacity is reported as a
+    number rather than <code>unknown</code>, since a coordinator deciding how wide to fan out cannot
+    read it today.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
