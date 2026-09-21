@@ -159,9 +159,7 @@ def test_full_emission_records_a_verdict_for_every_checklist_item() -> None:
 
 def test_omitted_item_verdict_is_named_absent_with_the_aggregate_withheld() -> None:
     without_diff = "\n".join(
-        line
-        for line in VALID_TEXT.splitlines()
-        if not line.startswith("VERDICT diff:")
+        line for line in VALID_TEXT.splitlines() if not line.startswith("VERDICT diff:")
     )
     record = review_module.parse_review(without_diff)
     assert record["status"] == "parsed"
