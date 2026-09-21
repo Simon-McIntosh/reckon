@@ -22,7 +22,7 @@ than silently taken over fewer dimensions — a total computed over four is a
 lower score indistinguishable from a worse one.
 
 Alongside the dimensions, the parser records one verdict per checklist item —
-the five read targets the prompt enumerates — and names any item that carries
+the six read targets the prompt enumerates — and names any item that carries
 none, by the same rule: an item with no verdict is reported as absent and the
 item count is withheld rather than taken over the items that happen to be
 present. The item verdicts are recorded and their absence named, but they do
@@ -69,11 +69,12 @@ REVIEW_DIMENSIONS: tuple[str, ...] = (
 
 REVIEW_MAX_SCORE = 20
 
-# ── The checklist: five read targets, one verdict each ──────────────────────
-# These mirror the "What to read" list in prompts/review.md, and that file
-# states that every one of them needs a VERDICT line. A reviewer that skips an
-# item and summarises the rest produces a record indistinguishable from a
-# thorough one unless the omission is named, which is what this list is for.
+# ── The checklist: six read targets, one verdict each ───────────────────────
+# These mirror the "What to read" list in prompts/review.md. The first five
+# use VERDICT lines and call_sites uses the dedicated CALL_SITES line. A
+# reviewer that skips an item and summarises the rest produces a record
+# indistinguishable from a thorough one unless the omission is named, which is
+# what this list is for.
 # The mirror is checked by the same falsifier that checks the dimension names.
 
 REVIEW_ITEMS: tuple[str, ...] = (
@@ -82,6 +83,7 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "write_paths",
     "manifest",
     "diff",
+    "call_sites",
 )
 
 # The prompt is a versioned, diffable file rather than a string inside this
@@ -167,8 +169,8 @@ def parse_review(text: str) -> dict[str, Any]:
     - ``call_sites`` and ``call_site_count`` — the production call sites the
       reviewer verified against the change and their parseable count. An
       explicit ``CALL_SITES: none`` records an empty list and zero; an omitted
-      line leaves both keys absent because omission and zero are different
-      claims.
+      or empty line leaves both keys absent because omission and zero are
+      different claims.
     - ``call_sites_emission`` — ``"empty"`` when the reviewer emitted the
       label but supplied no site, whitespace, or only separators. The count
       remains absent in this state because the line measured nothing.
@@ -222,10 +224,14 @@ def parse_review(text: str) -> dict[str, Any]:
             value = match.group(1).strip()
             if value.lower() == "none":
                 call_sites_emission = "none"
+                item_verdicts["call_sites"] = "no production call sites found"
             else:
                 call_sites = [site.strip() for site in value.split(",") if site.strip()]
                 if call_sites:
                     call_sites_emission = "sites"
+                    item_verdicts["call_sites"] = (
+                        f"verified {len(call_sites)} production call site(s)"
+                    )
                 else:
                     call_sites_seen = False
                     call_sites_emission = "empty"
@@ -371,8 +377,7 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
     scores: dict[str, int] = {}
     if isinstance(score_values, Mapping):
         scores = {
-            str(dimension): int(value)
-            for dimension, value in score_values.items()
+            str(dimension): int(value) for dimension, value in score_values.items()
         }
     total = record.get("total")
     return {

@@ -7,7 +7,7 @@ artefacts, not on the worker's account of them.
 
 ## What to read
 
-Read each of these before scoring. These five are the checklist, and each one
+Read each of these before scoring. These six are the checklist, and each one
 is named by the slug in parentheses because you must emit a verdict for each:
 
 1. The source node's **goal** (`goal`) — the one-sentence deliverable it was
@@ -20,6 +20,9 @@ is named by the slug in parentheses because you must emit a verdict for each:
    shipped, with its stated test results.
 5. The **diff of its commits against its base** (`diff`) — what the landed
    change actually contains, reviewed commit by commit.
+6. The production **call sites** (`call_sites`) — runtime code that can reach
+   the landed change. The node's own test files do not count as production call
+   sites.
 
 ## How much to read
 
@@ -52,8 +55,9 @@ one another; never rank, weigh or compare them.
 
 ## What to emit
 
-For every one of the five checklist items, emit one VERDICT line. For every
-one of the five dimensions, emit one SCORE line and one JUSTIFICATION line.
+For each of the first five checklist items, emit one VERDICT line. The sixth
+item is recorded by the required CALL_SITES line below. For every one of the
+five dimensions, emit one SCORE line and one JUSTIFICATION line.
 Then emit one FINDING line per defect you found. A verdict says what you read
 and what you found there, and must cite the path or line it is about. A
 justification is one sentence and must cite the path or line of the code it
@@ -62,6 +66,7 @@ exactly in this form and nothing else with these prefixes:
 
 ```
 VERDICT <item>: <one sentence saying what you read and what you found>
+CALL_SITES: <comma-separated production call sites, or none>
 SCORE <dimension>: <integer 0..20>
 JUSTIFICATION <dimension>: <one sentence citing a path or a line>
 FINDING <file>:<line> <what is wrong and why it matters>
@@ -69,14 +74,15 @@ FINDING <file>:<line> <what is wrong and why it matters>
 
 **Every checklist item needs a verdict.** A summary is not a substitute for
 one: an omitted item reads exactly like a checked one, which is how a review
-skips a step and still looks thorough.
+skips a step and still looks thorough. For call sites, the CALL_SITES line is
+that verdict: it must name the sites examined or state `none` explicitly.
 
 A verdict with no text is not a verdict — an empty one is read as the item
 being unreported. A review that omits an item, or emits it empty, has that
 item named absent, and its item count is withheld rather than taken over the
 items that are present.
 
-Every review must also emit one `CALL_SITES` line. This requirement is not optional.
+Every review must emit one `CALL_SITES` line. This requirement is not optional.
 List the production call sites you verified the change against as a
 comma-separated list, or emit the literal `CALL_SITES: none` when you found no
 production call site. Production means runtime code that can reach the change;
