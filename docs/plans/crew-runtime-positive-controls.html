@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.714">
-<meta name="plan-version" content="43">
+<meta name="plan-impl" content="0.667">
+<meta name="plan-version" content="44">
 </head>
 <body>
   <main class="plan-doc">
@@ -633,6 +633,36 @@
     This result does not test systemd restart or service-manager fallback. No production or test file is
     changed and the driving followup remains open for coordinator disposition.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s14">Diagnosis evidence and report</a>.</p>
+
+    <h2 id="s15">&#167;15 &mdash; A wait the reader does not understand is refused by name, and a file condition has a shape</h2>
+    <p>Three workers wrote the wait block three wrong ways in one hour on 2026-09-20, each with the right key
+    names and a value the reader discards. The first wrote a list of <code>{kind, path}</code> objects for a
+    three-file condition; the reader requires strings, so it parsed to nothing. The second wrote a valid
+    argument vector and then put <code>exit:0</code> under <code>wait_terminal</code>, which is not a state any
+    probe emits. The third wrote whole shell command lines, which pass the string check and then cannot exec,
+    because the first element is a program name containing spaces. None is careless: each is a reasonable
+    reading of a field whose only example is a scheduler query, written by a worker whose actual condition was
+    about files. A contract three independent workers fill three wrong ways in one hour is a contract defect.</p>
+    <p>Two things are wrong and only one of them is the shape. The reader reduces an unrecognised shape to
+    silence, so the run reports to a coordinator as a worker that declared no probe at all &mdash; the failure
+    is invisible at the moment it could still be repaired, which is the defect this whole plan exists to
+    remove. And a file condition, which is the ordinary shape of a wait in this fleet because a worker waits
+    for a job's log far more often than for a scheduler to say the job left the queue, has no first-class form
+    at all.</p>
+    <p><strong>Done when.</strong> Cases in <code>tests/test_wait_shapes.py</code> assert that a wait declaring
+    a file condition over 3 paths is accepted and read back with those paths, so a condition about files needs
+    no argument vector; that each of the 3 measured wrong shapes &mdash; a list of objects, a list of whole
+    shell command lines, and an argument vector whose terminal value names no state a probe emits &mdash; is
+    refused with a reason naming the shapes the reader does accept, and that the reason reaches the field a
+    follower already renders; and that no unrecognised shape reduces to an empty probe, which is the negative
+    half and is asserted as the absence of the silent path rather than inferred from the refusals. The existing
+    no-op probe refusal and the live-state terminal refusal both still hold, asserted so this node cannot
+    loosen what &#167;4 landed. The declared mutation is applied, <code>tests/test_wait_shapes.py</code> is
+    observed to fail, and the red log is recorded with the mutation verbatim on its first line.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/recovery.py</code> and a new
+    <code>tests/test_wait_shapes.py</code>. The manifest template that must say which form to use when is in
+    <code>reckon/crew/prompts.py</code>, held by this plan's own template node and therefore outside this
+    fence; it is a follow-on, and this node states in its manifest what the template will need to say.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
