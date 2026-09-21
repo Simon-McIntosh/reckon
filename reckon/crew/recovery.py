@@ -152,6 +152,14 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
 
 REVIEW_NODE_PREFIX = "review-of-"
 
+# The dispatch role that produces reviews. A run carrying it is the reviewer,
+# never the reviewed, so no classification may compose a review of it: the
+# composed dispatch names its own source run, so reviewing a review spawns
+# another review of the same shape without limit. The promotion boundary keys
+# its own exemption on the same fact — a review run is never gated on a review
+# of itself.
+REVIEW_ROLE = "review"
+
 
 def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
     """The facts a scoring run's review dispatch is built from.
@@ -2084,7 +2092,27 @@ def classify_pointer(
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
     elif manifest_status == "complete":
-        if review_complete:
+        if _pointer_role(record) == REVIEW_ROLE:
+            # A review run's deliverable is the review it wrote for another
+            # run, so it is not itself awaiting review. The exemption is the
+            # role the run carried, not the presence of a stored review: a run
+            # that never had a review attached still reads as scoring when its
+            # role could have had one, and the reflex keeps dispatching for it.
+            # Without this arm the scoring branch composes a dispatch whose
+            # source node is this run, whose review run completes and scores in
+            # turn — an unbounded chain of reviews reviewing reviews, each one
+            # a real dispatch against a real member.
+            classification = "promotable"
+            detail = (
+                "the worker manifest reports completion; the run is the "
+                f"{REVIEW_ROLE} it dispatched with, so the review it wrote is "
+                "its deliverable and no review of this run is required"
+            )
+            action = (
+                f"promote the completed {REVIEW_ROLE} run once its verdict is "
+                "read; the run is not itself reviewed"
+            )
+        elif review_complete:
             classification = "promotable"
             detail = (
                 "the worker manifest reports completion and an independent "
