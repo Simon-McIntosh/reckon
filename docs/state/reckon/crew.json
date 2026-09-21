@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T17:43:57",
+  "updated": "2026-09-21T17:44:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -225687,6 +225687,343 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a76",
+        "node": "the-figure-directory-is-granted-like-the-evidence-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1137,
+                "cached_input_tokens": 499168,
+                "input_tokens": 500307,
+                "output_tokens": 438,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 500745,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "tests/test_shared_landing_paths.py passes and asserts four things, entering through reckon.crew.dispatch rather than calling the private helper alone wherever the assertion is about the grant reaching a node. First, reckon.crew.dispatch._shared_landing_paths returns a third shared path beside the evidence record and the plan file, namely the directory docs/figures/ joined with the node's plan slug, asserted against a synthesised docs tree using the slug scoring-should-stop-a-promotion so the expected string is docs/figures/scoring-should-stop-a-promotion. Second, the granted entry is that topic DIRECTORY and not a file inside it, asserted by requiring the declared string to carry no file extension and to equal that directory exactly. Third, a node dispatched with no figure path of its own comes back with that directory present in its write_paths, asserted through the dispatch entry point. Fourth, two nodes on the same plan may both hold that directory without a scope conflict, asserted by driving the exclusive-claim check over two candidates that both declare it, because it is shared exactly like the evidence record; and as the paired negative, two nodes declaring the same figure FILENAME inside it are still refused with the owning run named, asserted. Update the docstring of _shared_landing_paths, which today says those two paths, to say three and to state why the directory is shared while a filename is exclusive. Ruff check and format over exactly the staged paths add no findings beyond the same paths at the base revision, with both counts pasted into the manifest as digits.",
+          "estimated_hours": 0.8,
+          "goal": "Grant every node its plan's figure topic directory alongside the plan file and the cumulative evidence record, so a node that illustrates its landing record is not writing outside its fence to obey the graphics mandate",
+          "id": "the-figure-directory-is-granted-like-the-evidence-record",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T14:57:15Z",
+            "read_at": "2026-09-21T14:57:17Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 25.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/manifest.md",
+          "negative_control": "drop the figures directory from the set _shared_landing_paths returns, leaving only the evidence record and the plan file; tests/test_shared_landing_paths.py must fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_shared_landing_paths.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-tool-approval",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-21T14:58:02Z",
+        "completed_at": "2026-09-21T15:14:40Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 998,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 998,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "ad4f3c2bc22355224ed568ceff2c2cd34a826651",
+        "commits": [
+          "7a18dd2fade1e21b9235433968211adca0f2a76d",
+          "89ac656b5e8c2b1dde932fddf67695433f56b5d4"
+        ],
+        "changed_lines": {
+          "added": 251,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_shared_landing_paths.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/after-test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c479-6040-70b3-ab72-d378df7560e6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4914176,
+            "cached_input_tokens_cumulative": 4914176,
+            "input_tokens": 5058794,
+            "input_tokens_cumulative": 5058794,
+            "output_tokens": 19750,
+            "output_tokens_cumulative": 19750,
+            "reasoning_output_tokens": 4939,
+            "reasoning_output_tokens_cumulative": 4939
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T15:14:40Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 26.0,
+              "resets_at": 1790575134,
+              "observed_at": "2026-09-21T15:14:40Z"
+            }
+          ],
+          "notional_cost_usd": 10.4935,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 703,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3272,
+              "log_fresh": false,
+              "manifest_commits": [
+                "681771db720457af44af42bf95a42ae757bb62b0",
+                "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+                "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "03a4cfe7a657167b7d95949a8023644bfba99546bb9aeb2dc35fccd0d5f95516",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route --gate <verdict> --commit 681771db720457af44af42bf95a42ae757bb62b0 --commit c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54 --commit 930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+              "node": "a-paraphrased-control-has-a-recorded-route",
+              "phase": "working",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 3306,
+              "terminal_at": "2026-09-21T14:02:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-paraphrased-control-has-a-recorded-route"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 921,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1253,
+              "log_fresh": false,
+              "manifest_commits": [
+                "57ed30eeaa34fee7f85f862f8057d14c6b423634",
+                "3df4730f"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "0a6f1ea063cfa60c51c0f0e062016927d9e6302c21729c13fd89f20fc8dcdc56",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan scoring-should-stop-a-promotion --section '\u00a74' --role review --spec-level exact --node review-of-the-reviewer-names-the-call-sites-it-verified --goal 'attach an independent review to run r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified' --done-when 'the review for r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified.json --time-budget 35m --session 660d357e-1ede-4027-b678-d89d9391ff8f --allow-unreconciled-runs --local",
+              "node": "the-reviewer-names-the-call-sites-it-verified",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T142050484334-the-reviewer-names-the-call-sites-it-verified",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 1328,
+              "terminal_at": "2026-09-21T14:35:28Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-reviewer-names-the-call-sites-it-verified"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 18,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 4914176,
+          "cumulative_input_tokens": 9972970,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24689
+        },
+        "follow_on_paths": [
+          "reckon/crew/dispatch.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-figure-directory-is-granted-like-the-evidence-record",
+          "session_id": "01a0c479-6040-70b3-ab72-d378df7560e6",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T15:14:40Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.5,
+          "at_complete": 0.56,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_shared_landing_paths.py"
+          ],
+          "declaration": "drop the figures directory from the set _shared_landing_paths returns, leaving only the evidence record and the plan file; tests/test_shared_landing_paths.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/negative-control.log",
+          "reason": "paraphrase, verified before waiving. The declaration says drop the figures directory from the set _shared_landing_paths returns; the log's first line says remove the plan-owned figure topic from _shared_landing_paths. Same function, same removal, different words. The discriminator is which tests failed: the three that fail are exactly the three asserting the figure topic is returned, granted through dispatch, and shareable by two nodes, which is what removing it from that set produces and nothing else would"
+        },
+        "tool_steps": 50.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -225971,6 +226308,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1928
+    "_version": 1929
   }
 }
