@@ -1163,6 +1163,116 @@ nothing has been launched</code></pre>
       from one armed by the service, which is a wording change in <code>reckon/crew/node.py</code> and outside
       this fence.</p>
     </section>
+
+    <section id="s15">
+      <h2>&sect;15 &mdash; A wait the reader does not understand is refused by name, and a file condition has a shape</h2>
+      <p><strong>Implemented, awaiting coordinator review:</strong> commit <code>800bef46</code> changes
+      <code>reckon/crew/recovery.py</code> and adds <code>tests/test_wait_shapes.py</code> at base
+      <code>ca943455</code>.</p>
+      <p><strong>What the reader now accepts.</strong> A wait declaration has one of two shapes. An
+      <code>wait_file</code> condition names a file condition as one path or a JSON array of paths, and its
+      probe and terminal are derived from those paths rather than declared: the probe is
+      <code>test -e a -a -e b -a -e c</code>, run without a shell through the same single argument vector
+      every other wait uses, and the terminal it is matched against is <code>exit:0</code>. So the reader
+      that answers the condition and the sweep that lifts the parked run need no second machinery, and a
+      condition about files needs no scheduler query written by hand. A scalar is one path and is never
+      comma-split, because a comma inside a path is part of the path.
+      <code>wait_probe</code> keeps its meaning unchanged: a shell-free argument vector whose first element
+      is a bare program name.</p>
+      <p><strong>What the reader now refuses, and how.</strong> A probe or file condition that is present
+      and unreadable is refused at the declaration, not at the probe, so the reason reaches the field the
+      follower already renders. Each refusal names both accepted shapes, so the repair is stated in the row
+      rather than inferred from it. A declaration carrying both <code>wait_probe</code> and
+      <code>wait_file</code> is refused as two shapes for one wait, and so is a <code>wait_terminal</code>
+      naming an exit-code sentinel, because the observation a terminal is matched against is the probe's
+      own output and an exit status is not a state any probe prints. Absence stays a separate outcome: a
+      manifest written without <code>wait_probe</code> at all still reports the missing field, so a value
+      the reader could not read no longer reports the same reason as a value that was never written.</p>
+
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" aria-label="A wait declaration is routed by shape; an
+        argument vector and a file condition are accepted, and every other present value is refused by
+        naming both accepted shapes." style="max-width:100%;height:auto">
+          <style>
+            .n { fill:#1d2430; stroke:#3b6ea5; stroke-width:1.4px; }
+            .ok { fill:#16241b; stroke:#2e7d43; stroke-width:1.6px; }
+            .no { fill:#2a1a1a; stroke:#b23b3b; stroke-width:1.6px; }
+            .l { fill:#dfe6ef; font:13px sans-serif; }
+            .e { stroke:#8b98a8; stroke-width:1.3px; fill:none; }
+            .el { fill:#9fb0c4; font:11px sans-serif; }
+          </style>
+          <rect class="n" x="14" y="100" width="150" height="52" rx="6"/>
+          <text class="l" x="30" y="122">manifest</text>
+          <text class="l" x="30" y="140">status: waiting</text>
+          <path class="e" d="M164 126 H 214"/>
+          <rect class="n" x="214" y="100" width="150" height="52" rx="6"/>
+          <text class="l" x="230" y="122">wait_file</text>
+          <text class="l" x="230" y="140">declared?</text>
+          <path class="e" d="M364 126 H 414"/>
+          <rect class="ok" x="414" y="34" width="292" height="70" rx="6"/>
+          <text class="l" x="430" y="58">accepted: probe derived from the paths</text>
+          <text class="l" x="430" y="76">test -e a -a -e b -a -e c</text>
+          <text class="el" x="430" y="94">one path or a JSON array; scalar is one path</text>
+          <path class="e" d="M289 100 V 60 H 414" stroke-dasharray="4 3"/>
+          <text class="el" x="296" y="76">no &#8594; wait_probe</text>
+          <rect class="ok" x="414" y="150" width="292" height="70" rx="6"/>
+          <text class="l" x="430" y="174">accepted: argument vector, run</text>
+          <text class="l" x="430" y="192">without a shell</text>
+          <text class="el" x="430" y="210">first element is a bare program name</text>
+          <path class="e" d="M474 100 V 150"/>
+          <rect class="no" x="14" y="186" width="350" height="52" rx="6"/>
+          <text class="l" x="30" y="208">refused: names both accepted shapes,</text>
+          <text class="l" x="30" y="226">at the declaration rather than at the probe</text>
+          <path class="e" d="M214 152 V 212 H 364" stroke-dasharray="4 3"/>
+          <text class="el" x="150" y="204">present but unreadable,</text>
+          <text class="el" x="150" y="232">or two shapes at once</text>
+        </svg>
+        <figcaption>One reader routes a declaration by the shape it carries. The reduction this node
+        removes is the missing arm: a present-but-unreadable value used to fall through to the same
+        outcome as an omitted field, so a worker that had declared something was reported as a worker
+        that had declared nothing.</figcaption>
+      </figure>
+
+      <p><strong>Verification.</strong> The focused population is <code>tests/test_wait_shapes.py</code>
+      together with the four suites that bind the reader's neighbouring contracts
+      (<code>test_wait_declaration_parses_both_forms.py</code>, <code>test_worker_wait_contract.py</code>,
+      <code>test_wait_marker_is_not_a_stub.py</code>, <code>test_crew_recovery.py</code>), run with the
+      root environment interpreter and this worktree on <code>PYTHONPATH</code>:
+      <strong>159 passed, 1 failed in 6.79 seconds</strong>. The single failure,
+      <code>test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion</code> &mdash; the
+      promotion case whose temporary checkout is not a git worktree &mdash; was re-run against the base revision of
+      <code>reckon/crew/recovery.py</code> and failed there identically, so this node adds no failure.
+      <code>tests/test_wait_shapes.py</code> alone reports <strong>17 passed</strong>. Every pre-existing
+      guarantee the node could have loosened is asserted in the new file for its own sake: the no-op probe
+      refusal, the live-state terminal refusal and a genuine argument vector still reading as valid.</p>
+      <p><strong>Negative control, applied and removed.</strong> The declared mutation is
+      <code>restore the silent reduction of an unrecognised wait shape to an empty probe in
+      reckon/crew/recovery.py</code>, recorded verbatim as the first line of
+      <code>mutation-red.log</code>. With it applied the focused gate reported <strong>6 failed, 11
+      passed in 0.82 seconds</strong>, exit 1 &mdash; both named-refusal cases and both follower-field
+      cases for the mappings shape and the command-line shape, and the negative-half case for each. The
+      first run of the log reported 5 failures, not 6: the negative-half case for the mappings shape
+      passed under the mutation, because the reduction there produced the missing-field reason rather
+      than an empty one and the case only required a non-empty reason. The case was strengthened to
+      compare the reason against the one a manifest with no probe at all produces &mdash; the two must
+      differ, because the repairs differ &mdash; and the log was re-taken. The third measured shape, an
+      argument vector whose terminal is <code>exit:0</code>, stays refused under this mutation because a
+      separate guard refuses a terminal naming no state a probe prints; the two guards are independent,
+      and the mutation is absent from the implementation commit.</p>
+      <p><strong>Durable receipts.</strong> The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T144705093304-wait-reader-names-the-shapes-it-accepts/</code>.
+      It contains <code>mutation-red.log</code> (first line is the declared mutation verbatim),
+      <code>green.log</code> and <code>manifest.md</code>, which carries the commit and every changed
+      path.</p>
+      <p><strong>Follow-ons.</strong> <code>reckon/crew/prompts.py</code> holds the manifest template that
+      must say which form to use when, and is outside this node's fence. It should stop teaching
+      <code>exit:&lt;code&gt;</code> under <code>wait_terminal</code> and teach <code>wait_file</code> for
+      a file condition, since a worker following the template as written will keep writing a terminal the
+      reader now refuses. Two environment failures seen in the wider suite are reported rather than
+      triaged: three resumption cases read the shared review store and one budget case reports a worktree
+      claimed by live peer runs. Plan lifecycle metadata and the driving followup remain unchanged for
+      coordinator adjudication.</p>
+    </section>
   </main>
 </body>
 </html>
