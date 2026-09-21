@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T23:31:10",
+  "updated": "2026-09-21T23:32:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -251466,6 +251466,349 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72d",
+        "node": "the-refusal-asks-git-whether-the-ledger-existed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2086,
+                "cached_input_tokens": 217549,
+                "input_tokens": 219637,
+                "output_tokens": 1461,
+                "reasoning_output_tokens": 447,
+                "total_tokens": 221098,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "a promotion into a repository whose ledger path has never been tracked by git creates the ledger and succeeds; a promotion into a repository where the ledger path is present in git history but absent from the working tree still refuses with the recovery message naming the run store; both cases are asserted in tests/test_a_promotion_never_creates_a_ledger.py, whose fixture for the refusing case commits the ledger and then unlinks it so it carries the incident shape rather than a never-created file; and on the all_debug partition, PYTHONPATH set to the main checkout and the root interpreter, pytest over tests/test_a_promotion_never_creates_a_ledger.py tests/test_crew_placed_promotion.py tests/test_crew_promotion.py tests/test_crew_promotion_requires_review.py tests/test_crew_promotion_scope.py tests/test_ledger.py tests/test_ledger_write_cannot_shrink.py tests/test_promotion_beat_carries_fleet_state.py tests/test_promotion_harvests_the_receipt.py tests/test_promotion_reads_the_terminal_record.py tests/test_promotion_release.py tests/test_promotion_requires_impl_move.py tests/test_refused_promotion_leaves_no_trace.py tests/test_report_only_promotion.py tests/test_rollback_asks_head.py reports no more failures than the 8 that base revision 73392943ef11c6d66fbfc382c890db9a6c1049fe reports over the 13 of those files present there, with both counts pasted into the manifest",
+          "estimated_hours": null,
+          "goal": "the absent-ledger refusal distinguishes a ledger that was deleted from a project that never had one, by asking git whether the ledger path was ever tracked in the repository receiving the promotion",
+          "id": "the-refusal-asks-git-whether-the-ledger-existed",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T20:46:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed/manifest.md",
+          "negative_control": "make the git-history question answer that the ledger was never tracked for every repository, so an absent ledger is always created: the refusing case in tests/test_a_promotion_never_creates_a_ledger.py must go red",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72d",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_a_promotion_never_creates_a_ledger.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-0cf29778881411ed5f0b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T20:46:33Z",
+        "completed_at": "2026-09-21T20:59:57.620Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 796,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 804,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "c16659ffd528b998ea89db41059ece2ae10db879",
+        "commits": [
+          "f1abfa99c65c7e10b03d86bf553bd7e78a77feba",
+          "aeff6178a08fed2426c3c31d4fe1b4766608105a"
+        ],
+        "changed_lines": {
+          "added": 233,
+          "removed": 18,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "srun --partition=all_debug bash -c \"PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q <15 promotion and ledger test files>\"",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-surface-delta/head-after-repair.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the absent-ledger refusal asks git whether the path was ever tracked, so a deleted ledger still refuses and a project that never had one is initialised; coordinator verification at the merged head reports 10 failed / 246 passed against base 10 failed / 229 passed, identical failure set, 0 added",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed/manifest.md",
+        "scope_changed": false,
+        "session_id": "fecf4a52-c64a-45fa-8c84-afcfd47b7eaa",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6781564,
+            "input_tokens_cumulative": 6781564,
+            "output_tokens": 35234,
+            "output_tokens_cumulative": 35234,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T20:59:57.620Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 703,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 24202,
+              "log_fresh": false,
+              "manifest_commits": [
+                "681771db720457af44af42bf95a42ae757bb62b0",
+                "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+                "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "03a4cfe7a657167b7d95949a8023644bfba99546bb9aeb2dc35fccd0d5f95516",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route --gate <verdict> --commit 681771db720457af44af42bf95a42ae757bb62b0 --commit c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54 --commit 930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+              "node": "a-paraphrased-control-has-a-recorded-route",
+              "phase": "blocked",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 24235,
+              "terminal_at": "2026-09-21T14:02:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-paraphrased-control-has-a-recorded-route"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 697,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2136,
+              "log_fresh": false,
+              "manifest_commits": [
+                "89a574d2",
+                "3cae6100"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "4d824288c28d6c0c78f65df1a5431861bbe41cedff56bcb9fa852c955ab761b6",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan scoring-should-stop-a-promotion --section '\u00a72d' --role review --spec-level exact --node review-of-a-promotion-never-creates-a-ledger --goal 'attach an independent review to run r-20260921T195859674086-a-promotion-never-creates-a-ledger' --done-when 'the review for r-20260921T195859674086-a-promotion-never-creates-a-ledger stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T195859674086-a-promotion-never-creates-a-ledger.json --time-budget 40m --session 660d357e-1ede-4027-b678-d89d9391ff8f --allow-unreconciled-runs --local",
+              "node": "a-promotion-never-creates-a-ledger",
+              "phase": "starting",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T195859674086-a-promotion-never-creates-a-ledger",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 2161,
+              "terminal_at": "2026-09-21T20:10:25Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/a-promotion-never-creates-a-ledger"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 90
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6781564,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 800.736,
+          "generated_tokens": 35234,
+          "generation_seconds": 499.659,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.0,
+          "machine_seconds": 301.077,
+          "peak_input_tokens": 134360,
+          "tokens_per_second": 70.52,
+          "wall_tokens_per_second": 44.0
+        },
+        "follow_on_paths": [
+          "reckon/ledger.py",
+          "tests/test_a_promotion_never_creates_a_ledger.py);",
+          "merge/verification"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-refusal-asks-git-whether-the-ledger-existed",
+          "session_id": "fecf4a52-c64a-45fa-8c84-afcfd47b7eaa",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T20:59:57.620Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.66,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.66,
+          "at_complete": 0.7,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_a_promotion_never_creates_a_ledger.py"
+          ],
+          "declaration": "make the git-history question answer that the ledger was never tracked for every repository, so an absent ledger is always created: the refusing case in tests/test_a_promotion_never_creates_a_ledger.py must go red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed/negative-control.log"
+        },
+        "tool_steps": 68.0,
+        "orientation_input_tokens": 1017032.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -251750,6 +252093,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2026
+    "_version": 2027
   }
 }
