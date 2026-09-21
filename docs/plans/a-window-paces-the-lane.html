@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-window-paces-the-lane">
   <meta name="plan-title" content="A Window Paces The Lane">
   <meta name="plan-summary" content="The provider publishes two clocks on every served stream and nothing reads them, so a wave spends a five-hour window in an hour and the free lane sits idle.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="2">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="5">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -54,25 +54,59 @@
 
     <h2 id="s2">&sect;2 &mdash; The pace function, on two clocks</h2>
 
-    <p>A target is what the account <em>should</em> have spent by now, and there is one per window:</p>
+    <p><strong>The five-hour allowance is derived from the week, not configured.</strong> A fixed
+    five-hour cap cannot react to load: it is either too tight on a quiet Tuesday or too loose on a
+    busy Monday, and it never learns. Deriving it needs no gain term and no tuning constant, because
+    the arithmetic is self-correcting.</p>
 
-    <pre><code>target(window) = pace_multiple &times; elapsed_fraction(window)</code></pre>
+    <p>Let <code>D</code> be the <strong>drain deadline</strong> &mdash; the point the subscription
+    should be spent, a configured lead time before the weekly reset (12&nbsp;h, so the week ends
+    drained rather than exhausted mid-Sunday-night with work still queued). Then for a declared
+    budget group:</p>
 
-    <p>The account is <strong>ahead</strong> of pace when a window's utilisation exceeds its target
-    and <strong>behind</strong> when it does not. <code>pace_multiple</code> defaults a little above
-    one so the week drains rather than finishing with headroom unspent; it is a flight key, not a
-    constant.</p>
+    <pre><code>remaining_budget  = 1 - utilisation
+remaining_windows = (D - elapsed) / 5h
 
-    <p>The two clocks do different jobs and must not be collapsed. The <strong>seven-day</strong>
-    clock decides whether the week is on course, which is what makes late-week open-ended work
-    flow to the metered lane and early-week work stay local. The <strong>five-hour</strong> clock
-    stops a single wave eating a whole window before the rest of the day can use it; the existing
-    hard ceiling stays exactly as it is, and the pace target sits below it.</p>
+allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
-    <p><strong>Done when</strong> both targets are computed from the parsed windows and asserted
-    against synthetic window states covering ahead, behind and on-pace for each clock independently,
-    including the case where the two clocks disagree &mdash; behind on the week and ahead on the
-    hour &mdash; which is the state a wave enters and the one a single-clock design gets wrong.</p>
+    <p><strong>That single line is the whole governor.</strong> Spend heavily now and
+    <code>remaining_budget</code> falls while <code>remaining_windows</code> falls more slowly, so
+    the next window's allowance shrinks. Spend nothing and it grows. It converges on exhausting the
+    budget exactly at <code>D</code> from any starting position, and it needs no memory of how the
+    week has gone &mdash; the two figures already carry it.</p>
+
+    <p><strong>The best five-hour estimate to start the week with is the fixed point of that
+    formula</strong>, which is simply the nominal share: <code>5 / D</code>. At
+    <code>D</code>&nbsp;=&nbsp;156&nbsp;h that is <strong>3.205% of the weekly budget per five-hour
+    window</strong>, over 31.2 windows. A group exactly on pace returns 1.00&times; nominal, which
+    is the consistency check the implementation should assert rather than a number to hardcode.</p>
+
+    <table>
+      <caption>The allowance tracking up and down. Computed, not illustrative.</caption>
+      <thead><tr><th>Group state</th><th>Used</th><th>Elapsed</th><th>Allowance per 5&nbsp;h window</th><th>vs nominal</th></tr></thead>
+      <tbody>
+        <tr><td>ahead of pace, early</td><td>30%</td><td>24 h</td><td>2.65%</td><td>0.83&times; &mdash; throttles</td></tr>
+        <tr><td>exactly on pace</td><td>31%</td><td>48 h</td><td>3.21%</td><td><strong>1.00&times;</strong></td></tr>
+        <tr><td>behind, late in the week</td><td>50%</td><td>120 h</td><td>6.94%</td><td>2.17&times; &mdash; opens up</td></tr>
+        <tr><td><strong>measured now</strong></td><td><strong>14%</strong></td><td><strong>3.75 h</strong></td><td><strong>2.82%</strong></td><td>observed burn is <strong>18.7% per window &mdash; 6.6&times; the allowance</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row is this morning and it is the case the governor exists for: at the observed rate
+    the week's budget is gone at <strong>26.8 hours</strong>, on Tuesday morning, against a deadline
+    of 156 hours on Sunday evening.</p>
+
+    <p><strong>The provider's own five-hour ceiling still applies and is a separate number.</strong>
+    The effective limit is the lesser of the derived allowance and the provider's hard ceiling: the
+    first paces the week, the second stops a burst. Collapsing them loses the week.</p>
+
+    <p><strong>Done when</strong> the allowance is computed per declared group from its freshest
+    owned reading, asserted at four states &mdash; ahead, on pace, behind, and exhausted &mdash;
+    with the on-pace case asserted to return exactly the nominal share, since that equality is what
+    proves the formula self-consistent rather than merely plausible; the effective limit is asserted
+    to be the lesser of the derived allowance and the provider ceiling, with a case where each wins;
+    and the deadline lead time is a flight key whose change moves the allowance, asserted, so the
+    twelve hours is data rather than a constant in the code.</p>
 
     <h2 id="s3">&sect;3 &mdash; A rising bar, not a switch</h2>
 
@@ -196,6 +230,106 @@
     than carrying the probed account's number &mdash; the measure already written into
     <code>burn-is-visible-before-it-bites</code> §5 against spark specifically, which this section
     consumes rather than restates.</p>
+
+    <h2 id="s7">&sect;7 &mdash; A block must be real, and most of today's were not</h2>
+
+    <p><strong>A governor that holds on a figure it cannot vouch for is worse than none</strong>,
+    because the hold looks identical either way and the coordinator routes around it. Every hold
+    therefore carries its evidence, and a hold that cannot produce fresh, owned evidence does not
+    hold.</p>
+
+    <table>
+      <caption>A hold is real only on the left. Every row on the right was observed on 2026-09-21.</caption>
+      <thead><tr><th>Real</th><th>Artificial</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>the provider refused &mdash; a 429 carrying its own reset clause</td>
+          <td>computed from a <strong>stale</strong> reading: three of four <code>codex-sub</code> members were 2.4&ndash;2.7&nbsp;h old while the group had moved</td>
+        </tr>
+        <tr>
+          <td>the derived allowance is spent, computed from a reading inside its shelf life</td>
+          <td>computed from a <strong>borrowed</strong> figure: a probe speaking for a pool it does not declare</td>
+        </tr>
+        <tr>
+          <td>the provider's five-hour ceiling is reached</td>
+          <td><code>unknown</code> read as exhausted &mdash; absence of a signal is not evidence of absent headroom</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td>a member held by a <strong>gone process</strong> &mdash; 28 of 44 pointers fleet-wide this morning</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td>concurrency capped at 1 because the auto-created member is one per <em>session</em></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The assertion is mechanical, not a habit.</strong> A hold names its group, its
+    figure, that figure's observation age and source, and the ceiling it breached. A hold whose
+    figure is past its shelf life re-queries first and holds only on what comes back; if the
+    re-query fails the state is <code>unknown</code>, and <em>unknown does not hold</em>. That rule
+    already exists in the budget fence and must not be weakened here, because the two failure
+    directions are not symmetric: <strong>a missed hold costs some quota, a false hold costs the
+    lane.</strong></p>
+
+    <p><strong>Done when</strong> a hold without a named group, figure, age and source cannot be
+    constructed &mdash; asserted by requiring the constructor to refuse, never by checking a
+    formatted string; a hold computed from a reading past its shelf life is asserted to re-query and
+    adopt the new figure; a failed re-query is asserted to yield <code>unknown</code> and to
+    <em>not</em> hold; and a borrowed probe reading is asserted never to become a group's position,
+    the measure already written into <code>burn-is-visible-before-it-bites</code> §5.</p>
+
+    <h2 id="s8">&sect;8 &mdash; The pattern that is not blocked</h2>
+
+    <p>The dispatch pattern that never meets a hold falls out of the two sections above, and it is
+    the shape this workstation drifted into by accident today:</p>
+
+    <ul>
+      <li><strong>The metered lane carries bookends only, and they are reserved.</strong> Reviews
+      and verifications are small, bounded, and never contend, because §4's reserve is theirs from
+      the start of the window rather than whatever is left at the end. <em>A pattern whose metered
+      demand never exceeds its reserve cannot be blocked by construction.</em></li>
+      <li><strong>Implementation runs local as prescribed nodes.</strong> One artifact, file and
+      line named, a numeric gate with its before value, a literal control mutation, a thirty-minute
+      fence. The lane ceiling is 64 and the binding constraint has been bookkeeping, not capacity.</li>
+      <li><strong>Metered implementation opens only when the week is behind.</strong> That is §3's
+      bar driven by §2's allowance: behind and late, the bar drops and open-ended work flows
+      metered; ahead and early, it rises and everything prescribable goes local.</li>
+      <li><strong>Width comes from more nodes, never larger ones.</strong> Node width is a capacity
+      property &mdash; an over-large node cannot run beside its siblings and consumes the pool that
+      would have carried them.</li>
+    </ul>
+
+    <p>The steady state is <em>local wide, metered narrow and reserved</em>. It is unblocked because
+    it never asks the metered lane for more than the reserve guarantees, and the governor only ever
+    <em>widens</em> that ask when the evidence says the week is underspent.</p>
+
+    <p><strong>Done when</strong> a week's committed rows show metered demand staying inside the
+    reserve except where the allowance explicitly opened the bar, and the local-versus-metered split
+    by class of work is reproducible from those rows alone &mdash; the same cut the fitness table
+    needs, so one record serves both.</p>
+
+    <h2 id="s9">&sect;9 &mdash; The log that lets someone else tune this</h2>
+
+    <p>Every dispatch records the group, the utilisation it was judged against with that figure's
+    age and source, the five-hour position, elapsed and remaining windows, the derived allowance,
+    the node's open-endedness score, the bar, the lane chosen, and whether a hold fired with its
+    evidence. <strong>That set is chosen so the decision is reproducible from the row alone</strong>
+    &mdash; a row that needs the streams re-read to be interpreted has not been recorded.</p>
+
+    <p>It serves two readers who must not be conflated. <strong>Self-tuning</strong> is the governor
+    comparing its realised drain curve against target and correcting its own estimate.
+    <strong>Independent tuning</strong> is a person or a later session replaying the week from the
+    log, asking whether a different lead time, floor or reserve would have drained better, without
+    re-running anything and without trusting the governor's account of itself. <em>The second is
+    what catches a governor tuned to look good on its own metric</em>, which is why both are named
+    rather than one.</p>
+
+    <p><strong>Done when</strong> one week of rows reproduces the allowance curve and every hold
+    decision without reading a stream, asserted by recomputing both from the rows and comparing
+    against what was recorded at the time; and a deliberately mistuned lead time is shown to be
+    detectable from the log alone, since a log that cannot expose a bad setting cannot tune one.</p>
 
     <h2 id="s6">&sect;6 &mdash; The pace is visible before a wave opens</h2>
 
