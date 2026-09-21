@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -459,6 +459,48 @@
     status and the accepted vocabulary, rather than silently declassifying the run, asserted with
     each of the three observed strings; and the review role stays exempt, asserted, since that
     exemption is the one that is correct.</p>
+
+    <h2 id="s2h">§2h — The verbatim match is defeatable by the person it blocks, and it has caught nothing</h2>
+
+    <p>§2's negative-control check compares the declared mutation against the log as a substring:
+    <code>if declaration not in text</code>. <strong>Measured across two repositories: ten
+    promotions refused, none of them a fabricated control.</strong> Every refusal was a faithful
+    paraphrase of the declared mutation sitting above a genuine red log.</p>
+
+    <p><strong>And the cheapest way past it adds no evidence.</strong> Pasting the declaration into
+    the log satisfies the test, and afterwards is indistinguishable from a control that was always
+    labelled correctly. So the check is <em>defeatable in exactly the direction that matters, by
+    the person it blocks</em> — it costs an honest worker a corrective node and costs a dishonest
+    one a copy-paste. This plan used it to refuse two of its own promotions, both correctly, and
+    described it as evidence; it is not. <strong>It establishes that a declaration and a log agree
+    about wording, not that a control ran.</strong></p>
+
+    <p><strong>The field's shape is under-determined, which is why stating the convention louder
+    has already failed.</strong> Four workers wrote <code>negative_control_log</code> four
+    different ways, no two alike: a bare path, a path followed by prose, a mapping of
+    <code>declared</code>/<code>log</code>/<code>result</code> sub-keys with a nested second
+    control, and a markdown heading with the path beneath. Two of those were already recorded and
+    the diagnosis was "workers append prose to a field that invites it"; two more, independent and
+    unlike either, move it to <em>nothing a worker reads determines the shape</em>.</p>
+
+    <p><strong>The repair drops the wording test entirely and gates on two facts no edit to a log
+    can manufacture:</strong> the control command exits non-zero, and <em>its failure set differs
+    from the baseline's</em>. Both are properties of a run rather than of a string. The declaration
+    stays on the node record and is printed beside the log so a human judges the match — which is
+    the judgement the substring test was pretending to make.</p>
+
+    <p>This is the same discriminator §5b names, applied to the check itself: <em>what would make
+    this field wrong while it still printed the same value?</em> A pasted line. The failure-set
+    comparison has no such answer.</p>
+
+    <p><strong>Done when</strong> the promotion check requires a non-zero exit and a failure set
+    differing from the recorded baseline, asserted against a log whose declaration matches
+    perfectly but whose failure set is identical to the baseline — the forged case, which must be
+    refused; a faithful paraphrase above a genuinely red log is accepted, asserted, since that is
+    the case costing ten corrective dispatches today; the declaration is rendered beside the log in
+    the refusal and the promoted row; and the manifest field accepts each of the four observed
+    shapes or refuses them <em>when the worker writes it</em> rather than at promotion, because
+    that is the moment the only party who can fix it still exists.</p>
 
     <h2 id="s2g">§2g — One gate per kind of work, selected by what the run produced</h2>
 
@@ -1395,6 +1437,7 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260921T091649353628-review-of-classifier-exempts-a-review-role-run" data-who="reckon-ship" data-when="2026-09-21T09:45:51.496Z">
     <div class="r-comment-body"><p>stored a parsed five-dimension review scoring 88 for its source run</p></div>
+</div>
 <div class="r-comment" data-section="s2f" data-id="c-run-r-20260921T085229395567-review-gate-covers-every-writing-run" data-who="reckon-ship" data-when="2026-09-21T11:48:00Z">
     <div class="r-comment-body">Landed, awaiting promotion. The guard now keys on a run writing a repository path rather than on the role name, and an unrecognised manifest status is refused by name before the classification is consulted; the review-role exemption is retained and asserted. tests/test_review_gate_coverage.py holds 16 test functions and 22 cases, all passing, covering test, documentation and investigate runs that change a tracked file (each separately, all refused), runs of those roles that change nothing (not refused), a run with no recorded role but a changed path (refused), a review-role run that changed a tracked file (still exempt), the unchanged implement behaviour, and the status refusal for each of awaiting-orchestrator-review, implemented-not-closed and done naming the accepted vocabulary. The 15-file promotion cohort ran 18 failed / 166 passed at this node's base ee622294 and 19 failed / 165 passed after; the single moved test is tests/test_crew_test_role.py::test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion, still refused but now by the review gate before the verifier-source gate, so its message assertion no longer matches — outside this node's write fence, named as a follow-on. Declared negative control (changed_repository forced False, applied to a scratch copy of HEAD): all three cases of test_a_role_writing_a_tracked_file_is_refused_without_a_review fail DID NOT RAISE. promotion.py byte-identical to its committed blob.</div>
 </div>
