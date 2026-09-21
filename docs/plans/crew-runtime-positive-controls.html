@@ -430,6 +430,13 @@
     <code>tests/test_service.py</code> still asserts the removed policy at its line 28 and is the one red beside
     those six passes, and the refusal wording in <code>reckon/crew/node.py</code> that should separate <em>a
     unit exists and is not running</em> from <em>no watcher is live</em> is untouched.
+    <strong>Follow-on landed 2026-09-21.</strong> The one red that summary flagged is closed:
+    <code>tests/test_service.py</code>'s case is now named for a restart that always happens and asserts
+    <code>Restart=always</code> with the same <code>RestartSec</code> bound the watcher file states, so the
+    removed policy is asserted nowhere. Run together the two files report <strong>17 passed, exit 0</strong>.
+    The declared mutation restored the <code>Restart=on-failure</code> assertion and reddened exactly that case
+    alone (<strong>1 failed, 10 passed, exit 1</strong>), reverted before the commit; the red log's first line
+    repeats the declaration verbatim.
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s9">&sect;9 landed</a>.</p>
 
     <h2 id="s10">&#167;10 &mdash; Arming a watcher survives a service manager that cannot be reached</h2>

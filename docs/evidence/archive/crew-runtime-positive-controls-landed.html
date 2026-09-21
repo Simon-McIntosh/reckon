@@ -619,6 +619,18 @@ nothing has been launched</code></pre>
       scope and is left untouched and named as a follow-on rather than edited. The refusal wording that should
       distinguish <em>a unit exists and is not running</em> from <em>no watcher is live</em> is composed in
       <code>reckon/crew/node.py</code>, held by another node, and remains a follow-on.</p>
+      <p><strong>Follow-on landed 2026-09-21.</strong> The single red named above is closed.
+      <code>tests/test_service.py</code> no longer says <code>on-failure</code> anywhere: its case is renamed
+      to <code>test_unit_restarts_always_and_installs_into_the_default_target</code> and asserts
+      <code>Restart=always</code> together with a <code>RestartSec</code> parsed from the rendered text and
+      bounded at 30 seconds, so it makes the same two claims the watcher file does, from the same surface, with
+      the same bound. Run together the two files report <strong>17 passed, exit 0</strong>. The declared mutation
+      was <em>restore the assertion Restart=on-failure in tests/test_service.py</em>; applied it reddened exactly
+      that case and no other (<strong>1 failed, 10 passed, exit 1</strong>) and was reverted before the commit,
+      the red log's first line repeating the declaration verbatim. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260921T133249963192-service-case-*</code> — the gate at
+      <code>logs/after-two-fixed.log</code> and the red control at
+      <code>logs/negative-control-restore-on-failure.log</code>.</p>
     </section>
 
     <section id="s14">
