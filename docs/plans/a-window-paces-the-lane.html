@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A Window Paces The Lane">
+  <meta name="plan-summary" content="The provider publishes two clocks on every served stream and nothing reads them, so a wave spends a five-hour window in an hour and the free lane sits idle.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="11.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
+  <title>A Window Paces The Lane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; Two clocks are published and nothing reads them</h2>
+
+    <p>The metered provider publishes its own pace on the stream of every served run that carries a
+    rate-limit event: <code>unifiedWindows.five_hour</code> and
+    <code>unifiedWindows.seven_day</code>, each with a <code>utilization</code> and a
+    <code>resetsAt</code>. Reckon reads neither. Its budget fence consults a single ceiling, so a
+    wave may legitimately spend most of a five-hour window in one hour and the fence stays silent
+    until the window is nearly gone.</p>
+
+    <p><strong>Measured 2026-09-21.</strong> The newest reading available on this workstation, 17
+    minutes old at the time of writing: <code>five_hour</code> utilisation <strong>0.13</strong>
+    resetting at the top of the hour, <code>seven_day</code> utilisation <strong>0.31</strong>
+    resetting 2026-09-27T06:00Z. Across an audit wave earlier today the five-hour figure ran
+    <strong>0.64 to 0.93</strong> and reset at 10:40Z. These are real provider windows: a 429
+    carrying a reset clause follows when the five-hour figure reaches 1.0.</p>
+
+    <p><strong>What the pace is for.</strong> The five-hour window is not self-pacing and is not
+    meant to be the policy. The policy is: keep the weekly burn a little above linear, end the week
+    with the subscription drained, and never drain it on Monday. The free lane absorbs whatever the
+    window will not admit. <em>Stated that way, the window is not a fence at all &mdash; it is the
+    threshold that decides which lane a node goes to.</em></p>
+
+    <h2 id="s2">&sect;2 &mdash; The pace function, on two clocks</h2>
+
+    <p>A target is what the account <em>should</em> have spent by now, and there is one per window:</p>
+
+    <pre><code>target(window) = pace_multiple &times; elapsed_fraction(window)</code></pre>
+
+    <p>The account is <strong>ahead</strong> of pace when a window's utilisation exceeds its target
+    and <strong>behind</strong> when it does not. <code>pace_multiple</code> defaults a little above
+    one so the week drains rather than finishing with headroom unspent; it is a flight key, not a
+    constant.</p>
+
+    <p>The two clocks do different jobs and must not be collapsed. The <strong>seven-day</strong>
+    clock decides whether the week is on course, which is what makes late-week open-ended work
+    flow to the metered lane and early-week work stay local. The <strong>five-hour</strong> clock
+    stops a single wave eating a whole window before the rest of the day can use it; the existing
+    hard ceiling stays exactly as it is, and the pace target sits below it.</p>
+
+    <p><strong>Done when</strong> both targets are computed from the parsed windows and asserted
+    against synthetic window states covering ahead, behind and on-pace for each clock independently,
+    including the case where the two clocks disagree &mdash; behind on the week and ahead on the
+    hour &mdash; which is the state a wave enters and the one a single-clock design gets wrong.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A rising bar, not a switch</h2>
+
+    <p>Lane choice is not metered-or-local by category. Each node gets an <strong>open-endedness
+    score</strong> from what dispatch already knows, and the metered lane admits it only when the
+    score clears a bar that rises as the windows fill.</p>
+
+    <table>
+      <caption>The score's inputs, all already present on the node at dispatch.</caption>
+      <thead><tr><th>Input</th><th>Less open-ended</th><th>More open-ended</th></tr></thead>
+      <tbody>
+        <tr><td>declared specification level</td><td><code>exact</code></td><td><code>open</code></td></tr>
+        <tr><td>role</td><td>verify, review</td><td>investigate, design</td></tr>
+        <tr><td>prescription completeness</td><td>file and line named, numeric gate with its before value, literal control mutation, one artifact</td><td>none of these stated</td></tr>
+      </tbody>
+    </table>
+
+    <p>The third input is the one with evidence behind it: prescription completeness is what the
+    local pilots showed makes a node viable on the free lane, and
+    <code>reckon/crew/prescription.py</code> already computes it. <strong>The bar is therefore a
+    function of window state, and everything below it routes local as a prescribed node</strong>
+    &mdash; from zero when the account is behind pace and the window is empty, to admitting only
+    verification bookends and resumes when the five-hour ceiling is reached.</p>
+
+    <p><strong>Done when</strong> the bar is one pure function of window state, unit-tested at the
+    extremes and at the transitions, and a node's lane is asserted to follow score-against-bar
+    rather than any category; and a node routed local by the bar is asserted to be prescribed,
+    because routing unprescribed work to the free lane is the failure the fitness evidence
+    already records.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Reserve the bookends, or the repairs starve</h2>
+
+    <p>A local repair is verified by a short metered review. Those verifications are small, and they
+    are exactly what an audit wave starves: today a pilot's bookend had to wait for a window reset
+    because the wave ahead of it had eaten the window.</p>
+
+    <p>So a fraction of each five-hour window is reserved for review and verify roles and is not
+    available to implementation work at any bar. <strong>A reserve that only applies when the window
+    is nearly full is not a reserve</strong>; it holds from the start of the window.</p>
+
+    <p><strong>Done when</strong> an implementation dispatch is refused against the reserved
+    fraction while a review dispatch in the same window state succeeds, asserted as a pair, since
+    asserting either alone would pass on a reserve that does nothing.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Reading the windows without inventing them</h2>
+
+    <p><strong>Most runs do not carry the windows, and this is the correction that shapes the
+    reader.</strong> Measured over the 400 newest streams on this workstation: <strong>54 carry
+    <code>unifiedWindows</code> and 346 do not</strong>. The local lane carries them on none of its
+    28, which is correct &mdash; it is unmetered. So "read the newest event" must mean <em>the
+    newest event that carries a window</em>, and a reading is normally minutes to hours old rather
+    than current.</p>
+
+    <p>Three rules follow, and each exists because its opposite has already been observed:</p>
+
+    <ul>
+      <li><strong>Read from a served run's stream, not from an account surface.</strong> The account
+      read fails on one side with the binary absent from the server's PATH and on the other with a
+      403.</li>
+      <li><strong>Carry the age with the figure.</strong> A window utilisation with no observation
+      time cannot be distinguished from a current one, and the five-hour clock rolls over.</li>
+      <li><strong>Never read <code>unknown</code> as either full or empty.</strong> Absence of a
+      signal is not exhaustion &mdash; that rule already holds in the budget fence and must not be
+      weakened here &mdash; and it is equally not headroom.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the reader returns a figure with its observation age or an explicit
+    unknown, asserted for a fleet whose newest streams carry no window at all, and asserted not to
+    fall back to zero or to one in that case.</p>
+
+    <h2 id="s6">&sect;6 &mdash; The pace is visible before a wave opens</h2>
+
+    <p>A governor nobody can see is a governor nobody trusts. <code>crew preflight</code> prints
+    both clocks with their ages, the current bar, and which of the ready nodes the bar would admit,
+    so a coordinator reads the pace before committing to a wave rather than discovering it in a
+    refusal.</p>
+
+    <p>Every dispatch records the window utilisations as observed, the node's score, the bar it was
+    judged against, and the lane chosen. That record is what makes the policy falsifiable
+    afterwards: the weekly report shows pace against target and the local-versus-metered split by
+    class of work, which is the same cut the fitness table in
+    <code>background-agent-fitness-and-dispatch-scope</code> needs.</p>
+
+    <p><strong>Done when</strong> a pre-flight names both clocks, their ages, the bar and the
+    admitted subset of a stated ready set; and one week's committed rows reproduce the pace curve
+    and the lane split without reading any stream, since a record that needs the streams to be
+    interpreted has not been recorded.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="pace-multiple" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What is the default pace multiple, and is it one value or one per window?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="single-1.1">a single multiple, default 1.1, both clocks</button>
+      <button class="r-opt" data-value="per-window">separate multiples for the five-hour and seven-day clocks</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="bar-shape" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does the bar rise between an empty window and the ceiling?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="stepped">stepped, so a coordinator can name which tier it is in</button>
+      <button class="r-opt" data-value="continuous">continuous in the window figure</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wpl-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship a-window-paces-the-lane §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read the two clocks before pacing on them — §5 first</h4>
+    <div class="r-fu-body">The provider publishes unifiedWindows.five_hour and seven_day on served streams and reckon reads neither; measured 2026-09-21 the five-hour figure ran 0.64 to 0.93 across one audit wave while the fence stayed silent. Section 5 comes first because the reader shapes everything above it: only 54 of the 400 newest streams carry a window at all, the local lane carries none of its 28 because it is unmetered, and a reading is normally minutes to hours old. Then section 2's two targets, section 3's rising bar over the open-endedness score prescription.py already computes, section 4's bookend reserve, and section 6's pre-flight line so a coordinator reads the pace before opening a wave rather than in a refusal.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-window-paces-the-lane §5</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
