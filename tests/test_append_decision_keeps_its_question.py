@@ -220,3 +220,87 @@ def test_appended_decision_without_options_still_succeeds(setup):
     decision = data["decisions"][KEY]
     assert decision["title"] == "Retire the legacy reader?"
     assert decision["choices"] == []
+
+
+def test_a_mapping_option_with_a_null_label_falls_back_to_its_value(setup):
+    """A value-to-label mapping whose label is null keeps the value as label.
+
+    The mapping spelling puts the option's value on the key side and its label
+    on the value side, so a null there states the label is absent. Reading the
+    null as the label and stringifying it would store the option labelled
+    ``None`` while its value stayed usable -- a decision the lead cannot read.
+    """
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(
+        project, {"question": QUESTION, "options": {"unix socket": None}}
+    )
+    assert r["ok"] is True, r
+
+    data, _ = _store_module.read_plan(project, "plan-a")
+    decision = data["decisions"][KEY]
+    assert decision["choices"] == ["unix socket"]
+    assert decision["option_labels"] == {"unix socket": "unix socket"}
+    # The negative half: the literal ``None`` is what a read that stringified
+    # the null label would have stored, so an equality against the value alone
+    # is not enough.
+    assert "None" not in decision["option_labels"].values()
+
+    soup = BeautifulSoup(
+        (docs_dir / "plan-a.html").read_text(encoding="utf-8"), "html.parser"
+    )
+    button = soup.select_one(f'.r-dec[data-key="{KEY}"] .r-opt')
+    assert button is not None, "the written decision renders no option"
+    assert button.get_text(strip=True) == "unix socket"
+
+
+def test_a_mapping_option_with_a_null_value_side_is_refused(setup):
+    """A mapping whose value side is null has no option value and is refused.
+
+    ``{None: "unix socket"}`` stringifies to the option spelled ``None`` just
+    as the object spelling did, so the same guard must refuse it -- and it must
+    refuse the append as a whole rather than drop the malformed entry, because
+    a dropped option is the loss this normalisation exists to prevent.
+    """
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(
+        project, {"question": QUESTION, "options": {None: "unix socket"}}
+    )
+    assert r["ok"] is False, r
+    # The refusal names the null value rather than the collection.
+    assert "null 'value'" in json.dumps(r), r
+
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert KEY not in data.get("decisions", {})
+
+
+def test_an_option_object_carrying_no_value_key_is_refused_as_missing(setup):
+    """An option object with no ``value`` key is refused, and named as missing.
+
+    Falling back to the label made a label-only object a valid option whose
+    value was the label -- accepted, so nothing reported the substitution --
+    and an object carrying neither key was refused as a null even though no
+    value key was present. The refusal must say the key is missing.
+    """
+    docs_dir, _, project = setup
+    _make_plan(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+
+    r = _append_decision(
+        project, {"question": QUESTION, "options": [{"label": "unix socket"}]}
+    )
+    assert r["ok"] is False, r
+    assert "carries no 'value' key" in json.dumps(r), r
+    # The refusal must not claim a null where no value key was present at all.
+    assert "null" not in json.dumps(r), r
+
+    # An object carrying neither key is the same defect, not a null.
+    r2 = _append_decision(project, {"question": QUESTION, "options": [{}]}, key="other")
+    assert r2["ok"] is False, r2
+    assert "carries no 'value' key" in json.dumps(r2), r2
+    assert "null" not in json.dumps(r2), r2
+
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data.get("decisions", {}) == {}

@@ -623,6 +623,29 @@
     not only by assertion. The evidence anchor is in
     <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
 
+    <p class="landed-summary"><strong>Coverage landed 2026-09-21 &mdash; the mapping branch of the option
+    guard.</strong> The repair above left half its guard unprotected, and the review measured it: its
+    declared mutation deleted the null refusal in <em>both</em> branches and reddened one case, because no
+    case passed a mapping-shaped <code>options</code> value. Re-measured before anything was added, the
+    mapping branch was still open &mdash;
+    <code>_decision_options_as_choices({None: "unix socket"})</code> returned
+    <code>(['None'], {'None': 'unix socket'})</code>. Three cases now reach it in
+    <code>tests/test_append_decision_keeps_its_question.py</code>: an append whose options are a mapping
+    carrying a null label, asserted to keep the value as its own label rather than the literal
+    <code>None</code>; an append whose mapping carries a null value side, asserted to be refused with
+    nothing landed; and an option object carrying no <code>value</code> key at all, asserted to be refused
+    as missing rather than as null. The last is the smaller finding the review carried: a label-only object
+    was accepted with the label as its value, and nothing reported the substitution. The three list-branch
+    cases and the question-and-options cases are unchanged, so this reach regresses nothing. The node
+    record's declared mutation is <em>delete the mapping-branch null guard in
+    <code>_decision_options_as_choices</code> in <code>reckon/_store.py</code></em>; applied, it reddens
+    exactly <code>test_a_mapping_option_with_a_null_value_side_is_refused</code> at <strong>1 failed, 8
+    passed</strong>, and the red log's first line repeats it verbatim at
+    <code>~/.config/reckon/crew/runs/r-20260921T165140068358-the-mapping-branch-guard-is-reachable-by-a-case/negative_control_mapping_guard.log</code>.
+    The mutation was reverted before the commit, the fixed tree re-run to <strong>9 passed, exit 0</strong>,
+    and both changed paths carry no lint findings beyond their base. The evidence anchor is in
+    <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A resolved launcher is checked against an origin that is serving</h2>
     <p>Measured 2026-09-20, and it is one step past the control &#167;1 landed. This workstation carries two
     launchers named <code>clive</code>: the canonical one at
