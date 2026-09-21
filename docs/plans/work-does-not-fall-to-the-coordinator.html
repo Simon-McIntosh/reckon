@@ -158,6 +158,39 @@
     second composer, because two implementations of one record is the drift this plan's own
     &sect;9 argues against.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong> The composer now has the
+    second source this section asks for. Commit <code>1f12f4bf</code> gives
+    <code>reckon/evidence.py</code> a report-backed pass: for a run with no commits the
+    composer reads the manifest the row already names, takes the durable path the run
+    declared, and cites it by path with its content reproduced inside the section; when no
+    declared path resolves to a readable file the section states that no record could be
+    composed and why, rather than rendering an anchored section with no content. A run that
+    has commits is composed exactly as before, and the module still defines one document
+    renderer — <code>_render_document</code> — so no second composer was introduced, which
+    is the constraint this section set.</p>
+
+    <p class="landed-summary">The declared mutation, <em>remove the report-backed source so
+    the composer falls back to ledger rows only</em>, reddened the two report-backed
+    assertions and left the ledger-row and single-renderer assertions green, so the red log
+    is the declared mutation rather than a failure for another reason; it carries the
+    mutation verbatim on its first line. The focused gate
+    (<code>tests/test_evidence_from_report.py</code> with the pre-existing
+    <code>tests/test_evidence_synthesis.py</code>) reports 1f12f4bf's change as 9 passed,
+    against zero coverage for the behaviour at base. The residue is recorded rather than
+    smoothed: manifests deleted with the <code>/run/user</code> tree they lived in, run
+    directories gone, and <code>artifacts</code> values written as prose rather than as a
+    path — each now reaches the reader as a stated absence, none as a cited report.</p>
+
+    <p class="landed-summary"><strong>Not claimed by this node.</strong> The gate measures
+    this node's own change, not the merged result; verifying the merged head belongs to a
+    separately dispatched test node. One limit the section's own wording exposes: the
+    report-backed pass is reached for every commit-less row, which includes
+    <code>review</code> rows as well as <code>investigate</code> rows, so a plan's landed
+    record will carry a cited report for every commit-less node rather than only for the
+    report-delivering ones. That is the behaviour the four assertions pin, and narrowing it
+    by role is a change to the contract this section states rather than a defect in the
+    pass.</p>
+
     <h2 id="s5">&sect;5 &mdash; Per-node wall time and width-at-start, already in the ledger</h2>
 
     <p>The ledger row carries <code>dispatched_at</code> and <code>completed_at</code>. Per-node

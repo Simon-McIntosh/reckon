@@ -30,6 +30,23 @@ class EvidenceSynthesisResult:
     commits: int
 
 
+# Manifest fields, in the order they are consulted, that name the durable
+# paths a run delivered. A run whose deliverable is a report names it in the
+# first of these that carries it, and a run that changed the repository names
+# its changed paths in the same fields — so the reader takes the first
+# candidate that resolves to a readable file rather than trusting one key.
+_REPORT_SOURCE_KEYS = ("artifacts", "orientation_write_paths", "changed_paths")
+
+
+@dataclass(frozen=True, slots=True)
+class _RunReport:
+    """The report a commit-less run delivered, or why none could be read."""
+
+    path: Path | None
+    content: str
+    detail: str
+
+
 def _section_key(value: object) -> str:
     section = str(value or "").strip()
     match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
@@ -106,6 +123,131 @@ def _run_rows(records: Sequence[Mapping[str, Any]]) -> str:
     return "\n".join(rows)
 
 
+def _field_paths(value: object) -> list[object]:
+    """Return one manifest field's path items, decoding a raw flow sequence.
+
+    A manifest field normally arrives as a list, but a flow sequence a worker
+    wrote can survive the parse as one literal string. It is still a structured
+    value rather than prose, so it is decoded rather than treated as a single
+    path that cannot exist.
+    """
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.startswith("["):
+            try:
+                decoded = json.loads(stripped)
+            except json.JSONDecodeError:
+                return [value]
+            if isinstance(decoded, list):
+                return list(decoded)
+        return [value]
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return []
+
+
+def _report_candidates(record: Mapping[str, Any], root: Path) -> list[Path]:
+    """Return the durable paths a commit-less run's manifest names, in order."""
+
+    manifest_value = str(record.get("manifest_path") or "").strip()
+    if not manifest_value:
+        return []
+    manifest = Path(manifest_value).expanduser()
+    try:
+        text = manifest.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return []
+
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        fields = parse_manifest(text, path=str(manifest))
+    except ManifestParseError:
+        return []
+
+    candidates: list[Path] = []
+    for key in _REPORT_SOURCE_KEYS:
+        for item in _field_paths(fields.get(key)):
+            candidate = Path(str(item)).expanduser()
+            if not candidate.is_absolute():
+                candidate = root / candidate
+            candidates.append(candidate)
+    return candidates
+
+
+def _run_report(record: Mapping[str, Any], root: Path) -> _RunReport:
+    """Read the report a commit-less run delivered, or say why it could not be read.
+
+    A run whose deliverable is a report rather than a diff has no commits for
+    the ledger row to compose from, so the composer reaches the run's manifest
+    for the path and reads the report itself. The detail string is carried
+    rather than raised because one unreadable report makes its own run's record
+    incomplete, not the whole document's.
+    """
+
+    manifest_value = str(record.get("manifest_path") or "").strip()
+    if not manifest_value:
+        return _RunReport(
+            None, "", "it names no manifest, so no report path could be resolved"
+        )
+    candidates = _report_candidates(record, root)
+    if not candidates:
+        return _RunReport(
+            None,
+            "",
+            f"its manifest at {manifest_value} names no readable report path",
+        )
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            content = candidate.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return _RunReport(
+                candidate, "", f"the report at {candidate} could not be read"
+            )
+        return _RunReport(candidate, content, "")
+    named = ", ".join(str(candidate) for candidate in candidates)
+    return _RunReport(
+        None, "", f"no path in its manifest resolves to a readable file ({named})"
+    )
+
+
+def _report_entries(record: Mapping[str, Any], root: Path) -> str:
+    """Render the report-backed block for a run whose deliverable is a report.
+
+    A readable report is cited by path and reproduced, so the section is
+    anchored to the artifact rather than to a paraphrase of it. A run with
+    neither commits nor a readable report is stated as such in the section,
+    because an anchored section with no content reads as work that landed
+    nothing rather than as a record that could not be composed.
+    """
+
+    run_id = _escape(record.get("run_id"))
+    node = _escape(record.get("node")) or run_id
+    report = _run_report(record, root)
+    if report.path is not None:
+        return (
+            f'    <article class="landed-report" data-run-id="{run_id}" '
+            f'data-report-path="{_escape(report.path)}">\n'
+            f"      <h3>{node} &mdash; delivered report</h3>\n"
+            f"      <p>Cited from <code>{_escape(report.path)}</code>.</p>\n"
+            '      <div class="landed-report-body">'
+            f"<pre>{_escape(report.content)}</pre></div>\n"
+            "    </article>"
+        )
+    return (
+        f'    <article class="landed-report landed-report-unreadable" '
+        f'data-run-id="{run_id}">\n'
+        f"      <h3>{node} &mdash; no record composed</h3>\n"
+        f"      <p>This run landed no commits and {_escape(report.detail)}, so "
+        "no section could be composed from a report. The absence is recorded "
+        "here rather than left as an anchored section with no content.</p>\n"
+        "    </article>"
+    )
+
+
 def _comment_entries(comments: Sequence[Mapping[str, Any]]) -> str:
     entries: list[str] = []
     for comment in comments:
@@ -136,6 +278,7 @@ def _render_document(
     plan: Mapping[str, Any],
     source: str,
     records: Sequence[Mapping[str, Any]],
+    root: Path,
 ) -> str:
     plan_slug = str(plan.get("slug") or "").strip()
     plan_title = str(plan.get("title") or plan_slug).strip()
@@ -195,6 +338,15 @@ def _render_document(
                     "    </table>",
                 ]
             )
+        # A run with no commits composed nothing from the ledger row, so its
+        # record comes from the report it delivered. A run with commits keeps
+        # composing from the row alone, which is why the report reader is
+        # reached only for the commit-less records.
+        parts.extend(
+            _report_entries(record, root)
+            for record in section_runs
+            if not record.get("commits")
+        )
         parts.append("  </section>")
         sections.append("\n".join(parts))
 
@@ -278,7 +430,7 @@ def synthesize_landed_record(
             str(record.get("run_id") or ""),
         ),
     )
-    rendered = _render_document(project, plan, source, records)
+    rendered = _render_document(project, plan, source, records, docs_dir.parent)
     destination = docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
