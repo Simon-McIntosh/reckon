@@ -337,6 +337,42 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       node's write scope and is recorded as a follow-on.</p>
     </article>
 
+    <article class="r-outcome" data-id="o-s5-gate-at-the-current-head">
+      <h3>The integration gate ran at the head it names</h3>
+      <p>Landed 2026-09-21, commit <code>2e4c8c8e</code>. The gate was re-run at the head resolved
+      <em>when the node ran</em> &mdash; <code>825774198f7a637aa7aa6afc2d428390879fa45b</code> on
+      <code>main</code> &mdash; on the eleven declared test files: <strong>112 passed, 2
+      failed</strong>. The predecessor's record was taken at <code>48bf51b2</code>, which is
+      <strong>193 commits and 22 merges</strong> behind the head
+      it was cited for, and its tally was over a different eight-file selection, so its numbers
+      cannot speak for the interval.</p>
+      <p><strong>What the comparison covers, and what it cannot.</strong> Nine of the eleven files do
+      not exist at base <code>1d2e70cc</code>; an absent file is not a file that ran clean, so the
+      base comparison is over the two files present at both revisions,
+      <code>test_crew_lanes_view.py</code> and <code>test_lanes_view_is_live.py</code>: 25 passed and
+      2 failed at base, 25 passed and 2 failed at head &mdash; a delta of zero in both columns.</p>
+      <p><strong>Both failures are pre-existing; the added count is zero.</strong>
+      <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> fails on
+      <code>TypeError: dict.__getitem__() takes no keyword arguments</code> at
+      <code>reckon/mcp_views.py:691</code>, and
+      <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> fails on
+      <code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code>. Both reproduce
+      identically at base, and no commit in the interval touches either test file or the module the
+      first one exercises.</p>
+      <p><strong>Why the counts are tied to one revision.</strong> The main checkout is live and peers
+      commit to it, so HEAD advanced four times during the node. The full selection and the subset
+      must share a revision for their counts to belong in one table; the first pair did not, and was
+      superseded and re-run together. The run that produced these counts held HEAD constant across
+      both invocations.</p>
+      <p><strong>The run measured the shipped tree.</strong> <code>import reckon</code> resolves to
+      <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code> and the editable pointer holds
+      that main-checkout path, not a worktree path; the base run entered a tree extracted by
+      <code>git archive</code> with <code>PYTHONPATH</code> pointing at it, and its own check
+      confirmed the resolution there. Evidence, logs and the figure:
+      <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#gate-at-the-current-head">the
+      gate anchor</a>.</p>
+    </article>
+
     <h2 id="s5b">&sect;5b &mdash; Four lanes, one wallet, and a figure that is never re-read</h2>
 
     <p><strong>The lanes do not hold independent budgets and reckon does not know it.</strong>
