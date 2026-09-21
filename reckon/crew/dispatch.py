@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1727,6 +1728,7 @@ class DispatchPlan:
     default_backend: str | None = None
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
+    lane_advisory: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -1742,6 +1744,9 @@ class DispatchPlan:
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
             "local": self.local,
+            "lane_advisory": (
+                None if self.lane_advisory is None else dict(self.lane_advisory)
+            ),
             "lane_declaration": (
                 None if self.lane_declaration is None else dict(self.lane_declaration)
             ),
@@ -1897,6 +1902,299 @@ def _lane_declaration_finding(
             "unmetered alternatives"
         ),
     }
+
+
+# Committed runs of one node shape a lane must carry before its rework-charged
+# cost can separate it from another lane. Below this the advisory says the
+# evidence is too thin to name a lane rather than ranking one off a run or two;
+# it is the same floor the shape-conditioned lane evidence module uses.
+_LANE_ADVISORY_MINIMUM_SAMPLES = 10
+
+# The horizon a projection is compared against when a node declares no time
+# budget of its own, so a burn never reads as safe merely for want of a bound.
+_LANE_ADVISORY_DEFAULT_HORIZON_SECONDS = 25 * 60
+
+
+def _lane_advisory_lane(run: Mapping[str, Any]) -> str:
+    """Name the lane a committed run was served on, or the empty string."""
+    backend = str(run.get("backend") or "").strip()
+    if backend:
+        return backend
+    agent = run.get("agent")
+    if isinstance(agent, Mapping):
+        return str(agent.get("backend") or "").strip()
+    return ""
+
+
+def _lane_advisory_costs(
+    runs: Iterable[Mapping[str, Any]], *, role: str, spec_level: str
+) -> dict[str, dict[str, Any]]:
+    """Rework-charged input per durable node for every lane on one shape.
+
+    The derivation is the one the routing figures use: a run counts as
+    reworked when a later run on the same plan re-touches paths it declared,
+    and a lane's cost is the median worker-plus-coordinator input over one
+    minus its rework rate. Rework detection, the charged-input reader and the
+    exclusion reasons are taken from the same module that derives the routing
+    surface, so this carry cannot drift from the figure a reader sees there.
+
+    A shape whose runs were all served on one lane therefore reports one lane,
+    and a lane with too few usable runs to charge is reported with its sample
+    depth and no cost rather than a cost drawn from a handful of runs.
+    """
+    from reckon import capabilities as capabilities_module
+
+    usable = [
+        run
+        for run in runs
+        if str(run.get("role") or "") == role
+        and str(run.get("spec_level") or "") == spec_level
+        and capabilities_module._routing_outcome_exclusion(run) is None
+    ]
+    later_paths: dict[str, list[tuple[int, tuple[str, ...]]]] = defaultdict(list)
+    for index, run in enumerate(usable):
+        plan = str(run.get("plan") or "").strip()
+        paths = capabilities_module._write_paths(run)
+        if plan and paths:
+            later_paths[plan].append((index, paths))
+
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for index, run in enumerate(usable):
+        lane = _lane_advisory_lane(run)
+        if not lane:
+            continue
+        paths = capabilities_module._write_paths(run)
+        plan = str(run.get("plan") or "").strip()
+        reworked = bool(paths and plan) and any(
+            later > index and capabilities_module._paths_overlap(paths, other)
+            for later, other in later_paths.get(plan, ())
+        )
+        worker = capabilities_module._input_tokens(run)
+        coordinator = capabilities_module._coordinator_input_tokens(run)
+        charged = (
+            worker + coordinator
+            if worker is not None and coordinator is not None
+            else None
+        )
+        grouped[lane].append({"reworked": reworked, "charged_input": charged})
+
+    evidence: dict[str, dict[str, Any]] = {}
+    for lane, observations in grouped.items():
+        samples = len(observations)
+        reworked = sum(bool(item["reworked"]) for item in observations)
+        rework_rate = reworked / samples
+        inputs = [
+            float(item["charged_input"])
+            for item in observations
+            if item["charged_input"] is not None
+        ]
+        median_input = capabilities_module._median_or_none(inputs)
+        evidence[lane] = {
+            "samples": samples,
+            "rework_rate": round(rework_rate, 6),
+            "input_samples": len(inputs),
+            "cost_per_durable_node": (
+                capabilities_module._charged_cost(median_input, rework_rate)
+                if samples >= _LANE_ADVISORY_MINIMUM_SAMPLES
+                else None
+            ),
+        }
+    return evidence
+
+
+def _lane_advisory_cheaper_lane(
+    runs: Iterable[Mapping[str, Any]],
+    *,
+    resolved_lane: str,
+    role: str,
+    spec_level: str,
+    configured_lanes: Iterable[str],
+) -> dict[str, Any]:
+    """Name the lane measured rework serves this shape on more cheaply, or none.
+
+    Only lanes the flight configures are named, so the clause always points at
+    something a caller could actually route to. A lane whose rework-charged
+    cost is not measured -- too few runs, or no paired coordinator reading --
+    is never guessed at: the clause states the shortfall instead, because a
+    recommendation drawn from one or two runs would read as evidence.
+    """
+    evidence = _lane_advisory_costs(runs, role=role, spec_level=spec_level)
+    candidates = {
+        name
+        for name in evidence
+        if name in set(configured_lanes) or name == resolved_lane
+    }
+    measured = {
+        name: evidence[name]
+        for name in candidates
+        if evidence[name]["cost_per_durable_node"] is not None
+    }
+    resolved = evidence.get(resolved_lane)
+    if resolved_lane not in measured:
+        samples = resolved["samples"] if resolved else 0
+        return {
+            "lane": None,
+            "state": "insufficient_evidence",
+            "resolved_cost_per_durable_node": None,
+            "candidates": sorted(measured),
+            "detail": (
+                f"the rework-charged cost of {resolved_lane!r} for {role!r} at "
+                f"{spec_level!r} is not measured: {samples} usable run(s), "
+                f"{_LANE_ADVISORY_MINIMUM_SAMPLES} needed, so no lane can be "
+                "named cheaper on this evidence"
+            ),
+        }
+    cheapest = min(measured, key=lambda name: measured[name]["cost_per_durable_node"])
+    if cheapest == resolved_lane:
+        return {
+            "lane": None,
+            "state": "none_cheaper",
+            "resolved_cost_per_durable_node": resolved["cost_per_durable_node"],
+            "candidates": sorted(measured),
+            "detail": (
+                f"no configured lane serves {role!r} at {spec_level!r} more "
+                f"cheaply on measured rework than {resolved_lane!r} "
+                f"({resolved['cost_per_durable_node']:g} input tokens per "
+                "durable node)"
+            ),
+        }
+    chosen = measured[cheapest]
+    return {
+        "lane": cheapest,
+        "state": "measured",
+        "resolved_cost_per_durable_node": resolved["cost_per_durable_node"],
+        "cost_per_durable_node": chosen["cost_per_durable_node"],
+        "rework_rate": chosen["rework_rate"],
+        "samples": chosen["samples"],
+        "candidates": sorted(measured),
+        "detail": (
+            f"measured rework puts {cheapest!r} at "
+            f"{chosen['cost_per_durable_node']:g} input tokens per durable node "
+            f"for {role!r} at {spec_level!r} against {resolved_lane!r} at "
+            f"{resolved['cost_per_durable_node']:g}, over {chosen['samples']} "
+            f"run(s) at a {chosen['rework_rate']:.3f} rework rate"
+        ),
+    }
+
+
+def _lane_advisory_ledger_runs(
+    project: str, ledger_root: str | Path | None
+) -> list[dict[str, Any]]:
+    """Read one project's committed runs in promotion order, or nothing.
+
+    An absent ledger is the ordinary state of a project that has run no workers,
+    so it reads as no evidence rather than an error: the advisory then states
+    that no lane can be named instead of refusing the dispatch over it.
+    """
+    try:
+        data, _version = ledger.load(project, root=ledger_root)
+    except (OSError, ValueError, ledger.LedgerError):
+        return []
+    return [dict(run) for run in data.get("runs") or [] if isinstance(run, Mapping)]
+
+
+def _lane_advisory_horizon_seconds(node: TaskNode) -> int:
+    """The node's own fence as a horizon, falling back to the default bound."""
+    declared = str(node.time_budget or "").strip()
+    if declared:
+        try:
+            return int(parse_duration(declared))
+        except CrewError:
+            pass
+    return _LANE_ADVISORY_DEFAULT_HORIZON_SECONDS
+
+
+def _lane_advisory_instant(value: object) -> datetime | None:
+    """Parse an ISO instant from a budget reading, or None when unreadable."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip())
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def _dispatch_lane_advisory(
+    *,
+    backend_name: str,
+    metered: bool,
+    observation: Mapping[str, Any] | None,
+    node: TaskNode,
+    cheaper_lane: dict[str, Any],
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Carry a lane's trajectory beside the routing, refusing nothing.
+
+    The advisory exists because a coordinator learns its lane's trajectory only
+    if it goes looking, and the one moment it is certainly not looking is while
+    it dispatches. It therefore rides on the dispatch: the utilisation, burn
+    multiple, projected exhaustion and reset are read from the same window
+    reading the dispatch already took, and the projection is compared against
+    the horizon of the work in hand. Nothing here refuses, holds or reroutes --
+    the payload records the position and the resolved backend is untouched.
+
+    ``state`` is ``emitted`` only when a metered lane's projection precedes the
+    node's horizon, which is the moment the advice would change a decision;
+    otherwise the carry is ``quiet`` and names why, so a silent payload is
+    never mistaken for a lane that was checked and found safe.
+    """
+    measured = observation or {}
+    horizon_seconds = _lane_advisory_horizon_seconds(node)
+    moment = now or datetime.now(UTC)
+    horizon_ends_at = moment + timedelta(seconds=horizon_seconds)
+    projection = _lane_advisory_instant(measured.get("projected_exhaustion_at"))
+    precedes: bool | None = None
+    if projection is not None:
+        precedes = projection <= horizon_ends_at
+    carry = {
+        "state": "quiet",
+        "detail": "",
+        "backend": backend_name,
+        "metered": metered,
+        "utilisation_pct": measured.get("utilisation_pct"),
+        "burn_multiple": measured.get("burn_multiple"),
+        "projected_exhaustion_at": measured.get("projected_exhaustion_at"),
+        "resets_at": measured.get("resets_at"),
+        "seconds_until_reset": measured.get("seconds_until_reset"),
+        "observed_at": measured.get("observed_at"),
+        "horizon_seconds": horizon_seconds,
+        "horizon_ends_at": horizon_ends_at.isoformat(),
+        "precedes_horizon": precedes,
+        "cheaper_lane": cheaper_lane,
+    }
+    utilisation = measured.get("utilisation_pct")
+    burn = measured.get("burn_multiple")
+    if not metered:
+        carry["detail"] = (
+            f"{backend_name!r} is unmetered, so it has no window to exhaust; "
+            "the local lane's scarcity is throughput, which it does not publish"
+        )
+        return carry
+    if projection is None:
+        carry["detail"] = (
+            f"no projected exhaustion is available for {backend_name!r}; "
+            "the burn projection needs a numeric utilisation bounded by a "
+            "known window, and without one no horizon comparison is made"
+        )
+        return carry
+    if not precedes:
+        carry["detail"] = (
+            f"{backend_name!r} is projected to exhaust at "
+            f"{measured.get('projected_exhaustion_at')}, which is after this "
+            f"node's {horizon_seconds}s horizon ending "
+            f"{horizon_ends_at.isoformat()}"
+        )
+        return carry
+    carry["state"] = "emitted"
+    carry["detail"] = (
+        f"{backend_name!r} sits at {utilisation}% utilisation burning "
+        f"{burn}x, projected to exhaust at "
+        f"{measured.get('projected_exhaustion_at')} -- before this node's "
+        f"{horizon_seconds}s horizon ending {horizon_ends_at.isoformat()}; the "
+        f"window resets at {measured.get('resets_at')}"
+    )
+    return carry
 
 
 def _lane_reading_unknown(*, detail: str) -> dict[str, Any]:
@@ -2523,6 +2821,7 @@ def plan_dispatch(
                 findings=[*verdict.findings, *sandbox_findings],
             )
     lane_declaration: dict[str, Any] | None = None
+    lane_advisory: dict[str, Any] | None = None
     if verdict.ok:
         ledger_root = (
             resolve_dispatch_ledger_root(resolved_authority)
@@ -2545,6 +2844,23 @@ def plan_dispatch(
             resolved_backend=backend_name,
             observation=observation,
         )
+        lane_advisory = _dispatch_lane_advisory(
+            backend_name=backend_name,
+            metered=not ledger.is_unmetered_backend(backend_name),
+            observation=observation,
+            node=node,
+            cheaper_lane={"lane": None, "state": "not_evaluated", "detail": ""},
+        )
+        if lane_advisory["state"] == "emitted":
+            lane_advisory["cheaper_lane"] = _lane_advisory_cheaper_lane(
+                _lane_advisory_ledger_runs(project, ledger_root),
+                resolved_lane=backend_name,
+                role=node.role,
+                spec_level=node.spec_level,
+                configured_lanes=sorted(
+                    str(name) for name in (config.get("backends") or {})
+                ),
+            )
         if backend.get("budget_check") and not caller_declared_backend:
             verdict = NodeValidation(
                 ok=False,
@@ -2588,6 +2904,7 @@ def plan_dispatch(
         default_backend=str(config.get("default_backend") or "") or None,
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
+        lane_advisory=lane_advisory,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(

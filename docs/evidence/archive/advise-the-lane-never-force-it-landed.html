@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="advise-the-lane-never-force-it-landed">
+  <meta name="plan-title" content="Advise The Lane, Never Force It — landed evidence">
+  <meta name="plan-summary" content="A dispatch carries its lane's projected exhaustion and the cheaper lane for its role, unasked and without altering the resolution.">
+  <meta name="plan-evidence-for" content="advise-the-lane-never-force-it">
+  <meta name="plan-verifies" content="advise-the-lane-never-force-it#s2">
+  <meta name="plan-commits" content="abfee217">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_lane_advisory_on_dispatch.py,docs/figures/advise-the-lane-never-force-it/lane-advisory-decision.png">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,dispatch,lane,budget,advisory">
+  <title>Advise The Lane, Never Force It — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>Advise The Lane, Never Force It</h1>
+      <p class="lead">A dispatch onto a lane that will exhaust inside the node's own horizon
+      carries the trajectory it never asked for, names the lane measured rework says serves the
+      role more cheaply, and changes nothing about where the work goes.</p>
+    </header>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; The advisory arrives where the choice is made</h2>
+      <p>Commit <code>abfee217</code> adds a <code>lane_advisory</code> carry to the dispatch
+      payload. The carry rides the lane reading the dispatch already takes &mdash; it opens no
+      second probe &mdash; and reports the utilisation, the burn multiple, the projected
+      exhaustion and the reset, with the node's own horizon placed beside them.</p>
+      <figure>
+        <img src="/reckon/figures/advise-the-lane-never-force-it/lane-advisory-decision.png"
+             alt="Left: a figure showing the metered lane's projection landing before the node's work horizon while the unmetered lane has no window. Right: the rework-charged cost per durable node for the resolved lane against the lane the advisory names.">
+        <figcaption>The emission condition, and the lane the advisory names. Left: the same
+        single reading is emitted when the projection precedes the horizon and states its
+        position when it does not. Right: the cheaper lane is named from rework-charged cost,
+        which is why a lane running one plan twice loses to one that does not.</figcaption>
+      </figure>
+
+      <h3>The emitted carry</h3>
+      <p>A lane fixed at a spending trajectory emits, unasked, with the four figures present:</p>
+      <table>
+        <thead><tr><th>Field</th><th>Value under the fixed trajectory</th></tr></thead>
+        <tbody>
+          <tr><td><code>state</code></td><td><code>emitted</code></td></tr>
+          <tr><td><code>utilisation_pct</code></td><td>46.0</td></tr>
+          <tr><td><code>burn_multiple</code></td><td>5.7</td></tr>
+          <tr><td><code>projected_exhaustion_at</code></td><td>present, 300 s out</td></tr>
+          <tr><td><code>resets_at</code></td><td>present</td></tr>
+          <tr><td><code>precedes_horizon</code></td><td><code>true</code></td></tr>
+          <tr><td><code>cheaper_lane.lane</code></td><td>the cheap lane, state <code>measured</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>It is emitted without a caller asking, and without a second probe</h3>
+      <p>The observing read is counted. A dispatch that emits the advisory reads the lane
+      trajectory exactly once &mdash; the same call the dispatch made before the advisory
+      existed &mdash; so no caller asks for the advisory and no extra request is spent on it.</p>
+
+      <h3>Nothing about it moves the work</h3>
+      <p>Three dispatches onto one lane are taken: one whose projection lands inside the
+      horizon, one whose projection lands beyond it, and one whose lane publishes no projection
+      at all. The payloads differ only in the carry. The resolved backend and the agent's
+      backend are the same string in all three, so the advisory is data and never a routing
+      decision.</p>
+
+      <h3>The clause that names a lane, and the clause that declines to</h3>
+      <table>
+        <thead><tr><th>Condition</th><th>What the advisory says</th></tr></thead>
+        <tbody>
+          <tr><td>A configured lane costs less per durable node</td><td>names it, state <code>measured</code></td></tr>
+          <tr><td>The resolved lane is already the cheapest</td><td>states none is cheaper, state <code>none_cheaper</code></td></tr>
+          <tr><td>No lane carries enough usable runs</td><td>states the shortfall, state <code>insufficient_evidence</code></td></tr>
+          <tr><td>Projection lands beyond the horizon</td><td><code>quiet</code>, stating it lands after the node</td></tr>
+          <tr><td>The lane is unmetered</td><td><code>quiet</code>, stating it has no window to exhaust</td></tr>
+          <tr><td>The ledger cannot be read</td><td>quiet clause, and the dispatch still resolves</td></tr>
+        </tbody>
+      </table>
+      <p>The shortfall clause carries its threshold: a lane with one usable run reports
+      <code>1 usable run(s)</code> against <code>10 needed</code> rather than naming a lane from
+      a single sample. An absent or unreadable ledger states the same shortfall and refuses
+      nothing.</p>
+
+      <h3>The negative control</h3>
+      <p>The gate was shown to fail on the thing it claims to protect. Dropping the
+      <code>burn_multiple</code> key from the emitted carry turns the gate red, and it fails on
+      the missing key itself:</p>
+      <pre><code>mutation: in _dispatch_lane_advisory, drop the burn_multiple key from the emitted carry
+F........                                                                [100%]
+&gt;       assert advisory["burn_multiple"] == 5.7
+E       KeyError: 'burn_multiple'
+1 failed, 8 passed</code></pre>
+      <p>The assertion added for each figure and each clause is likewise falsified by the
+      condition it describes, so the gate measures the advisory rather than the presence of a
+      function.</p>
+
+      <h3>Verification</h3>
+      <p><code>pytest -q tests/test_lane_advisory_on_dispatch.py</code> passed: 9 passed, exit 0.
+      The focused set covering the edited module and the modules that import it
+      (<code>test_lane_advisory_on_dispatch</code>, <code>test_lane_reading_at_dispatch</code>,
+      <code>test_dispatch_names_its_backend</code>, <code>test_dispatch_lane_disagreement</code>,
+      <code>test_crew_lanes_view</code>) reported 52 passed, 2 failed. Both failures were
+      reproduced with the base revision of the edited module and live in files outside this
+      node's declared scope; they are recorded as follow-ons rather than repaired here. The
+      delta against the stated base is zero added failures, and the module adds no lint finding
+      against its own baseline.</p>
+    </section>
+  </main>
+</body>
+</html>
