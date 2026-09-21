@@ -185,7 +185,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     over the whole window domain rather than at transitions a continuous bar does not have, and
     asserted at both extremes; each of the three outcomes is returned at its own boundary, asserted
     separately, since a bar that can only send or hold has silently become the switch this section
-    rejects; the returned value is a recommendation and is asserted never to select a backend by
+    rejects; a maximally prescribed node is asserted to return send-local at EVERY window fill
+    including a full one, which is the assertion the first implementation failed and the one that
+    distinguishes a lane recommendation from a window fence; the returned value is a recommendation and is asserted never to select a backend by
     itself, with an orchestrator override in each direction asserted to be recorded rather than
     refused; a node recommended to the free lane is asserted to be prescribed, because routing
     unprescribed work there is the failure the fitness evidence already records; and the
