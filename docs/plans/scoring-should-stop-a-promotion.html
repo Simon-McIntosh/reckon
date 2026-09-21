@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -536,6 +536,25 @@
             <td>paraphrase</td></tr>
       </tbody>
     </table>
+
+    <p><strong>A sixth row is a third category and the most misleading of the three.</strong> The
+    dispatch-guard node declared <q>revert the guard to testing phase without consulting the
+    liveness verdict</q>; its log's first line reads <q>replace the phase-only member guard with
+    the three-valued liveness refusal</q> — <em>the repair, not the mutation</em>. The evidence
+    underneath is correct: the failing test is
+    <code>test_gone_member_is_admitted_through_dispatch</code>, which fails exactly when the guard
+    is phase-only, so the mutation that ran <strong>is</strong> the declared one. Only the sentence
+    describing it points the other way, and the manifest's own note says the log <q>begins with the
+    declared mutation</q>, which it does not.</p>
+
+    <p>So a reader has three shapes to tell apart and the refusal text distinguishes none of them:
+    a <em>substitution</em>, where a different and weaker mutation ran; a <em>paraphrase</em>, where
+    the same mutation is described in other words; and an <em>inverted label</em>, where the right
+    mutation ran under a sentence describing its opposite. The last is the worst to read, because
+    trusting the label teaches the reverse of what happened while the evidence beneath it is sound.
+    The discriminator that settles all three costs one line and does not involve the prose at all:
+    <strong>which test failed, and what would have to be true of the code for that test to
+    fail.</strong> It identified the mutation in every one of the six.</p>
 
     <p><strong>That changes what the check is for.</strong> It is not mostly catching wording; it
     is catching a worker running a weaker control than the one the node specified, which is the
