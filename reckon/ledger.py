@@ -1725,6 +1725,56 @@ def _shadow_store_append(project: str, record: Mapping[str, Any]) -> dict[str, A
     return {"status": "written"}
 
 
+def _ledger_ever_tracked(path: Path) -> bool | None:
+    """Ask git whether this checkout ever recorded the ledger path.
+
+    A committed ledger removed from the working tree and a project that never
+    had one present identically — an absent file — so the file alone cannot
+    say which write is safe. Git can: ``True`` means the path appears somewhere
+    in the repository's history, so its absence is a deletion to recover;
+    ``False`` means git has never recorded it, so the project is genuinely new.
+    ``None`` is returned when the question cannot be answered here — the path
+    is outside any checkout, or the checkout carries no commits — so a caller
+    keeps its conservative refusal rather than reading silence as a fresh
+    start.
+    """
+    resolved = path.expanduser().resolve()
+    discovery_root = resolved.parent
+    while not discovery_root.exists() and discovery_root != discovery_root.parent:
+        discovery_root = discovery_root.parent
+    toplevel = subprocess.run(
+        ["git", "-C", str(discovery_root), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if toplevel.returncode != 0:
+        return None
+    checkout = Path(toplevel.stdout.strip()).resolve()
+    try:
+        relative_path = resolved.relative_to(checkout)
+    except ValueError:
+        return None
+    logged = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "log",
+            "--all",
+            "--format=%H",
+            "--",
+            relative_path.as_posix(),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if logged.returncode != 0:
+        return None
+    return bool(logged.stdout.strip())
+
+
 def append_run(
     project: str,
     record: Mapping[str, Any],
@@ -1739,10 +1789,13 @@ def append_run(
     re-reads the ledger the winner just wrote and appends to that, so neither
     record is lost. A second record for the same run id is refused instead —
     that is not concurrency, it is a double promotion, and it would double-count
-    the measurements the calibration loops read. A promotion cannot turn an
-    absent ledger into a new project: the independent run store already holds
-    each promoted run, so an absent file is a recovery condition. Initialising
-    a genuinely new project requires ``allow_create=True``.
+    the measurements the calibration loops read. An absent ledger is refused
+    only when git shows the path was once tracked: a committed ledger missing
+    from the working tree is a deletion to recover, since the independent run
+    store already holds each promoted run, while a path git has never recorded
+    is a genuinely new project and is initialised. Where git cannot answer, the
+    refusal stands, and ``allow_create=True`` remains the explicit way to
+    initialise a project outside a checkout.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -1750,13 +1803,14 @@ def append_run(
     ledger_root = _run_ledger_root(project, root)
     path = ledger_path(project, ledger_root)
     if not path.exists() and not allow_create:
-        raise LedgerError(
-            f"refusing to promote run {run_id!r} for {project!r}: ledger file "
-            f"{path} does not exist. The run store at {_run_store_location()} "
-            "is the independent authority that holds every promoted run; "
-            "recover the ledger or initialise a genuinely new project with "
-            "allow_create=True."
-        )
+        if _ledger_ever_tracked(path) is not False:
+            raise LedgerError(
+                f"refusing to promote run {run_id!r} for {project!r}: ledger file "
+                f"{path} does not exist. The run store at {_run_store_location()} "
+                "is the independent authority that holds every promoted run; "
+                "recover the ledger or initialise a genuinely new project with "
+                "allow_create=True."
+            )
     stored_record = dict(record)
     last: LedgerError | None = None
     store_outcome: dict[str, Any] | None = None
