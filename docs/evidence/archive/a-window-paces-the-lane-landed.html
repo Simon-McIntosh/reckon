@@ -537,6 +537,78 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     layer that would carry it is validated before any of this code sees it.</p>
   </section>
 
+  <section id="gate-at-the-current-head">
+    <h2>The gate ran at the head it names</h2>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/head-vs-base-gate.svg" alt="Top: a revision line from base 1d2e70cc, through the predecessor gate's cited head 48bf51b2, to the pinned head 8257741, with the interval between the latter two labelled 193 commits and 22 merges. Bottom left: a two-by-two grid in which both named failing tests are marked failing at base and at head, so the failure is pre-existing rather than added. Bottom right: four successive readings of the main checkout's HEAD while the node ran, where the first two runs were superseded because the pair spanning them did not share one revision and the last held.">
+      <figcaption>The predecessor's tally was taken 193 commits and 22 merges behind the head
+      it was cited for. Re-measured at the head itself, the two failures are pre-existing, both
+      reproducing at base on the same assertion, and the added-failure count is zero.</figcaption>
+    </figure>
+
+    <p><strong>The revision this is valid for, and no other.</strong> Every count below was
+    produced at <code>825774198f7a637aa7aa6afc2d428390879fa45b</code> on <code>main</code>. A later
+    reader must not cite this anchor for a different head. The preceding integration gate recorded
+    its run at <code>48bf51b2</code>, which at that head is <strong>193 commits and 22 merges
+    behind</strong>; its tally of 122 passed and 2 failed was taken over a different, eight-file
+    selection and cannot speak for the interval that separates it from the head.</p>
+
+    <p><strong>The selection and the counts.</strong> The eleven declared files
+    (<code>test_window_reading</code>, <code>test_budget_group</code>, <code>test_binding_window</code>,
+    <code>test_lanes_borrowed_figure</code>, <code>test_reserve</code>, <code>test_pace</code>,
+    <code>test_staleness</code>, <code>test_lane_document</code>, <code>test_cached_account_age</code>,
+    <code>test_crew_lanes_view</code>, <code>test_lanes_view_is_live</code>) give
+    <strong>112 passed, 2 failed</strong>. Nine of the eleven do not exist at base
+    <code>1d2e70cc</code> &mdash; an absent file is not a file that ran clean, so the base
+    comparison is over the two files present at both revisions,
+    <code>test_crew_lanes_view.py</code> and <code>test_lanes_view_is_live.py</code>: 25 passed and
+    2 failed at base, 25 passed and 2 failed at head, a delta of zero in both columns.</p>
+
+    <p><strong>The two failures are pre-existing, and the added-failure count is zero.</strong>
+    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> fails with
+    <code>TypeError: dict.__getitem__() takes no keyword arguments</code> at
+    <code>reckon/mcp_views.py:691</code>, and
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> fails on
+    <code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code>.
+    Both reproduce identically at base, and no commit between base and head touches either test file
+    or <code>reckon/mcp_views.py</code>. Both sit outside this node's write scope and are carried
+    under follow-ons rather than triaged here.</p>
+
+    <p><strong>The instrument, and the refusal it made.</strong> The main checkout is live and
+    peer sessions commit to it, so a count reported against "the head" is worthless unless a revision
+    is attached to it. HEAD advanced four times while this node ran
+    (<code>b72eb947</code>, <code>b97335e0</code>, <code>7ce2ab3a</code>, <code>8257741</code>). The
+    first selection was run at <code>b97335e0</code> and the subset at <code>7ce2ab3a</code>, each
+    with HEAD unchanged immediately before and after its own invocation &mdash; and the check still
+    refused the pair, because comparing the two runs' revisions found them unequal. Counts split
+    across two revisions cannot be put in one table, so both were discarded and the pair was re-run
+    together. That re-run held: HEAD read <code>8257741</code> before and after, and its counts are
+    the ones recorded here. The refusal is the receipt &mdash; an instrument that had simply reported
+    the earlier pair would have published a comparison spanning two revisions, which is the
+    predecessor's defect in a subtler form.</p>
+
+    <p><strong>The run resolved to the shipped tree.</strong> Interpreter
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python3</code> (CPython 3.14.2, pytest 9.1.1),
+    working directory
+    <code>/home/ITER/mcintos/Code/reckon</code>. <code>import reckon</code> resolves to
+    <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code>, and the editable pointer
+    <code>_editable_impl_reckon_plans.pth</code> holds that same main-checkout path &mdash; not a
+    worktree path, so the run measured the tree that shipped. The base run entered a tree extracted
+    by <code>git archive 1d2e70cc | tar -x</code> (no branch switch, no stash) with
+    <code>PYTHONPATH</code> pointing at it, and its own check confirmed <code>import reckon</code>
+    resolved there, so base and head were measured as two distinct trees.</p>
+
+    <p><strong>Logs.</strong> All under
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/wave-integration-current/</code> &mdash;
+    <code>head-825774198f7a637aa7aa6afc2d428390879fa45b.log</code> (the declared eleven-file run),
+    <code>head-subset-825774198f7a637aa7aa6afc2d428390879fa45b.log</code>,
+    <code>base-1d2e70cc.log</code>, the extracted
+    <code>base-tree-1d2e70cc/</code>, the environment and pointer captures, and
+    <code>superseded/</code> holding the two refused runs with their revisions in the filenames.
+    None under <code>/tmp</code>, <code>/dev/shm</code> or <code>/run/user</code>.</p>
+  </section>
+
   <section id="follow-ons">
     <h2>Follow-ons</h2>
     <ul>
