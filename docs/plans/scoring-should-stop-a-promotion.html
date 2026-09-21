@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 </head>
@@ -189,6 +189,36 @@
     for its own source run, or the second review of a wave is refused by the first. Both
     properties need a test, because both failures look like an idle fleet rather than an
     error.</p>
+
+    <p><strong>Two blockers, both found by §2's worker, and the reflex is unsafe to turn on
+    until each is closed.</strong> Neither was visible when this section was written.</p>
+
+    <p><strong>The sweep would dispatch a review of a review, without limit.</strong>
+    <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code> returns
+    <code>scoring</code> for a <em>completed review-role run</em> and composes a review of that
+    run as its own <code>next_action</code> — there is no role exemption in that function. §2
+    exempted the review role at the promotion boundary, which is the right place for promotion and
+    the wrong place for this: the sweep never reaches promotion. So wiring the sweep before the
+    classifier is exempted turns one landed node into an unbounded chain of reviews reviewing
+    reviews, each one a real dispatch against a real member. <strong>This is the reason §3 cannot
+    be a one-line caller.</strong></p>
+
+    <p><strong>The reviewer runs on the lane that did the work.</strong>
+    <code>_review_dispatch_argv</code> ends in a hardcoded <code>--local</code>, and
+    <code>dispatch_review_for_run</code> passes <code>local=True</code>, so a review composed for a
+    local-lane run is dispatched to the local lane. That contradicts both governing statements:
+    <code>background-agent-fitness-and-dispatch-scope</code> §1 asks for scored reviews "on lanes
+    other than the one that did the work", and the ruling in force requires every local-lane
+    promotion to sit behind "a short review on a metered lane". A reviewer sharing the worker's
+    lane is also the weaker instrument on the merits — the gate and the review then come from the
+    same model, which is a smaller version of the defect this plan exists to fix, where the gate
+    and the diff come from the same worker.</p>
+
+    <p><strong>Neither is a hard-coded lane name in the repair.</strong> Which lane reviews is a
+    runtime routing choice; what the code must express is that the review resolves a lane
+    <em>different from the run's own</em>, with the choice left to flight config. A fixed
+    <code>--local</code> and a fixed <code>--backend codex</code> are the same mistake with
+    different defaults.</p>
 
     <p><strong>One defect is already there to fix.</strong> The sweep's own refusal
     accumulator in <code>dispatch_awaiting_reviews</code> appends a generator expression
