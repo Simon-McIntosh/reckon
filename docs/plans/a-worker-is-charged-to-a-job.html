@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -400,6 +400,31 @@ than a lane reading:</strong></p>
     <td>read the lane to choose; resume is viable</td></tr>
 </tbody>
 </table>
+
+<p><strong>The first population is not a new failure, and saying so is part of the record.</strong>
+It is the recorded print-mode behaviour: a dispatched worker gets no turn after its last one, so
+anything it defers past the end of a turn is never done, and its final utterance is forward-looking
+narration of the step it never took. Both runs match on every particular &mdash; clean terminal
+record, real API time and cost, mid-task last words. <strong>The remedy already exists and is the
+manifest discipline, not a lane reading:</strong> write the manifest with what you have, then start
+the wait. A manifest naming the work done and the check still running is recoverable; a deferred
+one is indistinguishable from a crash. What is new here is only that the <em>classifier</em> calls
+it <code>abandoned</code> and points the reader at resume.</p>
+
+<p><strong>And the stream test is readable only before anyone resumes, which is the caveat that
+matters most.</strong> A completed resume writes its own terminal <code>result</code> into the same
+stream, so a coordinator who resumes first has destroyed the evidence for why it needed to.
+Measured by the peer attempting exactly this classification on their own three after recovering
+them: 4,765 / 1,949 / 7,347 records, two now carrying a terminal success attributable to the
+recovery rather than to the stall. <em>Resuming is the correct first reflex and it forecloses the
+diagnosis.</em> The one instrument that stayed clean did so by accident &mdash; the first
+population has nothing to resume into, so nobody tried.</p>
+
+<p>What survives, at the strength the evidence supports and no further: the behavioural test is the
+stronger of the two &mdash; <strong>if there is work to resume and resuming produces, it was
+congestion</strong>, which held four for four on the peer's runs; the stream-shape test is narrow
+and perishable; and neither distinguishes a congested worker from one that would have ended its
+turn regardless, which one run cannot settle.</p>
 
 <p><strong>The attribution this corrects is the recording session's own.</strong> All four were
 reconciled to the ledger as <code>infrastructure-failure</code>, and for the first two that is
