@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400"
+     role="img" aria-labelledby="title desc">
+  <title id="title">The filter-order case: the fleet's width and the selection's width differ at 10:00</title>
+  <desc id="desc">A timeline of the five fixture runs. early and disagreeing both start at
+  10:00, but disagreeing holds another plan, so the read reports two runs in flight at
+  early's dispatch instant while a read that counted width after its plan filter would
+  report one.</desc>
+
+  <style>
+    .lane-label { font: 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #333; }
+    .note       { font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #666; }
+    .axis       { stroke: #bbb; stroke-width: 1; }
+    .tick       { stroke: #ddd; stroke-width: 1; }
+    .tick-label { font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #888; }
+    .span        { fill: #7a91b0; }
+    .span-dropped{ fill: #c99a4a; }
+    .span-open   { fill: none; stroke: #7a91b0; stroke-width: 2; stroke-dasharray: 4 3; }
+    .marker      { fill: #a14a4a; }
+    .beat        { stroke: #444; stroke-width: 1.4; stroke-dasharray: 5 4; }
+    .beat-label  { font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #222; }
+    .box         { fill: #f6f8fb; stroke: #c3ccd8; stroke-width: 1; }
+    .box-title   { font: 12px/1.2 ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #222; }
+    .box-body    { font: 11px/1.35 ui-sans-serif, system-ui, sans-serif; fill: #444; }
+    .figcap      { font: 12px/1.35 ui-sans-serif, system-ui, sans-serif; fill: #555; }
+  </style>
+
+  <rect x="0" y="0" width="960" height="400" fill="#ffffff"/>
+
+  <!-- time axis: 09:58 at x=90, 11:04 at x=860, 11.667 px per minute -->
+  <line class="axis" x1="90" y1="300" x2="860" y2="300"/>
+  <g class="tick-label" text-anchor="middle">
+    <line class="tick" x1="113" y1="300" x2="113" y2="306"/><text x="113" y="320">10:00</text>
+    <line class="tick" x1="230" y1="300" x2="230" y2="306"/><text x="230" y="320">10:10</text>
+    <line class="tick" x1="347" y1="300" x2="347" y2="306"/><text x="347" y="320">10:20</text>
+    <line class="tick" x1="464" y1="300" x2="464" y2="306"/><text x="464" y="320">10:30</text>
+    <line class="tick" x1="697" y1="300" x2="697" y2="306"/><text x="697" y="320">10:50</text>
+    <line class="tick" x1="813" y1="300" x2="813" y2="306"/><text x="813" y="320">11:00</text>
+  </g>
+
+  <!-- the dispatch instant the case reads a width at -->
+  <line class="beat" x1="113" y1="52" x2="113" y2="300"/>
+  <text class="beat-label" x="119" y="48">early dispatched 10:00 &#8212; the instant the case asks about</text>
+
+  <!-- lanes -->
+  <text class="lane-label" x="20" y="88">early</text>
+  <text class="note"       x="20" y="102">plan alpha</text>
+  <rect class="span" x="113" y="76" width="351" height="16" rx="3"/>
+
+  <text class="lane-label" x="20" y="128">disagreeing</text>
+  <text class="note"       x="20" y="142">plan beta</text>
+  <rect class="span-dropped" x="113" y="116" width="24" height="16" rx="3"/>
+  <text class="note" x="146" y="128">in flight at 10:00, but the plan filter drops it</text>
+
+  <text class="lane-label" x="20" y="168">no-completion</text>
+  <text class="note"       x="20" y="182">plan gamma</text>
+  <rect class="span-open" x="230" y="156" width="58" height="16" rx="3"/>
+  <text class="note" x="296" y="168">never measured an end, so it widens no other row</text>
+
+  <text class="lane-label" x="20" y="208">alone</text>
+  <text class="note"       x="20" y="222">plan beta</text>
+  <rect class="span" x="813" y="196" width="14" height="16" rx="3"/>
+
+  <text class="lane-label" x="20" y="248">no-dispatch</text>
+  <text class="note"       x="20" y="262">plan alpha</text>
+  <circle class="marker" cx="347" cy="240" r="5"/>
+  <text class="note" x="358" y="244">completion only &#8212; no dispatch stamp, so width is absent</text>
+
+  <!-- the two answers -->
+  <rect class="box" x="60" y="336" width="400" height="52" rx="6"/>
+  <text class="box-title" x="74" y="357">Counted before the filter &#8212; the fleet</text>
+  <text class="box-body"  x="74" y="375">width at 10:00 = 2 &#160;(early, disagreeing)</text>
+
+  <rect class="box" x="486" y="336" width="418" height="52" rx="6"
+        style="fill:#fdf3e3;stroke:#c99a4a"/>
+  <text class="box-title" x="500" y="357">Counted after the filter &#8212; plan alpha</text>
+  <text class="box-body"  x="500" y="375">width at 10:00 = 1 &#160;(early alone)</text>
+</svg>
