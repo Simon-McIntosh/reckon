@@ -119,14 +119,26 @@
     then remains possible and remains visible, which is the difference between a discipline
     and an obstacle.</p>
 
+    <p><strong>A review run must be exempt in the CLASSIFIER, not only at promotion, and
+    this is the defect that would make the reflex unbounded.</strong> Measured 2026-09-21 on
+    imas-ambix: a completed review run classifies as <code>scoring</code> exactly like the
+    node it reviewed, and its own <code>next_action</code> reads
+    <code>--node review-of-review-of-node-probe</code>. Reviews therefore require reviews,
+    without limit. Today that is a cosmetic oddity because nothing acts on the
+    classification; with §3's sweep wired it becomes a fleet that never drains, each review
+    dispatching another. Exempting the role only at the promotion boundary would leave the
+    sweep recursing, so the exemption belongs where the classification is computed.</p>
+
     <p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>,
+    <code>reckon/crew/recovery.py</code>,
     <code>reckon/cli.py</code>, <code>tests/test_crew_promotion_requires_review.py</code> (new).</p>
 
     <p><strong>Done when</strong> promoting a passing implement run with no stored review is
     refused and the refusal names both the run and the review command; the same promotion
     with the waiver succeeds and the promoted ledger row carries the waiver reason; a run
-    whose review is stored promotes unchanged; a review-role run is never itself gated on
-    having a review; and the repository's own lint and test gates pass.</p>
+    whose review is stored promotes unchanged; <strong>a completed review-role run classifies
+    as ready rather than as scoring, and its <code>next_action</code> never names a review of
+    itself</strong>, asserted; and the repository's own lint and test gates pass.</p>
 
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
