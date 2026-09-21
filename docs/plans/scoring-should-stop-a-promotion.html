@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -687,6 +687,33 @@
     §2g's per-kind profile is selected from the run's own changed paths, which the reflex already
     has; the accumulated findings are one further sentence. Until it does, an automatic review is
     weaker than the manual one it replaced, and the ledger cannot tell them apart.</p>
+
+    <p><strong>A discarded run renders as a promotion, which is the costliest false positive this
+    plan can produce.</strong> At <code>reckon/crew/recovery.py:3423</code> every departed pointer
+    is reported <code>promoted</code>, with no ledger check:</p>
+
+    <pre><code>for run_id in (item for item in known if item not in current):
+    changes.append((departed, str(known[run_id]["state"]), "promoted"))</code></pre>
+
+    <p>A pointer departs for several reasons — promotion, <code>crew discard</code>, manual removal
+    — and the follower calls them all the same. <strong>This plan's whole claim is that a promotion
+    cannot happen without a stored review</strong>, so a reader watching the ticker see
+    <code>review-of-… abandoned → promoted</code> after a discard concludes the gate was satisfied.
+    Measured on imas-ambix 2026-09-21: nothing was promoted, the ledger carried zero rows for that
+    run and no review record existed. The ledger being right does not help a reader watching the
+    stream, which is what the follower is for. <em>The distinguishing fact is available at render
+    time — a promotion writes a ledger row and a discard does not.</em></p>
+
+    <p><strong>And a reflex review can produce nothing and still wedge the roster.</strong> A
+    reflex-dispatched review ran ten seconds, ended <code>exit_code: 0, outcome: success</code>,
+    and wrote no manifest, no review record and no final output; the pointer classified
+    <code>abandoned</code>. It had auto-created a roster member, and a member is released by
+    promotion — which that run can never reach — so <code>crew member add</code> stays blocked
+    until the roster write is committed by hand. <strong>A failed automatic review therefore costs
+    manual repair rather than nothing</strong>, which is the opposite of what a reflex is for. Its
+    node carried <code>negative_control: ""</code> and the generic done-when above, so the two
+    defects are one: an unprofiled brief produces a review that can fail silently, and the failure
+    is not free.</p>
 
     <p><strong>Also required of the reflex, and not yet true:</strong> the composed brief names the
     profile it selected, so a reader of the stored review can see which checklist it was answering
