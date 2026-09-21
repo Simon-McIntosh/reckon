@@ -52,11 +52,23 @@ def test_head_path_survives_unrelated_restore_failure(repository, monkeypatch):
     assert tracked.read_text() == "landing content\n"
 
 
-def test_path_absent_from_head_is_dropped(repository):
+def test_path_absent_from_head_is_dropped(repository, monkeypatch):
     created = repository / "created file.txt"
     created.write_text("landing content\n")
     _git(repository, "add", "--", str(created))
+    real_git = promotion._git
+    calls = []
+
+    def fail_restore(checkout, *args, **kwargs):
+        calls.append(args[0])
+        if args[0] == "restore":
+            return subprocess.CompletedProcess(args, 128, "", "index is locked")
+        return real_git(checkout, *args, **kwargs)
+
+    monkeypatch.setattr(promotion, "_git", fail_restore)
     promotion._restore_landing_writes(repository, [created])
+    assert "restore" in calls
+    assert "rm" in calls
     assert not created.exists()
     assert not _git(repository, "ls-files", "--", str(created)).stdout.strip()
 
