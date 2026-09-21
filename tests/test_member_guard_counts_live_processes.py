@@ -49,9 +49,12 @@ OTHER_HOST = "another-login-node"
 
 
 def _absent_pid() -> int:
-    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    """Return a PID proven absent at the point the pointer is built."""
     ceiling = int(Path("/proc/sys/kernel/pid_max").read_text().strip())
-    return ceiling + 4096
+    pid = ceiling + 4096
+    with pytest.raises(ProcessLookupError):
+        os.kill(pid, 0)
+    return pid
 
 
 def _pointer(
@@ -112,7 +115,9 @@ def test_a_pointer_with_no_recorded_pid_blocks_and_is_unknown():
 
 def test_a_pointer_recorded_on_another_host_blocks_and_is_unknown():
     # A foreign pid is not this host's process to judge in either direction.
-    verdict = member_in_flight_verdict(_pointer(pid=1, launcher_host=OTHER_HOST))
+    verdict = member_in_flight_verdict(
+        _pointer(pid=os.getpid(), launcher_host=OTHER_HOST)
+    )
     assert verdict.blocks is True
     assert verdict.liveness == "unknown"
 
@@ -142,7 +147,7 @@ def test_the_refusal_names_the_observed_liveness_for_each_blocking_state():
     for pointer, state in (
         (_pointer(pid=os.getpid()), "alive"),
         (_pointer(pid=None), "unknown"),
-        (_pointer(pid=1, launcher_host=OTHER_HOST), "unknown"),
+        (_pointer(pid=os.getpid(), launcher_host=OTHER_HOST), "unknown"),
     ):
         with pytest.raises(MemberInFlight) as raised:
             refuse_member_in_flight("member-a", pointer)
@@ -184,6 +189,10 @@ def test_the_guard_never_consults_the_manifest(tmp_path, monkeypatch):
 
 def test_every_pointer_above_carries_a_non_terminal_phase():
     # No release above may pass because a phase happened to read terminal.
-    for pid, host in ((_absent_pid(), HOST), (None, HOST), (1, OTHER_HOST)):
+    for pid, host in (
+        (_absent_pid(), HOST),
+        (None, HOST),
+        (os.getpid(), OTHER_HOST),
+    ):
         pointer = _pointer(pid=pid, launcher_host=host)
         assert str(pointer["phase"]) not in node._TERMINAL_RUN_PHASES

@@ -472,6 +472,19 @@
       <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#dispatch-member-liveness">dispatch member liveness</a>
       (commit <code>8a3ebe90</code>).
     </p>
+    <p class="landed-summary">
+      <strong>§2e member-guard test fixtures — host-PID dependence removed.</strong>
+      The named-member regression now records the test process PID, while every gone-worker
+      fixture proves its above-<code>pid_max</code> PID raises <code>ProcessLookupError</code> in
+      the same helper call; the foreign-host fixtures use the test process PID with a foreign
+      hostname, so none relies on an arbitrary occupied or free host PID. The focused gate is
+      <strong>14 passed, 0 failed</strong> across the named dispatch regression and the complete
+      member-guard file. A negative control that substitutes the proven-absent PID makes the
+      second dispatch launch and fail at the launch assertion, demonstrating that the repaired
+      fixture—not incidental host occupancy—controls the refusal. Full record:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#member-liveness-test-fixtures">member-liveness test fixtures</a>
+      (commit <code>b9ccab9c</code>).
+    </p>
     <h2 id="s2f">§2f — The lane reading is discarded whole, and the roster is invisible at the refusal</h2>
 
     <p>§2e found stale <code>phase</code> holding members. Two further causes were measured on

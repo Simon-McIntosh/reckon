@@ -1698,6 +1698,7 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
 
 def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) -> None:
     ledger_member = "worker-a"
+    worker_pid = os.getpid()
     crew.ledger.register_member("proj", ledger_member, harness="codex", root=repo)
     first = crew.dispatch(
         node=_node(),
@@ -1706,7 +1707,7 @@ def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) ->
         config=CONFIG,
         session="sess",
         member=ledger_member,
-        launcher=lambda *a, **k: 4242,
+        launcher=lambda *a, **k: worker_pid,
     )
 
     with pytest.raises(crew.MemberInFlight) as excinfo:
@@ -1722,6 +1723,7 @@ def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) ->
 
     assert excinfo.value.member == ledger_member
     assert excinfo.value.run_id == first["run_id"]
+    assert first["pid"] == worker_pid
     assert ledger_member in str(excinfo.value)
     assert first["run_id"] in str(excinfo.value)
     assert [row["run_id"] for row in crew.list_live()] == [first["run_id"]]
