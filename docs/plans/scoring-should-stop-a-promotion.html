@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1278,6 +1278,33 @@
     — <code>&lt;run&gt;.at-&lt;sha&gt;.json</code> — is the same shape as the
     <code>reviewed_base_sha</code> normalisation above: <em>accumulation by construction, rather
     than by someone remembering to copy a file before each recheck lands.</em></p>
+
+    <p><strong>Third form: a stored verdict revised in place, with nothing recording the move.</strong>
+    Measured on imas-ambix 2026-09-21 — same reviewer, same reviewed revision
+    <code>7adfc3a30700</code>, the same four findings on the same files and lines, and the
+    <code>evidence</code> dimension revised from 18 to 15 twenty-four minutes later, taking the
+    total from 90 to 87. Not a recheck and not a second reviewer. A reader sees 87 and cannot know
+    it was ever 90.</p>
+
+    <p>If a reviewer reconsiders its own evidence that is good behaviour and should not be
+    stopped — but it has to be <em>visible</em>. It already corrupted a real row: a coordinator
+    read the 90, acted on its four findings, and promoted the review run with an outcome stating
+    <em>"scored 90 at 7adfc3a3"</em>. That ledger row now contradicts the store it cites. The
+    findings being identical was luck; a revision changing <em>which</em> findings existed would
+    have left a coordinator acting on a record that no longer said what it read.</p>
+
+    <p><strong>This is the hard argument for §2g's refusal to gate on a score.</strong> That
+    section rejects thresholds because a threshold invites tuning — a soft reason. The hard one is
+    that a threshold would be <em>non-deterministic</em>: the same run, at the same reviewed
+    revision, is promotable at 12:40 and not at 13:00, with nothing in the record explaining the
+    difference. <em>It is worse than staleness, because staleness at least leaves a revision to
+    compare against; here the revision is identical and the verdict moved underneath it.</em></p>
+
+    <p><strong>And whatever consults a review must record what it read.</strong> Today's gate
+    checks <code>status == "parsed"</code> and writes that a review was attached, without naming
+    <em>which record</em> it saw. Recording the figure consulted and the record's modification time
+    on the row makes a later disagreement detectable rather than silent — the same discipline as
+    recording the revision a review read, one level up.</p>
 
     <p><strong>Key the store by the reviewing run instead, and superseding falls out.</strong> An
     append-only history makes "which review is current" a revision comparison — the one whose
