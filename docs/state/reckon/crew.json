@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T18:44:57",
+  "updated": "2026-09-21T18:45:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -219565,6 +219565,26 @@
         "orientation_input_tokens": null,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "failed",
+          "integrated_revision": "4fcbbf719d5b76e5396f05bd8111741837fe78b7",
+          "checkout_revision": "4fcbbf719d5b76e5396f05bd8111741837fe78b7",
+          "checkout_on_integrated_revision": true,
+          "gate_command": "pytest -p no:cacheprovider -q tests/test_dispatch_guard_consults_liveness.py tests/test_crew.py::test_double_dispatch_refuses_a_member_with_a_non_terminal_run",
+          "ran": true,
+          "exit_status": 4,
+          "timed_out": false,
+          "reason": null,
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "failed",
+            "integrated_revision": "4fcbbf719d5b76e5396f05bd8111741837fe78b7",
+            "exit_status": 4,
+            "reason": null,
+            "message": "the gate passed at the worker's base but reports failed on the integrated revision 4fcbbf719d5b: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       },
       {
@@ -233512,6 +233532,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1960
+    "_version": 1961
   }
 }
