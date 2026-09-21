@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" font-family="system-ui, sans-serif" font-size="13">
+  <rect width="900" height="430" fill="#ffffff"/>
+  <text x="24" y="30" font-size="16" font-weight="600">A quota position is read once per declared group</text>
+  <text x="24" y="52" fill="#555">Five lanes, two declared wallets. The position is the group's freshest member reading, with that member's own observation age.</text>
+
+  <text x="24" y="92" font-weight="600">Lanes (as read)</text>
+  <text x="330" y="92" font-weight="600">Declared group</text>
+  <text x="600" y="92" font-weight="600">Group position</text>
+
+  <g stroke="#c8ccd4" stroke-width="1">
+    <rect x="24" y="104" width="200" height="30" rx="4" fill="#f6f7f9"/>
+    <rect x="24" y="140" width="200" height="30" rx="4" fill="#f6f7f9"/>
+    <rect x="24" y="176" width="200" height="30" rx="4" fill="#f6f7f9"/>
+    <rect x="24" y="212" width="200" height="30" rx="4" fill="#f6f7f9"/>
+    <rect x="24" y="248" width="200" height="30" rx="4" fill="#f6f7f9"/>
+  </g>
+
+  <text x="36" y="124" font-weight="600">codex</text>
+  <text x="120" y="124" fill="#555">13% · age 2.4 h</text>
+  <text x="36" y="160" font-weight="600">codex-astra</text>
+  <text x="150" y="160" fill="#555">14% · age 0 s</text>
+  <text x="36" y="196" font-weight="600">codex-terra</text>
+  <text x="148" y="196" fill="#a33">14% · undeclared</text>
+  <text x="36" y="232" font-weight="600">codex-luna</text>
+  <text x="130" y="232" fill="#555">7% · age 6 min</text>
+  <text x="36" y="268" font-weight="600">codex-spark</text>
+  <text x="130" y="268" fill="#555">88% · age 6.7 d</text>
+
+  <g stroke="#7a8291" stroke-width="1.4" fill="none">
+    <path d="M224 119 C 300 119, 330 150, 400 150"/>
+    <path d="M224 155 C 300 155, 340 152, 400 152"/>
+    <path d="M224 227 C 300 227, 340 156, 400 156"/>
+    <path d="M224 263 C 300 263, 340 268, 400 268"/>
+  </g>
+
+  <rect x="400" y="132" width="180" height="46" rx="6" fill="#eef3fb" stroke="#5b7fc0"/>
+  <text x="412" y="152" font-weight="600">codex-main</text>
+  <text x="412" y="169" fill="#555">four lanes, one wallet</text>
+
+  <rect x="400" y="250" width="180" height="46" rx="6" fill="#eef7ee" stroke="#4f8a4f"/>
+  <text x="412" y="270" font-weight="600">spark</text>
+  <text x="412" y="287" fill="#555">its own two windows</text>
+
+  <rect x="400" y="196" width="180" height="34" rx="6" fill="#fbf1f1" stroke="#c06060" stroke-dasharray="4 3"/>
+  <text x="412" y="218" fill="#a33">ungrouped — joins no wallet</text>
+
+  <g stroke-width="1.6" fill="none">
+    <path d="M580 155 L 632 120" stroke="#5b7fc0"/>
+    <path d="M580 273 L 632 250" stroke="#4f8a4f"/>
+  </g>
+
+  <rect x="632" y="96" width="244" height="52" rx="6" fill="#ffffff" stroke="#5b7fc0"/>
+  <text x="644" y="116" font-weight="600">codex-main position</text>
+  <text x="644" y="134" fill="#555">14% from codex-astra, age 0 s — freshest,</text>
+  <text x="644" y="148" fill="#555">not the first lane declared</text>
+
+  <rect x="632" y="224" width="244" height="52" rx="6" fill="#ffffff" stroke="#4f8a4f"/>
+  <text x="644" y="244" font-weight="600">spark position</text>
+  <text x="644" y="262" fill="#555">88%, age 6.7 d — carried with its age,</text>
+  <text x="644" y="276" fill="#555">not presented as current</text>
+
+  <text x="24" y="330" font-weight="600">What the position is not</text>
+  <text x="24" y="352" fill="#555">No entry point takes a backend name: group_position refuses a lane, so one lane's quarter allowance cannot be reported as the wallet's whole.</text>
+  <text x="24" y="372" fill="#555">A group with no ageable reading reports unobserved with no age, never a zero that would read as an instant-fresh figure.</text>
+
+  <g font-size="12" fill="#6b7280">
+    <text x="24" y="404">Source: reckon/crew/budget_group.py · tests/test_budget_group.py</text>
+  </g>
+</svg>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane-landed">
+  <meta name="plan-title" content="One wallet, one figure — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for a-window-paces-the-lane. One anchor per material outcome, accumulating as nodes land.">
+  <meta name="plan-evidence-for" content="a-window-paces-the-lane">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; node group-position-is-its-freshest-member dispatched through reckon crew to a detached worktree; tests run against the shared root environment's interpreter">
+  <title>One wallet, one figure — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>One wallet, one figure — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Five lanes collapse into two declared groups: four codex lanes into one wallet whose position is codex-astra's freshest 14% reading at age 0 s, and codex-spark into its own wallet at 88% and age 6.7 days. An undeclared codex-terra joins no group, and no entry point takes a backend name.">
+    <figcaption>Grouping comes from the declared slot alone, and a position is the group's freshest member reading carried with that member's own age.</figcaption>
+  </figure>
+
+  <section id="group-position">
+    <h2>Group position is its freshest member reading</h2>
+
+    <p><strong>The defect.</strong> Read through <code>crew(view="lanes")</code> on 2026-09-21, four
+    sol-family lanes shared one subscription to the second while each carried
+    <code>budget_group: null</code> and its own reading, and <code>codex-spark</code> carried a
+    separate pair of windows with a 6.7-day-old figure presented as a position. The lanes view
+    already restated a declared <code>budget_group</code> into a <code>budget_groups</code> map, so
+    what was missing was not the declaration but any computation that reads once per wallet: a
+    position, a bar or a reserve computed per lane divides one allowance four ways and reports each
+    quarter as the whole.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/crew/budget_group.py</code> resolves backends into
+    their declared groups from resolved flight config and returns a group's position as its freshest
+    member reading, carrying that member's own observation age. The module's only position callable
+    takes a declared group identifier: <code>group_position("codex", …)</code> raises, so there is no
+    route by which one lane's share of a shared wallet can be reported as the wallet's figure. Where
+    no member reading can be aged the position is <code>unobserved</code> with no member and no age,
+    never a zero that would read as a figure taken this instant.</p>
+
+    <table>
+      <caption>What the node asserted, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>Five lanes resolve to exactly two declared groups from the config slot; a mistyped slot name never groups</td><td><code>test_grouping_reads_the_declared_slot_from_resolved_config</code></td></tr>
+        <tr><td>An undeclared backend is left ungrouped</td><td><code>test_a_backend_declaring_no_group_is_left_ungrouped</code></td></tr>
+        <tr><td>The position is the freshest member, which is last in declaration order</td><td><code>test_position_is_the_freshest_member_not_the_first_declared</code></td></tr>
+        <tr><td>Its age is that member's own, not the group's oldest</td><td><code>test_position_carries_the_freshest_members_own_age</code></td></tr>
+        <tr><td>An undated member never outranks a dated sibling</td><td><code>test_an_undated_member_never_outranks_a_dated_one</code></td></tr>
+        <tr><td>No ageable member reports unobserved with no age, never a zero</td><td><code>test_no_member_can_be_aged_reports_unobserved_and_never_zero</code></td></tr>
+        <tr><td>No per-backend position entry point exists, and a lane name is refused</td><td><code>test_module_exposes_no_per_backend_position_entry_point</code>, <code>test_position_requires_a_declared_group_so_no_per_lane_position_exists</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Evidence.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider
+    -q tests/test_budget_group.py</code> → <strong>12 passed</strong>. The red log at
+    <code>~/.config/reckon/crew/reports/reckon/group-position-is-its-freshest-member/freshest_member_replaced_by_first.red.log</code>
+    records the declared mutation — returning the first member carrying an ageing reading instead of
+    the member with the newest observation stamp — applied to a scratch copy of the package, where
+    <strong>4 tests fail</strong>, including the two naming the freshest member and its age. The module
+    under test in that run resolved to the scratch copy, printed beside the run.</p>
+
+    <p><strong>Boundary of this node.</strong> The re-query of a reading past its shelf life, and the
+    rendering of a lane whose figure came from a shared account probe, belong to the sections that
+    consume this position and to their own nodes; this node supplies the group keyed figure and its
+    age, and nothing in the lanes view or the pacing path is rewired here.</p>
+  </section>
+
+</main>
+</body>
+</html>
