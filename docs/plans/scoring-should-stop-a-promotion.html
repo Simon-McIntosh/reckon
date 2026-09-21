@@ -23,9 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="16">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="18">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
+<meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -162,6 +164,51 @@
       <p><strong>Declared mutation applied at the merged head.</strong> The node above recorded its red log from a <em>different</em> mutation than the one it declared: forcing the guard's <code>unreviewed</code> flag false (predicate short-circuited) rather than deleting the refusal branch. Both make an unreviewed run promote silently, so the two are equivalent — and the declared one was applied here to say so from evidence. The earlier log was first copied verbatim to the run's <code>negative-control-equivalent-mutation.log</code>, verified by <code>diff</code> against the original with no difference (both sha256 <code>9fcb32fa675ab3afe10c9bc7b7da08e91e5917be7a4bcbf2d16cbe4ef4f231e</code>). Then the <code>if unreviewed:</code> branch in <code>_require_review_waiver</code> was deleted in full in a scratch copy of the tree at <code>HEAD</code> and <code>tests/test_crew_promotion_requires_review.py</code> run: <strong>6 passed</strong> unmutated, <strong>2 failed, 4 passed</strong> under the deletion — <code>test_passing_implement_run_without_review_is_refused</code> with <code>DID NOT RAISE CrewError</code>, and <code>test_reasoned_waiver_promotes_and_records_reason</code> on the guard's own "no unreviewed promotion to waive" message. The two mutations redden the same two tests. The red log's first line repeats the declared mutation verbatim. <code>reckon/crew/promotion.py</code> is byte-identical before and after (sha256 <code>7fa02399f9495fed0b1ebd9675cfdada761a36842c3cfbdff9a7be27e930431e</code>), the worktree is clean, and the full record is at <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2-declared-mutation-reddens">s2-declared-mutation-reddens</a>.</p>
       <p><strong>Bypassing <code>/reckon-edit</code></strong> because this node carries no MCP write path: the landing record is appended to this section directly in the worktree and committed with it.</p>
     </div>
+    <h2 id="s2c">§2c — A promotion asserts landed work that never landed</h2>
+
+    <p>§2 makes promotion refuse a run with no review. This section is the same command refusing a
+    different false statement, and it is the worse of the two: <strong><code>crew complete</code>
+    writes a durable "passed" whose truth depends on a merge that is a separate, later,
+    unverified act.</strong> Nothing checks that the act happened.</p>
+
+    <p><strong>Measured on imas-ambix, 2026-09-21, and verified from this checkout.</strong> Four
+    nodes carry <code>promote(...): passed</code> commits on <code>main</code>. All four commits
+    are ancestors of <code>main</code>. Two of them assert work that is not in the tree:</p>
+
+    <table>
+      <caption>Four promotions, one reachability verdict, two different truths.</caption>
+      <thead><tr><th>Promotion</th><th>Ancestor of main</th><th>Content in main</th></tr></thead>
+      <tbody>
+        <tr><td><code>engine-names</code></td><td>yes</td><td>yes</td></tr>
+        <tr><td><code>request-receipts</code></td><td>yes</td><td>yes</td></tr>
+        <tr><td><code>telemetry-index</code></td><td>yes</td><td><strong>no</strong> — <code>main:imas_ambix/agent/telemetry_index.py</code> does not exist</td></tr>
+        <tr><td><code>bench-single-owner</code></td><td>yes</td><td><strong>no</strong> — <code>main:…/bench.py</code> still declares the duplicate the node removed, twice</td></tr>
+      </tbody>
+    </table>
+
+    <p>Nothing is lost — both worktrees are clean and hold their commits — but the ledger asserts
+    five of five landed against a tree carrying three, the live pointers are gone because promotion
+    deleted them, and no surface reports the gap. The coordinator who produced it did not notice
+    across two nodes.</p>
+
+    <p><strong>The reachability column is the trap, not the diagnosis.</strong> It reads
+    <em>yes</em> for all four, which is why the obvious check cannot find this: the user-global
+    rules already name it for merges — a commit being reachable is not the fact anyone needs, and
+    the fact anyone needs is whether the content is in the head. Promotion has the same exposure
+    and no equivalent check.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, and a new test file.</p>
+
+    <p><strong>Done when</strong> a promotion records the head it expects its work to land in, and
+    a sweep asserts both halves against that head — the promoted revision is an ancestor, <em>and</em>
+    a marker the change introduced is present — reporting a promotion whose ancestry passes while
+    its marker is absent, asserted against a synthesised repository reproducing exactly that pair;
+    a promotion whose content did land reports nothing, asserted, because a check that fires on the
+    healthy case is a check nobody keeps; and the negative half is covered too — a change whose
+    purpose was a <em>removal</em> is asserted by requiring the removed marker's absence, since a
+    dropped deletion is as silent as a dropped addition. Promotion does not merge: the assertion is
+    a later sweep, not a side effect of landing.</p>
+
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
     <p>Give <code>dispatch_awaiting_reviews</code> the caller its docstring already assumes.
@@ -662,6 +709,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T062835098165-review-prompt-per-item-verdicts" data-who="reckon-ship" data-when="2026-09-21T06:38:38.045Z">
     <div class="r-comment-body"><p>stopped at 10 minutes and withdrawn: dispatched to the local lane in breach of the 2026-09-21 interim ruling recorded in background-agent-fitness-and-dispatch-scope, which admits only investigation and reporting nodes there. Manifest never left orientation; the section is re-dispatched to a metered lane</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-09-21T07:25:00Z">
+    <div class="r-comment-body">Landed and promoted. The refusal, the reasoned waiver and the review-role exemption are live at merged head 346b98b6; the promotion cohort measured 18 failures before and 18 after with 0 new. Its independent review on a metered lane scored 85 and found that the declared negative control was not the mutation the log showed; that was repaired by re-running the declared deletion at the merged head and preserving the original log beside it, rather than by reweighting the declaration, and the promoted row records negative_control verdict matched.</div>
 </div>
 </section>
 </main>
