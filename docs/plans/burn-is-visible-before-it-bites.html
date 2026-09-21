@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef,b0ede8b,6c18dd4">
 <meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,reckon/mcp_views.py,tests/test_crew_lanes_view.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
@@ -355,6 +355,9 @@ The reasoning behind the narrowing stands and is worth keeping: what this plan n
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260921T125652058236-the-meter-is-captured-in-all-three-states" data-who="reckon-ship" data-when="2026-09-21T15:18:31.444Z">
     <div class="r-comment-body"><p>y</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260921T1910-the-ledger-row-is-thin-and-why" data-who="reckon-ship" data-when="2026-09-21T19:10:00Z">
+    <div class="r-comment-body">THE LEDGER ROW FOR THIS LANDING IS THIN, AND THE CAUSE IS A COORDINATOR ERROR RATHER THAN A MISSING MEASUREMENT. The promoted row carries gate passed and the correct commit bedd7050, and carries NO outcome, no gate command, no exit status and no negative-control waiver. Everything it should have carried is in this section's comments, in the resolved followup, and in the evidence record -- so the substance is durable and only the row is bare. HOW IT HAPPENED, because the shape is worth more than the incident. A promotion had been refused and the coordinator re-ran the SAME LIVE COMMAND with placeholder arguments -- gate-command x, outcome y -- purely to read the full refusal text, which had been truncated. It did not refuse the second time. The probe succeeded and wrote the row. A command that changes the world is not an instrument for reading an error message, and the refusal that had been informative a moment earlier stopped being informative exactly when the missing argument was supplied. THE LEDGER IS APPEND-ONLY THROUGH PROMOTION AND HAS NO AMEND PATH, which is correct -- a row that could be rewritten after the fact would be worth less than one that cannot. So the remedy is the same one this session used for a destroyed pointer earlier: record where the content actually lives rather than manufacture a replacement. A reader who finds a bare row for this node should read this section and the resolved followup f-bvb-001, which carry the six captures, their verification by image header, the re-captured gate at 9 passed exit 0 with Crew measured at both widths, the review at 89 with no findings, and the one recorded gap that the declared negative control was never run. THE SAFE FORM, for the next time a refusal is truncated: read it with --dry-run, or against a run id that does not exist, or by widening the output rather than by supplying the argument the fence was asking for.</div>
 </div>
 </section>
 </main>
