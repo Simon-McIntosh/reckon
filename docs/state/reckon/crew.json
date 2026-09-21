@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T22:26:42",
+  "updated": "2026-09-21T22:29:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -246840,6 +246840,243 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a79",
+        "node": "a-declaration-is-resolved-before-it-is-compared",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1597,
+                "cached_input_tokens": 496439,
+                "input_tokens": 498038,
+                "output_tokens": 924,
+                "reasoning_output_tokens": 245,
+                "total_tokens": 498962,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260921"
+          },
+          "done_when": "tests/test_write_scope_agreement.py gains cases asserting that a changed path under an ABSOLUTE declaration naming a directory inside the repository is accepted by reports.audit_manifest exactly as promotion._outside_declared_scope accepts it, that an absolute declaration naming a directory OUTSIDE the repository still rejects a repository path in both, that the existing relative-declaration cases are unchanged, and that the two surfaces agree on a table of at least four absolute-declaration pairs; the whole file passes; and the declared mutation is applied, the new absolute-declaration cases are observed to fail under it while the relative cases still pass, and the red log is recorded in the run directory with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "Resolve a declared write path against the worktree and the repository before comparing a changed path to it, so an absolute declaration accepts what promotion accepts.",
+          "id": "a-declaration-is-resolved-before-it-is-compared",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T18:01:46Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/manifest.md",
+          "negative_control": "compare each declared path literally in reports.audit_manifest instead of resolving it against the worktree and the repository first",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_write_scope_agreement.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T18:01:58Z",
+        "completed_at": "2026-09-21T18:21:29.254Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1163,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1171,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "71462872a5d8d4966043f86bd8aec5444e3df9de",
+        "commits": [
+          "2c8aa281a04c019938d84095627f1b188eb66fc8",
+          "c9942d1ecdb65afbc30386550b09665575b5cd2b"
+        ],
+        "changed_lines": {
+          "added": 279,
+          "removed": 11,
+          "files": 5
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_write_scope_agreement.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/logs/gate.txt",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "path_within_declared_scope resolves each declaration against the worktree and the repository before comparing, so a directory granted by absolute path is accepted at the write-time surface exactly as promotion accepts it; 17 passed, and the declared mutation reddens the five absolute inside-repository pairs while the relative pairs and the outside-repository rejection stay green",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/manifest.md",
+        "scope_changed": false,
+        "session_id": "120a4ccc-90c4-403b-b681-1e79118e7c6a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10290031,
+            "input_tokens_cumulative": 10290031,
+            "output_tokens": 59402,
+            "output_tokens_cumulative": 59402,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T18:21:29.254Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 20,
+            "fit": 15,
+            "goal_fidelity": 17,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 90
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10290031,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1167.757,
+          "generated_tokens": 59402,
+          "generation_seconds": 945.066,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.2,
+          "machine_seconds": 222.691,
+          "peak_input_tokens": 164160,
+          "tokens_per_second": 62.85,
+          "wall_tokens_per_second": 50.87
+        },
+        "follow_on_paths": [
+          "reckon/crew/promotion.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/a-declaration-is-resolved-before-it-is-compared",
+          "session_id": "120a4ccc-90c4-403b-b681-1e79118e7c6a",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T18:21:29.254Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.7,
+          "at_complete": 0.77,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_write_scope_agreement.py"
+          ],
+          "declaration": "compare each declared path literally in reports.audit_manifest instead of resolving it against the worktree and the repository first",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/logs/negative-control.txt",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T180145690656-a-declaration-is-resolved-before-it-is-compared/logs/negative-control.txt"
+        },
+        "tool_steps": 91.0,
+        "orientation_input_tokens": 1116812.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -247124,6 +247361,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2009
+    "_version": 2010
   }
 }
