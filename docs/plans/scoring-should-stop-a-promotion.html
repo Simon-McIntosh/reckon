@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="45">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -459,6 +459,47 @@
     status and the accepted vocabulary, rather than silently declassifying the run, asserted with
     each of the three observed strings; and the review role stays exempt, asserted, since that
     exemption is the one that is correct.</p>
+
+    <h2 id="s2i">§2i — A finding cannot say whether it blocks, so the gate cannot ask</h2>
+
+    <p>§2's refusal is a machine reading review records. It can gate on score, and once §5c lands
+    on staleness. <strong>It cannot distinguish "this finding blocks" from "this finding is a
+    follow-on"</strong> — which is the distinction that decides whether a node carrying one open
+    finding should land.</p>
+
+    <p><strong>Measured across the whole store: 589 findings, of which 579 carry only
+    <code>file</code>, <code>line</code> and <code>text</code>.</strong></p>
+
+    <table>
+      <caption>Finding record shapes, all projects.</caption>
+      <thead><tr><th>Count</th><th>Keys</th></tr></thead>
+      <tbody>
+        <tr><td>579</td><td><code>file, line, text</code></td></tr>
+        <tr><td>6</td><td><code>file, line, severity, text</code></td></tr>
+        <tr><td>4</td><td><code>file, line, recommendation, severity, summary</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The store is not the blocker — the parser is.</strong> Ten findings carry a severity
+    and those ten were written directly rather than parsed from <code>FINDING</code> lines, because
+    the emitted format has no slot for one. Across them the vocabulary is <code>minor</code>,
+    <code>moderate</code>, <code>low</code> — three values, no agreement, 2% coverage. The field
+    exists by accident and means nothing.</p>
+
+    <p><strong>Reviewers already produce the triage when asked and have nowhere to put it.</strong>
+    One ended a finding with <em>"neither changes what the code does"</em> — a correct, load-bearing
+    judgement now living as prose inside a free-text field, legible to a human and invisible to the
+    gate. That is §5b's class in the record the gate consults: <em>the finding says something the
+    gate cannot read.</em></p>
+
+    <p><strong>Done when</strong> a finding carries a severity drawn from one declared vocabulary,
+    emitted by the prompt and parsed by the parser so the two cannot drift — pinned by the same
+    falsifier that holds the dimension names; a finding emitted without one is recorded absent
+    rather than defaulted, since a defaulted severity is a judgement nobody made; the promotion
+    refusal can be asked to gate on blocking findings alone, asserted against a stored review
+    carrying one blocking and one follow-on; and the ten existing records keep parsing, asserted,
+    because a schema change that orphans the only severities in the store would be the §5c mistake
+    repeated.</p>
 
     <h2 id="s2h">§2h — The verbatim match is defeatable by the person it blocks, and it has caught nothing</h2>
 
@@ -1298,6 +1339,26 @@
         <tr><td>after second repair</td><td>—</td><td>0 of 1</td><td>1 (caused by that repair)</td></tr>
       </tbody>
     </table>
+
+    <p><strong>The author of a finding is not protected by having authored it.</strong> The
+    coordinator who reported §2c to this plan reproduced it themselves four hours later: they
+    promoted a node, watched <code>promote(…): passed</code> land on the primary branch, and the
+    changed file was not in the tree. Their account of why is the useful part — <em>knowing the
+    defect in detail, having written it up, did not make me do the merge, because promotion feels
+    terminal and the ledger says passed.</em></p>
+
+    <p>It caught them only because §2c's own check was fresh in mind. Then the merge offered three
+    further chances to go wrong in one operation: a conflict in the plan file where both sides were
+    additive and taking either would have silently dropped the other; and a content check that
+    grepped for the mechanism the change <em>removed</em> rather than the one it introduced, which
+    would have passed on a tree where the repair had been reverted — exactly the negative-half trap
+    §2c specifies.</p>
+
+    <p><strong>So the argument for the automated sweep is not that coordinators are careless; it is
+    that authorship confers no protection.</strong> This session walked into
+    <code>crew-observability-truth</code> §9 — "nine commits are reachable, unlanded, and owned by
+    nobody" — with §2c open in front of it, and lost two finished pieces the same way. Two
+    coordinators, the same defect, both of whom had just written about it.</p>
 
     <p><strong>Coordinator hand-verification caught none of three; the review path caught all
     three.</strong> That is the claim this plan should stand or fall on, and it is narrower and
