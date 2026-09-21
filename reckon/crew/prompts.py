@@ -259,8 +259,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>
-  tests: <command and result>
-  test_logs: <paths on disk>
+  tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
+  test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command
   negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. The log's first line repeats the declared mutation verbatim, so a log that failed for any other reason is refused
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
