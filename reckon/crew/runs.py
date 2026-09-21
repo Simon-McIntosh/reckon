@@ -2159,12 +2159,50 @@ def _register_watch_unit(project: str, unit: str) -> dict[str, Any]:
         return {"registered": True, "reason": "written", "unit": unit}
 
 
+def _service_manager_unreachable(error: BaseException) -> bool:
+    """Report whether an arming failure means the service bus cannot be reached.
+
+    Only an unreachable manager is a reason to arm the watcher another way; a
+    unit the manager refused on its merits must still raise, or the fallback
+    would replace a diagnosis with a process nobody asked for. The markers are
+    the ones systemd and logind print when the per-user manager is gone:
+    ``Failed to connect to bus: Connection refused`` after a client restart,
+    ``No such file or directory`` when the bus socket has been removed, and the
+    launcher's own ``is not available on this host`` when it is absent entirely.
+    """
+    detail = str(error).lower()
+    return any(
+        marker in detail
+        for marker in (
+            "failed to connect to bus",
+            "connection refused",
+            "connection reset by peer",
+            "transport endpoint is not connected",
+            "is not available on this host",
+        )
+    )
+
+
+def _arm_watcher_as_process(project: str) -> Mapping[str, Any]:
+    """Start the project's watcher as a plain background process.
+
+    The same producer the dispatch path arms, so the fallback reuses one watcher
+    implementation rather than adding a second: it takes the seat once, replaces
+    a seat whose supervisor has died, and reports liveness rather than raising.
+    Imported lazily because the dispatch path imports this module.
+    """
+    from reckon.crew.dispatch import _ensure_watch_producer
+
+    return _ensure_watch_producer(project)
+
+
 def ensure_watcher_service(
     project: str,
     *,
     manager: Any | None = None,
     config: Mapping[str, Any] | None = None,
     restart: bool = False,
+    producer: Callable[[str], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Start or restart a project's watcher as an idempotent user service.
 
@@ -2174,6 +2212,17 @@ def ensure_watcher_service(
     restarted. Restarting unconditionally would drop the seat and re-take it,
     so the command a refusal tells a person to run would interrupt the watcher
     it exists to guarantee.
+
+    Arming also survives a manager that cannot be reached. The user manager is a
+    single point of failure for a command whose whole job is to leave a watcher
+    behind: a watcher started as a plain process lifts on every tick exactly as
+    the service would, so a bus failure falls back to that path rather than
+    raising and leaving the project unwatched. The result names which path armed
+    the watcher, and why, in fields a caller reads rather than in prose.
+
+    The fallback is deliberately narrow — a unit the manager refused on its
+    merits still raises — and ``producer`` is the seam that lets a caller supply
+    the process arming, so a test exercises this path without starting a watcher.
     """
     from reckon import flight
 
@@ -2189,24 +2238,38 @@ def ensure_watcher_service(
         config if config is not None else flight.resolve(project=project).config
     )
     environment = _watcher_service_environment(resolved_config)
+    # Rendering and writing the unit touch no bus, so a failure here is a real
+    # one about the account's own filesystem and never a reason to fall back.
     content = render_watch_unit(project, environment=environment)
     path, changed = service_manager.write_unit(project, content)
 
-    was_active = service_manager.active(project)
-    start_required = bool(changed or restart or not was_active)
-    if start_required:
-        # 'enable --now' leaves an already-running unit on its old definition,
-        # so a rewritten active unit needs an explicit restart.
-        service_manager.start(
-            project, restart=bool(restart or (changed and was_active))
-        )
+    try:
+        was_active = service_manager.active(project)
+        start_required = bool(changed or restart or not was_active)
+        if start_required:
+            # 'enable --now' leaves an already-running unit on its old
+            # definition, so a rewritten active unit needs an explicit restart.
+            service_manager.start(
+                project, restart=bool(restart or (changed and was_active))
+            )
 
-    lingering: bool | None = None
-    if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
-        lingering = bool(service_manager.lingering())
-        if not lingering:
-            service_manager.enable_linger()
+        lingering: bool | None = None
+        if LINGER_IF_REQUIRED and hasattr(service_manager, "lingering"):
             lingering = bool(service_manager.lingering())
+            if not lingering:
+                service_manager.enable_linger()
+                lingering = bool(service_manager.lingering())
+    except Exception as error:
+        if not _service_manager_unreachable(error):
+            raise
+        return _watcher_armed_as_process(
+            project,
+            error=error,
+            unit_path=path,
+            unit_changed=bool(changed),
+            environment=environment,
+            producer=producer or _arm_watcher_as_process,
+        )
 
     registration = _register_watch_unit(project, watch_unit_name(project))
     if start_required:
@@ -2232,6 +2295,57 @@ def ensure_watcher_service(
         "lingering": lingering,
         "registration": registration,
         "watcher_live": watch_state(project)["watcher_live"],
+        # Which path armed the watcher, as a field rather than prose: a caller
+        # acts on a value instead of parsing a sentence out of ``detail``.
+        "path": "service",
+        "fallback_reason": None,
+        "ensure_line": watcher_ensure_line(project),
+    }
+
+
+def _watcher_armed_as_process(
+    project: str,
+    *,
+    error: BaseException,
+    unit_path: Path,
+    unit_changed: bool,
+    environment: Mapping[str, str],
+    producer: Callable[[str], Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Arm the watcher as a plain process after the service bus refused.
+
+    The result keeps the shape the service path returns, so a caller reads one
+    result either way, and states the fallback in three fields: ``path``, the
+    failure that forced it, and whether a watcher is live afterwards. The
+    producer reports liveness rather than raising, so a fallback that could not
+    start a watcher reads as ``watcher_live`` false with the reason beside it,
+    which is the same shape the dispatch path reports.
+    """
+    state = producer(project)
+    registration = _register_watch_unit(project, watch_unit_name(project))
+    live = bool(state.get("watcher_live"))
+    reason = " ".join(str(error).split())
+    return {
+        "project": project,
+        "unit": watch_unit_name(project),
+        "unit_path": str(unit_path),
+        "unit_changed": bool(unit_changed),
+        "service_active": False,
+        "started": live,
+        "detail": (
+            f"the service manager could not be reached ({reason}); "
+            + (
+                f"armed the watcher for {project} as a plain background process"
+                if live
+                else f"a plain background watcher for {project} is not live either"
+            )
+        ),
+        "environment": environment,
+        "lingering": None,
+        "registration": registration,
+        "watcher_live": live,
+        "path": "fallback",
+        "fallback_reason": reason,
         "ensure_line": watcher_ensure_line(project),
     }
 

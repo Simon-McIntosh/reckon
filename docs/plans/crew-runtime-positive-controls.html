@@ -506,6 +506,29 @@
     the mutation verbatim on its first line, and the mutation is reverted before the commit.</p>
     <p><strong>Files.</strong> <code>reckon/crew/runs.py</code> and a new
     <code>tests/test_watcher_arming_fallback.py</code>.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong> <code>ensure_watcher_service</code> now
+    separates the calls that touch no bus from the calls that do: the unit is still rendered and written
+    first, and the manager calls sit under a handler that arms the watcher through the process path
+    <code>reckon.crew.dispatch</code> already provides when the failure means the bus is unreachable, and
+    re-raises otherwise. The classifier matches only the markers an absent manager prints, so a unit the
+    manager refused on its merits still raises and a real refusal is not answered with an unsupervised
+    process. The result carries <code>path</code> and, when it fell back, <code>fallback_reason</code>; the
+    CLI already emits the whole result, so both fields reach a caller inside this node's fence. In the
+    fallback, <code>started</code> reports whether a watcher is live after the attempt rather than that an
+    arming call was issued. Five cases in <code>tests/test_watcher_arming_fallback.py</code> both halves: the
+    connection-refused manager arms by the fallback path, a reachable manager still takes the service path
+    with the producer raising if it is called, a unit the manager refused still raises, and the fallback's
+    default arming is asserted to be the dispatch producer through an injected manager and producer &mdash; no
+    case writes a unit to the account home or needs a systemd manager on the host. Gate on the new file with
+    the two neighbouring watcher files: <strong>17 passed, exit 0</strong>. The declared mutation &mdash;
+    make <code>ensure_watcher_service</code> raise instead of taking the fallback &mdash; reddened the two
+    fallback cases alone (<strong>2 failed, 3 passed, exit 1</strong>), reverted before the commits; the red
+    log's first line repeats the declaration verbatim. The pre-change failure that produced this section is
+    reproduced in that same log, which dies at the fake bus call with <em>Failed to connect to bus:
+    Connection refused</em>. Commits <code>851249ed</code> and <code>5a068617</code>
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s10">§10 landed</a>.
+    The merged-head verification is the separately dispatched test node's; the process spawn itself is not
+    started by any case.</p>
 
     <h2 id="s11">&#167;11 &mdash; The red-log field is a path, and the contract a worker reads says so</h2>
     <p>Four workers wrote <code>negative_control_log</code> four ways in three projects, none matching another:
