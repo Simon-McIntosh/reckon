@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="38">
 <meta name="plan-impl" content="0.25">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -208,6 +208,46 @@
     deleted; a <code>member add</code> leaving a clean tree; a plan shipping on
     investigate-node landings with no hand-authored evidence file; a ledger read returning
     wall time and width without arithmetic by the reader.</p>
+
+    <h2 id="s9">&sect;9 &mdash; A manifest contract checked at the last possible moment</h2>
+
+    <p>The promotion contract validates a worker's manifest when the coordinator promotes it
+    &mdash; hours after the worker's process has ended. Measured twice on 2026-09-21 in
+    <strong>imas-efit</strong>: two workers finished sound work with sound negative controls,
+    and both promotions were refused because the contract reads
+    <code>negative_control_log</code> as a scalar path and neither manifest was shaped that
+    way. One held a mapping of <code>declared</code>, <code>log</code> and
+    <code>result</code> sub-keys; the other a markdown heading with the path beneath.</p>
+
+    <p>Three properties make this the same animal as sections 2 to 6. The check fires when
+    the one party who could satisfy it is gone. The only remedy available to a coordinator is
+    editing an artifact it did not author, which is the condition under which two
+    coordinators produce two different repairs &mdash; and they did, one moving the value to
+    a scalar and preserving the mapping alongside, the other preserving the worker's section
+    under a heading and adding the scalar above it. And the check is satisfiable by editing
+    its own input, so the compensation is corrosive rather than merely undesirable: a
+    coordinator under time pressure can make the refusal go away without adding any evidence,
+    and nothing afterwards distinguishes that from the honest repair.</p>
+
+    <p><strong>The repair this plan owns is the write-time check.</strong> The manifest is
+    written while the worker still has turns, so validating at the moment of writing refuses
+    it then, to the party who can fix it, at a cost of one turn. Widening the reader to accept
+    the shapes workers actually produce is the other candidate &mdash; it removes the refusal
+    but leaves the lateness, and it belongs to the plan that owns the field,
+    <code>crew-runtime-positive-controls</code>. The two are not exclusive, and only the first
+    matches this plan's thesis.</p>
+
+    <p>The measure is &sect;8's, applied here: a worker whose manifest is malformed learns of
+    it while it still has a turn in which to act, and a promotion of a manifest that passed
+    the write-time check performs no validation a coordinator could satisfy by editing the
+    manifest.</p>
+
+    <p><strong>One correction to the record.</strong> The reporting coordinator checked
+    whether it had been hand-editing <code>crew.json</code> and had not: every write to it in
+    that session came from <code>crew complete</code> or <code>crew member</code>. The ledger
+    is not the surface that leaks this work &mdash; the manifest contract is. Worth stating
+    because the two are easy to conflate from the outside, and a repair aimed at the ledger
+    would miss.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
