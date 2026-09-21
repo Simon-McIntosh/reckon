@@ -303,11 +303,12 @@ def test_a_path_under_no_declaration_is_reported_from_outside(
     outside_cwd: Path,
     crew_home_watch: CrewHomeWatch,
 ) -> None:
-    """From the same outside caller, an undeclared path is still refused.
+    """From the same outside caller, an undeclared path alone is refused.
 
-    The scope resolves from the pointer yet the guard it feeds still fires, so
-    the earlier case is a mapping that works rather than a check that stopped
-    judging.
+    The finding names exactly the undeclared path and none of the declared
+    ones: the scope resolves from the pointer yet the guard it feeds still
+    fires, so the earlier case is a mapping that works rather than a check that
+    stopped judging.
     """
     absolute_scope_run["manifest"].write_text(
         ABSOLUTE_SCOPE_MANIFEST.replace(
@@ -321,7 +322,7 @@ def test_a_path_under_no_declaration_is_reported_from_outside(
 
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]
-    assert "docs/plan.html" in " ".join(findings)
+    assert findings == ["changed paths outside the write scope: docs/plan.html"]
     crew_home_watch.assert_untouched()
 
 
