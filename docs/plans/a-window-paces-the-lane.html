@@ -231,6 +231,35 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <code>burn-is-visible-before-it-bites</code> §5 against spark specifically, which this section
     consumes rather than restates.</p>
 
+    <h3 id="s5b-group-position">Landing &mdash; a position is read once per declared group</h3>
+
+    <p><strong>Landed 2026-09-21.</strong> <code>reckon/crew/budget_group.py</code> resolves backends
+    into their declared groups from resolved flight config &mdash; the <code>budget_group</code> slot
+    on the backend, never a lane name, a probe figure or a reset time &mdash; and returns a group's
+    position as its freshest member reading, carrying that member's own observation age. The module's
+    only position callable takes a declared group identifier: <code>group_position("codex", &hellip;)</code>
+    refuses a lane, so a per-lane position cannot be computed through it. A group with no ageable
+    member reading is <code>unobserved</code> with no member and no age, never a zero that would read
+    as a figure taken this instant.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Five lanes collapse into two declared groups: four codex lanes into one wallet whose position is codex-astra's freshest 14% reading at age 0 s, and codex-spark into its own wallet at 88% and age 6.7 days. An undeclared codex-terra joins no group.">
+      <figcaption>The declared slot alone groups; the freshest member alone supplies the figure, with its own age.</figcaption>
+    </figure>
+
+    <p><strong>Evidence.</strong> The group-keyed resolution is asserted with four sol-family lanes
+    resolving to two groups and an undeclared backend left ungrouped; the freshest member is asserted
+    where it is last in declaration order; the position is asserted to carry that member's own age and
+    never to fall back to zero when nothing can be aged; and the module is asserted to expose no
+    per-backend position entry point. The declared mutation &mdash; reporting the first member carrying
+    an ageing reading instead of the one with the newest observation stamp, applied to a scratch copy of
+    the package &mdash; reddens four of the twelve tests. Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed">the landed evidence record</a>.</p>
+
+    <p><strong>Not in this node.</strong> Nothing in the lanes view or the pacing path is rewired here:
+    the re-query of a reading past its shelf life, and the rendering of a lane whose figure came from a
+    shared account probe, belong to the sections that consume this position.</p>
+
     <h2 id="s7">&sect;7 &mdash; A block must be real, and most of today's were not</h2>
 
     <p><strong>A governor that holds on a figure it cannot vouch for is worse than none</strong>,
