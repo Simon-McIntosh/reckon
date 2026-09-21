@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -32,9 +33,14 @@ PROJECT = "proj"
 
 # The fixture ranges the input domain rather than one shape: two runs dispatched
 # at the same moment, a row whose stored field disagrees with its own stamps, a
-# row missing its completion stamp, and a row missing its dispatch stamp. The
-# plans differ so a filtered read can be asked for a subset whose width was
-# measured against the rows the filter drops.
+# row missing its completion stamp, and a row missing its dispatch stamp.
+#
+# The plan assignment is load-bearing for the filter-order case: the row
+# ``early`` is dispatched at 10:00, when both it and ``disagreeing`` are in
+# flight, but ``disagreeing`` holds another plan. So a read that counted width
+# after applying its filter would report one run at that instant while the
+# fleet held two, and the two orders therefore answer differently for this
+# fixture.
 ROWS = [
     {
         "run_id": "early",
@@ -46,7 +52,7 @@ ROWS = [
     },
     {
         "run_id": "disagreeing",
-        "plan": "alpha",
+        "plan": "beta",
         "node": "disagreeing",
         "dispatched_at": "2026-09-20T10:00:00Z",
         "completed_at": "2026-09-20T10:02:00Z",
@@ -68,7 +74,7 @@ ROWS = [
     },
     {
         "run_id": "no-dispatch",
-        "plan": "beta",
+        "plan": "alpha",
         "node": "no-dispatch",
         "completed_at": "2026-09-20T10:20:00Z",
         "wall_seconds": 999,
@@ -199,20 +205,55 @@ def test_the_two_read_surfaces_agree_on_every_figure(tmp_path):
         assert row["width_at_start"] == from_mcp[run_id]["width_at_start"], run_id
 
 
-def test_a_filtered_read_still_reports_the_width_at_that_instant(tmp_path):
+def _width_within_plan(plan: str, run_id: str) -> int:
+    """Count the fixture's runs in ``plan`` in flight at ``run_id``'s dispatch.
+
+    This is the figure a read would report if it counted the width after
+    applying its own filter rather than before. It is derived from the same
+    rows the fixture stages, so the case can state the two orders' answers
+    instead of asserting that one of them looks plausible.
+    """
+
+    selected = [row for row in ROWS if row["plan"] == plan]
+    target = next(row for row in selected if row["run_id"] == run_id)
+    start = datetime.fromisoformat(target["dispatched_at"])
+    return sum(
+        1
+        for row in selected
+        if row.get("dispatched_at")
+        and row.get("completed_at")
+        and datetime.fromisoformat(row["dispatched_at"])
+        <= start
+        <= datetime.fromisoformat(row["completed_at"])
+    )
+
+
+def test_a_filtered_read_reports_the_width_of_the_fleet_not_of_the_selection(tmp_path):
     """Selection narrows the rows, never the width they started in.
 
-    A read that counted width after applying its filter would report the width
-    of the selection rather than of the fleet, which is the measurement a reader
-    asking how loaded the fleet was must not receive.
+    The selected row was dispatched while a run holding a different plan was in
+    flight, so the two orders answer differently for this fixture: counting the
+    width over every committed row reports the fleet, and counting it after the
+    filter reports the selection. The case asserts the fleet's figure and, from
+    the same fixture, that the selection's own count is strictly smaller — so
+    it fails when the read reports the selection's figure and equally when a
+    later fixture edit removes the difference it rests on.
     """
 
     repo = _repository(tmp_path)
     selected = _rows("mcp", repo, plan="alpha")
-    assert set(selected) == {"early", "disagreeing"}
+    assert set(selected) == {"early", "no-dispatch"}
     unfiltered = _rows("cli", repo)
-    for run_id, row in selected.items():
-        assert row["width_at_start"] == unfiltered[run_id]["width_at_start"] == 2
+
+    assert (
+        selected["early"]["width_at_start"]
+        == unfiltered["early"]["width_at_start"]
+        == 2
+    )
+    assert _width_within_plan("alpha", "early") == 1
+    # A selected row whose dispatch stamp is missing still reports absence,
+    # which the filter cannot manufacture a width for.
+    assert selected["no-dispatch"]["width_at_start"] is None
 
 
 def _call_sites(root: Path) -> dict[str, list[int]]:
