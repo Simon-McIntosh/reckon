@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="scoring-should-stop-a-promotion">
   <meta name="plan-title" content="Scoring Should Stop A Promotion">
   <meta name="plan-summary" content="The reviewer is reachable only from an error path, and a run that never had a review promotes exactly like one that passed.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="13.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="5">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -144,8 +145,23 @@
     sweep that stops at the first refusal would make one unavailable lane look like a quiet
     one.</p>
 
-    <p><strong>Write paths.</strong> <code>reckon/crew/recovery.py</code>,
-    <code>reckon/crew/follow.py</code>, <code>tests/test_review_reflex_sweep.py</code> (new).</p>
+    <p><strong>One defect is already there to fix.</strong> The sweep's own refusal
+    accumulator in <code>dispatch_awaiting_reviews</code> appends a generator expression
+    rather than the report, so a refused review is recorded as an unreadable object and the
+    reported refusal list is useless to its reader. It has never been exercised because the
+    function has no caller; giving it one exposes it, so it is repaired here.</p>
+
+    <p><strong>Where the cadence actually lives.</strong> There is no
+    <code>reckon/crew/follow.py</code>. The follower's periodic work is
+    <code>_sweep_on_cadence</code> inside <code>_follow_watch_lines</code> in
+    <code>reckon/cli.py</code>, which calls <code>reckon.crew.resumption.sweep</code> and
+    nothing else. Adding the review pass to <code>sweep</code> itself therefore gives the
+    reflex three callers at once — the follower's cadence, <code>crew resume-ready</code>,
+    and the MCP <code>sweep</code> action — from one site, and keeps the follower's own
+    code unaware of reviews.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/resumption.py</code>,
+    <code>reckon/crew/recovery.py</code>, <code>tests/test_review_reflex_sweep.py</code> (new).</p>
 
     <p><strong>Done when</strong> a run entering scoring while a follower is armed has its
     review dispatched without any command being issued, asserted; the sweep run twice over
@@ -172,7 +188,17 @@
     items in exactly the same way, and a clean summary is indistinguishable from a thorough
     one.</strong> Per-item verdicts make the skipping visible; a summary hides it.</p>
 
+    <p><strong>The checklist items are the five read targets</strong> the prompt already
+    enumerates — goal, done_when, declared write paths, manifest, diff — not the five
+    scored dimensions, which carry their verdicts as SCORE lines today. The per-item
+    verdict is therefore a new emitted line, and rejecting a review that omits one is a
+    parser change: <code>reckon/crew/review.py</code> is inside the fence for that reason.
+    The falsifier that pins the prompt against the schema is
+    <code>tests/test_review_scoring.py::test_prompt_is_read_from_disk_at_call_time_and_names_every_dimension</code>;
+    extending it to the checklist items is an edit to that file.</p>
+
     <p><strong>Write paths.</strong> <code>reckon/crew/prompts/review.md</code>,
+    <code>reckon/crew/review.py</code>, <code>tests/test_review_scoring.py</code>,
     <code>tests/test_review_prompt_contract.py</code> (new).</p>
 
     <p><strong>Done when</strong> a parsed review carries a verdict for every checklist item
