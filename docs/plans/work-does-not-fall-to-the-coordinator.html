@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-impl" content="0.55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -303,6 +303,24 @@
     deleted; a <code>member add</code> leaving a clean tree; a plan shipping on
     investigate-node landings with no hand-authored evidence file; a ledger read returning
     wall time and width without arithmetic by the reader.</p>
+
+    <p><strong>A function with no caller has not removed any hand step, and this codebase
+    produces them habitually.</strong> Measured twice in one session on this plan, by two
+    unrelated reconnaissance nodes: <code>reckon/crew/reports.py:audit_manifest</code>
+    existed, was correct, was covered by four test modules, and nothing in production called
+    it; then <code>reckon/crew/summary.py:run_rows</code> landed green and falsified, and a
+    word-boundary search returned its definition and its own test and nothing else. In both
+    cases the mechanism was already there and the gap was the wiring, which is not what
+    either section's prose predicted.</p>
+
+    <p>That has a consequence for how a node on this plan is written. <strong>A measure that
+    names a function is satisfiable without the hand step disappearing;</strong> a measure
+    that names the surface a reader reaches is not. So a node's done-when asserts the
+    behaviour at the entry point a caller actually uses &mdash; the command, the read, the
+    promotion path &mdash; and, where the node's purpose is to create a first caller, asserts
+    the call-site census directly. Fencing a node to the module that holds the mechanism,
+    without the files that would call it, makes its own measure unsatisfiable: the worker can
+    only land the half inside the fence, and the hand step survives.</p>
 
     <h2 id="s9">&sect;9 &mdash; A manifest contract checked at the last possible moment</h2>
 
