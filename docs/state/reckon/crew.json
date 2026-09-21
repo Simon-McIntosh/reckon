@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T08:23:49",
+  "updated": "2026-09-21T08:37:30",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -197262,6 +197262,228 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T061448262664-measure-unreviewed-promotion-exposure",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72",
+        "node": "measure-unreviewed-promotion-exposure",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 800,
+                "cached_input_tokens": 190370,
+                "input_tokens": 191172,
+                "output_tokens": 823,
+                "reasoning_output_tokens": 174,
+                "total_tokens": 191995,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "the report at the named path records: the exact pytest cohort command used and how the cohort was derived; the baseline failure count at the worktree HEAD with the cohort unchanged; the failure count with a scratch probe patch making promotion.complete raise CrewError when classify_pointer returns 'scoring'; and one line per newly failing test giving its full nodeid and the source file whose fixture produced the scoring classification. The probe patch is reverted before the manifest is written and git status --porcelain in the worktree is empty apart from the report, pasted into the manifest verbatim; both failure counts are pasted into the manifest as digits",
+          "estimated_hours": null,
+          "goal": "Measure how many existing tests pass only because reckon crew complete never consults the scoring classification, by flipping that guard closed in this worktree and counting",
+          "id": "measure-unreviewed-promotion-exposure",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T06:14:49Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061448262664-measure-unreviewed-promotion-exposure/manifest.md",
+          "negative_control": "none: the node writes only a measurement report and commits no test, so no mutation of product code could make its report fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/unreviewed-promotion-exposure.md",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T06:14:55Z",
+        "completed_at": "2026-09-21T06:34:49.670Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1165,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1194,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "0b752e96b66f30b9381eaef855cdda6ce2685d8f",
+        "commits": [
+          "c535b07461ca62998cefcd3738c03f1f472e0296"
+        ],
+        "changed_lines": {
+          "added": 156,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q over the 15-file promotion cohort, baseline arm; the measure is the delta against the probe arm in cohort-probe.log",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061448262664-measure-unreviewed-promotion-exposure/cohort-base.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "19 of 184 cohort tests across 4 files pass only because crew complete never consults the scoring classification; 0 move the other way; probe reverted byte-for-byte and the worktree clean",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061448262664-measure-unreviewed-promotion-exposure/manifest.md",
+        "scope_changed": true,
+        "session_id": "bf2a28f1-374f-4404-991e-8820836e5c46",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 99583,
+            "input_tokens_cumulative": 7032481,
+            "output_tokens": 11240,
+            "output_tokens_cumulative": 41711,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T06:34:49.670Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7198121,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1189.313,
+          "generated_tokens": 50139,
+          "generation_seconds": 916.907,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.2,
+          "machine_seconds": 272.406,
+          "peak_input_tokens": 164340,
+          "tokens_per_second": 54.68,
+          "wall_tokens_per_second": 42.16
+        },
+        "follow_on_paths": [
+          "tests/test_crew_promotion.py::test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest cohort",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/figures/unreviewed-promotion-exposure/exposure_counts.png",
+            "reason": "the rendered figure the generator above produces, embedded in the cumulative evidence record"
+          },
+          {
+            "path": "docs/figures/unreviewed-promotion-exposure/exposure_counts.py",
+            "reason": "the repository requires an evidence record to carry a figure where one aids understanding; the coordinator fenced only the report path, so the generator is an obligation the fence omitted rather than a path the worker took"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/measure-unreviewed-promotion-exposure",
+          "session_id": "bf2a28f1-374f-4404-991e-8820836e5c46",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T06:34:49.670Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 64.0,
+        "orientation_input_tokens": 4074388.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -197546,6 +197768,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1759
+    "_version": 1760
   }
 }
