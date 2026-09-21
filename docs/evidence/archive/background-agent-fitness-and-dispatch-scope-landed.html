@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="background-agent-fitness-and-dispatch-scope-landed">
+  <meta name="plan-title" content="Background agent fitness and dispatch scope — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the background-agent fitness plan: the per-class fitness table, the prescription judgement that opens the local lane, and the routing rule that reads it.">
+  <meta name="plan-evidence-for" content="background-agent-fitness-and-dispatch-scope">
+  <meta name="plan-verifies" content="background-agent-fitness-and-dispatch-scope#s2">
+  <title>Background agent fitness and dispatch scope — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Background agent fitness and dispatch scope — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design and
+      the ruling; this record holds what actually happened.
+    </p>
+
+    <h2 id="prescription-judgement">The prescription judgement — the local lane's admission test</h2>
+    <p>
+      Node <code>prescription-check-for-a-lane</code> (§2). The lead ruling of 2026-09-21 06:35Z
+      reopens the locally served lane for <em>prescribed</em> implementation nodes only. This node
+      states that rule once, as a pure function, so dispatch reads a definition rather than the
+      ruling's prose restated in a second place.
+    </p>
+    <p>
+      <code>reckon/crew/prescription.py</code> declares one public function,
+      <code>judge_prescribed(node: TaskNode)</code>, returning
+      <code>{prescribed: bool, failures: [property, …], detail: {property: reason}}</code>. It
+      reports every failed property rather than stopping at the first, so a caller reshaping a node
+      sees the whole list in one pass. The judgement is pure — it reads no file, no config and no
+      environment — which is what lets a dispatcher refuse an unprescribed node before any worktree
+      exists.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Property</th><th>What the judgement requires</th><th>This node's record</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>one-artifact</code></td>
+          <td>At most one non-test path in the write scope. Test files are the check beside the
+            artifact, and the plan file and cumulative evidence record are the shared landing
+            paths every node on the plan holds, so neither counts as an artifact.</td>
+          <td>passes</td>
+        </tr>
+        <tr>
+          <td><code>file-and-line</code></td>
+          <td>The goal or done-when carries a path:line reference matching the module's declared
+            <code>FILE_LINE_RE</code>, so the worker reads the change rather than searching for it.</td>
+          <td>passes (<code>reckon/crew/node.py:1</code>)</td>
+        </tr>
+        <tr>
+          <td><code>numeric-gate</code></td>
+          <td>The done-when carries a digit and a stated baseline, so a reader can tell a moved
+            number from an aimed one.</td>
+          <td>passes (<code>18</code>, "measured before value")</td>
+        </tr>
+        <tr>
+          <td><code>literal-negative-control</code></td>
+          <td><code>negative_control</code> is non-empty and does not begin with
+            <code>none:</code>.</td>
+          <td>passes</td>
+        </tr>
+        <tr>
+          <td><code>time-fence</code></td>
+          <td>The time budget parses and is at most thirty minutes
+            (<code>MAX_FENCE_SECONDS = 1800</code>).</td>
+          <td>passes (<code>30m</code>, boundary)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Gate measure, as executed</h3>
+    <ul>
+      <li><strong>Focused gate.</strong> <code>pytest -p no:cacheprovider -q
+        tests/test_prescription.py</code> → <strong>19 passed, 0 failed</strong> (15 test functions,
+        including one parametrised case; the ruling requires at least 12). Each of the five
+        properties has a refusal case whose node fails that property and no other, asserted by
+        <code>judge_prescribed(node)["failures"] == [property]</code>.</li>
+      <li><strong>The node's own record.</strong>
+        <code>test_this_nodes_own_dispatch_record_is_prescribed</code> builds this worker's dispatch
+        record — goal, done-when, the four write paths, the fence and the negative control — and
+        asserts <code>failures == []</code>. It passes.</li>
+      <li><strong>Purity.</strong>
+        <code>test_the_verdict_is_pure_and_reads_no_state_outside_the_node</code> calls the function
+        with a synthesised node inside a <code>tmp_path</code> cwd and asserts the directory is
+        still empty and two calls agree.</li>
+      <li><strong>No collateral change.</strong> The 15-file promotion cohort recorded at
+        <code>~/.config/reckon/crew/reports/unreviewed-promotion-exposure.md</code> fails exactly
+        <strong>18</strong>, its measured before value, with this change in the tree
+        (<code>18 failed, 166 passed</code>).</li>
+    </ul>
+
+    <h3>Negative control, as executed</h3>
+    <p>
+      The declared mutation — <em>change the fence comparison in prescription.py so an over-long
+      time budget is admitted instead of refused; tests/test_prescription.py must fail</em> — was
+      applied (<code>if seconds &gt; MAX_FENCE_SECONDS:</code> → <code>if False:</code>), and the
+      focused gate was observed to fail: <strong>3 failed, 16 passed</strong>, the three failures
+      being the over-long-fence cases. The mutation was then reverted and the file restored
+      byte-identical (sha256 <code>d76cdbd22654cae9db6ff1f1a88d811950ddf738b42fad299059b132020dd8e9</code>).
+      Red log:
+      <code>~/.config/reckon/crew/runs/r-20260921T065134568209-prescription-check-for-a-lane/negative-control.log</code>.
+    </p>
+
+    <h3>Interpretation recorded for review</h3>
+    <p>
+      The ruling says "one artifact"; the cue in this node's brief glossed it as "at most one
+      non-test path". Read literally over all write paths, that would refuse <em>every</em> node
+      dispatched on a plan — including this one, whose record carries the two shared landing
+      paths — which contradicts the same brief's requirement that this node's record pass. The
+      judgement therefore excludes test paths <em>and</em> the two landing records, which is the
+      repository's own existing notion of what a node's scope contains
+      (<code>reckon.crew.dispatch._shared_landing_paths</code>: the plan file and the cumulative
+      evidence record "are shared by all of them rather than owned by any one"). A node that
+      produces two source artifacts still fails <code>one-artifact</code>.
+    </p>
+
+  </main>
+</body>
+</html>
