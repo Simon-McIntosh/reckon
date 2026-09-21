@@ -401,6 +401,88 @@
     focused by which tests reach the changed modules, not a whole-suite run; verifying the merged result
     belongs to a separately dispatched test node.</p>
   </section>
+
+  <section id="s7-lane-agnostic-placement">
+    <h2>&sect;7 &mdash; Placement is pinned as a property of a backend, whatever lane it is</h2>
+    <p>Commit <code>09e48eae</code> &mdash; one new file, <code>tests/test_crew_lane_agnostic_placement.py</code>,
+    four cases. Gate <code>.venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_crew_placement.py tests/test_crew_workspace_requirements.py tests/test_routing_surface.py
+    tests/test_dispatch_names_its_backend.py tests/test_crew_routing_visibility.py
+    tests/test_crew_lane_agnostic_placement.py</code> &mdash; <strong>48 passed, exit 0</strong>. The same
+    command over the five files that exist at base <code>3450e8e6</code> is <strong>44 passed, exit 0</strong>,
+    so the delta is four cases added and an empty set of newly failing ids.</p>
+
+    <p><strong>No production code changed, and that is the finding.</strong>
+    <code>reckon/crew/dispatch.py</code> and <code>reckon/crew/node.py</code> are unchanged. The wrap in
+    <code>apply_backend_placement</code> reads <code>flight.placement_for(backend)</code> and the pre-launch
+    check in <code>check_placement_requirements</code> reads
+    <code>flight.placement_requirement_entries(placement)</code> &mdash; both read the resolved backend's own
+    declaration, and neither branches on which lane that backend is. So the section's mechanism clause is met
+    by construction already and the work this node owes is the missing checks, not a second guard: adding an
+    externally served backend is a configuration change, and nothing in the placement path names a lane.</p>
+
+    <table>
+      <caption>What each clause of the measure asserts, and the case that pins it</caption>
+      <thead><tr><th>Clause</th><th>Behaviour</th><th>Case</th></tr></thead>
+      <tbody>
+        <tr><td>no lane-specific branch</td><td>the wrap and the refusal follow the resolved backend's declaration, across the configured local lane and backend names no code has seen</td><td><code>test_adding_a_backend_needs_no_placement_code</code></td></tr>
+        <tr><td>unreachable provider</td><td>refused before launch naming the backend and the endpoint, in the workspace contract's sentence family, with no live pointer written</td><td><code>test_an_unreachable_provider_endpoint_is_refused_before_launch</code></td></tr>
+        <tr><td>no reroute</td><td>a satisfiable placement stays on the named lane carrying its own settings; an unsatisfiable one refuses rather than falling back to the default lane</td><td><code>test_a_placed_dispatch_is_never_rerouted_to_another_lane</code></td></tr>
+        <tr><td>reachable control</td><td>an answered endpoint admits the same placement unchanged</td><td><code>test_a_reachable_provider_leaves_the_placement_admitted</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>One refusal family, asserted rather than added.</strong> The unreachable-endpoint refusal
+    already existed: it is composed by <code>placement_requirement_unmet</code> in
+    <code>reckon/crew/node.py</code>, the same sentence the invisible-path case gets, raised from the same
+    pre-launch site in <code>plan_dispatch</code>. The new case asserts that rather than adding a second
+    check. It pins the backend name, the endpoint and the target partition into the message, asserts the
+    endpoint and path sentences share their literal framing (<em>places its workers on</em>, <em>but
+    requirement</em>, <em>is not visible from there</em>), and asserts the refusal leaves no live pointer in
+    the crew live directory &mdash; so a placement-specific second refusal, or a check that ran after a
+    side effect, would fail it. The path control in that case uses a top-level directory that does not exist
+    rather than a pytest <code>tmp_path</code>, because the pytest temp root on this host is under
+    <code>/run/user</code> and a <code>tmp_path</code>-derived control would exercise the per-node sentence
+    instead of the not-visible one &mdash; the first cut of the case did exactly that and was corrected by
+    the failing assertion.</p>
+
+    <p><strong>Ranging the no-branch claim over names, not over the live inventory.</strong> The case varies
+    the backend <em>name</em> &mdash; the configured local lane plus names no code has seen &mdash; with each
+    backend's placement declaring its own partition, and reads the resulting prefix and refusal back. That is
+    the input domain of the claim (any backend), which is stronger than sampling whichever backends happen to
+    be mounted here: a live-inventory sample can be all-placed or all-unplaced and would then say nothing
+    about the branch.</p>
+
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: in <code>plan_dispatch</code>, a
+    placement whose requirements are unmet falls back to the default lane instead of refusing. The red log at
+    <code>r-20260920T162256985533-awcj-placement-carries-any-lane/negative-control.red.log</code> (its first
+    line repeats the mutation verbatim) reddens all three named cases with <code>DID NOT RAISE
+    CrewError</code> or a resolution on the wrong lane, and leaves
+    <code>test_a_reachable_provider_leaves_the_placement_admitted</code> green. The mutation is one the node
+    exists to prevent &mdash; the silent reroute &mdash; so the control is aimed at the claim rather than at
+    a nearby line: a mutation that reddens everything is not evidence that any case is aimed.</p>
+
+    <p><strong>The credential path this section adds: none.</strong> Each lane's credential path is a
+    workspace requirement declared in section 4 and read by the same check, so a lane whose credentials do
+    not travel is refused there. This node adds no requirement entry and changes no config.</p>
+
+    <p><strong>The demonstration half is deferred, and why.</strong> The measure's first clause &mdash; a
+    placed dispatch to an externally served backend running on a compute node and reaching its provider,
+    demonstrated on one real node rather than by a port check &mdash; is not attempted. The external lane
+    reads 98 percent window utilisation, so a node spent on it would be spent on the demonstration rather
+    than on the mechanism this node owns. The mechanism is pinned above; the demonstration remains owed and
+    is reported as a follow-on rather than claimed.</p>
+
+    <p><strong>Lint and formatting delta.</strong> No module changed, so no changed module gains a finding.
+    The new test file is lint-clean and format-clean (one missing terminal newline and two wrap sites,
+    corrected with <code>ruff check --fix</code> and <code>ruff format</code> scoped to that one path before
+    staging).</p>
+
+    <p><strong>What is not here.</strong> No plan state is touched: the driving followup stays open and no
+    terminal status is set, because only the coordinator observes the other nodes. The six-file focused set
+    is chosen by which tests reach the placement path, not a whole-suite run; verifying the merged result
+    belongs to a separately dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
