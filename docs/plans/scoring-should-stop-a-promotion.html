@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -587,11 +587,31 @@
     <code>--local</code> and a fixed <code>--backend codex</code> are the same mistake with
     different defaults.</p>
 
-    <p><strong>One defect is already there to fix.</strong> The sweep's own refusal
-    accumulator in <code>dispatch_awaiting_reviews</code> appends a generator expression
-    rather than the report, so a refused review is recorded as an unreadable object and the
-    reported refusal list is useless to its reader. It has never been exercised because the
-    function has no caller; giving it one exposes it, so it is repaired here.</p>
+    <p><strong>One defect is already there to fix, and as of 2026-09-21 it is still there.</strong>
+    The sweep's own refusal accumulator in <code>dispatch_awaiting_reviews</code> appends a
+    generator expression rather than the report — <code>reckon/crew/recovery.py:523</code>,
+    verified at that line after the classifier exemption landed — so a refused review is recorded as
+    an unreadable object and <code>json.dumps</code> raises on the CLI's emit path. It has never
+    been exercised because the function has no caller; giving it one exposes it. <em>An earlier
+    revision of this paragraph said it "is repaired here" before any node had touched it, which an
+    independent review caught: a claim written ahead of the work, sitting in the section that warns
+    about records outliving what they describe.</em></p>
+
+    <p><strong>The two role exemptions disagree, and the test written to hold them together cannot
+    fail.</strong> <code>recovery._pointer_role</code> accepts either spelling — the record root,
+    falling back to <code>node.role</code> — and its docstring states dispatch writes both.
+    <code>promotion._require_review_waiver</code> reads <code>record.get("role")</code> at the root
+    only. So a record carrying its role under <code>node.role</code> is review-role to the
+    classifier and <em>not</em> review-role to the promotion guard: the classifier exempts it from
+    scoring while the promotion boundary demands a review it will never get. The agreement test
+    builds both records with the root spelling, so it passes without ever reaching the
+    disagreement.</p>
+
+    <p><strong>The repair is to read the role through one accessor, not to widen the second
+    reader.</strong> Two spellings with two readers is how they drifted; a third reader would be
+    the same defect again. The agreement test must construct its record with the role under
+    <code>node.role</code> <em>only</em>, since that is the spelling neither side was tested
+    against.</p>
 
     <p><strong>Where the cadence actually lives.</strong> There is no
     <code>reckon/crew/follow.py</code>. The follower's periodic work is
