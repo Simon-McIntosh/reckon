@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="27">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -272,6 +272,91 @@
     purpose was a <em>removal</em> is asserted by requiring the removed marker's absence, since a
     dropped deletion is as silent as a dropped addition. Promotion does not merge: the assertion is
     a later sweep, not a side effect of landing.</p>
+
+    <h2 id="s2d">§2d — A promotion destroyed the ledger it was writing to</h2>
+
+    <p>§2 and §2c are about a promotion asserting something false. This one is about a promotion
+    <em>deleting</em> the record — and it is the most serious defect on this page, because the
+    evidence for every other claim here lives in the file it destroyed.</p>
+
+    <p><strong>One <code>crew complete</code> write, verified from this checkout by replaying the
+    revisions of imas-efit's ledger.</strong> Reported by that project's coordinator; the diffstat
+    is the part that settles it:</p>
+
+    <table>
+      <caption>Two consecutive revisions of <code>docs/state/imas-efit/crew.json</code>.</caption>
+      <thead><tr><th>Revision</th><th>When</th><th>Runs</th><th>Members</th></tr></thead>
+      <tbody>
+        <tr><td><code>c1f439bc</code> record run observations</td><td>09-17 15:42</td><td>110</td><td>87</td></tr>
+        <tr><td><code>490b5cc5</code> <strong>promote(…reeb-picard-transient-rca)</strong></td><td>09-17 15:44</td><td><strong>1</strong></td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><code>62 insertions(+), 22233 deletions(-)</code> in a single promote commit.</p>
+
+    <p><strong>The roster wipe and the ledger truncation are one defect, not two.</strong> They were
+    reported as separate incidents on the same day — 110 runs to 1, and 87 members to 0 — and the
+    diffstat shows both in the same write. So whatever path loses the read replaces the
+    <em>whole document</em> rather than appending to it, and both collections go together. Two
+    concurrent <code>crew complete</code> processes were running at the time.</p>
+
+    <p><strong>What it costs is audit, not data.</strong> The run store still holds every run —
+    4,548 rows, 147 of them imas-efit's, against the 37 the regrown ledger now carries. So the
+    durable committed record is recoverable. What is not recoverable without rebuilding it is the
+    consequence the reporting coordinator weighed correctly: <strong>67 of 93 promoted runs now
+    carry no ledger row and therefore no recorded <code>gate_check</code></strong> — no command, no
+    exit status, no log pointer. For those runs the only gate evidence is the worker's own manifest
+    prose, which is precisely the self-scored evidence this plan exists to stop relying on.</p>
+
+    <p><strong>Nothing reported it.</strong> It is visible only by counting rows across revisions.
+    A promotion that silently deletes 110 records and reports success is the same shape as every
+    other defect on this page, at the worst possible place: <em>the write that creates the
+    evidence.</em></p>
+
+    <p><strong>Write paths.</strong> <code>reckon/ledger.py</code>, and a new test file.</p>
+
+    <p><strong>Done when</strong> a promote write that begins from a stale read is refused rather
+    than applied, asserted by driving two writes against one ledger with the second holding the
+    pre-first snapshot and requiring the second to refuse and the file to retain both rows; a write
+    that would reduce the run count or the member count is refused naming both counts, asserted,
+    because appending is the only shape a promotion has and a reduction is by construction a lost
+    read; the refusal names the recovery, since the run store holds the rows; and a rebuild path
+    restores a truncated ledger from the run store for one named project, asserted by truncating a
+    synthesised ledger and rebuilding it to its original row count. The two concurrent writers of
+    the measured incident are the test's fixture, not a hypothetical.</p>
+
+    <h2 id="s2e">§2e — Promotion destroys the path a finding needs</h2>
+
+    <p>The three arguments for §2's refusal so far are all about the <em>score</em>: an unreviewed
+    run might be defective, a self-scored gate cannot separate lanes, a stale review describes other
+    code. This one holds <strong>even when the score is perfect</strong>, and it is the cheapest to
+    state.</p>
+
+    <p><strong>Promotion deletes the run's live pointer</strong>, and the live pointer is what
+    <code>crew resume</code> needs. So a review that arrives after promotion cannot be acted on by
+    the worker that did the work. Measured on imas-ambix while acting on today's findings:</p>
+
+    <table>
+      <caption>Five nodes, same sprint, same reviewer, split only by whether promotion had happened.</caption>
+      <thead><tr><th>Node</th><th>Live pointer</th><th>What the findings cost</th></tr></thead>
+      <tbody>
+        <tr><td><code>node-probe</code></td><td>present</td><td rowspan="3"><code>crew resume</code> — <strong>11 findings closed</strong> across single follow-up turns, each worker holding its own reasoning about why it built the thing that way</td></tr>
+        <tr><td><code>telemetry-store</code></td><td>present</td></tr>
+        <tr><td><code>scrape-fixture</code></td><td>present</td></tr>
+        <tr><td><code>telemetry-index</code></td><td><strong>deleted</strong></td><td rowspan="2">cannot resume — <strong>8 findings</strong> dispatched as fresh nodes that must re-derive the context, and whose repairs nobody can compare against the original author's intent</td></tr>
+        <tr><td><code>bench-single-owner</code></td><td><strong>deleted</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>This is the shape of the resume-path loss the user-global rules describe for a denied run,
+    but the trigger is worse: there, an external failure costs a session. Here, <em>the ledger
+    recording that the work passed</em> is what makes its findings unactionable by their author. A
+    run scoring 100 whose review lands after promotion still cannot be resumed to add the one test
+    the reviewer asked for.</p>
+
+    <p><strong>So the rule is an ordering rule, not a quality rule: promote last.</strong> The
+    contrast above is the whole measurement and reproduces for nothing —
+    <code>test -f ~/.config/reckon/crew/live/&lt;run&gt;.json</code> before and after a promote.</p>
 
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
@@ -834,7 +919,7 @@
     <div class="r-comment-body"><p>stopped at 10 minutes and withdrawn: dispatched to the local lane in breach of the 2026-09-21 interim ruling recorded in background-agent-fitness-and-dispatch-scope, which admits only investigation and reporting nodes there. Manifest never left orientation; the section is re-dispatched to a metered lane</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260921T073825402133-declared-parser-mutation-reddens-the-contract-test" data-who="reckon-ship" data-when="2026-09-21T07:38:35.860Z">
-    <div class="r-comment-body"><p>refused at admission in 166ms with &#x27;Prompt is too long&#x27; and terminal_reason blocking_limit, on a 12050-byte prompt against a 480000-token window: the roster member&#x27;s long-lived session had accumulated the context, not this node. Re-dispatched to a member with an empty session at this config key</p></div>
+    <div class="r-comment-body"><p>refused at admission in 166ms with 'Prompt is too long' and terminal_reason blocking_limit, on a 12050-byte prompt against a 480000-token window: the roster member's long-lived session had accumulated the context, not this node. Re-dispatched to a member with an empty session at this config key</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-09-21T07:25:00Z">
     <div class="r-comment-body">Landed and promoted. The refusal, the reasoned waiver and the review-role exemption are live at merged head 346b98b6; the promotion cohort measured 18 failures before and 18 after with 0 new. Its independent review on a metered lane scored 85 and found that the declared negative control was not the mutation the log showed; that was repaired by re-running the declared deletion at the merged head and preserving the original log beside it, rather than by reweighting the declaration, and the promoted row records negative_control verdict matched.</div>
