@@ -261,6 +261,32 @@
     attaching a stale verdict is worse than having no review, because it reads as
     independent evidence and is not.</p>
 
+    <div class="r-comment" data-section="s3" data-id="c-run-r-20260921T070737878256-classifier-exempts-a-review-role-run" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Classifier exemption landed.</strong> The first of §3's two blockers is closed:
+      <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code> now reads the role the
+      run carried and returns <code>promotable</code> for a completed <code>review</code> run
+      instead of <code>scoring</code>, with a <code>next_action</code> that composes no dispatch
+      naming it. The key is the role, not the absence of a review: an <code>implement</code> run
+      with no stored review still classifies as <code>scoring</code> and still composes the review
+      it lacks, asserted as the negative half in the same module. The second blocker — the review
+      dispatched to the lane that did the work, and the caller itself — is untouched here and
+      still stands between this plan and turning the reflex on.</p>
+      <p><strong>Measurement.</strong> The declared negative control (removing the exemption so a
+      completed review-role run scores again) turns 6 of the module's 7 tests red, the seventh
+      being the implement-run control the mutation must not reach; the control was reverted and the
+      source is byte-identical to the committed revision. The 15-file promotion cohort that invokes
+      <code>promotion.complete</code> measures <strong>18</strong> failures before and
+      <strong>18</strong> after, its recorded before value, with 0 newly failing. A 5-file
+      classification regression set measures 1 failure at base and the same 1 with the change.
+      Anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s3-review-role-exemption">s3-review-role-exemption</a>.</p>
+      <p><strong>What is still open in this section.</strong> <code>classify_pointer</code> exempts
+      the role, but the reflex's caller and the lane the review resolves against are both §3's
+      remaining work: <code>dispatch_awaiting_reviews</code> still has no production caller, still
+      ends <code>_review_dispatch_argv</code> in a hardcoded <code>--local</code>, and still
+      accumulates a refusal as a generator expression rather than a report. The exemption is a
+      precondition of wiring the sweep, not a substitute for it.</p>
+    </div>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in

@@ -57,6 +57,93 @@
     <p><strong>Exposure, and what it cost.</strong> The measured cohort — the 15 test files that invoke <code>promotion.complete</code>, 184 tests — ran at <strong>18</strong> failures before the change and <strong>18</strong> after, with <strong>0</strong> newly failing. Fifteen of the fixtures left exposed by the earlier probe needed repair, not a waiver: 14 of them build a complete-manifest run with no review, so each now carries a stored parsed review, keeping the test measuring its own subject (landing comments, stream figures, worktree retention, suite-delta policy) rather than the review gate; the commit-shortfall fixture waives the requirement explicitly, because that file writes no review home of its own.</p>
     <p><strong>Evidence that could have failed.</strong> The declared negative control — forcing the guard's <code>unreviewed</code> flag false so no scoring promotion is refused — makes <code>tests/test_crew_promotion_requires_review.py</code> fail (2 failed, 4 passed), naming the mutation on the log's first line; the control was reverted before the commit and the guard's source is byte-identical to the committed revision afterwards. A suite that passes never shows a guard fires, so the guarded thing was made to happen and the refusal shown.</p>
   </section>
+
+  <section id="s3-review-role-exemption">
+    <h2>A completed review-role run is exempt from the scoring classification</h2>
+    <p><strong>What landed.</strong> <code>classify_pointer</code> in
+    <code>reckon/crew/recovery.py</code> reads the role the run carried and returns
+    <code>promotable</code> for a completed <code>review</code> run, with a
+    <code>next_action</code> that composes no dispatch naming it. Every other completed run is
+    unchanged: <code>promotable</code> when a parsed review is attached, <code>scoring</code>
+    when one is missing or incomplete, and <code>scoring</code> is the classification the review
+    reflex acts on. Without the exemption the reflex dispatches a review <em>of</em> a review
+    run, that review completes, classifies as scoring in turn, and dispatches another of the same
+    shape — a chain in which every link is a real dispatch against a real member.</p>
+    <figure>
+      <svg width="660" height="240" viewBox="0 0 660 240" role="img" aria-labelledby="s3-exempt-title">
+        <title id="s3-exempt-title">Branch taken by a completed run in classify_pointer: a review-role run returns promotable and composes no dispatch, every other role keeps the existing branches</title>
+        <defs>
+          <marker id="s3-exempt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#5b6b7c"></path>
+          </marker>
+        </defs>
+        <rect x="14" y="88" width="168" height="62" rx="6" fill="#eef2f7" stroke="#5b6b7c"></rect>
+        <text x="98" y="114" text-anchor="middle" font-size="12" fill="#22303c">manifest status</text>
+        <text x="98" y="132" text-anchor="middle" font-size="12" fill="#22303c">complete</text>
+        <line x1="182" y1="119" x2="236" y2="119" stroke="#5b6b7c" stroke-width="1.5" marker-end="url(#s3-exempt-arrow)"></line>
+        <rect x="240" y="84" width="150" height="70" rx="6" fill="#fff5e6" stroke="#b5761f"></rect>
+        <text x="315" y="112" text-anchor="middle" font-size="12" fill="#22303c">role ==</text>
+        <text x="315" y="130" text-anchor="middle" font-size="12" fill="#22303c">"review"?</text>
+        <line x1="390" y1="101" x2="446" y2="62" stroke="#5b6b7c" stroke-width="1.5" marker-end="url(#s3-exempt-arrow)"></line>
+        <text x="412" y="76" font-size="11" fill="#5b6b7c">yes</text>
+        <rect x="450" y="28" width="196" height="62" rx="6" fill="#e7f5ec" stroke="#2f7d4f"></rect>
+        <text x="548" y="54" text-anchor="middle" font-size="12" fill="#22303c">promotable</text>
+        <text x="548" y="72" text-anchor="middle" font-size="11" fill="#22303c">no review composed</text>
+        <line x1="390" y1="139" x2="446" y2="176" stroke="#5b6b7c" stroke-width="1.5" marker-end="url(#s3-exempt-arrow)"></line>
+        <text x="412" y="168" font-size="11" fill="#5b6b7c">no</text>
+        <rect x="450" y="148" width="196" height="76" rx="6" fill="#eef2f7" stroke="#5b6b7c"></rect>
+        <text x="548" y="174" text-anchor="middle" font-size="12" fill="#22303c">existing branches</text>
+        <text x="548" y="192" text-anchor="middle" font-size="11" fill="#22303c">reviewed → promotable</text>
+        <text x="548" y="210" text-anchor="middle" font-size="11" fill="#22303c">unreviewed → scoring</text>
+      </svg>
+      <figcaption>Only the role branch is new. The <code>scoring</code> leaf is what the reflex acts on, so it is the leaf the exemption must keep a review run out of.</figcaption>
+    </figure>
+    <p><strong>The defect reproduced at the base revision before the repair.</strong> With
+    <code>aa3c5ac6</code>'s <code>reckon/crew/recovery.py</code> restored in place, the module
+    run against the base tree reports <strong>6 failed, 1 passed</strong>, and the composed
+    action for a completed review-role run reads, verbatim:</p>
+    <pre><code>reckon crew dispatch ... --role review --spec-level exact \
+  --node review-of-r-prior-review \
+  --goal 'attach an independent review to run r-prior-review' \
+  --done-when 'the review for r-prior-review stores a parsed record ...' \
+  --write-path .../crew/reviews/sample/r-prior-review.json ... --local</code></pre>
+    <p>That is a review of a review, composed by the same function that composes the review a
+    genuine scoring run needs. After the repair the same fleet mints exactly one review node,
+    <code>review-of-r-work</code>, and none for the review run.</p>
+    <p><strong>Counts.</strong></p>
+    <table>
+      <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_review_role_is_not_reviewed.py</code> (7 tests)</td><td>6 failed, 1 passed</td><td>0 failed, 7 passed</td><td>the module measures the exemption; the surviving base pass is the implement-run control the mutation must not reach</td></tr>
+        <tr><td>Declared negative control, exemption removed from the committed tree</td><td>—</td><td>6 failed, 1 passed</td><td>removing a guard turns its tests red rather than leaving them green, so the module is not resting on the guard's failure to fire</td></tr>
+        <tr><td>15-file promotion cohort (184 tests)</td><td>18</td><td>18</td><td>0 newly failing; this node changes no promotion path</td></tr>
+        <tr><td>5-file classification regression set (129 tests)</td><td>1</td><td>1</td><td>0 newly failing; the failure is pre-existing at base and outside this node's scope</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Role-keyed, not review-keyed.</strong> The exemption reads the <em>role the run
+    carried</em>, so a run that merely never had a review produced still classifies as
+    <code>scoring</code> and still composes the review it lacks. This is the negative half, and it
+    is asserted as its own test rather than implied: an implement run with no stored review keeps
+    its <code>scoring</code> classification and its
+    <code>--role review</code> dispatch. The role is read from either spelling the pointer may
+    carry (<code>role</code> on the record root or on the node block), because dispatch writes
+    both.</p>
+    <p><strong>Agreement with the promotion boundary, asserted rather than assumed.</strong> The
+    promotion guard refuses an unreviewed promotion for the <code>implement</code> role, so the
+    two exemptions are one fact seen from two places. A test drives both with the same
+    synthesised record: on a review-role record the classifier returns a classification other
+    than <code>scoring</code> and <code>promotion._require_review_waiver</code> returns no
+    refusal; on its implement twin the classifier returns <code>scoring</code> and the promotion
+    guard raises. Either half drifting alone now fails the test, which is the failure a
+    duplicated predicate would otherwise hide.</p>
+    <p><strong>Revert.</strong> The control's mutation was reverted before the commit and
+    <code>git diff reckon/crew/recovery.py</code> is empty against the committed revision; the
+    negative-control log's first line repeats the declared mutation verbatim. A runner's
+    autofix pass scoped to this file was discarded rather than committed: it rewrote unrelated
+    lines (<code>timezone.utc</code> to <code>UTC</code>, import grouping) belonging to a
+    repository-wide backlog that is its own commit, so the delivered diff carries the exemption
+    and its tests and nothing else.</p>
+  </section>
 </main>
 </body>
 </html>
