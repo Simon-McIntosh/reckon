@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1784,6 +1784,41 @@
     proving that assertion fires. That is §5b's discriminator — <em>what would make this field
     wrong while it still printed the same value</em> — arrived at independently, by a worker, about
     its own test.</p>
+
+    <p><strong>Two sections have now been reviewed to a clean verdict, and the pair is the first
+    evidence that the loop terminates at all.</strong> Ledger rows
+    <code>r-20260921T053228459971-node-probe</code> and
+    <code>r-20260921T053306239225-telemetry-store</code>, both merged and both verified by a marker
+    the change introduced:</p>
+
+    <table>
+      <caption>Two independently reviewed sections, six rounds each, scores by round.</caption>
+      <thead><tr><th>Section</th><th>Round scores</th><th>Final</th></tr></thead>
+      <tbody>
+        <tr><td><code>node-probe</code></td><td>86 → 94 → 94 → 94 → 96</td><td>96, <strong>zero findings</strong></td></tr>
+        <tr><td><code>telemetry-store</code></td><td>79 → 87 → <strong>84</strong> → 95 → 98</td><td>98, <strong>zero findings</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The 87 → 84 step is the only thing in either sequence that could not be produced by
+    consensus</strong>, and it is what makes this a measurement rather than a story. A run of
+    monotonically rising scores ending in zero findings is indistinguishable from reviewers
+    converging on agreement with one another; a reviewer finding <em>more</em> than its predecessor
+    is the sequence behaving like an instrument. Two different starting scores, two different
+    paths, one of them non-monotonic, both landing on zero.</p>
+
+    <p><strong>What this does not support, stated because someone will otherwise plan against
+    it.</strong> It supports <em>the loop terminates</em>. It does not support <em>the loop
+    terminates at six</em>, and the distinction is not pedantry. n is two. The coordinator chose
+    when to stop dispatching rounds, and fed each brief from the previous round's findings — so the
+    sequence length partly measures <strong>how fast that coordinator propagated</strong> rather
+    than how fast the defects ran out. Six is a property of one operator's cadence on two sections,
+    not of the method. This plan does not carry a round count, and a future section that needs
+    eight is not thereby failing.</p>
+
+    <p>The qualification came from the session that produced the data, unprompted and against its
+    own headline. That is worth recording beside the numbers, because the failure mode this plan
+    exists to catch is a true figure standing in for the claim someone wanted it to make.</p>
 
     <h2 id="s5g">§5g — The sharpest thing a review caught all day is an assertion that cannot fail</h2>
 
