@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <title>The isolation witness watches the crew home a case did not substitute</title>
+  <desc>Two directories. Left: the crew home the process resolved before the case runs, snapshotted entry by entry with its bytes before and after the case, and compared. Right: the home the case substitutes via RECKON_HOME, where the fixture's pointer write is meant to land. An arrow between them is the escape the witness exists to catch: if home resolution stopped honouring the substitution, the pointer write would land under the watched root instead, and the byte comparison would fire naming the created path. Below, the permanent control makes the same write into a substitute root and shows the witness quiet before it and firing after it. A footnote records why the production crew home is not the watched root: measured at 598,286 entries with 138 rewritten in six seconds.</desc>
+
+  <rect x="0" y="0" width="960" height="700" fill="#fbfbfd"/>
+
+  <text x="32" y="42" font-size="21" font-weight="700" fill="#16181d">The isolation witness watches the root a case did not substitute</text>
+  <text x="32" y="66" font-size="13.5" fill="#5a6172">tests/test_manifest_check_command.py &#8212; a write-shaped test accounts for the state it did not isolate</text>
+
+  <!-- left panel -->
+  <rect x="32" y="92" width="420" height="286" rx="10" fill="#ffffff" stroke="#c9cedb" stroke-width="1.5"/>
+  <text x="54" y="124" font-size="14.5" font-weight="700" fill="#16181d">Watched root</text>
+  <text x="54" y="145" font-size="12.5" fill="#5a6172">the crew home this process resolved</text>
+  <text x="54" y="162" font-size="12.5" fill="#5a6172">before any case substituted one</text>
+
+  <rect x="54" y="180" width="376" height="52" rx="7" fill="#eef1f8" stroke="#c9cedb"/>
+  <text x="68" y="202" font-size="12.5" fill="#29303f">crew_home() &#8594; the suite&#8217;s temporary home</text>
+  <text x="68" y="221" font-size="12.5" fill="#29303f">(RECKON_HOME set by the session fixture)</text>
+
+  <rect x="54" y="248" width="180" height="46" rx="7" fill="#f3f4f8" stroke="#c9cedb"/>
+  <text x="68" y="269" font-size="12" fill="#29303f">snapshot A &#8212; every entry,</text>
+  <text x="68" y="285" font-size="12" fill="#29303f">each with its own bytes</text>
+
+  <rect x="250" y="248" width="180" height="46" rx="7" fill="#f3f4f8" stroke="#c9cedb"/>
+  <text x="264" y="269" font-size="12" fill="#29303f">snapshot B &#8212; taken when</text>
+  <text x="264" y="285" font-size="12" fill="#29303f">the case&#8217;s work is done</text>
+
+  <rect x="54" y="312" width="376" height="44" rx="7" fill="#e8f2ea" stroke="#a9c9b2"/>
+  <text x="68" y="333" font-size="12.5" fill="#1f4a2c">B == A &#8594; the witness stays quiet</text>
+  <text x="68" y="349" font-size="12.5" fill="#1f4a2c">B != A &#8594; it names every path that moved</text>
+
+  <!-- right panel -->
+  <rect x="508" y="92" width="420" height="286" rx="10" fill="#ffffff" stroke="#c9cedb" stroke-width="1.5"/>
+  <text x="530" y="124" font-size="14.5" font-weight="700" fill="#16181d">The case&#8217;s own home</text>
+  <text x="530" y="145" font-size="12.5" fill="#5a6172">substituted by the fixture, so the case&#8217;s</text>
+  <text x="530" y="162" font-size="12.5" fill="#5a6172">write stays inside the case</text>
+
+  <rect x="530" y="180" width="376" height="52" rx="7" fill="#eef1f8" stroke="#c9cedb"/>
+  <text x="544" y="202" font-size="12.5" fill="#29303f">monkeypatch.setenv(&#8220;RECKON_HOME&#8221;,</text>
+  <text x="544" y="221" font-size="12.5" fill="#29303f">tmp_path / &#8220;config&#8221;)</text>
+
+  <rect x="530" y="248" width="376" height="46" rx="7" fill="#f3f4f8" stroke="#c9cedb"/>
+  <text x="544" y="269" font-size="12.5" fill="#29303f">_write_json(pointer_path(RUN_ID), {&#8230;})</text>
+  <text x="544" y="285" font-size="12.5" fill="#29303f">&#8594; lands here, under tmp_path</text>
+
+  <rect x="530" y="312" width="376" height="44" rx="7" fill="#eef1f8" stroke="#c9cedb"/>
+  <text x="544" y="333" font-size="12.5" fill="#29303f">all four command cases end by calling</text>
+  <text x="544" y="349" font-size="12.5" fill="#29303f">crew_home_watch.assert_untouched()</text>
+
+  <!-- escape arrow -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b4462f"/>
+    </marker>
+  </defs>
+  <path d="M 530 396 C 460 440, 400 440, 372 396" fill="none" stroke="#b4462f" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+  <text x="378" y="424" font-size="12.5" fill="#8f3521" text-anchor="middle">the escape, if home resolution stops</text>
+  <text x="378" y="441" font-size="12.5" fill="#8f3521" text-anchor="middle">honouring the substitution: the pointer</text>
+  <text x="378" y="458" font-size="12.5" fill="#8f3521" text-anchor="middle">lands under the watched root instead</text>
+  <text x="378" y="482" font-size="11.5" fill="#8f3521" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">created: live/r-&#8230;-manifest-check.json</text>
+
+  <!-- control panel -->
+  <rect x="32" y="506" width="896" height="118" rx="10" fill="#ffffff" stroke="#c9cedb" stroke-width="1.5"/>
+  <text x="54" y="536" font-size="14.5" font-weight="700" fill="#16181d">The permanent control &#8212; the assertion is shown to fire, on a root the production home never sees</text>
+
+  <rect x="54" y="550" width="420" height="60" rx="7" fill="#f3f4f8" stroke="#c9cedb"/>
+  <text x="68" y="571" font-size="11.5" fill="#29303f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">watch.assert_untouched()  # quiet: nothing written yet</text>
+  <text x="68" y="590" font-size="11.5" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#29303f">_write_json(root / &#8220;live&#8221; / f&#8220;{RUN_ID}.json&#8221;, &#8230;)</text>
+  <text x="68" y="606" font-size="11.5" fill="#5a6172">into tmp_path / &#8220;substituted-crew-home&#8221;</text>
+
+  <rect x="490" y="550" width="416" height="60" rx="7" fill="#fbeceb" stroke="#d8a89f"/>
+  <text x="504" y="571" font-size="11.5" fill="#8f3521" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">with pytest.raises(AssertionError, match=&#8220;live/&#8221;):</text>
+  <text x="504" y="590" font-size="11.5" fill="#8f3521" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">    watch.assert_untouched()</text>
+  <text x="504" y="606" font-size="11.5" fill="#8f3521">a guard that cannot fire is indistinguishable from no guard</text>
+
+  <!-- footnote -->
+  <text x="32" y="654" font-size="12.5" fill="#5a6172">Why the production crew home is not the root under watch: measured on a live wave at <tspan font-weight="700" fill="#29303f">598,286 entries</tspan> with <tspan font-weight="700" fill="#29303f">138 of them rewritten in six seconds</tspan>.</text>
+  <text x="32" y="673" font-size="12.5" fill="#5a6172">Comparing it whole would be slow, and a pass over it would be measuring the fleet rather than the case &#8212; so the failure the witness catches is made to happen on a substitute root.</text>
+  <text x="32" y="692" font-size="11.5" fill="#8a90a0">Reckon &#183; work-does-not-fall-to-the-coordinator &#167;9 &#183; the manifest check reaches its writer while the run still holds a turn</text>
+</svg>

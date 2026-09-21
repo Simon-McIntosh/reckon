@@ -963,6 +963,97 @@
     repository, a temporary crew home and the run directory the manifest cites). Receipts:
     <code>~/.config/reckon/crew/runs/r-20260921T142607348054-the-landed-record-composes-from-a-run-report/</code>.</p>
   </section>
+
+  <section id="the-manifest-check-test-witnesses-its-own-isolation">
+    <h2>&sect;9 &mdash; The check-command test witnesses the isolation it depends on</h2>
+
+    <p><strong>The gap was named by the independent review, not by the suite.</strong>
+    The review of the node that gave <code>audit_manifest</code> its first production caller
+    scored the work 95/100 and spent its one finding on the new test file: the fixture
+    redirected <code>RECKON_HOME</code> to a test-config home but never asserted the crew home
+    was left untouched, so a broken home resolution would write the fixture's pointer into the
+    real directory and every case would still pass. The repository rule names exactly that
+    assertion for every write-shaped test, and it names why the write direction is the one that
+    matters &mdash; a reader can only be wrong, while a writer can make others wrong. Four
+    cases in that file each write a live pointer.</p>
+
+    <p><strong>The obvious watch is the wrong one, and the reason is measured.</strong> A
+    byte-for-byte comparison of the production crew home is not merely slow: on a live wave it
+    is a moving target. Measured before writing the assertion, that directory held
+    <strong>598,286 entries and 138 of them were rewritten inside six seconds</strong> &mdash;
+    stream logs growing, pointers appearing and being cleared by concurrent runs, reports
+    rewritten mid-wave. A whole-tree comparison there would be slow, would be flaky, and a pass
+    over it would be a statement about the fleet rather than about the case under test. So the
+    watched root is the crew home this process resolved <em>before</em> a case substitutes one,
+    which is the directory a broken resolution would actually write into &mdash; the suite's
+    own temporary home, not the production one.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/isolation-witness.svg"
+           alt="Left, the watched root: the crew home the process resolved before a case substitutes one, snapshotted entry by entry with its bytes before and after the case and compared. Right, the case's own home, substituted via RECKON_HOME, where the fixture's pointer write is meant to land. A dashed escape arrow runs between them: if home resolution stopped honouring the substitution the pointer would land under the watched root instead, and the comparison would fire naming created: live/&lt;run&gt;.json. Below, the permanent control makes the same write into a substitute root and shows the witness quiet before it and firing after it. A footnote records that the production crew home is not the watched root — 598,286 entries with 138 rewritten in six seconds.">
+      <figcaption>The escape the witness exists to catch, and the control that shows it firing
+      on a root the production home never sees.</figcaption>
+    </figure>
+
+    <p><strong>The order is guaranteed by a dependency, not by luck.</strong> The witness
+    fixture requests the suite's temporary-home fixture <em>by name</em>, so the substitution is
+    in place before it captures anything and the root it captures cannot be the production
+    directory; the manifest fixture in turn depends on the witness, so capture precedes the
+    case's write. Ordering by autouse alone would have left the root dependent on fixture
+    instantiation order. The witness also refuses to be vacuous: if the root it resolved lies
+    under <code>Path.home()</code> it raises, because a pass in that state would be measuring
+    the fleet &mdash; the aim assertion, without which a witness pointed at the wrong directory
+    reads as silent success, which is the failure shape this plan keeps finding.</p>
+
+    <p><strong>The assertion is shown to fire, on a root the production home never sees.</strong>
+    A guard that never fires is indistinguishable from no guard, so the file carries a permanent
+    fifth case that constructs the witness over a substitute root under <code>tmp_path</code>,
+    calls it once with nothing written (it stays quiet), writes the same pointer the manifest
+    fixture writes, and requires the assertion to name the path it caught. The declared mutation
+    then proved the same property over the real cases: the fixture was made to write its pointer
+    into the watched root as well, unsubstituted, and every command case went red.</p>
+
+    <table>
+      <thead>
+        <tr><th>Case</th><th>Clean</th><th>Under the declared mutation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>a manifest inside its fence exits zero</td><td>pass</td><td>fail &mdash; the witness names the watched root</td></tr>
+        <tr><td>the command names the run it read</td><td>pass</td><td>fail &mdash; the witness names the watched root</td></tr>
+        <tr><td>a path outside the node fence is reported</td><td>pass</td><td>fail &mdash; the witness names the watched root</td></tr>
+        <tr><td>an unknown run is refused</td><td>pass</td><td>fail &mdash; the witness names the watched root</td></tr>
+        <tr><td>the isolation assertion fires on a substitute root</td><td>pass</td><td>pass &mdash; it writes nothing near the watched root</td></tr>
+        <tr><td>the CLI is the only production caller</td><td>pass</td><td>pass &mdash; it reads the source tree, not the home</td></tr>
+      </tbody>
+    </table>
+
+    <p>The red log's first line carries the mutation verbatim, and its tail is
+    <code>4 failed, 2 passed in 1.61s</code> / <code>EXIT=1</code>. The assertion named a
+    pytest temporary directory as the watched root and the way it moved &mdash;
+    <code>the root existed=False before, True after</code> &mdash; because under that mutation
+    the root itself was created by the escaping write, which is the <em>existence</em> branch
+    of the differ. The <em>path</em> branch is what the control exercises, on a substitute root
+    whose <code>live/</code> directory already exists, where the assertion names
+    <code>live/r-20260921T000000000000-manifest-check.json</code> exactly. Restoring the file left it byte-identical
+    to the committed copy (sha256 <code>ec95cf2d&hellip;</code>), so the mutation is declared and
+    reversible rather than a state the evidence was trimmed around. The pattern it was modelled
+    on &mdash; and the reason the production home is never a party to it &mdash; is the
+    write-outside-the-repository rule: the failing case proves the assertion works without any
+    case ever writing into the real directory the assertion protects.</p>
+
+    <h3>Residue, recorded rather than smoothed over</h3>
+    <p>The watched root is the session's shared temporary home, so the same exposure the
+    dispatch-derivation test carries applies here: a fixture that arms a watch producer is reaped
+    at session end rather than per case, and could in principle write under that root between
+    the snapshots. It was not observed in this node's runs, and the exposure is inherited rather
+    than introduced &mdash; the sibling file watches the same root by the same mechanism. It is
+    recorded here because the alternative was to assert over the production home, which cannot be
+    compared whole at all.</p>
+
+    <p>Changed path: <code>tests/test_manifest_check_command.py</code> (six cases; four command
+    cases now carry the witness, plus the permanent control). Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/negative-control.txt</code>.</p>
+  </section>
   </main>
 </body>
 </html>
