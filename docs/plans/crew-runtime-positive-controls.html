@@ -481,6 +481,33 @@
     <code>tests/test_append_decision_keeps_its_question.py</code>. The append reaches the decisions target
     around <code>reckon/_store.py</code>'s <code>append</code> handling; whether the loss happens there or in
     the HTML writer is for the node to establish rather than assume, which is why both are granted.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong> The loss is at the append, not in the HTML
+    writer, and the reproduction says so in one line: an item written as
+    <code>{question, options}</code> returned <code>ok: True</code> and
+    <code>read_plan</code> gave back <code>title == "transport"</code> (the key) with
+    <code>choices[]</code> empty. The mismatch is between two surfaces rather than inside one:
+    <code>mcp_views._open_decisions</code> hands a caller each open decision as <code>question</code> and
+    <code>options</code>, while the stored block and the renderer speak <code>title</code> and
+    <code>choices</code>, so a caller echoing back the decision it had just read landed reasoning under a
+    heading that was a slug and an option list with nothing in it. <code>reckon/_store.py</code>'s decisions
+    append now folds the view spelling onto the stored one through <code>_decision_as_stored</code>, which
+    takes <code>question</code> as the title when no title is given and <code>options</code> as the choices
+    when no choices are given, accepting a list of values, a list of objects carrying <code>value</code> and
+    <code>label</code>, or a value-to-label mapping, and refusing an unrecognised shape rather than dropping it.
+    The <code>title</code>/<code>choices</code> spelling is unchanged, so the existing callers are unaffected.
+    Three cases in <code>tests/test_append_decision_keeps_its_question.py</code> assert the question text and
+    every option value survive a read-back through this repository's own reader, that the written question
+    paragraph is not the key, and that an append carrying no options still succeeds; an autouse fixture
+    fingerprints the real state directory in each case and asserts it is untouched. The declared mutation —
+    write the key as the question and drop the options — reddens all three, and its red log leads with that
+    text. <code>tests/test_edit_plan.py</code> is <strong>3 failed, 75 passed</strong> at base
+    <code>26d6df25</code> and the same <strong>3 failed, 75 passed</strong> at this node's head with the failure
+    set identical row for row; the three failures are in the create path, where an
+    <code>unwired_plan</code> precondition refuses a stub plan, and they are recorded rather than triaged here.
+    Verified in the served module rather than only committed: running the repro against this worktree's
+    <code>reckon</code> package returned <code>title == "Which transport should the watcher use?"</code> with
+    both option values after the change. The evidence anchor is in
+    <code>docs/evidence/archive/crew-runtime-positive-controls-landed.html</code>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A resolved launcher is checked against an origin that is serving</h2>
     <p>Measured 2026-09-20, and it is one step past the control &#167;1 landed. This workstation carries two

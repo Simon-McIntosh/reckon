@@ -575,6 +575,59 @@ nothing has been launched</code></pre>
       this node's cases.</p>
     </section>
 
+    <section id="s12">
+      <h2>&sect;12 &mdash; An appended decision keeps its question and its options</h2>
+      <p>The failure this section answers: an append to the decisions target returned <code>ok</code> and wrote
+      a decision whose question paragraph held the key rather than the question text, with no options element
+      at all. The context paragraph survived, which is what made it silent: the decision rendered, and a reader
+      saw reasoning under a heading that was a slug with nothing to choose between, so the roadmap counted the
+      decision open while the lead saw a question that was not one. Omitting the outer key is not an
+      alternative, because the call is then refused outright, so there was no spelling of the operation that
+      preserved a decision.</p>
+      <p><strong>Where the loss is, established rather than assumed.</strong> The section grants both
+      <code>reckon/_store.py</code> and <code>reckon/_plan_html.py</code> because it does not know which one
+      drops the field. The reproduction settles it in one line: an item written as
+      <code>{question, options}</code> lands in the decisions mapping exactly as the caller spelled it, and
+      the renderer reads <code>title</code> and <code>choices</code>, falling back to the key for the heading
+      and rendering an empty option block. The loss is therefore a field-name mismatch at the append, not a
+      rendering fault, and the repair belongs on the write side rather than in the writer.</p>
+      <p><strong>The mismatch is between two surfaces.</strong>
+      <code>mcp_views._open_decisions</code> hands a caller each open decision as <code>question</code> and
+      <code>options</code>, while the stored block and the renderer speak <code>title</code> and
+      <code>choices</code>. A caller echoing back the decision it had just read — the natural way to copy one
+      decision's shape into another plan — therefore used the read surface, not the write surface, and the
+      write answered <code>ok</code>.</p>
+      <p><strong>Measured before the change.</strong> An item written as
+      <code>{question: "Which transport should the watcher use?", options: ["unix socket", "tcp loopback"]}</code>
+      read back as <code>title == "transport"</code> — the key — with <code>choices == []</code>, and the append
+      returned <code>ok: True</code>. After the change the same call reads back
+      <code>title == "Which transport should the watcher use?"</code> with both option values and their labels,
+      verified by <code>read_plan</code> against this worktree's <code>reckon</code> package rather than by the
+      assertion alone. <code>_decision_as_stored</code> maps <code>question</code> onto the title when no title
+      is given and <code>options</code> when no choices are given, accepting a list of values, a list of objects
+      carrying <code>value</code> and <code>label</code>, or a value-to-label mapping, and refusing an
+      unrecognised shape rather than dropping it. The <code>title</code> and <code>choices</code> spelling
+      is unchanged, so existing callers and their cases are unaffected.</p>
+      <p><strong>The cases, and the mutation that reddens them.</strong>
+      <code>tests/test_append_decision_keeps_its_question.py</code> carries three cases: the question text and
+      every option value survive a read-back through this repository's own reader; the written question
+      paragraph is not the key, asserted against the raw HTML as well as through the round trip, because a key
+      can read like a question and equality against the question alone would pass on the defect; and an append
+      carrying no options still succeeds, so the repair does not make options mandatory. An autouse fixture
+      fingerprints the real state directory in every case and asserts it is untouched afterwards, so a leak
+      into the live state root fails the case that caused it.</p>
+      <p>One declared mutation — restore the append decisions branch to write the key as the question and drop
+      the options — reddens all three cases, and its red log is kept beside the green one at
+      <code>~/.config/reckon/crew/runs/r-20260921T123854882600-appended-decision-keeps-its-question/negative-control.log</code>,
+      whose own first line repeats the declared mutation verbatim.</p>
+      <p><strong>The gate.</strong> <code>tests/test_edit_plan.py</code>, run once at base
+      <code>26d6df25</code> with the base <code>_store.py</code> in effect and once at this node's head:
+      <strong>3 failed, 75 passed</strong> on both, with the failure set identical row for row. The three
+      failures are in the create path — an <code>unwired_plan</code> precondition refusing a stub plan —
+      unrelated to the decisions target and outside this node's scope, so they are recorded rather than
+      triaged here. The new file adds three passes at head.</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
       <p>The gate is the crew dispatch, watch, recovery and resume populations plus the two new files, run once
