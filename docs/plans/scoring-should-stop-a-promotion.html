@@ -349,6 +349,35 @@
       <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
     </div>
 
+    <div class="r-comment" data-section="s2d" data-id="c-run-r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>The absent-ledger refusal now asks git whether the path was ever tracked.</strong>
+      Commit <code>f1abfa99</code> adds <code>ledger._ledger_ever_tracked</code>, which asks the
+      receiving checkout whether the ledger path appears anywhere in its history
+      (<code>git log --all --format=%H -- &lt;relative-path&gt;</code>), and gates the existing
+      refusal on that answer. A path git once recorded is a deletion to recover and still refuses,
+      naming the path and the run store as the independent authority; a path git has never recorded
+      is a genuinely new project and is initialised without the <code>allow_create</code> escape.
+      Where git cannot answer — outside a checkout, or a checkout with no commits — the refusal
+      stands and <code>allow_create</code> remains the explicit route.</p>
+      <p><strong>Pre-repair receipt.</strong> Against a fresh checkout whose ledger path was never
+      committed, <code>append_run</code> refused at the node base revision; the deletion case
+      refused as well, so the two were indistinguishable. The fixture for the refusing case now
+      commits the ledger and then unlinks it, carrying the incident shape rather than a
+      never-created file.</p>
+      <p><strong>Evidence.</strong> The focused file reports <strong>5 passed</strong>. The declared
+      mutation — make the git question answer <em>never tracked</em> for every repository — reddens
+      exactly <code>test_a_promotion_refuses_a_ledger_deleted_from_the_tree</code> with
+      <code>DID NOT RAISE LedgerError</code> in a scratch copy of the fixed tree, its log's first
+      line repeating the declaration verbatim. The 15-file gate on <code>all_debug</code> reports
+      <strong>10 failed / 246 passed</strong> against base <code>73392943</code>'s
+      <strong>10 failed / 229 passed</strong> over the 13 files present there, with
+      <strong>identical</strong> failure sets — this change adds none. Ruff findings hold at
+      <strong>17 → 17</strong> and format deviations at <strong>1</strong>. Full record:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-ledger-asks-git">the absent-ledger git decision</a>,
+      figure at <code>docs/figures/scoring-should-stop-a-promotion/absent-ledger-git-decision.png</code>.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
+    </div>
+
     <h3 id="rollback-head-query-landed">Rollback now asks HEAD directly</h3>
     <p><strong>Locally committed at <code>412536f0ad40a77d795a171996652228ca970d96</code>.</strong>
     A restore failure no longer authorizes unlinking a tracked path: the rollback asks
