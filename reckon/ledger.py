@@ -635,18 +635,33 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
     """Read the ledger, returning its data and current version.
 
     An absent ledger is the ordinary state of a project that has run no workers
-    yet, so it reads as an empty roster at version 0 rather than an error.
+    yet, so it reads as an empty roster at version 0 rather than an error. A
+    present ledger must carry list-valued collections: treating a malformed
+    collection as empty would turn damaged history into a fresh start.
     """
     path = ledger_path(project, root)
     data, version = _store._load_json_envelope(path)
+    if not path.exists():
+        return {"members": [], "runs": [], "holds": []}, version
     members = data.get("members")
     runs = data.get("runs")
     holds = data.get("holds")
+    malformed = [
+        name
+        for name, value in (("members", members), ("runs", runs), ("holds", holds))
+        if not isinstance(value, list)
+    ]
+    if malformed:
+        raise LedgerError(
+            f"ledger for {project!r} at {path} is malformed: "
+            f"{', '.join(malformed)} must be list-valued; refusing to read "
+            "damaged history as an empty project"
+        )
     return (
         {
-            "members": list(members) if isinstance(members, list) else [],
-            "runs": list(runs) if isinstance(runs, list) else [],
-            "holds": list(holds) if isinstance(holds, list) else [],
+            "members": list(members),
+            "runs": list(runs),
+            "holds": list(holds),
         },
         version,
     )
@@ -1716,6 +1731,7 @@ def append_run(
     *,
     root: str | Path | None = None,
     attempts: int = 12,
+    allow_create: bool = False,
 ) -> dict[str, Any]:
     """Append one completed run, retrying when a concurrent write intervenes.
 
@@ -1723,12 +1739,24 @@ def append_run(
     re-reads the ledger the winner just wrote and appends to that, so neither
     record is lost. A second record for the same run id is refused instead —
     that is not concurrency, it is a double promotion, and it would double-count
-    the measurements the calibration loops read.
+    the measurements the calibration loops read. A promotion cannot turn an
+    absent ledger into a new project: the independent run store already holds
+    each promoted run, so an absent file is a recovery condition. Initialising
+    a genuinely new project requires ``allow_create=True``.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
         raise LedgerError("a run record must carry a run_id")
     ledger_root = _run_ledger_root(project, root)
+    path = ledger_path(project, ledger_root)
+    if not path.exists() and not allow_create:
+        raise LedgerError(
+            f"refusing to promote run {run_id!r} for {project!r}: ledger file "
+            f"{path} does not exist. The run store at {_run_store_location()} "
+            "is the independent authority that holds every promoted run; "
+            "recover the ledger or initialise a genuinely new project with "
+            "allow_create=True."
+        )
     stored_record = dict(record)
     last: LedgerError | None = None
     store_outcome: dict[str, Any] | None = None
