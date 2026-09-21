@@ -1085,6 +1085,65 @@
     cases now carry the witness, plus the permanent control). Receipts:
     <code>~/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/negative-control.txt</code>.</p>
   </section>
+
+  <section id="the-two-write-scope-tests-agree">
+    <h2>&sect;9 &mdash; The write-time and promotion-time write-scope tests agree</h2>
+
+    <p><strong>The gap was found by a node, reported rather than repaired, and closed here.</strong>
+    The node that hardened the write-time manifest check ran that check against its own run and
+    was refused for a figure sitting inside the fence the dispatch had granted. Tracing it showed
+    two implementations of one contract reading a directory declaration differently:
+    <code>reports.audit_manifest</code> tested exact membership, while
+    <code>promotion._outside_declared_scope</code> tested root containment. The repair was
+    outside that node's declared scope, so it was reported. This node owns it.</p>
+
+    <p><strong>The repair is one predicate, applied at the write-time audit.</strong>
+    <code>path_within_declared_scope</code> (<code>reckon/crew/reports.py</code>) returns true
+    when a changed path equals a declared path or lies beneath one, which is the containment
+    rule promotion already applied. <code>audit_manifest</code> now calls it in place of the
+    membership set test. The promotion-side function is unchanged, so the earlier surface was
+    moved onto the later contract rather than the later surface being loosened to match a
+    stricter early one.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/scope-agreement.svg"
+           alt="A declared write scope holding a directory and a file. One changed path beneath the directory. Before: the write-time audit applies exact membership and reports it stray, red; the promotion test applies root containment and accepts it, green; the two disagree. After: one containment rule, that a target equals a root or the root is one of its parents, applied at both surfaces, and the path is accepted by both. A footnote records that restoring exact membership reddens four of ten cases, the directory cases and a bare directory naming case, while the file-versus-file and out-of-scope cases stay green.">
+      <figcaption>Where the two surfaces agree, where they disagreed, and the rule the earlier
+      one was moved onto.</figcaption>
+    </figure>
+
+    <p><strong>Proven by a test that enters both surfaces for the same inputs, not by asserting
+    about either one.</strong> <code>tests/test_write_scope_agreement.py</code> calls
+    <code>reports.audit_manifest</code> and <code>promotion._outside_declared_scope</code> with
+    one changed path and one declaration, and compares their verdicts. Four properties:
+    a changed path equal to a declared path is accepted by both; a changed path under a declared
+    directory is accepted by both, which is the case the write-time audit refused before this
+    change; a changed path under no declared path is rejected by both; and the two agree on a
+    table of seven path-and-declaration pairs covering file declarations, directory declarations
+    bare and trailing-slashed, and a prefix case a string-prefix test would wrongly accept
+    (<code>reports.py.bak</code> against <code>reports.py</code>, which both reject).</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation restores the
+    exact-membership test so a path under a granted directory is reported stray again. Applied,
+    the suite reddens <code>4 failed, 6 passed in 0.82s</code>, <code>EXIT=1</code>: the
+    directory case and the three table rows whose declaration is a directory, nine cases total
+    passing under the file declaration and the out-of-scope case. The mutation sits verbatim on
+    the red log's first line and the source was restored byte-identically, verified by an empty
+    <code>git diff</code> against the commit that carries the fix.</p>
+
+    <p><strong>Suite delta measured against the base revision, not against green.</strong> The
+    focused cohort — this file, the manifest-check command tests, the promotion-scope tests and
+    the manifest-format tests — is <strong>142 passed</strong>. A wider selection over
+    <code>tests/test_crew.py</code> matching manifest, audit or scope reported 6 failures, and
+    all 6 fail identically with this node's change temporarily removed and the base
+    revision's <code>reports.py</code> restored in its place, confirming they are pre-existing
+    and unrelated to this change.</p>
+
+    <p>Changed paths: <code>reckon/crew/reports.py</code>,
+    <code>tests/test_write_scope_agreement.py</code>. Commit <code>165463c6</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T171122683919-the-two-scope-tests-agree-on-a-granted-directory/</code>
+    (<code>negative-control.log</code>, <code>after-suite.log</code>).</p>
+  </section>
   </main>
 </body>
 </html>
