@@ -119,6 +119,23 @@
     promotion without a scored review from another lane; and the rules for every class in the §1
     table are recorded with the audit anchors they rest on.</p>
 
+    <p class="landed-summary">
+      <strong>§2 first landing — the admission test the ruling's wording needs.</strong>
+      <code>reckon/crew/prescription.py</code> declares one public function,
+      <code>judge_prescribed(node)</code>, returning <code>prescribed</code>,
+      <code>failures</code> and <code>detail</code>, over exactly the five properties the 06:35Z
+      ruling names. The judgement is pure — no file, no config, no environment — so a dispatcher
+      can refuse an unprescribed node before any worktree exists, which is the "refused before a
+      worktree exists" half of this section's done-when. That half is now implementable; the
+      flight-config rule that reads it and the review-required flag <code>crew complete</code>
+      honours are the remainder. Gate: 19 tests pass in <code>tests/test_prescription.py</code>,
+      one refusal case per property; this node's own dispatch record passes; the promotion
+      entry-point cohort still fails its recorded 18.
+      Full record:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#prescription-judgement">§2 landed</a>
+      (commit <code>873724a4</code>).
+    </p>
+
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
     review a gated promotion requires must re-derive at least one number the node claims from the
