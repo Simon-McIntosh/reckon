@@ -62,7 +62,12 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
-from reckon.crew.recovery import _stream_refusal_block, classify_pointer, external_wait
+from reckon.crew.recovery import (
+    _stream_refusal_block,
+    classify_pointer,
+    dispatch_awaiting_reviews,
+    external_wait,
+)
 from reckon.crew.runs import (
     _manifest_mtime_ns,
     _pointer_lock,
@@ -792,6 +797,23 @@ def _writer_key(kind: str, key: str) -> str:
     return f"follower:{key}" if kind == "follower" else kind
 
 
+def _review_outcome_counts(reviews: Any) -> dict[str, int]:
+    """The review pass's outcome, as counts a status reader can consume.
+
+    Counts rather than lists because this lands in a per-writer status entry
+    that answers "did my follower dispatch reviews?" — a reader wanting the
+    reports themselves reads the sweep report, and a refusal list folded into
+    a status line would be the unreadable object this pass was repaired for.
+    """
+    if not isinstance(reviews, Mapping):
+        return {"dispatched": 0, "refused": 0, "awaiting_lane": 0}
+    return {
+        "dispatched": len(reviews.get("dispatched") or ()),
+        "refused": len(reviews.get("refused") or ()),
+        "awaiting_lane": len(reviews.get("awaiting_lane") or ()),
+    }
+
+
 def _sweep_writer_entry(
     report: Mapping[str, Any], kind: str, key: str
 ) -> dict[str, Any]:
@@ -804,6 +826,7 @@ def _sweep_writer_entry(
         "checked": report.get("checked"),
         "resumed": len(report.get("resumed") or []),
         "skipped": len(report.get("skipped") or []),
+        "reviews": _review_outcome_counts(report.get("reviews")),
         "swept_by_pid": os.getpid(),
     }
 
@@ -882,6 +905,7 @@ def _write_sweep_status(
                         "checked": report.get("checked"),
                         "resumed": len(report.get("resumed") or []),
                         "skipped": len(report.get("skipped") or []),
+                        "reviews": _review_outcome_counts(report.get("reviews")),
                         "swept_by_pid": os.getpid(),
                         "writers": writers,
                     },
@@ -932,6 +956,12 @@ def sweep(
     writer: Any = None,
 ) -> dict[str, Any]:
     """Resume runs whose provider hold or declared external wait has ended.
+
+    A sweep also dispatches the review a run has already composed for itself
+    once it reaches scoring, so the reflex fires from the same mechanism that
+    tells a coordinator the run finished rather than from the coordinator
+    remembering. That pass is idempotent for the same reason the resume pass
+    is: a run whose review is stored or already in flight is left alone.
 
     Idempotent by construction: a resumed run carries the trigger it was
     resumed for, so a second pass over the same fleet reports nothing to do.
@@ -1124,19 +1154,41 @@ def sweep(
             }
         )
 
+    # The review pass, on the same cadence and from the same site as the resume
+    # pass. A run that reaches scoring has already had its review dispatch
+    # composed; leaving it composed is what left runs waiting on a coordinator
+    # to notice and retype the command. Every caller of ``sweep`` therefore
+    # gives the reflex its caller at once — the follower's cadence, the
+    # resume-ready surface and the MCP sweep action all reach ``sweep``.
+    #
+    # A dry run reports what recovery would do and must not dispatch reviews
+    # either: a preview that dispatched would be a preview that acted.
+    reviews: dict[str, Any] = {}
+    if not dry_run:
+        try:
+            reviews = dispatch_awaiting_reviews(
+                project=project, config=config, launcher=launch
+            )
+        except (CrewError, OSError) as exc:
+            # A review pass that cannot run must not take the resume pass's
+            # record down with it: the recoveries it did perform are already
+            # durable on each resumed run.
+            reviews = {"error": str(exc)}
+
     report = {
         "project": project,
         "dry_run": bool(dry_run),
         "checked": considered,
         "resumed": resumed,
         "skipped": skipped,
+        "reviews": reviews,
         "swept_at": _utc_now(),
     }
     # Two records, because they answer different questions. The append-only log
     # holds what happened, and only sweeps that judged something write to it —
     # an operator reading it wants recoveries and the refusals to recover, not a
     # heartbeat from every tick of every follower.
-    if considered:
+    if considered or _review_outcome_counts(reviews)["dispatched"]:
         path = recovery_log_path(project)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:

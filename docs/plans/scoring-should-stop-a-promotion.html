@@ -621,6 +621,48 @@
       precondition of wiring the sweep, not a substitute for it.</p>
     </div>
 
+    <div class="r-comment" data-section="s3" data-id="c-run-r-20260921T090837876644-review-reflex-fires-on-the-sweep" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>The reflex fires on the sweep.</strong> <code>resumption.sweep</code> now runs
+      <code>dispatch_awaiting_reviews</code> after its resume pass, handing it the same launcher it
+      already holds, so a run entering scoring has the review it composed dispatched with no
+      command issued by anyone. That is the path a healthy run takes: the periodic sweep is what a
+      session watching its own fleet already runs, and it now reaches the reflex from all three of
+      its callers — the follower cadence, <code>crew resume-ready</code>, and the MCP
+      <code>sweep</code>.</p>
+      <p><strong>The composed command carries the waiver it needs.</strong> A run awaiting review
+      <em>is</em> an unreconciled run, so past the grace window the fence refused the very dispatch
+      that clears the backlog — measured as exit 6 naming the same three runs. The dispatch now
+      passes <code>unreconciled_override</code>, and the command composed for a reader to retype
+      carries <code>--allow-unreconciled-runs</code> for the same reason. The suite asserts the
+      fence is genuinely armed by driving the same run with the waiver withheld and requiring the
+      refusal, so the exemption is shown to be load-bearing rather than assumed.</p>
+      <p><strong>Three quiet failures are closed with it.</strong> A review run is never its own
+      source run, keyed on the recorded role <em>and</em> on the minted <code>review-of-</code> for
+      a node id, so a pointer predating the role record is inert rather than composing a review of
+      a review. A refusal on one run leaves the rest of the wave dispatched, because stopping at
+      the first refusal reports nothing about the run never reached and makes an occupied seat look
+      like a quiet fleet. And the refusal accumulator stores the report itself rather than a
+      generator expression, which is what raises on <code>json.dumps</code> in the CLI emit path:
+      one refusal used to abort the whole sweep's emit.</p>
+      <p><strong>Measurement.</strong> <code>tests/test_review_reflex_sweep.py</code> passes with
+      9 tests and 0 failures, each property asserted against a stub launcher that records its
+      calls — the claim is that the sweep <em>issued</em> the dispatch, and an issued command is
+      visible in a recorded call whereas a review that ran and wrote nothing is visible nowhere.
+      The declared negative control (withholding the waiver at the dispatch) turns the waiver test
+      red and the source was reverted byte-identical by sha256. The 15-file promotion cohort that
+      invokes <code>promotion.complete</code> measures <strong>18</strong> failures, equal to its
+      recorded before value of <strong>18</strong>, with 0 newly failing. Anchor:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s3-review-reflex-sweep">s3-review-reflex-sweep</a>.</p>
+      <p><strong>What this does not close.</strong> §3's second blocker is untouched: the reflex
+      still resolves the review against a competing local lane, and <code>_review_dispatch_argv</code>
+      still ends in a hardcoded <code>--local</code>, so a lane-routing fix is separate work. A wave
+      of two reviews inside one coordinator session is also still refused — the first review takes
+      the session's private member seat and the watch admission, and both refusals are raised inside
+      the dispatch path rather than at this caller. The tests assert the honest continuation instead
+      (dispatching resumed on the next run), and the seat collisions are recorded as follow-on work
+      rather than papered over here.</p>
+    </div>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in

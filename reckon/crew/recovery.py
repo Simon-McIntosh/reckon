@@ -161,6 +161,19 @@ REVIEW_NODE_PREFIX = "review-of-"
 REVIEW_ROLE = "review"
 
 
+def _is_review_node(record: Mapping[str, Any]) -> bool:
+    """Whether a run was minted as some run's review.
+
+    The node id is the identity the review dispatch names, so a pointer written
+    before a pointer carried a role is still recognisable as the reviewer. The
+    role is the primary key — it survives a renamed node id — and this is the
+    second, because either alone leaves a run that composes a review of itself
+    and each link of that chain is a real dispatch against a real member.
+    """
+    node = record.get("node") or {}
+    return str(node.get("id") or "").startswith(REVIEW_NODE_PREFIX)
+
+
 def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
     """The facts a scoring run's review dispatch is built from.
 
@@ -192,7 +205,15 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
 
 
 def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
-    """The review dispatch as an argument vector, ready to run or to print."""
+    """The review dispatch as an argument vector, ready to run or to print.
+
+    The unreconciled-runs waiver is part of the composed command because a run
+    awaiting review *is* an unreconciled run: past the grace window the fence
+    refuses new dispatches for the whole project until the backlog is
+    reconciled, and the reconciling action for each of those runs is exactly
+    the review dispatch being refused. Without the waiver the composition is a
+    command that cannot succeed on the runs it is composed for.
+    """
     fields = _review_dispatch_fields(record)
     return [
         "reckon",
@@ -220,6 +241,7 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
         fields["time_budget"],
         "--session",
         fields["session"],
+        "--allow-unreconciled-runs",
         "--local",
     ]
 
@@ -350,6 +372,7 @@ def dispatch_review_for_run(
     *,
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
+    allow_unreconciled_runs: bool = True,
 ) -> dict[str, Any]:
     """Run the review dispatch a scoring run has already composed for itself.
 
@@ -361,8 +384,24 @@ def dispatch_review_for_run(
     the rest of the fleet. The refusal itself still comes from dispatch, so the
     automatic path is refused exactly where a manual dispatch is rather than
     being waved through.
+
+    ``allow_unreconciled_runs`` defaults on because a run awaiting review is
+    itself an unreconciled run: past the grace window the fence refuses the
+    review dispatch that is the only thing able to clear it, so the automatic
+    path would deadlock on the runs it exists for. The waiver is recorded on
+    the review run's own pointer by dispatch, naming the runs it waived, so the
+    exception stays visible after the command that supplied it is gone.
     """
     run_id = str(record.get("run_id") or "")
+    if _is_review_node(record):
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": (
+                "the run is itself a review, so dispatching its review would "
+                "compose a review of a review"
+            ),
+        }
     row = classify_pointer(record)
     if row["classification"] != "scoring":
         return {
@@ -441,6 +480,7 @@ def dispatch_review_for_run(
             launcher=launcher,
             watch_required=True,
             local=True,
+            unreconciled_override=allow_unreconciled_runs,
         )
     except BudgetHold as exc:
         reason = f"the local lane is unavailable: {exc}"
@@ -506,6 +546,11 @@ def dispatch_awaiting_reviews(
             and str(pointer.get("project")) != project
         ):
             continue
+        # A review run is never its own source run: counting one as a run
+        # awaiting review is what composes a review of a review, and each link
+        # of that chain is a real dispatch against a real member.
+        if _is_review_node(pointer):
+            continue
         scan: dict[str, Any] | None = None
         try:
             scan = classify_pointer(pointer)
@@ -520,7 +565,12 @@ def dispatch_awaiting_reviews(
         elif report.get("awaiting_lane"):
             awaiting_lane.append(str(report.get("run_id") or ""))
         elif report.get("refused"):
-            refused.append(report for report in (report,))
+            # The report itself, not a generator over it: a refusal list is
+            # read and serialized by whoever consumes the sweep, and a
+            # generator is neither readable nor JSON-serializable, so the
+            # refusal would be lost at exactly the moment a reader needs to
+            # know which lane was refused.
+            refused.append(report)
     return {
         "reports": reports,
         "dispatched": dispatched,

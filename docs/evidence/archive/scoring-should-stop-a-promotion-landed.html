@@ -179,6 +179,65 @@
     repository-wide backlog that is its own commit, so the delivered diff carries the exemption
     and its tests and nothing else.</p>
   </section>
+
+  <section id="s3-review-reflex-sweep">
+    <h2>The reflexive sweep: the review a scoring run already composed</h2>
+    <p><strong>Measure.</strong> The reflex only earns its name when it fires on the path a healthy
+    run takes. A run that reaches scoring has already had its review dispatch composed and returned
+    as a string; leaving it composed is what left runs waiting on a coordinator to notice and retype
+    the command. The site chosen is <code>resumption.sweep</code>, because that is the periodic pass
+    a session watching its own fleet already runs, and it is the one place the reflex reaches all
+    three of its callers at once. The claim is stated as an issued command, not as an observed
+    effect: <code>tests/test_review_reflex_sweep.py</code> drives the sweep against a stub launcher
+    that records every call. The number of recorded calls is the evidence; a review that ran and
+    wrote nothing is not visible in any output.</p>
+    <p><strong>The strongest half is the quiet one.</strong> Every property is argued with its
+    negative half, because both failure modes here look like an idle fleet rather than an error. A
+    sweep that dispatches nothing is indistinguishable from a fleet with nothing to dispatch, and a
+    sweep that re-dispatches what it already dispatched manufactures reviews — so <em>two</em>
+    sweeps over the same fleet are run and asserted to produce exactly one recorded call. A refusal
+    on one run must leave the rest dispatched, because a sweep that stops at the first refusal
+    reports nothing about the run it never reached. And a pointer whose node id was minted as some
+    run's review is asserted to classify as <code>scoring</code> yet dispatch nothing and gain no
+    <code>review_dispatch</code>: inert by its minted name, not by a role it may not carry.</p>
+    <p><strong>The waiver, and the fence it opens.</strong> A run awaiting review <em>is</em> an
+    unreconciled run, so past the grace window the fence refused the very dispatch that clears the
+    backlog, measured as exit 6 naming the same three runs. The suite arms that fence rather than
+    assuming its absence: the fixture manifests are backdated past a short grace, the dispatch is
+    driven with the waiver withheld and required to be <code>refused</code> with the run id and the
+    grace in its reason, and the same run is then driven with the waiver and required to be
+    dispatched carrying <code>waived_runs</code>. A test that cannot see the fence fire cannot show
+    the waiver is doing anything.</p>
+    <p><strong>The refusal accumulator stored a generator.</strong> A refusal recorded as a
+    generator expression is not a report: it is a value that raises on <code>json.dumps</code> in
+    the CLI emit path, so one refusal aborted the sweep's entire emit. The repair stores the report
+    itself, asserted by checking the stored entry's type and its content round-tripped through JSON.
+    The repair is load-bearing independently of the reflex, which is why it was carried here rather
+    than deferred, and the negative control reaches it.</p>
+    <p><strong>Negative control.</strong> Withholding the waiver at the dispatch
+    (<code>unreconciled_override=False</code>) turns the waiver test red, along with the two tests
+    whose fixtures depend on a dispatch succeeding; the log's first line repeats the mutation
+    verbatim. The source was reverted and <code>reckon/crew/recovery.py</code> is byte-identical to
+    its pre-mutation revision — <code>sha256</code>
+    <code>7454bdc2ba943749b8c79358a8d388f2ca60183fe24b354c251e528ff52ae133</code> both before the
+    mutation and after the revert — and the suite re-run after the revert reports 9 passed, 0
+    failed.</p>
+    <p><strong>Cohort.</strong> The 15-file promotion cohort that invokes
+    <code>promotion.complete</code> is run at this revision and measures <strong>18</strong>
+    failures against its recorded before value of <strong>18</strong>, with 0 newly failing: the
+    sweep's review pass reaches no <code>promotion.complete</code> call site, which is the
+    independence this number is here to show.</p>
+    <p><strong>Limits, recorded rather than implied.</strong> Three things are explicitly outside
+    this measure. The review resolves against a competing local lane and
+    <code>_review_dispatch_argv</code> still ends in a hardcoded <code>--local</code>, so lane
+    routing for the reflex is separate work. A wave of two reviews inside one coordinator session is
+    still refused — the first review takes the session's private member seat and the watch
+    admission, both inside the dispatch path rather than at this caller — so the wave test asserts
+    the honest continuation (dispatching resumes on the next run) rather than the two-review
+    outcome the template implies, and the seat collisions are recorded as follow-ons. And this gate
+    measures this node's own change only; verifying the merged result belongs to a separately
+    dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
