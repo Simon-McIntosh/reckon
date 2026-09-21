@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T17:26:54",
+  "updated": "2026-09-21T17:27:30",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -222831,6 +222831,343 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a79",
+        "node": "service-case-asserts-the-restart-policy-in-force",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 656,
+                "cached_input_tokens": 359055,
+                "input_tokens": 359713,
+                "output_tokens": 640,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 360353,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "tests/test_service.py passes at this base, where the watcher unit restart policy is already Restart=always, with its case asserting Restart=always and a short RestartSec and its name no longer naming on-failure; a run of tests/test_service.py together with tests/test_watcher_unit_restart.py reports 0 failed and exit 0; the declared mutation is applied, tests/test_service.py is observed to fail, and the red log is recorded with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "the service unit case asserts the restart policy the generator now carries instead of the one it was changed away from",
+          "id": "service-case-asserts-the-restart-policy-in-force",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T13:32:51Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/manifest.md",
+          "negative_control": "restore the assertion Restart=on-failure in tests/test_service.py",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_service.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "service-unit-assertion",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T13:33:12Z",
+        "completed_at": "2026-09-21T13:55:04.629Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1295,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1312,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "fc09f75d37386d3b5bf5c14c1f7ac013aba95415",
+        "commits": [
+          "0f12a6c1400f09970164b04c1b01d4c1cf25c5ef"
+        ],
+        "changed_lines": {
+          "added": 30,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/service-case-asserts-the-restart-policy-in-force /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider tests/test_service.py tests/test_watcher_unit_restart.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/logs/gate-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/manifest.md",
+        "scope_changed": false,
+        "session_id": "a4d678be-fd92-4506-a8bf-51afbabcb66d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3710089,
+            "input_tokens_cumulative": 3710089,
+            "output_tokens": 18662,
+            "output_tokens_cumulative": 18662,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T13:55:04.629Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 840,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2315,
+              "log_fresh": false,
+              "manifest_commits": [
+                "9ea06319d9807d61bc31b912183e2efadbea4336",
+                "91ee994748af6a46c9ee8a76bdbb318a45345634"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "8170c76bee153084b8ed226ae7b7c3cb613ef6abbefc569cbc8bf75b71deee66",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-runtime-positive-controls --section '\u00a713' --role review --spec-level exact --node review-of-launcher-is-checked-against-a-serving-origin --goal 'attach an independent review to run r-20260921T123858966184-launcher-is-checked-against-a-serving-origin' --done-when 'the review for r-20260921T123858966184-launcher-is-checked-against-a-serving-origin stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin.json --time-budget 50m --session ship-crpc-20260921 --allow-unreconciled-runs --local",
+              "node": "launcher-is-checked-against-a-serving-origin",
+              "phase": "complete",
+              "plan": "crew-runtime-positive-controls",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T123858966184-launcher-is-checked-against-a-serving-origin",
+              "session": "ship-crpc-20260921",
+              "terminal_age_seconds": 2331,
+              "terminal_at": "2026-09-21T12:54:11Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/launcher-is-checked-against-a-serving-origin"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 647,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2501,
+              "log_fresh": false,
+              "manifest_commits": [
+                "9980886ededc0fa0cc418a930430fe031058096a",
+                "ad84b2e30f7ad3f30903c357d1d870c4177654c8"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "e2fd0443b74dc8e4b2a3a6fc02e479794d881ce7222c2e2b6a155e9ba94651c2",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-runtime-positive-controls --section '\u00a714' --role review --spec-level exact --node review-of-orphaned-watcher-replacement-diagnosis --goal 'attach an independent review to run r-20260921T123905355879-orphaned-watcher-replacement-diagnosis' --done-when 'the review for r-20260921T123905355879-orphaned-watcher-replacement-diagnosis stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T123905355879-orphaned-watcher-replacement-diagnosis.json --time-budget 45m --session ship-crpc-20260921 --allow-unreconciled-runs --local",
+              "node": "orphaned-watcher-replacement-diagnosis",
+              "phase": "complete",
+              "plan": "crew-runtime-positive-controls",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T123905355879-orphaned-watcher-replacement-diagnosis",
+              "session": "ship-crpc-20260921",
+              "terminal_age_seconds": 2527,
+              "terminal_at": "2026-09-21T12:50:55Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/orphaned-watcher-replacement-diagnosis"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 100
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3710089,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1308.688,
+          "generated_tokens": 18662,
+          "generation_seconds": 1262.325,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 21.1,
+          "machine_seconds": 46.363,
+          "peak_input_tokens": 101380,
+          "tokens_per_second": 14.78,
+          "wall_tokens_per_second": 14.26
+        },
+        "follow_on_paths": [
+          "reckon/crew/node.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/service-case-asserts-the-restart-policy-in-force",
+          "session_id": "a4d678be-fd92-4506-a8bf-51afbabcb66d",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T13:55:04.629Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.5,
+          "at_complete": 0.733,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_service.py"
+          ],
+          "declaration": "restore the assertion Restart=on-failure in tests/test_service.py",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/logs/negative-control-restore-on-failure.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/logs/negative-control-restore-on-failure.log"
+        },
+        "tool_steps": 44.0,
+        "orientation_input_tokens": 1338562.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -223115,6 +223452,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1914
+    "_version": 1915
   }
 }
