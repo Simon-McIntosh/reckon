@@ -125,6 +125,107 @@
       produces two source artifacts still fails <code>one-artifact</code>.
     </p>
 
+  <h3>Repair — the two admission checks now test the property, not its tokens</h3>
+    <p>
+      Node <code>prescription-checks-refuse-what-they-were-passing</code>, commit
+      <code>3b7dbf66</code>. The
+      <a href="#prescription-judgement">judgement above</a> landed with nineteen green tests; an
+      independent review on a metered lane then scored it 82 and found two holes through which an
+      unprescribed node passes behind a green suite. Nothing in dispatch may read the judgement
+      until they are closed, because a routing rule built on a check that fails open admits exactly
+      the nodes it exists to refuse.
+    </p>
+    <p>
+      Both holes are the same defect in different clothes: the check tested a token the property
+      happens to mention rather than the property itself — a count's <em>presence</em> where its
+      cardinality was meant, and a gate's <em>vocabulary</em> where its arithmetic was meant. The
+      repair makes each test the property, so a near-miss now has to fail for the reason the
+      property names rather than on a technicality of proximity.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Hole as found</th><th>Before value</th><th>Repair</th><th>After value</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>one-artifact</code> refused only a count <em>greater than one</em>, so a node
+          declaring no non-test artifact was judged prescribed — the ruling says one artifact</td>
+          <td>0 non-test artifacts admitted</td>
+          <td>an exact cardinality, with the empty case refused by its own message naming the
+          missing artifact</td>
+          <td>0 and 2 refused, 1 admitted</td>
+        </tr>
+        <tr>
+          <td><code>numeric-gate</code> tested token co-occurrence: a digit anywhere plus a
+          baseline-ish word anywhere passed, the reviewer's own false positive included</td>
+          <td>8 of 8 near-miss done-whens admitted</td>
+          <td>the two halves are required together: a count bound to the outcome it counts, beside
+          a baseline word carrying a number in the same sentence</td>
+          <td>0 near-miss admitted, 4 genuine admitted</td>
+        </tr>
+        <tr>
+          <td>the module claimed one public function and exposed three</td>
+          <td>3 public functions</td>
+          <td>the two helpers deciding which paths count become private</td>
+          <td>1 public function, compared against the claim in the test</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Because the repair <em>is</em> the conjunction, the figure shows the two stages a done-when
+      must clear rather than describing them: a near-miss falls out at whichever half it lacks.
+    </p>
+    <svg viewBox="0 0 860 172" role="img" aria-label="Two-stage gate. Stage one asks whether a count is bound to the outcome it counts; the reviewer's false positive, read the 2026 note, is refused here. Stage two asks whether a baseline word carries a number in the same sentence; a bare count such as passes with 0 failures is refused here. Only a done-when clearing both stages is admitted.">
+      <defs>
+        <marker id="gate-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+        </marker>
+      </defs>
+      <rect x="10" y="38" width="250" height="64" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="26" y="64" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">a count attached to</text>
+      <text x="26" y="84" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">the outcome it counts?</text>
+      <line x1="264" y1="70" x2="300" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#gate-arrow)"/>
+      <rect x="304" y="38" width="250" height="64" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="320" y="64" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">a baseline word carrying</text>
+      <text x="320" y="84" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">a number in the same sentence?</text>
+      <line x1="558" y1="70" x2="594" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#gate-arrow)"/>
+      <rect x="598" y="38" width="250" height="64" rx="6" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+      <text x="700" y="74" font-family="system-ui, sans-serif" font-size="13" fill="#065f46">admitted</text>
+      <text x="12" y="128" font-family="system-ui, sans-serif" font-size="11" fill="#b91c1c">refused: &ldquo;read the 2026 note&rdquo;</text>
+      <text x="12" y="146" font-family="system-ui, sans-serif" font-size="11" fill="#b91c1c">— a number with no measure</text>
+      <text x="306" y="128" font-family="system-ui, sans-serif" font-size="11" fill="#b91c1c">refused: &ldquo;passes with 0 failures&rdquo;</text>
+      <text x="306" y="146" font-family="system-ui, sans-serif" font-size="11" fill="#b91c1c">— a count with no before value</text>
+    </svg>
+    <h3>Gate measure, as executed</h3>
+    <p>
+      <code>tests/test_prescription.py</code>: 46 cases over 29 test functions, 0 failures
+      (<code>uv run pytest tests/test_prescription.py</code>, exit 0). The two named cases are
+      asserted directly: a node declaring zero non-test artifact paths is refused naming
+      <code>one-artifact</code>, and the reviewer's string is refused naming
+      <code>numeric-gate</code> alongside seven further near-miss done-whens recorded as a table in
+      the test. Four genuine done-whens are admitted case by case, and each of the five property
+      names remains reachable as a sole failure, asserted per property. The module's public names
+      are compared against the single-function claim in the test rather than restated in prose.
+    </p>
+    <h3>Negative control, as executed</h3>
+    <p>
+      Declared mutation: <em>restore the greater-than-one comparison for the artifact count so a
+      zero-artifact node passes again; tests/test_prescription.py must fail.</em> Applied to the
+      merged tree at the fix, it reddens three tests —
+      <code>test_zero_non_test_artifacts_are_refused_naming_one_artifact_only</code>,
+      <code>test_a_node_declaring_no_write_paths_at_all_is_refused</code> and
+      <code>test_landing_records_alone_leave_the_node_with_no_artifact</code> — and the file was
+      then restored byte-identical (<code>sha256 5c752019…6d61d</code>) before the commit. The log
+      repeats the declared mutation verbatim on its first line.
+    </p>
+    <h3>Naming</h3>
+    <p>
+      The test file names no plan document and no node identity: two assertions in it read the file
+      and require that every <code>docs/plans/*.html</code> it mentions does not exist and that its
+      only kebab-case identifiers of node-id shape are the property names the module declares. The
+      plan slug and the node id appear nowhere in the test path.
+    </p>
+
   <h2 id="session-ownership">Session ownership — a stored conversation does not outlive the session that opened it</h2>
     <p>
       Node <code>worker-session-is-session-scoped</code> (§2d, stage one: stop the lookup). An
