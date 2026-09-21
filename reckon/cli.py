@@ -3159,8 +3159,11 @@ def crew_ledger(project, view, checkout_path, pretty):
     ledger_module = _ledger_module()
     try:
         if view == "records":
+            # The committed rows as a reader receives them: each carries its
+            # own wall time and the width of the fleet when it was dispatched.
+            records, _version = ledger_module.read_records(project, checkout_path)
             payload = {
-                "runs": ledger_module.runs(project, checkout_path),
+                "runs": records,
                 "holds": ledger_module.holds(project, checkout_path),
                 "members": ledger_module.members(project, checkout_path),
             }

@@ -257,6 +257,61 @@
     width without arithmetic by the reader &mdash; is therefore satisfied at the module and
     still unmet at the entry point. Section <a href="#s8">&sect;8</a> owns that closure.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21 &mdash; the figures reach both read
+    surfaces.</strong> <code>ledger.read_records</code> now answers the reader's two questions
+    behind <code>with_figures: bool = True</code>, delegating to
+    <code>summary.run_rows</code>, and <code>ledger.runs</code> passes
+    <code>with_figures=False</code> so the raw promotion-order read still hands back the stored
+    row its exact-row assertions expect. The wiring is a default rather than an opt-in flag
+    because the MCP records read calls <code>read_records</code> from
+    <code>reckon/mcp.py</code>, which was not in this node's write scope: an opt-in flag would
+    have wired the CLI and left the MCP surface emitting neither figure.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/derived-figures-reach-the-read-surfaces.svg"
+           alt="The committed ledger feeds summary.run_rows, which derives wall_seconds and width_at_start;
+                ledger.read_records delegates to it with with_figures on by default, so both the CLI
+                records view and the MCP records view receive the figures, while ledger.runs passes
+                with_figures off and keeps the stored row for its exact-row callers.">
+      <figcaption>One derivation, both read surfaces receiving it. The raw
+      <code>ledger.runs</code> path is kept beside it, because a caller asserting the stored row
+      byte-for-byte must not receive a derived one.</figcaption>
+    </figure>
+
+    <p><strong>Strength, and it is the wiring that is tested.</strong> Nine cases in
+    <code>tests/test_derived_figures_reach_a_reader.py</code> enter through
+    <code>crew ledger --view records</code> and <code>crew(view="records")</code> rather than
+    through the deriver, because a test against the deriver passes on the tree where the deriver
+    is correct and the surfaces are empty &mdash; which is the defect this section records. They
+    assert the figures on every row, the stamp-derived value where the stored one disagrees, and
+    absence rather than <code>0</code> where the stamps cannot support a figure; the two
+    surfaces are held to agreement figure by figure; and one static case searches
+    <code>reckon/</code> for a <code>run_rows</code> call site outside its own definition and
+    outside tests, with the instrument checked against the definition it must find first. The
+    declared negative control &mdash; removing the derivation so the stored row passes through
+    &mdash; reddens all nine.</p>
+
+    <p><strong>Gate delta, and what it does not claim.</strong> The cohort is this file plus
+    <code>tests/test_summary_wall_and_width.py</code>, <code>tests/test_ledger.py</code>,
+    <code>tests/test_mcp_tools.py</code>, <code>tests/test_crew_surface_parity.py</code>,
+    <code>tests/test_lane_evidence.py</code> and <code>tests/test_run_store.py</code>, run whole
+    at both revisions against a throwaway extraction of the base commit: <strong>5 failed, 167
+    passed</strong> at base against <strong>5 failed, 176 passed</strong> here, the same five
+    identifiers on both sides and the nine new passes being this file. Zero added failures. The
+    five are pre-existing and environment-bound, not this change's; the merged head is a
+    separately dispatched node's measurement. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-derived-figures-reach-the-read-surfaces">the cumulative evidence</a>.</p>
+
+    <p><strong>What remains outside this node.</strong> The paragraph above, recording that no
+    surface reaches the read, is superseded in the respect it names: both records reads now
+    carry the figures. What it correctly leaves open is the rest of the surface.
+    The derivation is reached at the CLI and MCP
+    records reads; <code>crew ledger --view summary</code> still resolves to the aggregate, which
+    carries no per-run rows, and whether a per-node figure belongs in that aggregate is a
+    separate question this node did not take. Whether &sect;8's measure is now closed at the
+    entry point is also not this node's call &mdash; the record above states what a reader
+    receives, and the verdict belongs to the coordinator.</p>
+
     <h2 id="s6">&sect;6 &mdash; A gate that measures the node rather than the fleet</h2>
 
     <p>The reporting coordinator ran an SDCC build plus a fast unit and validation delta

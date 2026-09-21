@@ -1085,6 +1085,99 @@
     cases now carry the witness, plus the permanent control). Receipts:
     <code>~/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/negative-control.txt</code>.</p>
   </section>
+
+  <section id="the-derived-figures-reach-the-read-surfaces">
+    <h2>&sect;5 — The derived figures reach the read surfaces</h2>
+    <p>The derivation landed one node earlier and nothing called it. This node is the
+    wiring: the two figures now arrive at a reader of the committed-run read.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/derived-figures-reach-the-read-surfaces.svg"
+           alt="The committed ledger feeds summary.run_rows, which derives wall_seconds and width_at_start;
+                ledger.read_records delegates to it with with_figures on by default, so both the CLI
+                records view and the MCP records view receive the figures, while ledger.runs passes
+                with_figures off and keeps the stored row for its exact-row callers.">
+      <figcaption>One derivation, both read surfaces receiving it. The raw
+      <code>ledger.runs</code> path is kept beside it, because a caller asserting the stored row
+      byte-for-byte must not receive a derived one.</figcaption>
+    </figure>
+
+    <h3>The seam, and why it is a default rather than a new view</h3>
+    <p><code>reckon/cli.py</code> reaches <code>ledger.runs</code> for <code>crew ledger --view
+    records</code>; <code>reckon/mcp.py</code>'s records read calls
+    <code>ledger.read_records</code>. Both surfaces were reachable from one function, so the
+    derivation sits in <code>read_records</code> behind <code>with_figures: bool = True</code>
+    and <code>runs</code> opts out with <code>with_figures=False</code>. Defaulting it on is
+    the load-bearing half: the MCP records read is in <code>reckon/mcp.py</code>, and a new
+    required parameter there would have been an edit in a file this node does not own, so an
+    opt-in flag would have wired one surface and left the other emitting neither figure — the
+    exact defect <code>test_the_derivation_has_a_production_caller_inside_reckon</code> exists
+    to catch.</p>
+    <p><code>runs</code> keeping the stored row is not conservatism. <code>runs</code> is the
+    raw promotion-order read and <code>tests/test_ledger.py</code> asserts its rows against the
+    stored shape, so derived keys appearing there would have changed a shared shape in service
+    of a read that did not need it. The two reads differ in exactly one respect and the
+    difference is declared rather than incidental: <code>read_records</code> answers the
+    reader's two questions, <code>runs</code> hands back what was committed.</p>
+    <p><strong>The stored <code>wall_seconds</code> is not consulted on the derived path.</strong>
+    The delegation is to <code>summary.run_rows</code>, which reads the stamps and never the
+    field, so a row whose stored value disagrees reports the stamp-derived figure. The
+    stored-vs-derived measurement for this repository's ledger is in
+    <a href="#s5-wall-time-and-width-at-start">the derivation record above</a> and is not
+    restated here.</p>
+
+    <h3>Falsifier and declared negative control</h3>
+    <p><code>tests/test_derived_figures_reach_a_reader.py</code> enters through the two surfaces a
+    reader actually reaches — <code>CliRunner().invoke(cli.main, ["crew", "ledger", "--project",
+    …, "--view", "records", …])</code> and <code>mcp._crew(PROJECT, view="records", …)</code> —
+    rather than calling <code>summary.run_rows</code>. A test
+    against the deriver would have passed on the base tree, where the deriver is correct and the
+    surfaces are empty; this is the reason the file exists separately from the derivation's own
+    test.</p>
+    <p>The fixture ranges the input domain rather than one shape: two rows dispatched at the same
+    instant, a row whose stored value disagrees with its own stamps, a row missing its completion
+    stamp, and a row missing its dispatch stamp. The figures asserted are therefore asserted at
+    the surface: appearing on every row, being the stamp-derived value where the stored one
+    disagrees, and being absent rather than <code>0</code> where the stamps cannot support them.
+    Both surfaces are asserted to agree figure by figure, and a filtered read is held to the
+    width measured over every committed row — a read counting width after applying its filter
+    would report the width of the selection.</p>
+    <p><strong>Declared negative control:</strong> <code>read_records: "records =
+    summary.run_rows(project, root=root)" -&gt; "records = list(data["runs"])"</code> — the
+    derivation removed, so both surfaces pass the stored row through. Applied alone, it reddens
+    <strong>all nine</strong> cases, including the static caller test, because the call site it
+    searches for is gone with it. <code>assert 4242 == 120</code> and <code>assert 7 is
+    None</code> are the two shapes it shows. The mutation is verbatim on the first line of the red
+    log, and the green run after it is the same tree with only that mutation reverted.</p>
+
+    <h3>Gate delta</h3>
+    <p>The cohort is <code>test_derived_figures_reach_a_reader.py</code>,
+    <code>test_summary_wall_and_width.py</code>, <code>test_ledger.py</code>,
+    <code>test_mcp_tools.py</code>, <code>test_crew_surface_parity.py</code>,
+    <code>test_lane_evidence.py</code> and <code>test_run_store.py</code>, run whole at both
+    revisions against a throwaway extraction of the base commit rather than a stash or a second
+    checkout.</p>
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td>5 failed, 167 passed</td><td>the same five, all in test_ledger.py</td></tr>
+        <tr><td>this node</td><td>5 failed, 176 passed</td><td>the same five</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Zero added failures, and the nine new passes are this node's file.</strong> The five
+    are pre-existing on both sides and are the shared-environment failures other nodes on this
+    machine record; <code>test_ledger.py</code> run alone shows four of them at both revisions,
+    so the fifth appears under cross-file ordering rather than under this change. The file is
+    green alone: <code>9 passed in 2.17s</code>, against <code>9 failed in 2.82s</code> under the
+    mutation. Lint delta: the two changed product files carry no new findings, measured against a
+    scratch copy of their base content. This measures this node's own change; the merged head
+    belongs to a separately dispatched node.</p>
+    <p>Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T155801579049-the-derived-figures-reach-a-reader/</code>
+    — <code>cohort-head.log</code>, <code>cohort-base.log</code>,
+    <code>cohort-base-ledger.log</code>, <code>cohort-head-ledger.log</code>,
+    <code>mutation-red.log</code> (mutation verbatim on line 1), <code>tests-green.log</code>.</p>
+  </section>
   </main>
 </body>
 </html>
