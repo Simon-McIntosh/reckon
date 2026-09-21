@@ -418,6 +418,57 @@
     the denial seat a non-cli launch experiences sits outside this node's write
     scope &mdash; is recorded in a section comment on the owning plan.</p>
   </section>
+
+  <section id="binding-window-reader">
+    <h2>The lane that reads no window now reaches the refusal that knows</h2>
+    <p>Landed 2026-09-21, commit <code>1d3935b0</code>. The inference above
+    existed but had no caller: it was reachable only by reading the run store
+    directly, while the module that owns the refusal write &mdash; the one a
+    budget read already goes through when it observes a refusal &mdash; could
+    not report it. <code>reckon/budget.py</code> now exposes the reading, so
+    the answer arrives as part of a module a caller already consults rather than
+    as a function that has to be known about separately.</p>
+    <p><strong>The reader and the writer resolve the same store.</strong>
+    <code>binding_window</code> reads the durable refusal rows
+    <code>_stamp_refusal</code> writes, through the same path resolution, so a
+    caller that stamped and a caller that reads reach the same rows. The store
+    is shared across lanes; only the stamps whose own lane matches the one asked
+    about are read, and the wall-clock anchor moves the inference from a probe
+    the lane never publishes to refusals it could not avoid emitting.</p>
+    <table>
+      <tr><th>Stamps for the lane asked about</th><th>Reported window</th></tr>
+      <tr><td>Two, about one short window apart</td><td><code>weekly</code> &mdash; the short window reset and the lane refused anyway</td></tr>
+      <tr><td>Two, far apart</td><td><code>short</code> &mdash; the lane was served and drained it again</td></tr>
+      <tr><td>One</td><td><code>undetermined</code> &mdash; no window named, no boolean a caller could read as a verdict</td></tr>
+      <tr><td>One for this lane, two for another</td><td>The other lane's stamps are ignored; this lane stays <code>undetermined</code></td></tr>
+    </table>
+    <p><strong>The undetermined answer is asserted as an absence.</strong> It
+    may not carry a window name under another spelling and may not carry a
+    boolean anywhere in its fields, because a caller keying on truth would take
+    one for &ldquo;the weekly window is binding&rdquo;. The store is a lower
+    bound rather than a census &mdash; a refusal that never surfaced as a
+    log-derived rate-limit event is never stamped &mdash; which is what makes
+    that third state load-bearing rather than decorative.</p>
+    <p><strong>Measure:</strong> 5 tests, all five writing their stamps through
+    the production writer and reading them back through this reader, so no case
+    runs against literals handed to an inference. 60 passed / 1 failed over the
+    focused budget batch against the same 1 failed at base
+    (<code>test_a_served_turn_refutes_the_refusal.py:174</code>, reproduced with
+    <code>budget.py</code> restored from the base revision), so zero added
+    failures. Ruff adds no finding on either path: the four in
+    <code>budget.py</code> are identical at base, counted by delta.</p>
+    <p><strong>Negative control, and it fires.</strong> The declared mutation
+    &mdash; make the single-stamp case report the short window as binding
+    &mdash; was applied to a scratch copy, and the named test file was observed
+    to fail: 2 failed / 3 passed, the two failures being exactly the tests that
+    assert <code>undetermined</code>, with <code>short</code> reported in its
+    place. The red log records the mutation on its first line and the resolved
+    module path under the scratch tree. One instrument note kept because it
+    nearly hid this: a scratch copy made with <code>cp -a</code> carries the
+    source tree's <code>__pycache__</code>, and the compiled test module then
+    reports <em>the original</em> file path in its traceback &mdash; the run was
+    against the mutated module, and the log read as though it were not.</p>
+  </section>
 </main>
 </body>
 </html>
