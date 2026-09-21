@@ -610,6 +610,88 @@ nothing has been launched</code></pre>
       removing the recorder's phase guard leaves the four pre-existing launch-failure cases green while the new
       double-recording case fails.</p>
     </section>
+    <section id="s13">
+      <h2>&sect;13 &mdash; A resolved launcher reports its origin before a bounded HTTP probe</h2>
+      <p><strong>Implemented, awaiting coordinator review:</strong> commit <code>9ea06319</code> adds
+      <code>reckon/crew/serving_origin.py</code> and <code>tests/test_serving_origin.py</code> at base
+      <code>26d6df25680ac385446f9db0c86f339ddb57fece</code>. The standalone callable is
+      <code>check_serving_origin(backend, launcher_path, origin_args=..., timeout=5.0,
+      probe_path="/v1/models", env=..., cwd=...)</code>. Its result names the resolved path without
+      dereferencing launcher symlinks, the queried origin, HTTP status, whether HTTP answered,
+      the stated timeout, elapsed seconds and whether that timeout expired.</p>
+      <p><strong>Reproduction before implementation.</strong> A synthetic executable embedding a different
+      origin was resolved successfully while a temporary endpoints document listed the configured model.
+      The existing availability reading returned <code>command_found: true, serving: serving</code>
+      without querying the launcher or opening a socket. The exact receipt is retained in
+      <code>reproduction.log</code>. This reproduces the observation gap; it does not claim the
+      historical production origin is still down.</p>
+      <p><strong>Introspection finding.</strong> Reading the deployed launcher at
+      <code>/work/projects/imas_gpu/agents/clive</code> established that it has no origin-only query:
+      <code>--list</code> contacts catalogs, unknown arguments are forwarded to the agent CLI, and the
+      initial origin assignment can be replaced after model selection. Therefore this check neither guesses
+      a flag nor parses that assignment. The caller must supply a documented side-effect-free argument
+      vector whose stdout is a JSON object containing an HTTP(S) <code>origin</code>, using the same
+      model, environment and working directory as the intended launch. No such vector was exercised on
+      production. Without it the callable returns <code>unknown</code>; without an endpoints declaration
+      it returns <code>not-applicable</code>.</p>
+      <table>
+        <thead><tr><th>Controlled input</th><th>Observed receipt / assertion</th><th>Scope of proof</th></tr></thead>
+        <tbody>
+          <tr><td>Loopback HTTP 200</td><td><code>serving</code>, answered true, exact launcher and origin;
+          server receives one request</td><td>Actual HTTP response, no proxy substitution</td></tr>
+          <tr><td>Bound, non-listening loopback port</td><td><code>refusal</code>, answered false;
+          detail names both launcher and origin</td><td>Connection refusal cannot read as serving</td></tr>
+          <tr><td>No endpoints declaration</td><td><code>not-applicable</code>, no origin or HTTP observation</td>
+          <td>A backend outside this check is not refused</td></tr>
+          <tr><td>Server accepts the request and sends no response</td><td>Timeout refusal at a stated
+          2.5-second budget, measured between 2.4 and 3.2 seconds</td><td>The server must have received
+          the request; an empty observation cannot satisfy the test</td></tr>
+          <tr><td>1.5-second launcher query followed by a silent server</td><td>Shared 4-second deadline,
+          measured between 3.9 and 4.8 seconds</td><td>HTTP does not receive a fresh full budget</td></tr>
+          <tr><td>HTTP 401, 404, 503 or redirect</td><td><code>refusal</code> with answered true and HTTP
+          status; redirect destination receives no request</td><td>An HTTP answer is distinguished from
+          a transport failure; another origin cannot provide the success</td></tr>
+          <tr><td>Malformed, failed or unavailable introspection</td><td><code>unknown</code>;
+          no origin inferred from endpoint publication</td><td>Missing evidence remains explicit</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Meaning and cost.</strong> Serving means a successful HTTP status at the named health path,
+      defaulting to <code>/v1/models</code>; it does not establish catalog contents, model identity, inference
+      authorization or successful generation. Callers may select another origin-local health path.
+      HTTP runs in an isolated standard-library subprocess, with proxies and redirects disabled and a parent
+      deadline that also bounds DNS and incomplete headers. There is no retry or model invocation. Two
+      subprocess starts are the overhead; an initial login-node run demonstrated that interpreter startup
+      can consume a subsecond budget, producing 4 failures and 19 passes before any HTTP request in the
+      affected timing cases. Those cases now use explicit seconds-scale budgets and require positive
+      evidence of request arrival. Production latency and serving state were not measured.</p>
+      <p><strong>Verification.</strong> The scoped command is
+      <code>python -m pytest -p no:cacheprovider -q tests/test_serving_origin.py</code>, with the root
+      environment interpreter and this worktree on <code>PYTHONPATH</code>. On <code>all_debug</code>
+      (one CPU, 2 GiB, five-minute allocation limit), the focused gate reported <strong>23 passed in
+      8.22 seconds</strong>; after removing the negative control it reported <strong>23 passed in
+      7.97 seconds</strong>. Ruff lint and formatting checks pass for both new files. These tests create
+      their own executables and loopback servers; no production origin or real endpoints document is read.
+      The module and test file are new at the stated base, so no pre-existing scoped test population exists.
+      The merged integration gate remains outside this worker's scope.</p>
+      <p><strong>Negative control, applied and removed.</strong> The declared mutation is
+      <code>make the reachability check return serving without probing the origin in reckon/crew/serving_origin.py</code>.
+      An unconditional serving return was inserted after origin discovery and before the HTTP probe.
+      The gate then reported <strong>8 failed, 15 passed in 2.83 seconds</strong>, exit 1. The failed cases
+      cover the positive request observation, connection refusal, both HTTP deadlines, all three HTTP error
+      statuses and redirect handling. The mutation is absent from the implementation commit.</p>
+      <p><strong>Durable receipts.</strong> The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/</code>.
+      It contains <code>reproduction.log</code>, the initial <code>gate.log</code>,
+      <code>focused-gate.log</code>, <code>negative-control.log</code> (first line is the declared mutation
+      verbatim), <code>negative-control.patch</code>, <code>restored-gate.log</code> and
+      <code>manifest.md</code>. The manifest carries both delivery commits and all changed paths.</p>
+      <p><strong>Follow-ons.</strong> The launcher owner must expose a safe origin-only query, returning
+      the origin selected for the requested model without starting inference. The dispatch owner then passes
+      its resolved executable, launch environment, working directory and query arguments into this callable
+      and decides how to surface <code>unknown</code> alongside refusals. The check is deliberately not
+      connected to <code>reckon/crew/dispatch.py</code> in this node. Plan lifecycle metadata and the driving
+      followup remain unchanged for coordinator adjudication.</p>
+    </section>
   </main>
 </body>
 </html>
