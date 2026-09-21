@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.45">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -104,6 +104,47 @@
     <p><strong>Done when.</strong> The table exists as an anchor of this plan's evidence document
     with every count traceable to an audit anchor, and it names the classes where the local lane's
     defect rate is indistinguishable from the metered lanes and the classes where it is not.</p>
+
+    <p><strong>The audit's record landed on 2026-09-21 and its headline changes what §2 can be.</strong>
+    55 audit review rows over 48 unique promotions, every count bound to a record file and line,
+    with seven cross-area duplicates named. Reviewed-over-defective on the locally served lane, by
+    class: record repair 8/7; mechanical refactor with a focused gate 4/3; measurement driver 7/4;
+    solver change 11/9; negative-control authoring 9/2; investigation and reporting 3/1. Figure
+    rendering is 348 artifacts at mean 55.7 with 242 under 70, and is <em>not</em> promotion-keyed,
+    so it is an artifact-quality reading and not a defect rate — it does not belong in the same
+    column as the rest.</p>
+
+    <p><strong>On the classes where both lanes have rows, the lane is not the variable.</strong>
+    Metered lanes on the same classes: mechanical 3/3 against the local lane's 4/3, measurement
+    driver 3/2 against 7/4, solver change 6/5 against 11/9. A routing rule fitted to those
+    differences would be fitting noise. The axis that carries the signal is the one the defect
+    classes themselves name — gates recorded over failures, controls that do not discriminate,
+    done-whens promoted as complete — and that is the promotion process, not the lane. It is the
+    same finding <code>scoring-should-stop-a-promotion</code> reached from the other end, which is
+    why the two plans meet: <strong>the gate is the lever, and the lane is mostly not.</strong></p>
+
+    <p><strong>Two places the lane genuinely does differ, and they point opposite ways.</strong>
+    Negative-control authoring at 9/2 is the strongest local row in the set and argues for sending
+    more of that work there, not less. The weakness is judgement about completion and about physics
+    — which is the shape of the interim ruling's original premise, and is also why the honest stops
+    observed on that lane are the good behaviour rather than a failure to report. Classes with too
+    few rows are marked as such in the record rather than ruled on, and §2 must inherit that
+    discipline instead of extrapolating across them.</p>
+
+    <p><strong>So §2's rules are keyed to the kind of work and its gate, not to the backend.</strong>
+    A per-lane routing table would encode a difference this evidence does not support on five of
+    the seven classes. What the evidence does support is a per-class <em>review</em> requirement,
+    which is the surface <code>scoring-should-stop-a-promotion</code> §2g is already building, and
+    a lane preference on the two classes where the rows separate.</p>
+
+    <p><strong>One caveat that belongs beside the numbers, because it is the same session's
+    measurement.</strong> Serving capacity is a confound the defect rates cannot see. On the day
+    this record was assembled the local pool was sampled at 30 concurrent against a computed
+    ceiling of 22 with nothing queueing, and runs there degraded silently rather than refusing —
+    turns emitted, tool calls made, nothing produced, no error record. A defect rate measured
+    across that condition mixes the lane's judgement with the pool's saturation, and nothing in the
+    promotion record distinguishes them. §2 should not read a class's local-lane row as a property
+    of the model until the rate is measured with the pool inside its own ceiling.</p>
 
     <h2 id="s2">§2 — Turn the table into routing rules the dispatcher enforces</h2>
     <p>Reckon already routes model and effort from how completely a node is specified

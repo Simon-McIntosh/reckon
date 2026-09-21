@@ -250,6 +250,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     rate-limit event. The reader has no caller yet; the sections that consume it are separate
     nodes. Evidence:
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed">the window reader, landed</a>.</p>
+    <article class="r-outcome" data-id="o-s5-lane-document">
+      <h3>A lane reading now degrades field by field</h3>
+      <p>Landed 2026-09-21, commit <code>abbce128</code>.
+      <code>reckon/crew/lane_document.py</code> reads a published lane document and resolves each of
+      <code>headroom</code>, <code>running</code>, <code>waiting</code>,
+      <code>concurrent_requests</code>, <code>mean_context</code>, <code>kv_occupancy</code>,
+      <code>state</code> and <code>observed_at</code> on its own, so a <code>null</code>
+      <code>binding_observed</code> leaves the other fields intact and a field absent from the
+      document comes back <code>unknown</code> while its siblings still resolve.</p>
+      <p><strong>The defect reproduced first.</strong> The reader a dispatch used resolved the
+      document wholesale: driven with a real-shaped document carrying <code>headroom</code> 96 and
+      <code>running</code> 0 beside a <code>null</code> <code>mean_context</code>, it returned
+      <code>unknown</code> for every field. The new reader returns the numbers it carries and
+      <code>unknown</code> for the one field that is genuinely null.</p>
+      <p><strong>Freshness travels with the figure.</strong> A reading older than the document's own
+      <code>suggested_shelf_life_seconds</code> keeps its age and a <code>stale</code> marker rather
+      than being dropped or served as current. The reader never raises on an absent, unreadable,
+      unparsable or non-object document; it returns all-unknown with a reason, because a dispatch
+      consults it outside a <code>try</code> block.</p>
+      <p><strong>Gate.</strong> <code>pytest tests/test_lane_document.py</code> &mdash; 14 passed;
+      <code>ruff check</code> and <code>ruff format --check</code> clean. The negative control
+      inserts the whole-document collapse back into a scratch copy and observes the named test fail.</p>
+      <p><strong>Not wired here.</strong> The dispatch-side consumer still calls
+      <code>dispatch._lane_reading_carry</code>; substituting this reader there is outside this
+      node's write scope and is recorded as a follow-on.</p>
+    </article>
 
     <h2 id="s5b">&sect;5b &mdash; Four lanes, one wallet, and a figure that is never re-read</h2>
 
