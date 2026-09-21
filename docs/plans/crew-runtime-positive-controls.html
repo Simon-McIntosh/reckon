@@ -514,6 +514,15 @@
     the origin is supplied by the test. The declared mutation is applied, the named cases are observed to fail,
     the red log is recorded with the mutation verbatim on its first line, and the mutation is reverted before
     the commit.</p>
+    <p><strong>Prior art this section must be judged against, recorded 2026-09-21 by the coordinator.</strong>
+    <code>reckon/flight.py</code> already reads a backend's <code>endpoints_document</code> and already reports
+    a per-backend <code>serving</code> and <code>serving_detail</code> &mdash; the flight reading for the local
+    backend on this workstation says <em>endpoints document lists 1 endpoint(s), serving configured model</em>.
+    So the endpoints reader is not the thing that is missing, and a node that writes a second one has
+    duplicated the surface this plan's own naming rule forbids. What is missing is narrower and is the whole
+    point: nothing compares that document against the launcher that was <em>actually resolved</em>. A node
+    authoring new machinery here states why <code>reckon/flight.py</code>'s existing reader could not be
+    reused, or reuses it; the review of this section checks that claim before anything else.</p>
     <p><strong>Files.</strong> A new <code>reckon/crew/serving_origin.py</code> and a new
     <code>tests/test_serving_origin.py</code>. Wiring the check into the pre-launch path is deliberately NOT in
     this node: that path is <code>reckon/crew/dispatch.py</code>, which is held by another session's run. This
