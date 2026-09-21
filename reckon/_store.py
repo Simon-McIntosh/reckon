@@ -1531,9 +1531,14 @@ def _decision_options_as_choices(options: Any) -> tuple[list[str], dict[str, str
     if isinstance(options, list):
         for entry in options:
             if isinstance(entry, dict):
-                # Distinguish a null from a missing key: ``entry.get("value",
-                # …)`` treats both alike, and the fallback then hides the null.
-                value = entry["value"] if "value" in entry else entry.get("label")
+                # A missing value key is refused before it can be confused with
+                # a null one: ``entry.get("value", entry.get("label"))`` reads
+                # both alike, so an option carrying only a label was accepted
+                # with the label as its value, and an option carrying neither
+                # was refused as a null when no key was present at all.
+                if "value" not in entry:
+                    raise OpError(f"decision option {entry!r} carries no 'value' key")
+                value = entry["value"]
                 label = entry.get("label", value)
             elif isinstance(entry, str):
                 value = entry
