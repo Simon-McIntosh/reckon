@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326,51589acde2aba08be2d2ab036f7113acc65a1df2">
@@ -804,6 +804,31 @@
     a reviewer that skipped four of the five things it was told to read — which is the whole
     reason §4 requires a verdict per item.</p>
 
+    <h3>The class, named once, because this page kept finding it</h3>
+
+    <p><strong>A true statement doing duty for the one that was actually required.</strong> Every
+    instance below was found by looking at the <em>artifact</em>, and missed by everything that
+    looked at the proxy. They are recorded here as one class rather than separately in the five
+    sections that each met it.</p>
+
+    <table>
+      <caption>The proxy, the question it was standing in for, and where it cost something.</caption>
+      <thead><tr><th>The proxy that read true</th><th>The fact that was needed</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>the commit is reachable from <code>HEAD</code></td><td>the content is in the tree</td><td>§2c — two nodes promoted <code>passed</code>, never merged</td></tr>
+        <tr><td>the <code>promote</code> commit is an ancestor of main</td><td>the <em>promoted work</em> is an ancestor</td><td>§2c — made the ancestry check a tautology; my error, caught by a peer</td></tr>
+        <tr><td>the process is gone</td><td>the work was abandoned</td><td>§2e — false for 27 of 28; discarding would have destroyed 15 delivered runs and 5 reviews</td></tr>
+        <tr><td>the manifest status is not <code>complete</code></td><td>the run has no review to gate on</td><td>§2f — a plausible synonym exempts a run from review silently</td></tr>
+        <tr><td>the review parsed</td><td>the review read <em>this</em> revision</td><td>§5c — a repaired run promotes on a record of what it was repaired from</td></tr>
+        <tr><td><code>systemctl is-active</code> says the unit is down</td><td>no watcher seat is held</td><td>four needless restarts; the seat was held by an orphan and working</td></tr>
+        <tr><td>no process matches <code>clive</code></td><td>no local-lane worker is running</td><td>reported 0 workers against 31 live pointers; <code>clive</code> execs <code>claude</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Nine of these were made in one day across three sessions by readers who knew the
+    rule.</strong> That is the argument for a mechanical check rather than a habit: the failure
+    needs no carelessness, only a plausible adjacent field that happens to be populated.</p>
+
     <h2 id="s5c">§5c — A review describes a revision, and nothing records which</h2>
 
     <p><strong>Acting on a review invalidates it, and the guard cannot tell.</strong> The healthy
@@ -855,6 +880,20 @@
     with three rechecks in flight against the paths holding their originals, whose eleven findings
     and scores of 79, 86 and 89 are the measurement this plan's §5 rests on. Copying them aside is
     not a fix.</p>
+
+    <p><strong>A review record has now been lost, not nearly lost.</strong> Recorded 2026-09-21:
+    <code>node-probe</code>'s round-two review — score 94 at revision <code>f12261e8</code>,
+    carrying the unreachable-job-bound finding that the round-one repair had introduced — was
+    <em>overwritten by the round-three recheck before its author could copy it aside</em>. The
+    finding survives only because it had already been acted on. The store's own record of why the
+    third repair was needed no longer exists.</p>
+
+    <p><strong>And the interim naming failed for a reason worth keeping.</strong> The surviving
+    records were first set aside under a round number, which was wrong within minutes because
+    nobody knew the count in advance. Rekeying them by the revision each reviewer read
+    — <code>&lt;run&gt;.at-&lt;sha&gt;.json</code> — is the same shape as the
+    <code>reviewed_base_sha</code> normalisation above: <em>accumulation by construction, rather
+    than by someone remembering to copy a file before each recheck lands.</em></p>
 
     <p><strong>Key the store by the reviewing run instead, and superseding falls out.</strong> An
     append-only history makes "which review is current" a revision comparison — the one whose
