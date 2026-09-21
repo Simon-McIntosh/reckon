@@ -456,6 +456,22 @@
     enters through <code>crew.dispatch.dispatch</code> rather than calling the helper, and asserts
     the grep count so the wiring cannot regress to a direct phase test.</p>
 
+      <strong>§2e dispatch wire-up — the production member guard now consults the verdict.</strong>
+      <code>reckon/crew/dispatch.py</code> now calls
+      <code>refuse_member_in_flight(effective_member, pointer)</code> for each matching holder,
+      so a worker proven gone on this host no longer blocks the roster member while a live or
+      unresolvable worker still refuses with the observed liveness in the message. The wiring is
+      exercised through <code>crew.dispatch.dispatch</code>, not by calling the node helper: the
+      focused gate in <code>tests/test_dispatch_guard_consults_liveness.py</code> passes all four
+      cases (<strong>4 passed, 0 failed</strong>) for live, gone, unknown and source-level wiring.
+      The existing named-member regression also passes (<strong>5 passed, 0 failed</strong> when
+      run with the focused file). The negative control reproduced the old defect before the
+      repair: the gone-holder dispatch exited 1 with
+      <code>MemberInFlight: crew member 'worker-a' already holds in-flight run 'holder-run'</code>.
+      Full record:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#dispatch-member-liveness">dispatch member liveness</a>
+      (commit <code>8a3ebe90</code>).
+    </p>
     <h2 id="s2f">§2f — The lane reading is discarded whole, and the roster is invisible at the refusal</h2>
 
     <p>§2e found stale <code>phase</code> holding members. Two further causes were measured on

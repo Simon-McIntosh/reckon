@@ -340,6 +340,51 @@
       node's job and is listed as a follow-on rather than claimed here.
     </p>
 
+    <h2 id="dispatch-member-liveness">Dispatch member admission — the production guard reads liveness</h2>
+    <p>
+      Node <code>the-dispatch-guard-consults-the-liveness-verdict</code> (§2e). The remaining
+      phase-only call site in <code>reckon/crew/dispatch.py</code> now delegates each matching
+      holder to <code>refuse_member_in_flight</code>, which consumes the existing
+      <code>alive</code>/<code>gone</code>/<code>unknown</code> verdict. The production dispatch
+      path therefore releases only a holder proven gone on this host; unknown remains closed so a
+      foreign or unborn worker cannot be double-dispatched.
+    </p>
+    <table>
+      <caption>Dispatch outcomes asserted through the public dispatch entry point.</caption>
+      <thead><tr><th>Observed holder</th><th>Dispatch result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td><code>alive</code></td><td>refused</td><td><code>MemberInFlight</code> names <code>alive</code></td></tr>
+        <tr><td><code>gone</code></td><td><strong>admitted</strong></td><td>dispatch returns a record for the member</td></tr>
+        <tr><td><code>unknown</code></td><td>refused</td><td><code>MemberInFlight</code> names <code>unknown</code></td></tr>
+        <tr><td>wiring marker</td><td>asserted</td><td><code>dispatch.py</code> contains <code>refuse_member_in_flight</code></td></tr>
+      </tbody>
+    </table>
+    <h3>Gate measure, as executed</h3>
+    <ul>
+      <li><strong>Focused gate.</strong> <code>pytest -p no:cacheprovider -q
+        tests/test_dispatch_guard_consults_liveness.py</code> → <strong>4 passed, 0 failed</strong>.
+        The three liveness cases all enter through <code>crew.dispatch.dispatch</code>; the fourth
+        also dispatches through that entry point before asserting the source marker. The existing
+        named-member regression ran with it and the combined result was <strong>5 passed, 0
+        failed</strong>.</li>
+      <li><strong>Negative control.</strong> Before the repair, the gone-holder case exited 1 and
+        failed at the phase-only branch with
+        <code>MemberInFlight: crew member 'worker-a' already holds in-flight run 'holder-run'</code>.
+        The declared mutation was <em>replace the phase-only member guard with the three-valued
+        liveness refusal</em>; the red log is
+        <code>~/.config/reckon/crew/runs/r-20260921T140456571846-the-dispatch-guard-consults-the-liveness-verdict/negative-control.log</code>.</li>
+      <li><strong>Lint and format.</strong> Ruff check over the exact changed code and test paths
+        introduced no new findings: the dispatch file has <strong>7</strong> findings at the
+        assigned base and <strong>7</strong> after the change, while the new test file has
+        <strong>0</strong>. Formatting was run over exactly those two paths; the remaining
+        dispatch findings are pre-existing and outside this node's behavioural change.</li>
+    </ul>
+    <p>
+      The landing is <code>8a3ebe90</code>. No worktree, plan metadata or terminal plan state is
+      closed by this worker; the coordinator decides whether the section can advance after the
+      other §2e nodes land.
+    </p>
+
   </main>
 </body>
 </html>
