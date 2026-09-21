@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="51">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -558,6 +558,82 @@
     the refusal and the promoted row; and the manifest field accepts each of the four observed
     shapes or refuses them <em>when the worker writes it</em> rather than at promotion, because
     that is the moment the only party who can fix it still exists.</p>
+
+    <h2 id="s2j">§2j — The gate reads a record written by a process that no longer exists</h2>
+
+    <p>Four runs were refused promotion today on the <strong>shape of the record</strong> rather
+    than on anything about the work. All four had sound work, a green gate, a genuinely red
+    control, and a commit that was an ancestor of <code>HEAD</code> with its content present. Each
+    was refused for a different reason, and no two of the reasons are the same defect.</p>
+
+    <table>
+      <caption>Each row: what the promotion gate read, and what was true on disk at the same
+      moment.</caption>
+      <thead><tr><th>Run</th><th>What the gate read</th><th>What was on disk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>review-reflex-fires-on-the-sweep</code></td>
+          <td><code>status: implemented-locally</code> — outside the closed vocabulary, so the
+          whole manifest read as unreadable</td>
+          <td>nine tests green, the control reddening its named test and reverting byte-identical
+          against a recorded <code>sha256</code>, commit merged</td>
+        </tr>
+        <tr>
+          <td><code>promotion-write-cannot-shrink-the-ledger</code></td>
+          <td><code>negative_control_log:</code> empty</td>
+          <td>the control log beside the manifest in the same directory, first line stating the
+          mutation, exit 1 on the named test</td>
+        </tr>
+        <tr>
+          <td><code>member-guard-counts-live-processes</code></td>
+          <td>the field carrying the path <em>and</em> a parenthetical quoting the log's own first
+          line, so it did not resolve as a path at all</td>
+          <td>a red control log — under <code>/tmp</code>, where it does not survive</td>
+        </tr>
+        <tr>
+          <td><code>review-gate-covers-every-writing-run</code></td>
+          <td>the field naming the first of the worker's two control logs, whose mutation the node
+          never declared</td>
+          <td>a second log carrying the declared mutation verbatim and reddening the fence with
+          five failures</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The common factor is timing, not carelessness.</strong> The worker writes the
+    record; the gate reads it minutes to hours later; and by then the only party who could correct
+    a field is gone. Three of these four workers had already ended when their record was first
+    read. So every one of these became a coordinator hand-editing a worker's manifest — which is
+    the one repair that must never become routine, because a repaired field and a fabricated one
+    are the same bytes. Each edit here kept the worker's original beside it and stated in the
+    record what was changed and why; that is a discipline, and a discipline is what this plan
+    exists to replace with a check.</p>
+
+    <p><strong>Validate the field where it is written, not where it is read.</strong> §2h's
+    done-when already says this for <code>negative_control_log</code>; these four rows say it for
+    the manifest as a whole. A worker told at write time that <code>implemented-locally</code> is
+    not a status, or that its control-log field does not resolve to a file, fixes it in the turn it
+    is already having. The same message at promotion reaches nobody.</p>
+
+    <p><strong>And the coordinator needs an honest exit.</strong> Every other refusal this gate
+    raises has a named waiver that is recorded on the promoted row — suite delta, boundary refusal,
+    resume path, unreviewed promotion, undeclared companion path, unmoved impl. The
+    negative-control refusal has none. A coordinator holding a control that genuinely ran the
+    declared mutation but described it in other words therefore has exactly two moves: paste the
+    declaration into the log, which the check cannot tell from a correct label, or abandon landed
+    work. <strong>A gate whose only honest exit is abandonment gets defeated rather than
+    obeyed</strong>, and the defeat leaves no trace while the abandonment leaves a hole.</p>
+
+    <p><strong>Done when</strong> <code>reckon crew complete</code> grows
+    <code>--waive-negative-control REASON</code>, refused unless the run actually carries a
+    control-match refusal, since a waiver that can be passed unconditionally is not a waiver;
+    passing it records the reason, the declaration and the log path on the ledger row, asserted by
+    reading the written row rather than the command's output; a row promoted through the waiver is
+    distinguishable from one whose control matched by a field a reader can filter on, not by the
+    free text; and the manifest's <code>status</code> and <code>negative_control_log</code> fields
+    are validated at the worker's write, with the refusal naming the recognised values and, for the
+    log, whether the path resolves — asserted by a test that writes each of the four shapes in the
+    table above and requires each to be refused at write time.</p>
 
     <h2 id="s2g">§2g — One gate per kind of work, selected by what the run produced</h2>
 
@@ -1095,6 +1171,43 @@
     thought of it. This session read the plan it was shipping and not the plan that governed
     how, and nothing in the dispatch path said a word. That is a fitness question about the
     tooling, not about the lane.</p>
+
+    <p><strong>The reflex, once wired, pins every automatic review to that one lane.</strong>
+    <code>dispatch_review_for_run</code> passes <code>local=True</code>, and the argv it composes
+    carries <code>--local</code>, so §3's reflex — the thing that makes reviews happen without a
+    coordinator remembering — sends all of them to the local backend regardless of what that lane
+    is doing. That is defensible as a default and indefensible as the only behaviour, and today it
+    was measured failing: a peer session sampled the lane three times over one minute at
+    <code>running=30</code> against a computed ceiling of <code>concurrent_requests=22</code>,
+    with <code>waiting=0</code>, so nothing was queueing and the pool was simply serving 36% more
+    than its own document says it should.</p>
+
+    <p><strong>It degrades rather than refusing, which is why the classification is wrong as well
+    as the lane.</strong> Four of this session's runs on it emitted turns and tool calls and
+    produced nothing at all — no commit, no uncommitted edit, clean worktree at base — and two
+    peer runs last emitted a line about their own output coming out garbled before going quiet.
+    No <code>is_error</code> record in any of them. They classify as <code>stalled</code> or
+    <code>abandoned</code>, which reads as a node to resume; the correct operator response is a
+    fleet to let drain. Resuming was tried and does not work: the same node stalled, resumed and
+    stalled again, each attempt spending a turn to reach the same condition.</p>
+
+    <p>Two consequences for this plan. The reflex must honour the destination lane's own headroom
+    and fall back rather than pinning — and the signal to read is the pair of counts in the lane
+    document the preflight already opens, not the stored <code>binding_observed</code>
+    classification, because a stored classification carries no observation time and a stale verdict
+    is indistinguishable from a current one. And the sweep must not re-launch a review onto a lane
+    that just dropped one: this session watched the reflex dispatch the same review to the
+    saturated lane twice within two minutes, each attempt abandoning inside a minute, because the
+    sweep fires on every completion and nothing carries the failure forward.</p>
+
+    <p><strong>Done when</strong> <code>dispatch_review_for_run</code> selects its backend rather
+    than asserting it, asserted by a test that offers a lane whose <code>running</code> meets or
+    exceeds its <code>concurrent_requests</code> and requires the dispatch to go elsewhere or to
+    record <code>awaiting-lane</code>, and by a second test that offers a healthy lane and requires
+    the local one still to be preferred — the fallback must not become the default; and a review
+    dispatch that abandons within its first minute is not recomposed onto the same backend by the
+    next sweep, asserted by driving two sweeps over one run and requiring the second either to pick
+    a different backend or to refuse, naming the first attempt.</p>
 
     <h2 id="s5">§5 — Dogfood: this plan's own back half is reviewed</h2>
 
