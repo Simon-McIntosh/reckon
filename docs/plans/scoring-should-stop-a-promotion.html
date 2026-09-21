@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -661,6 +661,38 @@
     for its own source run, or the second review of a wave is refused by the first. Both
     properties need a test, because both failures look like an idle fleet rather than an
     error.</p>
+
+    <p><strong>Landed 2026-09-21, and it immediately exposed a defect of its own: the reflex
+    dispatches a <em>generic</em> brief.</strong> The composed done-when is, verbatim, <em>"the
+    review for &lt;run&gt; stores a parsed record scoring all 5 dimensions in the range
+    0..20"</em> — no reachability items, no inverse-direction control, no propagated findings.
+    None of the clauses that produced today's value.</p>
+
+    <p>Every review that found something real today was hand-written: the role-spelling
+    disagreement between the two exemptions, the two fail-open holes in the prescription
+    judgement, the substituted negative control. Each brief named specific things to check. Set
+    against the four-node measurement in §2g — where a reviewer found a defect once and three more
+    instances came only from writing it into the next brief, and one round returned exactly the
+    two items its brief named and nothing else — the consequence is exact: <strong>the brief
+    bounds what a review finds, so automating the dispatch while leaving the brief generic scales
+    the weakest version of the review rather than the review.</strong></p>
+
+    <p><strong>This is the same substitution, pointed at this plan's own repair.</strong>
+    <code>status: parsed</code> stood in for <em>the record is complete</em>; a green gate stood in
+    for <em>the change is correct</em>; and now <em>a review was dispatched</em> stands in for
+    <em>a review was asked anything</em>. The reflex is correct and incomplete, and the
+    incompleteness is invisible precisely because the reviews still come back scored.</p>
+
+    <p><strong>So the composed dispatch must carry the profile, not the generic line.</strong>
+    §2g's per-kind profile is selected from the run's own changed paths, which the reflex already
+    has; the accumulated findings are one further sentence. Until it does, an automatic review is
+    weaker than the manual one it replaced, and the ledger cannot tell them apart.</p>
+
+    <p><strong>Also required of the reflex, and not yet true:</strong> the composed brief names the
+    profile it selected, so a reader of the stored review can see which checklist it was answering
+    rather than inferring it from the findings; and a review dispatched with the generic brief is
+    recorded as such, since an unprofiled review and a profiled one currently produce
+    indistinguishable records.</p>
 
     <p><strong>Two blockers, both found by §2's worker, and the reflex is unsafe to turn on
     until each is closed.</strong> Neither was visible when this section was written.</p>
