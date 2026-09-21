@@ -34,7 +34,7 @@ Environment="PATH={path}"
 ExecStart={exec_start}
 StandardOutput=append:{log_file}
 StandardError=append:{log_file}
-Restart=on-failure
+Restart=always
 RestartSec=5
 TimeoutStopSec=30
 
