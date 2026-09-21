@@ -535,6 +535,116 @@
     reports <em>the original</em> file path in its traceback &mdash; the run was
     against the mutated module, and the log read as though it were not.</p>
   </section>
+
+  <section id="rendered-evidence">
+    <h2>Rendered evidence — six captures of the meter's three states</h2>
+
+    <p>Six captures record the meter as the surface renders it, at 1374 and 1920
+    pixels wide, for the three states the section names: the unsustainable case
+    whose projection precedes its reset, the sustainable case at the same quota
+    position, and the backend that reports no window at all. The first pair below
+    carries the measure — the <em>same</em> 20% position, differing only in rate,
+    so the projection mark moves and the bar's warning state changes while the
+    position does not.</p>
+
+    <figure>
+      <img src="/reckon/figures/burn-is-visible-before-it-bites/after/unsustainable-1374.png"
+           alt="Crew quota meter, unsustainable: 20% used in a 7-day window, 10.3x one-hour and 1.71x 7-day derived rates each marked as an upper bound, projection mark before the reset, bar in its warning state">
+      <figcaption>Unsustainable — 20% used, 10.3&times; over the hour and
+      1.71&times; over the week; the projection sits far before the reset and the
+      bar carries its warning state.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="/reckon/figures/burn-is-visible-before-it-bites/after/sustainable-1374.png"
+           alt="Crew quota meter, sustainable: the same 20% used in the same 7-day window, lower derived rates, projection mark at the reset edge, bar not in its warning state">
+      <figcaption>Sustainable — the same 20% position and the same window, at
+      lower derived rates; the projection sits at the reset edge and the bar does
+      not warn.</figcaption>
+    </figure>
+
+    <p><strong>The measured difference between those two captures is the whole
+    content of this section.</strong> The position is unchanged at 20%; the
+    projection moves from well before the reset to the reset itself; the warning
+    state follows the projection rather than the position. A reader treating
+    "20% used" as the state would call these two identical, and they are not.</p>
+
+    <figure>
+      <img src="/reckon/figures/burn-is-visible-before-it-bites/after/no-window-1374.png"
+           alt="No window reported: no meter is drawn at all, and the captured region carries a labelled capture-harness annotation restating the payload's own headroom-unknown text">
+      <figcaption>No window — no meter is drawn at all. The region carries a
+      capture-harness annotation instead of a blank bar.</figcaption>
+    </figure>
+
+    <h3>What the no-window capture shows, and why it needed two facts</h3>
+    <p>A backend reporting no window renders no meter, so its capture is a
+    photograph of nothing and would evidence nothing by itself. Two independent
+    facts are recorded, and the index carries both. First, the component returns
+    null for such a reading, so the rendered document contains no meter class and
+    no position element at all — asserted against a real element the other two
+    captures <em>do</em> contain, which is what separates "no meter" from "a meter
+    at zero". Second, the captured region carries the payload's own text,
+    <code>headroom: unknown</code>, in an annotation labelled within the image
+    itself as a capture-harness annotation rather than product output; the label
+    is legible in the PNG, not only in an HTML attribute a reader of the figure
+    cannot see. The index entry carries the corresponding fields,
+    <code>explicit_unknown: true</code> and
+    <code>annotation_source: capture-harness</code>.</p>
+
+    <h3>The index, and how each width was established</h3>
+    <p><code>docs/figures/burn-is-visible-before-it-bites/after/capture-index.json</code>
+    lists all six captures with the figures each one shows.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Capture</th>
+          <th>Recorded size</th>
+          <th>Quota position</th>
+          <th>Rate windows</th>
+          <th>Projected exhaustion</th>
+          <th>Bar state</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>unsustainable-1374</td><td>1374 &times; 900</td><td>20% of a 10080-minute window</td><td>60min 10.3&times; / 10080min 1.71&times;</td><td>2026-09-15T03:09:00Z (before the reset)</td><td>warns</td></tr>
+        <tr><td>unsustainable-1920</td><td>1920 &times; 900</td><td>20% of a 10080-minute window</td><td>60min 10.3&times; / 10080min 1.71&times;</td><td>2026-09-15T03:09:00Z (before the reset)</td><td>warns</td></tr>
+        <tr><td>sustainable-1374</td><td>1374 &times; 900</td><td>20% of a 10080-minute window</td><td>60min 0.2&times; / 10080min 0.7&times;</td><td>2026-09-21T00:00:00Z (at or after the reset)</td><td>calm</td></tr>
+        <tr><td>sustainable-1920</td><td>1920 &times; 900</td><td>20% of a 10080-minute window</td><td>60min 0.2&times; / 10080min 0.7&times;</td><td>2026-09-21T00:00:00Z (at or after the reset)</td><td>calm</td></tr>
+        <tr><td>no-window-1374</td><td>1374 &times; 900</td><td>none reported</td><td>none reported</td><td>none reported</td><td>no meter; annotation quotes the payload</td></tr>
+        <tr><td>no-window-1920</td><td>1920 &times; 900</td><td>none reported</td><td>none reported</td><td>none reported</td><td>no meter; annotation quotes the payload</td></tr>
+      </tbody>
+    </table>
+
+    <p>Every recorded size was read out of the PNG's own header rather than taken
+    from the filename or from the width that was requested, and the run asserts
+    the two agree before writing an entry — a filename claiming one width over an
+    image of another is exactly the mismatch a filename check cannot see.</p>
+
+    <h3>What this node did not reach</h3>
+    <p>Two gaps bound this evidence and neither was closed here, both lying
+    outside the paths this node may write. <strong>The repository's capture gate
+    does not roster this plan</strong>, so nothing in the suite would notice these
+    six files disappearing; the index is complete and self-describing, and this
+    node's captures are therefore asserted by its own run rather than by the
+    suite. <strong>The live Crew surface passes no quota reading to its view
+    component</strong>, so the meter these captures show is rendered from fixture
+    readings only: the component renders correctly, and no wired surface yet
+    hands it anything. Both are recorded so that a reader does not take this
+    evidence as a statement that the live surface displays a meter.</p>
+
+    <h3>One instrument that had to be replaced mid-run</h3>
+    <p>The first pass decided whether a capture showed a meter by scanning the
+    page's serialized text for the meter's class name. Every one of those
+    assertions passed for every case, including the case that renders no meter —
+    because the class name is in the page's own stylesheet, the label text is in
+    the compiled component's source, and the annotation's text is in the injected
+    script. The instrument could not fail, so its passes meant nothing. It was
+    replaced with signals computed inside the page from the page's live DOM and
+    reported in the document's title, which no source string can satisfy: the
+    three states then measured as measured, and the no-window case's absence of a
+    meter became a real reading rather than a coincidence.</p>
+  </section>
 </main>
 </body>
 </html>
