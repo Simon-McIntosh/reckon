@@ -1350,6 +1350,148 @@ def _wait_probe(value: Any) -> list[str]:
     return [item.strip() for item in probe]
 
 
+# The shapes a wait declaration's condition can take, named wherever one is
+# refused. Three workers wrote the wait block three wrong ways in one hour, each
+# with the right key names and a value the reader discarded: the run then read
+# to a coordinator as a worker that had declared nothing, so the repair could
+# not be made from the row. A reader that silently reduces an unrecognised shape
+# to the absence of a declaration is the defect; naming what it does accept in
+# the refusal is what removes it.
+_WAIT_ACCEPTED_SHAPES = (
+    "the reader accepts a shell-free argument vector whose first element is a "
+    "bare program name, or a file condition declared as wait_file with one "
+    "path or a JSON array of paths"
+)
+
+
+def _wait_file_paths(value: Any) -> list[str]:
+    """Read the paths a file condition names.
+
+    One path is a plain scalar and several are a JSON array, the same pair of
+    forms the terminal list accepts -- except that a scalar is never
+    comma-split here, because a comma inside a path is part of the path and a
+    reader that split it would invent two paths that do not exist. A value that
+    is present and is neither of those forms reads as no paths, so a caller
+    telling the shapes apart can refuse it rather than read it as an undeclared
+    condition.
+    """
+    if isinstance(value, list):
+        if any(not isinstance(item, str) or not item.strip() for item in value):
+            return []
+        return [item.strip() for item in value]
+    text = str(value or "").strip()
+    if not text:
+        return []
+    if not text.lstrip().startswith("["):
+        return [text]
+    try:
+        parsed = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        return []
+    if not isinstance(parsed, list) or any(
+        not isinstance(item, str) or not item.strip() for item in parsed
+    ):
+        return []
+    return [item.strip() for item in parsed]
+
+
+def _wait_probe_shape_refusal(value: Any) -> str:
+    """The reason a declared probe is not a shape the reader can run, or "".
+
+    Absence is not a refusal: a declaration carrying no probe is incomplete,
+    which the reader reports by naming the missing field, and the two outcomes
+    stay distinguishable. Refused is a probe that is present and unreadable,
+    because that is the shape that used to reduce silently to the absence of a
+    probe -- and a worker reading its own row was then told it had declared
+    nothing when it had declared something.
+    """
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return ""
+    candidate: Any = value
+    if isinstance(value, str):
+        try:
+            candidate = json.loads(value)
+        except (TypeError, json.JSONDecodeError):
+            return (
+                "wait_probe is a single value the reader cannot parse as a "
+                f"JSON array; {_WAIT_ACCEPTED_SHAPES}"
+            )
+    if not isinstance(candidate, list):
+        return f"wait_probe is a scalar rather than a list; {_WAIT_ACCEPTED_SHAPES}"
+    if not candidate:
+        return ""
+    if any(not isinstance(item, str) or not item.strip() for item in candidate):
+        return (
+            "wait_probe is a list of mappings rather than of program "
+            f"arguments; {_WAIT_ACCEPTED_SHAPES}"
+        )
+    first = candidate[0].strip()
+    if not first or " " in first or "\t" in first:
+        return (
+            f"wait_probe starts with {first!r}, a whole command line rather "
+            f"than a program name, so nothing can exec it; {_WAIT_ACCEPTED_SHAPES}"
+        )
+    return ""
+
+
+def _wait_file_shape_refusal(value: Any) -> str:
+    """The reason a declared file condition is not a shape the reader reads."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return ""
+    if isinstance(value, list):
+        if not value:
+            return ""
+        if any(not isinstance(item, str) or not item.strip() for item in value):
+            return (
+                "wait_file is a list of mappings rather than of paths; "
+                f"{_WAIT_ACCEPTED_SHAPES}"
+            )
+        return ""
+    if isinstance(value, str):
+        if not value.lstrip().startswith("["):
+            return ""
+        if not _wait_file_paths(value):
+            return (
+                "wait_file opens with a bracket but does not parse as a JSON "
+                f"array of paths; {_WAIT_ACCEPTED_SHAPES}"
+            )
+        return ""
+    return f"wait_file is neither a path nor a list of paths; {_WAIT_ACCEPTED_SHAPES}"
+
+
+# A terminal value names a state the probe prints. The exit-code sentinel is
+# not one: the observation the reader matches against is the probe's own output,
+# so a declaration whose terminal is an exit status reads as pending on every
+# sweep of a job that has already ended, and the run never lifts.
+_WAIT_EXIT_SENTINEL = re.compile(r"exit:\s*\d+\s*$", re.IGNORECASE)
+
+
+def _wait_terminal_names_no_probe_state(terminal: Sequence[str]) -> str:
+    """Name a terminal value that is not a state any probe prints, or ""."""
+    for value in terminal:
+        spelled = str(value).strip()
+        if spelled and _WAIT_EXIT_SENTINEL.match(spelled):
+            return spelled
+    return ""
+
+
+def _wait_file_probe(files: Sequence[str]) -> list[str]:
+    """The shell-free argument vector a file condition executes.
+
+    A file condition is read through the same single path every other wait
+    uses -- one argument vector, run without a shell -- so the reader that
+    answers the condition and the sweep that lifts a parked run need no second
+    machinery for it. ``test -e`` per path joined by ``-a`` exits 0 exactly
+    when every declared path exists.
+    """
+    argv = ["test"]
+    for index, path in enumerate(files):
+        if index:
+            argv.append("-a")
+        argv.extend(["-e", path])
+    return argv
+
+
 def _wait_terminal_values(value: Any) -> list[str]:
     """Read the external states that mean a condition has terminated.
 
@@ -1421,10 +1563,48 @@ def _wait_condition_observation(
     }
 
 
+def _wait_file_condition_observation(
+    record: Mapping[str, Any], files: Sequence[str]
+) -> dict[str, str]:
+    """Read a file condition by looking for the paths it declares.
+
+    The condition is met when every path exists, and the paths still missing
+    are named, so a row says which one the wait is on rather than only that
+    something is absent. A relative path resolves against the run's worktree,
+    which is where the worker that declared it was running.
+    """
+    worktree = Path(str(record.get("worktree") or "."))
+    root = worktree if worktree.is_dir() else Path(".")
+
+    def _resolved(path: str) -> Path:
+        candidate = Path(path)
+        return candidate if candidate.is_absolute() else root / candidate
+
+    missing = [path for path in files if not _resolved(path).exists()]
+    missing = [path for path in files if not _resolved(path).exists()]
+    if missing:
+        return {
+            "state": "pending",
+            "observed": "absent",
+            "detail": (
+                f"{len(missing)} of {len(files)} declared paths are not there "
+                f"yet: {', '.join(missing)}"
+            ),
+        }
+    return {
+        "state": "met",
+        "observed": "present",
+        "detail": f"all {len(files)} declared paths exist",
+    }
+
+
 def _run_wait_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, str]:
     """Read a declared condition through a short, shell-free probe."""
+    files = [str(path) for path in (wait.get("files") or ())]
+    if files:
+        return _wait_file_condition_observation(record, files)
     worktree = Path(str(record.get("worktree") or "."))
     try:
         completed = subprocess.run(
@@ -1742,6 +1922,20 @@ def _manifest_wait(
     run to the resume loop forever. The offending token is named in the refusal
     so the repair is a one-line edit rather than a reread of the probe.
 
+    A condition takes one of two shapes. An argument vector is the one a
+    scheduler query needs; ``wait_file`` is the ordinary one, because a worker
+    waits for a job's log far more often than for a scheduler to report that
+    the job left the queue. It names one path or an array of paths, and its
+    probe and terminal are derived from those paths rather than declared, so
+    the one argument-vector reader both answers the condition and lifts the run
+    it parks.
+
+    A probe that is present but unreadable is refused by naming the shapes the
+    reader does accept, and never reduced to the absence of a probe: a worker
+    whose declaration was discarded reported to a coordinator as a worker that
+    had declared nothing, which is a failure invisible at the moment it could
+    still be repaired.
+
     ``previous_lift`` is the pointer's record of the last condition that lifted
     this run. A declaration identical to the one already lifted, arriving again
     after the worker re-parked, is the same condition reporting terminal a
@@ -1751,12 +1945,19 @@ def _manifest_wait(
     if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
         return None
     condition = str(manifest_data.get("wait_condition") or "").strip()
-    probe = _wait_probe(manifest_data.get("wait_probe"))
-    terminal = _wait_terminal_values(manifest_data.get("wait_terminal"))
+    declared_probe = _wait_probe(manifest_data.get("wait_probe"))
+    files = _wait_file_paths(manifest_data.get("wait_file"))
+    declared_terminal = _wait_terminal_values(manifest_data.get("wait_terminal"))
     if _wait_condition_declares_no_wait(condition):
         return None
-    if _wait_probe_is_a_no_op(probe):
+    if _wait_probe_is_a_no_op(declared_probe):
         return None
+    # A file condition's end is its paths' existence, so the terminal the
+    # reader matches is derived rather than declared: one probe path answers
+    # both shapes, and a file condition needs no exit-code sentinel written by
+    # hand for the sweep that lifts it to read.
+    terminal = declared_terminal or (["exit:0"] if files else [])
+    probe = _wait_file_probe(files) if files else declared_probe
     resume_brief = str(manifest_data.get("resume_brief") or "").strip()
     missing = [
         name
@@ -1768,6 +1969,32 @@ def _manifest_wait(
         )
         if not value
     ]
+    # A shape the reader does not understand is refused by naming what it does
+    # accept, so the declaration reaches the follower as something to repair
+    # rather than as a worker that declared nothing.
+    missing.extend(
+        reason
+        for reason in (
+            _wait_probe_shape_refusal(manifest_data.get("wait_probe")),
+            _wait_file_shape_refusal(manifest_data.get("wait_file")),
+        )
+        if reason
+    )
+    if files and declared_probe:
+        missing.append(
+            "either wait_probe or wait_file, not both: a wait has one shape"
+        )
+    if files and declared_terminal:
+        missing.append(
+            "wait_terminal alongside wait_file, where the condition ends when "
+            "its paths exist"
+        )
+    unemitted = _wait_terminal_names_no_probe_state(declared_terminal)
+    if unemitted:
+        missing.append(
+            f"wait_terminal listing {unemitted!r}, an exit-code sentinel "
+            f"rather than a state the probe prints; {_WAIT_ACCEPTED_SHAPES}"
+        )
     live_token = _wait_terminal_names_a_live_state(terminal, probe)
     if live_token:
         missing.append(
@@ -1815,6 +2042,7 @@ def _manifest_wait(
         "condition": condition,
         "probe": probe,
         "terminal": terminal,
+        "files": files,
         "resume_brief": resume_brief,
         "started_at": started_value
         or datetime.fromtimestamp(started_seconds, tz=UTC).strftime(
