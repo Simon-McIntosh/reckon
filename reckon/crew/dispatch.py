@@ -3275,18 +3275,20 @@ def dispatch(
     if resolution.local:
         agent["local"] = True
     committed_runs = ledger.runs(project, root=ledger_root)
-    reuse_session = (
-        _session_for_configuration(
+    session_resolution = (
+        _member_session_resolution(
             roster_member,
             agent,
             committed_runs,
             harness_default_model=_harness_default_model(
                 config, str(roster_member.get("harness") or "")
             ),
+            dispatching_session=str(session),
         )
         if roster_member and backend.get("session_reuse")
-        else None
+        else {"session_id": None, "withheld": None}
     )
+    reuse_session = session_resolution["session_id"]
     prior_node_runs = [
         item
         for item in committed_runs
@@ -3497,6 +3499,11 @@ def dispatch(
             "attempt_started_at": _utc_now(),
             "phase": "starting",
             "session_id": reuse_session,
+            # A stored session belonging to another coordinator session is not
+            # resumed, and that is written down rather than left silent: a peer
+            # whose worker starts a fresh conversation reads the session, its
+            # recorded owner and the reason here.
+            "session_withheld": session_resolution["withheld"],
             "task": None,
             "pid": None,
             "argv": None,
@@ -4454,14 +4461,62 @@ def _harness_default_model(config: Mapping[str, Any], harness: str) -> str:
     return str(backend.get("model") or "").strip()
 
 
-def _session_for_configuration(
-    member: Mapping[str, Any],
+def _recorded_session_owners(member: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return the coordinator sessions recorded as owning stored sessions.
+
+    A stored conversation is only resumable by the coordinator session that
+    opened it, so ownership travels beside the session under the same key — the
+    agent configuration for a configuration-keyed entry, the model for a legacy
+    model-keyed one. An entry carrying no owner was set outside any dispatch
+    that recorded one, and no dispatch can prove it belongs to it.
+    """
+    owners = member.get("session_owners")
+    return owners if isinstance(owners, Mapping) else {}
+
+
+def _owned_session(
+    session: str, owner: Any, dispatching_session: str
+) -> dict[str, Any]:
+    """Return `session` as resumable only when `owner` is the dispatching session.
+
+    The owning coordinator session is the whole eligibility test: a session
+    whose owner is another session, or which records no owner at all, is
+    withheld rather than returned. Withholding says which session was passed
+    over and why, so a peer whose worker starts a fresh conversation can read
+    the reason from the run rather than inferring it.
+    """
+    recorded_owner = str(owner).strip() if owner is not None else ""
+    if recorded_owner and recorded_owner == str(dispatching_session or "").strip():
+        return {"session_id": session, "withheld": None}
+    if not recorded_owner:
+        reason = (
+            "the roster entry records no owning coordinator session for it, "
+            "so no dispatch can prove the conversation belongs to this one"
+        )
+    else:
+        reason = (
+            f"it belongs to coordinator session {recorded_owner!r}, not to the "
+            f"dispatching session {str(dispatching_session or '').strip()!r}"
+        )
+    return {
+        "session_id": None,
+        "withheld": {
+            "session_id": session,
+            "owner": recorded_owner or None,
+            "reason": reason,
+        },
+    }
+
+
+def _member_session_resolution(
+    member: Mapping[str, Any] | None,
     agent: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]] = (),
     *,
     harness_default_model: str = "",
-) -> str | None:
-    """Return the member session proved to belong to this configuration.
+    dispatching_session: str = "",
+) -> dict[str, Any]:
+    """Resolve this configuration's member session, or say which one was withheld.
 
     Configuration-keyed roster entries are authoritative. Model-keyed entries
     predate that representation, so they are eligible only when the committed
@@ -4476,27 +4531,42 @@ def _session_for_configuration(
     model this dispatch actually resolved to; a role overlay that moves the
     resolved model away from the harness default is exactly the mismatch that
     must start a fresh session rather than risk resuming the wrong one. Once
-    resumed, the ordinary capture path records both the configuration key and
-    the model onto the roster, the same way it does for any other session.
+    resumed, the ordinary capture path records the configuration key, and the
+    coordinator session that owns it, onto the roster.
+
+    Both stored-session branches obey the same ownership rule, because closing
+    either one alone leaves the other resuming a conversation across sessions.
+    The answer carries `session_id` only when it resolved, and names the
+    session plus its recorded owner under `withheld` when it did not.
     """
+    member = member or {}
     configuration_key = agent_configuration_key({"agent": agent})
     sessions = member.get("sessions")
+    owners = _recorded_session_owners(member)
+    unresolved: dict[str, Any] = {"session_id": None, "withheld": None}
+
     if isinstance(sessions, Mapping) and sessions.get(configuration_key):
-        return str(sessions[configuration_key])
+        return _owned_session(
+            str(sessions[configuration_key]),
+            owners.get(configuration_key),
+            dispatching_session,
+        )
 
     model = str(agent.get("model") or "").strip()
     if not model:
-        return None
+        return unresolved
     session_id = member.get("session_id")
     if not session_id:
-        return None
+        return unresolved
     recorded_model = str(member.get("session_model") or "").strip()
     has_capture_history = isinstance(sessions, Mapping) and bool(sessions)
 
     if not recorded_model and not has_capture_history:
         if harness_default_model and harness_default_model == model:
-            return str(session_id)
-        return None
+            return _owned_session(
+                str(session_id), owners.get(model), dispatching_session
+            )
+        return unresolved
 
     legacy_session = None
     if isinstance(sessions, Mapping) and sessions.get(model):
@@ -4504,7 +4574,11 @@ def _session_for_configuration(
     elif recorded_model == model:
         legacy_session = str(session_id)
     if not legacy_session:
-        return None
+        return unresolved
+
+    owned = _owned_session(legacy_session, owners.get(model), dispatching_session)
+    if owned["session_id"] is None:
+        return owned
 
     member_id = str(member.get("id") or "")
     captured_configurations = {
@@ -4515,7 +4589,37 @@ def _session_for_configuration(
         and isinstance(run.get("agent"), Mapping)
         and run.get("agent")
     }
-    return legacy_session if captured_configurations == {configuration_key} else None
+    if captured_configurations == {configuration_key}:
+        return owned
+    return {
+        "session_id": None,
+        "withheld": {
+            "session_id": legacy_session,
+            "owner": str(owners.get(model) or "").strip() or None,
+            "reason": (
+                "the committed run history does not identify it as this agent "
+                "configuration"
+            ),
+        },
+    }
+
+
+def _session_for_configuration(
+    member: Mapping[str, Any],
+    agent: Mapping[str, Any],
+    runs: Iterable[Mapping[str, Any]] = (),
+    *,
+    harness_default_model: str = "",
+    dispatching_session: str = "",
+) -> str | None:
+    """Return the member session owned by the dispatching coordinator session."""
+    return _member_session_resolution(
+        member,
+        agent,
+        runs,
+        harness_default_model=harness_default_model,
+        dispatching_session=dispatching_session,
+    )["session_id"]
 
 
 def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -4527,6 +4631,11 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
     the full resolved configuration (rather than the model alone) keeps an
     effort or model change from inheriting incompatible session context while
     letting every distinct configuration reuse its own history independently.
+
+    The coordinator session that dispatched the run is recorded as the owner of
+    the entry it writes, under the same key as the session, because a stored
+    conversation is only resumed by the session that opened it. Reading it back
+    is what lets a later dispatch decide whether the entry belongs to it.
     """
     member = record.get("member")
     session_id = record.get("session_id")
@@ -4534,6 +4643,7 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
     if not member or not session_id or not isinstance(agent, Mapping) or not agent:
         return None
     configuration_key = agent_configuration_key(record)
+    coordinator_session = str(record.get("session") or "").strip()
     try:
         data, version = ledger.load(
             str(record.get("project") or ""), root=record.get("repo")
@@ -4559,6 +4669,10 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
                 }
             sessions[configuration_key] = str(session_id)
             entry["sessions"] = sessions
+            if coordinator_session:
+                session_owners = dict(entry.get("session_owners") or {})
+                session_owners[configuration_key] = coordinator_session
+                entry["session_owners"] = session_owners
             if not entry.get("session_id"):
                 entry["session_id"] = str(session_id)
                 entry["session_model"] = str(agent.get("model") or "") or None
