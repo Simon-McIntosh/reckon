@@ -216,6 +216,44 @@
     overrun rate from it. Derive the figure at read time from the row's own stamps, and keep
     the stored field out of the answer.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong>
+    <code>reckon/crew/summary.py:run_rows</code> reads the project's committed run rows and
+    returns each carrying <code>wall_seconds</code>, derived from that row's own
+    <code>dispatched_at</code> and <code>completed_at</code>, and <code>width_at_start</code>,
+    counted from the measured spans of the same row set at the row's dispatch instant. The
+    stored <code>wall_seconds</code> is never passed through: the read consults the stamps and never the
+    field, so a row whose stored value disagrees reports the stamp-derived figure. A figure the
+    run never measured &mdash; no dispatch stamp, no completion stamp &mdash; is reported as
+    absent rather than as zero, and a run whose completion was never recorded contributes to no
+    other row's width, because assuming it was still in flight would invent the measurement the
+    read exists to derive. Five tests in
+    <code>tests/test_summary_wall_and_width.py</code> enter through
+    <code>run_rows</code> against a throwaway repository; the declared negative control
+    (returning the stored field instead of deriving it) reddens three of them and the red log
+    sits in the run directory with the mutation verbatim on its first line.</p>
+
+    <p><strong>The constraint reproduces, and it is not a rounding difference.</strong> Measured
+    on this repository's committed ledger at <code>20496d11</code>: of 1182 rows carrying a
+    stored <code>wall_seconds</code>, 507 equal the stamp-derived figure exactly and 83 differ
+    by under a second. The remaining <strong>592 differ by more than a second and 355 by more
+    than ten</strong>, with two rows off by three orders of magnitude &mdash;
+    <code>r-20260812T153712167451-gate-element</code> spans 467 seconds between its own stamps
+    and stores <code>1093235.797</code>. A reader handed the stored field is not handed a
+    noisier wall time; on a third of the ledger it is a different quantity. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed">the cumulative evidence</a>.</p>
+
+    <p><strong>What this does not settle.</strong> The read exists and is exercised, but no
+    surface reaches it. <code>crew ledger --view summary</code> resolves to
+    <code>ledger.summary</code> (<code>reckon/cli.py:3122</code>), the aggregate, which carries
+    no per-run rows; <code>crew ledger --view records</code> reaches
+    <code>ledger.runs</code> (<code>reckon/cli.py:3117</code>), the rows before either figure is
+    derived, so the seam is a single call rather than a new view. Neither that view nor
+    <code>crew(view="summary")</code> was in this node's write scope: wiring the read to a
+    surface touches <code>reckon/cli.py</code>, <code>reckon/ledger.py</code> and
+    <code>reckon/mcp_views.py</code>. §8's measure &mdash; a ledger read returning wall time and
+    width without arithmetic by the reader &mdash; is therefore satisfied at the module and
+    still unmet at the entry point. Section <a href="#s8">&sect;8</a> owns that closure.</p>
+
     <h2 id="s6">&sect;6 &mdash; A gate that measures the node rather than the fleet</h2>
 
     <p>The reporting coordinator ran an SDCC build plus a fast unit and validation delta

@@ -97,6 +97,92 @@
     </ul>
   </section>
 
+  <section id="s5-wall-time-and-width-at-start">
+    <h2>§5 — Per-node wall time and width-at-start</h2>
+    <p><code>reckon/crew/summary.py:run_rows</code> returns the project's committed run rows,
+    each carrying two derived figures: <code>wall_seconds</code> from that row's own
+    <code>dispatched_at</code> and <code>completed_at</code>, and <code>width_at_start</code>
+    from the measured spans of the same row set at the row's dispatch instant. The stored
+    <code>wall_seconds</code> field is never consulted. The derivation reuses
+    <code>reckon/ledger.py:_worker_seconds</code> rather than restating the subtraction, so the
+    read and the ledger agree on what a span is by construction. Landed in
+    <code>20496d11</code>.</p>
+
+    <h3>What reaches a reader, and what does not</h3>
+    <p>A figure the row's stamps cannot support is <code>None</code>, never <code>0</code> — an
+    absent measurement and a zero-second span are different facts and the second is a
+    plausible-looking lie. A ratio of 0.99 between the widths at two dispatch stamps that are
+    close together is possible, so no rounding or floor was applied; the counts are integers
+    over the measured spans. <strong>No surface reaches this read.</strong>
+    <code>crew ledger --view summary</code> resolves to <code>ledger.summary</code>
+    (<code>reckon/cli.py:3122</code>), the aggregate, which carries no per-run rows;
+    <code>crew ledger --view records</code> reaches <code>ledger.runs</code>
+    (<code>reckon/cli.py:3117</code>), the rows <em>before</em> either figure is derived. The
+    seam is therefore one call in an existing view rather than a new view, and wiring it
+    touches <code>reckon/cli.py</code>, <code>reckon/ledger.py</code> and
+    <code>reckon/mcp_views.py</code>, none of which was in this node's write scope.</p>
+
+    <h3>The recorded defect still reproduced</h3>
+    <p>The constraint this section records is that the stored <code>wall_seconds</code> is a
+    different quantity from the stamp span. Measured on this repository's own committed ledger
+    at <code>20496d11</code> (1182 rows, every one carrying a stored value), against
+    <code>ledger._worker_seconds</code> resolved from the worktree:</p>
+    <table>
+      <thead>
+        <tr><th>Stored against stamp-derived</th><th>Rows</th><th>Reading</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Equal</td><td>507</td><td>The stored value happens to be the span.</td></tr>
+        <tr><td>Within one second</td><td>83</td><td>Rounding only; carries fractional seconds.</td></tr>
+        <tr><td>One to ten seconds</td><td>237</td><td>Not rounding.</td></tr>
+        <tr><td>More than ten seconds</td><td>355</td><td>Includes two rows off by three orders of magnitude.</td></tr>
+      </tbody>
+    </table>
+    <p>The two extremes are
+    <code>r-20260812T153712167451-gate-element</code> and
+    <code>r-20260812T153726158261-sprint-focus-derived</code>: both dispatch at 15:37 and
+    complete after roughly 467 and 457 seconds, and both store <code>1093235.797</code> and
+    <code>1093123.291</code>. A reader handed the stored field therefore receives, 592 times in
+    1182, a number that is not the span — and twice receives a number roughly 2300 times too
+    large. This is why the read derives rather than passes through.</p>
+
+    <h3>Falsifier and positive controls</h3>
+    <p><code>tests/test_summary_wall_and_width.py</code> enters through
+    <code>summary.run_rows</code> rather than through the arithmetic beneath it, because the
+    defect is in the read's answer and a direct call to a helper would pass while the read
+    stayed wrong. The fixture ranges the input domain rather than one shape: two rows dispatched
+    at the same instant, a row whose stored value disagrees with its own stamps, a row missing
+    its completion stamp, and a row missing its dispatch stamp. One test asserts that the real <code>docs</code>
+    directory is <em>not</em> the fixture's, so the write-isolation half is checked rather than
+    assumed.</p>
+    <p><strong>Declared negative control:</strong> <code>make the summary read return the stored
+    wall_seconds field instead of deriving the figure from the row own stamps</code>. Applied,
+    it reddens three of the five tests — the two that assert a derived figure and the one that
+    asserts absence — with <code>assert 4242 == 120</code> and <code>assert 7 is None</code>, and
+    leaves the width and isolation tests passing, which is the discrimination the control
+    should show. The mutation is verbatim on the first line of the red log, and the green run
+    that follows is the same tree with only that line restored.</p>
+    <p><strong>Base absence, with a positive control:</strong> <code>def run_rows</code> does
+    not occur in <code>reckon/crew/summary.py</code> at base
+    <code>63fd372f0d08a9a5e457b8e291f5e94c572da97e</code> (count <code>0</code>) and occurs once
+    in the delivered tree, so the empty result is the symbol's absence and not an unaimed
+    search.</p>
+
+    <h3>Gate delta and receipts</h3>
+    <p>The gate is this node's own cohort; the merged head belongs to a separately dispatched
+    test node, and no suite-wide claim is made here. At base the cohort does not exist (the
+    file is this node's deliverable); at the delivered tree it is <code>5 passed in 1.20s</code>,
+    and under the mutation <code>3 failed, 2 passed in 2.42s</code>. Lint delta against base:
+    <code>reckon/crew/summary.py</code> carries one finding at base and one after (the same
+    pre-existing <code>UP035</code>), and the delivered test file carries none.</p>
+    <ul>
+      <li><code>~/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/tests-green.log</code></li>
+      <li><code>~/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/negative-control.log</code></li>
+      <li><code>~/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/stored-vs-derived.log</code></li>
+      <li><code>~/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/manifest.md</code></li>
+    </ul>
+  </section>
+
   <section id="s2-roster-commit-content-agreement">
     <h2>Roster commit content agrees with its message</h2>
     <p><strong>The previously recorded mismatch reproduced at base
