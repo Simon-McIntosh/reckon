@@ -172,9 +172,7 @@ def test_reasoned_waiver_promotes_and_records_reason(
     assert _row(repository, run_id)["review_waiver"]["reason"] == reason
 
 
-def test_reviewed_run_promotes_without_waiver(
-    repository: Path, tmp_path: Path
-) -> None:
+def test_reviewed_run_promotes_without_waiver(repository: Path, tmp_path: Path) -> None:
     run_id = "r-20260921T060200000000-reviewed"
     _write_complete_pointer(repository, tmp_path, run_id)
     _store_complete_review(run_id)
