@@ -21,8 +21,8 @@
   <title>An Orchestrator Is Bound By Its Inbox | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-19">
-<meta name="plan-version" content="37">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="38">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
 <meta name="plan-impl" content="0.6">
 </head>
@@ -421,6 +421,17 @@ findings: []   absent: []   total: 73</pre><p><strong>Nothing instructed it to w
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260919T144456275579-aobi-plan-rubber-duck-skill-contract" data-who="reckon-ship" data-when="2026-09-19T15:02:30Z">
     <div class="r-comment-body"><p>the release rule lands in both authoring skills, material defined once, and the copyable dispatch block was run with its placeholders substituted: exit 0, all eight node-contract properties pass, read-only sandbox, write reach confined to the crew config home</p></div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-aobi-review-reflex" data-section="s2" data-gated-sections="s2" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the reflex that dispatches a finished run&#x27;s composed review fires on the healthy path, with the sweep as its caller, the review-role classifier exemption in place so it cannot review its own reviews, and the unreconciled-runs fence waived for the dispatch that clears the backlog</h4>
+    <p class="r-gate-required-evidence">scoring-should-stop-a-promotion#s3</p>
+    </div>
+<div class="r-gate" data-id="g-aobi-true-signals" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">a send to a crew worker that cannot be delivered is refused at the layer that knows, so a coordinator is never told a message succeeded while nothing is delivered</h4>
+    <p class="r-gate-required-evidence">a-live-worker-can-be-reached#s3</p>
+    </div>
 </section>
 </main>
 </body>
