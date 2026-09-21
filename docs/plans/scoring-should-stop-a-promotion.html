@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -1689,6 +1689,56 @@
     proving that assertion fires. That is §5b's discriminator — <em>what would make this field
     wrong while it still printed the same value</em> — arrived at independently, by a worker, about
     its own test.</p>
+
+    <h2 id="s5f">§5f — A clean final round certifies the module, not its effect — and the report is the one artifact nobody reviews</h2>
+
+    <p><strong>The strongest review sequence in this plan's evidence is half a triumph, and the
+    half it is missing is the one a reader assumes.</strong> A peer's <code>node-probe</code> node
+    ran six review rounds, closed five defects, landed thirty-four tests, returned <em>zero</em>
+    findings at 96 on the final round, and merged. Nothing in that repository calls it. Every one
+    of the twenty-plus findings across those rounds is necessarily intra-module, because there is
+    no call site at which anything could have been wrong: six rounds could not have found a defect
+    in how the probe behaves inside the recorder tick, since no tick invokes it.</p>
+
+    <p>So review depth is real and is bounded by a horizon that nothing states.
+    <strong>A clean round certifies the module against its fixtures; it says nothing about the
+    contract the module will meet when wired.</strong> That is not a smaller claim than the
+    triumph reading — it is a different claim, and the two are confused exactly when the numbers
+    are good.</p>
+
+    <p><strong>A planned deferral and a false claim of effect look identical in a grep, and they
+    are not the same thing.</strong> That peer's plan splits build from wire deliberately: the wire
+    nodes collide on two shared files, so they are separate and unstarted, and the node's own record
+    says the readings are unreachable until they land. This plan's own member-guard node said the
+    same — its section states the wire-up is the remainder — and <em>the coordinator reported the
+    behaviour as delivered anyway</em>, naming a figure for members released when the true figure
+    was zero. The defect there is in the report, not in the plan and not in the node.</p>
+
+    <p><strong>Which names the one artifact in this chain with no reviewer.</strong> A worker's
+    diff is reviewed. A review is parsed, scored and stored. A promotion is gated. The
+    coordinator's report to the person reading it passes through nothing at all. Two sessions
+    measured their own today rather than argue about it: one corrected four of roughly twelve
+    defect reports it had sent a peer, and this one corrected seven — a cache figure read from the
+    wrong provider's field and the inconsistency claim built on it, an ancestry check aimed at the
+    promote commit instead of the promoted work, two greps whose false negatives would have read as
+    a worker having done nothing, a claim that no review records its revision when five spellings of
+    that field exist across 151 records, and the released-members figure above.</p>
+
+    <p><strong>The errors are not random in direction.</strong> Both sessions' mistakes ran toward
+    <em>overstating a defect</em>, because a surprising reading is what prompts a report in the first
+    place; a cheap instrument that answers instantly and answers a different question is the
+    mechanism in every case. No gate here catches that. The nearest thing that works is stating the
+    check beside the claim so the recipient can re-derive it in one step instead of none — which
+    does not stop the author being wrong and does make being wrong detectable.</p>
+
+    <p><strong>Done when</strong> the review prompt requires a sixth emission naming the production
+    call sites the reviewer reached the change through, with <code>none</code> as an explicit value;
+    the parser records the count as an integer and an <em>omitted</em> emission as absent rather
+    than as zero, because absent and zero are different claims and only one is a measurement; a
+    stored record with a zero count is filterable without reading its prose; and the reviewer is
+    <em>not</em> asked to judge whether zero was intended, because that requires a plan it was not
+    given — the reviewer reports the count, the plan declares the intent, and a later gate refuses
+    on the mismatch between them.</p>
 
     <h2 id="s6">§6 — A reviewer that can see the figure</h2>
 
