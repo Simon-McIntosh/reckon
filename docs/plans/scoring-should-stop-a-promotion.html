@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 </head>
@@ -443,6 +443,40 @@
     dry-run <code>ok</code> survives a dispatch that cannot run. The five dimension scores survive
     a reviewer that skipped four of the five things it was told to read — which is the whole
     reason §4 requires a verdict per item.</p>
+
+    <h2 id="s5c">§5c — A review describes a revision, and nothing records which</h2>
+
+    <p><strong>Acting on a review invalidates it, and the guard cannot tell.</strong> The healthy
+    cycle is: the review finds defects, a worker repairs them, the run promotes. At that moment
+    the stored review describes code that no longer exists — and §2's refusal is satisfied by any
+    <em>complete</em> stored review, so the repaired run promotes on the strength of a record of
+    the thing it was repaired from. The guard reads the presence of a review as evidence about the
+    code being promoted. It is evidence about a revision, and the two stopped being the same
+    revision at the first repair.</p>
+
+    <p><strong>It is not merely undetected here; it is undetectable.</strong> Reported by this
+    plan's author from imas-ambix as a reviewer leaving a <code>commits_read</code> field null.
+    Checked against this repository: <code>reckon/crew/review.py</code> has no such field.
+    <code>parse_review</code> emits <code>status</code>, <code>scores</code>, <code>absent</code>,
+    <code>justifications</code>, <code>findings</code>, <code>total</code> and
+    <code>raw_text</code>, and <code>store_review</code> requires only <code>project</code> and
+    <code>reviewed_run_id</code>, stamping a timestamp. <strong>No stored review records the
+    revision it read.</strong> So there is no null to notice: a reader cannot distinguish a review
+    of the promoted code from a review of code two repairs old, and a timestamp does not settle it
+    because the commits may be older or newer than the review either way.</p>
+
+    <p><strong>The repair is a required field, not a heuristic.</strong> A stored review carries
+    the revision it read; a review whose revision is absent is not a complete review, on the same
+    principle that already governs an absent dimension and an absent item verdict; and §2's
+    refusal compares that revision against the commits being promoted, refusing a review that
+    describes a different one with the same waiver available. A timestamp comparison is the
+    tempting cheap version and it is wrong — it answers "which was written first", which is not
+    the question.</p>
+
+    <p><strong>Why this is the same defect as every other one on this page.</strong> A complete
+    review is a true statement standing in for the one that was needed. It is the discriminator of
+    §5b run on our own guard: <em>what would make this field wrong while it still printed the same
+    value?</em> — a review that is complete, parsed, stored, and about different code.</p>
 
     <h2 id="s6">§6 — A reviewer that can see the figure</h2>
 
