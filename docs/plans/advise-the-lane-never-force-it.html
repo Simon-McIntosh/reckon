@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="advise-the-lane-never-force-it">
   <meta name="plan-title" content="Advise The Lane, Never Force It">
   <meta name="plan-summary" content="A lane&#x27;s capacity is shared across sessions and two lanes exhaust in opposite ways, only one of them audibly. Advise at the moment of choice; never override.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -19,14 +19,15 @@
   <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,burn-is-visible-before-it-bites,a-lane-can-say-where-it-stands">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,burn-is-visible-before-it-bites">
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
+<meta name="plan-informs" content="a-lane-can-say-where-it-stands">
 </head>
 <body>
   <main class="plan-doc">
@@ -312,6 +313,13 @@ This is the same defect family as the rest of this plan, arriving as decay rathe
 <div class="r-comment" data-section="s5" data-id="c-20260921T1445-preemption-counter-does-not-exist" data-who="reckon-ship" data-when="2026-09-21T14:45:00Z">
     <div class="r-comment-body">THE LOCKED SCARCITY SIGNAL NAMES A COUNTER THIS ENGINE DOES NOT PUBLISH. Verified at source in imas_ambix/agent/lane.py rather than taken on report: 'SGLang does not expose an equivalent cumulative preemption counter, so its readings return None rather than substituting a queue depth or a zero.' The locked decision on this section names num_preemptions_total leaving zero as the signal that matters most, on the correct reasoning that the engine preempts and recomputes rather than refusing. That reasoning stands; the instrument does not exist on this lane. The null in the published document is therefore DELIBERATE AND CONSERVATIVE, not a recording gap: substituting a zero would publish 'this lane has never been saturated' as a measurement when nothing measured it, and substituting a queue depth would answer a different question. I read that null as an unrecorded signal earlier today and had the diagnosis exactly inverted. WAITING IS NOT THE FALLBACK, AND THE SAME FILE SAYS WHY. 'Measured 2026-09-14: the first version included it and went true at waiting: 2 on a lane that was not saturated, with the next sample reading 1. A consumer gating on that would refuse work the engine would have taken, which is the defect the deleted admission filter embodied.' That is precisely the reading this coordinator made today -- a waiting of 2 taken as a capacity crossing -- recorded as a known false positive a week before I made it. Sustained waiting across consecutive samples is the usable form, and it is reported by a separate producer. THE DOCUMENT ALSO DECLARES ITS OWN CEILINGS UNTESTED. headroom_is_upper_bound reads false, and the source defines that as: 'every ceiling here is extrapolated and none of it has been tested; treating not binding at the loads we could produce as not binding is the error this flag exists to keep visible.' So the lane publishes, in a field, that nothing in it is a measured limit. WHAT THIS SECTION NOW OWES. Either the locked decision takes a different signal for this lane, or it records the lane as exempt and names what stands in its place -- sustained waiting from the producer that counts consecutive samples, with the prefix hit rate against occupancy as the pair that actually moves before degradation. Reopening the lock is the lead's call and is not taken here. This section's measurement campaign is unchanged and becomes more necessary rather than less: the curve is the only thing that can locate an edge no counter will announce.</div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-atl-1" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the local lane&#x27;s declared context window agrees with the figure its endpoint actually serves, so a measured ceiling curve is not drawn against a window that does not exist</h4>
+    <p class="r-gate-required-evidence">a-lane-can-say-where-it-stands</p>
+    </div>
 </section>
 </main>
 </body>
