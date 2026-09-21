@@ -1041,6 +1041,37 @@
     write-outside-the-repository rule: the failing case proves the assertion works without any
     case ever writing into the real directory the assertion protects.</p>
 
+    <h3>The write-time check refused this node's manifest, and it was wrong to</h3>
+    <p>The node ran the command it had just given a test to, against its own run. It exits 1 with
+    one finding &mdash; <em>changed paths outside the write scope:
+    docs/figures/&hellip;/isolation-witness.svg</em> &mdash; and that path is inside the fence: the
+    dispatch granted the directory <code>docs/figures/work-does-not-fall-to-the-coordinator</code>
+    verbatim, and the figure was created under it. The two implementations of one contract
+    disagree, and the disagreement is measured rather than read off the source. Called side by
+    side on this node's own changed paths and declared paths: the write-time test returns the
+    figure as stray; the promotion test returns nothing outside.</p>
+
+    <table>
+      <thead>
+        <tr><th>Implementation</th><th>Where</th><th>Test applied</th><th>Result on the figure</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>write-time audit</td><td><code>reports.audit_manifest</code> at <code>reports.py:1014</code></td><td><code>path not in set(node.write_paths)</code> &mdash; exact membership</td><td>stray, refused</td></tr>
+        <tr><td>promotion contract</td><td><code>promotion._outside_declared_scope</code></td><td><code>path == root or path.is_relative_to(root)</code> &mdash; root containment</td><td>inside the fence, accepted</td></tr>
+      </tbody>
+    </table>
+
+    <p>The docstring of the containment test calls the declared path a write <em>root</em>, and
+    dispatch grants directories, so the stricter reading is the write-time one &mdash; which makes
+    the early refusal this section exists to install wrong in a specific direction: it sends a
+    worker back to repair a manifest that promotion would accept. That is the same class of harm
+    the section names, a refusal aimed at the wrong party, arriving one node later than the late
+    one it replaced. It is <strong>reported rather than repaired</strong>: the repair lives in
+    <code>reckon/crew/reports.py</code>, outside this node's declared scope. Two candidate repairs,
+    for whoever owns that file &mdash; make the write-time test containment-aware so both
+    implementations agree, or have dispatch enumerate the files it means rather than granting a
+    directory neither side reads the same way.</p>
+
     <h3>Residue, recorded rather than smoothed over</h3>
     <p>The watched root is the session's shared temporary home, so the same exposure the
     dispatch-derivation test carries applies here: a fixture that arms a watch producer is reaped
