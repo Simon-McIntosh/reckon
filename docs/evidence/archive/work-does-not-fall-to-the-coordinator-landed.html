@@ -1375,6 +1375,91 @@
     (<code>logs/gate.txt</code>, <code>logs/negative-control.txt</code>,
     <code>logs/cohort-focused.txt</code>).</p>
   </section>
+
+  <section id="the-check-command-supplies-the-scope-it-resolves-against">
+    <h2>&sect;9 &mdash; The check command supplies the scope it resolves against</h2>
+
+    <p><strong>The resolution step landed on the audit and the command that calls it handed it
+    nothing.</strong> The previous node moved <code>path_within_declared_scope</code> onto the
+    mapping promotion applies, and gave <code>audit_manifest</code> the worktree and repository
+    that mapping needs, defaulting both to the working directory. But <code>crew
+    check-manifest</code> kept invoking <code>audit_manifest(text, node)</code> with neither
+    argument, so every reading took the default. The two surfaces agreed only when the caller
+    happened to stand in the run's worktree &mdash; which a worker does and a coordinator
+    checking a delivered run does not. From anywhere else an absolutely declared directory
+    resolved under neither tree, and every changed path read stray.</p>
+
+    <p><strong>Reproduced at base <code>bd2a5438</code> before the repair, and quoted.</strong>
+    Calling the audit from a directory that is neither the worktree nor the repository, with a
+    fence of two absolute directories &mdash; one under the worktree, one under the repository
+    &mdash; and a manifest recording both changed paths repository-relative:</p>
+
+    <pre><code>caller cwd: /run/user/39486/tmpf1sms8ec/elsewhere
+no worktree/repo (base behaviour): ['changed paths outside the write scope: lib/helper.py, src/module.py']
+worktree+repo from pointer:       []</code></pre>
+
+    <p>The same inputs read clean once the tree travels with the call. The base command either
+    produced the first line or the second depending only on where it was invoked, which is the
+    caller-dependence this node removes. Receipt:
+    <code>repro-scope-depends-on-cwd.log</code> in the run directory.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/check-manifest-scope-source.svg"
+           alt="One run pointer holding a worktree and a repository, and one absolute directory declaration. Before: the scope is read from the working directory, so a caller in the run worktree resolves the declaration and reports no finding, while a caller elsewhere resolves it under neither tree and reports every changed path stray — the two disagree. After: the scope is read from the run pointer's worktree and repo fields and passed into audit_manifest, so both callers report no finding. A footnote records that dropping the two arguments to fall back to the working directory reddens all three new cases and leaves the six existing ones green, three failed against six passed.">
+      <figcaption>Where the scope comes from. A declaration granted absolutely only maps to the
+      repository-relative path a manifest records when it is resolved against the tree the run
+      worked in.</figcaption>
+    </figure>
+
+    <p><strong>The repair reads the two fields the pointer already holds.</strong>
+    <code>crew check-manifest</code> (<code>reckon/cli.py</code>) now takes <code>worktree</code>
+    and <code>repo</code> from the run's live pointer &mdash; the fields
+    <code>promotion._outside_declared_scope</code> reads from its record &mdash; and passes them
+    through to <code>audit_manifest</code>. Nothing in the resolution mapping moved, and no
+    product path outside this command changed: the audit was handed arguments it was already
+    documented to accept. A pointer recording neither field still falls back to the working
+    directory, which is the behaviour a run without a worktree had.</p>
+
+    <p><strong>Proven by three cases that enter through the CLI and stand outside both
+    trees.</strong> A fixture writes a run whose worktree and repository are two distinct
+    directories, with the fence declared absolutely &mdash; <code>src</code> under the worktree
+    and <code>lib</code> under the repository &mdash; so a case can tell which tree a
+    declaration was resolved against; a manifest recording <code>src/module.py</code> and
+    <code>lib/helper.py</code> repository-relative resolves under both roots only when both
+    trees are supplied. Three cases in <code>tests/test_manifest_check_command.py</code>: the
+    command invoked from a directory that is neither tree reports no finding; a changed path
+    under no declaration, added to the same manifest, is reported and the finding names exactly
+    that path and none of the declared ones; and the command invoked from two different
+    directories returns the same findings. The file is <strong>9 passed</strong>, the six
+    existing cases unchanged.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation drops the two
+    arguments so the resolution falls back to <code>Path.cwd()</code>. Applied, the file reddens
+    <code>3 failed, 6 passed in 1.22s</code>, <code>EXIT=1</code>: all three new cases fail and
+    all six existing cases pass, and the outside caller under the mutation reports
+    <code>changed paths outside the write scope: lib/helper.py, src/module.py</code> where the
+    fixed tree reports none. The undeclared-path case was tightened for this &mdash; its first
+    form asserted the stray path merely appeared among the findings, which a run reporting every
+    path also satisfies, and it stayed green under the mutation; asserting the finding names
+    exactly <code>docs/plan.html</code> makes it redden for the mutation. The mutation sits
+    verbatim on the red log's first line and <code>reckon/cli.py</code> was restored to the
+    committed content, verified by an empty <code>git diff</code> at that path against
+    <code>4e06ae51</code>.</p>
+
+    <p><strong>What this does not claim.</strong> The gate measures this node's own change
+    against its own base; the merged head is a separately dispatched test node's measurement.
+    No full-suite run is claimed here. The command's other findings &mdash; the completed-status,
+    commit, test and armed-suite checks &mdash; are untouched, and the six pre-existing cases
+    that cover them pass unchanged.</p>
+
+    <p>Changed paths: <code>reckon/cli.py</code>,
+    <code>tests/test_manifest_check_command.py</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/check-manifest-scope-source.svg</code>.
+    Commits <code>4e06ae51</code> and <code>2bb68b24</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260921T203445733658-the-check-command-supplies-the-scope-it-resolves-against/</code>
+    (<code>gate-check-manifest-scope.log</code>, <code>negative-control-check-manifest-scope.log</code>,
+    <code>repro-scope-depends-on-cwd.log</code>).</p>
+  </section>
   </main>
 </body>
 </html>

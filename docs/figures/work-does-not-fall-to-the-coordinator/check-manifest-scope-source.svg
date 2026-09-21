@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 452" width="980" height="452"
+     font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <rect width="980" height="452" fill="#fbfbfc"/>
+
+  <text x="24" y="30" font-size="16" font-weight="600" fill="#1b1f24">
+    The check command supplies the scope it resolves against
+  </text>
+  <text x="24" y="50" fill="#5a6472">
+    One run, one manifest, two callers. Only the run pointer names the tree the declaration was granted in.
+  </text>
+
+  <!-- Inputs panel -->
+  <rect x="24" y="70" width="280" height="176" rx="8" fill="#ffffff" stroke="#d5dae1"/>
+  <text x="40" y="94" font-weight="600" fill="#1b1f24">The run pointer holds the tree</text>
+  <text x="40" y="120" fill="#5a6472">worktree:</text>
+  <text x="40" y="138" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">/wt/run-worktree</text>
+  <text x="40" y="162" fill="#5a6472">repo:</text>
+  <text x="40" y="180" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">/main-checkout</text>
+  <text x="40" y="204" fill="#5a6472">declared (absolute):</text>
+  <text x="40" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">/wt/run-worktree/src</text>
+  <text x="40" y="238" font-size="12" fill="#8a94a3">changed (as recorded): src/module.py</text>
+
+  <!-- Before panel -->
+  <rect x="324" y="70" width="316" height="176" rx="8" fill="#fff5f5" stroke="#f0c2c2"/>
+  <text x="340" y="94" font-weight="600" fill="#8c2c2c">Before — scope read from the working directory</text>
+
+  <rect x="340" y="106" width="284" height="34" rx="5" fill="#ffffff" stroke="#e6b8b8"/>
+  <text x="352" y="128" fill="#1b1f24">caller in /wt/run-worktree</text>
+  <text x="612" y="128" text-anchor="end" font-weight="600" fill="#1e8449">no finding</text>
+
+  <rect x="340" y="146" width="284" height="34" rx="5" fill="#ffffff" stroke="#e6b8b8"/>
+  <text x="352" y="168" fill="#1b1f24">caller elsewhere</text>
+  <text x="612" y="168" text-anchor="end" font-weight="600" fill="#c0392b">stray</text>
+
+  <text x="340" y="202" font-weight="600" fill="#c0392b">DISAGREE</text>
+  <text x="340" y="222" font-size="12" fill="#8c2c2c">The declaration resolves under neither</text>
+  <text x="340" y="238" font-size="12" fill="#8c2c2c">tree, so every changed path reads stray.</text>
+
+  <!-- After panel -->
+  <rect x="660" y="70" width="296" height="176" rx="8" fill="#f4fbf6" stroke="#bfe3cb"/>
+  <text x="676" y="94" font-weight="600" fill="#1e6b3f">After — scope read from the run pointer</text>
+
+  <rect x="676" y="106" width="264" height="34" rx="5" fill="#ffffff" stroke="#c6e3d0"/>
+  <text x="688" y="128" fill="#1b1f24">caller in /wt/run-worktree</text>
+  <text x="928" y="128" text-anchor="end" font-weight="600" fill="#1e8449">no finding</text>
+
+  <rect x="676" y="146" width="264" height="34" rx="5" fill="#ffffff" stroke="#c6e3d0"/>
+  <text x="688" y="168" fill="#1b1f24">caller elsewhere</text>
+  <text x="928" y="168" text-anchor="end" font-weight="600" fill="#1e8449">no finding</text>
+
+  <text x="676" y="202" font-weight="600" fill="#1e6b3f">AGREE</text>
+  <text x="676" y="222" font-size="12" fill="#1e6b3f">The declaration resolves under the worktree,</text>
+  <text x="676" y="238" font-size="12" fill="#1e6b3f">so the judgement is the same wherever invoked.</text>
+
+  <!-- Source strip -->
+  <rect x="24" y="264" width="932" height="72" rx="8" fill="#ffffff" stroke="#d5dae1"/>
+  <text x="40" y="288" font-weight="600" fill="#1b1f24">The scope the audit is given</text>
+
+  <rect x="40" y="300" width="300" height="26" rx="5" fill="#f2f5f9" stroke="#d5dae1"/>
+  <text x="52" y="318" font-family="ui-monospace, monospace" font-size="12" fill="#1b1f24">record["worktree"], record["repo"]</text>
+  <text x="352" y="318" fill="#5a6472">&#8594; passed as audit_manifest(worktree, repository)</text>
+  <text x="700" y="318" fill="#5a6472">the mapping promotion applies</text>
+
+  <!-- Footnote -->
+  <text x="24" y="366" font-weight="600" fill="#1b1f24">Falsified, and controlled</text>
+  <text x="24" y="388" fill="#5a6472">
+    Dropping the two arguments so the resolution falls back to Path.cwd() reddens all three new cases and leaves the six existing ones green:
+  </text>
+  <text x="24" y="406" fill="#5a6472">
+    <tspan font-weight="600" fill="#c0392b">3 failed, 6 passed</tspan>. Under the mutation the outside caller reports every changed path stray, which is the reading the fix removes.
+  </text>
+  <text x="24" y="430" fill="#8a94a3" font-size="12">
+    The undeclared-path control is asserted to name exactly the stray path and none of the declared ones, so it reddens for the mutation rather than merely for a check that stopped judging.
+  </text>
+</svg>
