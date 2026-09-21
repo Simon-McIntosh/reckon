@@ -159,6 +159,7 @@ def _write_complete_manifest_pointer(
     record = json.loads(pointer_path(run_id).read_text(encoding="utf-8"))
     record["manifest_path"] = str(manifest)
     _write_json(pointer_path(run_id), record)
+    _stored_review(run_id, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
     return manifest
 
 
@@ -1163,6 +1164,7 @@ def test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state(
         status="complete",
         worktree=worktree,
     )
+    _stored_review(run_id, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
 
     promoted = crew.complete(
         run_id,
@@ -1433,6 +1435,7 @@ def test_promotion_records_stream_figures_on_the_committed_row(
         },
     )
 
+    _stored_review(run_id, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
     promoted = crew.complete(run_id, gate="passed", root=repository)
 
     data, _version = ledger.load(PROJECT, root=repository)
@@ -1731,6 +1734,7 @@ def test_promotion_appends_no_second_comment_when_the_worker_authored_the_record
     worker_sha, _worker_tree = _worker_plan_pointer(
         repository, tmp_path, run_id, worker_html
     )
+    _stored_review(run_id, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
 
     promoted = crew.complete(
         run_id,
@@ -1769,6 +1773,7 @@ def test_a_run_without_a_worker_authored_record_still_lands_exactly_one_comment(
         bare.read_text(encoding="utf-8"),
         code_file=True,
     )
+    _stored_review(run_id, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
 
     promoted = crew.complete(
         run_id,

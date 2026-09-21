@@ -28,6 +28,7 @@ from click.testing import CliRunner
 from reckon import capabilities, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import promotion
+from reckon.crew import review as review_module
 from reckon.crew.reports import audit_manifest, parse_manifest
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -211,6 +212,22 @@ def _write_suite_manifest(
     path.write_text("\n".join(lines) + "\n")
 
 
+def _stored_review(run_id: str) -> None:
+    """Attach a complete independent review so a suite-delta policy is what fires."""
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+        }
+    )
+    review_module.store_review(record)
+
+
 def _complete_arguments(
     run_id: str,
     repository: Path,
@@ -364,6 +381,7 @@ def test_armed_promotion_refuses_missing_observation_and_keeps_pointer(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T090400000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "missing-after.md"
     _write_suite_manifest(
         manifest,
@@ -390,6 +408,7 @@ def test_armed_promotion_refuses_added_failures_with_ids(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T090500000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "added.md"
     _write_suite_manifest(
         manifest,
@@ -522,6 +541,7 @@ def test_real_cited_commit_and_clean_suite_delta_promote_together(
         after=_suite_observation(landed_sha, ["tests/test_old.py::test_old"]),
     )
     run_id = "r-20260826T090800000000-node-a"
+    _stored_review(run_id)
     _write_pointer(
         run_id,
         repository,
@@ -553,6 +573,7 @@ def test_known_bad_promotion_with_twenty_added_failures_is_refused(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T091000000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "known-bad.md"
     baseline_failures = [_DOCUMENTATION_LAYOUT_COLLECTION_FAILURE]
     _write_suite_manifest(
@@ -1069,6 +1090,7 @@ def test_added_failure_with_no_attribution_entry_still_refuses(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260903T000200000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "unattributed-added.md"
     baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
     after = _suite_observation(
