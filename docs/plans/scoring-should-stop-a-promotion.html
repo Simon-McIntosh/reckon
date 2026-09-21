@@ -349,6 +349,29 @@
       <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
     </div>
 
+    <h3 id="rollback-head-query-landed">Rollback now asks HEAD directly</h3>
+    <p><strong>Locally committed at <code>412536f0ad40a77d795a171996652228ca970d96</code>.</strong>
+    A restore failure no longer authorizes unlinking a tracked path: the rollback asks
+    <code>git cat-file -e HEAD:&lt;relative-path&gt;</code>. A real held index lock makes both
+    staging and restore exit <strong>128</strong>; the tracked path survives. Every later
+    landing or cleanup failure names the completed ledger append and says <strong>do not
+    re-promote</strong>. The final focused gate moves from <strong>9 failed / 2 passed</strong>
+    against base to <strong>11 passed</strong>; restoring the declared return-code inference
+    yields <strong>2 failed / 9 passed</strong>, with both tracked-path survival assertions red.
+    Ruff findings remain <strong>11 → 11</strong> and formatting deviations <strong>1 → 1</strong>.
+    <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#rollback-asks-head">Receipts and rollback flow</a>.
+    This worker has not promoted the repair, closed this section, or resolved its followup;
+    integration and verification at the merged head remain coordinator-owned.</p>
+
+    <p><strong>Independent review amendments recorded.</strong> Rollback preserves a path
+    outside the checkout when <code>relative_to</code> raises <code>ValueError</code>, keeping
+    the original staging error visible. The receipt wrapper documents its reliance on the
+    absence of typed exception handlers for failures inside its span. The expanded gate is
+    <strong>12 passed</strong>; original base <strong>10 failed / 2 passed</strong>;
+    declared mutation <strong>3 failed / 9 passed</strong>. The held-index-lock and
+    pre-append refusal controls remain in the file. Counts and receipts are appended to the
+    <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#rollback-asks-head">same evidence anchor</a>.</p>
+
     <h2 id="s2e">§2e — Promotion destroys the path a finding needs</h2>
 
     <p>The three arguments for §2's refusal so far are all about the <em>score</em>: an unreviewed

@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1646,8 +1647,31 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
         )
         if restored.returncode == 0:
             continue
+        try:
+            relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+        except ValueError:
+            continue
+        present = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
+        if present.returncode == 0:
+            continue
         _git(checkout, "rm", "--cached", "--force", "--", target, check=False)
         Path(path).unlink(missing_ok=True)
+
+
+@contextmanager
+def _report_written_ledger_row(run_id: str):
+    """Keep the append receipt visible when a later landing operation fails.
+
+    Exceptions escaping this span lose their type, which is safe only while no
+    typed exception handler can be reached by an exception raised within it.
+    """
+    try:
+        yield
+    except Exception as exc:
+        raise CrewError(
+            f"the ledger row for run {run_id!r} is already written; "
+            f"do not re-promote. Landing or cleanup failed: {exc}"
+        ) from exc
 
 
 def _commit_landing_writes(
@@ -1664,8 +1688,9 @@ def _commit_landing_writes(
     Stages exactly the given paths (never a whole-tree add) and commits them
     under a subject naming the promoted run and its gate verdict, so a landing
     leaves the checkout with no uncommitted change at the paths promotion
-    wrote. A write that cannot be staged or committed resets those paths to
-    their committed state and refuses, leaving neither store written.
+    wrote. A write that cannot be staged or committed attempts to restore
+    those paths and refuses. A blocked restore preserves paths held by HEAD;
+    callers that already appended a ledger row must report that append.
 
     ``subject`` and ``body`` override the promotion-flavoured defaults; a
     caller that records a non-promotion landing (a gate re-run at the
@@ -3215,62 +3240,63 @@ def _complete_locked(
         None,
     )
     if existing is not None:
-        comment = (
-            {"recorded": False, "reason": "shadow evidence does not land code"}
-            if shadow
-            else _record_landing_comment(
-                project=project,
-                plan=str(node.get("plan") or ""),
-                section=str(node.get("section") or ""),
-                run_id=run_id,
-                narrative=outcome,
-                author=_COORDINATOR_LANDING_AUTHOR,
-                when=str(existing.get("completed_at") or _utc_now()),
-                root=ledger_root,
-                worker_tree=tree,
-                worker_commits=_declared_manifest_commits(record),
+        with _report_written_ledger_row(run_id):
+            comment = (
+                {"recorded": False, "reason": "shadow evidence does not land code"}
+                if shadow
+                else _record_landing_comment(
+                    project=project,
+                    plan=str(node.get("plan") or ""),
+                    section=str(node.get("section") or ""),
+                    run_id=run_id,
+                    narrative=outcome,
+                    author=_COORDINATOR_LANDING_AUTHOR,
+                    when=str(existing.get("completed_at") or _utc_now()),
+                    root=ledger_root,
+                    worker_tree=tree,
+                    worker_commits=_declared_manifest_commits(record),
+                )
             )
-        )
-        _commit_landing_writes(
-            run_id=run_id,
-            verdict=str(gate).strip().lower(),
-            checkout=checkout,
-            paths=_plan_comment_store_path(
-                project=project,
-                plan=str(node.get("plan") or ""),
-                comment=comment,
-                root=ledger_root,
-            ),
-        )
-        capture = _capture_member_session(record)
-        path = pointer_path(run_id)
-        path.unlink(missing_ok=True)
-        retention = existing.get("worktree_retention")
-        release = _release_after_promotion(
-            run_id,
-            record,
-            retention if isinstance(retention, Mapping) else None,
-        )
-        result = {
-            "run_id": run_id,
-            "project": project,
-            "ledger_path": str(ledger.ledger_path(project, ledger_root)),
-            "ledger_version": ledger_version,
-            "pointer_removed": not path.exists(),
-            "record": dict(existing),
-            "already_promoted": True,
-            "session_capture": capture,
-            "plan_comment": comment,
-            "release": release,
-        }
-        lane_receipt = existing.get("lane_receipt")
-        if isinstance(lane_receipt, Mapping):
-            result["lane_receipt"] = dict(lane_receipt)
-        # This is a bounded fleet reading, not a readiness recommendation: the
-        # result states only what promotion observed, and the orchestrator owns
-        # every decision about what to do next.
-        result["fleet_state"] = _fleet_state_reading(project)
-        return result
+            _commit_landing_writes(
+                run_id=run_id,
+                verdict=str(gate).strip().lower(),
+                checkout=checkout,
+                paths=_plan_comment_store_path(
+                    project=project,
+                    plan=str(node.get("plan") or ""),
+                    comment=comment,
+                    root=ledger_root,
+                ),
+            )
+            capture = _capture_member_session(record)
+            path = pointer_path(run_id)
+            path.unlink(missing_ok=True)
+            retention = existing.get("worktree_retention")
+            release = _release_after_promotion(
+                run_id,
+                record,
+                retention if isinstance(retention, Mapping) else None,
+            )
+            result = {
+                "run_id": run_id,
+                "project": project,
+                "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+                "ledger_version": ledger_version,
+                "pointer_removed": not path.exists(),
+                "record": dict(existing),
+                "already_promoted": True,
+                "session_capture": capture,
+                "plan_comment": comment,
+                "release": release,
+            }
+            lane_receipt = existing.get("lane_receipt")
+            if isinstance(lane_receipt, Mapping):
+                result["lane_receipt"] = dict(lane_receipt)
+            # This is a bounded fleet reading, not a readiness recommendation: the
+            # result states only what promotion observed, and the orchestrator owns
+            # every decision about what to do next.
+            result["fleet_state"] = _fleet_state_reading(project)
+            return result
 
     # A writer still alive when a prompt promotion arrives is about to be ended
     # by this promotion's own release step; end it before the observation so the
@@ -3625,63 +3651,64 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
-    # The shadow store outcome rides on the ordinary payload, not a flag or a
-    # log stream: a promotion that otherwise succeeded is the exact consumer
-    # that must see a silently failing shadow. When this call did not perform
-    # the append, the outcome is the one already recorded on the committed row.
-    store_outcome = written.get("store")
-    if store_outcome is None:
-        recorded = written["run"].get("store_write")
-        store_outcome = dict(recorded) if isinstance(recorded, Mapping) else None
+    with _report_written_ledger_row(run_id):
+        # The shadow store outcome rides on the ordinary payload, not a flag or a
+        # log stream: a promotion that otherwise succeeded is the exact consumer
+        # that must see a silently failing shadow. When this call did not perform
+        # the append, the outcome is the one already recorded on the committed row.
+        store_outcome = written.get("store")
+        if store_outcome is None:
+            recorded = written["run"].get("store_write")
+            store_outcome = dict(recorded) if isinstance(recorded, Mapping) else None
 
-    # The two tracked stores this promotion wrote (the ledger row and, when a
-    # narrative landed, the plan comment) are committed as one landing, so the
-    # checkout carries no uncommitted state the next reader would trip on.
-    _commit_landing_writes(
-        run_id=run_id,
-        verdict=str(gate).strip().lower(),
-        checkout=checkout,
-        paths=[
-            ledger.ledger_path(project, ledger_root),
-            *_plan_comment_store_path(
-                project=project,
-                plan=str(node.get("plan") or ""),
-                comment=comment,
-                root=ledger_root,
-            ),
-        ],
-    )
+        # The two tracked stores this promotion wrote (the ledger row and, when a
+        # narrative landed, the plan comment) are committed as one landing, so the
+        # checkout carries no uncommitted state the next reader would trip on.
+        _commit_landing_writes(
+            run_id=run_id,
+            verdict=str(gate).strip().lower(),
+            checkout=checkout,
+            paths=[
+                ledger.ledger_path(project, ledger_root),
+                *_plan_comment_store_path(
+                    project=project,
+                    plan=str(node.get("plan") or ""),
+                    comment=comment,
+                    root=ledger_root,
+                ),
+            ],
+        )
 
-    # The session id lives only in the pointer until it reaches the roster, so
-    # it has to be captured before the pointer goes.
-    capture = _capture_member_session(record)
-    pointer_path(run_id).unlink(missing_ok=True)
-    release = _release_after_promotion(
-        run_id,
-        record,
-        worktree_retention,
-        process_already_ended=ended_writer,
-    )
-    # This is a bounded fleet reading, not a readiness recommendation: the
-    # result states only what promotion observed, and the orchestrator owns
-    # every decision about what to do next.
-    return {
-        "run_id": run_id,
-        "project": project,
-        "ledger_path": written["path"],
-        "ledger_version": written["version"],
-        "pointer_removed": not pointer_path(run_id).exists(),
-        "record": written["run"],
-        "lane_receipt": dict(written["run"]["lane_receipt"]),
-        "fleet_state": _fleet_state_reading(project),
-        "already_promoted": already_promoted,
-        "session_capture": capture,
-        "plan_comment": comment,
-        "release": release,
-        "store": store_outcome,
-        "impl_move": dict(impl_move),
-        "negative_control": dict(negative_control),
-    }
+        # The session id lives only in the pointer until it reaches the roster, so
+        # it has to be captured before the pointer goes.
+        capture = _capture_member_session(record)
+        pointer_path(run_id).unlink(missing_ok=True)
+        release = _release_after_promotion(
+            run_id,
+            record,
+            worktree_retention,
+            process_already_ended=ended_writer,
+        )
+        # This is a bounded fleet reading, not a readiness recommendation: the
+        # result states only what promotion observed, and the orchestrator owns
+        # every decision about what to do next.
+        return {
+            "run_id": run_id,
+            "project": project,
+            "ledger_path": written["path"],
+            "ledger_version": written["version"],
+            "pointer_removed": not pointer_path(run_id).exists(),
+            "record": written["run"],
+            "lane_receipt": dict(written["run"]["lane_receipt"]),
+            "fleet_state": _fleet_state_reading(project),
+            "already_promoted": already_promoted,
+            "session_capture": capture,
+            "plan_comment": comment,
+            "release": release,
+            "store": store_outcome,
+            "impl_move": dict(impl_move),
+            "negative_control": dict(negative_control),
+        }
 
 
 def discard(run_id: str) -> dict[str, Any]:

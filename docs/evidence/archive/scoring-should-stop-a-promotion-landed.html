@@ -747,6 +747,61 @@
     Afterward it reports <strong>6 passed</strong>, without changing that test file. The checklist
     item remains the complete answer to whether call sites were examined; no follow-on is needed.</p>
   </section>
+
+  <section id="rollback-asks-head">
+    <h2>Rollback queries HEAD and preserves the append receipt</h2>
+    <p><strong>Local implementation:</strong> <code>412536f0ad40a77d795a171996652228ca970d96</code>,
+    against base <code>643df48aed08626cbebda773d8545abae50bbeec</code>.
+    <code>_restore_landing_writes</code> asks <code>git cat-file -e HEAD:&lt;relative-path&gt;</code>
+    after a failed restore and keeps a path that HEAD carries. The post-append boundary wraps
+    landing and cleanup errors, retaining the cause while naming the written row and saying
+    <strong>do not re-promote</strong>. The same warning covers cleanup of an already-recorded run.
+    Failures before append do not claim a written row.</p>
+    <figure><img src="/reckon/figures/scoring-should-stop-a-promotion/rollback-head-query.svg"
+    alt="A locked index blocks staging and restore; a direct HEAD query preserves tracked paths, and every later failure reports the ledger append.">
+    <figcaption>The shared index lock explains both failures; only the HEAD query establishes membership.</figcaption></figure>
+    <table>
+      <caption>Focused regression evidence in tests/test_rollback_asks_head.py</caption>
+      <thead><tr><th>Gate</th><th>Failed</th><th>Passed</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Initial base reproduction</td><td>8</td><td>1</td><td>Tracked path deleted; absent-path cleanup passes; six post-append failures omit the receipt.</td></tr>
+        <tr><td>Final tests with base module</td><td>9</td><td>2</td><td>Also measures existing-row cleanup and a pre-append refusal.</td></tr>
+        <tr><td>Repaired implementation</td><td>0</td><td>11</td><td>All node measures pass in 1.50 seconds.</td></tr>
+        <tr><td>Declared mutation: restore the return-code inference</td><td>2</td><td>9</td><td>Both tracked-file survival cases fail; the absent-file cleanup remains passing.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Failure receipts:</strong> with a real fixture <code>index.lock</code> held,
+    <code>git add</code> exits <strong>128</strong> and <code>git restore</code> exits
+    <strong>128</strong>. The base error says <code>could not stage the landing writes</code>
+    after one successful append, without naming it. The repaired error says
+    <code>the ledger row for run 'append-receipt' is already written; do not re-promote</code>
+    and retains the staging error. Independent injected errors cover commit, session capture,
+    pointer deletion, release, and fleet reading, including operations after pointer removal.</p>
+    <p><strong>Ruff delta:</strong> check findings <strong>11 → 11</strong>, concise output
+    lines <strong>13 → 13</strong>, files needing formatting <strong>1 → 1</strong>.
+    The new test file adds no lint findings and is formatted. Logs and the exact mutation driver
+    are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195804074649-the-rollback-asks-head-instead-of-inferring/</code>:
+    <code>baseline.log</code>, <code>baseline-final.log</code>, <code>focused.log</code>,
+    <code>negative-control.log</code>, and <code>lint-counts.json</code>.</p>
+    <p><strong>Boundary:</strong> local commits only. This repair was not promoted and
+    <code>crew complete</code> was not run on this node. Combined-head verification and
+    integration remain coordinator-owned; this evidence does not close the driving followup.</p>
+    <p><strong>Independent review amendments.</strong> A path that cannot be resolved under
+    the checkout is preserved: <code>relative_to</code> raising <code>ValueError</code> now
+    continues the best-effort rollback. The new outside-path test reproduced the unguarded
+    <code>ValueError</code> replacing the staging error, then passed with the outside file's
+    contents unchanged and <code>could not stage the landing writes</code> retained.
+    The receipt wrapper's docstring now states that exceptions lose their type and this is
+    safe only while no typed handler is reachable for exceptions raised within the span.</p>
+    <p>The expanded focused file reports <strong>12 passed</strong> (previously 11);
+    against the original base module it reports <strong>10 failed / 2 passed</strong>
+    (previously 9 / 2). The declared rollback mutation reports <strong>3 failed / 9 passed</strong>
+    (previously 2 / 9). The real held-index-lock and failure-before-append tests are retained.
+    Ruff remains <strong>11</strong> findings, <strong>13</strong> concise output lines,
+    and <strong>1</strong> file needing formatting. Additional receipts are
+    <code>review-before.log</code>, <code>review-focused.log</code>, <code>review-base.log</code>,
+    <code>review-negative-control.log</code>, and <code>review-gates.json</code> in the same run directory.</p>
+  </section>
 </main>
 </body>
 </html>
