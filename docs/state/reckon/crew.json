@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T22:59:59",
+  "updated": "2026-09-21T23:00:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -249877,6 +249877,215 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T202326387771-review-of-the-advisory-rides-the-dispatch-retry",
+        "plan": "advise-the-lane-never-force-it",
+        "section": "\u00a72",
+        "node": "review-of-the-advisory-rides-the-dispatch-retry",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1454,
+                "cached_input_tokens": 372651,
+                "input_tokens": 374107,
+                "output_tokens": 2120,
+                "reasoning_output_tokens": 1607,
+                "total_tokens": 376227,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "371936ba-c8c3-4c56-951a-abbaeb2a5a49",
+            "session_id": "ship-budget-20260921"
+          },
+          "done_when": "the review for the dispatch lane advisory run stores a parsed record scoring all 5 dimensions in the range 0..20",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260921T200217000000-the-advisory-rides-the-dispatch",
+          "id": "review-of-the-advisory-rides-the-dispatch-retry",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T20:23:27Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T202326387771-review-of-the-advisory-rides-the-dispatch-retry/manifest.md",
+          "negative_control": "",
+          "plan": "advise-the-lane-never-force-it",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T200217000000-the-advisory-rides-the-dispatch.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "lane-occupancy",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T20:23:48Z",
+        "completed_at": "2026-09-21T20:31:19.529Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 438,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 451,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "039e2c78648266a14e51f32c26113272d5e40404",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python - <<'EOF' (parse the stored review record and assert 5 dimensions in 0..20)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.local/share/reckon/gate-logs/ship-budget-20260921/advisory-review-record.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T202326387771-review-of-the-advisory-rides-the-dispatch-retry/manifest.md",
+        "scope_changed": false,
+        "session_id": "67186208-cdbd-4da9-a2a9-20af36ad739f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3339380,
+            "input_tokens_cumulative": 3339380,
+            "output_tokens": 38698,
+            "output_tokens_cumulative": 38698,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T20:31:19.529Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3339380,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 446.297,
+          "generated_tokens": 38698,
+          "generation_seconds": 428.336,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 30.2,
+          "machine_seconds": 17.961,
+          "peak_input_tokens": 145111,
+          "tokens_per_second": 90.34,
+          "wall_tokens_per_second": 86.71
+        },
+        "follow_on_paths": [
+          "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T200217000000-the-advisory-rides-the-dispatch.json",
+          "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T200201376670-the-advisory-rides-the-dispatch.json",
+          "reckon/crew/dispatch.py:2042",
+          "reckon/crew/dispatch.py:3768"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/review-of-the-advisory-rides-the-dispatch-retry",
+          "session_id": "67186208-cdbd-4da9-a2a9-20af36ad739f",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T20:31:19.529Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "advise-the-lane-never-force-it",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 44.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -250161,6 +250370,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2021
+    "_version": 2022
   }
 }
