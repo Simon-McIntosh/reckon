@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="background-agent-fitness-and-dispatch-scope">
+  <meta name="plan-title" content="Background agent fitness and dispatch scope — where the local lane is fit to work, decided from an audit rather than a habit">
+  <meta name="plan-summary" content="Turn the nova audit's per-class scores into dispatch rules: which roles and spec levels route to the local lane, which need an independent review, which never.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-depends-on" content="nova:figure-and-solver-audit">
+  <meta name="plan-informs" content="effort-calibration">
+  <title>Background agent fitness and dispatch scope | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>The locally served model lane did most of nova's sprint this month: 157 promotions since
+    2026-09-16, the large majority on it, because it is free, fast and always up while the metered
+    lanes exhaust their windows. On 2026-09-21 the lead read the figures that work produced and
+    judged them shoddy, and the coordinator's own day agreed: a negative control that inverted an
+    assertion in a copy of the test file, three manifests in a row whose red-log line broke the
+    promotion format, a certificate node whose diff spans sixty-three files, and a wall read
+    certified green on a reachability verdict that a later probe's panels showed to be a
+    discretisation artifact on both fixtures. The lead's judgement is precise and it is the
+    premise here: <em>these agents certainly have a role; they may have been deployed too
+    liberally.</em> This plan decides the role from evidence.</p>
+
+    <p>The evidence is nova's <code>figure-and-solver-audit</code>: one scored review per figure
+    directory and one per solver area, on lanes other than the one that did the work, producing
+    per-class-of-work counts of what the local lane got right and what it got wrong. That record
+    is this plan's input, and until it exists the rule in force is the lead's interim ruling of
+    2026-09-21: nothing from the local lane is promoted without a scored independent review, no new
+    implementation node is dispatched to it, and it keeps investigation and reporting nodes.</p>
+
+    <h2 id="s1">§1 — Read the audit into a fitness table, one row per class of work</h2>
+    <p>The audit's per-directory and per-area counts are re-read here into one table whose rows are
+    classes of work rather than plans: figure rendering under the plotting rules; record repair
+    (numbers re-derived into an evidence document); mechanical refactor with a bit-identity gate;
+    measurement driver (a SLURM job that produces a receipt); solver change; negative-control
+    authoring; investigation and reporting with no code change. For each class the row carries the
+    count of local-lane nodes reviewed, the mean review score, the count under the calibration
+    floor, the defect classes found (assertion-flipped control, stub gate, widened tolerance,
+    self-disabling guard, captioned-around physics, scope sprawl, manifest format), and the same
+    figures for the metered lanes on the same classes where the ledger has them, so the comparison
+    is between lanes and not between the local lane and perfection.</p>
+    <p><strong>Done when.</strong> The table exists as an anchor of this plan's evidence document
+    with every count traceable to an audit anchor, and it names the classes where the local lane's
+    defect rate is indistinguishable from the metered lanes and the classes where it is not.</p>
+
+    <h2 id="s2">§2 — Turn the table into routing rules the dispatcher enforces</h2>
+    <p>Reckon already routes model and effort from how completely a node is specified
+    (<code>crew-effort-routing</code>) and reads calibration from the ledger
+    (<code>effort-calibration</code>). What is missing is a rule keyed on the class of work and the
+    lane: for each class, whether the local lane is the default, is admitted only with an
+    independent-lane review before promotion, or is refused. The rule lives in the flight
+    configuration beside the backend it governs, is read at dispatch where the role and spec level
+    are already resolved, and its refusal names the class, the lane and the audit row that set the
+    rule, the way a placement refusal names its requirement. A coordinator can override it on a
+    node with a stated reason that lands on the ledger row, so the rule advises and records rather
+    than silently forbids.</p>
+    <p><strong>Done when.</strong> A dispatch of a refused class to the local lane is refused before
+    a worktree exists, naming the rule and its evidence; a dispatch of a review-gated class lands on
+    the ledger with a review-required flag that <code>crew complete</code> honours by refusing
+    promotion without a scored review from another lane; and the rules for every class in the §1
+    table are recorded with the audit anchors they rest on.</p>
+
+    <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
+    <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
+    review a gated promotion requires must re-derive at least one number the node claims from the
+    committed receipt, re-run the node's gate at the merged head, and confirm the negative control
+    applied is the one declared and reddens for the claimed reason; a review record missing any of
+    the three is not a review and the promotion stays refused. The scoring floor is read from the
+    calibration ledger rather than fixed in the rule.</p>
+    <p><strong>Done when.</strong> A review record lacking a re-derived number, a merged-head gate
+    re-run or a control check is rejected by <code>crew complete</code> with the missing element
+    named, pinned by a test with a synthesised incomplete review; and the first ten gated promotions
+    under the rule are listed on this plan's evidence with their review scores.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bafds-001-fitness-table" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="lead" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship background-agent-fitness-and-dispatch-scope §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">When the nova audit lands its counts, build the per-class fitness table and write it as this plan's evidence</h4>
+    <div class="r-fu-body"><p>Gated on nova <code>figure-and-solver-audit</code> §1 and §2 having their scored records. One node reads the audit anchors and the crew ledger, writes the class-of-work table with the counts and defect classes per lane, and states which classes the local lane is fit for by default, with review, or not at all, each with the audit rows behind it. The record is authored as an evidence document under <code>docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html</code>, with a figure only where a comparison across classes is clearer drawn than tabled.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship background-agent-fitness-and-dispatch-scope §1</pre>
+    </article>
+</section>
+
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-bafds-interim-ruling" data-who="lead" data-when="2026-09-21T03:40:00Z">
+    <div class="r-comment-body"><p>Interim ruling in force until §1 lands: nothing from the local lane is promoted without a scored review from another lane; no new implementation node is dispatched to it; investigation and reporting nodes may still route there. The nodes in flight at the time of the ruling finish and stay unpromoted in their worktrees until reviewed.</p></div>
+</div>
+</section>
+  </main>
+</body>
+</html>
