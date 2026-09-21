@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -352,6 +352,67 @@ classified from that text rather than as abandoned, asserted for both observed m
 lane counts are read from the document the preflight already opens rather than from a stored
 classification, because a stored classification carries no observation time and a stale verdict is
 indistinguishable from a current one.</p>
+
+<p><strong>A third population hides inside <code>abandoned</code>, and it is the opposite of a
+hang.</strong> Four silent runs of one session were measured from their own streams rather than
+from the verdict, and they split:</p>
+
+<table>
+<caption>Four runs the surface called abandoned or stalled, read from the terminal record in each stream.</caption>
+<thead><tr><th>Run</th><th>Terminal record</th><th>Its own last words</th></tr></thead>
+<tbody>
+<tr><td>declared-role-equality control</td>
+    <td><code>stop_reason: end_turn</code>, 8 turns, 272 s of API time, $0.70, <strong>zero errors</strong></td>
+    <td><q>Now let me read the current guard and the test file it mutates.</q></td></tr>
+<tr><td>a-review-records-the-revision</td>
+    <td><code>stop_reason: end_turn</code>, 24 turns, 346 s, $2.44, zero errors</td>
+    <td><q>Now the baseline cohort run. Checking partitions first.</q></td></tr>
+<tr><td>review-of-prescription-checks</td>
+    <td><strong>no terminal record at all</strong> &mdash; 4,712 records, 52 assistant turns, then silence</td>
+    <td>&mdash;</td></tr>
+</tbody>
+</table>
+
+<p>The first two <strong>ended their turn normally</strong>: a clean terminal record, no error
+anywhere in the stream, real money spent, and a last utterance that narrates the next step they
+never took. The process is gone <em>because it ended</em>, which is the reverse of what the
+verdict's phrase &mdash; <q>the process is gone without a complete manifest</q> &mdash; leads a
+reader to do about it. Both had nothing to resume from: clean worktree at base, no commit, no
+uncommitted edit. A resume there spends a turn to start over.</p>
+
+<p>Only the third is a stall. A peer measured four of its own at 908, 903, 902 and 901 seconds of
+stream silence &mdash; a fixed window across four coordinators, so a congestion signature rather
+than four independent hangs &mdash; and all four of theirs resumed successfully with no committed
+work lost, which is what a crawling worker predicts and a hung one does not.</p>
+
+<p><strong>So the discriminator is in the record the classifier already opens, and it is cheaper
+than a lane reading:</strong></p>
+
+<table>
+<caption>Two signatures the one word <code>abandoned</code> currently covers, and the opposite actions they call for.</caption>
+<thead><tr><th>In the stream</th><th>What it is</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td><code>end_turn</code>, no manifest, last text forward-looking</td>
+    <td>the turn ended mid-task; the worker believed it was continuing</td>
+    <td>redispatch &mdash; there is no turn to resume into</td></tr>
+<tr><td>no terminal record, stream silent past the window</td>
+    <td>congestion or hang</td>
+    <td>read the lane to choose; resume is viable</td></tr>
+</tbody>
+</table>
+
+<p><strong>The attribution this corrects is the recording session's own.</strong> All four were
+reconciled to the ledger as <code>infrastructure-failure</code>, and for the first two that is
+wrong: the infrastructure did exactly what it reports. The count &mdash; four runs producing
+nothing on a lane past its knee &mdash; stands; the cause does not, for two of the four. It is
+recorded here rather than left as three ledger rows asserting a cause that has since been measured
+against.</p>
+
+<p><strong>Done when</strong> a run whose stream carries a terminal <code>end_turn</code> and no
+manifest is classified distinctly from one carrying no terminal record at all, asserted with a
+synthesised stream of each shape, and the verdict for the first names redispatch while the verdict
+for the second names resume; and the verdict text for the first no longer says the process is gone
+without qualification, since it ended, asserted on the emitted string.</p>
 
 <h2 id="s3">&#167;3 &mdash; One reservation we hold, steps that never queue, and a limit we own</h2>
     <p>A job per worker mints a reservation per worker. That was measured to be fast, the proving run starting
