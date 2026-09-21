@@ -246,6 +246,79 @@
         and the write is outside this node's scope.</li>
     </ul>
 
+  <h2 id="member-in-flight-liveness">Member in flight — a proven-dead worker releases the member, a stale phase does not</h2>
+    <p>
+      Node <code>member-guard-counts-live-processes</code> (§2e). The member-in-flight guard refused
+      on a live pointer's <code>phase</code> field alone, and that field lags until something folds
+      the run's own stream: 44 pointers held members across every project while only 16 of their
+      workers were still running, so nine working workers sat behind a declared ceiling of
+      sixty-four that nothing was occupying.
+    </p>
+
+    <h3>What landed</h3>
+    <p>
+      <code>reckon/crew/node.py</code> now carries the guard's predicate as
+      <code>member_in_flight_verdict(pointer)</code>, returning <code>blocks</code>,
+      <code>liveness</code> and a <code>reason</code>, plus
+      <code>refuse_member_in_flight(member, pointer)</code> which raises
+      <code>MemberInFlight</code> naming the liveness it observed. The pid-and-host question is the
+      one the claim surfaces already ask, so the guard consults
+      <code>reckon.crew.claims._worker_liveness</code> rather than restating the host comparison
+      differently. The manifest is never read.
+    </p>
+    <table>
+      <caption>The predicate, stated as the four answers it can give.</caption>
+      <thead><tr><th>Observed</th><th>Blocks the member?</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td><code>alive</code></td><td>yes</td><td>a worker is running on this host</td></tr>
+        <tr><td><code>gone</code></td><td><strong>no</strong></td><td>proven stopped on this host — the case that recovers the lane</td></tr>
+        <tr><td><code>unknown</code></td><td>yes, reported as unknown</td><td>no recorded pid, or a launching host that is not this host; releasing would double-dispatch a member whose worker may be alive elsewhere</td></tr>
+        <tr><td><code>terminal</code></td><td>no</td><td>the phase is already terminal, so nothing can be narrowed by asking</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate measure, as executed</h3>
+    <ul>
+      <li><strong>Focused gate.</strong> <code>pytest -p no:cacheprovider -q
+        tests/test_member_guard_counts_live_processes.py</code> → <strong>13 passed, 0 failed</strong>
+        (13 test functions; the fence requires at least 9). Each of the three liveness states is
+        asserted against a synthesised pointer whose phase is non-terminal: a running worker still
+        blocks, a worker proven gone releases, and <em>unknown</em> blocks and is asserted separately
+        for the no-pid shape and the foreign-host shape, because releasing either double-dispatches.
+        A terminal phase is asserted to release a <em>running</em> worker, so the existing answer is
+        not narrowed. The guard is asserted not to consult the manifest, with a delivered-looking
+        manifest on disk beside the pointer and the freshness probe armed to raise if it is reached.
+        The refusal message is asserted to name each blocking state.</li>
+      <li><strong>No collateral change.</strong> The 15-file promotion cohort recorded at
+        <code>~/.config/reckon/crew/reports/unreviewed-promotion-exposure.md</code> fails exactly
+        <strong>18</strong>, its recorded before value, with this change in the tree
+        (<code>18 failed, 166 passed</code>, 40.7 s).</li>
+    </ul>
+
+    <h3>Negative control, as executed</h3>
+    <p>
+      The declared mutation — <em>in <code>reckon/crew/node.py</code>
+      <code>member_in_flight_verdict</code>, return <code>blocks=True</code> for every non-terminal
+      phase, dropping the three-valued process-liveness consult and restoring the phase-only
+      rule</em> — was applied and the focused gate observed to fail: <strong>8 failed, 5 passed</strong>.
+      The eight failures are the recovery direction and every unprovable shape: the gone case, both
+      lagging phases, the no-pid and foreign-host cases, the unknown-versus-gone distinction, the
+      refusal-message naming, and the raises-nothing case. The mutation was reverted and
+      <code>reckon/crew/node.py</code> restored byte-identical (sha256
+      <code>986ccb35a9197d533cc5da74009297e55d6a49b763fe8f09836b8ad0e2ac861e</code>, identical before
+      and after; the marker occurs 0 times in the committed file). Red log:
+      <code>~/.config/reckon/crew/runs/r-20260921T090441654915-member-guard-counts-live-processes/negative_control.log</code>.
+    </p>
+
+    <h3>What this node did not do</h3>
+    <p>
+      The predicate is the guard's decision, but the dispatch call site is not yet switched to it:
+      <code>reckon/crew/dispatch.py</code> still raises <code>MemberInFlight</code> from its own
+      inline phase loop, and that file is concurrently fenced by another node. The predicate and the
+      refusal message are exercised directly, so the change is measured; the wire-up is the next
+      node's job and is listed as a follow-on rather than claimed here.
+    </p>
+
   </main>
 </body>
 </html>

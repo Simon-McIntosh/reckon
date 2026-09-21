@@ -365,6 +365,25 @@
     number rather than <code>unknown</code>, since a coordinator deciding how wide to fan out cannot
     read it today.</p>
 
+    <p class="landed-summary">
+      <strong>§2e first landing — the guard's predicate is three-valued, and only
+      <em>gone</em> releases.</strong> <code>reckon/crew/node.py</code> now carries
+      <code>member_in_flight_verdict(pointer)</code> — <code>blocks</code>, <code>liveness</code>,
+      <code>reason</code>, over <code>alive</code> / <code>gone</code> / <code>unknown</code> plus
+      a terminal phase that still releases — and <code>refuse_member_in_flight(member, pointer)</code>,
+      which raises <code>MemberInFlight</code> naming the liveness it observed. It consults the
+      pid-and-host judge the claim surfaces already use and never reads the manifest. Gate: 13 tests
+      pass in <code>tests/test_member_guard_counts_live_processes.py</code>, each of the three states
+      asserted against a non-terminal phase, including <em>unknown</em> asserted separately for the
+      no-pid and foreign-host shapes and the terminal phase asserted to still release a running
+      worker; the promotion entry-point cohort still fails its recorded 18. The dispatch call site in
+      <code>reckon/crew/dispatch.py</code> is fenced to another node and is not yet switched to the
+      predicate, so the wire-up is the remainder rather than this landing.
+      Full record:
+      <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#member-in-flight-liveness">§2e landed</a>
+      (commit <code>45242ed9</code>).
+    </p>
+
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
     review a gated promotion requires must re-derive at least one number the node claims from the

@@ -112,9 +112,7 @@ def test_a_pointer_with_no_recorded_pid_blocks_and_is_unknown():
 
 def test_a_pointer_recorded_on_another_host_blocks_and_is_unknown():
     # A foreign pid is not this host's process to judge in either direction.
-    verdict = member_in_flight_verdict(
-        _pointer(pid=1, launcher_host=OTHER_HOST)
-    )
+    verdict = member_in_flight_verdict(_pointer(pid=1, launcher_host=OTHER_HOST))
     assert verdict.blocks is True
     assert verdict.liveness == "unknown"
 
