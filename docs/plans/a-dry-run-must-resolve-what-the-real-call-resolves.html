@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-title" content="A Dry Run Must Resolve What The Real Call Resolves">
+  <meta name="plan-summary" content="The dispatch dry run validates the node contract and skips every resolution the real call performs, so it answers ok for a dispatch that cannot run.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
+  <title>A Dry Run Must Resolve What The Real Call Resolves | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; A check that answers a narrower question, affirmatively</h2>
+
+    <p><code>reckon crew dispatch --dry-run</code> is documented as "validate and resolve only:
+    no worktree, no process, no record". It validates the eight node-contract properties and it
+    does <strong>not</strong> resolve the plan and section against the worktree base ref, nor the
+    roster member against the repository. So it returns <code>ok</code> for a dispatch that cannot
+    run, and the affirmative answer is what makes it dangerous: a refusal teaches, a false green
+    gets written down.</p>
+
+    <p><strong>Two measured instances, 2026-09-21, and they are same-shape-different-input.</strong></p>
+
+    <table>
+      <caption>Each row: a dry run that passed, and the real call that could not have.</caption>
+      <thead><tr><th>What was dry-run</th><th>Dry run</th><th>Real call</th><th>What the dry run skipped</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>--plan S13 --section Summary --role review</code> on imas-efit</td>
+          <td><code>ok</code></td>
+          <td><code>plan-unavailable</code></td>
+          <td>A sprint resource carries <code>data-reckon="sprint-items"</code> and no
+          <code>&lt;h2 id&gt;</code>, so no <code>--section</code> can resolve against it</td>
+        </tr>
+        <tr>
+          <td><code>--member codex-b</code> on reckon, no <code>--repo</code></td>
+          <td>refused, naming <code>--repo</code></td>
+          <td>&mdash;</td>
+          <td>Nothing &mdash; but <code>--member codex-a</code>, identically registered in the
+          same roster, dispatched with no <code>--repo</code> at all</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The first instance cost a false rule.</strong> The session that ran it recorded in
+    its handoff that "the sprint slug is an acceptable <code>--plan</code> for review nodes",
+    on the strength of the green. A later session read the handoff, dispatched, and got
+    <code>plan-unavailable</code>. The dry run did not merely fail to help; it manufactured a
+    durable false belief and handed it to the next reader.</p>
+
+    <p>The second row is the better instance precisely because it is the same command shape with
+    one input changed, which rules out the caller. Two identically registered members of one
+    roster resolve differently, and the refusal names a flag the working call never needed. One
+    of those two behaviours is wrong and the surface does not say which.</p>
+
+    <p>A third case shares the shape and needs no separate row: a freshly created plan.
+    <code>edit_plan(create=True)</code> writes the file, the dry run passes, and the real dispatch
+    refuses &mdash; the worktree base is a commit and the file is not in it.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The dry run performs every resolution, and stops before the side effects</h2>
+
+    <p>The fix is not more validation. It is moving the line the dry run stops at: it should do
+    everything the real call does up to the first thing that changes the world, and nothing after.
+    The real call resolves the repository, the roster member, the base ref, the plan file at that
+    ref and the named section within it, the peer scope claims, the backend and the budget &mdash;
+    and only then creates a worktree and spawns a process. The worktree is the boundary.</p>
+
+    <p><strong>Every resolution named above is read-only and every one of them is skipped today.</strong>
+    That is what makes this cheap: nothing new has to be computed, the calls already exist on the
+    real path and are simply not reached when <code>dry_run</code> is set.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/dispatch.py</code>,
+    <code>tests/test_dry_run_resolves_the_real_call.py</code> (new).</p>
+
+    <p><strong>Done when</strong> a dry run naming a sprint id as <code>--plan</code> is refused
+    with the same error code the real call returns, asserted against a synthesised sprint resource
+    carrying <code>sprint-items</code> and no section heading; a dry run naming an uncommitted plan
+    file is refused the same way, asserted; a dry run of a valid node still returns <code>ok</code>
+    and still creates no worktree, no process and no run record, asserted by listing the worktree
+    root and the pointer directory before and after and requiring both unchanged; and for one
+    node, the dry run's refusal payload and the real call's refusal payload are asserted equal on
+    <code>error</code> and on the set of resolution keys, because a dry run that refuses for a
+    different reason than the real call is the same defect wearing the opposite sign.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Member resolution gives one answer, not two</h2>
+
+    <p>Whatever the correct behaviour is, <code>--member codex-a</code> and
+    <code>--member codex-b</code> must share it. Decide which is right &mdash; a member is
+    resolvable from the project alone, or it requires a repository &mdash; and make both obey it.
+    The evidence for the decision is in the roster: if members can be registered against several
+    repositories then the repository is genuinely needed and the working call is the bug; if they
+    cannot, the refusal is.</p>
+
+    <p><strong>Write paths.</strong> <code>reckon/crew/dispatch.py</code>,
+    <code>tests/test_member_resolution_is_single_valued.py</code> (new).</p>
+
+    <p><strong>Done when</strong> two members registered identically in one project resolve
+    identically, asserted by a test that registers two and dispatches both with the same flags and
+    requires the same outcome; whichever behaviour is chosen, a member that genuinely cannot be
+    resolved is refused with a message naming what would make it resolvable, asserted; and the
+    single-valued property is expressed as a test over the roster rather than over two hardcoded
+    ids, so a third member cannot acquire a third behaviour.</p>
+
+    <h2 id="s4">&sect;4 &mdash; The general shape, and why it is worth a plan</h2>
+
+    <p>This plan is one instance of a family reckon keeps producing, and the family is worth
+    naming because the members do not look alike until they are stated together: <strong>a check
+    answers a narrower question than the caller is asking, and answers it affirmatively.</strong>
+    The caller reads the affirmative as an answer to their question, which it is not.</p>
+
+    <p>The discriminator that finds them is one question, and it costs nothing to ask:
+    <em>what would make this field wrong while it still printed the same value?</em></p>
+
+    <ul>
+      <li>A dry-run <code>ok</code> survives a dispatch that cannot run &mdash; this plan.</li>
+      <li>A review status of <code>parsed</code> survives a reviewer that skipped four of the five
+      things it was told to read.</li>
+      <li>A fresh stream mtime survives a worker writing nothing useful.</li>
+      <li>A <code>plan-slug</code> meta survives on a document that is not a plan.</li>
+      <li>A commit reachable from <code>HEAD</code> survives a merge that reverted its content.</li>
+    </ul>
+
+    <p>Each one is a true statement standing in for the one that was needed. The remedy is always
+    the same and is never more validation: make the check resolve the thing the caller is actually
+    asking about, or make it say plainly that it did not.</p>
+
+    <p><strong>Done when</strong> the discriminator question above is recorded in the dispatch
+    surface's own documentation next to <code>--dry-run</code>, in one sentence, so the next person
+    adding a check to this file meets it there rather than in a plan they would have to know to
+    look for.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="member-repository-requirement" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Is a roster member resolvable from the project alone, or does it require a repository?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="project-alone">project alone; the refusal is the bug</button>
+      <button class="r-opt" data-value="requires-repository">repository required; the working call is the bug</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ddr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship a-dry-run-must-resolve-what-the-real-call-resolves" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the dry run resolve the plan, the section and the member — §2 first</h4>
+    <div class="r-fu-body">Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok and the real call refused plan-unavailable; the session that saw the green recorded 'the sprint slug is an acceptable --plan for review nodes' in a handoff, and a later session acted on it. Separately, --member codex-a dispatched with no --repo while codex-b, identically registered in the same roster, refused naming --repo. §2 moves the dry run's stopping line to the worktree so every read-only resolution the real call performs is performed, §3 makes member resolution single-valued, and §4 records the discriminator that finds the next one: what would make this field wrong while it still printed the same value.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-dry-run-must-resolve-what-the-real-call-resolves</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
