@@ -610,6 +610,56 @@ nothing has been launched</code></pre>
       removing the recorder's phase guard leaves the four pre-existing launch-failure cases green while the new
       double-recording case fails.</p>
     </section>
+    <section id="s11">
+      <h2>&sect;11 &mdash; The red-log field is a path, and the contract a worker reads says so</h2>
+      <p>The failure this section answers: a worker cannot anticipate a refusal its own contract omits. Four
+      workers wrote <code>negative_control_log</code> four ways &mdash; a path plus an em dash and a sentence,
+      twice; a mapping of <code>declared:</code>, <code>log:</code> and <code>result:</code> sub-keys; and a
+      markdown heading with the path beneath it &mdash; none matching another, all refused at promotion, and all
+      unblocked by a coordinator editing the manifest by hand, hours after the worker's process had ended. The
+      guard resolves a bare path, but the template offered the field as a long description inside the
+      placeholder, so a worker filling it naturally emitted the path and then the description. This node changes
+      no guard; it changes what the worker is told before it writes one.</p>
+      <table>
+        <thead>
+          <tr><th></th><th>Template line a worker read</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>before</td>
+            <td><code>negative_control_log: &lt;path to the red log from applying the node's declared
+            negative_control mutation, whose content names that mutation; required when ...&gt;. The log's first
+            line repeats the declared mutation verbatim ...</code></td>
+          </tr>
+          <tr>
+            <td>after</td>
+            <td><code>negative_control_log: &lt;the path alone, and nothing else on this line &mdash; no
+            description, note or continuation&gt;. Required when ... The log's first line repeats the declared
+            mutation verbatim ...</code> and a new <code>negative_control_note: &lt;where an explanation
+            goes&gt;</code> line beside it.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Three cases in <code>tests/test_negative_control_log_is_a_path.py</code> enter through
+      <code>compose_prompt</code>, which is where a worker's contract is actually rendered, and assert: the
+      template states the value is the path alone and emits the note line beside it; the long description that
+      invited a trailing sentence is <em>absent</em>, asserted rather than inferred from the first assertion;
+      and the first-line convention the template already stated survives, so this change cannot silently drop
+      it.</p>
+      <p><strong>Evidence that could have failed.</strong> The declared mutation &mdash; removal of the
+      <code>negative_control_note</code> line &mdash; was applied to a scratch copy of the fixed tree (not the
+      base, so the test cannot pass there for a reason unrelated to the change), the module confirmed to resolve
+      to the scratch copy rather than the editable install, and
+      <code>test_template_emits_a_note_line_beside_the_log_line</code> observed to fail:
+      <strong>1 failed, 3 passed</strong>, exit 1. The red log's first line repeats the declared mutation
+      verbatim. The mutation never touched the committed tree, which carries the
+      <code>negative_control_note</code> line. The focused gate over the six prompt modules
+      (<code>test_negative_control_log_is_a_path</code>, <code>test_crew_prompts</code>,
+      <code>test_the_prompt_carries_the_contract</code>,
+      <code>test_the_prompt_carries_the_evidence_contract</code>, <code>test_worker_prompt_contract</code>,
+      <code>test_prompt_prefix_identity</code>) is <strong>58 passed, exit 0</strong>, and the change adds no
+      lint finding (two pre-existing findings in <code>reckon/crew/prompts.py</code> at base and at head).</p>
+    </section>
   </main>
 </body>
 </html>
