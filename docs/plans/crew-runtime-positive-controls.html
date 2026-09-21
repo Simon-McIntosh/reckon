@@ -414,6 +414,24 @@
     <code>reckon/crew/node.py</code>, which is held by another session's run and is therefore outside this
     node's fence; it is carried as a follow-on rather than attempted.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong> Both copies of the two-generator defect now
+    carry <code>Restart=always</code> with <code>RestartSec=5</code> unchanged: <code>WATCH_UNIT_TEMPLATE</code>
+    in <code>reckon/crew/runs.py</code>, which renders one unit per project watcher, and
+    <code>UNIT_TEMPLATE</code> in <code>reckon/service.py</code>, which renders the plan server unit.
+    <code>tests/test_watcher_unit_restart.py</code> holds six cases that read the rendered text from each
+    generator, one pair asserting <code>Restart=always</code> with a bounded <code>RestartSec</code>, one pair
+    asserting no generated unit still carries <code>Restart=on-failure</code> as its own separate claim, and one
+    case scanning <code>reckon/</code> for a <code>[Service]</code> header so a third template fails rather than
+    passing unnoticed &mdash; shown firing against a planted scratch template, which failed alone and was
+    removed. The declared mutation restored the old policy in <code>reckon/crew/runs.py</code> alone and
+    reddened exactly that file's two cases (<strong>2 failed, 4 passed, exit 1</strong>), reverted before the
+    commit; the red log's first line repeats the declaration verbatim. Gate on the new file:
+    <strong>6 passed, exit 0</strong>. Two files outside this node's scope are carried rather than edited:
+    <code>tests/test_service.py</code> still asserts the removed policy at its line 28 and is the one red beside
+    those six passes, and the refusal wording in <code>reckon/crew/node.py</code> that should separate <em>a
+    unit exists and is not running</em> from <em>no watcher is live</em> is untouched.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s9">&sect;9 landed</a>.</p>
+
     <h2 id="s10">&#167;10 &mdash; Arming a watcher survives a service manager that cannot be reached</h2>
     <p>Measured the same day and dependent on &#167;9's file, so it follows it rather than running beside it.
     <code>systemctl --user daemon-reload</code> failed with connection refused after a client restart, which

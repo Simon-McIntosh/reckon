@@ -575,6 +575,52 @@ nothing has been launched</code></pre>
       this node's cases.</p>
     </section>
 
+    <section id="s9">
+      <h2>&sect;9 &mdash; The watcher unit is written so a watcher that exits is brought back</h2>
+      <p><strong>Both copies of the unit text move together.</strong> The text is written twice &mdash;
+      <code>WATCH_UNIT_TEMPLATE</code> in <code>reckon/crew/runs.py</code>, which renders one unit per project
+      watcher, and <code>UNIT_TEMPLATE</code> in <code>reckon/service.py</code>, which renders the plan server
+      unit. Both carried <code>Restart=on-failure</code>, so a process that exited zero was never brought back:
+      a watcher that returned cleanly stayed down, and the project kept live runs, which is what was measured on
+      both projects three times in one afternoon. Each copy now carries <code>Restart=always</code> with
+      <code>RestartSec=5</code> unchanged, because a watcher that is a process the dispatcher can see is worth
+      nothing if an ordinary exit ends it. The one-word-per-copy shape of the defect is the point of the section:
+      repairing one generator would have left the other generating a unit that still never comes back.</p>
+      <p><strong>The cases read the rendered text, not the source.</strong>
+      <code>tests/test_watcher_unit_restart.py</code> holds six cases over the two generators. One parameterised
+      pair runs a case per generator, each calling that generator's renderer &mdash;
+      <code>crew_runs.render_watch_unit</code> and <code>service.render_unit</code> &mdash; and asserting that
+      <code>Restart=always</code> appears in the returned text and that the <code>RestartSec=</code> value parses
+      as an integer at or below 30 seconds, so "short" is a stated bound rather than a word. A second
+      parameterised pair asserts, as its own case per generator, that the same rendered text contains no
+      <code>Restart=on-failure</code> at all, which is the negative half and a separate assertion from the first.
+      The renders take the executable, the node interpreter and <code>RECKON_HOME</code> as arguments, and one
+      further case reads the redirected config home back out of the rendered log path, so the claim that no
+      render touched the real account home rests on a resolved path rather than on the absence of an error.</p>
+      <p><strong>A third copy fails rather than passing unnoticed.</strong>
+      <code>test_every_unit_template_in_the_tree_is_covered_here</code> scans every module under
+      <code>reckon/</code> for a <code>[Service]</code> section header and requires the set it finds to equal the
+      two generators this file renders, so a unit template added elsewhere fails until it is both listed and
+      rendered. The guard's own firing was shown rather than assumed: a scratch module carrying a third unit
+      template was planted at <code>reckon/_scratch_third_unit_probe.py</code>, the enumeration case was observed
+      to fail alone (<strong>1 failed</strong>, exit 1), and the module was removed &mdash; which is what
+      distinguishes this case from one that passes because it found nothing to check.</p>
+      <p><strong>The declared mutation, applied and reverted.</strong> The node declared <em>restore
+      Restart=on-failure in the unit template in reckon/crew/runs.py</em>. With that one word restored, that
+      file's two cases fail and no other case moves: <strong>2 failed, 4 passed, exit 1</strong>. The red log's
+      first line repeats the declaration verbatim and the mutation was reverted before the commit, with the
+      unmutated head giving <strong>6 passed, exit 0</strong> over the same file. Log:
+      <code>~/.config/reckon/crew/runs/r-20260921T123846054559-watcher-unit-restarts-always/negative-control.log</code>.</p>
+      <p><strong>What this section reaches, and the one file it does not.</strong>
+      <code>tests/test_service.py::test_unit_restarts_on_failure_and_installs_into_the_default_target</code>
+      asserts <code>"Restart=on-failure" in unit</code> at its line 28, so it asserts the defect this section
+      removes: it is the single red in the gate log beside the six new passes, no failure predates the change,
+      and the repair is a one-line change to the assertion's subject. That file is outside this node's write
+      scope and is left untouched and named as a follow-on rather than edited. The refusal wording that should
+      distinguish <em>a unit exists and is not running</em> from <em>no watcher is live</em> is composed in
+      <code>reckon/crew/node.py</code>, held by another node, and remains a follow-on.</p>
+    </section>
+
     <section id="s14">
       <h2>Orphaned watcher replacement diagnosis</h2>
       <p><strong>Observed 2026-09-21 at <code>26d6df25680ac385446f9db0c86f339ddb57fece</code>;
