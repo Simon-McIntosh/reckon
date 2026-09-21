@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.933">
-<meta name="plan-version" content="62">
+<meta name="plan-impl" content="0.938">
+<meta name="plan-version" content="63">
 </head>
 <body>
   <main class="plan-doc">
@@ -815,6 +815,35 @@
     file condition, since a worker following the template as written will keep writing the shape the
     reader now refuses.</p>
 
+    <h2 id="s16">&#167;16 &mdash; The wait the reader accepts is the wait the sweep lifts</h2>
+    <p>Reported by the independent review of &#167;15 and measured by it in that worktree. A file condition is
+    now accepted, read back and refused-by-name correctly, and the sweep that actually lifts a parked run would
+    never fire for one. Emptying the derived terminal records <code>terminal=false</code> from
+    <code>reckon/crew/resumption.py</code> even with every declared path present, so a worker parked on a file
+    condition waits forever. The case named for the derived condition asserts the probe and never asserts the
+    terminal, which is why the gate is green while the mechanism is inert &mdash; this plan's own &#167;7
+    defect, in the node that repaired the wait contract.</p>
+    <p>The cause is that there are two probe implementations. <code>_run_wait_condition_probe</code> in
+    <code>reckon/crew/recovery.py</code> returns early on a file condition and never runs the argument vector
+    its docstring says every wait runs through; the sweep in <code>reckon/crew/resumption.py</code> carries a
+    second implementation, and that is the one that decides whether a park lifts. A contract with two readers
+    is the same defect as a record with two spellings: the tested one and the live one are different, and
+    nothing reports the difference.</p>
+    <p><strong>Done when.</strong> A case asserts that a wait declaring a file condition over 3 paths, all of
+    which exist, is lifted by the sweep that lifts parked runs &mdash; entering where the sweep enters rather
+    than through the reader, because the reader is not what lifts; a second case asserts the same wait with one
+    path absent is NOT lifted, which is the negative half and is what distinguishes a lift from a function that
+    always returns true; a third case asserts the derived terminal is recorded true when every path exists,
+    named as the field rather than inferred from the lift; the duplicated assignment in
+    <code>reckon/crew/recovery.py</code> is removed and the docstring states which reader runs the argument
+    vector and which does not, so the two implementations are no longer described as one; and the eleven cases
+    &#167;15 landed still pass unchanged. The declared mutation is applied, the named cases are observed to
+    fail, and the red log is recorded with the mutation verbatim on its first line.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/recovery.py</code>, <code>reckon/crew/resumption.py</code> and
+    <code>tests/test_wait_shapes.py</code>. Whether the two probe implementations should become one is a
+    design question this node may answer either way, provided it says which it chose and why; what it may not
+    do is leave them described as one while they behave differently.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
@@ -1065,6 +1094,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260921T1825-arming-fallback-landed" data-who="reckon-ship" data-when="2026-09-21T18:25:00+02:00">
     <div class="r-comment-body">Gate passed: 17 passed exit 0 across the fallback file and the two watcher files it touches, 5 new cases and 12 pre-existing, ruff clean on both changed paths, and the declared mutation reddened 2. Arming now survives a service manager that cannot be reached, and reports which path it took rather than raising. Two cases beyond the brief are the reason this section is worth more than its size: a unit the manager genuinely refuses still raises, so the fallback swallows no real refusal, and a fallback that could not start a watcher does not report success — the silent-success failure this whole plan exists to remove, guarded without being asked for. The decision the arming path makes is drawn in docs/figures/crew-runtime-positive-controls/watcher-arming-fallback.png. This closes the last of the seven sections folded in from the open followups at the start of the session.</div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-20260921T1912-wait-shape-landed" data-who="reckon-ship" data-when="2026-09-21T19:12:00+02:00">
+    <div class="r-comment-body">Gate passed: 11 cases including both guards that §4's refusals still hold, and the declared mutation reddened 6. The single failure in the wider population was attributed to the base by its own measurement node: tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion fails identically at base ca943455 and head 5e9dde39 with an empty failure-set difference, the base taken by git archive into a temporary tree. Review 84/100, and its third finding is why section 16 exists rather than this section closing the plan: the case named for the derived condition asserts the probe and never the terminal, and emptying the derived terminal records terminal=false from resumption.py even with every path present, so the sweep that lifts a parked run would never fire for a file condition. The reader accepts a wait the sweep does not lift. The cause is two probe implementations — recovery.py returns early on files and never runs the argument vector its docstring claims every wait runs through, while the sweep carries its own. A contract with two readers is a record with two spellings: the tested one and the live one differ and nothing reports it.</div>
 </div>
 </section>
 </main>
