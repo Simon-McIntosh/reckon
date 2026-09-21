@@ -25,7 +25,9 @@ def repository(tmp_path):
     _git(root, "config", "user.email", "test@example.invalid")
     tracked = root / "tracked file.txt"
     tracked.write_text("committed content\n")
-    _git(root, "add", "--", str(tracked))
+    data, version = ledger.load("sample", root=root)
+    ledger.write("sample", data, version, root=root)
+    _git(root, "add", "--", str(tracked), str(ledger.ledger_path("sample", root)))
     _git(root, "commit", "-qm", "test: seed", "-m", "Seed the tracked path.")
     return root
 
