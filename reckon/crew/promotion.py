@@ -2054,7 +2054,7 @@ def _require_review_waiver(
     not its manifest names a path, so an implement run that declares no change
     is still refused rather than slipping through on its silence. The review
     role is exempt, because the review it wrote for another run is its own
-    deliverable and a review of it is what §3 exists to prevent.
+    deliverable; requiring another review would recurse without a stopping point.
     """
     from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
 
@@ -2104,6 +2104,7 @@ def complete(
     boundary_waiver: str = "",
     resume_waiver: str = "",
     review_waiver: str = "",
+    negative_control_waiver: str | None = None,
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
     no_impl_change: str = "",
@@ -2233,6 +2234,7 @@ def complete(
             resume_waived=resume_waived,
             reviewed=reviewed,
             review_waived=review_waived,
+            negative_control_waiver=negative_control_waiver,
             recoverable_session=recoverable_session,
             discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
@@ -3051,6 +3053,7 @@ def _require_declared_negative_control(
     gate: str,
     manifest: Mapping[str, Any] | None,
     manifest_path: str,
+    waiver_reason: str = "",
 ) -> dict[str, Any]:
     """Refuse a passing gate on a check whose red log is not delivered.
 
@@ -3064,14 +3067,16 @@ def _require_declared_negative_control(
     rather than refused.
     """
 
-    check: dict[str, Any] = {"verdict": "exempt", "reason": "node-writes-no-test-path"}
+    check: dict[str, Any] = {"verdict": "exempt"}
     node = record.get("node") or {}
     if not isinstance(node, Mapping):
+        check["reason"] = "node-writes-no-test-path"
         return check
     test_paths = sorted(
         str(path) for path in node.get("write_paths") or () if is_test_path(str(path))
     )
     if not test_paths:
+        check["reason"] = "node-writes-no-test-path"
         return check
     check["test_paths"] = test_paths
     declaration = str(node.get(NEGATIVE_CONTROL_FIELD) or "").strip()
@@ -3124,12 +3129,18 @@ def _require_declared_negative_control(
             "name that path"
         )
     if declaration not in text:
+        if waiver_reason:
+            check["verdict"] = "waived"
+            check["reason"] = waiver_reason
+            return check
         raise CrewError(
             f"run {run_id!r} declares the mutation {declaration!r} but the log at "
             f"{resolved!r} does not name it, so the log is a failure for some other "
             "reason and not the negative control of this check. Record the log the "
             "declared mutation produced with its first line repeating that mutation "
-            "verbatim, or correct the declaration to the mutation the log shows"
+            "verbatim, correct the declaration to the mutation the log shows, "
+            "or use --waive-negative-control REASON to record why the mismatch "
+            "may be accepted"
         )
     check["verdict"] = "matched"
     return check
@@ -3156,6 +3167,7 @@ def _complete_locked(
     resume_waived: Mapping[str, str] | None = None,
     reviewed: Mapping[str, Any] | None = None,
     review_waived: Mapping[str, str] | None = None,
+    negative_control_waiver: str | None = None,
     recoverable_session: Mapping[str, str] | None = None,
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
@@ -3414,13 +3426,24 @@ def _complete_locked(
     # A passing gate on a node that writes a check is refused unless the
     # manifest names the red log the declared mutation produced. The check runs
     # after the manifest is read, because the discharge lives there.
+    waiver_reason = (
+        "" if negative_control_waiver is None else str(negative_control_waiver).strip()
+    )
+    if negative_control_waiver is not None and not waiver_reason:
+        raise CrewError("--waive-negative-control requires a non-empty reason")
     negative_control = _require_declared_negative_control(
         run_id,
         record,
         gate=gate,
         manifest=manifest,
         manifest_path=manifest_path,
+        waiver_reason=waiver_reason,
     )
+    if negative_control_waiver is not None and negative_control["verdict"] != "waived":
+        raise CrewError(
+            f"run {run_id!r} has no negative-control match refusal for "
+            f"--waive-negative-control {waiver_reason!r} to waive"
+        )
     follow_on_paths = (
         None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
     )

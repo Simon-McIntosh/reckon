@@ -324,6 +324,62 @@
     (sha256 <code>037ea9f9c2cf4fa879ebd489f2c4e87c4080e7401fb243703e3abc9ab02c2c20</code>) and
     <code>git status --porcelain</code> in the worktree is empty.</p>
   </section>
+  <section id="negative-control-waiver">
+    <h2>A paraphrased negative control has a recorded waiver</h2>
+    <p><strong>Implementation.</strong> Commit <code>c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54</code> changes
+    <code>reckon/crew/promotion.py</code>, <code>reckon/cli.py</code> and
+    <code>tests/test_negative_control_waiver.py</code>. The coordinator explicitly granted
+    <code>reckon/cli.py</code> in place of the nonexistent <code>reckon/crew/cli.py</code>
+    in the original fence. A separate documentation commit <code>681771db</code> replaces
+    a planning-section reference in the review guard's docstring with its recursion rule.</p>
+    <p><strong>Reproduced before repair.</strong> At base
+    <code>6db1c0bc92e1124baadbe217a92450370ab67b53</code>, declaration
+    <q>removing the guard turns the fixture red</q> paired with a log stating
+    <q>bypassing the guard produced the expected assertion failure</q> raises
+    <code>CrewError</code>: the log <q>does not name it</q>. The existing refusal
+    offers rewriting the log or declaration, with no recorded waiver. The new CLI flag
+    records the exception without rewriting either delivered file, asserted byte for byte.</p>
+    <table>
+      <caption>Promotion outcomes are distinguished by a structured ledger field.</caption>
+      <thead><tr><th>Delivered evidence and request</th><th>Outcome</th><th>Ledger evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Control text names its declaration; no waiver</td><td>Promoted</td><td><code>negative_control.verdict = matched</code>, declaration and log paths</td></tr>
+        <tr><td>Readable control text does not name its declaration; reasoned waiver</td><td>Promoted</td><td><code>negative_control.verdict = waived</code>, reason, declaration, supplied <code>log</code> and <code>resolved_log</code></td></tr>
+        <tr><td>Mismatch without waiver, or blank waiver reason</td><td>Refused</td><td>No promoted row; live pointer retained</td></tr>
+        <tr><td>Waiver over a matched, exempt, none-declared, undeclared or non-passing control</td><td>Refused: nothing to waive</td><td>No promoted row; live pointer retained</td></tr>
+        <tr><td>Missing path or unreadable log, even with a reason</td><td>Refused</td><td>No promoted row; live pointer retained</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Checks on compute.</strong> All gates ran on <code>all_debug</code>
+    through the main checkout's existing virtualenv, without syncing it.
+    <code>python -m pytest -p no:cacheprovider -q tests/test_negative_control_waiver.py tests/test_crew_promotion_requires_review.py tests/test_crew_declared_negative_control.py</code>
+    reports 26 passed / 5 failed, including all 17 new waiver cases passing.
+    The two existing modules alone report 9 passed / 5 failed at the base revision;
+    the failure IDs match exactly, so there are zero added failures. The five fixtures
+    fail at the independent-review guard before reaching their control assertion and
+    are reported for a separately scoped repair. An initial partial base archive omitted
+    the fleet script and produced two additional setup-related failures; supplying the
+    base revision's own skills directory removed those instrument failures.</p>
+    <p><strong>The declared control could fail.</strong> Delete the branch that refuses
+    <code>--waive-negative-control</code> when the run carries no control-match refusal,
+    so the flag is accepted unconditionally. Applied to a scratch copy, that exact mutation
+    produces 5 failed / 12 passed: the matched, no-test, no-declaration, none and nonpassing
+    cases all detect the silent acceptance. The negative log's first line repeats the
+    dispatched declaration verbatim. The committed implementation files remain
+    byte-identical to their blobs.</p>
+    <p><strong>Lint delta.</strong> On the staged Python paths, Ruff check reports
+    12 findings before and 12 after (14 output lines each); format check reports one
+    unformatted file before and one after. The new test file is clean and formatted.
+    Matched rows also no longer inherit the unrelated <code>node-writes-no-test-path</code>
+    exemption reason, a misleading field exposed by reading the actual row.</p>
+    <p><strong>Durable receipts.</strong> Run directory:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/</code>.
+    It carries <code>reproduction.log</code>, <code>focused-and-related.log</code>,
+    <code>baseline-related-complete-install.log</code>, <code>negative-control.log</code>,
+    <code>lint-counts.json</code> and <code>verification.json</code> with exact failure IDs
+    and committed source hashes. No section status or driving followup is closed here;
+    merged-head verification and manifest write-time validation remain separate work.</p>
+  </section>
 </main>
 </body>
 </html>

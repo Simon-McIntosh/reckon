@@ -635,6 +635,27 @@
     log, whether the path resolves — asserted by a test that writes each of the four shapes in the
     table above and requires each to be refused at write time.</p>
 
+    <div class="r-comment" data-section="s2j" data-id="c-negative-control-waiver-landed" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Named control-match waiver implemented locally.</strong> Commit
+      <code>c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54</code> adds <code>--waive-negative-control REASON</code> to
+      <code>reckon crew complete</code>. A readable control log that does not name its
+      declaration can promote with the reason recorded beside its declaration, supplied log
+      path and resolved log path. The ledger field <code>negative_control.verdict</code>
+      reads <code>waived</code> instead of <code>matched</code>, so readers can filter the
+      exception without interpreting prose. Blank reasons and waivers with no mismatch are
+      refused; missing and unreadable logs still refuse.</p>
+      <p><strong>Evidence.</strong> All 17 cases in
+      <code>tests/test_negative_control_waiver.py</code> pass. Deleting the branch that
+      refuses a waiver without a control-match refusal produces 5 failed / 12 passed.
+      The related promotion cohort has 5 failing cases both at base and candidate, with
+      zero added failures; those existing fixtures lack stored reviews and remain outside
+      this node's scope. Ruff findings remain 12 → 12 and unformatted files 1 → 1.
+      The <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#negative-control-waiver">cumulative waiver evidence</a>
+      records the reproduction, ledger contract and logs. This is a worker landing record:
+      section closure, followup resolution and the separate manifest-validation work remain
+      with the coordinator.</p>
+    </div>
+
     <h2 id="s2g">§2g — One gate per kind of work, selected by what the run produced</h2>
 
     <p>§2f widens one gate. That is the substrate and not the design: a single rubric asked of

@@ -2843,6 +2843,16 @@ def _ledger_module():
     ),
 )
 @click.option(
+    "--waive-negative-control",
+    default=None,
+    metavar="REASON",
+    help=(
+        "Promote despite a negative-control log not naming its declared mutation "
+        "and record the reason, declaration and log path. Refused when the run "
+        "has no control-match refusal to waive."
+    ),
+)
+@click.option(
     "--accept-path",
     "accepted_paths",
     type=(str, str),
@@ -2884,6 +2894,7 @@ def crew_complete(
     waive_boundary_refusal,
     waive_resume_path,
     waive_unreviewed_promotion,
+    waive_negative_control,
     accepted_paths,
     no_impl_change,
     pretty,
@@ -2923,6 +2934,7 @@ def crew_complete(
             boundary_waiver=waive_boundary_refusal,
             resume_waiver=waive_resume_path,
             review_waiver=waive_unreviewed_promotion,
+            negative_control_waiver=waive_negative_control,
             accepted_paths=dict(accepted_paths),
             no_impl_change=no_impl_change,
         )
