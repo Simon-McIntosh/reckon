@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-impl" content="0.85">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -778,6 +778,9 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260921T203445733658-the-check-command-supplies-the-scope-it-resolves-against" data-who="reckon-ship" data-when="2026-09-21T20:41:15.927Z">
     <div class="r-comment-body"><p>crew check-manifest passes the run's worktree and repository to audit_manifest, so the write-time scope test resolves declarations as promotion does regardless of the caller's working directory; nine cases green re-run at the merged head, declared mutation verbatim on its log, and the worker narrowed its own undeclared-path assertion after the looser form survived the mutation</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260921T204249691356-review-of-the-check-command-supplies-the-scope-it-resolves-against" data-who="reckon-ship" data-when="2026-09-21T20:51:02.895Z">
+    <div class="r-comment-body"><p>independent review of the check-manifest caller node: 96/100, one finding — promotion resolves the worktree as the repository when the recorded worktree is gone, so a reclaimed run reads clean at the command and stray at promotion for the same declaration</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260921T123329168721-reuse-map-for-the-unbuilt-hand-compensations" data-who="reckon-ship" data-when="2026-09-21T14:18:48.562Z">
     <div class="r-comment-body"><p>reuse map for sections 3, 4 and 5: _write_shadow_patch (promotion.py:1175) plus run_dir (runs.py:69) are the durable-artifact shape section 3 needs, synthesize_landed_record (evidence.py:244) already composes the record section 4 hand-authors, and _worker_seconds (ledger.py:1959) plus concurrency_bounds (summary.py:397) already hold section 5's arithmetic</p></div>
