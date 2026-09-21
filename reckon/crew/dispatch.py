@@ -29,7 +29,6 @@ from reckon.crew.node import (
     CompetenceLimit,
     CrewError,
     DEFAULT_MEMBER_IDLE_WINDOW,
-    MemberInFlight,
     claim_disposition,
     claim_repository,
     repository_identity,
