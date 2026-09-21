@@ -545,6 +545,22 @@
     node's exclusive write scope. Reading is unrestricted; <code>reckon/crew/runs.py</code> is being written by
     another node in this same wave, so the report names the revision it read rather than assuming the file is
     still as it found it.</p>
+    <p><strong>Diagnosis delivered 2026-09-21, report commit <code>9980886e</code>.</strong>
+    Observed at <code>26d6df25680ac385446f9db0c86f339ddb57fece</code>: the orphan module returns
+    <strong>1 failed, 1 passed</strong>, with a <code>CrewError</code> refusing the fixture's omitted
+    <code>spec_level</code> before watcher replacement is reached. There is no failing assertion pair to
+    quote; the report preserves the exact exception and measures the actual field as <code>''</code>.
+    Historical executions locate this persistent failure at <code>d5811b204966f31db83bab190b6440a6eb7b9842</code>
+    and its mainline merge <code>8041fd4e5deeb0fe9b0b23503f7c1ab4a038b4f2</code>: each parent gives
+    <strong>2 passed</strong>, each child <strong>1 failed, 1 passed</strong>, with identical test and
+    dispatch blobs across the four snapshots. A current diagnostic supplying only
+    <code>spec_level=&quot;exact&quot;</code> in memory gives <strong>1 passed</strong> through the unchanged
+    real-process replacement and cleanup assertions. The fixture is invalid; its replacement assertions
+    remain appropriate. The smallest supported repair is the explicit declaration in
+    <code>tests/test_crew_orphan.py</code>, which is outside this report-only node and remains follow-on work.
+    This result does not test systemd restart or service-manager fallback. No production or test file is
+    changed and the driving followup remains open for coordinator disposition.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s14">Diagnosis evidence and report</a>.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
