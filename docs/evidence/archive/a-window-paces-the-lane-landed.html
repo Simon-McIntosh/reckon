@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane-landed">
+  <meta name="plan-title" content="A window paces the lane — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for a-window-paces-the-lane. One anchor per material outcome, accumulating as nodes land.">
+  <meta name="plan-evidence-for" content="a-window-paces-the-lane">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees">
+  <title>A window paces the lane — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A window paces the lane — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="s4-bookend-reserve">
+    <h2>&sect;4 &mdash; The bookend reserve holds from the start of the window</h2>
+
+    <p>A review dispatch verifying a local repair is small and bounded, and it is
+    the first thing an audit wave starves: the wave ahead of it spends the window,
+    and the bookend that would have closed the repair waits for a reset. The fix
+    makes the window two pools rather than one. A fraction of every window is
+    reserved for the <code>review</code> and <code>verify</code> roles and is not
+    available to implementation work at any bar.</p>
+
+    <p>The reserve holds from the start of the window, and that is a property of
+    the arithmetic rather than a branch on window state: a non-bookend role's
+    ceiling is the window ceiling <em>less</em> the reserve outright. Nothing is
+    withheld until the window fills, so the fraction is already gone when the
+    window is empty. A rule that withdrew the fraction only near the ceiling is a
+    function of utilisation; this one reads the role and the configured fraction
+    alone.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 150" role="img" aria-label="Window utilisation band showing implementation admitted to 80 percent and the 20 percent reserve above it available only to review and verify roles" style="max-width:100%;height:auto">
+        <rect x="40" y="40" width="480" height="46" fill="#dfe9f5" stroke="#6b7f96"></rect>
+        <rect x="520" y="40" width="120" height="46" fill="#f5e2df" stroke="#c07a6b"></rect>
+        <text x="280" y="68" text-anchor="middle" font-size="14" fill="#243447">implementation may reach 80%</text>
+        <text x="580" y="60" text-anchor="middle" font-size="12" fill="#7a3527">reserved 20%</text>
+        <text x="580" y="78" text-anchor="middle" font-size="12" fill="#7a3527">review / verify</text>
+        <line x1="40" y1="100" x2="640" y2="100" stroke="#243447"></line>
+        <text x="40" y="116" font-size="11" fill="#243447">0% (empty)</text>
+        <text x="520" y="116" text-anchor="middle" font-size="11" fill="#243447">80%</text>
+        <text x="640" y="116" text-anchor="end" font-size="11" fill="#243447">100% (ceiling)</text>
+        <text x="40" y="140" font-size="11" fill="#6b7f96">the withheld band is gone before any work is dispatched, at every utilisation</text>
+      </svg>
+      <figcaption>The window's utilisation band. A non-bookend role's ceiling is the
+        window ceiling less the withheld fraction; the bookend roles reach the
+        ceiling. The reserve is subtracted up front, so it binds at 0% exactly as it
+        does near the top.</figcaption>
+    </figure>
+
+    <table>
+      <caption>What the node's test asserts, and why each assertion is present.</caption>
+      <thead><tr><th>Assertion</th><th>What it rules out</th></tr></thead>
+      <tbody>
+        <tr><td>At an empty window, a whole-window implementation claim is refused while the same review claim is admitted &mdash; as a pair in one test</td><td>A reserve that does nothing: asserting the refusal alone passes on a module that refuses everything, and asserting the admission alone passes on one that withholds nothing</td></tr>
+        <tr><td>The same pair again at a nearly-full window (79% used)</td><td>A rule that withdrew the fraction only as the window filled &mdash; such a rule also refuses at the top, so only the empty-window pair separates it</td></tr>
+        <tr><td>A modest implementation claim at an empty window is admitted</td><td>A reserve that is a wall against all implementation work</td></tr>
+        <tr><td>The bookend fraction read as a flight key: one claim admitted at 20%, refused at 50%</td><td>A boundary hardcoded as a constant rather than data</td></tr>
+        <tr><td><code>verify</code> asserted to share the review ceiling, by identity of limit, parametrized over both roles</td><td>Second-classing either named role</td></tr>
+        <tr><td>The unset key still withholds the declared floor: the pair re-asserted with the key absent</td><td>A default of zero, which would silently disable the reserve in every layer that omits it</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Code.</strong> <code>reckon/crew/reserve.py</code> exposes
+    <code>reserve_pct</code>, <code>role_ceiling_pct</code> and
+    <code>admit</code>; the reserved fraction is read from the
+    <code>bookend_reserve_pct</code> key of the same <code>budget</code> block
+    that carries the resume and coordinator reserves, with a declared floor when
+    the key is absent. Commit <code>b2594d65</code>.</p>
+
+    <p><strong>Evidence that could have failed.</strong> The named test was run
+    against a scratch copy of the tree with the declared mutation applied &mdash;
+    <code>role_ceiling_pct</code> returning the window ceiling for every role, so
+    the reserve is never withheld &mdash; and observed to fail: 5 failed, 3 passed.
+    The log's first line repeats that mutation verbatim, so a log that went red for
+    any other reason would be refused.</p>
+  </section>
+</main>
+</body>
+</html>

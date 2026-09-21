@@ -192,6 +192,19 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     fraction while a review dispatch in the same window state succeeds, asserted as a pair, since
     asserting either alone would pass on a reserve that does nothing.</p>
 
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-21</span>
+    <code>reckon/crew/reserve.py</code> computes each role's ceiling from the window ceiling and a
+    <code>bookend_reserve_pct</code> flight key read from the budget block: a
+    <code>review</code> or <code>verify</code> role reaches the window ceiling, every other role
+    starts one reserved fraction below it, so the fraction is gone before any work is dispatched
+    rather than withdrawn as the window fills. The pair is asserted at an empty window and again
+    near the ceiling, the flight key is shown to move the refusal boundary, <code>verify</code> is
+    asserted to share the review ceiling, and an unset key is shown still to withhold the declared
+    floor. 8 tests pass; the declared mutation &mdash; <code>role_ceiling_pct</code> returning the
+    ceiling for every role &mdash; reddens 5 of them on a scratch copy. Record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html">a-window-paces-the-lane-landed</a>,
+    commit <code>b2594d65</code>.</p>
+
     <h2 id="s5">&sect;5 &mdash; Reading the windows without inventing them</h2>
 
     <p><strong>Most runs do not carry the windows, and this is the correction that shapes the
