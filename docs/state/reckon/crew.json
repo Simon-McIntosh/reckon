@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T08:37:30",
+  "updated": "2026-09-21T08:40:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -197484,6 +197484,188 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T062835098165-review-prompt-per-item-verdicts",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a74",
+        "node": "review-prompt-per-item-verdicts",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 522,
+                "cached_input_tokens": 243765,
+                "input_tokens": 244289,
+                "output_tokens": 2167,
+                "reasoning_output_tokens": 1159,
+                "total_tokens": 246456,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "tests/test_review_prompt_contract.py and tests/test_review_scoring.py pass and together assert six things: the prompt states the reading bound naming all three exclusions (do not re-derive the implementation, do not re-run the full suite, do not review code the node did not touch); the prompt names each of the five checklist read targets and states that every one needs a verdict, checked by extending the existing prompt falsifier in tests/test_review_scoring.py rather than duplicating it; parse_review records a verdict for each of the five items when they are emitted; a review omitting one names that item absent and withholds the item aggregate instead of computing it over the remainder; a review carrying all five dimension scores and no item verdicts at all still returns True from reckon.crew.recovery._review_is_complete, asserted by calling it, because 147 stored reviews and other sessions' live scoring runs depend on that predicate not moving; and grep -c 'Nothing here is wired into dispatch' over reckon/crew/review.py returns 0. The declared negative control is then applied to the working tree, tests/test_review_prompt_contract.py is observed to FAIL, that failing output is written to a log file whose path is named in the manifest, and the control is reverted before the commit. Ruff check and format over exactly the four staged paths add no findings against the same paths at the base revision, with both counts pasted into the manifest as digits",
+          "estimated_hours": null,
+          "goal": "Make the review prompt bound what the reviewer reads and require one explicit verdict per checklist item, and make the parser record those verdicts and name any that are absent",
+          "id": "review-prompt-per-item-verdicts",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T06:28:36Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T062835098165-review-prompt-per-item-verdicts/manifest.md",
+          "negative_control": "in the parser, drop the branch that names an absent checklist-item verdict and withholds the item aggregate, so an omitted item verdict is silently ignored; tests/test_review_prompt_contract.py must fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts/review.md",
+            "reckon/crew/review.py",
+            "tests/test_review_scoring.py",
+            "tests/test_review_prompt_contract.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T06:28:49Z",
+        "completed_at": "2026-09-21T06:38:38.045Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 576,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 589,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "b9e435d2fe1daf465cbfb9ddf3318ba55146fa22",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T062835098165-review-prompt-per-item-verdicts/manifest.md",
+        "scope_changed": false,
+        "session_id": "816f68f1-878f-42c0-af53-86c0088b63f5",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T06:38:38.045Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "the worktree commit 3d8234c6 is deliberately not merged: the node never reached its gate or its negative control, and it was dispatched to a lane the interim ruling closes to implementation work",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-prompt-per-item-verdicts",
+          "session_id": "816f68f1-878f-42c0-af53-86c0088b63f5",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T06:38:38.045Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "gate-not-passing",
+          "test_paths": [
+            "tests/test_review_prompt_contract.py",
+            "tests/test_review_scoring.py"
+          ]
+        },
+        "tool_steps": 60.0,
+        "orientation_input_tokens": 1586254.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -197768,6 +197950,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1760
+    "_version": 1761
   }
 }
