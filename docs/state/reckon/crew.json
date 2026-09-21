@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T08:12:59",
+  "updated": "2026-09-21T08:23:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2491,9 +2491,11 @@
         "id": "session-0cf29778881411ed5f0b",
         "harness": "clive",
         "role": "investigate",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "33ebb41d-f170-45c6-9afd-7c7db830b18a",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "33ebb41d-f170-45c6-9afd-7c7db830b18a"
+        },
         "created": "2026-09-21"
       },
       {
@@ -197054,6 +197056,212 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T061250080434-reuse-map-review-reflex",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a71",
+        "node": "reuse-map-review-reflex",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 965,
+                "cached_input_tokens": 183829,
+                "input_tokens": 184796,
+                "output_tokens": 649,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 185445,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "at the named report path, grep -c '^## node: ' returns exactly 5 (promotion-refusal, sweep-caller, per-item-verdicts, figure-review, dogfood-record), grep -c '^verdict: ' returns at least 5 with every value one of reuse-as-is, extend or not-applicable, and grep -cE '^(symbol|answer): [^ ]+\\.(py|md):[0-9]+' returns at least 8; the report additionally answers three questions, each with a file:line citation on its own answer line \u2014 how an existing crew complete refusal is shaped and waived end to end, which existing capability or context-fit refusal the figure-review lane requirement should copy, and where review records are stored and read back; the recorded grep counts are pasted into the manifest",
+          "estimated_hours": null,
+          "goal": "Write the reuse map the five implementation nodes of this plan must cite, naming for each the existing reckon machinery it extends rather than rebuilds",
+          "id": "reuse-map-review-reflex",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T06:12:50Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061250080434-reuse-map-review-reflex/manifest.md",
+          "negative_control": "",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "15m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reuse-map-review-reflex.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "exact",
+        "member": "session-0cf29778881411ed5f0b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T06:12:59Z",
+        "completed_at": "2026-09-21T06:21:12.012Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 470,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 493,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "655f71725f3fdac4c4abb1a013f86cc52959ad3d",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "grep counts over the report: node blocks, verdicts, verdict-value conformance, cited file:line anchors, answered questions",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061250080434-reuse-map-review-reflex/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T061250080434-reuse-map-review-reflex/manifest.md",
+        "scope_changed": false,
+        "session_id": "33ebb41d-f170-45c6-9afd-7c7db830b18a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2715309,
+            "input_tokens_cumulative": 2715309,
+            "output_tokens": 29840,
+            "output_tokens_cumulative": 29840,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T06:21:12.012Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2715309,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 488.801,
+          "generated_tokens": 29840,
+          "generation_seconds": 479.204,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 26.4,
+          "machine_seconds": 9.597,
+          "peak_input_tokens": 126737,
+          "tokens_per_second": 62.27,
+          "wall_tokens_per_second": 61.05
+        },
+        "follow_on_paths": [
+          "promotion.py:2689/3307",
+          "review.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "the deliverable is a report outside the repository; the node changed no tracked path by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/reuse-map-review-reflex",
+          "session_id": "33ebb41d-f170-45c6-9afd-7c7db830b18a",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T06:21:12.012Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:investigate"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 42.0,
+        "orientation_input_tokens": 1973352.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -197338,6 +197546,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1757
+    "_version": 1759
   }
 }
