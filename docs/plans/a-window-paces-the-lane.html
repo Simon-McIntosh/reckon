@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -142,6 +142,60 @@
     <p><strong>Done when</strong> the reader returns a figure with its observation age or an explicit
     unknown, asserted for a fleet whose newest streams carry no window at all, and asserted not to
     fall back to zero or to one in that case.</p>
+
+    <h2 id="s5b">&sect;5b &mdash; Four lanes, one wallet, and a figure that is never re-read</h2>
+
+    <p><strong>The lanes do not hold independent budgets and reckon does not know it.</strong>
+    Read through <code>crew(view="lanes")</code> on 2026-09-21:</p>
+
+    <table>
+      <caption>Every metered lane, its position, and how old that position is.</caption>
+      <thead><tr><th>Lane</th><th>Used</th><th>Resets</th><th>Source</th><th>Age</th></tr></thead>
+      <tbody>
+        <tr><td><code>codex</code> (sol)</td><td>13%</td><td>09-28 05:58Z</td><td>receipt</td><td>6 min</td></tr>
+        <tr><td><code>codex-astra</code></td><td>14%</td><td>09-28 05:58Z</td><td>probe</td><td>0 s</td></tr>
+        <tr><td><code>codex-terra</code></td><td>14%</td><td>09-28 05:58Z</td><td>probe</td><td>0 s</td></tr>
+        <tr><td><code>codex-luna</code></td><td>7%</td><td>09-28 05:58Z</td><td>receipt</td><td><strong>2.4 h</strong></td></tr>
+        <tr><td><code>codex-spark</code></td><td>7d 54% · 5h 88%</td><td>a <em>different</em> window</td><td>receipt</td><td><strong>6.7 days</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The first four share one reset to the second — one subscription. <code>codex-spark</code> is
+    a separate subscription with its own pair of windows. <strong>Every lane reports
+    <code>budget_group: null</code></strong>, so a pre-flight can clear <code>codex-terra</code> at
+    "86% remaining" when that is the same 86% <code>codex</code> is spending. Four lanes each
+    believe they hold a full allowance of one wallet.</p>
+
+    <p><strong>The mechanism for this already exists and is simply unconfigured.</strong>
+    <code>budget_group</code> is a declared slot in <code>reckon/schema/flight.yaml</code>, the
+    lanes view reads it and emits a <code>budget_groups</code> map, and a guard prevents the
+    discarded <code>quota_pool</code> spelling from ever grouping again — all landed under
+    <code>burn-is-visible-before-it-bites</code>. What is missing is a <em>declaration</em>: no
+    config layer names a group. So this section is a configuration change plus the pacing that
+    consumes it, not a build.</p>
+
+    <p><strong>Pacing reads the group, never the lane.</strong> A target, a bar and a reserve are
+    properties of a wallet. Computing them per lane would divide one allowance four ways and
+    report each quarter as a whole.</p>
+
+    <p><strong>A stale figure must be re-read, not reported.</strong> Today the view hands back a
+    2.4-hour-old receipt and a 6.7-day-old one as though they were positions. A reading older than
+    its own shelf life is <em>not a figure</em>: the call re-queries the lane's probe, and only
+    when that fails does it report the last reading <em>with its age</em> and a serving state of
+    unknown. <code>serving_state: stale</code> already exists in the payload and nothing acts on
+    it, which is the same shape as the reviewer that had no caller.</p>
+
+    <p><strong>Done when</strong> the four sol-family lanes and spark resolve to two declared
+    groups, asserted from resolved flight config rather than from lane names, with an undeclared
+    backend left ungrouped; a pace target, a bar and a reserve are each computed once per group and
+    asserted not to be computable per lane; a reading older than its configured shelf life triggers
+    a re-query, asserted by driving the reader with a stale receipt and a live probe and requiring
+    the probe's figure to be the one returned; a re-query that fails returns the old figure with its
+    age and a serving state of unknown rather than either a fresh-looking number or nothing,
+    asserted; and a lane whose figure came from a shared account probe renders as unobserved rather
+    than carrying the probed account's number &mdash; the measure already written into
+    <code>burn-is-visible-before-it-bites</code> §5 against spark specifically, which this section
+    consumes rather than restates.</p>
 
     <h2 id="s6">&sect;6 &mdash; The pace is visible before a wave opens</h2>
 
