@@ -31,7 +31,7 @@ def test_call_sites_uses_the_checklist_item_record_shape() -> None:
     assert record["item_aggregate"] == len(review_module.REVIEW_ITEMS)
 
 
-def test_call_site_count_is_a_measurement_or_an_explicit_non_measurement() -> None:
+def test_call_site_count_is_present_only_for_a_measurement() -> None:
     scores = _dimension_scores()
     emitted = review_module.parse_review(
         scores + "\nCALL_SITES: reckon/crew/recovery.py:_review_is_complete"
@@ -41,8 +41,9 @@ def test_call_site_count_is_a_measurement_or_an_explicit_non_measurement() -> No
 
     assert emitted["call_site_count"] == 1
     assert none["call_site_count"] == 0
-    assert omitted["call_site_count"] == review_module.CALL_SITES_NOT_EXAMINED
-    assert omitted["call_site_count"] is not None
+    assert "call_site_count" not in omitted
+    assert "call_sites" not in omitted
+    assert "call_sites" not in omitted["item_verdicts"]
 
 
 def test_missing_call_sites_is_named_by_the_existing_item_absence_predicate() -> None:

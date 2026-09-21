@@ -86,11 +86,6 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "call_sites",
 )
 
-# A missing call-site answer is not a numeric measurement. Keep that state in
-# the count field so callers cannot collapse it with an explicit zero merely by
-# reading a missing mapping key through ``dict.get``.
-CALL_SITES_NOT_EXAMINED = "not-examined"
-
 # The prompt is a versioned, diffable file rather than a string inside this
 # module, so editing it is a text change rather than a code change. It is read
 # from disk on every call: the module holds the path, not the text.
@@ -174,12 +169,11 @@ def parse_review(text: str) -> dict[str, Any]:
     - ``call_sites`` and ``call_site_count`` — the production call sites the
       reviewer verified against the change and their parseable count. An
       explicit ``CALL_SITES: none`` records an empty list and zero; an omitted
-      or empty line records ``"not-examined"`` as its count because omission
-      and zero are different claims.
+      or empty line leaves both keys absent because omission and zero are
+      different claims.
     - ``call_sites_emission`` — ``"empty"`` when the reviewer emitted the
       label but supplied no site, whitespace, or only separators. The count
-      records ``"not-examined"`` in this state because the line measured
-      nothing.
+      remains absent in this state because the line measured nothing.
     - ``findings`` — a list of ``{"file", "line", "text"}``.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
@@ -275,8 +269,6 @@ def parse_review(text: str) -> dict[str, Any]:
     if call_sites_seen:
         record["call_sites"] = call_sites
         record["call_site_count"] = len(call_sites)
-    else:
-        record["call_site_count"] = CALL_SITES_NOT_EXAMINED
     if call_sites_emission == "empty":
         record["call_sites_emission"] = call_sites_emission
     return record
