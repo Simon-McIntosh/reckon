@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.938">
-<meta name="plan-version" content="69">
+<meta name="plan-impl" content="0.882">
+<meta name="plan-version" content="70">
 </head>
 <body>
   <main class="plan-doc">
@@ -866,6 +866,37 @@
     <code>tests/test_wait_shapes.py</code>. Whether the two probe implementations should become one is a
     design question this node may answer either way, provided it says which it chose and why; what it may not
     do is leave them described as one while they behave differently.</p>
+
+    <h2 id="s17">&#167;17 &mdash; A gate log says which tree it measured, and a cited command reproduces its own figure</h2>
+    <p>Four independent reviewers found the same defect in four unrelated nodes on 2026-09-21, and none of the
+    four was a defect in the work. A gate command was recorded as <code>PYTHONPATH=&lt;worktree&gt;</code>,
+    a placeholder rather than the path it ran in. A landed record cited <code>git diff --stat</code> for a
+    figure that command prints nothing for at a clean tree. A record's verification conditions omitted the
+    <code>PATH</code> element the run actually used, so a reader following them measures 4 failed and 1 passed
+    where the record claims 17 passed. And two gate logs named neither the revision nor the command they ran,
+    so a later reader can tie them to a tree only through a manifest that may be gone.</p>
+    <p>This is the plan's own subject at a finer grain. &#167;0's fourth measured fault is a run whose prose
+    claimed a passing gate its structured record contradicted; these are records that claim a result no one
+    can reproduce from what the record says. The coordinator produced two of the four, so exhortation is not
+    the remedy &mdash; the convention has to reach the surface that writes the log and the surface that reads
+    it. The two gate recaptures this plan dispatched later carry the revision, the tree, the working-tree
+    status and the resolved module path on their first lines, which is what a log needs to be evidence rather
+    than a number.</p>
+    <p><strong>Done when.</strong> The manifest template <code>reckon/crew/prompts.py</code> emits states that
+    a gate log's first line names the revision it ran at, the tree, and the command, and that a recorded gate
+    command is the one that ran rather than a template &mdash; asserted by a case entering through
+    <code>compose_prompt</code>; a case asserts the template carries no placeholder token of the
+    <code>&lt;worktree&gt;</code> form in its gate-command gloss, which is the negative half and is what the
+    first instance produced; and a case asserts the existing first-line convention for the negative-control log
+    is unchanged, so this node cannot loosen what &#167;11 landed. The declared mutation is applied,
+    <code>tests/test_gate_log_names_its_tree.py</code> is observed to fail, and the red log is recorded with
+    the mutation verbatim on its first line &mdash; on its first line, which is this section's own subject
+    applied to itself.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/prompts.py</code> and a new
+    <code>tests/test_gate_log_names_its_tree.py</code>. Whether promotion should additionally refuse a gate log
+    whose first line names no revision is the stronger form and belongs in
+    <code>reckon/crew/promotion.py</code>; that file is held by another session's run and the reading-side
+    change is carried as a follow-on rather than attempted here.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
