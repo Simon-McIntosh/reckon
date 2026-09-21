@@ -148,6 +148,15 @@
         <figcaption>Guard absent (18 failing) versus guard closed (37 failing); the 19 shaded failures are what the guard reaches.</figcaption>
       </figure>
     </div>
+
+    <div class="r-comment" data-section="s2" data-id="c-run-r-20260921T064149757128-promotion-refuses-unreviewed" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Refusal landed.</strong> <code>reckon crew complete</code> refuses a passing <code>implement</code> run whose pointer classifies as <code>scoring</code>, naming the run and the review dispatch that produces its review; <code>--waive-unreviewed-promotion REASON</code> permits the promotion and records the reason verbatim on the promoted ledger row. The guard consumes the review the promotion path already resolves — <code>read_review</code> occurs once in <code>reckon/crew/promotion.py</code>, not twice. A review-role run is never gated on a review of itself, and a waiver over an already-stored review is refused because there is nothing to waive. The cohort that invokes the entry point (15 files, 184 tests) measures <strong>18</strong> failures before and <strong>18</strong> after, <strong>0</strong> newly failing: 14 fixtures now carry a stored parsed review and the commit-shortfall fixture waives. The declared negative control neutering the guard turns <code>tests/test_crew_promotion_requires_review.py</code> red (2 failed, 4 passed) and was reverted. Anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2-refusal-landed">s2-refusal-landed</a>.</p>
+      <figure>
+        <img src="/reckon/figures/promotion-refusal-flow/refusal_flow.png" alt="The guard's decision flow: refused, waived with a reason, or promoted unchanged when a review is stored or the run never scores.">
+        <figcaption>Refuse, waive with a reason, or pass — and the two edges that keep the rule bounded.</figcaption>
+      </figure>
+      <p><strong>Still open in this section.</strong> The classifier-level exemption described above is not in this node's fence: <code>reckon/crew/recovery.py</code> is untouched, so a completed review-role run still classifies as <code>scoring</code> and still composes a review of itself. Exempting at the promotion boundary alone does not make the reflex bounded; the exemption belongs where the classification is computed, and §3's sweep will recurse until it lands.</p>
+    </div>
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
     <p>Give <code>dispatch_awaiting_reviews</code> the caller its docstring already assumes.
