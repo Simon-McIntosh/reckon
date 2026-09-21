@@ -418,6 +418,72 @@
     the denial seat a non-cli launch experiences sits outside this node's write
     scope &mdash; is recorded in a section comment on the owning plan.</p>
   </section>
+
+  <section id="borrowed-figure-unobserved">
+    <h2>A lane outside the probed account's group renders no figure at all</h2>
+    <p>Landed 2026-09-21, commit <code>0377db6b</code>. The surface half of the
+    borrowed-figure measure; the pool-divergence guard it pins landed on
+    2026-09-15 under <code>6c18dd4</code>
+    (<a href="#borrowed-figure">above</a>).</p>
+    <p><strong>The measure was already satisfied at the base revision, and the
+    brief came from a stale followup.</strong> Followup <code>f-bvb-003</code>
+    lists this measure as still remaining, but <code>6c18dd4</code> landed it at
+    <code>2026-09-15T00:56Z</code> &mdash; five hours <em>before</em> that
+    followup was written &mdash; and the plan's own landing comment at
+    <code>2026-09-15T00:56</code> records it as closing two of §5's five measures
+    at once. This node was dispatched against the followup, so its first act was
+    to check the behaviour rather than reimplement it. <strong>No production
+    code changed:</strong> <code>reckon/mcp_views.py</code> is byte-identical to
+    the base revision in this node's tree.</p>
+    <p><strong>The reproduction, before any test was written.</strong> The lane
+    view was composed with the live <code>flight.yaml</code> grouping (codex and
+    codex-luna declaring <code>codex-sub</code>, codex-spark declaring
+    <code>spark-sub</code>, all three declaring <code>command: codex</code>),
+    a spark-shaped receipt carrying token usage and no rate-limit windows, and a
+    probe answer shaped as the on-disk account copy states it &mdash; a scalar
+    <code>utilisation_pct</code> of 85 beside its period. The spark lane rendered
+    <code>quota_source: "borrowed"</code>, <code>quota_windows: []</code>, no
+    <code>used_percent</code> anywhere in the row, and no probe provenance
+    (<code>probe_fetch_age_seconds</code>, <code>probe_fetch_stamp</code>) beside
+    it. The probed account's 85 could not be read off the lane by any route.</p>
+    <p><strong>What each lane renders, and the case each test pins.</strong></p>
+    <table>
+      <thead><tr><th>lane</th><th>declared group</th><th>reading it carries</th><th>figure shown</th></tr></thead>
+      <tbody>
+        <tr><td>codex-spark (divergent)</td><td><code>spark-sub</code></td><td>none of its own</td><td><strong>none</strong> &mdash; <code>quota_source: borrowed</code>, <code>quota_windows: []</code></td></tr>
+        <tr><td>codex, codex-luna (probed group)</td><td><code>codex-sub</code></td><td>its own receipt window</td><td>its own &mdash; <code>quota_source: receipt</code></td></tr>
+        <tr><td>codex-spark with a direct read</td><td><code>spark-sub</code></td><td>its own window at 17%</td><td>its own &mdash; the probe is not substituted for it</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The negative control reproduces the plan's measured defect.</strong>
+    The declared mutation &mdash; let a borrowed probe reading populate the lane's
+    utilisation figure as before &mdash; was applied to a scratch copy whose
+    module resolution was verified (<code>mcp_views.__file__</code> under the
+    scratch root), and the named test failed in the expected direction:
+    <strong>1 failed / 2 passed</strong>, the spark case reading
+    <code>quota_source: "probe"</code>. Under that mutation the same scratch
+    rendered <code>used_percent: 85.0</code> for the spark lane with probe
+    provenance attached &mdash; exactly the measurement §5 was opened on, which is
+    what makes the green run evidence rather than a decoration. Log:
+    <code>/tmp/borrowed_negative_control.log</code>.</p>
+    <p><strong>Measure:</strong> 3 tests added, all three halves asserted by name
+    (divergent lane carries no figure, probed group not blanket-suppressed, a
+    lane with its own read unaffected). Focused gate over the lanes-view
+    surfaces: 41 passed / 2 failed at head against 38 passed / 2 failed at base
+    <code>1d2e70cc</code>, the same two ids at both revisions, so zero added
+    failures. The two are pre-existing and outside this node's scope:
+    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> and
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code>
+    (the latter fails <code>assert invocations == 0</code> at
+    <code>tests/test_lanes_view_is_live.py:217</code>).</p>
+    <p><strong>Carried-forward finding, re-observed rather than fixed:</strong> a
+    lane rendered <code>quota_source: borrowed</code> still carries
+    <code>probe_status: "unmatched"</code>, while the same pool-divergence refusal
+    on a lane keeping its own receipt renders <code>"answered"</code> &mdash; one
+    status carrying two meanings, since the probe did answer in both cases. It
+    was recorded by the review of <code>6c18dd4</code> and is left as found; this
+    node's measure is the figure, not the status vocabulary.</p>
+  </section>
 </main>
 </body>
 </html>
