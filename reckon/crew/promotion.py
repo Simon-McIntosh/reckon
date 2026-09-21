@@ -2054,7 +2054,7 @@ def _require_review_waiver(
     not its manifest names a path, so an implement run that declares no change
     is still refused rather than slipping through on its silence. The review
     role is exempt, because the review it wrote for another run is its own
-    deliverable and a review of it is what §3 exists to prevent.
+    deliverable; requiring another review would recurse without a stopping point.
     """
     from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
 
