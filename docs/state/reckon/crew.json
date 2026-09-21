@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T18:36:16",
+  "updated": "2026-09-21T18:37:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -232174,6 +232174,246 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T142336254234-the-summary-read-emits-wall-time-and-width",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a75",
+        "node": "the-summary-read-emits-wall-time-and-width",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2113,
+                "cached_input_tokens": 299075,
+                "input_tokens": 301190,
+                "output_tokens": 623,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 301813,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260921"
+          },
+          "done_when": "tests/test_summary_wall_and_width.py enters through the crew summary read rather than calling a helper directly, and asserts four things, that every run row carries a per-node wall time derived from that row dispatched_at and completed_at, that a row whose stored wall_seconds disagrees with its own stamps reports the stamp-derived figure and never the stored one, that every row carries a width-at-start counting runs in flight at its dispatch stamp, and that a row missing either stamp reports the field as absent rather than as zero; and the declared mutation is applied, tests/test_summary_wall_and_width.py is observed to fail under it, and the red log is recorded in the run directory with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "Emit per-node wall time and width-at-start on the crew summary read, each derived from the run row own dispatch and completion stamps.",
+          "id": "the-summary-read-emits-wall-time-and-width",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T14:23:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/manifest.md",
+          "negative_control": "make the summary read return the stored wall_seconds field instead of deriving the figure from the row own stamps",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/summary.py",
+            "tests/test_summary_wall_and_width.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-both-reasons",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T14:24:01Z",
+        "completed_at": "2026-09-21T15:52:59.726Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5321,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5338,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "63fd372f0d08a9a5e457b8e291f5e94c572da97e",
+        "commits": [
+          "20496d11e9322c0fd757327950ea654e35a46b84",
+          "693cd6ac366783713f051c87bdda74b9acac4383",
+          "3a1f120e46c808dec8de2b291bd19674e523f874"
+        ],
+        "changed_lines": {
+          "added": 376,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_summary_wall_and_width.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/tests-green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/manifest.md",
+        "scope_changed": false,
+        "session_id": "8d6968e9-28ff-449f-90f6-efabd3284815",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1039912,
+            "input_tokens_cumulative": 1039912,
+            "output_tokens": 4734,
+            "output_tokens_cumulative": 4734,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T15:52:59.726Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 18,
+            "goal_fidelity": 16,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 12024136,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 222.656,
+          "generated_tokens": 76310,
+          "generation_seconds": 221.062,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 24.9,
+          "machine_seconds": 1.594,
+          "peak_input_tokens": 119359,
+          "tokens_per_second": 345.2,
+          "wall_tokens_per_second": 342.73
+        },
+        "follow_on_paths": [
+          "reckon/cli.py",
+          "reckon/ledger.py",
+          "reckon/mcp_views.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-summary-read-emits-wall-time-and-width",
+          "session_id": "8d6968e9-28ff-449f-90f6-efabd3284815",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T15:52:59.726Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.25,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.25,
+          "at_complete": 0.55,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_summary_wall_and_width.py"
+          ],
+          "declaration": "make the summary read return the stored wall_seconds field instead of deriving the figure from the row own stamps",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142336254234-the-summary-read-emits-wall-time-and-width/negative-control.log",
+          "reason": "a paraphrase, not a substitution, and the independent review reached the same conclusion by calling promotion's own check. The declared mutation was prose; the log's first line is the one-line diff that implements that prose. The failing set proves the equivalence: assert 4242 == 120 is the stored field reaching the answer, assert 7 is None is the absent-stamp case collapsing to a value, which are exactly the two behaviours the declaration named. 3 failed, 2 passed, exit 1."
+        },
+        "tool_steps": 121.0,
+        "orientation_input_tokens": 4880931.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -232458,6 +232698,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1951
+    "_version": 1952
   }
 }
