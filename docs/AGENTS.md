@@ -103,7 +103,7 @@ fallback only when the XDG directory is absent.
   `loginctl enable-linger`, systemd tears down the per-user manager — and the
   server with it — when the last login session ends. `reckon service install`
   enables it; `reckon service status` reports it.
-- **`Restart=on-failure` covers crashes.** A server that dies comes back within
+- **`Restart=always` covers crashes and clean exits.** It comes back within five seconds —
   `RestartSec=5`. Do not treat "the server is gone" as a normal state to fix by
   hand — check `reckon service status` and the log first.
 - **Logs go to a file, not the journal**: `<config-home>/logs/server.log`.
