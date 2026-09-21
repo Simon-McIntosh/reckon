@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T11:51:40",
+  "updated": "2026-09-21T11:54:43",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -199132,6 +199132,341 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T074024967371-parser-mutation-reddens-the-contract-test",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a74",
+        "node": "parser-mutation-reddens-the-contract-test",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1729,
+                "cached_input_tokens": 507928,
+                "input_tokens": 509659,
+                "output_tokens": 855,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 510514,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "copy the existing first-path log verbatim to the second path and diff to require no difference, because it is real evidence of a different mutation. Then in a scratch copy of HEAD drop the branch in reckon/crew/review.py parse_review that names an absent checklist-item verdict and withholds item_aggregate, run tests/test_review_prompt_contract.py, and require at least 1 FAIL where it passes unmutated. Write that output to the first path with its first line repeating the declared mutation verbatim: 'in the parser, drop the branch that names an absent checklist-item verdict and withholds the item aggregate, so an omitted item verdict is silently ignored; tests/test_review_prompt_contract.py must fail'. Revert the scratch change, verify reckon/crew/review.py byte-identical to HEAD by sha256 with both digests in the manifest, paste git status --porcelain verbatim, and paste the passing and failing counts as digits",
+          "estimated_hours": null,
+          "goal": "Produce the negative-control log run r-20260921T064359159181 declared, by dropping the parser branch at the merged head",
+          "id": "parser-mutation-reddens-the-contract-test",
+          "lane_declaration": {
+            "backend": "clive",
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T07:40:25Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T074024967371-parser-mutation-reddens-the-contract-test/manifest.md",
+          "negative_control": "none: this node writes only a log and commits no code or test",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064359159181-review-reading-bound-and-item-verdicts/logs/negative-control.log",
+            "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064359159181-review-reading-bound-and-item-verdicts/logs/negative-control-prompt-mutation.log",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-matrix-currency",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T07:40:31Z",
+        "completed_at": "2026-09-21T07:51:28.065Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 649,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 657,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "650b1da3c819f0e7c488664951e614b1f4a00cbc",
+        "commits": [
+          "85495f3baf7fed98a8fadac42e331267d88bc3a4"
+        ],
+        "changed_lines": {
+          "added": 21,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_review_prompt_contract.py, unmutated and under the declared parser mutation",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064359159181-review-reading-bound-and-item-verdicts/logs/negative-control.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the declared parser mutation reddens the contract test at the merged head, the earlier prompt-mutation log preserved beside it and review.py byte-identical by sha256; reviewed 89/100",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T074024967371-parser-mutation-reddens-the-contract-test/manifest.md",
+        "scope_changed": false,
+        "session_id": "aa2b56c8-5ac7-41fb-943b-9c6d32121eab",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3074444,
+            "input_tokens_cumulative": 3074444,
+            "output_tokens": 26693,
+            "output_tokens_cumulative": 26693,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T07:51:28.065Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 1021,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2105,
+              "log_fresh": false,
+              "manifest_commits": [
+                "11e14c8e",
+                "21b5de42",
+                "3c4e0326"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ae122e666c9f7198ce9057a1d19dc4eae63afa70e7e366159862db46de955745",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064359159181-review-reading-bound-and-item-verdicts/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260921T064359159181-review-reading-bound-and-item-verdicts --gate <verdict> --commit 11e14c8e --commit 21b5de42 --commit 3c4e0326",
+              "node": "review-reading-bound-and-item-verdicts",
+              "phase": "working",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260921T064359159181-review-reading-bound-and-item-verdicts",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 2122,
+              "terminal_at": "2026-09-21T07:05:05Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-reading-bound-and-item-verdicts"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 443,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1054,
+              "log_fresh": false,
+              "manifest_commits": [
+                "51589acde2aba08be2d2ab036f7113acc65a1df2"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "2b8e0ae42c4461d8203d4a8b3b1ea70f5c64ee224698a51bccfa01b23bd537de",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T071520460860-declared-mutation-reddens-the-refusal-test/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan scoring-should-stop-a-promotion --section '\u00a72' --role review --spec-level exact --node review-of-declared-mutation-reddens-the-refusal-test --goal 'attach an independent review to run r-20260921T071520460860-declared-mutation-reddens-the-refusal-test' --done-when 'the review for r-20260921T071520460860-declared-mutation-reddens-the-refusal-test stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T071520460860-declared-mutation-reddens-the-refusal-test.json --time-budget 30m --session 660d357e-1ede-4027-b678-d89d9391ff8f --local",
+              "node": "declared-mutation-reddens-the-refusal-test",
+              "phase": "complete",
+              "plan": "scoring-should-stop-a-promotion",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T071520460860-declared-mutation-reddens-the-refusal-test",
+              "session": "660d357e-1ede-4027-b678-d89d9391ff8f",
+              "terminal_age_seconds": 1084,
+              "terminal_at": "2026-09-21T07:22:24Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/declared-mutation-reddens-the-refusal-test"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 13,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3074444,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 653.784,
+          "generated_tokens": 26693,
+          "generation_seconds": 623.001,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 23.2,
+          "machine_seconds": 30.783,
+          "peak_input_tokens": 111199,
+          "tokens_per_second": 42.85,
+          "wall_tokens_per_second": 40.83
+        },
+        "follow_on_paths": [
+          "negative-control-prompt-mutation.log",
+          "docs/figures/",
+          "docs/figures/review-negative-control/.",
+          "tests/test_review_prompt_contract.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/parser-mutation-reddens-the-contract-test",
+          "session_id": "aa2b56c8-5ac7-41fb-943b-9c6d32121eab",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T07:51:28.065Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.4,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.4,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 42.0,
+        "orientation_input_tokens": 1816554.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -199416,6 +199751,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1775
+    "_version": 1776
   }
 }
