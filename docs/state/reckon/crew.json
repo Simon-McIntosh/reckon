@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T19:56:34",
+  "updated": "2026-09-21T19:58:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -243776,6 +243776,348 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T160010767690-the-check-command-test-proves-its-own-isolation",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a79",
+        "node": "the-check-command-test-proves-its-own-isolation",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2804,
+                "cached_input_tokens": 396485,
+                "input_tokens": 399291,
+                "output_tokens": 552,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 399843,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260921"
+          },
+          "done_when": "every case in tests/test_manifest_check_command.py that runs the command asserts the real crew home directory tree is byte-for-byte unchanged against a snapshot taken before the case, the existing five cases still pass, and the declared mutation is applied, the test is observed to fail under it, and the red log is recorded in the run directory with the mutation verbatim on its first line; the control must demonstrate the new assertion firing without ever writing into the real crew home, so inject the write into a substituted root the test also snapshots",
+          "estimated_hours": null,
+          "goal": "Make the manifest-check command test assert that the real crew home was left untouched, closing the gap its independent review named.",
+          "id": "the-check-command-test-proves-its-own-isolation",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T16:00:12Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/manifest.md",
+          "negative_control": "make the command resolve its pointer under the snapshotted root instead of the redirected temporary home, so a write lands where the isolation assertion is looking",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_manifest_check_command.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T16:00:39Z",
+        "completed_at": "2026-09-21T17:08:52.548Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4080,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4093,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "dab4e802ada599bb7427da232d0a83f64b697ed7",
+        "commits": [
+          "8310dc5d87a8ab33e5bba8df73762c8b2bbab7a7",
+          "faca8b3cd22f7df51f3c0aa3f4a2f11a006c05c0",
+          "eef6d40c8303de1ca069b54a245f240dba2e240b"
+        ],
+        "changed_lines": {
+          "added": 337,
+          "removed": 6,
+          "files": 4
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_manifest_check_command.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/tests.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "every case that runs check-manifest now asserts the real crew home is byte-for-byte unchanged against a snapshot; the node also found that the write-time check enforced a stricter contract than promotion, which became its own node and has since landed",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/manifest.md",
+        "scope_changed": false,
+        "session_id": "812888a4-ea61-496a-bbd3-05355ff1b04b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10760545,
+            "input_tokens_cumulative": 10760545,
+            "output_tokens": 85515,
+            "output_tokens_cumulative": 85515,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T17:08:52.548Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1227,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 4827,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 807,
+              "log_fresh": true,
+              "manifest_commits": [
+                "1f12f4bf",
+                "f3c131a6"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "b69f4e0ddde6d89b12c0cda3c0dd3d01afc431c61679d23a4a76d1526d665376",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T142607348054-the-landed-record-composes-from-a-run-report/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan work-does-not-fall-to-the-coordinator --section '\u00a74' --role review --spec-level exact --node review-of-the-landed-record-composes-from-a-run-report --goal 'attach an independent review to run r-20260921T142607348054-the-landed-record-composes-from-a-run-report' --done-when 'the review for r-20260921T142607348054-the-landed-record-composes-from-a-run-report stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T142607348054-the-landed-record-composes-from-a-run-report.json --time-budget 60m --session ship-cdocw-20260921 --allow-unreconciled-runs --local",
+              "node": "the-landed-record-composes-from-a-run-report",
+              "phase": "starting",
+              "plan": "work-does-not-fall-to-the-coordinator",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T142607348054-the-landed-record-composes-from-a-run-report",
+              "session": "ship-cdocw-20260921",
+              "terminal_age_seconds": 958,
+              "terminal_at": "2026-09-21T15:44:27Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-landed-record-composes-from-a-run-report"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "elapsed_seconds": 1506,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 959,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 the deliverable is outside the repository; the repository worktree is unmodified at ea8eb00f"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "21864bddbc64cd117048ff2bfede4cf08488cd802b76b9e68e247836363aa224",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145341597121-review-of-the-manifest-check-is-reachable-before-promotion/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-the-manifest-check-is-reachable-before-promotion",
+              "phase": "working",
+              "plan": "work-does-not-fall-to-the-coordinator",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T145341597121-review-of-the-manifest-check-is-reachable-before-promotion",
+              "session": "ship-cdocw-20260921",
+              "terminal_age_seconds": 1001,
+              "terminal_at": "2026-09-21T15:43:45Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/review-of-the-manifest-check-is-reachable-before-promotion"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 15,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10926991,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4089.305,
+          "generated_tokens": 93357,
+          "generation_seconds": 3759.974,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 329.331,
+          "peak_input_tokens": 165146,
+          "tokens_per_second": 24.83,
+          "wall_tokens_per_second": 22.83
+        },
+        "follow_on_paths": [
+          "reckon/crew/reports.py",
+          "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+          "tests/test_dispatch_reads_derivations_cheaply.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-check-command-test-proves-its-own-isolation",
+          "session_id": "812888a4-ea61-496a-bbd3-05355ff1b04b",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T17:08:52.548Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.55,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.55,
+          "at_complete": 0.7,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_manifest_check_command.py"
+          ],
+          "declaration": "make the command resolve its pointer under the snapshotted root instead of the redirected temporary home, so a write lands where the isolation assertion is looking",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/negative-control.txt",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T160010767690-the-check-command-test-proves-its-own-isolation/negative-control.txt",
+          "reason": "the control was executed and reddened four of six cases at exit 1, never writing into the production home, with the source restored against a verified sha256 \u2014 but the manifest's claim that the declared mutation appears verbatim on line 1 is FALSE, and the independent review caught it by reproducing promotion's refusal two-sided. The declared string appears zero times in the log. The executed mutation routes the write through the fixture rather than through the command, so it demonstrates the assertion fires on any write to the watched root rather than specifically on the command writing there \u2014 equivalent in what it proves about the assertion, weaker in what it proves about the command. Waived on the evidence, with the false claim recorded rather than papered over."
+        },
+        "tool_steps": 104.0,
+        "orientation_input_tokens": 2013395.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -244060,6 +244402,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2002
+    "_version": 2003
   }
 }
