@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.714">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 </head>
 <body>
   <main class="plan-doc">
@@ -824,6 +824,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-20260921T1605-orphan-diagnosis-landed" data-who="reckon-ship" data-when="2026-09-21T16:05:00+02:00">
     <div class="r-comment-body">Gate passed: the verdict is that the case is wrong, not the replacement path — the fixture omits spec_level, so validation refuses before the watcher is armed, and the observed failure is a CrewError rather than an assertion. Boundary established experimentally, not from commit titles: d5811b20 red against parent 319db8de green, mainline d312c5bc green against merge 8041fd4e red, four archived snapshots on SLURM all_debug with test and dispatch blobs identical across all four. Independent review 83/100, and its durability score of 6 is a correct criticism: the positive control that carries the verdict was supplied in memory and its driver reached disk only as a transient stream item, so the decisive half is not reproducible by a later reader while the boundary half is. That is not repaired by preserving the plugin; the node orphan-case-declares-its-specification-level converts it into a durable negative-controlled case in tests/test_crew_orphan.py.</div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20260921T123905355879-orphaned-watcher-replacement-diagnosis" data-who="reckon-ship" data-when="2026-09-21T12:51:21Z">
+    <div class="r-comment-body"><p>the case is wrong, not the replacement path: the fixture omits spec_level so dispatch refuses before the watcher is armed; boundary at d5811b20 with its parent green, four archived snapshots; review 83/100 with durability 6 for an in-memory positive control whose driver did not reach disk</p></div>
 </div>
 </section>
 </main>
