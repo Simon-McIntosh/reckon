@@ -664,6 +664,60 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     and the lane split without reading any stream, since a record that needs the streams to be
     interpreted has not been recorded.</p>
 
+    <h3 id="s6-preflight-pace">Landing &mdash; a pre-flight names each group's clocks, allowance and bar</h3>
+
+    <p><strong>Landed 2026-09-21 (first half).</strong> The pre-flight report carries one entry per
+    declared budget group under <code>groups</code>, built by <code>budget.group_pace</code>: both
+    metered clocks with the age of each reading, the allowance derived in
+    <code>reckon/crew/pace.py</code>, and the bar <code>reckon/crew/bar.py</code> draws for a stated
+    ready set. Every figure is asserted from the emitted payload rather than from a summary string,
+    because the payload is what a caller routes on and the summary is prose a reader parses.</p>
+
+    <p><strong>Unknown is not a zero, in a second quantity.</strong> A group no reading reached
+    reports <code>state: unknown</code> with <code>None</code> for both clocks' utilisation, both
+    ages and every derived allowance field, asserted two-sidedly: the figures are absent
+    <em>and</em> not <code>0.0</code>. A zero utilisation would read as an empty window and admit
+    everything, which is the substitution <code>budget.py</code> already refuses for a hold. A
+    measured utilisation is still carried when only the reset stamp is unreadable, so a spend that
+    cannot be placed in the week stays distinguishable from a group nothing reached.</p>
+
+    <p><strong>One wallet, one reading.</strong> A group is read once, from its newest dated member;
+    an undated reading does not compete, because a figure that cannot be aged cannot be told from a
+    current one. An age is reported even when the reading is seconds old, so a reader never has to
+    infer that a missing age means current.</p>
+
+    <p><strong>Four outcomes, not a binary.</strong> Each ready node is named with the bar's own
+    verdict &mdash; <code>send-metered</code>, <code>send-local</code>, <code>split</code>,
+    <code>hold</code> &mdash; and bucketed into <code>admitted</code>, <code>split</code>,
+    <code>held</code> and <code>undecided</code>. Prescription is judged before the window, so a
+    prescribed node is decidable with no reading at all: its <code>decided_by</code> says
+    <code>prescription</code> while its <code>window_fill</code> stays unread, which keeps "we read
+    a window" apart from "no window could have changed this". A node naming an undeclared group is
+    refused rather than dropped, since a ready node silently missing from the admitted set is the
+    failure a pre-flight exists to prevent.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/preflight-bar-lanes.svg" alt="The bar's four outcome regions across the five-hour window fill: a horizontal prescribed band below an open-endedness score of 0.25, which is send-local at every fill; above it a send-metered region at or above the rising bar while the window still has room; the 0.15 band immediately below the bar as a split; and hold below that. The worked ready set is plotted at a half-filled window, where the bar is 0.50 -- prescribed 0.10 send-local, clears 0.50 send-metered, close-call 0.40 split, too-open 0.30 hold. A group with no reading has no fill, so nothing above 0.25 is decided at all.">
+    </figure>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q tests/test_preflight_pace.py</code> &mdash;
+    <strong>21 passed</strong>. The changed module plus every test file that imports it &mdash;
+    <strong>3 failed, 191 passed</strong> &mdash; and the module's own suite is identical at the base
+    revision, where <code>group_pace</code> does not exist (<strong>3 failed, 67 passed</strong>
+    either side), so the three are pre-existing tier collisions rather than this change: one refuses
+    on uncommitted roster content and two refuse to remove a worktree claimed by a live run. The
+    declared mutation &mdash; substituting a zero for an unread clock's utilisation &mdash; applied
+    to a scratch copy reddens the named test (<code>assert 0.0 is None</code>). Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-preflight-pace">the landed evidence
+    record</a>. Commit <code>2e32a558</code>.</p>
+
+    <p><strong>What this node does not claim.</strong> Nothing supplies the windows yet: the
+    pre-flight takes them as an implementation-supplied mapping, and the <code>crew preflight</code>
+    command passes neither a window nor a ready set, so a command-line run reports every declared
+    group unknown. The caller is outside this node's write paths. The second half of this section's
+    measure &mdash; one week of committed rows reproducing the pace curve and the lane split &mdash;
+    needs a week of rows to exist and belongs with &sect;9.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
