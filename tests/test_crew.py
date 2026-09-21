@@ -1723,7 +1723,7 @@ def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) ->
 
     assert excinfo.value.member == ledger_member
     assert excinfo.value.run_id == first["run_id"]
-    assert first["pid"] == worker_pid
+    assert first["pid"] == os.getpid()
     assert ledger_member in str(excinfo.value)
     assert first["run_id"] in str(excinfo.value)
     assert [row["run_id"] for row in crew.list_live()] == [first["run_id"]]
