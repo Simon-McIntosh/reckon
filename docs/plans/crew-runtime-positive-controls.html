@@ -529,6 +529,17 @@
     node delivers the check and its refusal shape; the wiring is carried as a follow-on, and the node states in
     its manifest what the calling site will need.</p>
 
+    <p class="landed-summary"><strong>Worker landing, 2026-09-21; closure awaits coordinator review.</strong>
+    Commit <code>9ea06319</code> adds <code>check_serving_origin</code> with a caller-supplied, safe
+    origin-only launcher query and a direct HTTP probe sharing one timeout. Its receipt preserves the
+    resolved launcher path, selected origin, whether HTTP answered, status code and timeout outcome.
+    The focused gate passes <strong>23 cases</strong>; returning serving without probing causes
+    <strong>8 failures</strong>, and removing that mutation restores all 23 passes. No test contacts a
+    production origin. The current Clive launcher exposes no safe origin-only query, so that capability
+    and dispatch wiring remain follow-ons: absence of introspection returns <code>unknown</code>, never
+    a serving claim inferred from the endpoints document. No lifecycle state or followup is closed here.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s13">Serving-origin evidence and calling contract</a>.</p>
+
     <h2 id="s14">&#167;14 &mdash; Why the orphaned-watcher replacement case is red, and which of the case or the path is wrong</h2>
     <p>Found while verifying an unrelated landing at the merged head.
     <code>tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused</code> fails on
