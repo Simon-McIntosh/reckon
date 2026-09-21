@@ -855,6 +855,43 @@ nothing has been launched</code></pre>
       failures are in the create path — an <code>unwired_plan</code> precondition refusing a stub plan —
       unrelated to the decisions target and outside this node's scope, so they are recorded rather than
       triaged here. The new file adds three passes at head.</p>
+      <p><strong>Repair, 2026-09-21 &mdash; a null option value was stored as the literal <code>None</code>.</strong>
+      This is the first of two findings the review carried out of the append repair above, and it is the
+      promise in the helper's own docstring that was not kept: an unrecognised shape is refused rather than
+      dropped, and an option with no value carries none. The read that folds a caller's option spelling onto
+      the stored one did <code>value = entry.get("value", entry.get("label", ""))</code>, so a null was
+      indistinguishable from a missing key; the fallback then handed <code>None</code> to
+      <code>str()</code>, and <code>"None"</code> is four characters and truthy, so the emptiness check that
+      catches an empty string never fired. The malformed option was therefore stored and rendered as a
+      selectable choice literally named <code>None</code>.</p>
+      <p><strong>Measured before the change.</strong>
+      <code>_decision_options_as_choices([{"value": None}])</code> returned
+      <code>(['None'], {'None': 'None'})</code> &mdash; a single option whose value is the string
+      <code>None</code>. The mapping branch was the same defect by a different route:
+      <code>{None: "lab"}</code> returned <code>(['None'], {'None': 'lab'})</code>. The empty-string case was
+      already correct and refused with <em>decision option carries no 'value'</em>, verified beside the
+      failing one so the two behaviours are distinguished rather than assumed.</p>
+      <p><strong>The repair is narrow on purpose.</strong> The read now asks whether the key is present rather
+      than whether the lookup found something, so a null is refused naming the offending option:
+      <em>decision option {'value': None} carries a null 'value'</em>. The mapping branch refuses a null key
+      by the same guard. Nothing else changed: a plain string entry, a value-to-label mapping, a missing key
+      and an empty string all behave exactly as before, which is what the second case asserts &mdash; an
+      option whose value is an empty string is still refused, as it was, so the repair does not narrow the
+      shapes the helper accepts.</p>
+      <p><strong>The cases, and the mutation that reddens them.</strong> Three cases were added to
+      <code>tests/test_append_decision_keeps_its_question.py</code>: the null object value is refused naming
+      the option and nothing lands in the decisions map, so the read-back cannot present <code>None</code> as
+      selectable; an empty option value is still refused; and a decision whose two option objects carry values
+      still reads back both, so the repair does not regress the question-and-options landing it follows. The
+      declared mutation &mdash; restore the pre-repair reads and delete both null guards &mdash; reddens the
+      null case and only that case, and its red log leads with that text verbatim at
+      <code>~/.config/reckon/crew/runs/r-20260921T154054784072-a-null-option-value-is-refused-not-stored/negative-control.log</code>.</p>
+      <p><strong>The gate.</strong> <code>tests/test_append_decision_keeps_its_question.py</code> is
+      <strong>6 passed</strong> at this node's head, three of them new. The adjacent populations that reach
+      the decisions target &mdash; <code>tests/test_dec_open.py</code> and
+      <code>tests/test_tool_arguments_accept_a_serialised_list.py</code> &mdash; are
+      <strong>11 passed</strong>, unchanged. The fix was verified in the worktree's own <code>reckon</code>
+      package by re-running the reproduction rather than by the assertion alone.</p>
     </section>
 
     <section id="verification">

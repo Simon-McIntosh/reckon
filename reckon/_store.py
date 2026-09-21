@@ -1522,13 +1522,18 @@ def _decision_options_as_choices(options: Any) -> tuple[list[str], dict[str, str
     objects carrying ``value`` (optionally ``label``), and a mapping of value
     to label. An unrecognised shape is refused rather than dropped, because a
     silently discarded option is the same defect this normalisation closes.
+    A JSON null is refused in the same breath: reading it as absent and then
+    stringifying it made ``str(None)`` a valid option literally spelled
+    ``None``, which the emptiness check below cannot see.
     """
     values: list[str] = []
     labels: dict[str, str] = {}
     if isinstance(options, list):
         for entry in options:
             if isinstance(entry, dict):
-                value = entry.get("value", entry.get("label", ""))
+                # Distinguish a null from a missing key: ``entry.get("value",
+                # …)`` treats both alike, and the fallback then hides the null.
+                value = entry["value"] if "value" in entry else entry.get("label")
                 label = entry.get("label", value)
             elif isinstance(entry, str):
                 value = entry
@@ -1537,6 +1542,8 @@ def _decision_options_as_choices(options: Any) -> tuple[list[str], dict[str, str
                 raise OpError(
                     f"decision option {entry!r} is neither a string nor an object"
                 )
+            if value is None:
+                raise OpError(f"decision option {entry!r} carries a null 'value'")
             value = str(value)
             if not value:
                 raise OpError("decision option carries no 'value'")
@@ -1545,6 +1552,8 @@ def _decision_options_as_choices(options: Any) -> tuple[list[str], dict[str, str
         return values, labels
     if isinstance(options, dict):
         for value, label in options.items():
+            if value is None:
+                raise OpError(f"decision option {value!r} carries a null 'value'")
             values.append(str(value))
             labels[str(value)] = str(value if label is None else label)
         return values, labels
