@@ -252,6 +252,55 @@
     prevents a promotion from creating the condition that needs it.</p>
   </section>
 
+  <section id="s2d-ledger-asks-git">
+    <h2>The absent-ledger refusal asks git whether the path was ever tracked</h2>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/absent-ledger-git-decision.png"
+           alt="Decision flow: an absent ledger is refused only when git shows the path was once tracked" />
+      <figcaption>The absent-ledger decision after this change. The first two questions are
+      unchanged; the third is new, and it is the one that tells a deletion from a new project.</figcaption>
+    </figure>
+    <p><strong>Defect reproduced before repair.</strong> The absent-ledger refusal could not
+    distinguish a ledger that had been deleted from one that never existed — both present as a
+    missing file, so both were refused. Driving <code>append_run</code> against a fresh checkout
+    whose ledger path git had never recorded (only <code>index.json</code> committed) refused at
+    the node base revision, so a genuinely new project could not be initialised without the
+    <code>allow_create</code> escape even though the run store held no row for it.</p>
+    <p><strong>What changed.</strong> <code>ledger._ledger_ever_tracked</code> asks git whether
+    the ledger path appears anywhere in the receiving checkout's history
+    (<code>git log --all --format=%H -- &lt;relative-path&gt;</code>). The refusal is now gated on
+    that answer being anything other than a definite <em>never tracked</em>: a path git recorded
+    is a deletion to recover and still refuses, naming the path and the run store; a path git has
+    never recorded is a new project and is initialised. Where git cannot answer — the path is
+    outside any checkout, or the checkout carries no commits — the probe returns no verdict and
+    the conservative refusal stands, with <code>allow_create=True</code> the explicit route.</p>
+    <p><strong>Evidence that could fail.</strong>
+    <code>tests/test_a_promotion_never_creates_a_ledger.py</code> reports <strong>5 passed</strong>
+    over a real checkout fixture: the deleted-ledger refusal (its fixture commits the ledger and
+    then unlinks it, so it carries the incident shape rather than a never-created file), the
+    never-tracked initialisation at version 1, the outside-a-checkout refusal with the explicit
+    route, and the malformed <code>members</code> / <code>runs</code> envelopes. The declared
+    mutation — make the git question answer <em>never tracked</em> for every repository — reddens
+    exactly <code>test_a_promotion_refuses_a_ledger_deleted_from_the_tree</code> with
+    <code>DID NOT RAISE LedgerError</code> in a scratch copy of the fixed tree; the log's first
+    line repeats the declaration verbatim. <code>reckon/ledger.py</code> is untouched by that run.
+    Ruff findings are <strong>17 at base and 17 after</strong> over the two changed paths and
+    format deviations remain <strong>1</strong> (the pre-existing ledger file).</p>
+    <p><strong>Gate.</strong> The declared 15-file promotion cohort ran on the
+    <code>all_debug</code> partition. After (15 files at the node head):
+    <strong>10 failed, 246 passed</strong>. Base <code>73392943</code> (the 13 files present
+    there): <strong>10 failed, 229 passed</strong>. The failure sets are <strong>identical</strong>
+    — zero added by this change. The brief stated a base of 8 failures; the base revision measured
+    here reports 10, and the two extra ids reproduce at base, so they are the checkout's, not this
+    node's. Both logs are retained in the run directory.</p>
+    <p><strong>Delivery.</strong> Commit <code>f1abfa99</code> changes <code>reckon/ledger.py</code>
+    and the focused test. Receipts live in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed/</code>.
+    The build path is a decision over three questions rather than a single guard, so a later
+    change to the git probe is caught by the refusing test's fixture rather than by a
+    count of refusals.</p>
+  </section>
+
   <section id="s3-review-reflex-sweep">
     <h2>The reflexive sweep: the review a scoring run already composed</h2>
     <p><strong>Measure.</strong> The reflex only earns its name when it fires on the path a healthy
