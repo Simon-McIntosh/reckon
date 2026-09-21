@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.867">
-<meta name="plan-version" content="58">
+<meta name="plan-impl" content="0.933">
+<meta name="plan-version" content="59">
 </head>
 <body>
   <main class="plan-doc">
@@ -1003,7 +1003,7 @@
     <div class="r-comment-body"><p>independent review stored and parsed for r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260921T145955874875-watcher-unit-gate-recaptured-at-the-merged-head" data-who="reckon-ship" data-when="2026-09-21T15:36:56.640Z">
-    <div class="r-comment-body"><p>the watcher unit gate re-run at integrated revision bbc1242b: 17 passed EXIT=0, the log naming the revision, the working-tree status and the resolved module path. Review scored 72 with goal fidelity 8 and evidence 10, and its evidence justification asserts revision-named=False; that sub-claim is false and checkable — the log&#x27;s first line reads &#x27;# revision: bbc1242b3d7790af4f769b851a63c3c72d501d13  tree: /home/ITER/mcintos/Code/reckon  captured: 2026-09-21T15:13:47Z&#x27;, seven lines, unmodified since 17:13. The review&#x27;s own prose agrees the artifact is the file rather than a claim about it. The score is recorded as given and the falsified sub-claim beside it.</p></div>
+    <div class="r-comment-body"><p>the watcher unit gate re-run at integrated revision bbc1242b: 17 passed EXIT=0, the log naming the revision, the working-tree status and the resolved module path. Review scored 72 with goal fidelity 8 and evidence 10, and its evidence justification asserts revision-named=False; that sub-claim is false and checkable — the log's first line reads '# revision: bbc1242b3d7790af4f769b851a63c3c72d501d13  tree: /home/ITER/mcintos/Code/reckon  captured: 2026-09-21T15:13:47Z', seven lines, unmodified since 17:13. The review's own prose agrees the artifact is the file rather than a claim about it. The score is recorded as given and the falsified sub-claim beside it.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260921T1738-decision-append-landed" data-who="reckon-ship" data-when="2026-09-21T17:38:00+02:00">
     <div class="r-comment-body">Gate passed with a proper delta: 3 failed and 75 passed at head, identical row for row at base, the base measured from the base blob in a scratch copy. The root cause is a vocabulary mismatch rather than a lost write — the read view hands a caller question and options while the stored block speaks title and choices, so a caller echoing back what it just read landed a block whose question fell back to the key and which carried no options. Independent review 96/100 on codex after three local-lane turns ended without writing the record. Two findings are carried as a repair node rather than closed here: an option object whose value is JSON null is stringified to the literal None before the empty check, so malformed input is stored as a selectable option instead of being refused as the helper promises; and the real-state-untouched guard fingerprints only relative paths and byte counts, so a same-size rewrite compares equal and the assertion can report untouched after content changed.</div>
@@ -1013,6 +1013,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260921T134558966551-review-of-appended-decision-keeps-its-question" data-who="reckon-ship" data-when="2026-09-21T15:05:58.373Z">
     <div class="r-comment-body"><p>independent review stored and parsed for its reviewed run</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260921T1825-arming-fallback-landed" data-who="reckon-ship" data-when="2026-09-21T18:25:00+02:00">
+    <div class="r-comment-body">Gate passed: 17 passed exit 0 across the fallback file and the two watcher files it touches, 5 new cases and 12 pre-existing, ruff clean on both changed paths, and the declared mutation reddened 2. Arming now survives a service manager that cannot be reached, and reports which path it took rather than raising. Two cases beyond the brief are the reason this section is worth more than its size: a unit the manager genuinely refuses still raises, so the fallback swallows no real refusal, and a fallback that could not start a watcher does not report success — the silent-success failure this whole plan exists to remove, guarded without being asked for. The decision the arming path makes is drawn in docs/figures/crew-runtime-positive-controls/watcher-arming-fallback.png. This closes the last of the seven sections folded in from the open followups at the start of the session.</div>
 </div>
 </section>
 </main>
