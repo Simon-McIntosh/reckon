@@ -380,6 +380,41 @@
     and committed source hashes. No section status or driving followup is closed here;
     merged-head verification and manifest write-time validation remain separate work.</p>
   </section>
+  <section id="s3-declared-sweep-removal-mutation">
+    <h2>The declared removal of the cadence review pass</h2>
+    <p><strong>Why this receipt was needed.</strong> The prior sweep landing recorded a red control
+    that withheld <code>unreconciled_override</code>. That is a real test of the unreconciled-runs
+    waiver, but it is not the mutation the node declared: removing the review pass from
+    <code>resumption.sweep</code> so a cadence dispatches no review. The two mutations have distinct
+    observable effects, so this record applies the declared one rather than treating the prior red
+    result as interchangeable.</p>
+    <table>
+      <caption>Focused receipt at the assigned revision <code>8c877ab295d2d771dcd30e86c49b14f6f2f99f08</code>.</caption>
+      <thead><tr><th>Tree and command</th><th>Exit</th><th>Result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Unmutated <code>git archive HEAD</code> scratch tree;<br><code>python -m pytest -p no:cacheprovider -q tests/test_review_reflex_sweep.py</code></td><td>0</td><td>9 passed</td><td>The focused suite is sound before the declared mutation.</td></tr>
+        <tr><td>Same scratch tree after deleting the conditional block that calls <code>dispatch_awaiting_reviews</code></td><td>1</td><td>7 failed, 2 passed</td><td>The cadence pass is load-bearing for the review-dispatch contract.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The red failure set differs from baseline.</strong> The first failure,
+    <code>test_the_sweep_dispatches_the_review_a_scoring_run_composed</code>, requires one launch
+    call and observes zero. Six companion tests then find the missing report fields or zero writer
+    dispatch count: idempotence, refusal continuation, the unreconciled-fence waiver, the refusal
+    report representation, legacy review-source exclusion and per-writer status. Those are the
+    expected effects of removing the call, rather than a collection or environment failure.</p>
+    <p><strong>Import and scope controls.</strong> Both logs first invoke
+    <code>env -C &lt;scratch-tree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -c 'import reckon; print(reckon.__file__)'</code>;
+    each prints a <code>reckon/__init__.py</code> path under the archive, establishing that
+    <code>python -c</code> imports the mutation tree. The mutation exists only under the designated
+    scratchpad. The assigned worktree's <code>git status --porcelain</code> was empty before its
+    required plan and evidence records were appended, and no source or test file in it was changed.</p>
+    <p><strong>Durable receipts.</strong> The baseline is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T090837876644-review-reflex-fires-on-the-sweep/logs/negative-control-declared-baseline.log</code>;
+    the red declared control is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T090837876644-review-reflex-fires-on-the-sweep/logs/negative-control-declared.log</code>.
+    The red receipt's first line repeats the declared mutation exactly. The node records evidence
+    only; it does not close the section or resolve its driving followup.</p>
+  </section>
 </main>
 </body>
 </html>

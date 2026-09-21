@@ -1076,6 +1076,29 @@
       rather than papered over here.</p>
     </div>
 
+    <div class="r-comment" data-section="s3" data-id="c-run-r-20260921T141531467381-declared-sweep-removal-mutation-reddens-the-reflex" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>The declared mutation, rather than the earlier substitute, turns the reflex suite red.</strong>
+      The prior landing log withheld <code>unreconciled_override</code>; that demonstrates the
+      unreconciled-runs waiver, not the node declaration that removes the review pass from
+      <code>resumption.sweep</code>. This node archived <code>HEAD</code>
+      (<code>8c877ab295d2d771dcd30e86c49b14f6f2f99f08</code>) into the designated scratch tree,
+      then deleted only the conditional block that calls <code>dispatch_awaiting_reviews</code>.
+      The unmutated receipt reports <strong>9 passed, exit 0</strong>; the declared removal reports
+      <strong>7 failed, 2 passed, exit 1</strong>. The seven failures all require the removed
+      cadence pass: no review-launch call is recorded, and the report has no
+      <code>reviews.dispatched</code> or <code>reviews.refused</code> entries.</p>
+      <p><strong>The control is aimed at the actual caller.</strong> Its first line is exactly
+      <q>remove the review pass from resumption.sweep so no review is dispatched on a cadence; tests/test_review_reflex_sweep.py must fail</q>.
+      Both receipts print <code>reckon.__file__</code> under the scratch tree before invoking the
+      focused test, so the result is not supplied by the assigned worktree's import. The representative
+      direct failure is <code>test_the_sweep_dispatches_the_review_a_scoring_run_composed</code>
+      (<code>assert 0 == 1</code> calls); the idempotence, refusal-continuation, waiver, generator,
+      legacy-review and writer-status assertions fail for the same absent pass. The mutation changes
+      no tracked source in this worktree; immediately before this landing record was added,
+      <code>git status --porcelain</code> was empty. Receipts and the cumulative evidence anchor:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s3-declared-sweep-removal-mutation">declared sweep removal</a>.</p>
+    </div>
+
     <h2 id="s4">§4 — A review that is quick enough to be reflexive</h2>
 
     <p>A review nobody waits for is as useless as one nobody asks for. The checklist in
