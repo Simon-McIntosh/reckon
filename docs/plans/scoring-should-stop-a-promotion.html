@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 </head>
@@ -507,6 +507,52 @@
     review is a true statement standing in for the one that was needed. It is the discriminator of
     §5b run on our own guard: <em>what would make this field wrong while it still printed the same
     value?</em> — a review that is complete, parsed, stored, and about different code.</p>
+
+    <h2 id="s5d">§5d — A repair can introduce the defect it was repairing</h2>
+
+    <p>§5c says a promotion must refuse a review that predates the head. That fence is necessary
+    and it is <strong>not sufficient</strong>, and the difference was measured rather than
+    reasoned.</p>
+
+    <p><strong>The case.</strong> An imas-ambix node was reviewed at 86 with two findings, repaired,
+    and re-reviewed at 94. Both original findings were confirmed fixed and the recheck read
+    <code>f12261e8</code>, the current head — so a staleness check passes it, correctly. The
+    recheck nonetheless carried one finding, and <em>the repair had caused it</em>: a declared
+    fifteen-second bound on a scheduler call that no production path can reach, because the caller
+    hands its own ten-second timeout down two frames. A knob that does not do what it says —
+    <strong>the same class as the defect being repaired, reintroduced one layer up by the fix.</strong></p>
+
+    <p>Had that node been promoted against its original verdict after a hand-check of the repair —
+    which is what happened for four earlier nodes that day — the new defect would have shipped with
+    a review on the row saying 86. So the second fence is its own rule: <strong>a repair is not
+    promotable against a review whose findings it changed.</strong> The review that matters is the
+    one that read the repair, and a staleness comparison cannot supply it because the stale review
+    is not the problem — the <em>superseded</em> one is.</p>
+
+    <p><strong>And the store destroys exactly the record that proves this.</strong> Verified here
+    against the imas-ambix store: the recheck overwrote the original at 09:15, one minute before a
+    hand-made copy was taken for unrelated reasons.</p>
+
+    <table>
+      <caption>One reviewed run, two reviews, one surviving file.</caption>
+      <thead><tr><th>Record</th><th>Total</th><th>Findings</th><th>Revision read</th><th>In the store?</th></tr></thead>
+      <tbody>
+        <tr><td>original review</td><td>86</td><td>2</td><td><code>a9b217c4</code></td><td>no — only a hand copy</td></tr>
+        <tr><td>recheck</td><td>94</td><td>1 (new, caused by the repair)</td><td><code>f12261e8</code></td><td>yes</td></tr>
+      </tbody>
+    </table>
+
+    <p>Without that copy the store would now assert node-probe was always a 94 with one finding,
+    and <em>the repair would have no evidence it ever needed to happen</em>. The two records answer
+    different questions — the original says what was wrong, the recheck says whether it is still
+    wrong and what the fix cost — and a store keyed by reviewed run can only hold one of them.</p>
+
+    <p><strong>So keying by the reviewing run is not an improvement, it is the precondition for
+    both fences.</strong> Records accumulate by construction; supersedes becomes a field rather
+    than a convention; the revision each record read is unambiguous without the parser having to
+    learn all five spellings of §5c; and "which review is current" is a revision comparison. The
+    <code>.first-review.json</code> files now sitting in the store are evidence of the defect, not
+    a naming convention to adopt — the store should do this itself.</p>
 
     <h2 id="s6">§6 — A reviewer that can see the figure</h2>
 

@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="f69a122c0da95fbb63dd5c01e3eae2e400fe0729">
 <meta name="plan-artifacts" content="reckon/crew/prescription.py,tests/test_prescription.py,docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html">
 <meta name="plan-section-declarations" content="{&quot;rule&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
@@ -138,6 +138,52 @@
       <a href="/reckon/evidence/archive/background-agent-fitness-and-dispatch-scope-landed#prescription-judgement">§2 landed</a>
       (commit <code>873724a4</code>).
     </p>
+
+    <h2 id="s2b">§2b — The first prescription judgement fails open twice</h2>
+
+    <p><code>reckon/crew/prescription.py</code> landed with <code>judge_prescribed</code> and
+    nineteen green tests, and its independent review on a metered lane scored it 82 and found two
+    holes that let an unprescribed node through. Both are recorded here because <strong>nothing in
+    dispatch may read this judgement until they are closed</strong>: a routing rule built on a
+    check that fails open admits exactly the nodes it exists to refuse, with a green suite behind
+    it.</p>
+
+    <ul>
+      <li><strong>A node with zero artifact paths is judged prescribed.</strong> The one-artifact
+      property fails only a count greater than one, so an empty count passes. The ruling says
+      <em>one</em> artifact; the cardinality has to be exactly one.</li>
+      <li><strong>The numeric-gate property tests token co-occurrence, not a gate.</strong> Any
+      done-when with a digit somewhere and a baseline-ish word somewhere satisfies it — the
+      reviewer's own example, <em>"Before editing, read the 2026 note"</em>, passes. This is the
+      load-bearing property of the whole prescription idea and it currently asserts almost
+      nothing.</li>
+      <li><strong>The module claims one public function and exposes three.</strong>
+      <code>is_landing_path</code> and <code>artifact_paths</code> sit public beside
+      <code>judge_prescribed</code> while the node's done-when and both landing records say
+      one.</li>
+      <li><strong>Its test file hardcodes a plan-document slug and a node identity</strong>, which
+      the repository's naming rules forbid in source.</li>
+    </ul>
+
+    <p><strong>What the episode says about the lane, which is this plan's actual subject.</strong>
+    The node was cut in the prescribed shape the ruling defines and delivered in ten minutes on the
+    local lane with a correct core, a real negative control, and an interpretation question raised
+    in its manifest rather than decided silently — it noticed that "one artifact" read literally
+    would refuse every node dispatched on a plan, including itself. What it did not do was make its
+    two admission checks strict. <em>That is the division the audit already reports: the lane
+    executes a bounded brief well and is weak exactly where a property must be judged rather than
+    applied.</em> The review caught both, on a lane that did not do the work, in twelve minutes.
+    The pairing is the finding, not either half — and it is the first direct evidence for the
+    ruling's own shape, prescribed work on the local lane behind a short metered review.</p>
+
+    <p><strong>Done when</strong> a node declaring zero non-test artifact paths is judged
+    unprescribed naming <code>one-artifact</code>, asserted; the numeric-gate property refuses the
+    reviewer's own false positive and every string in a recorded table of at least six near-miss
+    done-whens, asserted case by case; the module exposes exactly the public surface its record
+    claims, asserted by comparing the module's public names against that claim in a test rather
+    than in prose; the test file names no plan document and no node identity, asserted by the
+    repository's own naming check over the staged paths; and the file's tests pass with each of the
+    five properties still independently reachable as a sole failure.</p>
 
     <h2 id="s3">§3 — The review gate is a positive control, not a formality</h2>
     <p>A review that reads the diff and says "fine" is the failure this plan exists to prevent. The
