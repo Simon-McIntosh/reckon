@@ -237,6 +237,35 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     nodes. Evidence:
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed">the window reader, landed</a>.</p>
 
+    <h3 id="s5-wave-integration">Landing &mdash; the wave's selection at the merged head</h3>
+
+    <p><strong>Landed 2026-09-21.</strong> One pytest run at the merged head (main
+    <code>48bf51b2</code>) over the eight test files the wave wrote or touched: <strong>122 passed,
+    2 failed</strong>, and <strong>zero added failures</strong>. The two failures are pre-existing
+    &mdash; the identical two ids fail at the wave's base revision <code>1d2e70cc</code>, and
+    neither file appears in <code>git diff --stat 1d2e70cc..HEAD</code> &mdash; so they are reported
+    as follow-ons rather than triaged here, which is outside this node's write scope.</p>
+
+    <p><strong>The base figure is a delta over a stated subset, not over the full selection.</strong>
+    Five of the eight files do not exist at 1d2e70cc and cannot be collected there; passing the
+    eight-name selection at base is a pytest usage error that collects nothing, an empty result that
+    would read as a clean base. So the base comparison runs over the three files present at both
+    revisions &mdash; 44 passed and 2 failed at base against 71 passed and the same 2 failures at
+    head, or <strong>+27 passed and +0 failed</strong> &mdash; and the five absent files are recorded
+    as absent rather than as zero failures.</p>
+
+    <p><strong>Which tree was measured.</strong> Interpreter
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> (CPython 3.14.2, pytest 9.1.1),
+    working directory the main checkout <code>/home/ITER/mcintos/Code/reckon</code>, entered with
+    <code>uv run --directory &hellip; --no-sync</code>. <code>import reckon</code> resolves to
+    <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code> and the editable pointer holds
+    that path, so the run measured the tree that shipped rather than a worktree revision of it. The
+    base tree was materialised with <code>git archive 1d2e70cc</code> and entered with
+    <code>env -C</code>, since the node may neither switch branches nor stash. The report is
+    <code>~/.config/reckon/crew/reports/reckon/wave-integration/merged-head-report.md</code>, with
+    its logs beside it and none under <code>/tmp</code>. Evidence:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed">the wave's selection at the merged head</a>.</p>
+
     <h2 id="s5b">&sect;5b &mdash; Four lanes, one wallet, and a figure that is never re-read</h2>
 
     <p><strong>The lanes do not hold independent budgets and reckon does not know it.</strong>
