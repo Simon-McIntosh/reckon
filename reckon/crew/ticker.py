@@ -404,6 +404,15 @@ def resolve_terminal_width() -> int:
 # worse than the whitespace it replaces.
 MIN_REASON = 12
 
+# A run that never wrote a stream record reached no model, so the counter's
+# blocked bucket holds it and the clause is the only place the line can say the
+# stop is an infrastructure fault rather than a worker turn wanting a decision.
+# The classification normally supplies the cause and this clause is not reached;
+# it is here for the record that carries the state without one, because a
+# blocked number rendering no reason is the defect this line exists to close.
+LAUNCH_FAULT_STATE = "launch-failed"
+LAUNCH_FAULT_CLAUSE = "the launch failed before any turn and no model was reached"
+
 _RESET = "\x1b[0m"
 _DIM = "\x1b[2m"
 
@@ -830,16 +839,20 @@ class Ticker:
         silently ate the fleet's numbers instead.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
-        raw_to_state = event.get("to_state") or "unknown"
+        raw_to_state = str(event.get("to_state") or "unknown")
         typed_state = str(event.get("recovery_classification") or "")
-        # The compatibility lifecycle state may group several stops as
-        # blocked. The rendered state spells the cause-specific type when the
-        # producer supplied one, so the reader sees the recovery distinction.
-        to_state = _display_state(
+        # The compatibility lifecycle state may group several stops as blocked.
+        # The row spells the cause-specific type when the producer supplied one,
+        # so the reader sees the recovery distinction. The full word is held
+        # beside the elided one because the clause's gate reads it: the state
+        # cell is ten columns wide and a longer state word is cut to fit it, so
+        # a gate keyed on the rendered form matches no state at all.
+        entry_state = (
             typed_state
             if typed_state in {"held", "needs-help", "unwritten"}
             else raw_to_state
         )
+        to_state = _display_state(entry_state)
         baseline = is_baseline(event)
         # A baseline has no source state to show even when the record carries
         # one, because nothing moved: showing a from-state would claim a
@@ -893,7 +906,7 @@ class Ticker:
         # columns. A clause that claims the margin keeps it whole and the age
         # blanks, which is the bargain the margin already makes: what is
         # present holds its room and what is absent holds none.
-        reason = self._reason(event, to_state, room)
+        reason = self._reason(event, entry_state, room)
         ages = self._age_cells(event)
         if ages and len(reason) <= room - len(ages):
             cells.append((ages, None))
@@ -910,7 +923,7 @@ class Ticker:
             for text, style in cells
         )
 
-    def _reason(self, event: Mapping[str, Any], to_state: str, room: int) -> str:
+    def _reason(self, event: Mapping[str, Any], entry_state: str, room: int) -> str:
         """The clause explaining an actionable state, bounded by the margin.
 
         Only the state being entered may explain itself. Keying on the state
@@ -918,6 +931,12 @@ class Ticker:
         recovered from — describing a problem that is already over. A blocked
         entry carries a glyph saying whether a resume can answer it, derived from
         the persisted fact at render time rather than written into the record.
+
+        ``entry_state`` is the state word whole, not the form the state cell
+        renders: the cell is narrower than the longest word the classifier emits,
+        so the word is elided to fit it and the allow-list below holds the full
+        spellings. A gate reading the rendered form is a gate that says nothing
+        about work the pane is counting.
         """
         explained = NEEDS_ACTION | {
             "waiting",
@@ -931,17 +950,17 @@ class Ticker:
         # state word beside it can be any the classifier emitted — a live run
         # with a broken declaration reads as ordinary working. So the marker is
         # reachable from every state, and survives a clause with no room for it.
-        if to_state not in explained and not unprobed:
+        if entry_state not in explained and not unprobed:
             return ""
         if room < MIN_REASON:
             return UNPROBED_MARKER if unprobed else ""
         detail = event.get("detail")
         if detail is None:
             detail = event.get("reason")
-        if to_state in {"blocked", "needs-help"}:
+        if entry_state in {"blocked", "needs-help"}:
             marker = _display_marker(event)
         else:
-            marker = "!" if to_state == "wait-aged" else ""
+            marker = "!" if entry_state == "wait-aged" else ""
         if unprobed:
             # Additive, never a replacement: the age and needs-help glyphs are
             # signals about the run that a reader acts on, and a wait whose
@@ -952,6 +971,13 @@ class Ticker:
         recovery_prefix = f"{recovery}: " if recovery else ""
         reserve = len(marker) + (1 if marker else 0) + len(recovery_prefix)
         clause = single_clause(detail, limit=max(0, room - reserve))
+        if not clause and entry_state == LAUNCH_FAULT_STATE:
+            # The blocked bucket is where a launch failure's number arrives, so
+            # the clause is the only place the row can say the stop is an
+            # infrastructure fault. The classifier's cause normally fills it;
+            # this names the fault itself for a record that carried the state
+            # without one, rather than rendering a number with no reason.
+            clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=max(0, room - reserve))
         if recovery_prefix:
             clause = recovery_prefix + clause if clause else recovery_prefix.rstrip()
         if marker and clause:
