@@ -632,6 +632,41 @@
     <code>routing.py</code> both at base and after; the new test has zero findings,
     and both paths pass Ruff format.</p>
   </section>
+  <section id="s4-call-sites-checklist-accounting">
+    <h2>An unanswered call-sites answer is accountable evidence</h2>
+    <p><strong>Defect reproduced.</strong> At base
+    <code>a9f2db7594b84903c6301bcbf7c47dc761f81915</code>, a site-bearing review
+    parsed to <code>call_site_count = 1</code>, and <code>CALL_SITES: none</code>
+    parsed to <code>0</code>; an omitted line parsed to no count at all. The same
+    record named only the existing five checklist items as absent, so the omitted
+    call-sites answer was neither a measurement nor an incomplete checklist item.</p>
+    <p><strong>What landed.</strong> Commit <code>a1f5a6a5</code> makes call sites the
+    sixth checklist item. A named site or literal <code>none</code> supplies its item
+    verdict and an integer count. An omitted or empty line instead records
+    <code>call_site_count = "not-examined"</code>, leaves the item absent, and withholds
+    the item aggregate. The five-dimension promotion predicate is unchanged: a legacy
+    stored review with neither item fields nor a call-site count remains complete.</p>
+    <p><strong>Store census.</strong> Using the call-sites emission commit timestamp
+    <code>2026-09-21T14:31:43+00:00</code> as the cutoff, <strong>21</strong> of
+    <strong>38</strong> review records written afterward carry <code>call_site_count</code>;
+    <strong>17</strong> do not. A known present control is the record
+    <code>r-20260921T143322449564-a-hold-carries-the-evidence-that-produced-it</code>,
+    which carries the explicit zero. The denominator includes reviews whose briefs predate
+    the requirement, so 21/38 is a lower bound on compliance, not a compliance rate.</p>
+    <p><strong>Evidence that could have failed.</strong> The focused gate
+    <code>tests/test_call_sites_is_a_checklist_item.py</code> reports <strong>4 passed</strong>,
+    covering the item shape, a site emission, literal <code>none</code>, omission, missing-item
+    reporting, and a legacy record. Removing the explicit non-measurement state produces
+    <strong>1 failed, 3 passed</strong> at the omitted-emission assertion; the red receipt begins
+    with that declared mutation and the parser was restored before commit. Ruff check counts
+    are <strong>0 at base, 0 candidate</strong>; format deviations are <strong>1 at base,
+    0 candidate</strong>. Receipts are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/</code>.</p>
+    <p><strong>Scoped follow-on.</strong> The out-of-scope legacy test file
+    <code>tests/test_review_call_sites.py</code> still asserts omitted and empty emissions
+    have no <code>call_site_count</code>, so its focused run is red (2 failed, 4 passed) until
+    that test's expectations are updated to the explicit non-measurement state.</p>
+  </section>
 </main>
 </body>
 </html>
