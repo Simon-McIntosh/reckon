@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
@@ -510,6 +510,51 @@
         </tr>
       </tbody>
     </table>
+
+    <p><strong>A negative control is directional, and this plan's contract only ever asks for one
+    direction.</strong> <code>--negative-control</code> declares a mutation the node's checks must
+    <em>fail</em> against — it proves a check fires. Nothing asks whether the check still ignores
+    what it should, and for a repair that tightens, widens or sensitises a check, that is the half
+    that matters.</p>
+
+    <p><strong>Measured 2026-09-21.</strong> A node widened a single-owner guard from a column-zero
+    text match to an <code>ast</code> walk, so a rival declared inside a function or a
+    <code>try</code> block would be caught. It worked. It also made a <em>local variable merely
+    named like a guarded symbol</em> count as a declaration: a module whose function body does
+    <code>_SAMPLE_RE = text.split(",")</code> now reddens the guard while never holding the grammar.
+    The reviewer built that module and measured it — <strong>2 of 6 guard tests fail, naming the
+    innocent module as an extra definer</strong>.</p>
+
+    <p>The node carried <strong>six control logs and not one could have caught it</strong>, because
+    every one tested that the guard <em>does</em> fire. <strong>That is structural rather than
+    careless: nobody who has just spent a turn making a check catch more thinks to test that it
+    still ignores what it should.</strong> The author is the worst-placed person to find an
+    over-fire, which is precisely the argument for an independent reader and precisely what a
+    self-written gate cannot supply.</p>
+
+    <p>So the implementation and test profiles require, for any change to a check's sensitivity,
+    <strong>a control in the inverse direction — a concrete input that must stay green</strong> —
+    named in the brief rather than left to the reviewer's judgement. The clause that produced this
+    finding was written out in full: <em>"confirm an import of the owner's symbol, or a local merely
+    named like one, does not count as a declaration, with the concrete input."</em> A generic
+    "review this repair" would have confirmed the fix and scored it well, <em>because the fix is
+    correct</em>.</p>
+
+    <p><strong>And the profiles accumulate from findings rather than being authored once.</strong>
+    Twice today a specific instruction beat a general one, and in both cases the productive
+    checklist item was derived from a <em>previous round's defect</em> rather than from first
+    principles. A checklist written once from reasoning is a checklist that stops learning; the
+    per-kind profiles are therefore a growing record of what has actually been missed, and §2g's
+    table is its first entry rather than its final form.</p>
+
+    <p><strong>One more property worth naming, from the same review.</strong> It enumerated five
+    declaration shapes still invisible to the widened guard, confirmed the three the brief named
+    were caught, noted one deliberate exclusion — and then <em>recorded the boundary as a
+    documented limit instead of demanding a fix</em>. A reviewer that knows when to stop is worth
+    more than one that maximises findings, and a profile that rewards finding count will not
+    produce it. Scored 92 with <code>evidence</code> 19 and <code>scope_discipline</code> 20 — the
+    dimension the correlation analysis said to keep, doing its job on a review that found four
+    things.</p>
 
     <p><strong>Gates are element checks, not score thresholds.</strong> A threshold invites tuning
     and turns a review into a number to beat; the score stays, for calibration and lane comparison,
