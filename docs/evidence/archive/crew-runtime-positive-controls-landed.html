@@ -1329,6 +1329,117 @@ nothing has been launched</code></pre>
       claimed by live peer runs. Plan lifecycle metadata and the driving followup remain unchanged for
       coordinator adjudication.</p>
     </section>
+    <section id="s16">
+      <h2>&sect;16 &mdash; The wait the reader accepts is lifted by the sweep's own reader, and the lift is now pinned there</h2>
+      <p><strong>Implemented, awaiting coordinator review:</strong> commit <code>f901f4b1</code> changes
+      <code>reckon/crew/recovery.py</code> and <code>reckon/crew/resumption.py</code> and adds three cases to
+      <code>tests/test_wait_shapes.py</code>, at base <code>27184f74</code>. The section's premise is that a wait
+      declaring a file condition is never lifted, so its worker waits forever. Measured first, and it does not
+      hold at base: a live pointer carrying <code>wait_file</code> over three existing paths and nothing else was
+      offered to the resume loop by the real sweep &mdash; <code>checked 1, resumed
+      [r-repro], skipped []</code> &mdash; and the same pointer with one path withheld was left waiting
+      (<code>resumed [], skipped reason condition-overdue</code>). The reader that lifts was already reading the
+      derived vector correctly; what was missing was any case that would notice if it stopped.</p>
+      <p><strong>What the section's measurement actually exposes.</strong> The sweep carries its own condition
+      reader, and that the lift worked was invisible to every case: the classifier's reader answers a file
+      condition by looking for the declared paths and returns a tri-state for a row, and it returns before any
+      argument vector runs. The case named for the derived condition asserted the derived <em>probe</em> and
+      never the terminal the sweep branches on, so a change making the sweep derive
+      <code>terminal=false</code> for a vector that prints nothing and exits 0 &mdash; exactly the vector a file
+      condition derives &mdash; would have left the whole gate green and every worker parked on a file condition
+      waiting forever. That mutation is this node's declared negative control and it reddens the two new cases
+      and only those.</p>
+      <p><strong>The choice, stated.</strong> The two readers are kept separate rather than merged, and the
+      docstrings now say which is which. They answer different questions: a row for a person needs a tri-state
+      with the missing paths named, while the sweep needs a boolean verdict, and the sweep's reader is the one
+      that must honour the <code>exit:&lt;code&gt;</code> fallback the worker protocol documents for a vector
+      that prints nothing. Merging them would either drop the tri-state a row renders or drop that fallback,
+      so each docstring now states that the sweep's reader runs the argument vector and is the only
+      one whose verdict lifts a run, and that the classifier's reader answers a file condition by stat and never
+      runs the vector for it. The duplicated path scan in the classifier's reader is removed.</p>
+
+      <figure>
+        <svg viewBox="0 0 760 300" role="img" aria-label="One wait declaration is read by two readers: the
+        classifier's reader answers a file condition by stat for a row, while the sweep's reader runs the derived
+        argument vector and is the only verdict that lifts a parked run." style="max-width:100%;height:auto">
+          <style>
+            .n { fill:#1d2430; stroke:#3b6ea5; stroke-width:1.4px; }
+            .ok { fill:#16241b; stroke:#2e7d43; stroke-width:1.6px; }
+            .no { fill:#2a1a1a; stroke:#b23b3b; stroke-width:1.4px; }
+            .l { fill:#dfe6ef; font:12px sans-serif; }
+            .e { stroke:#8b98a8; stroke-width:1.3px; fill:none; }
+            .el { fill:#9fb0c4; font:11px sans-serif; }
+          </style>
+          <rect class="n" x="12" y="112" width="176" height="66" rx="6"/>
+          <text class="l" x="26" y="136">status: waiting</text>
+          <text class="l" x="26" y="154">wait_file: 3 paths</text>
+          <text class="el" x="26" y="170">file condition, no probe written</text>
+
+          <path class="e" d="M188 130 H 244"/>
+          <text class="el" x="196" y="122">declaration</text>
+
+          <rect class="n" x="244" y="20" width="212" height="72" rx="6"/>
+          <text class="l" x="258" y="44">classifier's reader</text>
+          <text class="l" x="258" y="62">stat each declared path</text>
+          <text class="el" x="258" y="80">never runs the vector &#8594; a row</text>
+          <path class="e" d="M300 92 V 130"/>
+
+          <rect class="n" x="244" y="196" width="212" height="72" rx="6"/>
+          <text class="l" x="258" y="220">sweep's reader</text>
+          <text class="l" x="258" y="238">test -e a -a -e b -a -e c</text>
+          <text class="el" x="258" y="256">runs the vector; exit:&lt;code&gt; fallback</text>
+
+          <path class="e" d="M456 232 H 512"/>
+          <rect class="ok" x="512" y="196" width="236" height="72" rx="6"/>
+          <text class="l" x="526" y="220">terminal = true</text>
+          <text class="l" x="526" y="238">exit 0, every path present</text>
+          <text class="el" x="526" y="256">&#8594; offered to the resume loop</text>
+
+          <path class="e" d="M456 268 V 288 H 512"/>
+          <rect class="no" x="512" y="272" width="236" height="26" rx="6"/>
+          <text class="l" x="526" y="290">exit 1, one path absent &#8594; still waiting</text>
+
+          <path class="e" d="M456 40 H 512"/>
+          <rect class="n" x="512" y="20" width="236" height="72" rx="6"/>
+          <text class="l" x="526" y="44">wait_condition_state: met</text>
+          <text class="l" x="526" y="62">wait_observed: present</text>
+          <text class="el" x="526" y="80">the row a person reads; nothing lifts here</text>
+        </svg>
+        <figcaption>One declaration, two readers, and only one verdict lifts. Every case for a file condition
+        stopped at the classifier &mdash; whose answer never resumes anything &mdash; so the lift itself was
+        unpinned. The two new cases enter at the sweep, and the negative half withholds one path so the lift
+        case cannot pass against a sweep that resumes whatever it is shown.</figcaption>
+      </figure>
+
+      <p><strong>Verification.</strong> <code>tests/test_wait_shapes.py</code> alone reports <em>20 passed</em>:
+      the 17 cases the reader already carried, unchanged, plus the lift, its negative half, and the declared
+      terminal. The focused population &mdash; the eleven suites that bind the wait declaration and the sweep
+      that reads it &mdash; reports <em>136 passed</em>, and the three sweep-consumer suites
+      (<code>test_review_reflex_sweep.py</code>, <code>test_crew_recover.py</code>,
+      <code>test_recovery_state_typing.py</code>) report <em>46 passed</em>. Both runs used the root
+      environment interpreter with this worktree on <code>PYTHONPATH</code> and
+      <code>-p no:cacheprovider</code>.</p>
+      <p><strong>Negative control, applied and removed.</strong> The declared mutation is <code>make the sweep
+      derive terminal=false for a file condition whose paths all exist in reckon/crew/resumption.py</code>,
+      recorded verbatim as the first line of <code>negative-control.log</code>. It was applied by returning
+      early from the sweep's reader when the vector printed nothing and exited 0 &mdash; the shape a file
+      condition derives &mdash; and the gate reported <strong>2 failed, 18 passed in 0.75 seconds</strong>,
+      exit 1. The two failures are exactly the cases that name the lift and the terminal field; the negative
+      half stayed green, which is what distinguishes a lift from a function that always returns true. The
+      mutation is absent from the implementation commit.</p>
+      <p><strong>Durable receipts.</strong> The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T172748855785-the-sweep-lifts-the-wait-the-reader-accepted/</code>.
+      It holds <code>negative-control.log</code> (first line is the declared mutation verbatim),
+      <code>gate-focused.log</code>, <code>gate-sweep-consumers.log</code> and <code>manifest.md</code>, which
+      carries the commit and every changed path.</p>
+      <p><strong>Follow-ons.</strong> <code>reckon/crew/prompts.py</code> is outside this node's fence and still
+      teaches <code>exit:&lt;code&gt;</code> under <code>wait_terminal</code> without teaching
+      <code>wait_file</code>, so a worker following the emitted template writes a terminal the declaration
+      reader refuses. Whether the two condition readers should become one is left open by the section and
+      answered here in favour of keeping them, with the reason in both docstrings. Plan lifecycle metadata and
+      the driving followup remain unchanged for coordinator adjudication.</p>
+    </section>
+
 
     <section id="s17">
       <h2>&sect;17 &mdash; A gate log says which tree it measured, and a cited command reproduces its own figure</h2>

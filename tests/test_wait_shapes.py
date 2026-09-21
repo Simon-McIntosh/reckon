@@ -37,11 +37,12 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery
+from reckon.crew import recovery, resumption
 
 # A three-file condition, the ordinary shape: the worker is parked on a job
 # whose logs land in its own worktree.
@@ -409,4 +410,116 @@ def test_a_genuine_argument_vector_wait_still_reads(tmp_path: Path) -> None:
 
     assert wait is not None
     assert wait["valid"] is True
+
+
+# ── The reader that lifts a park is the sweep's, not the classifier's ────
+#
+# A declaration reading back correctly says nothing about whether the run it
+# parks is ever resumed: the classifier's reader answers a file condition by
+# looking for the paths, and the sweep carries its own reader, which is the one
+# that decides. A gate that stops at the classifier cannot see the difference,
+# so these cases enter where the sweep enters. The lift is a branch on the
+# reader's `terminal` field, and the negative half -- the same wait with one
+# path absent -- is what distinguishes a lift from a function that always says
+# true.
+
+
+def _sweepable_file_manifest(paths=FILE_PATHS, *, expected: str = "59m") -> str:
+    """The file-condition manifest with a horizon, so its age is not the claim."""
+    return _manifest(
+        "status: waiting\n"
+        f"wait_condition: {FILE_CONDITION}\n"
+        f"wait_file: {json.dumps(paths)}\n"
+        f"wait_expected: {expected}\n"
+        f"resume_brief: {FILE_BRIEF}\n"
+    )
+
+
+def _place(pointer: dict, paths) -> None:
+    """Create the declared paths inside the run's worktree."""
+    root = Path(pointer["worktree"])
+    for path in paths:
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("done\n", encoding="utf-8")
+
+
+def _sweep_one(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, pointer: dict) -> dict:
+    """Run the recovery sweep over one live pointer, entering where it enters."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    monkeypatch.setattr(resumption, "list_live", lambda **_kwargs: [pointer])
+    monkeypatch.setattr(resumption, "_claimed_write_paths", lambda _pointer: [])
+    return resumption.sweep(
+        "fixture-project",
+        dry_run=True,
+        now=datetime.fromtimestamp(NOW_SECONDS, tz=UTC),
+    )
+
+
+def test_the_sweep_lifts_a_wait_whose_declared_paths_all_exist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The lift is the sweep's decision, so the case is made at the sweep.
+
+    Nothing here is asserted about the classifier's answer: a run is lifted
+    when the sweep offers it to the resume loop, and a file condition whose
+    paths all exist must reach that loop. The declared vector is a `test -e`
+    chain that prints nothing and exits 0, so this is also the case that fails
+    if the sweep stops reading `exit:<code>` for a condition it did not write.
+    """
+    pointer = _pointer(tmp_path, _sweepable_file_manifest())
+    _place(pointer, FILE_PATHS)
+
+    report = _sweep_one(monkeypatch, tmp_path, pointer)
+
+    assert report["checked"] == 1
+    assert [row["run_id"] for row in report["resumed"]] == [pointer["run_id"]]
+    assert report["skipped"] == []
+
+
+def test_the_sweep_does_not_lift_the_same_wait_when_one_path_is_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The negative half: a lift that fires with a path missing is no lift.
+
+    One declared path is withheld, so the vector exits 1. The run must be
+    reported as still waiting rather than offered to the resume loop, which is
+    what stops the case above from passing against a sweep that resumes
+    everything it is shown.
+    """
+    pointer = _pointer(tmp_path, _sweepable_file_manifest())
+    _place(pointer, FILE_PATHS[:-1])
+
+    report = _sweep_one(monkeypatch, tmp_path, pointer)
+
+    assert report["checked"] == 1
+    assert [row["run_id"] for row in report["resumed"]] == []
+    # The run is reported as still waiting, with the reason a reader acts on.
+    assert [row["reason"] for row in report["skipped"]] == ["condition-pending"]
+
+
+def test_the_sweep_records_the_derived_terminal_true_when_every_path_exists(
+    tmp_path: Path,
+) -> None:
+    """The field that decides the lift, named rather than inferred from it.
+
+    `terminal` is the value the sweep tests before it offers a run to the
+    resume loop, and for a file condition whose paths all exist it must be
+    true. Asserting it by name is what makes this case fail where the lift
+    stops being derived from the paths rather than from the run's presence in
+    a report, which a case that read only `resumed` could not tell apart.
+    """
+    pointer = _pointer(tmp_path, _sweepable_file_manifest())
+    _place(pointer, FILE_PATHS)
+
+    wait = _declaration(pointer)
+    assert wait is not None
+    # Derived from the paths rather than declared by the worker: the exit
+    # status of the vector the declaration carries.
+    assert wait["terminal"] == ["exit:0"]
+
+    recorded = resumption._run_condition_probe(pointer, wait)
+
+    assert recorded["terminal"] is True
+    assert recorded["observed"] == "exit:0"
     assert wait["error"] == ""
