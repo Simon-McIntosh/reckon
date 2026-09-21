@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -495,3 +496,87 @@ def bound_refusal_text(bound: Bound, *, backend_name: str, occupying: list[str])
         f"would exceed memory.max, and the runs occupying it: {listed}. Wait "
         f"for one to finish, or reduce the memory a worker reserves."
     )
+
+
+# ── The crew summary read ───────────────────────────────────────────────────
+#
+# Two figures a reader asks a completed node for are already in its row, and
+# neither is emitted. Wall time is the span between the row's own dispatch and
+# completion stamps, and width-at-start is how many runs were in flight when it
+# was dispatched. Both are derived here, at read time, from the stamps rather
+# than read back: the row's stored ``wall_seconds`` field was measured as a
+# different quantity from the span on nearly half the ledger, and a reader who
+# took it for the span's value derived a false rate from it twice. So the stored
+# field is never passed through — the answer carries the stamp-derived figure
+# under the same key, and an unstamped row carries nothing rather than a zero,
+# because a run whose span was not measurable is not a run that took no time.
+
+
+def _row_moment(record: Mapping[str, Any], key: str) -> datetime | None:
+    """One stamp of a row as an aware datetime, or None when unusable.
+
+    A stamp without an offset is read as UTC, matching the ledger's own
+    convention when it derives seconds from the same pair, so a stamp written
+    by a machine that omitted the offset is not silently shifted.
+    """
+
+    raw = record.get(key)
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        moment = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
+
+
+def run_rows(
+    project: str,
+    *,
+    root: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Read the project's committed run rows, each with its two derived figures.
+
+    Each returned row is the ledger record with ``wall_seconds`` replaced by the
+    figure derived from that row's own ``dispatched_at`` and ``completed_at``,
+    and ``width_at_start`` added: the number of runs whose own measured span
+    covers the moment this one was dispatched, counted from the same rows.
+
+    Both figures are absent, never zero, when the stamps they need are missing
+    or malformed. Width needs the dispatch stamp alone — a run created at a
+    known moment has a width at that moment whatever became of its ending — while
+    wall time needs the pair. A run that carries no completion stamp
+    contributes to no other row's width either, because a run whose end was
+    never measured cannot be shown to have been in flight; assuming it was
+    still running would be inventing the measurement this read exists to derive.
+    """
+
+    from reckon import ledger
+
+    records = ledger.runs(project, root)
+    measured: list[tuple[datetime, datetime]] = []
+    for record in records:
+        started = _row_moment(record, "dispatched_at")
+        finished = _row_moment(record, "completed_at")
+        if started is not None and finished is not None:
+            measured.append((started, finished))
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        row = dict(record)
+        # Derived per row rather than carried over: the stored field is the
+        # quantity a reader must never be handed under this name.
+        row["wall_seconds"] = ledger._worker_seconds(
+            record.get("dispatched_at"), record.get("completed_at")
+        )
+        started = _row_moment(record, "dispatched_at")
+        row["width_at_start"] = (
+            None
+            if started is None
+            else sum(
+                1
+                for span_start, span_end in measured
+                if span_start <= started <= span_end
+            )
+        )
+        rows.append(row)
+    return rows
