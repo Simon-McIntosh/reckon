@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-impl" content="0.889">
-<meta name="plan-version" content="76">
+<meta name="plan-impl" content="0.944">
+<meta name="plan-version" content="77">
 </head>
 <body>
   <main class="plan-doc">
@@ -1245,6 +1245,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-20260921T1952-gate-log-contract-landed" data-who="reckon-ship" data-when="2026-09-21T19:52:00+02:00">
     <div class="r-comment-body">Gate passed: 32 cases across the new file and both sibling prompt-contract files, exit 0, with the declared mutation reddening 1. The template now says the recorded gate command is the one that ran and never a template carrying an unsubstituted placeholder, and that a gate log's first line names the revision it ran at, the tree and the command. Landing it surfaced a sharper defect than the four that opened the section: this node's own manifest cited 7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1 as a landed commit and that object does not exist, the real one being 7892cb69128523ac598e02f62babaf56b6b71c17 — same eight-character prefix, fabricated remainder. It was caught only because git merge resolves the object it is given; nothing on the promotion path does, so the ledger would have carried a permanent citation to a commit nobody can find. Carried as section 18.</div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-20260921T2000-sweep-lift-landed" data-who="reckon-ship" data-when="2026-09-21T20:00:00+02:00">
+    <div class="r-comment-body">Gate passed: 20 cases in the wait-shape file, 17 pre-existing unchanged and 3 added, with a focused gate of 136 passed exit 0 over eleven wait and sweep suites and a sweep-consumer gate of 46 passed exit 0. The declared mutation — make the sweep derive terminal false for a file condition whose paths all exist — reddened 2. The three added cases enter where the sweep enters rather than through the reader: the sweep lifts a wait whose declared paths all exist, it does NOT lift the same wait when one path is absent, and the derived terminal is recorded true. That second case is what distinguishes a lift from a function that always returns true, and its absence is why section 15's gate was green while the mechanism was inert. The chain that began with three workers filling the wait block three wrong ways in one hour now closes: the contract has a file-condition shape, an unrecognised shape is refused by name rather than reduced to silence, and the wait the reader accepts is the wait the sweep lifts.</div>
 </div>
 </section>
 </main>
