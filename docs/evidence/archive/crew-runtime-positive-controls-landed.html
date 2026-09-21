@@ -909,6 +909,62 @@ nothing has been launched</code></pre>
       <code>tests/test_tool_arguments_accept_a_serialised_list.py</code> &mdash; are
       <strong>11 passed</strong>, unchanged. The fix was verified in the worktree's own <code>reckon</code>
       package by re-running the reproduction rather than by the assertion alone.</p>
+      <p><strong>Coverage, 2026-09-21 &mdash; the mapping branch was reached by no case.</strong>
+      <code>_decision_options_as_choices</code> normalises two spellings, a list and a value-to-label
+      mapping, and the review that closed the null-value repair above measured that deleting the null refusal
+      in <em>both</em> branches reddened one case: no case passed a mapping-shaped <code>options</code> value,
+      so the mapping half of the guard was unprotected. Re-measured before anything was added, that measurement
+      still held &mdash; <code>_decision_options_as_choices({None: "unix socket"})</code> returned
+      <code>(['None'], {'None': 'unix socket'})</code>, the same literal <code>None</code> the list branch had
+      been refusing all along. Deleting a guard and watching the suite stay green is the reachability evidence
+      here, and it is what the previous control could not show.</p>
+      <p><strong>Three reaches, two of them new.</strong> A mapping whose label side is null already fell back
+      correctly to its value, which is now asserted rather than assumed: <code>{'unix socket': None}</code>
+      reads back <code>choices == ['unix socket']</code> with
+      <code>option_labels == {'unix socket': 'unix socket'}</code>, and the literal string <em>None</em> is
+      asserted absent from the labels, because equality against the value alone would pass if the label had
+      been stringified from the null. A mapping whose value side is null is refused and nothing lands.
+      The third reach is the smaller finding the review carried: an option <em>object</em> with no
+      <code>value</code> key was read as its label, so <code>[{'label': 'unix socket'}]</code> was accepted as
+      an option whose value <em>was</em> the label &mdash; a substitution nothing reported &mdash; while an
+      object carrying neither key was refused as a null although no value key was present at all. The value
+      key is now required, and its absence refused as
+      <em>decision option {'label': 'unix socket'} carries no 'value' key</em>, with <code>[{}]</code> giving
+      the same wording rather than the null one. Both were verified at the fixed tree rather than only through the
+      cases, with <code>reckon.__file__</code> printing this worktree's path so the run is known to exercise
+      the changed source rather than a stale one.</p>
+      <p>The reach the section now covers, by branch and by shape, with the case that holds it:</p>
+      <table>
+        <thead>
+          <tr><th>branch</th><th>option shape a caller writes</th><th>what the guard does</th><th>case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>list</td><td><code>["unix socket", "tcp loopback"]</code></td><td>both values stored</td><td>pre-existing</td></tr>
+          <tr><td>list of objects</td><td><code>[{"value": "unix socket", "label": "Unix socket"}]</code></td><td>both values stored, labels kept</td><td>pre-existing</td></tr>
+          <tr><td>list of objects</td><td><code>[{"value": None, "label": "none"}]</code></td><td>refused, naming the option as null</td><td>pre-existing</td></tr>
+          <tr><td>list of objects</td><td><code>[{"value": ""}]</code></td><td>refused as empty</td><td>pre-existing</td></tr>
+          <tr><td>list of objects</td><td><code>[{"label": "unix socket"}]</code> &mdash; no value key</td><td>refused as missing</td><td>new</td></tr>
+          <tr><td>list of objects</td><td><code>[{}]</code> &mdash; neither key</td><td>refused as missing</td><td>new</td></tr>
+          <tr><td>mapping</td><td><code>{"unix socket": None}</code></td><td>value kept, its own label</td><td>new</td></tr>
+          <tr><td>mapping</td><td><code>{None: "unix socket"}</code></td><td>refused, naming the value as null</td><td>new</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The cases, and the mutation that reddens one.</strong> Three cases were added, for nine in
+      the file; every case above them is unchanged, so the reach this node adds regresses nothing. The node
+      record's declared mutation is <em>delete the mapping-branch null guard in
+      <code>_decision_options_as_choices</code> in <code>reckon/_store.py</code></em>. Applied in this
+      worktree it gives <strong>1 failed, 8 passed</strong> &mdash; exactly
+      <code>test_a_mapping_option_with_a_null_value_side_is_refused</code> red and the other eight green,
+      which is the receipt that a case now reaches that branch. The mutation was reverted before the commit,
+      the fixed tree re-run to <strong>9 passed, exit 0</strong>, and the red log is kept at
+      <code>~/.config/reckon/crew/runs/r-20260921T165140068358-the-mapping-branch-guard-is-reachable-by-a-case/negative_control_mapping_guard.log</code>,
+      whose first line repeats the declared mutation verbatim.</p>
+      <p><strong>What this leaves open.</strong> An option object whose <code>value</code> key is present but
+      whose <code>label</code> is explicitly null still stringifies that label to the literal <em>None</em>:
+      the object branch falls back to the value only when the key is <em>absent</em>, not when the label is
+      null, and the mapping branch already falls back on a null label. The two spellings therefore disagree
+      on the same input, and the object case is reported rather than repaired here, because this node's
+      measure names three reaches and a null object label is not one of them.</p>
     </section>
 
     <section id="verification">
