@@ -4,6 +4,19 @@ The same audit the promotion contract applies hours later, entered through the
 command surface a worker can run itself. Each test drives the CLI runner rather
 than the audit entry point, because what is under test is the wiring that gives
 the audit its first production caller.
+
+Running the command is also held to the repository rule that a write-shaped
+test accounts for the state it did not isolate. A case points RECKON_HOME at a
+temporary home so its own pointer write stays inside the case, and the crew
+home the process resolved *before* that substitution is watched byte for byte:
+if home resolution ever stopped honouring the substitution, this fixture's
+pointer would land in that other directory, and the witness is what names the
+escape rather than leaving it to be discovered later. The production crew home
+is not the directory under watch, and cannot be — measured on a live wave it
+holds 598,286 entries with 138 of them rewritten in six seconds, so comparing
+it whole would be slow and would measure the fleet instead. What the witness
+catches is instead made to happen on a substitute root, so this file proves its
+own assertion fires without writing anywhere near that directory.
 """
 
 from __future__ import annotations
@@ -16,7 +29,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon.cli import main as cli_main
-from reckon.crew.runs import _write_json, pointer_path
+from reckon.crew.runs import _write_json, crew_home, pointer_path
 
 RUN_ID = "r-20260921T000000000000-manifest-check"
 
@@ -34,8 +47,82 @@ blockers: none
 """
 
 
+def _tree_bytes(root: Path) -> dict[str, bytes] | None:
+    """Every entry under ``root`` by relative path, with the file's own bytes.
+
+    Directories carry a trailing slash so an empty directory appearing inside
+    the tree is a difference rather than an invisible one. ``None`` stands for
+    a root that does not exist, which is a state the comparison may see change.
+    """
+    if not root.exists():
+        return None
+    entries: dict[str, bytes] = {}
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if path.is_dir():
+            entries[relative + "/"] = b""
+        elif path.is_file():
+            entries[relative] = path.read_bytes()
+    return entries
+
+
+def _difference(before: dict[str, bytes] | None, after: dict[str, bytes] | None) -> str:
+    """Name the paths that appeared, vanished or changed between two trees."""
+    if before is None or after is None:
+        return (
+            f"the root existed={before is not None} before, {after is not None} after"
+        )
+    lines = []
+    for relative in sorted(set(before) | set(after)):
+        was, now = before.get(relative), after.get(relative)
+        if was == now:
+            continue
+        if was is None:
+            lines.append(f"  created: {relative}")
+        elif now is None:
+            lines.append(f"  removed: {relative}")
+        else:
+            lines.append(f"  changed: {relative} ({len(was)} -> {len(now)} bytes)")
+    return "\n".join(lines)
+
+
+class CrewHomeWatch:
+    """A byte-for-byte witness of one crew home across a case's run."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.before = _tree_bytes(root)
+
+    def assert_untouched(self) -> None:
+        """Fail naming every path that moved under the watched root."""
+        after = _tree_bytes(self.root)
+        assert after == self.before, (
+            f"the crew home {self.root} was written to by a case that did not "
+            f"substitute it:\n{_difference(self.before, after)}"
+        )
+
+
 @pytest.fixture()
-def manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def crew_home_watch(isolated_reckon_home: Path) -> CrewHomeWatch:
+    """Watch the crew home this process resolved before a case substituted one.
+
+    The suite's own fixture is requested by name so its temporary home is
+    already in place: the root under watch is where a case's pointer write
+    lands if home resolution stops honouring the substitution the case makes,
+    which is the escape the assertion exists to catch.
+    """
+    root = crew_home()
+    assert not root.is_relative_to(Path.home()), (
+        f"the witness is watching the production directory {root}: the suite's "
+        "temporary home is not in force, so a pass would be measuring the fleet"
+    )
+    return CrewHomeWatch(root)
+
+
+@pytest.fixture()
+def manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -67,23 +154,31 @@ def _check(run_id: str = RUN_ID):
     return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
 
 
-def test_a_manifest_inside_its_fence_exits_zero_with_no_finding(manifest: Path) -> None:
+def test_a_manifest_inside_its_fence_exits_zero_with_no_finding(
+    manifest: Path, crew_home_watch: CrewHomeWatch
+) -> None:
     result = _check()
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload["ok"] is True
     assert payload["findings"] == []
+    crew_home_watch.assert_untouched()
 
 
-def test_the_command_names_the_run_it_read(manifest: Path) -> None:
+def test_the_command_names_the_run_it_read(
+    manifest: Path, crew_home_watch: CrewHomeWatch
+) -> None:
     result = _check()
 
     assert RUN_ID in result.output
     assert json.loads(result.output)["run_id"] == RUN_ID
+    crew_home_watch.assert_untouched()
 
 
-def test_a_path_outside_the_node_fence_is_reported_by_name(manifest: Path) -> None:
+def test_a_path_outside_the_node_fence_is_reported_by_name(
+    manifest: Path, crew_home_watch: CrewHomeWatch
+) -> None:
     manifest.write_text(
         IN_FENCE_MANIFEST.replace(
             "changed_paths: reckon/cli.py",
@@ -97,13 +192,40 @@ def test_a_path_outside_the_node_fence_is_reported_by_name(manifest: Path) -> No
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]
     assert "reckon/other_module.py" in " ".join(findings)
+    crew_home_watch.assert_untouched()
 
 
-def test_an_unknown_run_is_refused_rather_than_reported_clean(manifest: Path) -> None:
+def test_an_unknown_run_is_refused_rather_than_reported_clean(
+    manifest: Path, crew_home_watch: CrewHomeWatch
+) -> None:
     result = _check(run_id="r-20260921T000000000000-absent")
 
     assert result.exit_code != 0
     assert result.output.strip()
+    crew_home_watch.assert_untouched()
+
+
+def test_the_isolation_assertion_fires_on_a_substituted_root(tmp_path: Path) -> None:
+    """The witness is shown to fire, on a root the production home never sees.
+
+    A guard that never fires is indistinguishable from no guard, so the failure
+    the witness exists to catch is made to happen here and the assertion is
+    shown to name it. The write goes into a substitute root, and the production
+    crew home is never a party to this case at all.
+    """
+    root = tmp_path / "substituted-crew-home"
+    (root / "live").mkdir(parents=True)
+    watch = CrewHomeWatch(root)
+
+    watch.assert_untouched()  # nothing written yet: the witness stays quiet
+
+    _write_json(
+        root / "live" / f"{RUN_ID}.json",
+        {"run_id": RUN_ID, "node": {"id": "manifest-check"}},
+    )
+
+    with pytest.raises(AssertionError, match=f"live/{RUN_ID}.json"):
+        watch.assert_untouched()
 
 
 def test_the_cli_is_the_only_production_caller() -> None:
