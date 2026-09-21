@@ -46,7 +46,8 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
+from pathlib import PurePosixPath
 from typing import Any, TypedDict
 
 import yaml
@@ -1011,15 +1012,42 @@ def audit_manifest(
                     )
                 )
     if node is not None and manifest["changed_paths"]:
-        allowed = set(node.write_paths)
+        declared = tuple(node.write_paths or ())
         stray = sorted(
-            path for path in manifest["changed_paths"] if path not in allowed
+            path
+            for path in manifest["changed_paths"]
+            if not path_within_declared_scope(path, declared)
         )
         if stray:
             findings.append(
                 "changed paths outside the write scope: " + ", ".join(stray)
             )
     return {"manifest": manifest, "findings": findings, "ok": not findings}
+
+
+def _normalized_scope_path(text: Any) -> PurePosixPath:
+    """Return a repository-relative path without redundancy but with ``..`` intact."""
+    return PurePosixPath(str(text).strip())
+
+
+def path_within_declared_scope(changed: Any, declared: Iterable[str]) -> bool:
+    """Return whether a changed path is contained by a declared write root.
+
+    Containment is the rule promotion applies when it audits a delivered run,
+    and the write-time audit judges a manifest earlier on the same terms.
+    Judging by exact membership instead would refuse a file under a directory
+    dispatch granted, sending a worker to repair a manifest promotion would
+    have accepted — a stricter contract at the earlier surface, which is the
+    drift between the two checks this function exists to remove. A changed
+    path is in scope when it equals a declared path or lies beneath one, so
+    both a file declaration and a directory declaration are honoured.
+    """
+    target = _normalized_scope_path(changed)
+    for raw_root in declared:
+        root = _normalized_scope_path(raw_root)
+        if target == root or root in target.parents:
+            return True
+    return False
 
 
 def report_log_paths_under_temp_root(
