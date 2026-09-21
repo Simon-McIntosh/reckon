@@ -32,12 +32,26 @@ from reckon.cli import main as cli_main
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 
 RUN_ID = "r-20260921T000000000000-manifest-check"
+ABSOLUTE_SCOPE_RUN_ID = "r-20260921T000000000000-manifest-absolute-scope"
 
 IN_FENCE_MANIFEST = """\
 node: manifest-check
 status: complete
 commits: 1a2b3c4
 changed_paths: reckon/cli.py
+tests: uv run pytest tests/test_manifest_check_command.py -q -> 3 passed
+test_logs: /tmp/manifest-check.log
+artifacts: none
+evidence_inputs: none
+follow_ons: none
+blockers: none
+"""
+
+ABSOLUTE_SCOPE_MANIFEST = """\
+node: manifest-check
+status: complete
+commits: 1a2b3c4
+changed_paths: src/module.py, lib/helper.py
 tests: uv run pytest tests/test_manifest_check_command.py -q -> 3 passed
 test_logs: /tmp/manifest-check.log
 artifacts: none
@@ -154,6 +168,66 @@ def _check(run_id: str = RUN_ID):
     return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
 
 
+@pytest.fixture()
+def absolute_scope_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+) -> dict[str, Path]:
+    """A run whose fence is declared absolutely, in trees the caller's cwd is not.
+
+    The worktree and the repository are two distinct directories so a case can
+    tell which one a declaration was resolved against, and the declared roots
+    lie under each: ``src`` under the worktree, ``lib`` under the repository.
+    Declarations are the absolute paths on disk, which is how dispatch grants a
+    directory, while the manifest records the repository-relative paths a diff
+    produces. Only a scope resolver that maps an absolute declaration through
+    the tree that run worked in brings the two into agreement; one that falls
+    back to the process working directory leaves both roots unmapped and calls
+    every changed path stray.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    worktree = tmp_path / "run-worktree"
+    repository = tmp_path / "main-checkout"
+    (worktree / "src").mkdir(parents=True)
+    (repository / "lib").mkdir(parents=True)
+    manifest_path = tmp_path / "manifest.md"
+    manifest_path.write_text(ABSOLUTE_SCOPE_MANIFEST, encoding="utf-8")
+    _write_json(
+        pointer_path(ABSOLUTE_SCOPE_RUN_ID),
+        {
+            "run_id": ABSOLUTE_SCOPE_RUN_ID,
+            "project": "sample",
+            "repo": str(repository),
+            "worktree": str(worktree),
+            "base_sha": "0" * 40,
+            "launch": "in-harness",
+            "role": "implement",
+            "node": {
+                "id": "manifest-check",
+                "plan": "fixture",
+                "section": "s9",
+                "write_paths": [str(worktree / "src"), str(repository / "lib")],
+            },
+            "manifest_path": str(manifest_path),
+        },
+    )
+    return {
+        "worktree": worktree,
+        "repository": repository,
+        "manifest": manifest_path,
+    }
+
+
+@pytest.fixture()
+def outside_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Stand the caller somewhere that is neither the worktree nor the repository."""
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    return elsewhere
+
+
 def test_a_manifest_inside_its_fence_exits_zero_with_no_finding(
     manifest: Path, crew_home_watch: CrewHomeWatch
 ) -> None:
@@ -202,6 +276,77 @@ def test_an_unknown_run_is_refused_rather_than_reported_clean(
 
     assert result.exit_code != 0
     assert result.output.strip()
+    crew_home_watch.assert_untouched()
+
+
+def test_an_absolute_declaration_resolves_from_outside_the_run_worktree(
+    absolute_scope_run: dict[str, Path],
+    outside_cwd: Path,
+    crew_home_watch: CrewHomeWatch,
+) -> None:
+    """A declaration granted absolutely maps through the tree the run worked in.
+
+    The caller stands in neither the worktree nor the repository, so a scope
+    resolved against the working directory would leave the declared roots
+    unmapped and report both changed paths stray. A clean reading is only
+    possible when the worktree and repository travel with the pointer.
+    """
+    result = _check(ABSOLUTE_SCOPE_RUN_ID)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["findings"] == []
+    crew_home_watch.assert_untouched()
+
+
+def test_a_path_under_no_declaration_is_reported_from_outside(
+    absolute_scope_run: dict[str, Path],
+    outside_cwd: Path,
+    crew_home_watch: CrewHomeWatch,
+) -> None:
+    """From the same outside caller, an undeclared path is still refused.
+
+    The scope resolves from the pointer yet the guard it feeds still fires, so
+    the earlier case is a mapping that works rather than a check that stopped
+    judging.
+    """
+    absolute_scope_run["manifest"].write_text(
+        ABSOLUTE_SCOPE_MANIFEST.replace(
+            "changed_paths: src/module.py, lib/helper.py",
+            "changed_paths: src/module.py, docs/plan.html",
+        ),
+        encoding="utf-8",
+    )
+
+    result = _check(ABSOLUTE_SCOPE_RUN_ID)
+
+    assert result.exit_code != 0, result.output
+    findings = json.loads(result.output)["findings"]
+    assert "docs/plan.html" in " ".join(findings)
+    crew_home_watch.assert_untouched()
+
+
+def test_the_scope_comes_from_the_run_pointer_not_the_working_directory(
+    absolute_scope_run: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    crew_home_watch: CrewHomeWatch,
+) -> None:
+    """Two callers in different directories judge one manifest identically.
+
+    The reading is the same from each because the tree it is resolved against
+    is named by the pointer rather than read from the process. A resolver that
+    read the working directory would judge the same manifest two ways.
+    """
+    findings_by_cwd: dict[str, list[str]] = {}
+    for relative in ("first-caller", "second-caller/deeper"):
+        cwd = tmp_path / relative
+        cwd.mkdir(parents=True)
+        monkeypatch.chdir(cwd)
+        result = _check(ABSOLUTE_SCOPE_RUN_ID)
+        assert result.exit_code == 0, result.output
+        findings_by_cwd[relative] = json.loads(result.output)["findings"]
+
+    assert list(findings_by_cwd.values()) == [[], []]
     crew_home_watch.assert_untouched()
 
 
