@@ -241,6 +241,17 @@
     before closing a fail-open guard; the rule that was missing is to ask what legitimate case the
     closed guard forbids, and whether its remedy can be reached by anyone.</p>
 
+    <p><strong>Correction, appended rather than edited.</strong> The base row above was measured once.
+    A second measurement of the same revision <code>73392943</code> over the same thirteen files, by the
+    node that carried the repair, reported <strong>10 failed / 229 passed</strong> &mdash; totals agreeing
+    at 239, so two tests flipped between two runs of one revision. <strong>The base is not stable at that
+    resolution and the 8 should not be cited on its own.</strong> The delta survives, because the repair
+    node took both of its counts from one instrument in one run and an independent verification at the
+    merged head <code>e1f73a40</code> reports <strong>10 failed / 246 passed</strong> with a failure set
+    identical to base: <strong>0 added</strong>. The 108 the guard introduced are gone. A delta measured
+    with one instrument across both sides survives a flaky denominator; the denominator quoted alone does
+    not &mdash; which is this record's own subject, a true reading standing in for a stable fact.</p>
+
     <p>The fix asks git whether the ledger path was ever tracked in the repository receiving the
     promotion. Tracked-then-unlinked is this incident; never-existed is a new project. That beats adding
     an operator flag, because a flag can be passed wrongly and a tracked-ness query cannot &mdash; and it
