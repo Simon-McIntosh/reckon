@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T09:24:21",
+  "updated": "2026-09-21T09:35:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -198154,6 +198154,209 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T070524558810-review-of-promotion-refuses-unreviewed",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72",
+        "node": "review-of-promotion-refuses-unreviewed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 786,
+                "cached_input_tokens": 388742,
+                "input_tokens": 389530,
+                "output_tokens": 815,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 390345,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "the review file at the named path stores a parsed record with a SCORE and a JUSTIFICATION line for each of the five dimensions in reckon/crew/review.py:43, every score an integer 0..20. Beyond the five dimensions the review reports three reachability findings, because a diff-scoped read misses the defects that matter: whether the new refusal branch in reckon/crew/promotion.py is reached under a registered test (name the test), whether the --waive-unreviewed-promotion reason actually lands on the committed ledger row rather than only on the in-memory record (re-derive it by reading a promoted row back), and whether any caller of promotion.complete outside the changed files now takes a path the change does not cover. It re-runs the node's own gate at the merged head 346b98b6 and records the observed pass or fail, and it confirms the declared negative control in the run record is the one applied in the run's negative-control.log and that the log reddens for that reason and not another. Every finding names a file and a line",
+          "estimated_hours": null,
+          "goal": "Attach an independent review to run r-20260921T064149757128-promotion-refuses-unreviewed, which landed on the local lane and is unpromoted",
+          "id": "review-of-promotion-refuses-unreviewed",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T07:05:25Z",
+            "read_at": "2026-09-21T07:05:26Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 8.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070524558810-review-of-promotion-refuses-unreviewed/manifest.md",
+          "negative_control": "none: a review node writes only its own stored review record and commits no test, so no mutation of product code could make its record fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "20m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T064149757128-promotion-refuses-unreviewed.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "codex-c",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-21T07:05:32Z",
+        "completed_at": "2026-09-21T07:13:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 504,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 504,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "aa3c5ac61b28bd545c81e4ba6f8740e7c0cf3666",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "parse the stored review and require five dimensions, no absent, and recovery._review_is_complete True",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070524558810-review-of-promotion-refuses-unreviewed/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T070524558810-review-of-promotion-refuses-unreviewed/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c2c8-c748-7700-8a5c-e42621bddb3f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3823360,
+            "cached_input_tokens_cumulative": 3823360,
+            "input_tokens": 3949305,
+            "input_tokens_cumulative": 3949305,
+            "output_tokens": 19417,
+            "output_tokens_cumulative": 19417,
+            "reasoning_output_tokens": 7533,
+            "reasoning_output_tokens_cumulative": 7533
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T07:13:56Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 9.0,
+              "resets_at": 1790575133,
+              "observed_at": "2026-09-21T07:13:56Z"
+            }
+          ],
+          "notional_cost_usd": 16.1856,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 3823360,
+          "cumulative_input_tokens": 7772665,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 26950
+        },
+        "follow_on_paths": [
+          "docs/figures/promotion-refusal-flow/refusal_flow.png",
+          "reckon/crew/recovery.py:2086-2109"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "a review node's deliverable is its stored review record outside the repository; it changes no tracked path by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/review-of-promotion-refuses-unreviewed",
+          "session_id": "01a0c2c8-c748-7700-8a5c-e42621bddb3f",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T07:13:56Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "tool_steps": 46.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -198438,6 +198641,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1766
+    "_version": 1767
   }
 }
