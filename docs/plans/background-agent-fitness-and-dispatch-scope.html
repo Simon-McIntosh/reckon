@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="background-agent-fitness-and-dispatch-scope">
   <meta name="plan-title" content="Background agent fitness and dispatch scope — where the local lane is fit to work, decided from an audit rather than a habit">
-  <meta name="plan-summary" content="Turn the nova audit's per-class scores into dispatch rules: which roles and spec levels route to the local lane, which need an independent review, which never.">
+  <meta name="plan-summary" content="Turn the nova audit&#x27;s per-class scores into dispatch rules: which roles and spec levels route to the local lane, which need an independent review, which never.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -94,22 +94,28 @@
     named, pinned by a test with a synthesised incomplete review; and the first ten gated promotions
     under the rule are listed on this plan's evidence with their review scores.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-</section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-bafds-001-fitness-table" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="lead" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship background-agent-fitness-and-dispatch-scope §1" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">When the nova audit lands its counts, build the per-class fitness table and write it as this plan's evidence</h4>
+    <h4 class="r-fu-title">When the nova audit lands its counts, build the per-class fitness table and write it as this plan&#x27;s evidence</h4>
     <div class="r-fu-body"><p>Gated on nova <code>figure-and-solver-audit</code> §1 and §2 having their scored records. One node reads the audit anchors and the crew ledger, writes the class-of-work table with the counts and defect classes per lane, and states which classes the local lane is fit for by default, with review, or not at all, each with the audit rows behind it. The record is authored as an evidence document under <code>docs/evidence/archive/background-agent-fitness-and-dispatch-scope-landed.html</code>, with a figure only where a comparison across classes is clearer drawn than tabled.</p></div>
     <pre class="r-fu-prompt">/reckon-ship background-agent-fitness-and-dispatch-scope §1</pre>
+    </article>
+<article class="r-fu" data-id="f-bafds-002-review-sandbox-for-gate-reruns" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship background-agent-fitness-and-dispatch-scope §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A review that must re-run a gate needs an execution-capable sandbox by default</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-21: five solver-core reviews whose measure was a gate re-run at the merged head were dispatched under the review role's read-only sandbox and the first blocked on <em>Required scheduler connection denied by sandbox</em>; all five were restarted with <code>--set roles.review.sandbox=worktree-full</code>. Section 3 makes the merged-head gate re-run a required element of a gating review, so the review role must resolve an execution-capable sandbox when its brief carries a gate command, or the dispatcher must refuse the pairing before launch rather than let the worker discover it.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship background-agent-fitness-and-dispatch-scope §3</pre>
     </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-bafds-interim-ruling" data-who="lead" data-when="2026-09-21T03:40:00Z">
     <div class="r-comment-body"><p>Interim ruling in force until §1 lands: nothing from the local lane is promoted without a scored review from another lane; no new implementation node is dispatched to it; investigation and reporting nodes may still route there. The nodes in flight at the time of the ruling finish and stay unpromoted in their worktrees until reviewed.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-bafds-prescribed-local-with-bookends" data-who="lead" data-when="2026-09-21T06:35:00Z">
+    <div class="r-comment-body"><p>Lead ruling 2026-09-21, replacing the interim freeze. The local lane reopens for <strong>prescribed</strong> implementation nodes only: one artifact, the file and line named, a numeric gate with its before value stated, a literal negative-control mutation, a thirty-minute fence, the prescription taken from the ready-to-append followups the codex and claude-opus reviewers write, and every promotion behind a short review on a metered lane. Metered lanes carry reviews, mechanism diagnostics, design verdicts and repair verification, and hold new dispatches when the five-hour window reads near its ceiling. <strong>No nested dispatch</strong>: a metered-lane worker does not spawn local sub-workers, because a worker cannot promote, its fence cannot hold a sub-dispatch wait, sandboxes and manifests do not nest, and a second log layer goes unread; the same division of labour is had at depth one with the coordinator dispatching both ends. The evidence behind the ruling is the nova figure audit: the local lane did well on bounded literal tasks and failed where a brief left it judgement about controls, physics or completion. The first prescribed pilot is nova <code>cca-apply-the-separatrix-test-on-the-moment-path</code>; the rule in section 2 encodes this as the review-gated class until the fitness table of section 1 refines it per class.</p></div>
 </div>
 </section>
   </main>
