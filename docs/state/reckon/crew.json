@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T17:52:06",
+  "updated": "2026-09-21T17:59:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -226276,6 +226276,245 @@
           "reason": null,
           "finding": null
         }
+      },
+      {
+        "run_id": "r-20260921T123541816127-counter-reason-names-the-launch-failure",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a78",
+        "node": "counter-reason-names-the-launch-failure",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1861,
+                "cached_input_tokens": 251163,
+                "input_tokens": 253026,
+                "output_tokens": 4247,
+                "reasoning_output_tokens": 1533,
+                "total_tokens": 257273,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "a fleet reading with one launch-failed and one blocked run renders blocked=2 whose reason clause names the launch failure distinctly; the block still renders four cells at its current width; a reading with no launch-failed run carries no launch-failure wording; the declared mutation is applied, the named cases are observed to fail, and the red log is recorded with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "the fleet counter blocked bucket reason clause names a launch-failed run as an infrastructure fault, with the four-cell block unchanged",
+          "id": "counter-reason-names-the-launch-failure",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T12:35:42Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/manifest.md",
+          "negative_control": "remove the launch-failure clause from the blocked bucket reason composition in reckon/crew/ticker.py",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_fleet_counter_launch_failure.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-791cd98e623fd636bb87",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T12:36:11Z",
+        "completed_at": "2026-09-21T15:01:27.745Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 8693,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 8716,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "c748ca77d9aeca99c36223a5c88a3c0940ae580c",
+        "commits": [
+          "3d927b8855406b37d93adeaf3a3b4b32729b60b6",
+          "3c913e4975b6747eece2cfec0a016403d3d215df"
+        ],
+        "changed_lines": {
+          "added": 377,
+          "removed": 13,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/counter-reason-names-the-launch-failure /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_counter_launch_failure.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/Code/reckon/reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/manifest.md",
+        "scope_changed": true,
+        "session_id": "9af3a6ac-28b0-42fc-8bcb-3300739de4e5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3331857,
+            "input_tokens_cumulative": 3331857,
+            "output_tokens": 14958,
+            "output_tokens_cumulative": 14958,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T15:01:27.745Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 17
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14281973,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1037.392,
+          "generated_tokens": 95673,
+          "generation_seconds": 1001.22,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 27.3,
+          "machine_seconds": 36.172,
+          "peak_input_tokens": 131148,
+          "tokens_per_second": 95.56,
+          "wall_tokens_per_second": 92.22
+        },
+        "follow_on_paths": [
+          "tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set",
+          "tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers",
+          "/home/ITER/mcintos/Code/reckon/reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/counter-reason-names-the-launch-failure",
+          "session_id": "9af3a6ac-28b0-42fc-8bcb-3300739de4e5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T15:01:27.745Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.5,
+          "at_complete": 0.867,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_fleet_counter_launch_failure.py"
+          ],
+          "declaration": "remove the launch-failure clause from the blocked bucket reason composition in reckon/crew/ticker.py",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123541816127-counter-reason-names-the-launch-failure/negative_control.log",
+          "reason": "the control was run and is sound; only the wording differs. The coordinator declared 'remove the launch-failure clause from the blocked bucket reason composition in reckon/crew/ticker.py'; the worker's red log opens 'revert the reason gate to the elided display state word (pass the elided to_state instead of the full entry_state) in Ticker.render, so a launch-failed row's clause is dropped and the blocked number is explained by nothing'. That is the same experiment named by its mechanism rather than by its effect, and it is the more accurate of the two. It reddened exactly the two clause cases while the width, absence and bucket cases stayed green, with the re-run green log kept beside it. The declaration was not edited to match, because a check satisfiable by rewriting its own input measures nothing."
+        },
+        "tool_steps": 108.0,
+        "orientation_input_tokens": 2124032.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -226560,6 +226799,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1931
+    "_version": 1932
   }
 }
