@@ -175,16 +175,132 @@ class CrewError(Exception):
     """A dispatch cannot proceed, and the message says what to fix."""
 
 
+# The three answers a process-liveness question can give about a live pointer's
+# worker, plus the one the pointer's own phase settles without asking. Only
+# ``gone`` may release a member; the other three refuse it. ``unknown`` is a
+# distinct answer rather than a synonym for ``gone`` because the crew config home
+# is shared across login nodes, so a pid read on the wrong host, or a pointer
+# written before its worker was spawned, fabricates both verdicts — releasing on
+# either double-dispatches a member whose worker may be alive elsewhere.
+MEMBER_LIVENESS_ALIVE = "alive"
+MEMBER_LIVENESS_GONE = "gone"
+MEMBER_LIVENESS_UNKNOWN = "unknown"
+MEMBER_LIVENESS_TERMINAL = "terminal"
+
+
+@dataclass(frozen=True)
+class MemberInFlightVerdict:
+    """Whether a live pointer blocks its member, and the liveness observed.
+
+    ``blocks`` is the guard's answer; ``liveness`` is which of the four states
+    above it was taken from, so a caller can report which observation refused
+    the dispatch rather than reporting the phase field that did not decide it.
+    """
+
+    blocks: bool
+    liveness: str
+    reason: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "blocks": self.blocks,
+            "liveness": self.liveness,
+            "reason": self.reason,
+        }
+
+
+def _member_worker_liveness(pointer: Mapping[str, Any]) -> tuple[bool | None, str]:
+    """Judge whether a pointer's worker can still write, and why.
+
+    The rule lives in one place: :func:`reckon.crew.claims._worker_liveness`
+    already answers the pid-and-host question for the claim surfaces, so this
+    guard consults it rather than restating the host comparison differently. The
+    import is deferred because claims imports this module at load time.
+
+    ``True`` means the worker is running, ``False`` means it is proven stopped on
+    this host, and ``None`` means the question cannot be answered here. Every
+    non-``False`` answer blocks, so a foreign launching host and a pointer with
+    no recorded pid are both closed rather than assumed dead.
+    """
+    from reckon.crew.claims import _worker_liveness
+
+    return _worker_liveness(pointer)
+
+
+def member_in_flight_verdict(pointer: Mapping[str, Any]) -> MemberInFlightVerdict:
+    """Report whether a live pointer still blocks the member that owns it.
+
+    A pointer whose phase is terminal releases its member without asking the
+    process table, which is the answer this guard always gave. Every other phase
+    is judged from process liveness instead: a running worker blocks, a worker
+    proven gone on this host releases, and a liveness that cannot be established
+    here blocks and is reported as ``unknown`` rather than as death. The manifest
+    is deliberately not consulted — a delivered run and an abandoned one are told
+    apart by whether a process is still running, never by what a worker wrote
+    about itself, and a phase field that lags a finished worker is exactly the
+    stale reading this predicate replaces.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase in _TERMINAL_RUN_PHASES:
+        return MemberInFlightVerdict(
+            blocks=False,
+            liveness=MEMBER_LIVENESS_TERMINAL,
+            reason=f"its phase {phase!r} is terminal",
+        )
+    alive, reason = _member_worker_liveness(pointer)
+    if alive is True:
+        return MemberInFlightVerdict(
+            blocks=True, liveness=MEMBER_LIVENESS_ALIVE, reason=reason
+        )
+    if alive is False:
+        return MemberInFlightVerdict(
+            blocks=False,
+            liveness=MEMBER_LIVENESS_GONE,
+            reason="its worker process is gone on this host",
+        )
+    return MemberInFlightVerdict(
+        blocks=True,
+        liveness=MEMBER_LIVENESS_UNKNOWN,
+        reason=reason or "its worker liveness could not be established",
+    )
+
+
+def refuse_member_in_flight(member: str, pointer: Mapping[str, Any]) -> None:
+    """Refuse the dispatch when the pointer still blocks ``member``.
+
+    The refusal names the liveness it observed, so a coordinator reading the
+    refusal can tell a running worker from an unprovable one without re-reading
+    the pointer.
+    """
+    verdict = member_in_flight_verdict(pointer)
+    if verdict.blocks:
+        raise MemberInFlight(
+            member,
+            str(pointer.get("run_id") or "unknown"),
+            verdict=verdict,
+        )
+
+
 class MemberInFlight(CrewError):
     """A roster member already owns a live, non-terminal run."""
 
-    def __init__(self, member: str, run_id: str) -> None:
+    def __init__(
+        self,
+        member: str,
+        run_id: str,
+        *,
+        verdict: MemberInFlightVerdict | None = None,
+    ) -> None:
         self.member = member
         self.run_id = run_id
+        self.verdict = verdict
+        detail = ""
+        if verdict is not None:
+            detail = f" — {verdict.liveness}: {verdict.reason}"
         super().__init__(
             format_refusal(
                 "D16",
-                f"crew member {member!r} already holds in-flight run {run_id!r}",
+                f"crew member {member!r} already holds in-flight run {run_id!r}{detail}",
             )
         )
 
