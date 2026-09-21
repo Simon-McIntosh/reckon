@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.944">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 </head>
 <body>
   <main class="plan-doc">
@@ -1213,6 +1213,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260921T172639160911-review-of-the-mapping-branch-guard-is-reachable-by-a-case" data-who="reckon-ship" data-when="2026-09-21T17:42:33.150Z">
     <div class="r-comment-body"><p>independent review of the mapping-branch guard coverage: 96/100, finding that the object branch still stringifies an explicit null label while the mapping branch falls back to the value, so two spellings of one input store different labels</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260921T165140068358-the-mapping-branch-guard-is-reachable-by-a-case" data-who="reckon-ship" data-when="2026-09-21T17:24:36.645Z">
+    <div class="r-comment-body"><p>deleting the mapping-branch guard now reddens a case, which the previous declared mutation could not because no case reached that branch; 9 passed exit 0 at integrated revision dd8b0d58; population 3 failed 139 passed at head against 3 failed 136 passed at base, so no failure added and the added passes are the new cases. Review 96/100, its remaining finding that the object branch still stringifies an explicit null label while the mapping branch falls back to the value, so two spellings of one input store different labels.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-20260921T1825-arming-fallback-landed" data-who="reckon-ship" data-when="2026-09-21T18:25:00+02:00">
     <div class="r-comment-body">Gate passed: 17 passed exit 0 across the fallback file and the two watcher files it touches, 5 new cases and 12 pre-existing, ruff clean on both changed paths, and the declared mutation reddened 2. Arming now survives a service manager that cannot be reached, and reports which path it took rather than raising. Two cases beyond the brief are the reason this section is worth more than its size: a unit the manager genuinely refuses still raises, so the fallback swallows no real refusal, and a fallback that could not start a watcher does not report success — the silent-success failure this whole plan exists to remove, guarded without being asked for. The decision the arming path makes is drawn in docs/figures/crew-runtime-positive-controls/watcher-arming-fallback.png. This closes the last of the seven sections folded in from the open followups at the start of the session.</div>
 </div>
@@ -1247,7 +1250,7 @@
     <div class="r-comment-body">Gate passed: 32 cases across the new file and both sibling prompt-contract files, exit 0, with the declared mutation reddening 1. The template now says the recorded gate command is the one that ran and never a template carrying an unsubstituted placeholder, and that a gate log's first line names the revision it ran at, the tree and the command. Landing it surfaced a sharper defect than the four that opened the section: this node's own manifest cited 7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1 as a landed commit and that object does not exist, the real one being 7892cb69128523ac598e02f62babaf56b6b71c17 — same eight-character prefix, fabricated remainder. It was caught only because git merge resolves the object it is given; nothing on the promotion path does, so the ledger would have carried a permanent citation to a commit nobody can find. Carried as section 18.</div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20260921T174831957269-review-of-the-template-says-a-gate-log-names-its-tree" data-who="reckon-ship" data-when="2026-09-21T18:04:13.742Z">
-    <div class="r-comment-body"><p>independent review of the gate-log template contract: 96/100, its first finding correct and the section&#x27;s own argument, its second checked and refuted against the file</p></div>
+    <div class="r-comment-body"><p>independent review of the gate-log template contract: 96/100, its first finding correct and the section's own argument, its second checked and refuted against the file</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-20260921T2000-sweep-lift-landed" data-who="reckon-ship" data-when="2026-09-21T20:00:00+02:00">
     <div class="r-comment-body">Gate passed: 20 cases in the wait-shape file, 17 pre-existing unchanged and 3 added, with a focused gate of 136 passed exit 0 over eleven wait and sweep suites and a sweep-consumer gate of 46 passed exit 0. The declared mutation — make the sweep derive terminal false for a file condition whose paths all exist — reddened 2. The three added cases enter where the sweep enters rather than through the reader: the sweep lifts a wait whose declared paths all exist, it does NOT lift the same wait when one path is absent, and the derived terminal is recorded true. That second case is what distinguishes a lift from a function that always returns true, and its absence is why section 15's gate was green while the mechanism was inert. The chain that began with three workers filling the wait block three wrong ways in one hour now closes: the contract has a file-condition shape, an unrecognised shape is refused by name rather than reduced to silence, and the wait the reader accepts is the wait the sweep lifts.</div>
