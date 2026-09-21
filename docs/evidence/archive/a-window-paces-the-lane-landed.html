@@ -77,6 +77,17 @@
     the order-stability test. The scratch copy is kept under that reports directory rather than in a
     temporary one, so the run it records remains inspectable after the node lands. The module under test
     in that run resolved to the scratch copy, printed as the run's first line.</p>
+    <p><strong>Census control.</strong> The freshness mutation above proves the freshness property, which
+    was already proven by the node that first landed the module; it does not exercise the census
+    correction. The correction's own control restores the defective fixture in a scratch copy of the
+    fixed tree &mdash; <code>codex-terra</code> reused as the undeclared backend while still listed among
+    the four sol-family lanes &mdash; and requires the membership-count assertion to fail. It does:
+    <code>assert 3 == 4</code> at <code>test_grouping_reads_the_declared_slot_from_resolved_config</code>,
+    and <code>assert 4 == (4 + 1)</code> at <code>test_every_grouped_lane_resolves_to_exactly_one_group</code>,
+    2 failed of 14. The count therefore sees the defect it was written for, which a fixture naming three
+    lanes, or a lane tuple shrunk to match, would have hidden. Log:
+    <code>~/.config/reckon/crew/reports/reckon/close-the-review-findings-on-the-group-position/negative_control_fixture_census_reuse.red.log</code>.</p>
+
 
     <p><strong>Review closure.</strong> An independent review of the node that first landed this module
     recorded five findings, each closed by the correction commit. The fixture's undeclared control had
