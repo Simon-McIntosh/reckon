@@ -1329,6 +1329,80 @@ nothing has been launched</code></pre>
       claimed by live peer runs. Plan lifecycle metadata and the driving followup remain unchanged for
       coordinator adjudication.</p>
     </section>
+
+    <section id="s17">
+      <h2>&sect;17 &mdash; A gate log says which tree it measured, and a cited command reproduces its own figure</h2>
+      <p>The failure this section answers: a gate record that claims a result no one can reproduce from what
+      the record says. Four reviewers found the same defect in four unrelated nodes on 2026-09-21, and none of
+      the four was a defect in the work. A gate command was recorded as
+      <code>PYTHONPATH=&lt;worktree&gt;</code> &mdash; a placeholder rather than the path it ran in. A landed
+      record cited <code>git diff --stat</code> for a figure that command prints nothing for at a clean tree.
+      A record's verification conditions omitted the <code>PATH</code> element the run actually used, so a
+      reader following them measures 4 failed and 1 passed where the record claims 17 passed. And two gate logs
+      named neither the revision nor the command they ran, so a later reader can tie them to a tree only
+      through a manifest that may be gone.</p>
+      <p>The coordinator produced two of the four, so exhortation is not the remedy: the convention has to
+      reach the surface that writes the record. This node changes <code>reckon/crew/prompts.py</code> alone
+      &mdash; the manifest template a worker reads before it writes a manifest &mdash; and no guard. A manifest
+      that is refused today is still refused after it; what changes is what the worker is told before it writes
+      one.</p>
+      <table>
+        <thead>
+          <tr><th></th><th>Template line a worker read</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>before</td>
+            <td><code>tests: &lt;command and result&gt;</code> and <code>test_logs: &lt;paths on disk&gt;</code></td>
+          </tr>
+          <tr>
+            <td>after</td>
+            <td><code>tests: &lt;the gate command that actually ran, and its result &mdash; never a template
+            command carrying an unsubstituted placeholder&gt;</code> and <code>test_logs: &lt;paths on
+            disk&gt;. A gate log's first line names the revision it ran at, the tree, and the command</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Four cases in <code>tests/test_gate_log_names_its_tree.py</code> enter through
+      <code>compose_prompt</code>, which is where a worker's contract is actually rendered, and assert: the
+      template states a gate log's first line names the revision it ran at, the tree and the command; the
+      template states the recorded gate command is the one that ran rather than a template; the gate-command
+      gloss carries no angle-bracket worktree placeholder, which is the negative half and is the shape the
+      first measured instance produced; and the negative-control first-line convention the earlier landing
+      established survives unchanged, so this change cannot loosen it.</p>
+      <p><strong>Evidence that could have failed.</strong> The declared mutation &mdash; removal of the
+      sentence stating a gate log's first line names the revision, tree and command from the manifest template
+      &mdash; was applied to the fixed tree, the case entered through <code>compose_prompt</code> observed to
+      fail, and the mutation reverted before the commit. Result: <strong>1 failed, 3 passed</strong>, exit 1,
+      the failing case being
+      <code>test_template_states_a_gate_log_first_line_names_the_revision_tree_and_command</code> &mdash; the
+      three others stay green, which is what distinguishes a mutation that reddens the sentence's own case
+      from one that breaks something else. The red log's first line repeats the declared mutation verbatim,
+      and the mutation is absent from the committed tree.</p>
+      <p>The negative half was shown to fire separately, because a passing suite never shows that a guard
+      fires: with <code>PYTHONPATH=&lt;worktree-placeholder&gt; uv run pytest</code> appended to the
+      gate-command gloss as the first measured instance wrote it,
+      <code>test_gate_command_gloss_carries_no_angle_bracket_worktree_placeholder</code> fails and the other
+      three pass &mdash; <strong>1 failed, 3 passed</strong>. That probe never touched the committed tree.</p>
+      <p>The focused gate over the three prompt modules covering the change
+      (<code>test_gate_log_names_its_tree</code>, <code>test_crew_prompts</code>,
+      <code>test_negative_control_log_is_a_path</code>) is <strong>32 passed, exit 0</strong>. Widened to
+      <code>test_crew_negative_control_header</code> the run is 33 passed with <strong>1 failure</strong>,
+      <code>test_the_refusal_states_the_first_line_requirement</code>, which is pre-existing and unrelated:
+      run identically against a clean extraction of the base revision it fails the same way, because the
+      promotion under test is classified scoring and refuses for a missing independent review before the
+      negative-control-header check is reached. The change adds no lint finding
+      (<code>reckon/crew/prompts.py</code> reports the same four pre-existing findings at base and at head;
+      the new test file is clean).</p>
+      <p><strong>Durable receipts.</strong> The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/</code>,
+      holding <code>negative_control.log</code> (first line the declared mutation verbatim),
+      <code>gate_log.log</code> and <code>manifest.md</code>.</p>
+      <p><strong>Follow-ons.</strong> The reading side &mdash; refusing at promotion a gate log whose first
+      line names no revision &mdash; is the stronger form and belongs in <code>reckon/crew/promotion.py</code>,
+      which another session's run holds; it is carried as a follow-on rather than attempted here, so this node
+      changes no guard.</p>
+    </section>
   </main>
 </body>
 </html>
