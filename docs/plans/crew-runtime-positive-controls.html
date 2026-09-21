@@ -393,6 +393,40 @@
     <code>tests/test_fleet_counter_launch_failure.py</code>. A node taking this section is granted both, and
     nothing else: the classification and the drain count are already correct and are not to be touched.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-21.</strong> The defect is one comparison in the row's
+    reason gate in <code>reckon/crew/ticker.py</code>. The gate is an allow-list deciding which states may
+    explain themselves, and it tested membership of <code>NEEDS_ACTION</code>, plus the five words beside it,
+    against the state word as the <em>cell</em> renders it. The cell is <code>STATE</code> columns wide and the
+    word is elided to fit, so <code>launch-failed</code> &mdash; thirteen characters, the only actionable state
+    the classifier emits that is wider than the cell &mdash; reached the gate as <code>launch-fa&hellip;</code>,
+    matched nothing in the set, and the clause returned the empty string. It is
+    the only state the gate could silently drop, which is why nothing else in the fleet was affected.
+    Reproduced through the producer's own path rather than a hand-built event: a reading holding one
+    <code>launch-failed</code> and one ordinary <code>blocked</code> run rendered the launch row as
+    <code>0w&middot;&nbsp;2b&middot;&nbsp;0u</code> with nothing after the block, against a blocked row that
+    carried its own reason &mdash; the precedent the decision cites, a number saying something needs attention
+    and a line that does not say what.</p>
+    <p>The repair is the one the decision names. The gate reads the state word whole and the cell keeps the
+    elided form, so a launch failure's number and its cause reach the pane together while the blocked run's own
+    reason is unchanged. A record that carries the state without a cause of its own names the fault rather than
+    rendering a number explained by nothing, so the clause is not dependent on the classifier's sentence being
+    present. Nothing in the gate's own state handling moved. Five cases in the new
+    <code>tests/test_fleet_counter_launch_failure.py</code> pin the reading, the block's four cells and their
+    width, the absence case, the no-cause case and the bucket. Gate: the new file plus the fleet-counter
+    populations, run once to
+    <code>reports/reckon/crew-runtime-positive-controls/counter-reason-names-the-launch-failure/gate-head.log</code>
+    against the base revision
+    <code>c748ca77</code> at <code>…/counter-reason-names-the-launch-failure/gate-base.log</code> in the same
+    report directory &mdash; <strong>5 failed, 288 passed</strong>
+    at head against <strong>5 failed, 283 passed</strong> at base, the failure <em>sets</em> identical, so no
+    failure is added and the five added passes are the new cases. The declared mutation reverts the gate to the
+    elided word; its red log is <code>…/counter-reason-names-the-launch-failure/red.log</code>, the mutation
+    verbatim on its first line, and the
+    named cases it reddens are the launch-failure naming case and the no-cause case &mdash;
+    two of the five, the width, absence and bucket cases staying green, so the mutation reddens the clause and
+    nothing else.
+    <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s8">&sect;8 landed</a>.</p>
+
     <h2 id="s9">&#167;9 &mdash; The watcher unit is written so a watcher that exits is brought back</h2>
     <p>Measured 2026-09-20. The unit &#167;3 writes carries <code>Type=simple</code> with
     <code>Restart=on-failure</code>, so a watcher that exits zero is never restarted, and both project units
