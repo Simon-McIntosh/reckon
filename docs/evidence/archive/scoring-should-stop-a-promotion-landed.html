@@ -506,6 +506,39 @@
     The red receipt's first line repeats the declared mutation exactly. The node records evidence
     only; it does not close the section or resolve its driving followup.</p>
   </section>
+
+  <section id="s6-shared-figure-topic-grant">
+    <h2>Each landing record receives its plan-owned figure topic</h2>
+    <p><strong>What landed.</strong> Commit <code>7a18dd2f</code> extends
+    <code>reckon.crew.dispatch._shared_landing_paths</code> from two paths to three:
+    the plan file, the cumulative evidence record, and
+    <code>docs/figures/scoring-should-stop-a-promotion</code>. Dispatch adds that
+    directory to every node's declared write paths, so an evidence illustration is
+    inside the same grant as the record it explains.</p>
+    <table>
+      <caption>Scope behavior at the dispatch boundary.</caption>
+      <thead><tr><th>Claim</th><th>Two nodes on the plan</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Plan-owned figure topic directory</td><td>both receive it automatically</td><td>admitted as a shared landing path</td></tr>
+        <tr><td>One filename inside that directory</td><td>both explicitly claim it</td><td>refused with the first run named</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> Before the repair, the focused
+    four-case dispatch test returned <strong>3 failed, 1 passed</strong>: the helper
+    returned only plan and evidence paths, and neither dispatch record carried the
+    figure topic. After the repair it returns <strong>4 passed</strong>. The declared
+    negative control removes the topic from the helper; it returns <strong>3 failed,
+    1 passed</strong> and its first log line repeats that mutation. The source was
+    restored byte-for-byte afterwards (SHA-256
+    <code>85ae6a24ed62a13824b85c8058b3df4e3519592314672c944ac5deb9760d796f</code>).
+    Ruff check counted <strong>9</strong> findings both at the base and after on the
+    staged paths; the count is inherited from existing dispatch findings, while the
+    new test file is clean. Ruff format identifies one pre-existing unformatted
+    source file and the new test is formatted.</p>
+    <p><strong>Receipts.</strong> Focused test, pre-change reproduction, and declared
+    negative-control logs are retained in the node run directory. This node records
+    the landing only; it does not resolve the plan followup or close the section.</p>
+  </section>
 </main>
 </body>
 </html>
