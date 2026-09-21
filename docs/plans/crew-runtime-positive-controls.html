@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
 <meta name="plan-impl" content="0.643">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 </head>
 <body>
   <main class="plan-doc">
@@ -811,6 +811,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20260921T1552-serving-origin-landed" data-who="reckon-ship" data-when="2026-09-21T15:52:00+02:00">
     <div class="r-comment-body">Gate passed: 23 cases, exit 0; the declared mutation reddened 8 of them, run on SLURM all_debug after the login-node attempt showed 4 timing failures from process startup. Independent review 96/100 (durability 20, evidence 20, scope 20, fit 19, goal fidelity 17). The single finding is that the record did not name the existing endpoints reader — a clause committed at 31c976a4, three minutes after this node's base 26d6df25 was cut, so it never reached the worker; answered by coordinator append rather than charged to the run. Not wired into the pre-launch path: reckon/crew/dispatch.py is held by another session, and the launcher itself exposes no safe origin-only query, which is carried as a follow-on.</div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20260921T123858966184-launcher-is-checked-against-a-serving-origin" data-who="reckon-ship" data-when="2026-09-21T12:54:27Z">
+    <div class="r-comment-body"><p>the reachability check lands with 23 cases and its declared mutation reddening 8; review 96/100, its one finding a record gap from a requirement committed after the node&#x27;s base, answered by coordinator append</p></div>
 </div>
 </section>
 </main>

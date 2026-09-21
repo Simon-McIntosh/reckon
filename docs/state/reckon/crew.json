@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T16:00:55",
+  "updated": "2026-09-21T16:01:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -211672,6 +211672,242 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T123858966184-launcher-is-checked-against-a-serving-origin",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a713",
+        "node": "launcher-is-checked-against-a-serving-origin",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3898,
+                "cached_input_tokens": 293441,
+                "input_tokens": 297341,
+                "output_tokens": 923,
+                "reasoning_output_tokens": 105,
+                "total_tokens": 298264,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "cases in tests/test_serving_origin.py assert a callable in reckon/crew/serving_origin.py returns a result naming the resolved launcher path, the origin it determined, and whether that origin answered within a stated timeout; a launcher whose origin answers returns serving; one whose origin refuses the connection returns a refusal carrying both the path and the origin; a backend declaring no endpoints document returns not-applicable rather than a refusal; a 4th case asserts the timeout is honoured against an origin that never answers; no case opens a socket to a real origin; the declared mutation is applied, tests/test_serving_origin.py is observed to fail, and the red log is recorded with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "a reachability check establishes that a resolved launcher would reach an origin that is serving",
+          "id": "launcher-is-checked-against-a-serving-origin",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T12:39:04Z",
+            "read_at": "2026-09-21T12:39:06Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 18.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/manifest.md",
+          "negative_control": "make the reachability check return serving without probing the origin in reckon/crew/serving_origin.py",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "open",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/serving_origin.py",
+            "tests/test_serving_origin.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "serving-origin",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-21T12:40:27Z",
+        "completed_at": "2026-09-21T12:54:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 840,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 840,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+        "commits": [
+          "9ea06319d9807d61bc31b912183e2efadbea4336",
+          "91ee994748af6a46c9ee8a76bdbb318a45345634"
+        ],
+        "changed_lines": {
+          "added": 538,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "srun --partition=all_debug --time=00:05:00 --cpus-per-task=1 --mem=2G env TMPDIR=/tmp PYTHONPATH=<worktree> .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_serving_origin.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/restored-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0c3fb-6a1c-7f53-b2ee-01252a11817e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2445952,
+            "cached_input_tokens_cumulative": 2445952,
+            "input_tokens": 2568644,
+            "input_tokens_cumulative": 2568644,
+            "output_tokens": 22953,
+            "output_tokens_cumulative": 22953,
+            "reasoning_output_tokens": 4692,
+            "reasoning_output_tokens_cumulative": 4692
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-21T12:54:27Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 19.0,
+              "resets_at": 1790575134,
+              "observed_at": "2026-09-21T12:54:27Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 19,
+            "goal_fidelity": 17,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 2445952,
+          "cumulative_input_tokens": 2568644,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 27645,
+          "generation_seconds": 778.039,
+          "machine_seconds": 57.448,
+          "tokens_per_second": 35.53
+        },
+        "follow_on_paths": [
+          "/work/projects/imas_gpu/agents/clive",
+          "query/model",
+          "/v1/models",
+          "reckon/crew/dispatch.py",
+          "node/followup"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/launcher-is-checked-against-a-serving-origin",
+          "session_id": "01a0c3fb-6a1c-7f53-b2ee-01252a11817e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-21T12:54:27Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.5,
+          "at_complete": 0.643,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_serving_origin.py"
+          ],
+          "declaration": "make the reachability check return serving without probing the origin in reckon/crew/serving_origin.py",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T123858966184-launcher-is-checked-against-a-serving-origin/negative-control.log"
+        },
+        "tool_steps": 86.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -211956,6 +212192,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1877
+    "_version": 1878
   }
 }
