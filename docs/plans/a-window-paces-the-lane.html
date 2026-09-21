@@ -56,8 +56,9 @@
 
     <p><strong>The five-hour allowance is derived from the week, not configured.</strong> A fixed
     five-hour cap cannot react to load: it is either too tight on a quiet Tuesday or too loose on a
-    busy Monday, and it never learns. Deriving it needs no gain term and no tuning constant, because
-    the arithmetic is self-correcting.</p>
+    busy Monday, and it never learns. The derivation is self-correcting, so it needs no gain term:
+    its two tunables are the drain deadline and a single pace multiple, and neither is a gain on
+    the error.</p>
 
     <p>Let <code>D</code> be the <strong>drain deadline</strong> &mdash; the point the subscription
     should be spent, a configured lead time before the weekly reset (12&nbsp;h, so the week ends
@@ -78,8 +79,16 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <p><strong>The best five-hour estimate to start the week with is the fixed point of that
     formula</strong>, which is simply the nominal share: <code>5 / D</code>. At
     <code>D</code>&nbsp;=&nbsp;156&nbsp;h that is <strong>3.205% of the weekly budget per five-hour
-    window</strong>, over 31.2 windows. A group exactly on pace returns 1.00&times; nominal, which
-    is the consistency check the implementation should assert rather than a number to hardcode.</p>
+    window</strong>, over 31.2 windows.</p>
+
+    <p><strong>The pace multiple sits on top of that, and it is why the week ends drained rather
+    than merely spent.</strong> Locked at a single value of <code>1.1</code> applied to both clocks,
+    it is the deliberate bias above linear that &sect;1 states as the policy, kept separate from the
+    deadline because the two answer different questions: the deadline says when the budget should be
+    gone, the multiple says how hard to lean into it on the way. So a group exactly on pace returns
+    <strong>the multiple times nominal</strong>, and that equality &mdash; not the bare nominal
+    share &mdash; is the consistency check the implementation asserts rather than a number to
+    hardcode.</p>
 
     <table>
       <caption>The allowance tracking up and down. Computed, not illustrative.</caption>
@@ -102,11 +111,15 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <p><strong>Done when</strong> the allowance is computed per declared group from its freshest
     owned reading, asserted at four states &mdash; ahead, on pace, behind, and exhausted &mdash;
-    with the on-pace case asserted to return exactly the nominal share, since that equality is what
-    proves the formula self-consistent rather than merely plausible; the effective limit is asserted
-    to be the lesser of the derived allowance and the provider ceiling, with a case where each wins;
-    and the deadline lead time is a flight key whose change moves the allowance, asserted, so the
-    twelve hours is data rather than a constant in the code.</p>
+    with the on-pace case asserted to return the pace multiple times the nominal share, since that
+    equality is what proves the formula self-consistent rather than merely plausible; the effective
+    limit is asserted to be the lesser of the derived allowance and the provider ceiling, with a
+    case where each wins; and the deadline lead time and the pace multiple are each a flight key
+    whose change moves the allowance, asserted separately so that neither can be the constant the
+    other is mistaken for, so the twelve hours and the 1.1 are data rather than constants in the
+    code. Every computed allowance carries the multiple that produced it, because &sect;9 tunes that
+    multiple over a longer period than one week and a row that cannot say which setting produced a
+    curve cannot tune that setting.</p>
 
     <h2 id="s3">&sect;3 &mdash; A rising bar, not a switch</h2>
 
@@ -126,16 +139,44 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <p>The third input is the one with evidence behind it: prescription completeness is what the
     local pilots showed makes a node viable on the free lane, and
-    <code>reckon/crew/prescription.py</code> already computes it. <strong>The bar is therefore a
-    function of window state, and everything below it routes local as a prescribed node</strong>
-    &mdash; from zero when the account is behind pace and the window is empty, to admitting only
-    verification bookends and resumes when the five-hour ceiling is reached.</p>
+    <code>reckon/crew/prescription.py</code> already computes it. <strong>The bar is a continuous
+    function of window state</strong> &mdash; from zero when the account is behind pace and the
+    window is empty, to admitting only verification bookends and resumes when the five-hour ceiling
+    is reached.</p>
 
-    <p><strong>Done when</strong> the bar is one pure function of window state, unit-tested at the
-    extremes and at the transitions, and a node's lane is asserted to follow score-against-bar
-    rather than any category; and a node routed local by the bar is asserted to be prescribed,
-    because routing unprescribed work to the free lane is the failure the fitness evidence
-    already records.</p>
+    <p><strong>The bar recommends; it never routes.</strong> That is the same advise-never-force
+    contract this project already holds for lanes, and it is what makes the continuous shape
+    workable: a score a hair under the bar is not a verdict, it is a close call an orchestrator
+    should see. So the bar reports a position and a recommendation drawn from three outcomes, not
+    two:</p>
+
+    <ul>
+      <li><strong>Send it.</strong> The node clears the bar for the metered lane, or sits far enough
+      below it that the free lane will execute it as specified.</li>
+      <li><strong>Split it.</strong> The node is near the bar because it is carrying more than one
+      deliverable. Two smaller nodes both clear it, and both dispatch now &mdash; which is the
+      cheapest of the three outcomes and the one a binary switch cannot express.</li>
+      <li><strong>Hold it.</strong> The node is open-ended enough that it is better left
+      undispatched than sent to the free lane to be done badly. An unmetered lane makes a bad node
+      cheap, not good, and a wrong answer that cost nothing still has to be found and undone.</li>
+    </ul>
+
+    <p>The orchestrator may decide against the recommendation in either direction, and the bar
+    records that it was overridden rather than preventing it. The recommendation also moves as the
+    subscription burns: the same node is a send early in a drained week and a hold late in a spent
+    one, which is the coupling to &sect;2 and the reason the bar is a function of window state
+    rather than of the node alone.</p>
+
+    <p><strong>Done when</strong> the bar is one pure function of window state, asserted monotonic
+    over the whole window domain rather than at transitions a continuous bar does not have, and
+    asserted at both extremes; each of the three outcomes is returned at its own boundary, asserted
+    separately, since a bar that can only send or hold has silently become the switch this section
+    rejects; the returned value is a recommendation and is asserted never to select a backend by
+    itself, with an orchestrator override in each direction asserted to be recorded rather than
+    refused; a node recommended to the free lane is asserted to be prescribed, because routing
+    unprescribed work there is the failure the fitness evidence already records; and the
+    recommendation for one fixed node is asserted to move from send to hold as the window fills,
+    which is the only assertion that proves the bar reads window state at all.</p>
 
     <h2 id="s4">&sect;4 &mdash; Reserve the bookends, or the repairs starve</h2>
 
