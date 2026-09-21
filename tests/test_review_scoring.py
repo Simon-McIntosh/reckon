@@ -19,6 +19,11 @@ from reckon import _store
 from reckon.crew import review as review_module
 
 VALID_TEXT = """\
+VERDICT goal: the node stores a review durably; reckon/crew/review.py:187 writes it under the config home.
+VERDICT done_when: the done_when names tests/test_review_scoring.py and the manifest records that run.
+VERDICT write_paths: read the manifest; every path in the diff is inside the declared scope.
+VERDICT manifest: read; it names tests/test_review_scoring.py and its result.
+VERDICT diff: read commit by commit against the base; four files changed, all declared.
 SCORE goal_fidelity: 18
 JUSTIFICATION goal_fidelity: reckon/crew/review.py:81 reads the prompt from disk on every call
 SCORE evidence: 15
@@ -75,6 +80,16 @@ def test_prompt_is_read_from_disk_at_call_time_and_names_every_dimension(
         assert dimension in loaded, (
             f"schema dimension {dimension} missing from the prompt text"
         )
+    # The same falsifier covers the checklist items: each one must be named in
+    # the prompt AND named in the emission form, because a target the reviewer
+    # is told to read but never told to report on is the skip this schema
+    # exists to make visible.
+    for item in review_module.REVIEW_ITEMS:
+        assert item in loaded, f"checklist item {item} missing from the prompt"
+        assert f"VERDICT {item}:" in loaded, (
+            f"checklist item {item} has no VERDICT emission in the prompt"
+        )
+    assert "every checklist item needs a verdict" in loaded.lower()
     probe = tmp_path / "prompt.md"
     monkeypatch.setattr(review_module, "_PROMPT_PATH", probe)
     probe.write_text("first load\n", encoding="utf-8")
@@ -129,6 +144,65 @@ def test_missing_dimension_is_named_absent_not_a_partial_total() -> None:
     assert record["total"] is None, (
         "a total over four dimensions would read as a worse score"
     )
+
+
+# ── The checklist item verdicts ─────────────────────────────────────────────
+
+
+def test_full_emission_records_a_verdict_for_every_checklist_item() -> None:
+    record = review_module.parse_review(VALID_TEXT)
+    assert set(record["item_verdicts"]) == set(review_module.REVIEW_ITEMS)
+    assert record["absent_items"] == []
+    assert record["item_aggregate"] == len(review_module.REVIEW_ITEMS)
+    assert "tests/test_review_scoring.py" in record["item_verdicts"]["manifest"]
+
+
+def test_omitted_item_verdict_is_named_absent_with_the_aggregate_withheld() -> None:
+    without_diff = "\n".join(
+        line
+        for line in VALID_TEXT.splitlines()
+        if not line.startswith("VERDICT diff:")
+    )
+    record = review_module.parse_review(without_diff)
+    assert record["status"] == "parsed"
+    assert record["absent_items"] == ["diff"]
+    assert "diff" not in record["item_verdicts"]
+    assert record["item_aggregate"] is None, (
+        "a count over the items present would read as a review that checked fewer"
+    )
+    assert record["total"] == 85, (
+        "an omitted item verdict must not move the dimension scoring"
+    )
+
+
+def test_a_verdict_carrying_no_text_is_not_a_verdict() -> None:
+    emptied = "\n".join(
+        "VERDICT diff:" if line.startswith("VERDICT diff:") else line
+        for line in VALID_TEXT.splitlines()
+    )
+    record = review_module.parse_review(emptied)
+    assert "diff" in record["absent_items"]
+    assert record["item_aggregate"] is None
+
+
+def test_a_verdict_for_an_item_outside_the_schema_is_ignored() -> None:
+    record = review_module.parse_review(
+        "VERDICT not_an_item: this names nothing the schema declares\n" + VALID_TEXT
+    )
+    assert set(record["item_verdicts"]) == set(review_module.REVIEW_ITEMS)
+    assert record["absent_items"] == []
+    assert record["item_aggregate"] == len(review_module.REVIEW_ITEMS)
+
+
+def test_item_verdicts_alone_do_not_make_a_review_parsed() -> None:
+    verdicts_only = "\n".join(
+        line for line in VALID_TEXT.splitlines() if line.startswith("VERDICT ")
+    )
+    record = review_module.parse_review(verdicts_only)
+    assert record["status"] == "unparsed"
+    assert record["absent_items"] == []
+    assert record["item_aggregate"] == len(review_module.REVIEW_ITEMS)
+    assert record["total"] is None
 
 
 def test_out_of_range_score_is_refused_naming_dimension_and_value() -> None:
