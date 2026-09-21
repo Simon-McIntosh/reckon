@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T09:19:19",
+  "updated": "2026-09-21T09:24:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -462,7 +462,8 @@
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "060065f7-e49b-4f7b-bfcc-621b4984c754",
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "2d3c0200-9c0d-435d-88b1-ebfaa6b25710",
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "5673e6f9-a86b-40ba-b78f-88ca348eecd3",
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "21c4da69-e43c-4a71-bbf7-e0bd12bfd008"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "21c4da69-e43c-4a71-bbf7-e0bd12bfd008",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "5b1279bd-2d94-4821-ad1f-959f026d5d8e"
         },
         "created": "2026-09-05"
       },
@@ -197910,6 +197911,249 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T064149757128-promotion-refuses-unreviewed",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72",
+        "node": "promotion-refuses-unreviewed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1621,
+                "cached_input_tokens": 291970,
+                "input_tokens": 293593,
+                "output_tokens": 1088,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 294681,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "tests/test_crew_promotion_requires_review.py passes and asserts five things: a passing implement run classified scoring with no stored review is refused and the message names both the run id and the review command it should run; the same promotion with the new waiver flag succeeds and the promoted ledger row carries the waiver reason verbatim, read back from the row; a run whose stored review is complete promotes unchanged with no waiver; a review-role run is never itself gated on having a review; and the waiver is refused when the run already has a review and there is nothing to waive, following the precedent documented at reckon/crew/promotion.py:1142. The refusal reuses the review the promotion path already resolves \u2014 grep -c 'read_review' over reckon/crew/promotion.py must still return 1, pasted into the manifest, because a second reader is the defect this node must not add. reckon crew complete --help names the new waiver flag, asserted. The 15-file promotion cohort listed in the run report at /home/ITER/mcintos/.config/reckon/crew/reports/unreviewed-promotion-exposure.md runs with at most 18 failures, which is its measured count at base, with the observed number pasted into the manifest as a digit and any of the 19 tests that section measured as newly failing repaired in the four test files inside this fence. The declared negative control is then applied, tests/test_crew_promotion_requires_review.py is observed to FAIL, the failing output is written to a log whose path the manifest names, and the control is reverted before the commit. Ruff check and format over exactly the staged paths add no findings beyond the same paths at the base revision, both counts pasted into the manifest as digits",
+          "estimated_hours": null,
+          "goal": "Refuse a promotion whose run classifies scoring with no stored review, with a reasoned waiver that records why on the promoted row",
+          "id": "promotion-refuses-unreviewed",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-21T06:41:51Z",
+            "read_at": "2026-09-21T06:41:52Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 5.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/manifest.md",
+          "negative_control": "delete the branch in promotion.complete that raises when the run classifies scoring with no stored review, so an unreviewed run promotes silently again; tests/test_crew_promotion_requires_review.py must fail",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/cli.py",
+            "tests/test_crew_promotion_requires_review.py",
+            "tests/test_crew_promotion.py",
+            "tests/test_gate_evidence.py",
+            "tests/test_crew_test_role.py",
+            "tests/test_a_short_commit_list_is_reported.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T06:42:00Z",
+        "completed_at": "2026-09-21T07:02:24.645Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 840,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1224,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "a95801b1782cd0148b0bbafc659aa05559a86df4",
+        "commits": [
+          "eb848a591843dd1ce11bc10a1ad0abd08e4653ad"
+        ],
+        "changed_lines": {
+          "added": 21,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q over the 15-file promotion cohort, 184 tests",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/cohort-after2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "crew complete refuses a passing implement run classified scoring, with a reasoned waiver recorded on the row; cohort 18 to 18, 0 new; reviewed 85/100 on a metered lane, whose negative-control finding was repaired by re-running the declared mutation rather than reweighting the declaration",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/manifest.md",
+        "scope_changed": true,
+        "session_id": null,
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T07:02:24.645Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "lane-change",
+          "lanes": [
+            {
+              "changed_at": "2026-09-21T06:48:16Z",
+              "detail": "starting fresh because the session cannot follow the move from harness 'codex' to 'claude'",
+              "from_backend": "codex",
+              "from_harness": "codex",
+              "reason": "the lead reopened the local lane for this work: the prohibition was aimed at deep physics judgement and this node is wiring, and the codex weekly window is burning faster than the work horizon",
+              "session": "fresh",
+              "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+              "session_source": "pointer",
+              "to_backend": "clive",
+              "to_harness": "claude"
+            }
+          ],
+          "root_run_id": "r-20260921T064149757128-promotion-refuses-unreviewed"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 14,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 12
+          },
+          "absent": [],
+          "total": 85
+        },
+        "follow_on_paths": [
+          "reckon/crew/recovery.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "lane-change",
+        "attempt": 2,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": [
+          {
+            "path": "docs/figures/promotion-refusal-flow/refusal_flow.png",
+            "reason": "the evidence record requires a figure and the coordinator fenced only code and test paths; the figures topic directory was omitted from the fence, not taken by the worker"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "reason": "node-writes-no-test-path",
+          "test_paths": [
+            "tests/test_a_short_commit_list_is_reported.py",
+            "tests/test_crew_promotion.py",
+            "tests/test_crew_promotion_requires_review.py",
+            "tests/test_crew_test_role.py",
+            "tests/test_gate_evidence.py"
+          ],
+          "declaration": "delete the branch in promotion.complete that raises when the run classifies scoring with no stored review, so an unreviewed run promotes silently again; tests/test_crew_promotion_requires_review.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T064149757128-promotion-refuses-unreviewed/negative-control.log"
+        },
+        "commit_list_shortfall": {
+          "kind": "presented_commits_subset_of_manifest",
+          "presented": 1,
+          "declared": 4,
+          "missing": [
+            "102338e180df374fb586042f42c22ebc54e3d538",
+            "2986f5d14d4a2cf29a17012a397b1a8715c92a5a",
+            "954cd492baade8a9d6237202a1375401ede71196"
+          ],
+          "message": "run 'r-20260921T064149757128-promotion-refuses-unreviewed' has a passing gate presenting 1 commit(s) of the 4 its manifest declares; missing: 102338e180df374fb586042f42c22ebc54e3d538, 2986f5d14d4a2cf29a17012a397b1a8715c92a5a, 954cd492baade8a9d6237202a1375401ede71196. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal \u2014 present the full list, or the boundary check may not cover the node's work"
+        },
+        "tool_steps": 43.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -198194,6 +198438,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1764
+    "_version": 1766
   }
 }
