@@ -140,6 +140,13 @@
     as ready rather than as scoring, and its <code>next_action</code> never names a review of
     itself</strong>, asserted; and the repository's own lint and test gates pass.</p>
 
+    <div class="r-comment" data-section="s2" data-id="c-run-r-20260921T061448262664-measure-unreviewed-promotion-exposure" data-who="crew-worker" data-when="2026-09-21">
+      <p><strong>Measurement landed.</strong> Flipping the scoring guard closed inside <code>promotion.complete</code> in a scratch copy of the tree and re-running the cohort that invokes the entry point (15 files, <strong>184</strong> tests) moves the failure count from <strong>18</strong> at HEAD to <strong>37</strong> with the guard: <strong>19 existing tests pass only because <code>complete</code> never consults the scoring classification</strong>, and none changes the other way. The refusal fires 51 times against real scoring pointers and 0 times at HEAD, so the probe is aimed. The guard is reverted and <code>git status --porcelain</code> is empty. Per-test attribution is in the report; the anchor is <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2-unreviewed-promotion-exposure">unreviewed-promotion-exposure</a>.</p>
+      <figure>
+        <img src="/reckon/figures/unreviewed-promotion-exposure/exposure_counts.png" alt="Failure composition of the promotion cohort at HEAD and under the guard, and the fixture files that supply the scoring pointers">
+        <figcaption>Guard absent (18 failing) versus guard closed (37 failing); the 19 shaded failures are what the guard reaches.</figcaption>
+      </figure>
+    </div>
     <h2 id="s3">§3 — The reflex fires on the path a healthy run takes</h2>
 
     <p>Give <code>dispatch_awaiting_reviews</code> the caller its docstring already assumes.

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion-landed">
+  <meta name="plan-title" content="Scoring Should Stop A Promotion &mdash; cumulative execution evidence">
+  <meta name="plan-summary" content="Cumulative execution evidence for making the scoring classification load-bearing at promotion: the measured exposure of the existing suite to a guard inside reckon crew complete.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="scoring-should-stop-a-promotion#s2">
+  <meta name="plan-recorded-at" content="2026-09-21">
+  <meta name="plan-verdict" content="pass">
+  <title>Scoring Should Stop A Promotion &mdash; cumulative execution evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header>
+    <p class="eyebrow">Execution evidence · cumulative record</p>
+    <h1>Scoring Should Stop A Promotion — Landed Evidence</h1>
+    <p class="lead">Verified implementation outcomes for making the scoring classification decide whether a promotion proceeds.</p>
+  </header>
+
+  <section id="s2-unreviewed-promotion-exposure">
+    <h2>Unreviewed-promotion exposure in the existing suite</h2>
+    <p><strong>Measure.</strong> A guard added inside <code>promotion.complete</code> can only be reached by a test that invokes that entry point, so the cohort is the population of test files that call it — derived with <code>grep -lE 'promotion\.complete\(|from reckon\.crew\.promotion import|import promotion' tests/*.py</code>, giving 15 files and 184 collected tests. Both runs used the identical command; only the worktree source differed.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Failing</th><th>Passed</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>HEAD, cohort unchanged</td><td>18</td><td>166</td><td>the delta base</td></tr>
+        <tr><td>Scratch probe, guard closed</td><td>37</td><td>147</td><td>19 newly failing, 0 no longer failing</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Result: 19 existing tests pass only because <code>crew complete</code> never consults the scoring classification.</strong> They are carried by four fixture files: <code>tests/test_crew_promotion.py</code> (10), <code>tests/test_gate_evidence.py</code> (5), <code>tests/test_crew_test_role.py</code> (3) and <code>tests/test_a_short_commit_list_is_reported.py</code> (1). Each constructs a completed manifest with no attached review and then expects the promotion to proceed.</p>
+    <figure>
+      <img src="/reckon/figures/unreviewed-promotion-exposure/exposure_counts.png" alt="Left: failure composition of the 184-test cohort at HEAD and under the guard. Right: newly failing tests per fixture file.">
+      <figcaption>Guard absent (18 failing) versus guard closed (37 failing); the 19 shaded failures are exposed by the guard, and no failure changes the other way.</figcaption>
+    </figure>
+    <p><strong>Positive control.</strong> The probe's refusal text occurs 51 times in the guarded run and 0 times at HEAD, so the count is the guard firing on real scoring pointers rather than a cascade from a broken import or signature. <code>CrewError</code> is already imported in the module, and no test fails in the guarded run that does not pass through the raise first.</p>
+    <p><strong>Not the cohort.</strong> A wider derivation — any test file mentioning the string <code>complete</code>, 65 files, 1373 tests — was started and abandoned as a cohort: it stalls on an environment-scanning test and cannot be run twice inside a node budget. Breadth of file mentions is not what exposes a test; calling the entry point is.</p>
+    <p><strong>An observation about the guard's own test surface.</strong> The test named for promoting a run without a review reaches the state through the ledger's null sentinel rather than through the classification: its pointer carries a manifest path that does not exist on disk, so the manifest is unreadable and the pointer never classifies as <code>scoring</code>. The classification is left unexercised by the test that looks most like its own.</p>
+    <p><strong>Revert.</strong> <code>reckon/crew/promotion.py</code> was restored byte-for-byte (sha256 <code>cc1b857a39b47023a23c87076d98788d55e5e89643594fb1b3326692fee1a901</code> before and after), the probe marker occurs 0 times in the restored file, and <code>git status --porcelain</code> in the worktree is empty. The full report, per-test attribution and both logs are recorded in the node manifest.</p>
+  </section>
+</main>
+</body>
+</html>
