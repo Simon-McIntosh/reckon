@@ -47,6 +47,7 @@ from reckon.crew.node import (
     placement_query_undeclared,
     placement_requirement_node_local,
     placement_requirement_unmet,
+    refuse_member_in_flight,
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt
@@ -3238,13 +3239,8 @@ def dispatch(
             )
     if roster_member is not None:
         for pointer in list_live(project=project):
-            if (
-                pointer.get("member") == effective_member
-                and pointer.get("phase") not in _TERMINAL_RUN_PHASES
-            ):
-                raise MemberInFlight(
-                    effective_member, str(pointer.get("run_id") or "unknown")
-                )
+            if pointer.get("member") == effective_member:
+                refuse_member_in_flight(effective_member, pointer)
     disregarded_claims: list[str] = []
     if shadow_lineage:
         adjacent_peers = []
