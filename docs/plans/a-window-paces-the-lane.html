@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -351,21 +351,21 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="pace-multiple" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
     <p class="r-dec-q">What is the default pace multiple, and is it one value or one per window?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="single-1.1">a single multiple, default 1.1, both clocks</button>
+      <button class="r-opt chosen" data-value="single-1.1">a single multiple, default 1.1, both clocks</button>
       <button class="r-opt" data-value="per-window">separate multiples for the five-hour and seven-day clocks</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">One multiple, default 1.1, applied to both clocks. This adds a second tunable beside the drain deadline rather than folding the above-linear bias into D alone, and it is the lead&#x27;s call: the lead time and the bias answer different questions, so collapsing them would mean moving the deadline whenever the bias should move. Two consequences must be carried into the implementation rather than discovered. The on-pace case no longer returns exactly the nominal share, so the self-consistency assertion becomes on-pace returns the multiple times nominal, and the equality is still what proves the formula rather than a number to hardcode. And the multiple is a flight key like the lead time, asserted by changing it and requiring the allowance to move, so 1.1 is data rather than a constant in the code. The lead also asks that burn be logged so the multiple can be tuned over a longer period than one week: that is section 9, whose rows must therefore carry the multiple in force at the time of each dispatch, since a log that cannot say what setting produced a curve cannot tune that setting.</p>
     </div>
-<div class="r-dec" data-key="bar-shape" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="bar-shape" data-choice="continuous" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
     <p class="r-dec-q">How does the bar rise between an empty window and the ceiling?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="stepped">stepped, so a coordinator can name which tier it is in</button>
-      <button class="r-opt" data-value="continuous">continuous in the window figure</button>
+      <button class="r-opt chosen" data-value="continuous">continuous in the window figure</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Continuous in the window figure, so there is no cliff at which one node routes metered and the next local. The lead&#x27;s requirement that comes with it changes what the bar is for, and it is not a detail of shape: the bar must leave room for orchestrator judgement rather than resolve a lane by itself. Three outcomes, not two. A node may be hard enough that it is better left undispatched than sent to the free lane; a node may be close enough to the bar that the right move is to split it into two smaller nodes and dispatch both now; and the orchestrator must be able to decide against the bar in either direction. So the bar reports a position and a recommendation and never a routing, which is the same advisory-never-force contract this project already holds for lanes. Continuity also has a cost that must be paid rather than ignored: there is no tier name for a pre-flight line to print and no natural transition to assert, so section 6&#x27;s pre-flight prints the figure and the recommendation, and section 3&#x27;s tests assert monotonicity over the window domain and the three outcomes at their boundaries, rather than asserting transitions that a continuous bar does not have.</p>
     </div>
 </section>
 
