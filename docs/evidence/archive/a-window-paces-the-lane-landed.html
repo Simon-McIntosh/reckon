@@ -6,22 +6,26 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-window-paces-the-lane-landed">
-  <meta name="plan-title" content="One wallet, one figure — cumulative execution-evidence record">
+  <meta name="plan-title" content="A Window Paces The Lane — cumulative execution-evidence record">
   <meta name="plan-summary" content="Execution evidence for a-window-paces-the-lane. One anchor per material outcome, accumulating as nodes land.">
   <meta name="plan-evidence-for" content="a-window-paces-the-lane">
+  <meta name="plan-verifies" content="a-window-paces-the-lane#s5">
   <meta name="plan-recorded-at" content="2026-09-21">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux workstation; node group-position-is-its-freshest-member dispatched through reckon crew to a detached worktree; tests run against the shared root environment's interpreter">
-  <title>One wallet, one figure — cumulative execution-evidence record | reckon</title>
+  <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees; tests run against the main checkout's environment reached through PYTHONPATH, with pytest -p no:cacheprovider; negative controls run in scratch copies of the same tree">
+  <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99">
+  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py">
+  <title>A Window Paces The Lane — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
 <main class="plan-doc">
   <header class="plan-header">
-    <h1>One wallet, one figure — cumulative execution-evidence record</h1>
+    <h1>A Window Paces The Lane — cumulative execution-evidence record</h1>
     <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
   </header>
+
 
   <figure>
     <img src="/reckon/figures/a-window-paces-the-lane/group-position.svg" alt="Five lanes collapse into two declared groups: four codex lanes into one wallet whose position is codex-astra's freshest 14% reading at age 0 s, and codex-spark into its own wallet at 88% and age 6.7 days. An undeclared codex-terra joins no group, and no entry point takes a backend name.">
@@ -76,6 +80,104 @@
     age, and nothing in the lanes view or the pacing path is rewired here.</p>
   </section>
 
+
+  <section id="record-scope">
+    <h2>Record scope</h2>
+    <p>This record currently covers §5 only, the window reader. The plan's other sections are
+    separate nodes and their outcomes are not claimed here. The reader landed in
+    <code>reckon/crew/window_reading.py</code> under commit <code>e302ad39</code>, with its
+    tests in <code>tests/test_window_reading.py</code>; the commit is insert-only, 475
+    insertions across the two files, and it changes no existing call path.</p>
+    <figure>
+      <img src="/reckon/figures/window-reading/window-reading-selection.png"
+           alt="A stream of events in which the newest rate-limit report carries only the
+           account's top-level figure; the reader selects the earlier event that carries
+           unifiedWindows, and its observation age is anchored off the closest stamped record.">
+      <figcaption>The selection rule, drawn over a stream shaped like the fleet's: the newer
+      report that carries no window is skipped rather than allowed to erase the window, and the
+      age comes from the closest stamped record because a rate-limit event carries no timestamp
+      of its own.</figcaption>
+    </figure>
+  </section>
+
+  <section id="s5-the-reader">
+    <h2>§5 — Reading the windows without inventing them</h2>
+    <p>Gate <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_window_reading.py</code> — <strong>9 passed</strong>. <code>ruff check</code>
+    and <code>ruff format --check</code> are clean on both paths; the files are new, so their
+    finding baseline is zero and every finding reported was fixed rather than absorbed.</p>
+    <p>Each clause of the section's measure is carried by a named assertion:</p>
+    <ul>
+      <li><strong>The newest carrying event is the one read.</strong> A fixture whose newest
+      event is a report carrying the top-level figure and no window still returns the two
+      window figures from the earlier event, asserted for <code>five_hour</code> and
+      <code>seven_day</code> together with an assertion that the top-level figure was not
+      substituted.</li>
+      <li><strong>No window anywhere is unknown.</strong> The reading is unknown, its figure
+      set is empty, and the accessor returns <code>None</code> — asserted, for both periods,
+      to be neither <code>0.0</code> nor <code>1.0</code>, so it cannot read as exhaustion and
+      cannot read as headroom.</li>
+      <li><strong>The top-level figure is never a window.</strong> An <code>overage</code>
+      record is asserted to contribute nothing to the returned figures even when it is the
+      only figure present.</li>
+      <li><strong>Every figure carries its age in seconds.</strong> The observation time is
+      anchored off the closest surrounding stamped record, which is the mechanism the refusal
+      hold already uses for the same reason; ties prefer the following record, since ageing a
+      reading too far causes a needless re-query while ageing it too little is the safe
+      direction. A window whose observation time cannot be established at all is unknown rather
+      than a figure.</li>
+    </ul>
+    <p><strong>Two controls a green suite would not otherwise show.</strong> The first is a
+    positive control for the never-zero rule: a fixture in which the provider genuinely reports
+    <code>0.0</code> asserts that <code>0.0</code> is returned, so the rule is about the
+    unknown reading rather than about a figure, and is not the vacuous shape "never returns a
+    number that also means one thing". The second is a stamp-form control: the other fixtures
+    build their timestamps with <code>isoformat</code>'s <code>+00:00</code> offset, while the
+    fleet actually writes a trailing <code>Z</code>, so one fixture uses the real form —
+    without it, a parser handling only offsets would age every real reading as unknown and no
+    conveniently written fixture would say so.</p>
+  </section>
+
+  <section id="s5-real-streams">
+    <h2>§5 — The instrument against real streams, and one discrimination it makes</h2>
+    <p>Read against five real fleet streams known to contain the string
+    <code>unifiedWindows</code>: four returned figures with ages of 1.6 to 2.3 million seconds
+    (their runs are weeks old), one returned unknown. The unknown one is the useful reading.
+    Its single occurrence of the string sits inside an <code>item.completed</code> event — a
+    worker's prose about the windows, not a rate-limit report — so a string-presence grep
+    counts it and the reader correctly declines to. This is the same shape the section warns
+    about: the reader keys on the event, so prose mentioning a window can never become one.</p>
+    <p>The same sample also shows a genuine <code>1.0</code> figure returned for a lane whose
+    five-hour window the provider reported as full, which is the other half of the never-zero/one
+    claim: the reader returns a real <code>1.0</code>, and returns <code>None</code>, not
+    <code>1.0</code>, when it should.</p>
+  </section>
+
+  <section id="s5-negative-control">
+    <h2>§5 — The negative control</h2>
+    <p>The declared mutation replaces the newest-event-that-carries-a-window rule with the
+    newest event, so a newer windowless report erases the window reading:</p>
+    <pre><code>index = len(ordered) - 1 if ordered else None</code></pre>
+    <p>Applied to a scratch copy of the fixed tree, the named test
+    (<code>test_newest_carrying_event_wins_over_a_newest_that_carries_none</code>) fails, as do
+    four others; the driver asserts the imported module resolves inside the scratch copy before
+    running, so a red produced against the unmutated tree cannot be mistaken for this one. The
+    log is at
+    <code>~/.config/reckon/crew/runs/r-20260921T101754262859-window-reading-carries-its-age/negative-control.log</code>,
+    first line the mutation verbatim.</p>
+  </section>
+
+  <section id="what-this-does-not-claim">
+    <h2>What this record does not claim</h2>
+    <p>It claims a reader, not a fence. Nothing here paces a wave, opens a lane or refuses a
+    dispatch: §5 supplies the position and its age, and the sections that consume them — the
+    two-clock pace function, the per-group target and bar, the reserve, and the four-lane
+    pacing view — are separate nodes whose outcomes are not asserted in this record.</p>
+    <p>The reader is also not wired to any caller yet. §5's measure is the reader's own
+    behaviour, and its tests enter at <code>read_windows</code>; whether the surface a
+    coordinator actually reaches consumes it belongs to the sections that build that surface,
+    and is the failure mode this repository has recorded most often.</p>
+  </section>
 </main>
 </body>
 </html>
