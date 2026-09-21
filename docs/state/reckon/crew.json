@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T22:45:42",
+  "updated": "2026-09-21T22:45:43",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -248630,6 +248630,242 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T200201376670-the-advisory-rides-the-dispatch",
+        "plan": "advise-the-lane-never-force-it",
+        "section": "\u00a72",
+        "node": "the-advisory-rides-the-dispatch",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 594,
+                "cached_input_tokens": 341387,
+                "input_tokens": 341983,
+                "output_tokens": 557,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 342540,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "371936ba-c8c3-4c56-951a-abbaeb2a5a49",
+            "session_id": "ship-budget-20260921"
+          },
+          "done_when": "a dispatch onto a lane whose projected exhaustion precedes the work horizon returns a payload carrying the utilisation, the burn multiple, the projected exhaustion and the reset; the advisory names the lane that measured rework says would serve this role more cheaply, or states that none would; it is emitted without a caller asking for it and without adding a call; and the resolved backend is identical with and without the advisory, asserted over a lane fixed at a spending trajectory",
+          "estimated_hours": null,
+          "goal": "emit an unrequested lane advisory on the dispatch payload, naming the lane trajectory that would change a routing choice",
+          "id": "the-advisory-rides-the-dispatch",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T20:02:02Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T200201376670-the-advisory-rides-the-dispatch/manifest.md",
+          "negative_control": "remove the advisory from the dispatch payload so a dispatch onto a lane fixed at a spending trajectory returns a payload carrying no advisory",
+          "plan": "advise-the-lane-never-force-it",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_lane_advisory_on_dispatch.py",
+            "docs/evidence/archive/advise-the-lane-never-force-it-landed.html",
+            "docs/figures/advise-the-lane-never-force-it",
+            "docs/plans/advise-the-lane-never-force-it.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "lane-occupancy",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T20:02:17Z",
+        "completed_at": "2026-09-21T20:18:14.696Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 947,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 957,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "dd09c6d7a1b2f42f78a28d01445ffb2f1d9104e3",
+        "commits": [
+          "abfee217a5cc8c1c10a30167e4870d929262541b",
+          "34b9c1d5a767ac08b0c7efd064b2806ced0ce579"
+        ],
+        "changed_lines": {
+          "added": 748,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_advisory_on_dispatch.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.local/share/reckon/gate-logs/ship-budget-20260921/lane-advisory-merged-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T200201376670-the-advisory-rides-the-dispatch/manifest.md",
+        "scope_changed": false,
+        "session_id": "1105e784-3687-460c-868a-af9173894abf",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14423444,
+            "input_tokens_cumulative": 14423444,
+            "output_tokens": 63459,
+            "output_tokens_cumulative": 63459,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T20:18:14.696Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 16,
+            "fit": 18,
+            "goal_fidelity": 16,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 86
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14591516,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 954.072,
+          "generated_tokens": 70984,
+          "generation_seconds": 833.569,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 120.503,
+          "peak_input_tokens": 166772,
+          "tokens_per_second": 85.16,
+          "wall_tokens_per_second": 74.4
+        },
+        "follow_on_paths": [
+          "tests/test_dispatch_lane_disagreement.py::test_member_harness_without_override_meets_lane_declaration_refusal",
+          "tests/test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal",
+          "reckon/crew/dispatch.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/the-advisory-rides-the-dispatch",
+          "session_id": "1105e784-3687-460c-868a-af9173894abf",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T20:18:14.696Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "advise-the-lane-never-force-it",
+          "at_dispatch": null,
+          "at_complete": 0.2,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_lane_advisory_on_dispatch.py"
+          ],
+          "declaration": "remove the advisory from the dispatch payload so a dispatch onto a lane fixed at a spending trajectory returns a payload carrying no advisory",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T200201376670-the-advisory-rides-the-dispatch/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T200201376670-the-advisory-rides-the-dispatch/negative-control.log",
+          "reason": "The worker applied a narrower mutation than declared and it is a functioning control: dropping burn_multiple from the emitted carry reddened the gate with KeyError: 'burn_multiple', 1 failed and 8 passed. Rather than accept a substitution on the worker's word, the coordinator ran the DECLARED mutation independently - lane_advisory forced to None at the payload attachment site - in a scratch copy of reckon/ and tests/ whose reckon.crew.dispatch was asserted to resolve to that copy. Positive control first: the same unmutated tree is 9 passed. Mutated: 6 failed, 3 passed. So the declared mutation is also a functioning control and the check is falsifiable by the condition the brief names, not only by the key the worker chose. Coordinator's control log: /home/ITER/mcintos/.local/share/reckon/gate-logs/ship-budget-20260921/lane-advisory-negative-control.log, first line repeating the declaration verbatim. The manifest's own negative_control_log is left pointing at the worker's log because it records what the worker did."
+        },
+        "tool_steps": 130.0,
+        "orientation_input_tokens": 3051535.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -248914,6 +249150,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2015
+    "_version": 2016
   }
 }
