@@ -149,10 +149,51 @@
     completed without a resume. The nova runs for 2026-09-22 include at least one manifest whose
     status word is outside the recognised set, because nova-a9 repaired six by hand.</p>
 
+    <h2 id="s7">&sect;7 &mdash; Who should sweep a session nobody is following</h2>
+    <p>Today every follower runs the recovery sweep over the whole project, so a follower resumes and
+    reviews other sessions' runs. <a href="/reckon/plans/a-follower-keeps-your-work-in-view#s4">a-follower-keeps-your-work-in-view &sect;4</a>
+    narrows each follower to its own session, and its open decision asks who then sweeps a session
+    with no follower. The coordinator's recommendation is that the project watcher sweeps a session
+    once it has had no follower for a grace period, records itself as the sweep's writer, and treats
+    a session whose pointers name another login node as unknown rather than orphaned. The lead asked
+    for that recommendation to rest on measurement. This section takes the four measurements it
+    rests on.</p>
+    <ol>
+      <li><strong>The re-arm gap.</strong> For every Claude Code transcript over the last seven days
+      in the reckon, nova, imas-efit and imas-ambix checkouts, find each host expiry notice for a
+      Monitor running <code>crew follow</code> and the next Monitor call in the same transcript whose
+      command runs <code>crew follow</code>. Report the gap between them. Report the count, median,
+      90th percentile, 99th percentile and maximum, and separately the expiries followed by no
+      re-arm at all.</li>
+      <li><strong>The orphan population.</strong> For every live pointer under the crew config home,
+      group by session and state whether any follower registration for that session is live, using
+      <code>follower_state</code> and <code>list_followers</code> in <code>reckon/crew/runs.py</code>.
+      Report each unattended session's pointer count, oldest and newest pointer age, and whether the
+      owning coordinator's transcript was written to in the last hour. Also count entries in the live
+      pointer directory that are not <code>.json</code> files.</li>
+      <li><strong>Cross-session sweep actions.</strong> Over seven days of sweep status and recovery
+      logs, count the resumes and review dispatches a follower's sweep performed on a run whose
+      session differs from the sweeping follower's session. Use <code>sweep_status_path</code> and
+      <code>recovery_log_path</code> in <code>reckon/crew/resumption.py</code>, and where the log does
+      not carry the sweeping session, say so and count from the review run's own record.</li>
+      <li><strong>Cross-host records.</strong> Count live pointers and follower registrations whose
+      recorded host differs from the host running the census, and those that record no host at
+      all.</li>
+    </ol>
+    <p><strong>Done when</strong> <code>docs/research/data/monitor-sweep-ownership.json</code> holds
+    all four measurements, each with its population and the source paths read. The positive controls
+    must hold. nova-a9's transcript yields at least fourteen expiry-to-re-arm gaps. The review run
+    <code>r-20260922T161442206389</code> is found among the cross-session sweep actions, or the file
+    states exactly which record would have shown it and why it does not. The file closes with the
+    grace period implied by the measured 99th percentile re-arm gap, rounded up to the next five
+    minutes, and the number of sessions that grace period would have classified as orphaned at the
+    moment of the census.</p>
+
     <h2 id="s6">&sect;6 &mdash; What follows from the measurements</h2>
     <p>The coordinator reads the four data files, records the findings in
     <code>docs/research/why-the-monitor-goes-stale.html</code>, and writes the repair plans in the
-    same session. The repair plans cover the follower staying attached across the host's expiry,
+    same session. &sect;7's result locks the sweep-ownership decision on
+    <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a>. The repair plans cover the follower staying attached across the host's expiry,
     a standing per-session inventory pushed to the reader, a legible row, and stall and wait rows
     that say whether the process is alive. Those plans are not sections of this one, because each
     has its own lifecycle and its own done-when.</p>

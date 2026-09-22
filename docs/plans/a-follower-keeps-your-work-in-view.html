@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-22">
-  <meta name="plan-version" content="2">
+  <meta name="plan-version" content="3">
   <meta name="plan-depends-on" content="a-scoped-follower-counts-its-own-session">
   <title>A Follower Keeps Your Work In View | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -128,6 +128,18 @@
     <pre class="r-fu-prompt">/reckon-ship a-follower-keeps-your-work-in-view</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-afkywiv-sweep-ownership-measured" data-section="s4" data-gated-sections="s4" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the re-arm gap distribution, the unattended-session population, the count of cross-session sweep actions and the cross-host record count are measured, and the grace period is derived from the measured 99th percentile re-arm gap</h4>
+    <p class="r-gate-required-evidence">the-monitor-under-measurement#s7</p>
+    </div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-20260922T2020-sweep-recommendation" data-who="reckon-ship" data-when="2026-09-22T20:20:00+00:00">
+    <div class="r-comment-body"><p>Coordinator recommendation, not yet locked: the project watcher sweeps a session once it has had no live follower for a grace period, records itself as the sweep's writer on every run it acts on, and treats a session whose pointers name another login node as unknown rather than orphaned. The lead asked on 2026-09-22 that this rest on measurement, so the decision stays open behind gate <code>g-afkywiv-sweep-ownership-measured</code>. The grace period is the measured 99th percentile re-arm gap rounded up to five minutes, not the fifteen minutes first proposed. If the measurement finds no unattended sessions and no cross-session sweep actions, the recommendation weakens and the alternative option should be reconsidered.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
