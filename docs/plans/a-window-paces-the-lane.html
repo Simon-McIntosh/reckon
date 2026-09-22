@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f">
 <meta name="plan-impl" content="0.9">
@@ -1079,7 +1079,10 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-comment-body">GATE pytest -q tests/test_preflight_pace.py PASSED, 27 of 27, exit 0, re-run green by the independent reviewer at the worker's head; the declared negative control reds one case and one only. REVIEW 92 of 100 (goal 18, evidence 18, scope 19, durability 18, fit 19), one finding: the receipt shadows a newer stream reading rather than the freshest of the two being taken. COORDINATOR FINDING the reviewer could not see: recorded_windows reads the committed ledger only, so the workstation run chose a 14-hour-old codex-astra receipt while a fresher codex receipt sat in a live pointer; the age travelled with the figure, so the reader could see it, but the source should read live pointers too. Both findings fold into the next node on this section. SECTION s6 stays open: the week-of-rows half of its measure belongs with s9 and needs a week of rows. DRAIN LEDGER @ 2026-09-22T11:45Z — entry-point followup: folded → the-preflight-reads-its-windows-from-the-command-line; stranded landing records: folded → coordinator integration, merge 6a915fd7; no-commit promotion guard: foreign-owner → scoring-should-stop-a-promotion; receipt-shadows-stream and ledger-only source: folded → the-window-source-reads-live-pointers-and-takes-the-freshest; stream half unexercised in production and 300-minute map from synthesised receipts only: not work, a measured limit of this workstation's lanes, recorded in the evidence anchor. rows 5, foldable-remaining 0 pending the dispatched node.</div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line" data-who="reckon-ship" data-when="2026-09-22T11:25:02.509Z">
-    <div class="r-comment-body"><p>crew preflight and the budget MCP view read each declared group&#x27;s windows from recorded receipts and streams and accept a stated ready set; 27 passed, control red on the observed-group case, workstation run reports codex-sub observed at seven_day 0.31</p></div>
+    <div class="r-comment-body"><p>crew preflight and the budget MCP view read each declared group's windows from recorded receipts and streams and accept a stated ready set; 27 passed, control red on the observed-group case, workstation run reports codex-sub observed at seven_day 0.31</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260922T112547875020-review-of-the-preflight-reads-its-windows-from-the-command-line" data-who="reckon-ship" data-when="2026-09-22T11:50:11.033Z">
+    <div class="r-comment-body"><p>independent review of the pre-flight window source stored at 92 of 100 with one finding: the receipt is preferred over a newer stream reading instead of the freshest of the two; the reviewed gate re-ran green, 27 passed</p></div>
 </div>
 </section>
 </main>
