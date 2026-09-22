@@ -24,11 +24,12 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
-<meta name="plan-impl" content="0.2">
+<meta name="plan-impl" content="0.3">
+<meta name="plan-commits" content="7059a778,b78dcb95,b952879c">
 </head>
 <body>
   <main class="plan-doc">
@@ -148,6 +149,32 @@
     from the resolved lane's total sample count, while the shortfall that actually fired the clause
     is counted separately as <code>input_samples</code> and never carried into the message. A reader
     is therefore shown a count that already meets the floor beside a refusal that cites the floor.</p>
+
+    <h3 id="s3-row">Remaining &mdash; the advisory survives promotion onto the committed row</h3>
+    <p><strong>The pointer half landed; this is the other half of the same done-when.</strong> A
+    live pointer is deleted when its run is promoted, so an advisory that reaches only the pointer
+    is readable exactly until the moment the run becomes evidence. The committed row is where a
+    later reader asks whether advice was taken, and it carries neither the advisory nor the
+    declaration nor the reading &mdash; only <code>backend</code> and <code>lane_receipt</code>, as
+    the table above records.</p>
+    <p><strong>The chosen lane is already there.</strong> <code>backend</code> is on the row, so
+    carrying the advisory across is the whole of what makes taking the advice distinguishable from
+    declining it; no second field is needed to record the choice.</p>
+    <p><strong>Why this was not landed with the pointer half:</strong> the promotion path was held
+    by a concurrent run's live write claim at dispatch time, so the node was split rather than sent
+    against a fence it could not satisfy.</p>
+    <p><strong>Done when</strong> a promoted run whose dispatch carried an advisory has
+    <code>lane_advisory</code> on its committed ledger row, asserted by reading the row rather than
+    the pointer; <code>lane_declaration</code> and <code>lane_reading</code> reach the row by the
+    same path, since the row carries neither today; a promoted run whose <code>backend</code> equals
+    the advised lane and one whose <code>backend</code> differs are told apart from the committed
+    rows alone, asserted as a pair over a promoted run of each kind, which is the section's own
+    wording and the only form that shows the record can answer the question it exists for; a run
+    dispatched with no advisory promotes with no <code>lane_advisory</code> key rather than a null;
+    the existing promotion tests pass with no added failures against a base measured in the same
+    run; and the declared negative control &mdash; drop the advisory from the promotion carry
+    &mdash; is applied to a scratch copy, the row-carries-the-advisory case is observed to fail
+    there, and the red log's first line repeats the declared mutation verbatim.</p>
 
     <h2 id="s4">&#167;4 &mdash; One window, four coordinators</h2>
     <p>
@@ -375,6 +402,9 @@ THE COUNT THE REFUSAL RENDERS. The cost the clause refuses over is drawn only fr
 NEGATIVE CONTROL. Two controls on a scratch extraction of the commit. The declared one removes the record insertion and reddens exactly the pointer-carries-the-advisory case with KeyError: 'lane_advisory', 1 failed and 11 passed. An independent second control puts the floor back on the lane's total sample count and reddens exactly the shortfall case, 1 failed and 11 passed.
 
 Full record: docs/evidence/archive/advise-the-lane-never-force-it-landed.html#s3, figure docs/figures/advise-the-lane-never-force-it/advisory-reaches-the-pointer.png. The promoted-ledger-row half of this section is not landed here: it belongs to a node that can write the promotion path. A pre-existing failure in test_a_brief_points_rather_than_quotes was reproduced at the base revision and lives outside this node's scope.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260922T1835-advisory-reaches-the-pointer" data-who="reckon-ship" data-when="2026-09-22T18:35:00Z">
+    <div class="r-comment-body">GATE pytest -q tests/test_lane_advisory_on_dispatch.py PASSED, 12 of 12, exit 0; the adjacent dispatch-naming file 11 passed exit 0. TWO CONTROLS, one per finding, each red on exactly the case it names: removing the record assignment reds test_an_emitted_advisory_reaches_the_written_pointer, 1 failed 11 passed; reverting the floor to the resolved lane's total reds the shortfall case. A pre-existing failure in an unrelated file was reproduced at base 613a3530 and left alone, outside the fence. Merged at b952879c, proved both ways: the record assignment is present and the old total-count read is gone. THE WORKER FIXED THE CAUSE RATHER THAN THE RENDERING, and declared it. The section asked only that the message render the shortfall; the worker found the floor ITSELF was gated on the resolved lane's total usable runs rather than on the chargeable observations the median is drawn from, so a cost could be built from a handful of readings and still clear a floor of ten. It changed both and supplied the second control for the change it was not asked to make. That is the safer direction and it is recorded here rather than absorbed silently. An absent advisory is left off the record entirely rather than written as a null, because a null key reads as a lane checked and found quiet. SECTION 3 IS NOT CLOSED: its done-when names the live pointer AND the promoted ledger row, and only the pointer half landed. The row half needs reckon/crew/promotion.py, which peer session ship-cdocw-20260922 held live at dispatch time, so the node was split rather than sent against a fence it could not satisfy. DRAIN LEDGER @ 2026-09-22T18:35Z — advisory reaches the pointer and the shortfall renders: folded → the-advisory-reaches-the-live-pointer, landed; advisory reaches the committed ledger row: NOT folded, blocked on a peer's live claim of reckon/crew/promotion.py, named in the section below and dispatchable the moment that claim releases. rows 2, foldable-remaining 1, blocked on a peer scope claim rather than on judgement.</div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
