@@ -1168,6 +1168,49 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     applied to a scratch copy, the first case is observed to fail there, and the red log's first
     line repeats the declared mutation verbatim.</p>
 
+    <h3 id="s6-lanes-view-cases-landed">Landed &mdash; the lanes view now holds the helper it delegates to</h3>
+    <p><strong>The four lanes-view files carry the clause's cases, and they are the first cases on
+    that side to reach the shared helper.</strong> Both enter through
+    <code>mcp_views.crew_lanes_view</code> rather than by calling
+    <code>budget.run_observed_stamp</code>, because a direct call proves the function and not the
+    wiring: a lane can only be shown to report a stamp if the view that publishes it is the thing
+    asked.</p>
+    <p><strong>The first case is the clause the old list could not satisfy.</strong> A run carrying
+    only <code>created_at</code> is dated by the lanes view &mdash; the lane's
+    <code>observed_at</code> is that stamp and no refusal is published &mdash; where the pre-change
+    private list stopped one key short and rendered <code>unmeasured</code>. The same stamp decides
+    which of a backend's sessions is the newest, so before this the two surfaces could disagree about
+    which run a figure came from. <strong>The second case holds the parse-first rule the move
+    introduced.</strong> A record whose <code>budget.observed_at</code> is present but unparsable is
+    dated by its next lifecycle stamp, not by the malformed value: the pre-change helper returned any
+    truthy field without parsing, so <code>"yesterday afternoon"</code> would have been published as a
+    date where <code>completed_at</code> belongs.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/the-lanes-view-enters-where-a-caller-enters.svg"
+           alt="Two cases compose the lanes view over one run and read the lane's published observed_at; a run whose only stamp is created_at is dated to that stamp where the pre-change list rendered unmeasured, and a run whose budget stamp will not parse is dated to its next lifecycle stamp where the old truthy-field helper returned the malformed text" width="980"/>
+      <figcaption>Both cases ask the view, and both refusals of the old helper are the red chips.</figcaption>
+    </figure>
+
+    <p><strong>The gate and its delta.</strong> The four lanes-view files at this head: <strong>2
+    failed, 38 passed</strong> (36 at base plus the two added). The base revision, measured in the same
+    pass, gives <strong>2 failed, 36 passed</strong> &mdash; the same two ids either side, so
+    <strong>zero failures added</strong>. Logs <code>sha256 61a8d6dc&hellip;</code> (base) and
+    <code>sha256 6e6ae2f8&hellip;</code> (head). Lint measured by delta against the base file's own
+    copy under the repo's own config: <strong>0 findings at base, 0 at head</strong>, and
+    <code>ruff format --check</code> clean. Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-lanes-view-cases">the landed evidence
+    record</a>.</p>
+
+    <p><strong>The clause's literal form asks these files to exit 0, and they do not.</strong> They
+    did not at the base revision either: the two reds are pre-existing stale cases, carried through
+    unchanged, and the two cases this clause added exit 0 on their own. The operative clause is the
+    delta one, and both reds are diagnosed in the evidence record rather than left as symptoms &mdash;
+    one case's stub predates the production reader's <code>model_identifier</code> keyword, and the
+    other guards a population that is now empty, because every known dialect declares a probe after
+    <code>claude</code> took over its own account surface. Neither is repaired here: each repair is a
+    decision about a surface this section does not own.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">

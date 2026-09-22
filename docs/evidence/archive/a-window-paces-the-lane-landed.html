@@ -1526,6 +1526,162 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     </ul>
   </section>
 
+  <section id="s6-lanes-view-cases">
+    <h2>&sect;6 &mdash; The lanes view holds the shared dating helper with cases of its own</h2>
+
+    <h3>The measure</h3>
+
+    <p><strong>The four lanes-view files carry two cases for the shared helper, and they are the
+    first cases on that side to reach it.</strong> The clause above records that the earlier node's
+    Done-when asked the lanes-view tests to cover the moved helper and that no such test existed:
+    reinstating the pre-change key list in a scratch copy left those four files at exactly the same
+    two ids. This section is the clause satisfied rather than reported &mdash; the coverage the
+    earlier measurement found missing now exists and is measured to bind.</p>
+
+    <p><strong>Both cases enter where a caller enters.</strong> Each composes a one-backend lanes
+    view over a single run with <code>mcp_views.crew_lanes_view</code>, and each passes a
+    <code>probe_reader</code> that returns nothing so no probe overrides the receipt and the stamp a
+    lane can publish is the run record's own. Neither case calls
+    <code>budget.run_observed_stamp</code> directly: a direct call proves the function and not the
+    wiring, and the property that matters here is a property of the published lane.</p>
+
+    <table>
+      <caption>The two cases, what each holds, and what the pre-change helper did instead</caption>
+      <thead><tr><th>Case</th><th>Record</th><th>Asserted at head</th><th>Pre-change helper</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_the_lane_dates_a_run_whose_only_stamp_is_created_at</code></td>
+        <td>only <code>created_at</code>, no budget block</td>
+        <td><code>lane["observed_at"]</code> is that stamp; no <code>unmeasured</code> refusal</td>
+        <td><code>"unmeasured"</code> &mdash; the private list stopped one key short of
+        <code>created_at</code></td></tr>
+        <tr><td><code>test_the_lane_passes_over_a_budget_stamp_it_cannot_parse</code></td>
+        <td><code>budget.observed_at</code> = <code>"yesterday afternoon"</code>, plus a readable
+        <code>completed_at</code></td>
+        <td><code>lane["observed_at"]</code> is <code>completed_at</code> and not the malformed
+        text</td>
+        <td><code>"yesterday afternoon"</code> &mdash; it returned any truthy field without parsing
+        it</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/the-lanes-view-enters-where-a-caller-enters.svg"
+           alt="Two cases compose the lanes view over one run and read the lane's published observed_at; a run whose only stamp is created_at is dated to that stamp where the pre-change list rendered unmeasured, and a run whose budget stamp will not parse is dated to its next lifecycle stamp where the old truthy-field helper returned the malformed text" width="980"/>
+      <figcaption>Both cases ask the view, and both refusals of the old helper are the red chips.</figcaption>
+    </figure>
+
+    <h3>Gate</h3>
+
+    <p><strong>Delta, not absolute green, with the base measured in the same pass.</strong> The same
+    four files &mdash; <code>tests/test_crew_lanes_view.py</code>,
+    <code>tests/test_lanes_view_is_live.py</code>, <code>tests/test_lanes_view_serving_state.py</code>,
+    <code>tests/test_lane_evidence.py</code> &mdash; run at the base revision
+    <code>f4ba8f01</code> in a tree extracted with <code>git archive</code>: <strong>2 failed, 36
+    passed</strong>, exit 1. At this head: <strong>2 failed, 38 passed</strong>, exit 1. Both
+    failures are the same two ids either side, so <strong>zero failures added</strong> and the two
+    added cases are additive. Logs <code>baseline-lanes.log</code> (sha256
+    <code>61a8d6dc&hellip;</code>) and <code>head-lanes.log</code> (sha256
+    <code>6e6ae2f8&hellip;</code>), each carrying its revision, its tree and its command on the first
+    line, and each printing the <code>reckon</code> module it actually resolved so neither figure can
+    cite the wrong source.</p>
+
+    <table>
+      <caption>The two pre-existing failures, identical at base and at head</caption>
+      <thead><tr><th>Test</th><th>Failure</th><th>At base</th><th>At head</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code></td>
+        <td><code>TypeError: dict.__getitem__() takes no keyword arguments</code> where the production
+        reader is called with <code>model_identifier=</code> while the case patches in a bare
+        <code>dict.__getitem__</code></td><td>fails</td><td>fails</td></tr>
+        <tr><td><code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code></td>
+        <td><code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code></td>
+        <td>fails</td><td>fails</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Lint by delta.</strong> The one changed file counted against the base revision's own
+    copy, mode preserved at 644 so an executable bit cannot inflate the count, and both counted under
+    the repo's own <code>pyproject.toml</code>: <strong>0 findings at base, 0 at head</strong>, none
+    added. No pre-existing finding was fixed in passing; the commit is insertions only, 71 lines.
+    <code>ruff format --check</code> is clean.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim on the red log's first line: restore the private key
+    list in <em>mcp_views._receipt_observed_at</em> so it no longer delegates to
+    <em>budget.run_observed_stamp</em>.</strong> Applied at exactly one site in a scratch copy of
+    this tree &mdash; the delegating body replaced by the pre-change budget-block-then-lifecycle-list
+    form, the list ending at <code>started_at</code> &mdash; with <code>reckon/</code> and
+    <code>tests/</code> copied with <code>-a</code> and every <code>__pycache__</code> cleared. The
+    mutated run prints its own provenance, <code>mcp_views module file:
+    /tmp/nc-lanes-stamp.mLYR6h/reckon/mcp_views.py</code> and <code>budget module file:
+    /tmp/nc-lanes-stamp.mLYR6h/reckon/budget.py</code>, measured with the scratch tree as the working
+    directory, because a bare <code>python -c</code> from the worktree resolves the worktree copy
+    first and would have made the citation false.</p>
+
+    <p><strong>Positive control first, in the unmutated tree at this head:</strong> both cases pass
+    &mdash; they are two of the 38 in <code>head-lanes.log</code>. <strong>After the mutation both
+    named cases are red</strong> (<strong>2 failed, 9 deselected</strong>, exit 1), each at exactly
+    the assertion its clause names: <code>assert 'unmeasured' == '2029-12-31T22:00:00Z'</code> for the
+    <code>created_at</code>-only record, and <code>assert 'yesterday afternoon' ==
+    '2029-12-31T21:00:00Z'</code> for the unparsable budget stamp &mdash; the two pre-change
+    behaviours the table above predicts, observed rather than inferred. The whole modified file in the
+    same scratch copy gives <strong>3 failed, 8 passed</strong>: the two named cases plus
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code>, the pre-existing failure
+    that is red at base as well and is not a consequence of the mutation. So the mutation reddens
+    exactly the two named cases and nothing else. Log <code>sha256 5a8af0ae&hellip;</code> (168
+    lines); the scratch copy was removed once the red log was coherent, and the logs are the
+    artifacts.</p>
+
+    <h3>Not claimed</h3>
+
+    <p><strong>The two other lanes-view files were run but not added to.</strong>
+    <code>tests/test_lanes_view_serving_state.py</code> and <code>tests/test_lane_evidence.py</code>
+    are in the gate selection because the clause's delta is stated over the four files; neither needed
+    a case, and neither was edited. <strong>The coverage claim is about the dating path only.</strong>
+    These cases hold that the lanes view dates a record by the shared helper and passes over what will
+    not parse; they do not assert the ordering that helper drives in
+    <code>_latest_backend_runs</code>, which decides which of a backend's sessions is the newest. That
+    ordering is the reason the divergence mattered, and a case for it is not added here.</p>
+
+    <p><strong>Both files cannot exit 0 while two pre-existing stale cases remain, and the clause is
+    recorded as a delta rather than as green.</strong> The done-when's literal form asks the
+    lanes-view files to exit 0. They do not, and they did not at the base revision: two cases are red
+    before this node and are red after it. The operative clause is therefore the one that follows
+    &mdash; no added failures against a base measured in the same run &mdash; because an absolute
+    green is not available; the two added cases themselves exit 0 (<strong>2 passed</strong>). Both
+    cases are in files this node owns, and each is diagnosed below rather than left as a symptom;
+    neither is repaired, because each repair is a decision about a surface this node does not own and
+    has no evidence for.</p>
+
+    <p><strong>Failure one: the case's patch predates the reader's signature.</strong>
+    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> patches
+    <code>mcp_views.rollout_module.read_rollout_receipt</code> with the fixture's bare
+    <code>dict.__getitem__</code>, while <code>reckon/mcp_views.py:685</code> now calls that reader as
+    <code>read_rollout_receipt(session_id, model_identifier=...)</code>, so
+    <code>dict.__getitem__</code> refuses the keyword. The production signature is settled and its
+    comment states why &mdash; only the production reader prices the receipt, and the served model
+    passes through from the backend configuration &mdash; so the drift is in the test's stub, not in
+    the call. A reader accepting the keyword repairs it without weakening the assertion; it is
+    diagnosed here rather than applied because the same file's second red case does not have that
+    shape.</p>
+
+    <p><strong>Failure two: the guard's population is now empty.</strong>
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> is parametrised by a
+    fixture backend whose <code>command</code> is <code>claude</code>, and asserts the probe reader is
+    never invoked and the lane reports <code>not_declared</code>. <code>_ClaudeDialect</code> now
+    overrides <code>read_account_surface</code> (<code>reckon/_backends.py:1526</code>, against the
+    base at 877), so <code>_owns_account_surface_reading</code> is true for it and
+    <code>_declared_probe_command</code> returns <code>("claude", "account-surface probe
+    declared")</code>: the probe reader is invoked once, by design. Measured over
+    <code>known_dialects()</code>, <strong>no dialect is probe-less any more</strong> &mdash;
+    <code>codex</code> declares a quota probe and both <code>claude</code> and <code>clive</code>
+    declare an account-surface probe &mdash; so the population the guard was written over has no
+    member left, and its premise cannot be satisfied by any real command. Choosing a replacement
+    fixture would therefore change what the guard covers rather than repair it; that is a decision
+    about the account-surface surface, which another node owns, and it is reported instead.</p>
+  </section>
+
   <section id="gate-recapture">
     <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
 
