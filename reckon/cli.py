@@ -3192,8 +3192,19 @@ def crew_complete(
     default=300.0,
     help="Bound on the gate re-run before it is reported as timed out.",
 )
+@click.option(
+    "--command",
+    "command",
+    default=None,
+    help=(
+        "Command to run instead of the run's stored gate command, so a "
+        "coordinator can measure a wider suite at the merged head."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_verify_gate(project, run_id, checkout_path, revision, timeout_seconds, pretty):
+def crew_verify_gate(
+    project, run_id, checkout_path, revision, timeout_seconds, command, pretty
+):
     """Re-run one run's gate at the integrated revision, recording the report on the run.
 
     Reads the run's stored gate command and base verdict from its committed
@@ -3202,6 +3213,12 @@ def crew_verify_gate(project, run_id, checkout_path, revision, timeout_seconds, 
     run's ledger row, so a gate the integrated revision no longer satisfies is
     recorded against the run rather than only printed. The report is recorded
     whether or not a finding exists.
+
+    --command runs the given command in place of the stored one, so a
+    coordinator can measure a whole-repository suite rather than only the
+    node's own gate, and can do so on a run that stored no gate command. The
+    recorded report names the command that actually ran and whether it came
+    from the option or the stored row.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -3212,6 +3229,7 @@ def crew_verify_gate(project, run_id, checkout_path, revision, timeout_seconds, 
             integrated_revision=revision,
             timeout_seconds=timeout_seconds,
             root=checkout_path,
+            command=command,
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
