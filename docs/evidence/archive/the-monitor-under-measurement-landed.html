@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-under-measurement-landed">
+  <meta name="plan-title" content="How often a stall or an unreadable row misleads &mdash; landed evidence">
+  <meta name="plan-summary" content="118 transitions into stalled were cross-referenced against the attempt streams that were live at each stall over seven days across four projects, and in 97 of them the worker process was already gone. Separately, 194 manifest files declare a status outside complete/blocked/failed, 32 of them words no reader recognises. Both positive controls are qualified: the named rail-env run completed after a resume, not without one; and no nova manifest from 2026-09-22 carries an outside-vocabulary word on disk, though twelve carry in-progress or waiting.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-under-measurement">
+  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s5">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="qualified-pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; a locally served worker (deepseek-v4.1-flash) as the implement role; matplotlib 3.11.2">
+  <meta name="plan-commits" content="see the node manifest; the census data and figure land together with this record">
+  <meta name="plan-artifacts" content="docs/research/data/monitor-stall-census.json,docs/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png">
+  <title>How often a stall or an unreadable row misleads &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>How often a stall or an unreadable row misleads &mdash; landed evidence</h1>
+    <p class="plan-summary">The &sect;5 done-when produces
+    <a href="/reckon/research/data/monitor-stall-census.json">monitor-stall-census.json</a> with denominators for both
+    counts. The figure worth acting on is the one the monitor cannot draw:
+    <strong>97 of 118 stalls were a process that had already stopped writing</strong>, and
+    another 9 have no attempt stream alive at the stall instant, so the row a reader acts on is
+    reporting on nothing in 106 of 118 cases. 41 of the 118 later completed with no resume at
+    all, which is the row that reads as a live stall and is not one. Two positive controls were
+    set by the plan and <em>neither reproduces as written</em>: the named run completed after a
+    resume rather than without one, and the nova invented status word is not on disk. Both are
+    recorded below rather than reconciled away, because a control that is edited to agree with
+    the plan stops being a control.</p>
+  </header>
+
+  <section id="instrument">
+    <h2>The instrument, and the field that does not exist</h2>
+    <p>A stall transition in a watch stream carries no process-liveness field. The records under
+    <code>~/.config/reckon/crew/watch/*.events</code> say a run's stream went quiet for more than
+    the stall window; nothing in them says whether the writer was alive at that moment. The
+    census therefore derives liveness from a second, independent record: the attempt stream that
+    was <em>active</em> at the stall instant &mdash; the latest of
+    <code>stream.jsonl</code> and <code>resume-N.jsonl</code> in that run's directory whose first
+    content timestamp precedes the transition. A record in that same file <em>after</em> the
+    stall instant means the writer was alive; no record after it means it was gone. Nine stalls
+    fall before any attempt's first record and are reported as <code>unknown</code> rather than
+    guessed.</p>
+    <p>The stall window is set once: <code>DEFAULT_WATCH_STALL_WINDOW</code> in
+    <code>reckon/crew/node.py</code> is <code>"15m"</code>, 900 seconds, emitted in the
+    transition's <code>detail</code> as <code>stream quiet for &lt;N&gt;s</code>. The
+    <code>--stall-window</code> flag on <code>reckon crew follow</code> places the same value
+    from <code>reckon/cli.py</code>, so a follower armed with a shorter window writes more
+    stalls over the same fleet.</p>
+    <p>Timestamps are read from content, never from mtimes. On this workstation a manifest may
+    be hand-edited hours after its run ended, so a file's mtime orders the repair, not the
+    run.</p>
+  </section>
+
+  <section id="stalls">
+    <h2>The stall count, split four ways</h2>
+    <p>Window: <code>2026-09-15T20:25:02Z</code> to <code>2026-09-22T20:25:02Z</code>, seven
+    days, <strong>118 transitions into <code>stalled</code></strong>, split
+    reckon 39, nova 35, imas-efit 31, imas-ambix 13.</p>
+    <img src="/reckon/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png"
+         alt="Left: stalls per project stacked by process liveness, showing gone dominating in
+              every project. Right: what followed each stall, stacked by liveness at the stall,
+              showing completed-after-resume dominating the gone rows and completed-without-resume
+              dominating the alive rows."
+         style="max-width:100%">
+    <table>
+      <thead><tr><th>split</th><th>value</th><th>count</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3">process at the stall</td><td>gone</td><td>97</td></tr>
+        <tr><td>alive</td><td>12</td></tr>
+        <tr><td>unknown (no attempt precedes it)</td><td>9</td></tr>
+        <tr><td rowspan="4">what followed</td><td>completed after a resume</td><td>73</td></tr>
+        <tr><td>completed with no resume</td><td>41</td></tr>
+        <tr><td>a different transition, never a terminal</td><td>3</td></tr>
+        <tr><td>no later transition at all</td><td>1</td></tr>
+        <tr><td rowspan="4">role</td><td>implement</td><td>55</td></tr>
+        <tr><td>review</td><td>52</td></tr>
+        <tr><td>investigate</td><td>8</td></tr>
+        <tr><td>documentation</td><td>3</td></tr>
+        <tr><td rowspan="5">backend</td><td>clive (local lane)</td><td>110</td></tr>
+        <tr><td>codex</td><td>3</td></tr>
+        <tr><td>codex-astra</td><td>2</td></tr>
+        <tr><td>codex-luna</td><td>2</td></tr>
+        <tr><td>claude</td><td>1</td></tr>
+        <tr><td rowspan="2">state stalled from</td><td>working</td><td>104</td></tr>
+        <tr><td>dispatched</td><td>14</td></tr>
+      </tbody>
+    </table>
+    <p>The cross-tabulation is the part a single split hides. Of the 12 stalls where the writer
+    was <em>alive</em>, 9 later completed with <strong>no resume</strong> &mdash; the quiet was a
+    long turn, not a death, and acting on the row would have redispatched a working node. Of the
+    97 where it was <em>gone</em>, 64 completed only after a resume and 29 completed with no
+    resume at all, so even a dead writer is not by itself a reason to intervene. Three
+    <code>gone</code> stalls never reached a terminal state, and one has no later transition
+    whatsoever; those four are the population a stall row is actually for, and they are 3.4% of
+    the 118.</p>
+  </section>
+
+  <section id="manifests">
+    <h2>The unreadable status count</h2>
+    <p>Population: 4,378 manifest files carrying a <code>status:</code> line across 4,326 run
+    directories, every project on the workstation. The reader's terminal vocabulary is
+    <code>complete</code>, <code>blocked</code>, <code>failed</code>
+    (<code>reckon/crew/reports.py</code>); <strong>194 files declare something else</strong>, in
+    41 distinct spellings.</p>
+    <p>Two of those 194 are not defects and are counted separately: none are the
+    <code>a | b</code> template placeholders the reader already detects. Thirty-two are words
+    outside the reader's <em>extended</em> vocabulary at all &mdash; not
+    <code>in-progress</code>, <code>running</code>, <code>waiting</code>,
+    <code>pending</code>, <code>derived</code>, but <code>done</code>,
+    <code>delivered</code>, <code>partial</code>, <code>working</code>,
+    <code>reported</code>, <code>shipped</code>,
+    <code>implemented-pending-review</code>, <code>handover-pending</code>,
+    <code>ready-for-review</code>,
+    <code>delivered-awaiting-coordinator-adjudication</code>. The rest are a recognised word with
+    prose appended on the same line &mdash; <code>complete (provisional &mdash; being updated; see
+    checkpoint)</code> &mdash; which the line-oriented reader sees as one unrecognised token.</p>
+    <p>The 53 files kept as <code>manifest.md.asdelivered</code> and its siblings are the ones
+    that matter for attribution, because the live <code>manifest.md</code> has usually been
+    hand-repaired to a recognised value by the time anyone looks. The two imas-efit words this
+    plan's memory attributes to a worker inventing a status &mdash;
+    <code>delivered-awaiting-coordinator-adjudication</code> and
+    <code>ready-for-review</code> &mdash; survive only in their as-delivered copies, which is
+    exactly why a scan of live manifests alone cannot find them.</p>
+    <p>For every group the census also records whether the run ever emitted a terminal
+    transition. The answer is yes for all but the two <code>blocked (phase-2 finding &hellip;)</code>
+    and <code>blocked &mdash; the measure is met &hellip;</code> rows, whose runs never reached a
+    terminal state at all. So the invented word is a signal of a hand-edited manifest; it is not
+    a reliable signal that the run failed to finish.</p>
+  </section>
+
+  <section id="controls">
+    <h2>The two positive controls, and why neither holds as written</h2>
+    <p><strong>Control 1 &mdash; the named run.</strong> The plan requires
+    <code>r-20260922T140247463532-rail-env-remaining-eighteen</code> to appear as a stall that
+    later completed <em>without a resume</em>. It appears, at
+    <code>2026-09-22T14:32:30Z</code>, and it did complete under its own run id with no
+    redispatched duplicate. It completed <em>after a resume</em>: <code>resume-1.jsonl</code>
+    carries the completing attempt (content <code>15:14:15Z</code> to <code>15:21:08Z</code>),
+    the ledger records attempt 2 with <code>attempt_kind: "resume"</code> and
+    <code>completed_at 15:21:08Z</code>, and the stream emits
+    <code>completed_unpromoted</code> at <code>15:21:12Z</code>. Three independent durable
+    records agree, so the half of the control that holds is "stalled then completed"; the
+    "without a resume" clause is refuted by this instrument. Reported here rather than
+    reconciled: the census marks the run <code>completed_after_resume</code> and carries the
+    conflict in <code>positive_controls.stall_later_completed.claim_conflict</code>.</p>
+    <p><strong>Control 2 &mdash; the nova word.</strong> The plan requires at least one nova
+    manifest from 2026-09-22 whose status word is outside the recognised set. The literal reading
+    holds: 17 of the 98 nova manifests for that day are outside
+    <code>complete</code>/<code>blocked</code>/<code>failed</code>, namely <code>in-progress</code> and
+    <code>waiting</code>, twelve of them kept as as-delivered copies. The stricter reading the
+    plan's own memory states &mdash; a word no reader recognises,
+    <code>ready-for-review</code> or
+    <code>delivered-awaiting-coordinator-adjudication</code> &mdash; is <em>not</em> reproduced
+    for nova on that day; those two words are imas-efit's. The most likely reason is that the six
+    manifests nova-a9 repaired by hand were overwritten in place, leaving no as-delivered copy.
+    The census records this as <code>held: false</code> with the literal count beside it, so a
+    reader can see which reading failed.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope and follow-ons</h2>
+    <p>This node changed no source code and no test; it wrote one data file, one figure and this
+    record. The measurement is a snapshot at <code>2026-09-22T20:25:02Z</code> and a fleet that
+    keeps running moves every figure in it &mdash; re-run the census rather than quoting these
+    counts.</p>
+    <p>The liveness split is a derived instrument, not a recorded fact. Making the instrument
+    unnecessary is the repair a follow-on plan wants: a transition that carries whether its
+    writer was alive at emission. Until then, the four stalls that never reached a terminal state
+    are the population to act on, and the 106 that did are the population a stall row currently
+    misreports.</p>
+    <p>Failures outside this node's fence are not repaired here; the two positive-control
+    discrepancies are the substance: the plan's &sect;5 wording should be corrected to "later
+    completed, after a resume" and its control 2 restated against the project that actually
+    holds the word.</p>
+  </section>
+</main>
+</body>
+</html>
