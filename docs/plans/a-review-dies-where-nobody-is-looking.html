@@ -20,6 +20,7 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S19">
   <meta name="plan-blocks" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <meta name="plan-depends-on" content="worker-death-is-recorded">
   <meta name="plan-informs" content="scoring-should-stop-a-promotion">
   <title>A Review Dies Where Nobody Is Looking | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -67,11 +68,16 @@
       doing, because the runs carry no record of how they ended.</strong> That is the defect to close
       first, and it is the reason a plausible cause survived an afternoon: with no terminal record,
       any hypothesis fits.</p>
-      <p><strong>Measure.</strong> The run directory carries the client's own exit status and signal as
-      a terminal record, written by the launcher rather than inferred by a reader. A worker that was
-      signalled says so and names the signal; one that exited says so and names the status. Falsify by
-      killing a worker with a known signal and requiring the record to name it, and by letting one exit
-      cleanly and requiring the record to differ.</p>
+      <p><strong>The terminal record is not this plan's to build — it is
+      <code>worker-death-is-recorded</code>, which already carries it with its own measured
+      inventory.</strong> That plan was written before these deaths were investigated, sat as a draft
+      outside every sprint, and states the general case: a worker ended by a signal writes nothing on
+      the way out, so its pointer keeps the phase it held, the seat stays held, and the correct recovery
+      becomes unreachable because nothing says the run needs resuming. The oldest such pointer measured
+      here had read <em>working</em> for three days. <strong>This section depends on it and adds one
+      requirement of its own:</strong> the record must distinguish a signal the worker did not choose
+      from a clean exit, because that is the single distinction every account of these deaths has been
+      unable to make.</p>
       <p><strong>The memory candidate is closed for the instrumented slice, on three readings.</strong>
       <code>oom_kill</code> held at <strong>529 at 21:22, 21:28:23 and 21:52:08</strong> on 2026-09-22
       while <code>memory.current</code> sat near 32 GiB of a 64 GiB cap — and across that window two
