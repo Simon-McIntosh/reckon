@@ -2714,6 +2714,38 @@
 <div class="r-comment" data-section="§4b" data-id="c-run-r-20260922T111705361482-rv-the-reflex-selects-a-backend-rather-than-asserting-one" data-who="reckon-ship" data-when="2026-09-22T11:39:29.145Z">
     <div class="r-comment-body"><p>scored the reflex backend selection at 88 and named three remainders, including that any recorded backend on a refusal is read as a lane that dropped the review</p></div>
 </div>
+<div class="r-comment" data-section="s5c" data-id="c-run-r-20260922T204226780149-a-review-names-the-revision-it-read" data-who="crew-worker" data-when="2026-09-22">
+    <div class="r-comment-body">
+      <p><strong>The review store now names both revisions and accumulates rechecks.</strong>
+      Commit <code>315081c6</code> replaces the single <code>reviewed_revision</code> retrofit
+      with the pair this section specifies. The five stored spellings normalise without
+      collapsing base into head: <code>reviewed_base</code> and
+      <code>reviewed_base_sha</code> supply the canonical base, while
+      <code>reviewed_commit</code>, <code>reviewed_head_sha</code>, and the last entry in
+      <code>commits_read</code> supply the canonical head. Supplying a record without both
+      usable values now returns <code>status=incomplete</code>.</p>
+      <p><strong>The overwrite was reproduced before repair.</strong> Two reviews of one run
+      at different heads returned the same path, and only the second head remained readable.
+      Complete records now land at <code>&lt;run&gt;.at-&lt;reviewed-head-sha&gt;.json</code>;
+      two heads create two files, and a reader naming either head gets that record. The
+      focused gate reports <strong>12 passed</strong>. The declared single-path mutation
+      makes the accumulation test fail with <strong>1 failed, 11 passed</strong>.</p>
+      <p><strong>Adjacent-gate delta.</strong> The three required neighbouring suites report
+      the same five <code>call_sites</code> failures at base and candidate, with
+      <strong>zero newly failing</strong>; the candidate's combined gate is
+      <strong>58 passed, 5 failed</strong>. That prompt/test mismatch is outside this node's
+      scope and is reported as a follow-on. Full receipts:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5c-revision-keyed-reviews">revision-keyed review evidence</a>.</p>
+      <p><strong>Boundary.</strong> This node has not made the live review brief emit the pair
+      and has not made promotion request the record matching its named head. It has not closed
+      this section or resolved its followup; those remaining callers and merged-head
+      verification are coordinator-owned.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+      landing contract requires its own append-only plan and cumulative-evidence records;
+      shared lifecycle state, followup resolution, and terminal status remain
+      coordinator-owned.</p>
+    </div>
+</div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
