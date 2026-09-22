@@ -530,6 +530,47 @@
     merged head is a separately dispatched node's measurement. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-check-command-supplies-the-scope-it-resolves-against">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-22 &mdash; a blocked run's fence is widened through
+    its own pointer.</strong> The fence was drawn once: <code>--write-path</code> is read under
+    <code>dispatch</code>, and <code>crew resume</code> takes <code>--advice</code>,
+    <code>--backend</code>, <code>--reason</code> and <code>--print-only</code> and nothing that touches
+    scope. A worker blocked on too narrow a scope therefore forced a redispatch that discards its session
+    and its commits, or the hand-edit of <code>node.write_paths</code> that each coordinator performed
+    slightly differently and that <code>promotion._outside_declared_scope</code> then reads.
+    <code>crew widen</code> makes that edit a declared one: the named path is appended to the blocked
+    run's own pointer &mdash; the field promotion already reads, so one write closes both halves.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/widening-writes-the-pointer.svg"
+           alt="One blocked run's live pointer before and after the widening: the session id and the recorded
+                commits read unchanged while node.write_paths gains one path; a working run reaches the same
+                command and is refused at exit 1 with its pointer bytes identical." />
+      <figcaption>What moves and what does not: one field is written, and the session and commits the
+      widening exists to preserve are asserted equal by the gate rather than assumed.</figcaption>
+    </figure>
+
+    <p><strong>Nothing else in the record moves.</strong> The command writes through the same per-run
+    lock every other pointer writer takes, and only <code>node.write_paths</code> changes: the session
+    id and the recorded commits are asserted equal to their pre-widening values, and so is every other
+    key of the pointer and of its <code>node</code>, so the widened run resumes on its own session with
+    the work it had already committed. A run whose phase is not <code>blocked</code> is refused at a
+    non-zero exit with its pointer untouched, because a working run is already writing against the
+    boundary the command would move.</p>
+
+    <p><strong>Proven by six cases that enter through the CLI runner. 6 passed.</strong> One adds the
+    path and reads it back from the pointer; one asserts the session and the commits survive; one
+    re-declares an already-present path and requires no duplicate entry; one requires the refusal and
+    an unchanged pointer for a working run; one requires an unknown run to be refused rather than
+    silently widened; and the last makes the isolation witness fire on a substitute root, so the guard
+    that keeps the case's pointer write out of the fleet's crew home is shown to speak.
+    <strong>Falsified before trusting it.</strong> The declared mutation removes the blocked-phase
+    guard, and the file reddens <code>1 failed, 5 passed</code> &mdash; under it the working run's
+    pointer is rewritten in place and the command exits 0. The mutation sits verbatim on the red log's
+    first line and <code>reckon/cli.py</code> was restored, verified by the gate re-running green at
+    the same revision. This gate measures only this node's own change; the merged head is a separately
+    dispatched node's measurement. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#widening-writes-the-pointer">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
