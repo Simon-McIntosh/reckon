@@ -259,6 +259,50 @@
     that say whether the process is alive. Those plans are not sections of this one, because each
     has its own lifecycle and its own done-when.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="monitor-scope-path-map" data-when="2026-09-22">
+<p><strong>Outcome &mdash; the four source questions answered as data.</strong> Commit
+<code>91b0d3ed</code> lands <code>docs/research/data/monitor-scope-path-map.json</code>, and commit
+<code>5082fe7f</code> draws the two spatial relationships in it. The deliverable answers each of
+&sect;4's questions with a file, a line and the verbatim source line; all 37 quoted lines were
+re-read against the tree at base <code>9d8ccbd5</code> with zero mismatches.</p>
+<figure>
+<img src="/reckon/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg" alt="Left: the figure path from the project-wide producer through the stream to the row cells, marking the one call site that re-scopes the population and the two CLI call sites that do not. Right: attach_line composition, its nine carrying surfaces, and the bare shell's 127 against the resolved venv path.">
+<figcaption>The figure path and the attach-line path, with the one re-scoping site and the bare command's 127 marked.</figcaption>
+</figure>
+<p><strong>What each answer turns on.</strong> (1) The trailing figures are counted by
+<code>_fleet_counts</code> (<code>reckon/crew/recovery.py:3652</code>) and painted by the ticker's
+<code>_stats</code> (<code>reckon/crew/ticker.py:1022</code>); <code>_fleet_counts</code> has five
+production call sites and exactly one passes a session
+(<code>_scoped_watch_event</code>, <code>recovery.py:4025</code>), and neither CLI call to
+<code>format_watch_transition</code> (<code>cli.py:2133</code>, <code>cli.py:2256</code>) passes
+one, so the scoped population is reachable from the API but unused by either command a
+coordinator runs. (2) The state de-duplication is the <code>reported</code> map in
+<code>_follow_watch_lines</code> (<code>cli.py:1793</code>, keyed by run id and suppressed at
+<code>cli.py:1821</code>); <code>on_poll</code> is rejected as the vehicle for a periodic line
+because <code>_tick</code> discards its return (<code>cli.py:1801</code>), so it has no yield
+channel to the pane, and the correct site is the generator's own wait pass where
+<code>_tick()</code> is already called (<code>cli.py:1881</code>, <code>cli.py:1905</code>).</p>
+<p><strong>Question three &mdash; YES.</strong> The sweep is project-wide:
+<code>_sweep_lapsed_holds</code> (<code>cli.py:1633</code>) delegates to
+<code>resumption.sweep</code>, which iterates <code>list_live(project=project)</code> with no
+session (<code>reckon/crew/resumption.py:1000</code>) and then runs the automatic review
+dispatch (<code>resumption.py:1185</code>). The named run <code>r-20260922T161442206389</code> is
+the record: it is a review of nova's <code>r-20260922T153201482175</code>, dispatched from the
+runtime session <code>576a27e3-ea0d-439c-9e63-3058761859c6</code> by the claude worker process
+<code>pid 1928140</code>, while the run itself was recorded under crew session
+<code>s18-fable-20260922</code> &mdash; the cross-session reach the question asks about.</p>
+<p><strong>Question four &mdash; NO.</strong> <code>attach_line</code> is composed by
+<code>_watch_attach_line</code> (<code>reckon/crew/runs.py:2456</code>) and names the bare
+executable <code>reckon</code> with no path; nine surfaces carry it. It does not resolve from a
+shell whose PATH lacks the venv: with the venv bin on PATH <code>command -v reckon</code>
+returns <code>/home/ITER/mcintos/Code/reckon/.venv/bin/reckon</code>, and with
+<code>PATH=/usr/bin:/bin</code> an invocation exits <code>127</code>.</p>
+<p><strong>What remains.</strong> This node measures only this change; verifying the merged
+result belongs to a separately dispatched test node. The remaining items, and the positive
+controls the data file carries, are recorded in
+<a href="/reckon/evidence/archive/the-monitor-under-measurement-landed.html">the landed evidence
+record</a>. The followup below is left open for the coordinator.</p>
+</div>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tmum-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship the-monitor-under-measurement" data-resolved-at="" data-resolved-by="">

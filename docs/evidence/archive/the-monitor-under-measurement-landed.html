@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-monitor-under-measurement-landed">
   <meta name="plan-title" content="The Monitor Under Measurement &mdash; landed evidence">
-  <meta name="plan-summary" content="Cumulative record of the follower measurements: a cell census of every rendered row across four projects, and a census of 118 stalls by worker liveness and of manifests carrying an unrecognised status.">
+  <meta name="plan-summary" content="Cumulative record of the follower measurements: a cell census of every rendered row, a census of 118 stalls by worker liveness, and a source path map of where scope, de-duplication, the sweep and the attach line are decided.">
   <meta name="plan-evidence-for" content="reckon:the-monitor-under-measurement">
-  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s3,reckon:the-monitor-under-measurement#s5">
+  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s3,reckon:the-monitor-under-measurement#s4,reckon:the-monitor-under-measurement#s5">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="qualified-pass">
   <meta name="plan-environment" content="Linux workstation; detached git worktrees; locally served worker deepseek-v4.1-flash; matplotlib">
-  <meta name="plan-commits" content="91a4e14e,73cbb5c0,a727e296,e12ad508">
-  <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png,docs/research/data/monitor-stall-census.json,docs/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png">
+  <meta name="plan-commits" content="91a4e14e,73cbb5c0,a727e296,e12ad508,91b0d3ed,5082fe7f,a22867da,ea078bd7">
+  <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png,docs/research/data/monitor-stall-census.json,docs/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png,docs/research/data/monitor-scope-path-map.json,docs/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg">
   <title>The Monitor Under Measurement &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -263,6 +263,77 @@
     reader can see which reading failed.</p>
   </section>
 
+  <section id="path-map">
+    <h2>Where scope and push are decided</h2>
+    <p class="plan-summary">&sect;4's done-when is met by
+    <code>docs/research/data/monitor-scope-path-map.json</code>, which answers all four
+    questions with a file, a line and the verbatim source line. The part worth reading is
+    that the two commands a coordinator actually runs do not use the one call site that
+    narrows a row's trailing figures to a session, and that the sweep a follower runs
+    reaches every session's runs in the project &mdash; both confirmed against a named run's
+    own record and a shell probe with its positive control.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg"
+      alt="Left: the figure path from the project-wide producer through the stream to the row cells, marking the one call site that re-scopes the population and the two CLI call sites that do not. Right: attach_line composition, its nine carrying surfaces, and the bare shell's 127 against the resolved venv path.">
+    <figcaption>The figure path and the attach-line path, with the one re-scoping site and the bare command's 127 marked.</figcaption>
+  </figure>
+
+  <section id="figures">
+    <h2>The first two questions &mdash; the figures, and the de-duplication</h2>
+    <p>The trailing figures on a row are counted by <code>_fleet_counts</code>
+    (<code>reckon/crew/recovery.py:3652</code>) and painted by the ticker's <code>_stats</code>
+    (<code>reckon/crew/ticker.py:1022</code>). <code>_fleet_counts</code> has five production
+    call sites, and exactly one passes a session: <code>_scoped_watch_event</code> at
+    <code>recovery.py:4025</code>. <code>format_watch_transition</code> reaches the figures through
+    <code>recovery.py:4061</code> only when it is itself given a session, and neither CLI call
+    site does.</p>
+    <p>A run's state is de-duplicated by the <code>reported</code> map in
+    <code>_follow_watch_lines</code> (<code>cli.py:1793</code>, keyed by run id and suppressed
+    at <code>cli.py:1821</code>). <code>on_poll</code> is not the vehicle for a periodic line:
+    <code>_tick</code> calls it and discards its return (<code>cli.py:1801</code>), so it has no
+    yield channel to the pane; the generator's own wait pass, where <code>_tick()</code> is already
+    called (<code>cli.py:1881</code>, <code>cli.py:1905</code>), is inside the generator and can
+    yield.</p>
+  </section>
+
+  <section id="third-question">
+    <h2>The third question &mdash; the sweep is project-wide</h2>
+    <p><code>_sweep_lapsed_holds</code> (<code>cli.py:1633</code>) delegates to
+    <code>resumption.sweep</code>, which iterates <code>list_live(project=project)</code> with no
+    session filter (<code>reckon/crew/resumption.py:1000</code>) and then runs the automatic review
+    dispatch (<code>resumption.py:1185</code>). The named run
+    <code>r-20260922T161442206389</code> is the record that it happened: a review of nova's
+    <code>r-20260922T153201482175</code>, dispatched from the runtime session
+    <code>576a27e3-ea0d-439c-9e63-3058761859c6</code> by the claude worker process pid
+    <code>1928140</code>, while the run itself was recorded under crew session
+    <code>s18-fable-20260922</code>.</p>
+  </section>
+
+  <section id="fourth-question">
+    <h2>The fourth question &mdash; the attach line does not resolve bare; probe and positive control</h2>
+    <p><code>attach_line</code> is composed by <code>_watch_attach_line</code>
+    (<code>reckon/crew/runs.py:2456</code>) and names the bare executable <code>reckon</code> with
+    no interpreter path; nine surfaces carry it. With the venv bin on PATH,
+    <code>command -v reckon</code> prints <code>/home/ITER/mcintos/Code/reckon/.venv/bin/reckon</code>;
+    with <code>env -i PATH=/usr/bin:/bin</code>, the same invocation prints
+    <code>bash: line 1: reckon: command not found</code> and exits <code>127</code>. The positive
+    control is the first case: it shows the probe can see the command when the venv is present, so
+    the 127 is a real absence and not an unaimed instrument.</p>
+  </section>
+
+  <section id="verification">
+    <h2>Verification</h2>
+    <p>Every quoted line in the data file was re-read from the tree at base
+    <code>9d8ccbd5</code> by a checker that compares the quoted line to the source line at the stated
+    number: <code>37</code> quoted entries, <code>0</code> mismatches. The two blanks the
+    checker would otherwise miss &mdash; a wrong line number and a stale quote &mdash; are caught by
+    the same comparison, and one wrong line number was in fact caught and repaired during the
+    build, so the check is known to fire.</p>
+  </section>
+
+  </section>
+
   <section id="scope">
     <h2>Scope and follow-ons</h2>
     <p>This node changed no source code and no test; it wrote one data file, one figure and this
@@ -278,6 +349,13 @@
     discrepancies are the substance: the plan's &sect;5 wording should be corrected to "later
     completed, after a resume" and its control 2 restated against the project that actually
     holds the word.</p>
+    <p>This node measures only this change; verifying the merged result belongs to a separately
+    dispatched test node. The wiring the first two questions point at &mdash; passing
+    <code>session=session</code> from <code>crew follow</code> to
+    <code>format_watch_transition</code>, and yielding a periodic posture line from the generator's
+    wait pass &mdash; is a repair rather than this map, and is recorded for the followup plans.
+    Nothing here asserts that the monitor's behaviour changes; it records where the behaviour is
+    decided.</p>
   </section>
 </main>
 </body>

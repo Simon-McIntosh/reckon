@@ -1,0 +1,158 @@
+{
+  "plan": "reckon:the-monitor-under-measurement",
+  "section": "s4",
+  "node": "monitor-scope-path-map",
+  "generated_at": "2026-09-22",
+  "base_sha": "9d8ccbd5677dfdd1ec7a172c4f57597a010059ee",
+  "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/monitor-rox-20260922/monitor-scope-path-map",
+  "method": "Each answer cites the deciding source line verbatim with its file and line number, from the base revision named above. The single measurement (question four's PATH probe) is stated with its positive control, so a real absence is distinguishable from an unaimed instrument.",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Where the trailing figures on a follower row are computed, every call site of format_watch_transition and _fleet_counts, and which of them pass a session.",
+      "answer": "The trailing figures on a row are counted by _fleet_counts in reckon/crew/recovery.py and turned into the dust-capped cells by the ticker's _stats; neither the render surface nor the CLI counts them. Every production call site of _fleet_counts except one passes no session, so a follower's trailing figures are the fleet's totals unless the event is re-scoped first. The only re-scoping call site is _fleet_counts(current, session=session) inside _scoped_watch_event (recovery.py:4025), which format_watch_transition reaches only when it is itself given a session (recovery.py:4061). The CLI's follow path does NOT give it one: the session there goes only to _follow_render_event, which blanks the owner column and leaves the figures alone. The one path that narrows the population is therefore reachable from the API but unused by the command a coordinator actually runs.",
+      "computation_sites": [
+        {
+          "file": "reckon/crew/recovery.py",
+          "line": 3652,
+          "symbol": "_fleet_counts",
+          "quote": "def _fleet_counts(",
+          "note": "Counts the working/blocked/unpromoted partitions over live-pointer snapshots. The session keyword narrows the counted population; the docstring at line 3663 reads 'session narrows the counted population to the runs that session owns'."
+        },
+        {
+          "file": "reckon/crew/ticker.py",
+          "line": 1022,
+          "symbol": "Ticker._stats",
+          "quote": "    def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:",
+          "note": "Turns the already-counted numbers into trailing cells; it does not count. The cell string is built at line 1045."
+        }
+      ],
+      "call_sites_fleet_counts": [
+        {"file": "reckon/crew/recovery.py", "line": 3800, "passes_session": false, "quote": "        events.append((dict(snapshot), previous, state, _fleet_counts(running)))", "context": "The project-global producer's own transition events."},
+        {"file": "reckon/crew/recovery.py", "line": 4025, "passes_session": true, "quote": "    counts = _fleet_counts(current, session=session)", "context": "_scoped_watch_event: the ONLY call site that passes a session."},
+        {"file": "reckon/crew/recovery.py", "line": 4122, "passes_session": false, "quote": "            counts = _fleet_counts(current)", "context": "The shared ticker path."},
+        {"file": "reckon/crew/runs.py", "line": 1092, "passes_session": false, "quote": "        counts = _fleet_counts(current)", "context": "The baseline event written to the watch stream."},
+        {"file": "reckon/crew/runs.py", "line": 1139, "passes_session": false, "quote": "    counts = _fleet_counts(snapshots)", "context": "The baseline a follower re-derives on attach."}
+      ],
+      "call_sites_format_watch_transition": [
+        {"file": "reckon/cli.py", "line": 2133, "passes_session": false, "quote": "                    format_watch_transition(", "context": "crew follow. The session argument is absent; the call passes with_session and ticker only, the session having been consumed by _follow_render_event at line 2134."},
+        {"file": "reckon/cli.py", "line": 2256, "passes_session": false, "quote": "                    click.echo(format_watch_transition(result, ticker=grid), color=True)", "context": "crew watch follow. No session argument at all."}
+      ],
+      "session_reaching_the_figures": {
+        "file": "reckon/crew/recovery.py",
+        "line": 4061,
+        "quote": "    if session is not None:",
+        "note": "format_watch_transition re-scopes the event through _scoped_watch_event only when given a session; neither production call site is."
+      }
+    },
+    {
+      "id": 2,
+      "question": "Where the follower de-duplicates a run's state, so a blocked or unpromoted run is printed once, and which existing hook a periodic line could use without breaking the rule that the stream carries only transitions and posture. on_poll in _follow_watch_lines is the candidate to confirm or reject.",
+      "answer": "The de-duplication is the reported map in _follow_watch_lines, keyed by run_id and holding the last state emitted for that run: _emit returns None when the incoming state equals the remembered one, so a run that stays blocked or unpromoted is printed once. on_poll is REJECTED as the vehicle for a periodic line, on a mechanical fact rather than a preference: _tick calls on_poll and discards its return value, and the caller's own poll callback returns None, so anything on_poll does has no channel back to the generator that yields to the pane. The correct site is inside the generator's own wait pass, where _tick() is already called (cli.py:1881 and 1905), because that code is in the generator and can yield. A periodic fleet-posture line emitted there would not break the transitions-and-posture rule: the fleet posture is exactly what the baseline already carries, and the comment at line 1862 restrains the follower's own facts from the stream, not the fleet's posture.",
+      "dedup": [
+        {"file": "reckon/cli.py", "line": 1793, "quote": "    reported = {", "note": "The map: run_id -> last state emitted for that run."},
+        {"file": "reckon/cli.py", "line": 1821, "quote": "            if reported.get(run_id) == state:", "note": "The suppression condition: an unchanged state returns None at line 1822."},
+        {"file": "reckon/cli.py", "line": 1823, "quote": "            reported[run_id] = state", "note": "Records the state it just emitted."}
+      ],
+      "hook_verdict": {
+        "on_poll": "rejected",
+        "why": "_tick() calls on_poll and returns None, and the registered callback poll() also returns None; there is no yield channel from on_poll to the pane.",
+        "on_poll_quote": {"file": "reckon/cli.py", "line": 1804, "quote": "            on_poll("},
+        "tick_signature": {"file": "reckon/cli.py", "line": 1801, "quote": "    def _tick(*, stream_path: Path | None = None, offset: int = 0) -> None:"},
+        "correct_site_quotes": [
+          {"file": "reckon/cli.py", "line": 1881, "quote": "            _tick()", "context": "generator wait pass, producer not live"},
+          {"file": "reckon/cli.py", "line": 1895, "quote": "                    _tick(stream_path=stream_path, offset=stream.tell())", "context": "generator line pass"},
+          {"file": "reckon/cli.py", "line": 1905, "quote": "                _tick(stream_path=stream_path, offset=stream.tell())", "context": "generator wait pass, producer live"}
+        ],
+                "rule_scope": {
+          "file": "reckon/cli.py",
+          "line": 1862,
+          "quote": "        # two streams interleaved into one pane.",
+          "note": "The full comment (1859-1862) says nothing about the follower itself goes on this stream, a reader wanting worker transitions and the fleet posture. A periodic fleet-posture line is posture, not the follower's own fact, so the rule does not forbid it; it only requires the line to be yielded from the generator, which rules out on_poll."
+        }
+      },
+      "positive_control": {
+        "claim": "posture already reaches the pane through the generator, not a callback",
+        "control": "the baseline posture events are yielded by the generator at cli.py:1873 from cursor['baseline'] (cli.py:1870), the same code region a periodic line would join",
+        "note": "The baseline is the existing precedent for posture on the stream, so a periodic line is a second emission of the kind already present rather than a new kind."
+      }
+    },
+    {
+      "id": 3,
+      "question": "Whether the recovery sweep a follower runs acts on runs of sessions other than the follower's own. Trace _sweep_lapsed_holds into reckon/crew/resumption.py and any review dispatch it reaches. Check the record of run r-20260922T161442206389 and state which session and process launched it.",
+      "answer": "YES. The sweep acts on the whole project, not the follower's session. _sweep_lapsed_holds is a delegator to resumption.sweep(project, dry_run=...), and sweep iterates list_live(project=project) with no session argument, then runs an automatic review pass whose own comment fixes it to the same site as the resume pass. A follower runs the sweep on a cadence, so any follower's sweep reaches every session's runs in the project and may dispatch a review onto a peer's scoring run. The named run's own record confirms it: r-20260922T161442206389 is a review of nova's run r-20260922T153201482175-sgc-sweep-control-at-the-four-of-twenty-revision, dispatched from the runtime session 576a27e3 while the run itself was recorded under crew session s18-fable-20260922.",
+      "verdict": "yes",
+      "trace": [
+        {"file": "reckon/cli.py", "line": 1633, "quote": "def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:", "note": "The follower's sweep entry point; its signature carries no session."},
+        {"file": "reckon/cli.py", "line": 1641, "quote": "    from reckon.crew.resumption import sweep", "note": "Deferred import of the project-wide sweep."},
+        {"file": "reckon/cli.py", "line": 1643, "quote": "    return sweep(project, dry_run=dry_run)", "note": "Delegation: project only, no session."},
+        {"file": "reckon/crew/resumption.py", "line": 1000, "quote": "    for pointer in list_live(project=project):", "note": "No session filter: the iteration covers every live pointer in the project."},
+        {"file": "reckon/crew/resumption.py", "line": 1173, "quote": "    # The review pass, on the same cadence and from the same site as the resume", "note": "The comment fixing the review pass to every sweep caller."},
+        {"file": "reckon/crew/resumption.py", "line": 1185, "quote": "            reviews = dispatch_awaiting_reviews(", "note": "The review dispatch the sweep reaches."},
+        {"file": "reckon/cli.py", "line": 1847, "quote": "            sweep(project)", "note": "The follower's own cadence call inside _sweep_on_cadence: no session passed."}
+      ],
+      "named_run": {
+        "run_id": "r-20260922T161442206389-review-of-sgc-sweep-control-at-the-four-of-twenty-revision",
+        "reviewed_run": "r-20260922T153201482175-sgc-sweep-control-at-the-four-of-twenty-revision",
+        "launching_session": "s18-fable-20260922",
+        "launching_runtime_session": "576a27e3-ea0d-439c-9e63-3058761859c6",
+        "launching_process": "/home/ITER/mcintos/.local/bin/claude -p --output-format stream-json --verbose --model claude-sonnet-",
+        "launching_pid": 1928140,
+        "record_evidence": [
+          {
+            "source": "the run's own stream.jsonl, system/init record",
+            "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T161442206389-review-of-sgc-sweep-control-at-the-four-of-twenty-revision/stream.jsonl",
+            "quote": "{\"type\": \"system\", \"subtype\": \"init\", \"cwd\": \"/home/ITER/mcintos/Code/.reckon-worktrees/nova-a0f1e0938fc2/s18-fable-20260922/review-of-sgc-sweep-control-at-the-four-of-twenty-revision\", \"session_id\": \"d00bdddf-64ed-4391-9bd0-bf2d956accde\"}",
+            "note": "The init record names the worktree under crew session s18-fable-20260922 and the claude runtime session id d00bdddf-64ed-4391-9bd0-bf2d956accde."
+          },
+          {
+            "source": "coordinator transcript, cross-session message nova-37 to socket 1625767 (runtime 576a27e3), 2026-09-22T16:16:28Z",
+            "quote": "at 18:14:42 a review of my run sgc-sweep-control-at-the-four-of-twenty-revision was dispatched from your runtime session (576a27e3) on the claude/sonnet backend under my session id (r-20260922T161442206389), so the sweep still reaches my scoring runs even with observe off",
+            "note": "Nova-37, the reviewed run's owner, reported the cross-session dispatch. 18:14:42 local equals 16:14:42Z, matching the run id's stamp."
+          },
+          {
+            "source": "coordinator transcript, tool_result 2026-09-22T16:16:06Z (a ps/correlation listing)",
+            "quote": "r-20260922T161442206389-review-of-sgc-sweep-control-at-the-four-of-twenty-revision claude starting s18-fable-20260922 576a27e3-ea0d-439c-9e63-3058761859c6\n1928140       00:55 /home/ITER/mcintos/.local/bin/claude -p --output-format stream-json --verbose --model claude-sonnet-",
+            "note": "The listing pairs the run with crew session s18-fable-20260922, the runtime session 576a27e3 and the claude worker process 1928140."
+          },
+          {
+            "source": "reckon crew recovery log, nova.jsonl (sweeps on 2026-09-22 from 16:16:51Z)",
+            "quote": "{\"dispatched\": false, \"reason\": \"a review is already in flight as a live run\", \"review_run_id\": \"r-20260922T161442206389-review-of-sgc-sweep-control-at-the-four-of-twenty-revision\", \"run_id\": \"r-20260922T153201482175-sgc-sweep-control-at-the-four-of-twenty-revision\"}",
+            "note": "Later sweeps saw the named run already live; the review pass is idempotent for that reason."
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "question": "Where attach_line is composed, what executable it names, every surface that prints it to a coordinator, and whether it resolves from a shell whose PATH lacks the reckon virtual environment.",
+      "answer": "attach_line is composed by _watch_attach_line in reckon/crew/runs.py, which builds a parts list whose first element is the bare word reckon and appends the project and an optional --session. It names the executable reckon with no path; the docstring says this is one bare command on purpose, because a shell pipeline around it has three ways to swallow the ticker silently. Nine surfaces print or carry it. The emitted command does NOT resolve from a shell whose PATH lacks the reckon virtual environment: an invocation exits 127 with 'reckon: command not found'. Probe receipt: with the venv bin on PATH, command -v reckon prints /home/ITER/mcintos/Code/reckon/.venv/bin/reckon; with a PATH of /usr/bin:/bin it is absent.",
+      "composed_at": {
+        "file": "reckon/crew/runs.py",
+        "line": 2456,
+        "function": "_watch_attach_line (line 2433)",
+        "quote": "    parts = [\"reckon\", \"crew\", \"follow\", \"--project\", shlex.quote(project)]",
+        "docstring_quote": {"line": 2441, "quote": "    It is one bare command on purpose: filtering and buffering belong inside"}
+      },
+      "executable_named": "reckon (bare, unqualified: no interpreter path, no venv path)",
+      "session_suffix": {"file": "reckon/crew/runs.py", "line": 2458, "quote": "        parts += [\"--session\", shlex.quote(session)]"},
+      "surfaces": [
+        {"file": "reckon/crew/runs.py", "line": 1720, "surface": "follower_state return", "quote": "        \"attach_line\": _watch_attach_line(project, session=session),"},
+        {"file": "reckon/crew/runs.py", "line": 1824, "surface": "watch_state", "quote": "    attach_line = _watch_attach_line(project, session=session)"},
+        {"file": "reckon/crew/runs.py", "line": 1847, "surface": "watch_state return", "quote": "        \"attach_line\": attach_line,"},
+        {"file": "reckon/crew/runs.py", "line": 1863, "surface": "project_watch_visibility", "quote": "    attach_line = _watch_attach_line(project, session=session)"},
+        {"file": "reckon/crew/runs.py", "line": 1976, "surface": "project_watch_visibility return", "quote": "        \"attach_line\": attach_line,"},
+        {"file": "reckon/crew/dispatch.py", "line": 3873, "surface": "dispatch success payload, watch block", "quote": "                \"attach_line\": _watch_attach_line(project, session=session),"},
+        {"file": "reckon/crew/dispatch.py", "line": 3702, "surface": "WatcherRequired refusal payload", "quote": "            \"attach_line\": dispatch_watch[\"attach_line\"],"},
+        {"file": "reckon/crew/node.py", "line": 390, "surface": "refusal remedy fallback", "quote": "        attach = watch.get(\"attach_line\") or \"reckon crew follow\""},
+        {"file": "reckon/mcp.py", "line": 3098, "surface": "MCP crew docstring", "quote": "    ``session_attached`` plus the session-scoped ``attach_line``. Without it the"}
+      ],
+      "resolves_without_venv": "no",
+      "probe": {
+        "date": "2026-09-22",
+        "positive_control": {"command": "PATH=/home/ITER/mcintos/Code/reckon/.venv/bin:$PATH command -v reckon", "result": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon", "note": "The command is visible when the venv is present, so the negative below is a real absence and not an unaimed instrument."},
+        "negative": {"command": "env -i PATH=/usr/bin:/bin bash -c 'reckon crew follow --project nova'", "result": "bash: line 1: reckon: command not found", "exit": 127}
+      }
+    }
+  ]
+}
