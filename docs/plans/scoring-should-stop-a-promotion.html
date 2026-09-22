@@ -2221,6 +2221,45 @@
     reinstating the regression</em>, which is the negative-control discipline applied to a single
     line instead of a module.</p>
 
+    <div class="r-comment" data-section="s5g" data-id="c-assertion-can-fail-prompt-rule-landed" data-who="crew-worker" data-when="2026-09-22">
+      <p><strong>The assertion-independence rule is in the review prompt.</strong>
+      Commit <code>751281c859f9e3dffa12b71356df2fc0687fc018</code> adds a
+      <em>The assertions the run added</em> section to
+      <code>reckon/crew/prompts/review.md</code>: for every assertion a run
+      added, state what would have to be true of the code for that assertion to
+      fail; name any assertion that compares a value against the same variable
+      the test itself passed in rather than against an independent source; and
+      apply the remedy that an assertion added to prevent a regression is
+      verified by reinstating the regression, not by observing the test pass.
+      The <code>durability</code> dimension now points at the rule, so a
+      reviewer reading only the five dimensions meets it, and the section states
+      that this is a reading rather than an experiment, so the prompt's own
+      reading bound is preserved.</p>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/assertion-independence.svg" alt="Three panels: the assertion as written compares the recorded pid against the same variable the test passed in and passes; with the input reverted to a host-decided literal it still passes; an assertion against a source the test did not supply fails on that literal.">
+        <figcaption>The shape the rule catches. Left and middle are one assertion under two inputs: because both sides are the same variable they move together, and the regression is invisible. Right is what an independent assertion does on the same input.</figcaption>
+      </figure>
+      <p><strong>Evidence that could have failed.</strong> The rule is held by
+      <code>tests/test_review_prompt_contract.py</code>, which reads the composed
+      prompt with whitespace collapsed and requires all three clauses. The
+      declared mutation &mdash; deleting the independent-source sentence from
+      the prompt &mdash; reddens
+      <code>test_prompt_requires_an_added_assertion_to_be_able_to_fail</code>
+      with <code>1 failed, 4 passed</code>, the missing clause quoted in the
+      assertion message; the prompt was restored byte-for-byte (sha256
+      <code>59366f3320a36538400b4833686d8aea5dd06dd70ae2835633bc9c813430acb4</code>
+      before and after) and the file then reads <code>5 passed</code>. The red
+      log names the mutation on its first line.</p>
+      <p><strong>Gate.</strong> <code>tests/test_review_prompt_contract.py</code>
+      reports <strong>4 passed</strong> at base and <strong>5 passed</strong>
+      after, with <strong>0</strong> failures either side. Ruff check on the
+      staged test file is clean at base and clean after; format reports the
+      same single file already formatted. The
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5g-assertion-independence">cumulative evidence record</a>
+      carries the reproduction and both logs. This is a worker landing record:
+      section closure and followup resolution remain with the coordinator.</p>
+    </div>
+
     <h2 id="s5f">§5f — A clean final round certifies the module, not its effect — and the report is the one artifact nobody reviews</h2>
 
     <p><strong>The strongest review sequence in this plan's evidence is half a triumph, and the

@@ -876,6 +876,55 @@
     promotion was run. Receipts: <code>merged-after.log</code>, <code>merged-base.log</code>,
     and <code>merged-verification.json</code> in the same run directory.</p>
   </section>
+
+  <section id="s5g-assertion-independence">
+    <h2>The review prompt asks each added assertion to be able to fail</h2>
+    <p><strong>What landed.</strong> Commit
+    <code>751281c859f9e3dffa12b71356df2fc0687fc018</code> adds an <em>The assertions the run
+    added</em> section to <code>reckon/crew/prompts/review.md</code>. For every assertion a run
+    added it instructs the reviewer to state what would have to be true of the code for that
+    assertion to fail; it names the independent-source shape &mdash; an assertion comparing a
+    value against the same variable the test itself passed in; and it states the remedy, that an
+    assertion added to prevent a regression is verified by reinstating the regression rather than
+    by observing the test pass. The <code>durability</code> dimension points at the rule, and the
+    section states the check is a reading, preserving the prompt's existing reading bound.</p>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/assertion-independence.svg" alt="Three panels: the assertion as written compares the recorded pid against the same variable the test passed in and passes; with the input reverted to a host-decided literal it still passes; an assertion against a source the test did not supply fails on that literal.">
+      <figcaption>One assertion under two inputs. Because both sides are the same variable they move
+      together, so the reinstated regression leaves the assertion true; an assertion against a
+      source the test did not supply is what reddens on that input.</figcaption>
+    </figure>
+    <p><strong>The falsifier, and its limit.</strong>
+    <code>tests/test_review_prompt_contract.py</code> reads the composed prompt with whitespace
+    collapsed, because each clause wraps across lines, and requires the question, the
+    independent-source clause and the remedy. Every phrase is load-bearing: dropping one leaves a
+    prompt that no longer asks, and nothing else in the gate stack would notice, since the
+    assertion it guards passes and the control reddens regardless.</p>
+    <table>
+      <caption>Focused gate over <code>tests/test_review_prompt_contract.py</code>, main-checkout
+      interpreter with <code>PYTHONPATH</code> set to the worktree.</caption>
+      <thead><tr><th>Revision</th><th>Result</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>aa267565</code></td><td>4 passed, 0 failed</td><td>the delta base</td></tr>
+        <tr><td>candidate</td><td>5 passed, 0 failed</td><td>one test added, no new failures</td></tr>
+        <tr><td>candidate, clause deleted</td><td>1 failed, 4 passed</td><td>the declared mutation reddens the new test</td></tr>
+        <tr><td>candidate, clause restored</td><td>5 passed, 0 failed</td><td>prompt byte-identical to the commit</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> The declared mutation deletes the
+    independent-source sentence from the prompt and reddens
+    <code>test_prompt_requires_an_added_assertion_to_be_able_to_fail</code>, whose message quotes
+    the missing clause. The prompt was restored byte-for-byte,
+    sha256 <code>59366f3320a36538400b4833686d8aea5dd06dd70ae2835633bc9c813430acb4</code> before and
+    after, and the file then passes. The red log names the mutation verbatim on its first line;
+    the mutation was applied and reverted in the worktree, never committed.</p>
+    <p><strong>Ruff.</strong> The staged test file is clean at base and clean at the candidate on
+    <code>ruff check</code>; <code>ruff format --check</code> reports the same single file already
+    formatted either side. Logs: <code>logs/baseline-review-prompt-contract.log</code>,
+    <code>logs/after-review-prompt-contract.log</code>, <code>logs/negative-control.log</code> and
+    <code>logs/after-restore-review-prompt-contract.log</code> in the run directory
+    <code>r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail</code>.</p>
+  </section>
 </main>
 </body>
 </html>
