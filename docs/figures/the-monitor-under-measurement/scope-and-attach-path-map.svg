@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="1000" height="620" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill:#ffffff; stroke:#334155; stroke-width:1.5; rx:6; }
+    .producer { fill:#eef2ff; stroke:#4f46e5; }
+    .render { fill:#ecfdf5; stroke:#059669; }
+    .scope { fill:#fef3c7; stroke:#d97706; }
+    .shell { fill:#fef2f2; stroke:#dc2626; }
+    .lbl { font-size:13px; fill:#0f172a; }
+    .small { font-size:11px; fill:#475569; }
+    .code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; fill:#0f172a; }
+    .arrow { stroke:#64748b; stroke-width:1.6; fill:none; marker-end:url(#ah); }
+    .head { font-size:15px; font-weight:600; fill:#0f172a; }
+    .t { font-size:12px; fill:#334155; }
+  </style>
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="32" class="head">Which session does a figure reach? — the two paths a reader asks about</text>
+  <text x="30" y="52" class="t">Left: where a row's trailing figures are counted and which of its call sites narrow the population to one session.</text>
+  <text x="30" y="68" class="t">Right: where the attach line is composed and whether the command it emits resolves from a bare shell.</text>
+
+  <!-- ===== LEFT: figures path ===== -->
+  <text x="30" y="104" class="head">1. Trailing figures on a row</text>
+
+  <rect x="30" y="120" class="box producer" width="200" height="66"/>
+  <text x="44" y="143" class="lbl">watch-stream producer</text>
+  <text x="44" y="162" class="small">_publish_watch_stream</text>
+  <text x="44" y="178" class="small">run s1092 · cursor r1139</text>
+
+  <rect x="30" y="224" class="box producer" width="200" height="66"/>
+  <text x="44" y="247" class="lbl">the stream itself</text>
+  <text x="44" y="266" class="small">carries the FLEET totals</text>
+  <text x="44" y="282" class="small">_fleet_counts(running) r3800</text>
+
+  <rect x="30" y="328" class="box render" width="200" height="80"/>
+  <text x="44" y="351" class="lbl">row render</text>
+  <text x="44" y="370" class="small">ticker _stats t1022</text>
+  <text x="44" y="386" class="small">paints the four cells</text>
+  <text x="44" y="402" class="small">does NOT count</text>
+
+  <path class="arrow" d="M130,186 L130,224"/>
+  <path class="arrow" d="M130,290 L130,328"/>
+
+  <rect x="300" y="224" class="box scope" width="250" height="66"/>
+  <text x="314" y="247" class="lbl">the only re-scoping site</text>
+  <text x="314" y="266" class="small">_scoped_watch_event r4025</text>
+  <text x="314" y="282" class="small">_fleet_counts(..., session=)</text>
+
+  <rect x="300" y="328" class="box render" width="250" height="80"/>
+  <text x="314" y="351" class="lbl">format_watch_transition r4039</text>
+  <text x="314" y="370" class="small">re-scopes only if session given</text>
+  <text x="314" y="386" class="small">r4061: if session is not None</text>
+  <text x="314" y="402" class="small">→ scoped population</text>
+
+  <path class="arrow" d="M230,360 L300,357"/>
+
+  <rect x="600" y="150" class="box shell" width="370" height="76"/>
+  <text x="614" y="173" class="lbl">CLI follow path — no session to the figures</text>
+  <text x="614" y="192" class="small">cli.py:2133 format_watch_transition(</text>
+  <text x="614" y="210" class="small">session consumed by _follow_render_event (owner column only)</text>
+
+  <rect x="600" y="250" class="box shell" width="370" height="76"/>
+  <text x="614" y="273" class="lbl">CLI watch-follow path — no session at all</text>
+  <text x="614" y="292" class="small">cli.py:2256 format_watch_transition(result, ticker=grid)</text>
+  <text x="614" y="310" class="small">_fleet_counts: 5 production sites, 1 passes session</text>
+
+  <text x="600" y="360" class="t">So the fleet totals reach the pane through both commands,</text>
+  <text x="600" y="377" class="t">and the scoped path is reachable from the API only.</text>
+
+  <!-- ===== RIGHT: attach line ===== -->
+  <text x="30" y="460" class="head">2. attach_line — composed once, printed on nine surfaces, resolves nowhere bare</text>
+
+  <rect x="30" y="476" class="box scope" width="250" height="80"/>
+  <text x="44" y="499" class="lbl">_watch_attach_line r2433</text>
+  <text x="44" y="518" class="small">r2456 parts = [ "reckon" , … ]</text>
+  <text x="44" y="536" class="small">bare word, no interpreter path</text>
+  <text x="44" y="550" class="small">+ --session when given r2458</text>
+
+  <path class="arrow" d="M280,516 L330,516"/>
+
+  <rect x="330" y="476" class="box render" width="270" height="80"/>
+  <text x="344" y="499" class="lbl">nine surfaces carry it</text>
+  <text x="344" y="518" class="small">runs.py 1720 · 1824 · 1847</text>
+  <text x="344" y="536" class="small">runs.py 1863 · 1976 · dispatch 3873</text>
+  <text x="344" y="550" class="small">dispatch 3702 · node 390 · mcp 3098</text>
+
+  <path class="arrow" d="M600,516 L650,516"/>
+
+  <rect x="650" y="476" class="box shell" width="320" height="80"/>
+  <text x="664" y="499" class="lbl">resolves from a shell? NO</text>
+  <text x="664" y="518" class="small">with venv bin on PATH:</text>
+  <text x="664" y="536" class="small">…/reckon/.venv/bin/reckon</text>
+  <text x="664" y="550" class="small">PATH=/usr/bin:/bin → exit 127</text>
+  <text x="664" y="566" class="small">(probe with positive control)</text>
+</svg>
