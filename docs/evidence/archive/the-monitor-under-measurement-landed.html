@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-under-measurement-landed">
+  <meta name="plan-title" content="The Monitor Under Measurement — landed evidence">
+  <meta name="plan-summary" content="Fourteen expiry-to-re-arm gaps and the grace period they imply.">
+  <meta name="plan-evidence-for" content="the-monitor-under-measurement">
+  <meta name="plan-verifies" content="the-monitor-under-measurement#s7">
+  <meta name="plan-artifacts" content="docs/research/data/monitor-sweep-ownership.json">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,monitor,follower,sweep">
+  <title>The Monitor Under Measurement — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Monitor Under Measurement</h1>
+      <p class="lead">The four measurements the sweep-ownership
+      recommendation rests on, taken together over one seven-day window in a
+      single file: <code>docs/research/data/monitor-sweep-ownership.json</code>.</p>
+      <p>Window 2026-09-15T20:53Z to 2026-09-22T21:09Z; census host
+      <code>98dci4-srv-1006.iter.org</code>. The counts below are read from that
+      file; every figure states the population it is a count over.</p>
+      <p><strong>Note on shelf life.</strong> The live-pointer population is
+      read from <code>~/.config/reckon/crew/live</code>, which the fleet rewrites
+      continuously. An earlier reading an hour before the one recorded here saw
+      5 unattended sessions over 8 pointers; this one sees 3 over 3. The file
+      carries its own generation timestamp and the orphan figures move.</p>
+    </header>
+
+    <section id="s7a">
+      <h2>&sect;7a &mdash; The re-arm gap</h2>
+      <p>A crew follow Monitor is a <code>Monitor</code> tool_use whose
+      <code>input.command</code> runs <code>crew follow</code>. The host writes
+      its expiry as <code>[Monitor expired after Nm with K events delivered]</code>
+      inside a <code>Monitor event: "DESC"</code> summary, delivered once with a
+      <code>&lt;task-id&gt;</code>; duplicate records sharing a task id are one
+      notice. A notice counts only where DESC names a crew follow monitor. The
+      gap is the notice's delivery time to the next crew follow Monitor call in
+      the same transcript.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Transcripts scanned (reckon, nova, imas-efit, imas-ambix)</td><td>196</td></tr>
+          <tr><td>Transcripts carrying a notice</td><td>25</td></tr>
+          <tr><td>Expiry notices</td><td>600</td></tr>
+          <tr><td>Expiry-to-re-arm gaps</td><td>587</td></tr>
+          <tr><td>Expiries followed by no re-arm at all</td><td>13</td></tr>
+          <tr><td>Median gap</td><td>12.13 s</td></tr>
+          <tr><td>90th percentile</td><td>582.67 s</td></tr>
+          <tr><td>99th percentile</td><td>18586.37 s (309.77 min)</td></tr>
+          <tr><td>Maximum</td><td>46318.46 s</td></tr>
+          <tr><td>nova-a9 transcript gaps</td><td>16</td></tr>
+        </tbody>
+      </table>
+      <p>Two things the distribution says. The median re-arm is twelve seconds,
+      so the gap is not usually an operator problem. The ninety-ninth percentile
+      is five hours, and the maximum is nearly thirteen; the tail is where a
+      follower is left off across a working day, which is the case the grace
+      period exists to classify.</p>
+      <figure>
+        <img src="/reckon/figures/the-monitor-under-measurement/rearm-gap-and-orphans.png"
+             alt="Re-arm gap distribution on a log scale, and the orphan split at the census">
+        <figcaption>Left: the 587 gaps, with the 99th percentile and the
+        rounded grace period marked. Right: the census reading the grace period
+        is applied to.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s7b">
+      <h2>&sect;7b &mdash; The orphan population</h2>
+      <p>Live pointers grouped by session, with
+      <code>follower_state</code> and <code>list_followers</code> deciding
+      whether any follower registration for that session is live.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Live pointer files</td><td>44</td></tr>
+          <tr><td>Sessions holding pointers</td><td>11</td></tr>
+          <tr><td>Unattended sessions</td><td>3</td></tr>
+          <tr><td>Pointers those sessions hold</td><td>3</td></tr>
+          <tr><td>Entries in the live directory that are not <code>.json</code></td><td>7</td></tr>
+        </tbody>
+      </table>
+      <p>All seven non-<code>.json</code> entries are backups of the form
+      <code>&lt;run-id&gt;.json.bak-before-scope-grant</code> and similar, written
+      beside a live pointer rather than replacing it; a reader that lists the
+      directory by extension is correct, and one that globs it is not.</p>
+      <p>The owning coordinator's transcript is resolved by the crew follow arm
+      that names the session, falling back to the newest transcript naming the
+      session at all. The fallback is an upper bound: another session quoting
+      the name counts, so the cross-check against pointer age is the stronger
+      signal. All three unattended sessions resolve only by the fallback, and
+      each resolves to a transcript being written during the census, which is
+      the fallback reporting on the census's own session rather than on the
+      unattended one. Every one of the three has an oldest live pointer between
+      23.7 and 119.8 hours old, and every pointer process is gone, so the
+      unattended reading rests on the pointer age and on the pointer's process being gone.</p>
+    </section>
+
+    <section id="s7c">
+      <h2>&sect;7c &mdash; Cross-session sweep actions</h2>
+      <p>Seven days of recovery logs and sweep status, read through
+      <code>recovery_log_path</code> and <code>sweep_status_path</code>.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Recovery log lines read (5 projects)</td><td>9812</td></tr>
+          <tr><td>Lines inside the window</td><td>6072</td></tr>
+          <tr><td>Resumes</td><td>37, over 29 runs</td></tr>
+          <tr><td>Review dispatches</td><td>112 distinct runs</td></tr>
+          <tr><td>Attributable to a sweeping session</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Neither source records the sweeping session.</strong> The log
+      carries <code>checked</code>, <code>dry_run</code>, <code>project</code>,
+      <code>resumed</code>, <code>reviews</code>, <code>skipped</code> and
+      <code>swept_at</code>; the status file adds <code>swept_by_pid</code> and
+      <code>writers</code>. That is a key inventory, not an inference: 925 of
+      9812 log lines carry the <code>reviews</code> key and 8887 do not, and the
+      two shapes carry no session field in either case.</p>
+      <p>A resume entry does carry a session, and it is the resumed run's own
+      engine session, resolved from that run's stream (34 of 37) or its live
+      pointer (3 of 37). It is not the sweeper.</p>
+      <p>For a review dispatch, the file follows the plan's direction and reads
+      the review run's own record. That record holds the reviewing worker's own
+      engine session, and the reviewed run's committed row holds the reviewed
+      worker's own engine session; both are engine sessions of dispatched
+      workers, so they differ by construction and comparing them attributes
+      nothing. The count of cross-session actions is therefore reported as
+      unavailable rather than inferred, and all 224 review action rows are
+      marked unattributable. The launching session is recorded in exactly one
+      place: a run's live pointer, under the <em>session</em> key, removed when
+      the run is promoted.</p>
+    </section>
+
+    <section id="s7d">
+      <h2>&sect;7d &mdash; Cross-host records</h2>
+      <table>
+        <thead><tr><th>Record</th><th>Same host</th><th>Different host</th><th>No host</th></tr></thead>
+        <tbody>
+          <tr><td>Live pointers (44)</td><td>44</td><td>0</td><td>0</td></tr>
+          <tr><td>Follower registrations (95)</td><td>0</td><td>0</td><td>95</td></tr>
+        </tbody>
+      </table>
+      <p>A follower registration records no host field at all: its keys are
+      <code>delivery</code>, <code>parent_pid</code>,
+      <code>parent_start_time</code>, <code>pid</code>,
+      <code>pid_start_time</code>, <code>project</code>, <code>scope</code>,
+      <code>session</code> and <code>started_at</code>. So the second row is a
+      property of the record's shape rather than a finding about the fleet. The
+      host a follower is on is reachable only through the pointer it serves,
+      which carries <code>launcher_host</code>; on that evidence every pointer
+      read at this census named the census host, and none was unknown.</p>
+      <p>This matters for the recommendation it informs: a rule that treats a
+      session whose pointers name another login node as unknown rather than
+      orphaned cannot be exercised against anything in this population, because
+      the population holds no host-mismatched record. That the rule is untested
+      here is the point of reporting the denominator beside it.</p>
+    </section>
+
+    <section id="s7e">
+      <h2>&sect;7e &mdash; The grace period, and the positive controls</h2>
+      <p>The 99th percentile re-arm gap is 18586.37 s, which is 309.77 minutes.
+      Rounded up to the next five minutes, that gives a grace period of
+      <strong>310 minutes</strong>. At the census moment, that grace period
+      classifies <strong>3</strong> of the 11 sessions holding live pointers as
+      orphaned: all three unattended sessions, whose single live pointer is
+      26.17, 24.09 and 120.13 hours old. None of the three would be classified
+      unknown instead, because every pointer process belonging to them is gone.</p>
+      <p>The two positive controls hold.</p>
+      <ul>
+        <li>The nova-a9 transcript yields <strong>16</strong> expiry-to-re-arm
+        gaps, against the required minimum of 14.</li>
+        <li>The review run <code>r-20260922T161442206389</code> is
+        <strong>not</strong> among the cross-session sweep actions, and the file
+        names the record that would have shown it: the run's live pointer, the
+        only carrier of a dispatch's launching session. That pointer is removed
+        when the run is promoted and this run is not live. What remains in its
+        run directory is <code>stream.jsonl</code>, holding the reviewing
+        worker's own engine session <code>d00bdddf-64ed-4391-9bd0-bf2d956accde</code>,
+        plus <code>stderr.log</code> and <code>prompt.txt</code>, and the prompt
+        names no session. What the sweep log records instead is 52 refusals in
+        <code>recovery/nova.jsonl</code> between 2026-09-22T16:16:51Z and
+        17:11:47Z, every one <code>dispatched false</code> with the reason
+        <em>a review is already in flight as a live run</em>, paired with the
+        run it would have reviewed. The run is absent from
+        <code>run_store.db</code> and from all 9 project ledgers</li>
+      </ul>
+    </section>
+
+    <section id="limits">
+      <h2>What these figures do not support</h2>
+      <ul>
+        <li><strong>No cross-session count.</strong> The section asks for the
+        number of sweeps acting on another session's run. The logs do not carry
+        the sweeping session and the run store does not carry a dispatch's
+        launching session, so the count is unavailable from the recorded data.
+        Reporting the 224 review rows as cross-session would be an artefact of
+        comparing two worker engine sessions that differ by construction.</li>
+        <li><strong>The orphan count is a live reading.</strong> It is a count
+        over a directory the fleet rewrites. An earlier pass in the same hour
+        read 5 unattended sessions over 8 pointers against 3 over 3 here.</li>
+        <li><strong>The host rule is untested.</strong> No pointer at any read
+        named a host other than the census host, so the recommendation's
+        cross-node clause is re-read from a single-host population.</li>
+      </ul>
+      <p>One instrument defect was found and repaired while taking the
+      measurement, and it is recorded because it is the kind that reports
+      "nothing" rather than failing: the fallback that resolves a session's
+      transcript globbed <code>&lt;root&gt;*.jsonl</code> against roots that
+      already end in a separator, a pattern that matches no file at all. It ran
+      without error and returned no result for every unattended session until
+      the pattern was corrected.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p>The four measurements are computed by three scripts against the live
+      crew config home and the Claude Code project directories, and the data
+      file records every source path it read. The build asserts the nova-a9
+      control and exits non-zero when it fails. The control-run paragraph rests
+      on counts read directly from <code>recovery/nova.jsonl</code>, the run
+      directory listing, <code>run_store.db</code> and the nine project
+      ledgers.</p>
+    </section>
+  </main>
+</body>
+</html>
