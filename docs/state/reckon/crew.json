@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T16:19:47",
+  "updated": "2026-09-22T16:21:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -259240,6 +259240,245 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T120119468216-a-gate-population-names-files-the-repository-has",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a719",
+        "node": "a-gate-population-names-files-the-repository-has",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 844,
+                "cached_input_tokens": 926650,
+                "input_tokens": 927496,
+                "output_tokens": 450,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 927946,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "cases in tests/test_gate_population_resolves.py assert a dispatch whose gate command names a pattern matching no file is refused before a worktree exists, with the refusal naming the pattern that matched nothing; a case asserts a glob matching at least 1 file is admitted, which is the negative half and is what stops the check becoming a literal-path rule; a case asserts the measured pattern tests/test_crew_resum*.py is refused while a pattern that does match is admitted, so the refusal turns on what the repository holds rather than on syntax; a case asserts a node declaring no gate command at all is unaffected; the check asks the repository for matches and nowhere rejects a pattern for containing a glob character; the declared mutation is applied, tests/test_gate_population_resolves.py is observed to fail, and the red log is recorded with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "a dispatch whose gate command names a path matching no file in the repository is refused before a worktree exists",
+          "id": "a-gate-population-names-files-the-repository-has",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T12:01:21Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120119468216-a-gate-population-names-files-the-repository-has/manifest.md",
+          "negative_control": "remove the gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is admitted",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a719",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/node.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_gate_population_resolves.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/figures/crew-runtime-positive-controls",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "gate-population",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T12:01:38Z",
+        "completed_at": "2026-09-22T13:38:31.937Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5800,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5813,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "eb2ffd60d634d3510f35e77880322564095e9aa9",
+        "commits": [
+          "f528785ab418b242bd9da6d2cd7d1a921f3681a4",
+          "0da49468f7921634de563bf738299a1052bac685"
+        ],
+        "changed_lines": {
+          "added": 570,
+          "removed": 0,
+          "files": 6
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_population_resolves.py tests/test_crew_dispatch*.py tests/test_crew_watch*.py tests/test_crew_recovery*.py tests/test_role_write_scope.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120119468216-a-gate-population-names-files-the-repository-has/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120119468216-a-gate-population-names-files-the-repository-has/manifest.md",
+        "scope_changed": false,
+        "session_id": "ce2b105d-1359-4326-ba04-c92ea0ca5717",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9718267,
+            "input_tokens_cumulative": 9718267,
+            "output_tokens": 39566,
+            "output_tokens_cumulative": 39566,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T13:38:31.937Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 12,
+            "fit": 17,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 86
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 19950520,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1893.947,
+          "generated_tokens": 98978,
+          "generation_seconds": 1602.716,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 30.2,
+          "machine_seconds": 291.231,
+          "peak_input_tokens": 144953,
+          "tokens_per_second": 61.76,
+          "wall_tokens_per_second": 52.26
+        },
+        "follow_on_paths": [
+          "tests/test_role_write_scope.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/a-gate-population-names-files-the-repository-has",
+          "session_id": "ce2b105d-1359-4326-ba04-c92ea0ca5717",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T13:38:31.937Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.895,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.895,
+          "at_complete": 0.947,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_gate_population_resolves.py"
+          ],
+          "declaration": "remove the gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is admitted",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/gate-population.red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/gate-population.red.log",
+          "reason": "the control was run and is sound; only the wording differs and the record was corrected rather than the declaration. Declared: remove the gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is admitted. Log opens: removing the gate-population match check admits a pattern matching nothing. Same experiment, shorter. It reddened exactly the two refusal cases and left the five negative halves green. Third waiver on this plan for the same cause; none of the three caught an unsound control."
+        },
+        "tool_steps": 95.0,
+        "orientation_input_tokens": 5202067.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -259538,6 +259777,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2078
+    "_version": 2079
   }
 }
