@@ -1994,9 +1994,15 @@ def _lane_advisory_costs(
             "samples": samples,
             "rework_rate": round(rework_rate, 6),
             "input_samples": len(inputs),
+            # The floor sits on the observations the charged median is actually
+            # drawn from, not on the usable runs beside them: a run with no
+            # paired worker-and-coordinator reading contributes nothing to the
+            # cost, so counting it toward the floor would clear a cost built
+            # from a handful of readings. ``_charged_cost`` also refuses a
+            # median of None, which is the same population stated as zero.
             "cost_per_durable_node": (
                 capabilities_module._charged_cost(median_input, rework_rate)
-                if samples >= _LANE_ADVISORY_MINIMUM_SAMPLES
+                if len(inputs) >= _LANE_ADVISORY_MINIMUM_SAMPLES
                 else None
             ),
         }
@@ -2032,7 +2038,7 @@ def _lane_advisory_cheaper_lane(
     }
     resolved = evidence.get(resolved_lane)
     if resolved_lane not in measured:
-        samples = resolved["samples"] if resolved else 0
+        chargeable = resolved["input_samples"] if resolved else 0
         return {
             "lane": None,
             "state": "insufficient_evidence",
@@ -2040,7 +2046,7 @@ def _lane_advisory_cheaper_lane(
             "candidates": sorted(measured),
             "detail": (
                 f"the rework-charged cost of {resolved_lane!r} for {role!r} at "
-                f"{spec_level!r} is not measured: {samples} usable run(s), "
+                f"{spec_level!r} is not measured: {chargeable} usable run(s), "
                 f"{_LANE_ADVISORY_MINIMUM_SAMPLES} needed, so no lane can be "
                 "named cheaper on this evidence"
             ),
@@ -3871,6 +3877,14 @@ def dispatch(
                 "watcher": {},
             },
         }
+
+        # The advisory the dispatch computed rides the record when it exists,
+        # beside the lane declaration and reading it was derived from. An
+        # absent advisory is left off entirely rather than written as a null:
+        # a null key would read as a lane that was checked and found quiet,
+        # which is the opposite of a lane that was never assessed.
+        if resolution.lane_advisory is not None:
+            record["lane_advisory"] = resolution.lane_advisory
 
         if launch_kind == "cli":
             try:
