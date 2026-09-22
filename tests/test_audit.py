@@ -361,3 +361,143 @@ def test_audit_ignores_local_and_resolved_followup_refs(tmp_path, monkeypatch):
         item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
     ]
     assert followup_findings == []
+
+
+# ─ audit-doc: the authoritative state, not the prose around it ──────────────
+#
+# The state reader walks every plan-* meta in document order and keeps the
+# last, so a duplicated scalar is one value silently chosen rather than an
+# ambiguity it reports; a typed resource carries its state in the
+# reckon-resource-state island, so the island's absence is invisible to every
+# presentation check; and a row's end tag is omittable in HTML, so an unclosed
+# <tr> reflows the rest of the table into the last row's cell. Each specimen is
+# built here rather than read from a live document: a check asserted against a
+# live file turns red the day that file is legitimately repaired, which reads
+# as a doccheck regression rather than as a finding.
+
+_PLAN_SHELL = (
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+    '<meta name="docs-project" content="proj">'
+    "{head}"
+    "<title>{slug}</title></head><body>"
+    '<main class="plan-doc">{body}</main></body></html>'
+)
+
+# A plan that declares itself standalone carries no wiring finding, so each
+# fixture below differs from a clean document only by the defect it asserts.
+_STANDALONE = (
+    '<meta name="plan-standalone" content="Fixture declares no wire; none is'
+    ' asserted here">'
+)
+
+
+def _plan_doc(*, slug: str, head: str = "", body: str = "") -> str:
+    return _PLAN_SHELL.format(slug=slug, head=head, body=body)
+
+
+def _audit_doc(tmp_path: Path, name: str, text: str) -> tuple[int, str]:
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    result = CliRunner().invoke(main, ["audit-doc", str(path)])
+    return result.exit_code, result.output
+
+
+def _typed_sprint_island(island: str) -> str:
+    return (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="docs-project" content="proj">'
+        '<meta name="reckon-type" content="sprint">'
+        '<meta name="reckon-id" content="S99">'
+        '<meta name="reckon-version" content="3">'
+        "<title>S99 | sprint</title></head><body>"
+        '<main class="reckon-resource" data-type="sprint" data-id="S99">'
+        '<ol data-reckon="sprint-items"></ol>'
+        f"{island}"
+        "</main></body></html>"
+    )
+
+
+def test_audit_doc_reports_duplicated_plan_scalar(tmp_path):
+    # The reader keeps the last value, so the first line is dead state that a
+    # writer can keep updating while every read reports the other value.
+    text = _plan_doc(
+        slug="dup-scalar",
+        head=(
+            _STANDALONE + '<meta name="plan-slug" content="dup-scalar">'
+            '<meta name="plan-status" content="active">'
+            '<meta name="plan-impl" content="0.9">'
+            '<meta name="plan-impl" content="0.1">'
+        ),
+        body="<p>The body renders and the duplicate is silent.</p>",
+    )
+    code, output = _audit_doc(tmp_path, "dup-scalar.html", text)
+    assert code != 0
+    assert "duplicate-plan-scalar" in output
+    assert "plan-impl" in output
+
+
+def test_audit_doc_reports_missing_resource_state_island(tmp_path):
+    # The island IS the resource's state; with it absent the document renders
+    # and every presentation check passes while every plan read in the project
+    # fails. No other meta or body content distinguishes this from a valid one.
+    text = _typed_sprint_island("")
+    code, output = _audit_doc(tmp_path, "island-missing.html", text)
+    assert code != 0
+    assert "resource-island-missing" in output
+
+
+def test_audit_doc_reports_unparseable_resource_state_island(tmp_path):
+    text = _typed_sprint_island(
+        '<script type="application/json" id="reckon-resource-state">{not json</script>'
+    )
+    code, output = _audit_doc(tmp_path, "island-malformed.html", text)
+    assert code != 0
+    assert "resource-island-malformed" in output
+
+
+def test_audit_doc_reports_unclosed_table_row(tmp_path):
+    # Every row after the first is missing its end tag: the browser folds the
+    # remaining rows into one cell, which no presentation check can see.
+    text = _plan_doc(
+        slug="unclosed-tr",
+        head=(
+            _STANDALONE + '<meta name="plan-slug" content="unclosed-tr">'
+            '<meta name="plan-status" content="active">'
+        ),
+        body=("<table><tr><td>one</td></tr><tr><td>two</td><tr><td>three</td></table>"),
+    )
+    code, output = _audit_doc(tmp_path, "unclosed-tr.html", text)
+    assert code != 0
+    assert "tr-unclosed" in output
+
+
+def test_audit_doc_clean_document_reports_ok(tmp_path):
+    # The three checks above must not fire on a well-formed document: the
+    # duplicate check reads every plan-* meta, so a document carrying one of
+    # each beside a balanced table is the control the new checks stay silent on.
+    text = _plan_doc(
+        slug="clean",
+        head=(
+            _STANDALONE + '<meta name="plan-slug" content="clean">'
+            '<meta name="plan-status" content="active">'
+            '<meta name="plan-impl" content="1.0">'
+        ),
+        body=("<table><tr><td>one</td></tr><tr><td>two</td></tr></table>"),
+    )
+    code, output = _audit_doc(tmp_path, "clean.html", text)
+    assert code == 0
+    assert "OK" in output
+
+
+def test_audit_doc_typed_resource_with_parseable_island_reports_ok(tmp_path):
+    # The positive control for the island check: a well-formed island is the
+    # case it must stay silent on, so the absence reports above are the check
+    # firing rather than the check never running.
+    text = _typed_sprint_island(
+        '<script type="application/json" id="reckon-resource-state">'
+        '{"id":"S99","type":"sprint","version":3}'
+        "</script>"
+    )
+    code, output = _audit_doc(tmp_path, "island-present.html", text)
+    assert code == 0
+    assert "OK" in output
