@@ -173,3 +173,133 @@ def test_the_two_surfaces_agree_on_an_absolute_declaration(
     assert _write_time_accepts(changed, declared, tmp_path) == _promotion_accepts(
         changed, declared, tmp_path
     )
+
+
+# A reclaimed run: its worktree directory was removed after the worker
+# committed, so promotion reads the repository instead of the worktree. The
+# recorded worktree path survives on the run record, which is what the
+# write-time check resolves a declaration against — so promotion must resolve
+# it there too, or an absolute grant under the vanished worktree reads as in
+# scope at the check and as stray at promotion.
+RECLAIMED_CASES = (
+    "declared-directory",
+    "declared-directory-nested",
+    "declared-directory-trailing-slash",
+    "declared-file",
+    "declared-tests-directory",
+    "undeclared-path",
+)
+
+
+def _reclaimed_run(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
+    """Build a run whose recorded worktree no longer exists on disk."""
+    worktree = tmp_path / "worktree"
+    repository = tmp_path / "repo"
+    repository.mkdir()
+    assert not worktree.exists()
+    return worktree, repository, {"repo": str(repository), "worktree": str(worktree)}
+
+
+def _reclaimed_pair(case: str, worktree: Path) -> tuple[str, list[str]]:
+    """Return a changed path and an absolute declaration under the worktree."""
+    inside = worktree / DIRECTORY_DECLARATION
+    return {
+        "declared-directory": (f"{DIRECTORY_DECLARATION}/scope.svg", [str(inside)]),
+        "declared-directory-nested": (
+            f"{DIRECTORY_DECLARATION}/panels/agreement.svg",
+            [str(inside)],
+        ),
+        "declared-directory-trailing-slash": (
+            f"{DIRECTORY_DECLARATION}/panels/agreement.svg",
+            [f"{inside}/"],
+        ),
+        "declared-file": (FILE_DECLARATION, [str(worktree / FILE_DECLARATION)]),
+        "declared-tests-directory": (
+            "tests/test_write_scope_agreement.py",
+            [str(worktree / "tests")],
+        ),
+        "undeclared-path": ("reckon/crew/other.py", [str(inside)]),
+    }[case]
+
+
+def _reclaimed_write_time_accepts(
+    changed: str, declared: str | list[str], worktree: Path, repository: Path
+) -> bool:
+    audit = audit_manifest(
+        _manifest(changed),
+        _node(list(declared)),
+        worktree=worktree,
+        repository=repository,
+    )
+    return bool(audit["ok"])
+
+
+def _reclaimed_promotion_accepts(
+    changed: str,
+    declared: str | list[str],
+    worktree: Path,
+    repository: Path,
+    record: dict[str, str],
+) -> bool:
+    tree = worktree if worktree.is_dir() else repository
+    outside = _outside_declared_scope(
+        [changed], list(declared), record=record, tree=tree
+    )
+    return not outside
+
+
+def test_a_reclaimed_run_accepts_a_path_under_a_declared_directory_at_both(
+    tmp_path: Path,
+) -> None:
+    worktree, repository, record = _reclaimed_run(tmp_path)
+    changed, declared = _reclaimed_pair("declared-directory", worktree)
+
+    assert (
+        _reclaimed_write_time_accepts(changed, declared, worktree, repository) is True
+    )
+    assert (
+        _reclaimed_promotion_accepts(changed, declared, worktree, repository, record)
+        is True
+    )
+
+
+def test_a_reclaimed_run_rejects_a_path_under_no_declaration_at_both(
+    tmp_path: Path,
+) -> None:
+    worktree, repository, record = _reclaimed_run(tmp_path)
+    changed, declared = _reclaimed_pair("undeclared-path", worktree)
+
+    assert (
+        _reclaimed_write_time_accepts(changed, declared, worktree, repository) is False
+    )
+    assert (
+        _reclaimed_promotion_accepts(changed, declared, worktree, repository, record)
+        is False
+    )
+
+
+def test_a_run_whose_worktree_still_exists_is_unaffected(tmp_path: Path) -> None:
+    worktree, repository, record = _reclaimed_run(tmp_path)
+    worktree.mkdir()
+    changed, declared = _reclaimed_pair("declared-directory", worktree)
+
+    assert worktree.is_dir() is True
+    assert (
+        _reclaimed_write_time_accepts(changed, declared, worktree, repository) is True
+    )
+    assert (
+        _reclaimed_promotion_accepts(changed, declared, worktree, repository, record)
+        is True
+    )
+
+
+@pytest.mark.parametrize("case", RECLAIMED_CASES)
+def test_the_two_surfaces_agree_on_a_reclaimed_worktree(
+    case: str, tmp_path: Path
+) -> None:
+    worktree, repository, record = _reclaimed_run(tmp_path)
+    changed, declared = _reclaimed_pair(case, worktree)
+
+    assert _reclaimed_write_time_accepts(
+        changed, declared, worktree, repository
+    ) == _reclaimed_promotion_accepts(changed, declared, worktree, repository, record)

@@ -1007,6 +1007,22 @@ def _merge_revisions(cwd: Path, revisions: Iterable[str]) -> list[str]:
     return merges
 
 
+def _scope_worktree(record: Mapping[str, Any], tree: Path) -> Path:
+    """Return the worktree a declared write path resolves against.
+
+    ``tree`` is the caller's readable tree, which falls back to the repository
+    once the run's worktree directory has been reclaimed — correct for reading
+    a tree, wrong for resolving a declaration. An absolute write path dispatch
+    granted under that worktree still names a location inside the repository,
+    and the write-time audit resolves it against the recorded worktree, which
+    never falls back. Resolving against the repository instead loses the
+    mapping, so the same declaration reads as stray at promotion and in scope
+    at the write-time check. The recorded worktree is the authority here
+    whether or not it still exists on disk.
+    """
+    return Path(str(record.get("worktree") or tree))
+
+
 def _outside_declared_scope(
     changed_paths: Iterable[str],
     declared_paths: Iterable[str],
@@ -1017,7 +1033,7 @@ def _outside_declared_scope(
     """Return changed repository paths not contained by a declared write root."""
     repository = Path(str(record.get("repo") or tree))
     roots = _repository_scope_paths(
-        declared_paths, worktree=tree, repository=repository
+        declared_paths, worktree=_scope_worktree(record, tree), repository=repository
     )
     outside = []
     for changed in changed_paths:
@@ -1050,7 +1066,9 @@ def _accepted_scope_exceptions(
     normalized: dict[str, str] = {}
     for raw_path, raw_reason in supplied.items():
         roots = _repository_scope_paths(
-            (str(raw_path),), worktree=tree, repository=repository
+            (str(raw_path),),
+            worktree=_scope_worktree(record, tree),
+            repository=repository,
         )
         if len(roots) != 1:
             raise CrewError(
