@@ -88,6 +88,35 @@ CLOSURE_AUTHORITY_CONTRACT = (
     "  not whether the section closed."
 )
 
+# The write-time manifest check, placed where the worker still holds the pen.
+# The promotion gate reads the same file minutes to hours after the worker's
+# process has ended, so a field it refuses can only be satisfied by a
+# coordinator editing a record it did not author — and a repaired field and a
+# fabricated one are the same bytes. A refusal that reaches the writer costs one
+# edit inside the turn it is already having. The command carries the run's own
+# id rather than naming the check bare, because an instruction to look for
+# something is not an instruction to run it. The two fields are named because
+# they refused four promotions on shape alone while the work was sound, and
+# because the reader's status vocabulary is not guessable from the block alone.
+# Kept as a standalone constant so a test can compose with it masked out and
+# diff against the live prompt, proving the block is removable and scoped.
+MANIFEST_CHECK_CONTRACT = (
+    "CONTRACT — CHECK YOUR OWN RECORD BEFORE YOU CLOSE IT\n"
+    "  Before you set status to a terminal value, run this and repair what it\n"
+    "  reports — the write-time audit of your manifest against your own node\n"
+    "  and worktree:\n"
+    "  `{command}`\n"
+    "  The same refusal at promotion reaches a coordinator hours later, after\n"
+    "  you have ended, and a record repaired then is indistinguishable from a\n"
+    "  fabricated one.\n"
+    "  Two fields have refused promotions on shape alone while the work behind\n"
+    "  them was sound. `status` must be one of the recognised values: a value\n"
+    "  outside that vocabulary leaves the whole record unreadable and every\n"
+    "  other field unread with it. `negative_control_log` must be the bare path\n"
+    "  and nothing else on that line: an empty field, or one carrying a\n"
+    "  description or a quoted first line, names nothing a reader can open."
+)
+
 
 # This portion is deliberately constant for every worker, regardless of the
 # project, node, role, or delivery configuration.  Its declared length is the
@@ -195,6 +224,16 @@ RUNTIME FILESYSTEM
         can_land = can_write_worktree
     landing_contract = PLAN_LANDING_CONTRACT if can_land else ""
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
+    # The check is composed with this run's own id so the worker can execute the
+    # line as written. A composing caller that supplies no id still gets a
+    # runnable instruction rather than a command that silently checks nothing.
+    manifest_check_contract = MANIFEST_CHECK_CONTRACT.format(
+        command=(
+            f"reckon crew check-manifest --run {run_id}"
+            if run_id
+            else "reckon crew check-manifest --run <this run's id>"
+        )
+    )
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     if node.role == "test":
         evidence_role_note = (
@@ -246,6 +285,9 @@ FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
 FENCE — DELIVERY
   Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
   If that exact path is not writable, STOP and report a blocker; a manifest written anywhere else means delivery cannot be found. Long output and logs go on disk.
+
+{manifest_check_contract}
+
 MANIFEST (write exactly these keys; after reading the plan, observe path and revision in the assigned tree and make these first three lines your first write; those three lines are the orientation write — record them under status: in-progress with a checkpoint line, and leave the wait fields empty until you are actually waiting on an external condition)
   orientation_worktree: <output of pwd>
   orientation_base_sha: <output of git rev-parse HEAD>
