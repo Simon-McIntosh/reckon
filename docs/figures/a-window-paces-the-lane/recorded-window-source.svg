@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#1a1a1a">Where each declared group's clocks come from</text>
+  <text x="24" y="55" font-size="12.5" fill="#5a5a5a">One reading per member; the newest dated reading wins; a member of no declared group is never read.</text>
+
+  <!-- left: member selection -->
+  <rect x="24" y="90" width="196" height="96" rx="8" fill="#f4f6fa" stroke="#b9c2d4"/>
+  <text x="38" y="115" font-size="13" font-weight="600" fill="#243044">declared group members</text>
+  <text x="38" y="138" font-size="12" fill="#3d4a60">codex, codex-astra,</text>
+  <text x="38" y="156" font-size="12" fill="#3d4a60">codex-luna, codex-terra</text>
+  <text x="38" y="176" font-size="11.5" fill="#7a8699">undated readings never compete</text>
+
+  <line x1="220" y1="138" x2="292" y2="138" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <!-- branch 1: receipt -->
+  <rect x="292" y="86" width="230" height="104" rx="8" fill="#eef6ee" stroke="#9dc39d"/>
+  <text x="306" y="110" font-size="12.5" font-weight="600" fill="#1f4a1f">1. newest dated lane_receipt</text>
+  <text x="306" y="132" font-size="11.5" fill="#2f5a2f">quota_windows: window_minutes</text>
+  <text x="306" y="150" font-size="11.5" fill="#2f5a2f">300 / 10080, used_percent,</text>
+  <text x="306" y="168" font-size="11.5" fill="#2f5a2f">resets_at (epoch), observed_at</text>
+  <text x="306" y="184" font-size="11" fill="#5d7a5d">codex dialect</text>
+
+  <path d="M522 138 L560 138" stroke="#8a94a6" stroke-width="1.4"/>
+
+  <!-- branch 2: stream -->
+  <rect x="292" y="248" width="230" height="104" rx="8" fill="#fdf4e8" stroke="#d9b483"/>
+  <text x="306" y="272" font-size="12.5" font-weight="600" fill="#6a4715">when the receipt carries none:</text>
+  <text x="306" y="294" font-size="11.5" fill="#7a5520">newest run streams of that member,</text>
+  <text x="306" y="312" font-size="11.5" fill="#7a5520">read by window_reading.read_windows</text>
+  <text x="306" y="330" font-size="11.5" fill="#7a5520">(unifiedWindows)</text>
+  <text x="306" y="346" font-size="11" fill="#8a6a3a">claude dialect &mdash; bounded at 3 runs</text>
+
+  <path d="M220 156 L256 156 L256 300 L292 300" stroke="#8a94a6" stroke-width="1.4" fill="none" marker-end="url(#a)"/>
+  <path d="M522 300 L560 300 L560 138" stroke="#8a94a6" stroke-width="1.4" fill="none"/>
+
+  <!-- join -> group_pace -->
+  <line x1="560" y1="138" x2="626" y2="138" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+  <rect x="626" y="106" width="150" height="64" rx="8" fill="#eef1f8" stroke="#a8b2c8"/>
+  <text x="640" y="130" font-size="12.5" font-weight="600" fill="#243044">budget.group_pace</text>
+  <text x="640" y="150" font-size="11.5" fill="#3d4a60">freshest dated member</text>
+  <text x="640" y="164" font-size="11.5" fill="#3d4a60">per group</text>
+
+  <line x1="776" y1="138" x2="826" y2="138" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <!-- output -->
+  <rect x="826" y="96" width="130" height="84" rx="8" fill="#ffffff" stroke="#6b7688"/>
+  <text x="838" y="120" font-size="12.5" font-weight="600" fill="#1a1a1a">group entry</text>
+  <text x="838" y="140" font-size="11.5" fill="#3d4a60">clocks: state,</text>
+  <text x="838" y="155" font-size="11.5" fill="#3d4a60">utilisation, age</text>
+  <text x="838" y="172" font-size="11.5" fill="#3d4a60">allowance, bar</text>
+
+  <!-- example rows -->
+  <line x1="24" y1="386" x2="956" y2="386" stroke="#e0e4ec"/>
+  <text x="24" y="410" font-size="12.5" font-weight="600" fill="#1a1a1a">Measured 2026-09-22, &#167;6</text>
+  <text x="24" y="432" font-size="12" fill="#3d4a60">codex-sub &#8212; codex-astra: five_hour unknown &#183; seven_day observed 0.31, age 51,273.8 s &#183; allowance 0.0299 &#183; bar fill none</text>
+  <text x="24" y="452" font-size="12" fill="#3d4a60">spark-sub &#8212; no reading reached it: both clocks unknown &#183; allowance null with a reason</text>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8a94a6"/>
+    </marker>
+  </defs>
+</svg>

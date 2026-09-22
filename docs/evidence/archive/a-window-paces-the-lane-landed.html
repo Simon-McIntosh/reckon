@@ -1034,6 +1034,113 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     </ul>
   </section>
 
+  <section id="s6-entry-point">
+    <h2>&sect;6 &mdash; The windows come from what the runs recorded, and the command is the reader</h2>
+
+    <p><strong>Landed 2026-09-22.</strong> The pre-flight's two readers now supply their own window
+    source instead of taking an implementation-supplied mapping. <code>budget.recorded_windows</code>
+    resolves one reading per declared group member from what the member's own runs recorded: the
+    newest <em>dated</em> <code>lane_receipt</code> among its ledger rows wins, and when that receipt
+    carries no <code>quota_windows</code> the newest few of its run streams are read through
+    <code>window_reading.read_windows</code>. A member of no declared group is never read, so an
+    unmetered lane costs nothing to leave alone.</p>
+
+    <h3>The measure, and what it reads</h3>
+
+    <p>A receipt row is mapped by its own <code>window_minutes</code> &mdash; <code>300</code> is
+    <code>five_hour</code>, <code>10080</code> is <code>seven_day</code>;
+    <code>used_percent/100</code> is the utilisation and <code>resets_at</code> (epoch seconds) the
+    reset stamp. A row's own <code>observed_at</code> is used when it carries one, else the receipt's,
+    and the reading's age is the distance from that stamp to the moment the pre-flight ran. Undated
+    readings never compete, which is the same rule the group already applies to its members. The
+    stream fallback is bounded at three run directories per member, so a group that has receipts never
+    walks a run directory at all.</p>
+
+    <table>
+      <tr><th>group</th><th>member read</th><th>five_hour</th><th>seven_day</th><th>allowance</th><th>group state</th></tr>
+      <tr><td><code>codex-sub</code></td><td><code>codex-astra</code></td><td>unknown</td><td>observed, 0.31, age 51,273.8 s</td><td>derived 0.0299</td><td>observed</td></tr>
+      <tr><td><code>spark-sub</code></td><td>none</td><td>unknown</td><td>unknown</td><td>null, with a reason</td><td>unknown</td></tr>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/recorded-window-source.svg" alt="Two reading sources feeding one group position. A declared group's members are resolved one reading each: the newest dated lane_receipt is preferred, and a member whose receipt carries no quota_windows has the newest few of its run streams read instead. The two dialects differ only in where the windows are written -- the receipt for one, the stream for the other -- and both carry an observation stamp, so both carry an age. The freshest dated member then becomes the group's position, and a group no reading reached reports unknown for both clocks and a null allowance with a reason.">
+    </figure>
+
+    <p><strong>The weekly-only receipt is the honest reading, and it is asserted rather than
+    smoothed.</strong> Every codex receipt on this workstation carries only
+    <code>window_minutes 10080</code>, so <code>codex-sub</code> reports its weekly clock observed and its
+    five-hour clock unknown &mdash; the allowance still derives from the weekly clock, while the
+    bar's <code>window_fill</code> stays <code>None</code> and every unprescribed node stays undecided.
+    That asymmetry is asserted directly (<code>seven_day</code> observed, <code>five_hour</code>
+    unknown, <code>derived is not None</code>) because collapsing it would either invent a five-hour
+    fill or throw away a real weekly measurement.</p>
+
+    <h3>Gate</h3>
+
+    <p><code>pytest -q tests/test_preflight_pace.py</code> &mdash; <strong>27 passed</strong>, exit 0
+    (<code>sha256 f318b193&hellip;</code>). The file carried 21 cases before this node and 6 are
+    added: the observed-group command-line case, the stream-carried reading, the weekly-only receipt,
+    the MCP budget view, the undeclared-member case, and the unreadable-window case.</p>
+
+    <p><strong>The 21 are a regression control, not a delta.</strong> The base revision's own copy of
+    the test file, run against the current tree, is <strong>21 passed</strong>
+    (<code>sha256 f7f9c584&hellip;</code>) &mdash; so no assertion that existed before this change
+    changed its verdict, and every added case is additive. Two of the six are the pair that would
+    otherwise move together: a group with an undeclared member is read as nothing, and a group whose
+    only receipt row is unreadable stays unknown, so a source that returned a reading for everything
+    would redden the first and a source that invented a zero would redden the second.</p>
+
+    <h3>The real workstation</h3>
+
+    <p><code>reckon crew preflight --project reckon --pretty</code>, run from this worktree and
+    captured whole (<code>461</code> lines, <code>sha256 9b9ffd79&hellip;</code>), reports
+    <code>codex-sub</code> with <code>state: observed</code>, its <code>seven_day</code> clock
+    <code>utilisation 0.31</code> at <code>observed_at 2026-09-21T20:53:30+00:00</code> with
+    <code>age_seconds 51273.765066</code> and <code>resets_at 2026-09-28T05:58:53+00:00</code>, an
+    allowance <code>derived 0.029917936</code>, and <code>spark-sub</code> unknown with a stated
+    reason. Each group's bar <code>state</code> is <code>unknown</code> because no
+    <code>--ready</code> node was named, which is the correct empty case rather than a missing
+    reading.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> bypass the recorded-witness source at the
+    command's call site. Applied to a scratch copy of this tree at exactly one site &mdash;
+    <code>reckon/cli.py</code>, <code>windows = budget_module.recorded_windows(&hellip;)</code>
+    replaced by <code>windows = {}</code> &mdash; with the package and tests copied in and every
+    <code>__pycache__</code> cleared so the traceback cannot cite the worktree. The scratch copy is
+    green on the named case before the mutation and red after it: <code>1 failed, 26 deselected</code>,
+    exit 1, failing at <code>assert sol["member"] == "sol-a"</code> with
+    <code>assert None == 'sol-a'</code> &mdash; the group has no observed member because no reading
+    reached it, which is the assertion the change exists to satisfy rather than an error elsewhere.
+    Log: <code>sha256 1cef5713&hellip;</code>, its
+    first line the declared mutation verbatim.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The stream fallback is exercised in tests and not at the workstation.</strong> Every
+      declared codex group on this machine carries a receipt, so the stream path was taken for
+      <code>codex-sub</code> zero times; the dialect that publishes on the stream declares no group
+      here, so the real-workstation run cannot reach it. It is a source that exists, is bounded, and is
+      asserted from a synthesised stream &mdash; not a path observed in production.</li>
+      <li><strong>The command-line cases write their ledger under the checkout path, not the config
+      home.</strong> They invoke <code>crew preflight --project demo --checkout-path tmp_path</code>
+      with <code>RECKON_HOME</code> also pointed at a temporary directory, so the run record the fence
+      describes sits at <code>tmp_path/docs/state/demo/crew.json</code> and every named assertion is
+      made against the emitted payload. The substance is met by a different route than the fence named,
+      and the route is stated rather than implied.</li>
+      <li><strong>One pre-existing test line was rewritten.</strong> The residue
+      <code>bar["bar" if False else "state"]</code> now reads <code>bar["state"]</code>. The two are
+      runtime-equivalent, so no verdict moved; it is recorded because a diff touching an existing
+      assertion should say so.</li>
+      <li><strong>The measure ranges over this node's own change.</strong> A merged-head verification
+      is a separately dispatched node's job, and the lint delta claimed here is against the base
+      revision's copy of these four files (24 findings either side, per-rule identical; both formatted
+      clean), not against <code>main</code>.</li>
+    </ul>
+  </section>
+
   <section id="gate-recapture">
     <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
 

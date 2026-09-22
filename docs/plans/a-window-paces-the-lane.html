@@ -840,6 +840,47 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     recorded-windows source bypassed at the command's call site, the observed-group command-line
     assertion fails.</p>
 
+    <h4 id="s6-entry-point-landed">Landing &mdash; the command reads the receipts and the streams, and reports what it found</h4>
+
+    <p><strong>Landed 2026-09-22.</strong> <code>budget.recorded_windows</code> resolves one reading
+    per declared group member from what the member's own runs recorded: the newest <em>dated</em>
+    <code>lane_receipt</code> wins, and a member whose receipt carries no <code>quota_windows</code>
+    has the newest few of its run streams read through <code>window_reading.read_windows</code>. A
+    member of no declared group is never read at all. <code>crew preflight</code> and
+    <code>crew(view="budget")</code> both supply that source &mdash; the view taking its ready set
+    from the tool's existing <code>candidates</code> &mdash; and the command accepts a repeated
+    <code>--ready NAME=GROUP:SCORE</code> so a caller can name the nodes a wave would open with
+    instead of always seeing an empty admitted set.</p>
+
+    <p><strong>Measured at the workstation, not only in tests.</strong>
+    <code>reckon crew preflight --project reckon --pretty</code> reports <code>codex-sub</code>
+    <code>state: observed</code> with its <code>seven_day</code> clock at
+    <code>utilisation 0.31</code>, <code>age_seconds 51273.765066</code> and an allowance
+    <code>derived 0.029917936</code>; <code>spark-sub</code> stays unknown with a stated reason. The
+    weekly-only receipts on this machine mean the five-hour clock is unknown and the bar's
+    <code>window_fill</code> stays <code>None</code> &mdash; the asymmetry the plan predicted, emitted
+    rather than smoothed. The 300-minute half of the window map is therefore exercised from a
+    synthesised receipt and a synthesised stream, and the 10080 half from production.</p>
+
+    <table>
+      <tr><th>group</th><th>member read</th><th>five_hour</th><th>seven_day</th><th>allowance</th><th>group state</th></tr>
+      <tr><td><code>codex-sub</code></td><td><code>codex-astra</code></td><td>unknown</td><td>observed, 0.31, age 51,273.8 s</td><td>derived 0.0299</td><td>observed</td></tr>
+      <tr><td><code>spark-sub</code></td><td>none reached it</td><td>unknown</td><td>unknown</td><td>null, with a reason</td><td>unknown</td></tr>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/recorded-window-source.svg" alt="Two reading sources feeding one group position. A declared group's members are resolved one reading each: the newest dated lane_receipt is preferred, and a member whose receipt carries no quota_windows has the newest few of its run streams read instead. The two dialects differ only in where the windows are written -- the receipt for one, the stream for the other -- and both carry an observation stamp, so both carry an age. The freshest dated member then becomes the group's position, and a group no reading reached reports unknown for both clocks and a null allowance with a reason.">
+    </figure>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q tests/test_preflight_pace.py</code> &mdash;
+    <strong>27 passed</strong>, exit 0, with the base revision's own copy of that file still
+    <strong>21 passed</strong> against this tree, so the added cases are additive and no prior
+    assertion moved. The declared negative control &mdash; the recorded-witness source bypassed at
+    the command's call site in a scratch copy &mdash; reddens the observed-group case at
+    <code>assert sol["member"] == "sol-a"</code>. Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-entry-point">the landed evidence
+    record</a>. Commit <code>4d043fd0</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">

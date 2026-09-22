@@ -3235,7 +3235,15 @@ def _crew(
             return {
                 "ok": True,
                 "view": view,
-                **budget_module.preflight(project, config, root=checkout_path),
+                **budget_module.preflight(
+                    project,
+                    config,
+                    root=checkout_path,
+                    windows=budget_module.recorded_windows(
+                        project, config, root=checkout_path
+                    ),
+                    ready=candidates or [],
+                ),
             }
         if view == "lanes":
             config = flight_module.resolve(project, checkout_path=checkout_path).config
