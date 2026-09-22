@@ -439,12 +439,21 @@
     hook rather than a stubbed return code. Replacing the branch decision with <code>if False:</code>
     in a scratch copy turns the reverted case red (<strong>1 failed, 2 passed</strong>) and leaves
     the surviving case green. Over the new file and
-    <code>tests/test_rollback_asks_head.py</code>: <strong>14 passed, 1 failed</strong>. The failure
-    is <code>test_failure_after_append_names_the_written_row[commit]</code>, which asserts the
-    pre-repair wording for the case whose own trace is a successful restore; that param encodes the
-    defect and needs the reverted expectation, and the file is outside this node's write fence, so
-    the change is reported rather than made. Ruff findings are <strong>10 → 10</strong> over the
-    changed paths and formatting deviations <strong>2 → 2</strong>.</p>
+    <code>tests/test_rollback_asks_head.py</code>: <strong>15 passed</strong> — <strong>3</strong>
+    in the new file and <strong>12</strong> in the existing one (committed at
+    <code>01277e55</code>). Reaching that green was not a matter of relaxing a wording:
+    <code>test_failure_after_append_names_the_written_row</code> asserted the surviving-row wording
+    for every parameter, while its own recorded git trace shows the rollback outcome <em>differs</em>
+    — where the restore exits 0 the appended row leaves the ledger with it, and only a refused
+    restore leaves a row a reader can still open. That file was outside this node's write fence, and
+    the node reported it rather than editing it; the coordinator granted the extension and the test
+    now derives its case from the restore exit codes it recorded, asserting the rolled-back wording
+    where the restore succeeded and the already-written wording where it did not (renamed
+    <code>test_failure_after_append_names_the_row_state</code>, since it now covers both states). The
+    ledger is read back to require its contents match the recorded outcome, so the expectation cannot
+    drift from the behaviour. Neither wording was weakened; the case the brief's own words describe
+    is the one retained throughout. Ruff findings are <strong>10 → 10</strong> over the changed paths
+    and formatting deviations <strong>2 → 2</strong>.</p>
     <p>Full record:
     <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-receipt-two-states">the two states of a failed landing's row</a>.
     This worker has not promoted, closed this section, or resolved its followup; integration and

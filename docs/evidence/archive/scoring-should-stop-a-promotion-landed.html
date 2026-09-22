@@ -352,15 +352,27 @@
     restatements of it.</p>
     <p><strong>Gate.</strong> <code>tests/test_receipt_names_the_rolled_back_row.py</code> plus
     <code>tests/test_rollback_asks_head.py</code> at the node head:
-    <strong>14 passed, 1 failed</strong>. The single failure is
-    <code>test_failure_after_append_names_the_written_row[commit]</code>, which asserts the
-    pre-repair wording — <em>is already written</em> and <em>do not re-promote</em> — for the case
-    whose own git trace is <code>[('rev-parse', 0), ('add', 0), ('restore', 0)]</code>: a successful
-    restore of a tracked ledger. That param encodes the defect this node repairs and must move to
-    the reverted expectation; the file is outside this node's fence, so the change is reported
-    rather than made. The other <strong>11</strong> params and cases pass unchanged:
-    <code>[stage]</code> keeps the already-written wording because its refused restore preserves a
-    tracked path, and <code>[capture]</code>, <code>[pointer]</code>, <code>[release]</code> and
+    <strong>15 passed</strong> —
+    <strong>3</strong> in the new file, <strong>12</strong> in the existing one, each file also green
+    alone and both exit 0. The one case that did not pass at first was
+    <code>test_failure_after_append_names_the_written_row[commit]</code>, asserting the pre-repair
+    wording for the case whose own recorded git trace is
+    <code>[('rev-parse', 0), ('add', 0), ('restore', 0)]</code>: a successful restore of a tracked
+    ledger. It was correct about the behaviour and wrong about the expectation, which is the defect
+    this node repairs expressed as an assertion. That file is outside this node's fence, so the
+    change was reported rather than made, together with the evidence that the parametrised test
+    encoded the defect for exactly that param. <strong>The coordinator granted the extension</strong>
+    and the test now derives its case from the restore exit codes it recorded — a single outcome per
+    param, asserted as such — rather than listing parameters: a successful restore asserts the
+    rolled-back wording and that re-promotion is the recovery, and a refused or absent restore keeps
+    the already-written wording and the warning against re-promoting. It is renamed
+    <code>test_failure_after_append_names_the_row_state</code>, since it now covers both states
+    rather than one. Its expectations are coupled to reality by reading the row back from the ledger
+    and requiring its presence to match the recorded outcome, so no assertion can drift from the
+    behaviour it describes. Neither wording was weakened. The other params are unchanged in
+    substance: <code>[stage]</code> keeps the already-written wording because its refused restore
+    (<code>restore</code> 128, then <code>cat-file</code> confirming HEAD carries the path) preserves
+    a tracked path, and <code>[capture]</code>, <code>[pointer]</code>, <code>[release]</code> and
     <code>[fleet]</code> fail after the landing commit already succeeded, so their row is committed
     and the wording stands.</p>
     <p><strong>Ruff.</strong> Findings over the two changed paths are <strong>10 at base and 10
@@ -370,8 +382,12 @@
     count was taken, because a guard that reads any failure as <em>the row survived</em> would
     silently restore the defect.</p>
     <p><strong>Delivery.</strong> Commit <code>73cb04f9</code> changes
-    <code>reckon/crew/promotion.py</code> and the new test. Receipts live in
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/</code>.
+    <code>reckon/crew/promotion.py</code> and the new test; commit <code>01277e55</code> changes
+    <code>tests/test_rollback_asks_head.py</code> under the coordinator's mid-flight scope
+    extension, whose reason was that the brief's own evidence gate could not be met while that file
+    carried the pre-repair expectation. Receipts live in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/</code>,
+    including <code>gate.log</code> for the pair and one log per file.
     This worker did not promote, close the section, or resolve its followup; integration and
     verification at the merged head remain coordinator-owned.</p>
   </section>
