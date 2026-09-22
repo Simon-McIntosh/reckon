@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 640" width="940" height="640"
+     font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <style>
+    .box  { fill: #f7f8fa; stroke: #b9c0cc; stroke-width: 1.2; rx: 6; }
+    .node { fill: #ffffff; stroke: #8d96a6; stroke-width: 1.2; rx: 5; }
+    .gone { fill: #f3f4f6; stroke: #9aa1ad; stroke-width: 1.2; stroke-dasharray: 5 4; rx: 5; }
+    .bad  { fill: #fdecec; stroke: #c0392b; stroke-width: 1.4; rx: 5; }
+    .good { fill: #ecf7ee; stroke: #1e8449; stroke-width: 1.4; rx: 5; }
+    .lbl  { fill: #2b3140; }
+    .mut  { fill: #6b7280; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+    .hd   { font-weight: 600; }
+  </style>
+
+  <text x="24" y="32" class="lbl hd" font-size="16">A declaration under a reclaimed worktree, and the tree it was resolved against</text>
+  <text x="24" y="52" class="mut">The run's worktree directory is removed after the worker commits; the recorded path survives on the run record.</text>
+
+  <!-- The run record -->
+  <rect class="box" x="24" y="72" width="892" height="112"/>
+  <text x="40" y="94" class="lbl hd">Run pointer</text>
+  <rect class="node" x="40" y="104" width="400" height="24"/>
+  <text x="50" y="120" class="mono lbl">worktree: …/ship-xxxx/worktree</text>
+  <text x="450" y="121" class="mut">recorded, but the directory is gone</text>
+  <rect class="node" x="40" y="134" width="400" height="24"/>
+  <text x="50" y="150" class="mono lbl">repo: …/Code/reckon</text>
+  <text x="450" y="151" class="mut">exists; promotion's readable-tree fallback</text>
+  <rect class="node" x="40" y="164" width="400" height="24"/>
+  <text x="50" y="180" class="mono lbl">node.write_paths: ["…/worktree/docs/figures/x"]</text>
+  <text x="450" y="181" class="mut">granted absolutely, under the vanished worktree</text>
+
+  <!-- changed path -->
+  <rect class="node" x="40" y="202" width="860" height="30"/>
+  <text x="50" y="221" class="mono lbl">changed: docs/figures/x/scope.svg</text>
+
+  <!-- BEFORE -->
+  <text x="24" y="270" class="lbl hd" font-size="14">Before — each surface resolved against a different tree</text>
+
+  <rect class="good" x="40" y="286" width="410" height="96"/>
+  <text x="56" y="308" class="lbl hd">write-time check · check-manifest</text>
+  <text x="56" y="330" class="mono mut">resolve against the recorded worktree</text>
+  <text x="56" y="350" class="mono mut">→  docs/figures/x</text>
+  <text x="56" y="372" class="mono" fill="#1e8449">in scope — no finding</text>
+
+  <rect class="bad" x="474" y="286" width="442" height="96"/>
+  <text x="490" y="308" class="lbl hd">promotion · _outside_declared_scope</text>
+  <text x="490" y="330" class="mono mut">resolve against the fallback tree = repo</text>
+  <text x="490" y="350" class="mono mut">→  no root (declaration is under the worktree)</text>
+  <text x="490" y="372" class="mono" fill="#c0392b">stray — the same declaration is refused</text>
+
+  <line x1="450" y1="330" x2="474" y2="330" stroke="#c0392b" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="24" y="404" class="mut">The declaration is right and the run is sound. The later surface lost the worktree only because the directory is gone, and the grant no longer maps</text>
+  <text x="24" y="420" class="mut">to any repository-relative root, so the two disagree on one unchanged manifest.</text>
+
+  <!-- AFTER -->
+  <text x="24" y="462" class="lbl hd" font-size="14">After — both resolve against the recorded worktree</text>
+
+  <rect class="box" x="230" y="478" width="480" height="52"/>
+  <text x="248" y="500" class="mono lbl">worktree = record["worktree"] or tree</text>
+  <text x="248" y="519" class="mut">the recorded path is the authority whether or not it exists on disk</text>
+
+  <line x1="360" y1="530" x2="330" y2="564" stroke="#8d96a6" stroke-width="1.2"/>
+  <line x1="580" y1="530" x2="610" y2="564" stroke="#8d96a6" stroke-width="1.2"/>
+
+  <rect class="good" x="180" y="564" width="300" height="34"/>
+  <text x="200" y="586" class="lbl">write-time check: accepted</text>
+  <rect class="good" x="510" y="564" width="320" height="34"/>
+  <text x="530" y="586" class="lbl">promotion: accepted</text>
+
+  <text x="24" y="624" class="mut">Falsified by resolving promotion against the fallback tree instead: 6 failed, 20 passed — the five declared cases and the named acceptance case go red,</text>
+  <text x="24" y="638" class="mut">while the undeclared-path rejection and the intact-worktree cases stay green.</text>
+</svg>
