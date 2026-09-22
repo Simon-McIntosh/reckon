@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380"
+     role="img" aria-labelledby="mc-title mc-desc"
+     font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <title id="mc-title">When the manifest refusal reaches the only party who can repair it</title>
+  <desc id="mc-desc">Two timelines over the same run. Refused at promotion (top): the worker
+  writes the record, its turn ends, and only hours later does the gate read the field and refuse,
+  leaving a coordinator to hand-edit a record it did not author. Refused at the worker's write
+  (bottom): the check runs inside the same turn, the worker repairs the field with the pen still
+  in hand, and promotion reads a record its author made true.</desc>
+
+  <style>
+    .lane  { fill: #f6f7f9; stroke: #c9cfd6; stroke-width: 1.2; }
+    .step  { fill: #ffffff; stroke: #8a949e; stroke-width: 1.2; rx: 6; }
+    .term  { fill: #fdecea; stroke: #c0564b; stroke-width: 1.6; rx: 6; }
+    .ok    { fill: #eaf6ee; stroke: #4e8f63; stroke-width: 1.6; rx: 6; }
+    .lbl   { font-size: 13px; fill: #1f2429; }
+    .sub   { font-size: 11px; fill: #5c656e; }
+    .ttl   { font-size: 13px; font-weight: 600; fill: #1f2429; }
+    .axis  { stroke: #9aa3ac; stroke-width: 1.4; marker-end: url(#arrow); }
+    .hop   { stroke: #c0564b; stroke-width: 1.4; stroke-dasharray: 5 4; }
+    .lead  { font-size: 11px; fill: #7a828a; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9aa3ac"/>
+    </marker>
+  </defs>
+
+  <!-- ── Top lane: refused at promotion ─────────────────────────────────── -->
+  <rect class="lane" x="20" y="30" width="860" height="140"/>
+  <text class="ttl" x="36" y="54">Refused at promotion — the reader arrives after the writer has gone</text>
+
+  <line class="axis" x1="60" y1="104" x2="840" y2="104"/>
+
+  <rect class="step" x="52" y="78" width="150" height="52"/>
+  <text class="lbl" x="127" y="99" text-anchor="middle">worker writes</text>
+  <text class="sub" x="127" y="116" text-anchor="middle">the manifest</text>
+
+  <rect class="step" x="228" y="78" width="150" height="52"/>
+  <text class="lbl" x="303" y="99" text-anchor="middle">turn ends</text>
+  <text class="sub" x="303" y="116" text-anchor="middle">no turn after it — print mode</text>
+
+  <rect class="term" x="404" y="78" width="170" height="52"/>
+  <text class="lbl" x="489" y="99" text-anchor="middle">gate reads the field</text>
+  <text class="sub" x="489" y="116" text-anchor="middle">refusal: shape, not work</text>
+
+  <rect class="term" x="600" y="78" width="248" height="52"/>
+  <text class="lbl" x="724" y="99" text-anchor="middle">coordinator hand-edits the record</text>
+  <text class="sub" x="724" y="116" text-anchor="middle">a repaired field and a fabricated one are the same bytes</text>
+
+  <line class="hop" x1="378" y1="104" x2="404" y2="104"/>
+  <line class="hop" x1="574" y1="104" x2="600" y2="104"/>
+  <text class="lead" x="303" y="150" text-anchor="middle">minutes to hours elapse across this gap; the repair party is not the author</text>
+
+  <!-- ── Bottom lane: refused at the worker's write ─────────────────────── -->
+  <rect class="lane" x="20" y="200" width="860" height="140"/>
+  <text class="ttl" x="36" y="224">Refused at the worker's write — the check runs while the pen is in hand</text>
+
+  <line class="axis" x1="60" y1="274" x2="840" y2="274"/>
+
+  <rect class="step" x="52" y="248" width="150" height="52"/>
+  <text class="lbl" x="127" y="269" text-anchor="middle">worker writes</text>
+  <text class="sub" x="127" y="286" text-anchor="middle">the manifest</text>
+
+  <rect class="term" x="228" y="248" width="180" height="52"/>
+  <text class="lbl" x="318" y="269" text-anchor="middle">crew check-manifest</text>
+  <text class="sub" x="318" y="286" text-anchor="middle">the same node, same worktree</text>
+
+  <rect class="ok" x="434" y="248" width="150" height="52"/>
+  <text class="lbl" x="509" y="269" text-anchor="middle">worker repairs it</text>
+  <text class="sub" x="509" y="286" text-anchor="middle">one edit, same turn</text>
+
+  <rect class="ok" x="610" y="248" width="238" height="52"/>
+  <text class="lbl" x="729" y="269" text-anchor="middle">promotion reads a sound record</text>
+  <text class="sub" x="729" y="286" text-anchor="middle">status in the vocabulary, control log a path</text>
+
+  <text class="lead" x="318" y="320" text-anchor="middle">the refusal is inside the turn that can still fix it</text>
+
+  <text class="sub" x="450" y="364" text-anchor="middle">Two fields refused four promotions on shape alone while the work was sound: a status outside the reader's vocabulary, and a negative_control_log that is empty or carries more than the bare path.</text>
+</svg>
