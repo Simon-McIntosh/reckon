@@ -13,21 +13,34 @@
       "imas-efit",
       "imas-ambix"
     ],
-    "transcript_dirs_searched": 1384,
+    "transcript_dirs_searched": 1412,
     "transcript_root": "/home/ITER/mcintos/.claude/projects",
     "watch_stream_root": "/home/ITER/mcintos/.config/reckon/crew/watch",
-    "monitor_calls_all_time": 1292,
-    "monitor_calls_in_window": 700,
-    "armed_followers_in_window": 700
+    "monitor_calls_all_time": 1311,
+    "monitor_calls_in_window": 719,
+    "armed_followers_in_window": 719,
+    "monitor_calls_in_window_that_started_no_task": 0
   },
   "outcome_partition": {
-    "note": "Only the three outcome rows below partition the armed followers: every armed follower in the window ended in exactly one of them. The code-reload row is a fourth cause counted over a different population (commits, not armings), so it is excluded from this sum and its count does not enter it.",
-    "rows": ["host-expiry", "producer-gap", "arming-failure"],
-    "identity": "600 + 100 + 0 = 700 = armed_followers_in_window"
+    "note": "Only the four outcome rows partition the armed followers: every Monitor that started a task in the window ended in exactly one of them. The code-reload row is a fifth cause counted over a different population (commits, not armings), so it is excluded from this sum and its count does not enter it.",
+    "rows": [
+      "host-expiry",
+      "producer-gap",
+      "arming-failure",
+      "other-script-failure"
+    ],
+    "identity": "620 + 86 + 12 + 1 = 719 = armed_followers_in_window"
+  },
+  "script_failure_population": {
+    "failure_notices_all_time": 34,
+    "failure_notices_in_window_by_notice_time": 14,
+    "distinct_task_ids_with_a_failure_notice": 33,
+    "armed_in_window_with_a_failure_notice": 13,
+    "note": "a call is classified by when it was ARMED, while its failure notice may arrive on the other side of the window boundary, so the count of notices whose own timestamp falls inside the window is not the count of armings classified here; a probe that counted notices alone reports a larger number for that reason"
   },
   "positive_control": {
     "claim": "the imas-efit transcripts for 2026-09-22 yield at least nine expiry notices",
-    "observed": 17,
+    "observed": 20,
     "holds": true,
     "matcher": "Monitor expired after (\\d+)m with (no|\\d+) events? delivered",
     "examples": [
@@ -41,9 +54,9 @@
       "definition": "a follower that met the host's thirty-minute expiry, announced by a notice reading 'Monitor expired after'",
       "pattern_searched": "Monitor expired after (\\d+)m with (no|\\d+) events? delivered",
       "population_searched": "task-notification events across the four checkouts' transcripts",
-      "count": 600,
-      "notices_in_window": 603,
-      "notices_in_window_distinct_by_task": 601,
+      "count": 620,
+      "notices_in_window": 625,
+      "notices_in_window_distinct_by_task": 622,
       "examples": [
         {
           "quote": "[Monitor expired after 10m with 5 events delivered. Re-arm it if you still need the watch.]",
@@ -67,24 +80,17 @@
           "task_id": "bwxc0hlx4"
         }
       ],
-      "prose_only_hits_excluded": 4
+      "prose_only_hits_excluded": 6
     },
     "producer-gap": {
       "definition": "a follower whose source ended before its expiry (the seat was released), so the stream's producer stopped without a notice",
       "pattern_searched": "an arming whose expiry deadline elapsed inside the window with no notice bearing its task id",
       "population_searched": "Monitor armings in the window whose expiry deadline preceded the window's close",
-      "count": 100,
-      "denominator": 700,
+      "count": 86,
+      "derivation": "armed followers meeting none of the other outcomes: armed_followers_in_window - host-expiry - arming-failure - other-script-failure - still-armed",
+      "denominator": 719,
       "baseline_bursts_in_streams": 2,
       "examples": [
-        {
-          "quote": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project imas-ambix --session slurm-fleet-placement",
-          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/230b9fc6-569c-40eb-97d2-19af05ea3982.jsonl",
-          "line": 828,
-          "timestamp": "2026-09-22T19:52:24.319000+00:00",
-          "task_id": "b4vq6ift1",
-          "description": "reckon crew run transitions for session slurm-fleet-placement"
-        },
         {
           "quote": "cd /home/ITER/mcintos/Code/imas-ambix && uv run --project /home/ITER/mcintos/Code/reckon reckon crew follow --project imas-ambix --session telemetry-spine",
           "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/98f13dbe-0703-4abd-a5e4-65bfdb2eeee2.jsonl",
@@ -100,6 +106,14 @@
           "timestamp": "2026-09-18T10:26:28.343000+00:00",
           "task_id": "boafo703c",
           "description": "imas-ambix S24"
+        },
+        {
+          "quote": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project imas-efit --session ship-s13-20260916",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/2acd71f7-d577-4918-93ad-8efdea445708.jsonl",
+          "line": 3525,
+          "timestamp": "2026-09-17T22:49:04.490000+00:00",
+          "task_id": "b0a21zpjc",
+          "description": "imas-efit S13"
         }
       ],
       "stream_examples": [
@@ -121,16 +135,57 @@
       "still_armed_at_window_close": 0
     },
     "arming-failure": {
-      "definition": "a Monitor whose command exited 127 or printed 'command not found'",
-      "pattern_searched": "command not found|No such file or directory|exit code 127|exited with  *127",
-      "population_searched": "Monitor tool_result bodies across the transcripts",
-      "count": 0,
+      "definition": "an armed follower whose script the host reported as failed with exit code 127, so the attach line's command was never found and nothing was watched",
+      "pattern_searched": "Monitor \"([^\"]*)\" script failed \\(exit (\\d+)\\)",
+      "population_searched": "task-notification events across the four checkouts' transcripts, matched with the description's escaped quotes resolved",
+      "count": 12,
+      "cross_check_tool_result_bodies_mentioning_a_missing_command": 0,
       "positive_control": {
-        "check": "the same detector over every tool_result in the corpus",
-        "tool_results_matching_the_pattern": 505,
-        "verdict": "non-zero, so the pattern is detectable and a zero among Monitor armings is a measured zero rather than an unaimed instrument"
+        "claim": "the imas-efit session e2fc50d7 yields the host's failure notice for task bjx1kic75",
+        "observed": 1,
+        "holds": true,
+        "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/e2fc50d7-e1ab-4c66-bcda-1e6a97b468b7.jsonl",
+        "task_id": "bjx1kic75",
+        "summary": "Monitor \"imas-efit S13\" script failed (exit 127)",
+        "note": "an earlier matcher searched the Monitor tool_result bodies for exit 127 and found nothing, and its corpus-wide control passed for a different pattern while missing a description the host delivers as a task notification"
       },
-      "examples": []
+      "examples": [
+        {
+          "quote": "Monitor \"imas-efit S13\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/2acd71f7-d577-4918-93ad-8efdea445708.jsonl",
+          "line": 73,
+          "armed_at": "2026-09-17T09:54:46.845000+00:00"
+        },
+        {
+          "quote": "Monitor \"imas-efit S13\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/e2fc50d7-e1ab-4c66-bcda-1e6a97b468b7.jsonl",
+          "line": 265,
+          "armed_at": "2026-09-22T11:25:46.818000+00:00"
+        },
+        {
+          "quote": "Monitor \"nova single-grid-solver-cutover fleet\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-nova/d4ec2ce4-0617-4d7e-b9a0-3be01c3acb4b.jsonl",
+          "line": 2967,
+          "armed_at": "2026-09-22T09:49:55.930000+00:00"
+        }
+      ]
+    },
+    "other-script-failure": {
+      "definition": "an armed follower whose script the host reported as failed with an exit code other than 127, so the command ran and ended non-zero rather than never starting",
+      "pattern_searched": "Monitor \"([^\"]*)\" script failed \\(exit (\\d+)\\)",
+      "population_searched": "the same task-notification events as the arming failure",
+      "count": 1,
+      "exit_codes_seen": {
+        "2": 1
+      },
+      "examples": [
+        {
+          "quote": "Monitor \"nova S19\" script failed (exit 2)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-nova/8fac263d-04b1-4202-bc28-df1b0b73ec93.jsonl",
+          "line": 9103,
+          "armed_at": "2026-09-18T07:44:56.438000+00:00"
+        }
+      ]
     },
     "code-reload": {
       "definition": "an in-place re-exec by _FollowerReloader in reckon/cli.py, which replaces every armed follower at a stream-record boundary",
@@ -152,8 +207,8 @@
           "committed": "2026-09-22T20:01:43+02:00"
         }
       ],
-      "examples_note": "This row's examples are the commits themselves, with their timestamps, rather than transcript paths: the reloader acts on a commit, so the commit is the evidence and no transcript line quotes the re-exec. The other three rows cite transcript paths.",
- "deciding_source": "reckon/crew/runs.py:116 follower_code_stamp",
+      "examples_note": "This row's examples are the commits themselves, with their timestamps, rather than transcript paths: the reloader acts on a commit, so the commit is the evidence and no transcript line quotes the re-exec. The other rows cite transcript paths.",
+      "deciding_source": "reckon/crew/runs.py:116 follower_code_stamp",
       "reloader_source": "reckon/cli.py:1681 _FollowerReloader.poll",
       "caveat": "the re-exec leaves no banner a transcript distinguishes from ordinary prose, so this count is the opportunity for a reload, not reloads observed"
     }
@@ -161,12 +216,29 @@
   "monitor_parameters": {
     "persistent_passed_all_time": 453,
     "persistent_passed_in_window": 0,
-    "calls_total_all_time": 1292,
+    "calls_total_all_time": 1311,
     "harness_promise_to_persistent_calls": "Monitor started (task ..., persistent \u2014 runs until TaskStop or session end)",
     "harness_promise_to_non_persistent_calls": "Monitor started (task ..., expires in 30m unless the source ends first; you get one notice at expiry \u2014 re-arm if you still need the watch)",
     "persistent_calls_that_still_met_the_expiry": 0,
-    "non_persistent_calls_that_met_the_expiry": 731,
-    "verdict": "a persistent Monitor does not meet the thirty-minute expiry; only non-persistent ones do"
+    "non_persistent_calls_that_met_the_expiry": 751,
+    "verdict": "a persistent Monitor does not meet the thirty-minute expiry; only non-persistent ones do",
+    "last_call_passing_persistent": {
+      "ts": "2026-09-15T13:40:15.915000+00:00",
+      "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/52baf927-8066-49b2-94da-e4d32c07a1f3.jsonl",
+      "line": 8193,
+      "task_id": "ba1fmj1r4",
+      "project": null,
+      "session": null
+    },
+    "first_non_persistent_call_that_met_the_expiry": {
+      "ts": "2026-09-14T20:41:15.559000+00:00",
+      "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-reckon/3332e8d8-dcef-4091-9774-c9680478b165.jsonl",
+      "line": 160,
+      "task_id": "b8nrg6iex",
+      "project": "reckon",
+      "session": "ship-s16-20260914"
+    },
+    "persistent_flag_last_seen_at": "2026-09-15T13:40:15.915000+00:00"
   },
   "rearm_intervals": {
     "sessions_with_two_or_more_armings": 64,
@@ -305,10 +377,10 @@
         "max_interval_minutes": 493.7
       },
       "imas-ambix:slurm-fleet-placement": {
-        "armings": 3,
-        "median_interval_minutes": 43.78,
+        "armings": 4,
+        "median_interval_minutes": 57.46,
         "min_interval_minutes": 30.1,
-        "max_interval_minutes": 57.46
+        "max_interval_minutes": 58.98
       },
       "imas-ambix:wire-telemetry-spine": {
         "armings": 6,
@@ -335,8 +407,8 @@
         "max_interval_minutes": 191.29
       },
       "imas-efit:ship-s13-20260922": {
-        "armings": 15,
-        "median_interval_minutes": 30.69,
+        "armings": 18,
+        "median_interval_minutes": 30.67,
         "min_interval_minutes": 1.06,
         "max_interval_minutes": 131.4
       },
@@ -347,10 +419,10 @@
         "max_interval_minutes": 1.05
       },
       "nova:s18-fable-20260922": {
-        "armings": 19,
-        "median_interval_minutes": 30.18,
+        "armings": 21,
+        "median_interval_minutes": 30.19,
         "min_interval_minutes": 0.88,
-        "max_interval_minutes": 56.49
+        "max_interval_minutes": 76.68
       },
       "nova:s18-pta": {
         "armings": 3,
@@ -359,8 +431,8 @@
         "max_interval_minutes": 971.43
       },
       "nova:s19-codex-20260916": {
-        "armings": 22,
-        "median_interval_minutes": 30.8,
+        "armings": 24,
+        "median_interval_minutes": 30.49,
         "min_interval_minutes": 0.22,
         "max_interval_minutes": 56.08
       },
@@ -383,10 +455,10 @@
         "max_interval_minutes": 802.02
       },
       "reckon:monitor-rox-20260922": {
-        "armings": 2,
-        "median_interval_minutes": 30.09,
+        "armings": 4,
+        "median_interval_minutes": 30.13,
         "min_interval_minutes": 30.09,
-        "max_interval_minutes": 30.09
+        "max_interval_minutes": 30.34
       },
       "reckon:rca-worker-channel-20260915": {
         "armings": 12,
@@ -407,10 +479,10 @@
         "max_interval_minutes": 134.38
       },
       "reckon:ship-cdocw-20260922": {
-        "armings": 20,
+        "armings": 22,
         "median_interval_minutes": 30.09,
         "min_interval_minutes": 30.06,
-        "max_interval_minutes": 30.39
+        "max_interval_minutes": 30.4
       },
       "reckon:ship-cot-drain-20260909": {
         "armings": 2,
@@ -419,7 +491,7 @@
         "max_interval_minutes": 167.63
       },
       "reckon:ship-crpc-20260921": {
-        "armings": 23,
+        "armings": 25,
         "median_interval_minutes": 30.09,
         "min_interval_minutes": 0.26,
         "max_interval_minutes": 983.61
@@ -497,10 +569,10 @@
         "max_interval_minutes": 184.16
       },
       "reckon:ship-s19-20260922": {
-        "armings": 2,
-        "median_interval_minutes": 0.17,
+        "armings": 4,
+        "median_interval_minutes": 30.12,
         "min_interval_minutes": 0.17,
-        "max_interval_minutes": 0.17
+        "max_interval_minutes": 30.17
       },
       "reckon:ship-s8": {
         "armings": 2,
@@ -515,7 +587,7 @@
         "max_interval_minutes": 1323.46
       },
       "reckon:ship-window-20260922": {
-        "armings": 18,
+        "armings": 19,
         "median_interval_minutes": 30.11,
         "min_interval_minutes": 30.06,
         "max_interval_minutes": 55.48
@@ -576,10 +648,10 @@
     "resumed_run_stream_end_within_a_minute_of_an_expiry": {
       "question": "does a resumed run's stream end within a minute of a host expiry notice?",
       "answer": "yes, at close quarters to the base rate, so the coincidence does not discriminate on its own",
-      "run_streams_ending_in_window": 1846,
-      "coincidence_within_60s": 463,
-      "null_expected_coincidences": 220.9,
-      "notice_coverage_of_window": 0.12,
+      "run_streams_ending_in_window": 1889,
+      "coincidence_within_60s": 483,
+      "null_expected_coincidences": 234.3,
+      "notice_coverage_of_window": 0.124,
       "examples": [
         {
           "run_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260916T055536290363-cca-exact-clip-warm-cost-and-workspace/resume-2.jsonl",
@@ -601,9 +673,5 @@
         }
       ]
     }
-  },
-  "observation": {
-    "recorded_at": "2026-09-22T20:22:41.161270+00:00",
-    "note": "transcripts are live on this host; counts drift by a few as sessions keep writing, so the file is a measurement at the recorded instant"
   }
 }

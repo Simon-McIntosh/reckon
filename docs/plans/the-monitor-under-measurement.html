@@ -93,17 +93,33 @@
       <h3>&sect;2 landing record &mdash; the cause census</h3>
       <p><strong>Landed.</strong> <code>docs/research/data/monitor-staleness-census.json</code>
       carries one row per cause over 2026-09-16&ndash;2026-09-23 across the reckon, nova,
-      imas-efit and imas-ambix checkouts (1384 transcript directories, 1292 Monitor calls).</p>
+      imas-efit and imas-ambix checkouts (1412 transcript directories, 1311 Monitor calls).</p>
       <p>The positive control holds: the imas-efit transcripts for 2026-09-22 yield
-      <strong>17</strong> expiry notices against the coordinator's reported nine. Every armed
-      follower in the window falls into exactly one of three outcomes, a complete partition of
-      700 armings: <strong>600</strong> met the host's thirty-minute expiry, <strong>100</strong>
-      ended early because the seat was released, and <strong>0</strong> failed to arm. On the
-      host's parameters, <strong>453</strong> Monitor calls passed <code>persistent</code> and
-      none of them met the expiry, while 730 non-persistent calls did; every one of the 453
-      predates the window, so not one of the 700 in-window armings carried the flag. The median
-      interval between successive armings in one session is
-      <strong>30.23&nbsp;minutes</strong> across 64 sessions.</p>
+      <strong>20</strong> expiry notices against the coordinator's reported nine. Every armed
+      follower in the window falls into exactly one of four outcomes, a complete partition of
+      719 armings: <strong>620</strong> met the host's thirty-minute expiry, <strong>86</strong>
+      ended early because the seat was released, <strong>12</strong> failed to arm, and
+      <strong>1</strong> failed in another way (exit 2). On the host's parameters,
+      <strong>453</strong> Monitor calls passed <code>persistent</code> and none of them met the
+      expiry, while 751 non-persistent calls did; every one of the 453 predates the window, so
+      not one of the 719 in-window armings carried the flag. The last call that passed the flag
+      was armed 2026-09-15T13:40:15Z in the imas-ambix transcript <code>52baf927&hellip;</code>,
+      and the first non-persistent call that met the expiry was armed 2026-09-14T20:41:15Z in the
+      reckon transcript <code>3332e8d8&hellip;</code>, so the boundary at which the parameter
+      stopped being passed is recorded. The median interval between successive armings in one
+      session is <strong>30.23&nbsp;minutes</strong> across 64 sessions.</p>
+      <p><strong>The arming-failure row was refuted and repaired.</strong> An earlier reading
+      reported <strong>0</strong> arming failures and a producer gap of 100. The host reports a
+      failed arming as a task notification whose summary is
+      <code>Monitor &lt;description&gt; script failed (exit N)</code> &mdash; a shape no matcher
+      aimed at the Monitor tool-result bodies can see, so the walk yielded no failure record and
+      the zero looked measured while the producer-gap row absorbed the failures. Widening the
+      matcher to the host's form, for any exit code, and de-escaping the transcript line before
+      matching finds <strong>13</strong> armed followers in the window with a failure notice:
+      <strong>12</strong> with exit 127 and <strong>1</strong> with exit 2. The row now carries its
+      own positive control, the notice for task <code>bjx1kic75</code> in the imas-efit session
+      <code>e2fc50d7</code>, which is matched before the zero it replaced could be read, and the
+      producer gap falls to 86 accordingly.</p>
       <p>Sweep-launched workers: <strong>yes as to parentage, no as to the kill.</strong> The
       sweep reaches <code>subprocess.Popen</code> at <code>reckon/crew/dispatch.py:4585</code>,
       which makes the worker the follower's child, but it passes <code>start_new_session=True</code>
@@ -111,9 +127,10 @@
       survives the follower's death.</p>
       <figure>
         <img src="/reckon/figures/the-monitor-under-measurement/staleness-causes.png"
-             alt="Left: 600 host expiries, 100 seat releases, 0 arming failures. Right: 0% of
-                  persistent Monitor calls met the 30-minute expiry against 87% of the rest.">
-        <figcaption>The complete partition of 700 in-window armings, and the expiry rate split by
+             alt="Left: 620 host expiries, 86 seat releases, 12 arming failures, 1 other script
+                  failure. Right: 0% of persistent Monitor calls met the 30-minute expiry against
+                  88% of the rest.">
+        <figcaption>The complete partition of 719 in-window armings, and the expiry rate split by
         the <code>persistent</code> flag. All 453 persistent calls predate the window.</figcaption>
       </figure>
       <p><strong>Caveats.</strong> The code-reload row counts 198 commits touching
