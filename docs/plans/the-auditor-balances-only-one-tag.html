@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-auditor-balances-only-one-tag">
+  <meta name="plan-title" content="The Auditor Balances Only One Tag">
+  <meta name="plan-summary" content="The doc auditor balances section tags only, so an evidence record with four unclosed table rows passes the gate that runs before every commit.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-standalone" content="The document auditor is its own surface: no plan waits on this repair and this repair waits on none, so wiring it to the plan whose evidence file happened to expose it would assert a dependency that does not exist.">
+  <title>The Auditor Balances Only One Tag | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-22">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What the auditor balances, and what it does not</h2>
+
+    <p><code>reckon audit-doc</code> is the gate the ship skill requires before
+    any plan or evidence record is committed, and its own instruction is that all
+    errors are cleared before the turn ends. It can emit forty-seven distinct
+    check codes. Exactly one of them comes from a structural balance scan, and
+    that scan counts <code>&lt;section&gt;</code> opens against closes: an
+    unclosed section raises <code>section-unclosed</code> and an orphaned close
+    raises <code>section-stray-close</code>. Every other code is about metadata,
+    links, images, markdown leakage, or review state. Nothing looks at table
+    structure, so a table whose rows are never closed is not merely tolerated
+    &mdash; it is invisible.</p>
+
+    <p>The consequence is not cosmetic. An unclosed row does not degrade into a
+    slightly untidy table; the browser reflows everything after it into the cell
+    that was left open, so the rest of the document is swallowed by a table cell.
+    That is the same class of failure as the unclosed section the scanner already
+    catches, and it is caught for one tag and not the other for no reason anyone
+    chose &mdash; the scanner was written for sections because sections were the
+    problem that day.</p>
+
+    <h3 id="s1-measured">The measurement</h3>
+
+    <p>All 205 files under <code>docs/plans</code> and <code>docs/evidence</code>
+    were scanned on 2026-09-22 by counting opening against closing tags. Three
+    carry a structural imbalance. The auditor was then run against each of those
+    three. Optional-close tags such as <code>&lt;td&gt;</code> and
+    <code>&lt;li&gt;</code> are excluded from the count, because HTML permits
+    them to be left open and an imbalance there is not evidence of anything.</p>
+
+    <table>
+      <thead>
+        <tr><th>File</th><th>Tag</th><th>Open</th><th>Close</th><th>Auditor verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>a-live-worker-can-be-reached-landed</code></td>
+          <td><code>section</code></td><td>5</td><td>3</td>
+          <td>caught &mdash; <code>section-unclosed</code></td>
+        </tr>
+        <tr>
+          <td><code>crew-observability-truth-landed</code></td>
+          <td><code>section</code></td><td>57</td><td>53</td>
+          <td>caught &mdash; <code>section-unclosed</code></td>
+        </tr>
+        <tr>
+          <td><code>a-window-paces-the-lane-landed</code></td>
+          <td><code>tr</code></td><td>67</td><td>63</td>
+          <td><strong>OK</strong> &mdash; no finding at any severity</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The third row is the whole plan. That file is the cumulative evidence
+    record of a plan sitting at <code>impl</code> 0.99, which is to say the
+    record a later reader consults to find out what was actually proved, and the
+    check that exists to keep such records readable reports it clean. The first
+    two rows are the positive control: they establish that the auditor is not
+    silent in general, only silent about this. Without them the third row would
+    be equally consistent with the auditor never running at all.</p>
+
+    <p>How it was found is worth recording, because it was not found by the
+    auditor and could not have been. A worker repairing an unrelated test fixture
+    parsed the evidence file with its own section cut out, in order to prove that
+    the damage it could see was not damage it had caused, and reported the four
+    unclosed rows as an out-of-fence follow-on. The auditor had passed that file
+    on every commit it had ever received.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Generalise the scan, then repair what it finds</h2>
+
+    <p>The balance scanner already exists and already has the right shape; what
+    it lacks is a second tag. The work is to widen it to the tags whose imbalance
+    reflows a document, emit a finding in the same form as
+    <code>section-unclosed</code>, and then repair the three files the widened
+    check names. The order matters: the check lands first and is observed to fail
+    on the real file, because a repair made before the check exists proves only
+    that someone edited the file.</p>
+
+    <p>Two properties keep this from becoming a general HTML validator, which is
+    not what is wanted here. The scan stays a tag-balance count rather than a
+    parse, so it cannot object to anything a browser accepts. And the tag list is
+    explicit and short rather than open-ended, so a tag whose imbalance is
+    legitimate is never reported.</p>
+
+    <h3 id="s2-done">Done when</h3>
+
+    <p>A fixture built from the real evidence record &mdash; its four unclosed
+    rows preserved &mdash; produces a finding naming the tag and the counts, and
+    that finding is observed before any file is repaired; the two files already
+    caught by <code>section-unclosed</code> still produce exactly the finding they
+    produce today, asserted so the widening is shown not to have changed the
+    existing check; all three measured files pass the widened auditor after
+    repair, with the before and after counts recorded from the same pass; the
+    other 202 files produce no new finding, which is the measure that catches a
+    tag added to the list too eagerly; and the declared negative control &mdash;
+    revert the widened scan to sections alone &mdash; is applied to a scratch
+    copy, the fixture case is observed to fail there, and the red log's first
+    line repeats the declared mutation verbatim.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="balanced-tags" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Which tags does the balance scan cover, beyond section ?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="tr-only">tr only — the one measured failure, nothing speculative</button>
+      <button class="r-opt" data-value="table-structure">the table structure group — table, thead, tbody, tr</button>
+      <button class="r-opt" data-value="block-containers">every non-optional block container — table group, ul, ol, dl, figure</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-abo-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Widen the balance scan before repairing anything it would name</h4>
+    <div class="r-fu-body"><p>The scan lands first and is observed to fail on a fixture built from the real evidence record, because a repair made before the check exists proves only that someone edited the file. The tag list is a locked decision, so resolve <code>balanced-tags</code> before dispatching; the three measured files and their counts are in &sect;1.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-auditor-balances-only-one-tag §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
