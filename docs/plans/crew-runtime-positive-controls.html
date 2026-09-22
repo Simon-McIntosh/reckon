@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;done&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-impl" content="0.895">
-<meta name="plan-version" content="87">
+<meta name="plan-impl" content="0.947">
+<meta name="plan-version" content="88">
 </head>
 <body>
   <main class="plan-doc">
@@ -1334,6 +1334,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20260921T180734291802-review-of-the-sweep-lifts-the-wait-the-reader-accepted" data-who="reckon-ship" data-when="2026-09-22T10:33:45.745Z">
     <div class="r-comment-body"><p>independent review of the sweep-lift repair: 91/100, its finding that the cited gate logs name no revision, tree or command, which is section 17's defect and predates section 17's landing</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-20260922T1615-gate-population-landed" data-who="reckon-ship" data-when="2026-09-22T16:15:00+02:00">
+    <div class="r-comment-body">Gate passed: seven cases, the declared mutation reddening exactly the two refusal cases while the five negative halves stayed green (2 failed, 5 passed, exit 1), which is what separates a mutation that reddens the refusal from one that breaks something else. Three of the seven are the worker's own additions and one of them makes the check safe to have at all: a population the node declares it will WRITE is admitted, without which this refusal would reject nearly every node shipped on this plan, since each gates on a test file it is about to create. The other two are false-positive guards — a literal path matching no file is not a population, and a ratio in a measure is not read as a path. Review 86/100 with evidence 12, for a red log that paraphrases the declared mutation while the evidence anchor claimed it repeated it verbatim. The anchor is corrected at HEAD and the promotion carries a waiver; the declaration was not edited to match, because a check satisfiable by rewriting its own input measures nothing. Third such waiver on this plan, all three a worker wording a mutation differently from the coordinator, none catching an unsound control — which is the evidence the lead's write-time decision rests on.</div>
 </div>
 </section>
 </main>
