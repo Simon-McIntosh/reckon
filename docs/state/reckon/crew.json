@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T13:34:25",
+  "updated": "2026-09-22T13:36:44",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -254629,6 +254629,238 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a75g",
+        "node": "the-review-prompt-asks-whether-an-assertion-can-fail",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 940,
+                "cached_input_tokens": 496737,
+                "input_tokens": 497679,
+                "output_tokens": 607,
+                "reasoning_output_tokens": 166,
+                "total_tokens": 498286,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "the review prompt in reckon/crew/prompts/review.md instructs the reviewer, for every assertion the run added, to say what would have to be true of the code for that assertion to fail, and to name any assertion that compares a value against the variable the test itself passed in rather than against an independent source; it states the remedy, which is that an assertion added to prevent a regression is verified by reinstating the regression, not by observing the test pass; the instruction is asserted in tests/test_review_prompt_contract.py by reading the composed review prompt and requiring both the question and the independent-source clause; and PYTHONPATH set to the main checkout with the root interpreter, pytest over tests/test_review_prompt_contract.py reports no more failures than it reports at base, with both counts in the manifest",
+          "estimated_hours": null,
+          "goal": "the review prompt asks the reviewer to establish that each assertion a run added can actually fail, so an assertion that is true by construction is caught rather than counted as coverage",
+          "id": "the-review-prompt-asks-whether-an-assertion-can-fail",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T10:28:51Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail/manifest.md",
+          "negative_control": "remove the independent-source clause from the composed review prompt so it asks only that assertions exist: tests/test_review_prompt_contract.py must go red",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75g",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts/review.md",
+            "tests/test_review_prompt_contract.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "mapping-branch-guard",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T10:29:02Z",
+        "completed_at": "2026-09-22T10:43:14.292Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 842,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 852,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "aa267565830f08144840d73ca6d8cb90af2af2a3",
+        "commits": [
+          "751281c859f9e3dffa12b71356df2fc0687fc018",
+          "983f8c0d9c16e075c20d3c73809d1d9f16c83c1b"
+        ],
+        "changed_lines": {
+          "added": 206,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_prompt_contract.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-gates/prompt-gate-provenanced.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail/manifest.md",
+        "scope_changed": false,
+        "session_id": "3f0cad5f-2848-416c-908d-a30f1ac92681",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6218508,
+            "input_tokens_cumulative": 6218508,
+            "output_tokens": 34540,
+            "output_tokens_cumulative": 34540,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T10:43:14.292Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6218508,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 848.244,
+          "generated_tokens": 34540,
+          "generation_seconds": 803.844,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.8,
+          "machine_seconds": 44.4,
+          "peak_input_tokens": 138020,
+          "tokens_per_second": 42.97,
+          "wall_tokens_per_second": 40.72
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-review-prompt-asks-whether-an-assertion-can-fail",
+          "session_id": "3f0cad5f-2848-416c-908d-a30f1ac92681",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T10:43:14.292Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.7,
+          "at_complete": 0.82,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_review_prompt_contract.py"
+          ],
+          "declaration": "remove the independent-source clause from the composed review prompt so it asks only that assertions exist: tests/test_review_prompt_contract.py must go red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail/logs/negative-control.log",
+          "reason": "paraphrase differing by one verb on the same named clause. Declared: remove the independent-source clause from the composed review prompt so it asks only that assertions exist. Recorded first line: delete the independent-source clause \u2014 and it then quotes the exact sentence removed from reckon/crew/prompts/review.md, which is the clause the declaration names. The discriminator agrees: the control reddens the contract test that asserts that clause, 1 failed and 4 passed against 5 passed unmutated at the merged head."
+        },
+        "tool_steps": 63.0,
+        "orientation_input_tokens": 1342076.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -254927,6 +255159,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2054
+    "_version": 2055
   }
 }
