@@ -195,6 +195,42 @@
     first line the mutation verbatim.</p>
   </section>
 
+  <section id="wave-integration-gate">
+    <h2>The wave's selection at the merged head</h2>
+    <p>One pytest run at the merged head (main <code>48bf51b2</code>) over the eight test files the
+    wave's nodes wrote or touched: <strong>122 passed, 2 failed</strong>. The two failures are
+    <strong>pre-existing</strong> — the identical two ids fail at the wave's base revision
+    <code>1d2e70cc</code>, and neither file appears in <code>git diff --stat 1d2e70cc..HEAD</code>.
+    Added failures: <strong>zero</strong>.</p>
+    <p>Five of the eight files do not exist at the base revision, so they cannot be collected there.
+    An eight-name selection at base is a pytest usage error that collects nothing, which would read
+    as a clean base; the base figure is therefore taken over the three files present at both
+    revisions, and the five absent files are recorded as absent rather than as zero failures.</p>
+    <table>
+      <caption>The delta, over the three files present at both revisions.</caption>
+      <thead><tr><th>Revision</th><th>Files</th><th>Passed</th><th>Failed</th></tr></thead>
+      <tbody>
+        <tr><td>head <code>48bf51b2</code></td><td>8 (full selection)</td><td>122</td><td>2</td></tr>
+        <tr><td>head <code>48bf51b2</code></td><td>3 (comparable subset)</td><td>71</td><td>2</td></tr>
+        <tr><td>base <code>1d2e70cc</code></td><td>3 (comparable subset)</td><td>44</td><td>2</td></tr>
+        <tr><td><strong>delta</strong></td><td>3</td><td><strong>+27</strong></td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Which tree was measured.</strong> Interpreter
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> (CPython 3.14.2, pytest 9.1.1),
+    working directory the main checkout <code>/home/ITER/mcintos/Code/reckon</code>, entered with
+    <code>uv run --directory &hellip; --no-sync</code>. <code>import reckon</code> resolves to
+    <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code> and the editable pointer holds
+    that path, so the run measured the shipped tree rather than a worktree revision of it. The base
+    tree was materialised with <code>git archive 1d2e70cc</code>——no branch switch, no stash—and
+    entered with <code>env -C &lt;base tree&gt; PYTHONPATH=&lt;base tree&gt;</code>.</p>
+    <p>Logs, none under <code>/tmp</code>: <code>head-48bf51b2.log</code>,
+    <code>head-3shared-48bf51b2.log</code> and <code>base-1d2e70cc.log</code> under
+    <code>~/.config/reckon/crew/reports/reckon/wave-integration/</code>, beside the report
+    <code>merged-head-report.md</code>. This gate measures this node's own change; verifying the
+    merged result belongs to a separately dispatched node at the merged head.</p>
+  </section>
+
   <section id="what-this-does-not-claim">
     <h2>What this record does not claim</h2>
     <p>It claims a reader, not a fence. Nothing here paces a wave, opens a lane or refuses a
