@@ -876,6 +876,51 @@
     promotion was run. Receipts: <code>merged-after.log</code>, <code>merged-base.log</code>,
     and <code>merged-verification.json</code> in the same run directory.</p>
   </section>
+
+  <section id="s4b-review-lane-selection">
+    <h2>The reflex selects the lane it composes a review onto</h2>
+    <p>Commit <code>7cb989af</code> removes the unconditional <code>local=True</code> from
+    <code>dispatch_review_for_run</code>. The locally served backend remains the preference for a
+    first composition — a fallback that quietly becomes the default is a different defect with the
+    same shape — and is demoted only when the run already records a failed attempt on it. Each
+    recorded outcome now writes the backend it targeted, and with no other backend configured the
+    reflex records <code>awaiting-lane</code> naming the dropped backend rather than retrying it.</p>
+    <p><strong>A pre-existing defect was repaired in the same fencing.</strong>
+    <code>_review_in_flight</code> called <code>read_pointer(run_id)</code> unguarded, so a review
+    whose pointer was gone — the abandoned-review case its own docstring documents as
+    <em>not in flight</em> — raised <code>CrewError: no live run …</code> out of the reflex instead
+    of being read as ended. The reproduction is the traceback from the first run of the new suite,
+    <code>read_pointer</code> raising inside <code>_review_in_flight</code> at the byte-identical
+    base line. The probe now tests <code>pointer_path(run_id).exists()</code> first.</p>
+    <p><strong>Measurement.</strong> The declared gate is pytest over
+    <code>tests/test_review_reflex_selects_a_backend.py</code> and
+    <code>tests/test_review_gate_coverage.py</code>, run with
+    <code>PYTHONPATH=&lt;main-checkout&gt;</code> and the root interpreter
+    <code>&lt;main-checkout&gt;/.venv/bin/python -m pytest -p no:cacheprovider -q</code>.
+    After: <strong>26 passed, 0 failed, exit 0</strong>. Base, with the base
+    <code>recovery.py</code> and the new test file present so the same assertions run against the
+    unfixed selection: <strong>4 failed / 22 passed, exit 1</strong>. The four failures are the four
+    selection assertions, so the count moves in the direction the change claims. The two
+    neighbouring suites that drive the same reflex,
+    <code>tests/test_scoring_dispatches_its_review.py</code> and
+    <code>tests/test_review_reflex_sweep.py</code>, report <strong>13 passed, exit 0</strong>.</p>
+    <p><strong>Negative control.</strong> In a scratch copy of the <em>fixed</em> tree (not the
+    base), the recorded previous lane is replaced with an empty string inside
+    <code>dispatch_review_for_run</code> so a lane that already dropped this review is reselected.
+    Result: <strong>3 failed / 1 passed, exit 1</strong>. The one that passes is the
+    first-composition case, which has no prior attempt to demote and therefore no reason to fail —
+    the declaration is part of the control.</p>
+    <p><strong>What this does not close.</strong> <code>_review_dispatch_argv</code> still ends in
+    <code>--local</code> for the retypeable command; it takes no config, so it cannot name a
+    selection, and it is display-only — the reflex executes through <code>dispatch()</code>, not
+    through the argv. Its divergence from the executed command is a recorded follow-on rather than
+    papered over. This node declares no headroom-driven fallback: it selects among configured
+    backends and refuses rather than retrying a dropped one.</p>
+    <p>The selection and the two-sweep case it exists for are shown in
+    <a href="/reckon/figures/scoring-should-stop-a-promotion/lane-selection.png">the lane-selection figure</a>.
+    Receipts in the run directory: <code>gate-after.log</code>, <code>gate-base.log</code>,
+    <code>gate-neighbours.log</code>, <code>negative-control.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>
