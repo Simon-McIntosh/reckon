@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #fbfbfd; stroke: #c8cdd6; stroke-width: 1.5; rx: 6; }
+    .box-win { fill: #eef7ee; stroke: #4c8a4c; stroke-width: 2; }
+    .box-lose { fill: #f7f7f9; stroke: #c8cdd6; stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .h { font-size: 14px; font-weight: 700; fill: #1c2430; }
+    .t { font-size: 12px; fill: #41505f; }
+    .m { font-size: 11px; fill: #6a7787; font-family: ui-monospace, monospace; }
+    .lab { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; fill: #7a8798; }
+    .arrow { stroke: #8a94a4; stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+    .unknown { fill: #fdf3ec; stroke: #c07a3a; stroke-width: 1.6; rx: 6; }
+    .known { fill: #eef7ee; stroke: #4c8a4c; stroke-width: 1.6; rx: 6; }
+    .strike { stroke: #b05050; stroke-width: 1.6; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a4"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="24" y="30">One reading per member, chosen wholesale on observed_at</text>
+  <text class="t" x="24" y="50">The winner is a whole WindowReading, so the clocks it leaves unresolved are the group's gaps.</text>
+
+  <text class="lab" x="24" y="84">candidates, newest first</text>
+
+  <!-- candidate 3: live session rollout, weekly only -->
+  <rect class="box-win" x="24" y="96" width="300" height="104"/>
+  <text class="h" x="40" y="120">live session rollout</text>
+  <text class="m" x="40" y="140">session sess-weekly-only · 1 min old</text>
+  <text class="t" x="40" y="162">quota_readings: {10080 → 88.0 %}</text>
+  <text class="t" x="40" y="180">dated by the run record's stamp</text>
+  <text class="m" x="40" y="196">run_observed_stamp(row) — one helper</text>
+
+  <!-- candidate 2: live pointer, no receipt -->
+  <rect class="box-lose" x="24" y="216" width="300" height="70"/>
+  <text class="h" x="40" y="240">live pointer lane_receipt</text>
+  <text class="m" x="40" y="258">absent — a receipt is harvested at promotion</text>
+  <text class="t" x="40" y="276">contributes no candidate</text>
+
+  <!-- candidate 1: committed row -->
+  <rect class="box-lose" x="24" y="302" height="86" width="300"/>
+  <text class="h" x="40" y="326">older committed ledger row</text>
+  <text class="m" x="40" y="344">3 h old</text>
+  <text class="t" x="40" y="364">five_hour 42.0 % · seven_day 21.0 %</text>
+  <text class="t" x="40" y="382">both clocks resolved — and discarded</text>
+
+  <!-- arrows -->
+  <path class="arrow" d="M 330 148 C 380 148 380 200 424 200"/>
+  <path class="arrow" d="M 330 348 C 380 348 380 230 424 224"/>
+  <text class="lab" x="352" y="150">wins</text>
+  <text class="lab" x="346" y="352">loses on stamp</text>
+  <path class="strike" d="M 336 330 L 372 300"/>
+  <path class="strike" d="M 336 300 L 372 330"/>
+
+  <!-- the choice -->
+  <rect class="box" x="436" y="168" width="150" height="88"/>
+  <text class="h" x="452" y="196">max by stamp</text>
+  <text class="t" x="452" y="216">one reading</text>
+  <text class="t" x="452" y="234">not one per window</text>
+
+  <path class="arrow" d="M 590 212 C 630 212 630 150 668 150"/>
+  <path class="arrow" d="M 590 212 C 630 212 630 300 668 300"/>
+
+  <!-- group clocks -->
+  <text class="lab" x="676" y="84">the group's clocks</text>
+
+  <rect class="unknown" x="676" y="116" width="280" height="70"/>
+  <text class="h" x="692" y="142">five_hour — unknown</text>
+  <text class="t" x="692" y="164">the winner measured no 300-minute window;</text>
+  <text class="t" x="692" y="178">the loser's 42.0 % is not borrowed for it</text>
+
+  <rect class="known" x="676" y="266" width="280" height="70"/>
+  <text class="h" x="692" y="292">seven_day — observed 88.0 %</text>
+  <text class="t" x="692" y="314">age 60 s, from the winning reading's own</text>
+  <text class="t" x="692" y="328">run record</text>
+
+  <text class="t" x="676" y="372">Asserted, not incidental: a later per-window</text>
+  <text class="t" x="676" y="390">choice has to change this case to land.</text>
+  <text class="m" x="676" y="414">test_a_wholly_chosen_reading_leaves_the_other_clock_unknown</text>
+</svg>

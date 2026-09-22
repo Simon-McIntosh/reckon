@@ -1078,6 +1078,70 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     named production-branch case is observed to fail there, and the red log's first line repeats the
     declared mutation verbatim.</p>
 
+    <h3 id="s6-prove-the-reader-landing">Landing &mdash; the reader proves itself, and one helper dates a run</h3>
+
+    <p><strong>Landed 2026-09-22</strong>, commit <code>c011b6f9</code> (source and tests) followed by
+    this record. The reader proves itself by a case that injects nothing:
+    <code>test_the_uninjected_reader_is_the_production_rollout_reader</code> calls
+    <code>recorded_windows</code> with no <code>rollouts=</code> and a live pointer carrying a
+    <code>session_id</code>, patches the rollout module's own
+    <code>read_rollout_receipt</code>, and asserts both that the uninjected path reached it and that
+    the group reports that receipt's clocks &mdash; <code>five_hour</code> 0.11 and
+    <code>seven_day</code> 0.17 at the pointer's own age, ahead of a committed row three hours old.
+    The declared mutation now reddens exactly that case: with the production branch replaced by an
+    unmeasured answer in a scratch copy, <strong>1 failed, 36 passed</strong>, at
+    <code>assert [] == ['sess-production']</code>, and the red log's first line repeats the
+    mutation verbatim. Before this, the same mutation left the gate at 34 passed.</p>
+
+    <p><strong>One helper, two shapes of one answer.</strong>
+    <code>budget.run_observed_stamp(row)</code> is the shared reader over
+    <code>("observed_at", "completed_at", "terminal_at", "dispatched_at", "started_at",
+    "created_at")</code> behind the record's own budget block; <code>budget._run_observed_at</code>
+    is now the instant form parsed from it, and <code>mcp_views._receipt_observed_at</code> is a
+    one-line delegate that keeps its name and both call sites. The text form is the shared one
+    because the lanes view publishes the stamp as text, and a value that does not parse is passed
+    over rather than returned, so a malformed budget stamp cannot shadow a lifecycle stamp behind
+    it. No key list remains in <code>mcp_views</code>.</p>
+
+    <p><strong>What holds the unification, measured.</strong> The case named in the Done-when asserts
+    the identity directly, and it is extended to assert the stamp <em>where a reader reaches it</em>:
+    a lane whose only stamp is <code>created_at</code> reports that stamp, and a record carrying no
+    readable stamp reports <code>unmeasured</code> rather than a borrowed date, through
+    <code>mcp_views.crew_lanes_view</code> itself. That extension is what has teeth, because the
+    lanes suite does not cover the moved helper at all: reinstating the pre-change key list in a
+    scratch copy leaves the four lanes-view files at <strong>exactly the same 2 failed, 36
+    passed</strong>, the same two ids as at base. The clause about lanes-view tests covering the
+    moved helper therefore has no such test behind it; a test that would have caught this belongs in
+    those files, which are outside this node's write scope, and the measurement above is reported so
+    the gap is visible rather than assumed closed. Measured directly, the lanes half of the new case
+    binds: regressed, the lane's <code>observed_at</code> is <code>unmeasured</code>; here it is
+    <code>2026-09-21T16:00:00Z</code>.</p>
+
+    <p><strong>The mixed clock is asserted, not changed.</strong>
+    <code>test_a_wholly_chosen_reading_leaves_the_other_clock_unknown</code> pits a weekly-only
+    rollout reading one minute old against a committed row three hours old carrying both clocks, and
+    requires <code>seven_day</code> 0.88 observed with <code>five_hour</code>
+    <strong>None</strong> &mdash; the reading is chosen wholesale, so the row's five-hour figure is
+    discarded rather than borrowed. The per-window choice remains the lead's decision and is not
+    taken here; this case is what a later change to it has to face.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/one-stamp-reader-and-the-wholesale-winner.svg"
+           alt="Three candidate readings for one wallet; the newest is chosen whole, so the group reports the weekly clock it measured and leaves the five-hour clock unknown while the older row's figure is discarded" width="980"/>
+      <figcaption>One reading per member, and the winner's gaps are the group's gaps.</figcaption>
+    </figure>
+
+    <p><strong>The gate and its delta.</strong> <code>tests/test_preflight_pace.py</code> at the
+    formatted head: <strong>37 passed, exit 0</strong> (34 existing plus three), log
+    <code>sha256 ba46eb11&hellip;</code>. The gate file combined with the four lanes-view files:
+    <strong>2 failed, 73 passed</strong> &mdash; the same two ids as at base <code>c0e95c1b</code>,
+    where the same five files gave <strong>2 failed, 70 passed</strong>, so <strong>zero added
+    failures</strong> and the three added cases are additive. Lint measured by delta against the base
+    copies of the three files, mode preserved: <strong>6 findings at base, 6 at head</strong>, none
+    of them new. Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-prove-the-reader">the landed evidence
+    record</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
