@@ -1778,6 +1778,89 @@ worktree+repo from pointer:       []</code></pre>
     <code>negative-control.log</code>, <code>negative-control-relocation.log</code>,
     <code>negative-control-refusal.log</code>).</p>
   </section>
+
+  <section id="a-reclaimed-worktree-resolves-against-its-recorded-path">
+    <h2>&sect;9 &mdash; A reclaimed worktree still resolves the declaration it was granted</h2>
+
+    <p><strong>The two write-scope surfaces agreed on every case except the one where the
+    worktree is gone.</strong> Promotion reads a run's worktree when it is a directory and falls
+    back to the repository when it is not, because the reclaimed tree cannot be read. The
+    write-scope test was resolving a declared write path against that same fallback, and the
+    fallback is wrong for resolution: an absolute grant made under the vanished worktree maps to
+    no repository-relative root once the worktree path is replaced by the repository, so a changed
+    path beneath it read as in scope at the write-time manifest check and as stray at promotion
+    — the same declaration, the same run, two verdicts.</p>
+
+    <p><strong>Reproduced at base <code>34f7f5f3</code> through both entry points, and
+    quoted.</strong> A run whose recorded worktree does not exist, a repository that does, one
+    declaration written absolutely under the worktree, and one changed path beneath it recorded
+    repository-relative:</p>
+
+    <pre><code>worktree exists: False
+check-manifest findings: []
+promotion outside:       ['docs/figures/x/scope.svg']
+AGREE: False</code></pre>
+
+    <p>The declaration is correct and the run is sound; only the tree lost when the directory
+    was removed. Receipt: <code>repro-reclaimed-scope.log</code> in the run directory.</p>
+
+    <p><strong>The repair makes the recorded worktree the authority for resolution whether or
+    not it exists on disk</strong>, which is the tree the write-time check already resolves
+    against — it reads the pointer's <code>worktree</code>, which never falls back. Both
+    promotion-side scope surfaces now resolve through the same recorded path, so a grant under a
+    reclaimed worktree accepts the same changed paths at both. Redispatch entry: the same
+    reproduction after the change reports <code>promotion outside: []</code> and
+    <code>AGREE: True</code> (<code>repro-reclaimed-scope-head.log</code>).</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/reclaimed-worktree-resolution.svg"
+           alt="A run pointer holding a declaration written absolutely under a worktree that no longer exists, and a repository that does. Before: the write-time check resolves against the recorded worktree and reports no finding, while promotion resolves against its repository fallback, maps the declaration to no root and reports the changed path stray. After: both resolve against the recorded worktree and both report no finding. A footnote records that restoring the fallback reddens six new cases and leaves twenty green.">
+      <figcaption>One declaration, one run, two trees. The recorded worktree path survives on the
+      pointer after the directory is removed, and it is the path the grant was written
+      against.</figcaption>
+    </figure>
+
+    <p><strong>The gate is a table the two surfaces must agree on, built for the
+    disagreement.</strong> <code>tests/test_write_scope_agreement.py</code> gains a run whose
+    recorded worktree is absent and, against it: a path under a declared directory accepted at
+    both surfaces, a path under no declaration rejected at both, an intact worktree unaffected,
+    and a table of six reclaimed-worktree pairs asserted equal between the two. The file is
+    <strong>26 passed</strong> at the head, and the four-file cohort is <strong>1 failed, 68
+    passed</strong> against <strong>1 failed, 59 passed</strong> at base <code>34f7f5f3</code>
+    — the same single failure id at both revisions, and the nine-case difference is exactly this
+    node's added cases.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>34f7f5f3</code></th><th>Head</th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>Focused gate (<code>tests/test_write_scope_agreement.py</code>)</td><td>17 passed</td><td>26 passed</td><td>nine added, no removals</td></tr>
+        <tr><td>Four-file cohort</td><td>1 failed, 59 passed</td><td>1 failed, 68 passed</td><td>same failure id both sides</td></tr>
+        <tr><td>Declared mutation (promotion resolves against the fallback tree)</td><td>&mdash;</td><td>6 failed, 20 passed</td><td>the six reclaimed cases, existing cases stay green</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Falsified rather than asserted.</strong> The declared mutation restores the
+    fallback at the promotion surface and reddens exactly six cases — the five declared
+    reclaimed pairs and the named acceptance case — while the pre-existing seventeen and the new
+    undeclared-path rejection and intact-worktree cases stay green, because a rejection is not
+    flipped by removing a resolution step. The mutation is stated verbatim on the first line of
+    <code>negative_control.log</code>, and the source was restored byte-identically afterwards
+    (empty diff).</p>
+
+    <p><strong>What this does not claim.</strong> The gate measures this node's own change
+    against its own base; the merged result at the integrated head is a separately dispatched
+    test node's measurement, and the one cohort failure is pre-existing at base and outside this
+    node's declared scope.</p>
+
+    <p>Changed paths: <code>reckon/crew/promotion.py</code>,
+    <code>tests/test_write_scope_agreement.py</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/reclaimed-worktree-resolution.svg</code>.
+    Base revision <code>34f7f5f3</code>; commit <code>7287b129</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T155613014205-a-reclaimed-worktree-does-not-become-its-own-repository/</code>
+    (<code>cohort_head.log</code>, <code>cohort_base.log</code>, <code>negative_control.log</code>,
+    <code>repro-reclaimed-scope.log</code>, <code>repro-reclaimed-scope-head.log</code>).</p>
+  </section>
   </main>
 </body>
 </html>
