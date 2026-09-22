@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T13:57:20",
+  "updated": "2026-09-22T13:58:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -257101,6 +257101,239 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72d",
+        "node": "the-probe-answers-unknown-for-a-history-it-cannot-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 309,
+                "cached_input_tokens": 483614,
+                "input_tokens": 483925,
+                "output_tokens": 884,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 484809,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "in a depth-1 clone of a repository whose ledger deletion predates the shallow boundary, append_run refuses with the recovery message naming the run store, asserted by a test that creates a real shallow clone rather than patching the probe; a full clone that genuinely never tracked the path still creates the ledger; the outside-a-checkout case pins GIT_CEILING_DIRECTORIES to the temporary root so it tests the code rather than the ambient git ancestry of tmp_path, demonstrated by the test passing when TMPDIR is set inside a committed repository; the nested conditional at the call site no longer adds a SIM102 finding, with ruff check over reckon/ledger.py reporting no more findings than the 13 it reports at base c16659ff under the pinned ruff and the project rule set; and PYTHONPATH set to the main checkout with the root interpreter, pytest over tests/test_a_promotion_never_creates_a_ledger.py and tests/test_rollback_asks_head.py is green with both counts in the manifest",
+          "estimated_hours": null,
+          "goal": "the tracked-ness probe answers unknown rather than never-tracked whenever the repository cannot answer the question, so a shallow, grafted or partial history stops reading as a project that never had a ledger",
+          "id": "the-probe-answers-unknown-for-a-history-it-cannot-read",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T10:24:28Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read/manifest.md",
+          "negative_control": "make the shallow-history question always answer that the repository is complete, so the probe returns never-tracked for a truncated history again: the depth-1 clone case in tests/test_a_promotion_never_creates_a_ledger.py must go red",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72d",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_a_promotion_never_creates_a_ledger.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "orphan-fixture",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T10:24:38Z",
+        "completed_at": "2026-09-22T11:14:47.423Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2999,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3009,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "45ecc873757bbe38225a922290a6d7f5525d3dfa",
+        "commits": [
+          "529f9d9fd43a1aec202bd5f1107cadd356cbbfef",
+          "e4f67a216eaa437a64b26cf801875b87a46da816",
+          "94ea2abc77c0205f7d391fb77298743f50368dd4"
+        ],
+        "changed_lines": {
+          "added": 341,
+          "removed": 43,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_never_creates_a_ledger.py tests/test_rollback_asks_head.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-gates/probe-gate-provenanced.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the truncated-history probe answers unknown instead of never-tracked, so a shallow, grafted or partial clone no longer lets a promotion create a ledger that should be recovered; 22 passed at the merged head against 17 at base with zero failures either side. Its review scored 94 and disputed the recorded ruff figure: the evidence states 13 at base and that does not reproduce \u2014 the coordinator measured 15 at base c16659ff and 15 at head, so the delta the claim rested on is zero and the conclusion stands while the cited number does not",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "5426d001-8718-4c30-a76e-49033173e4a2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6056612,
+            "input_tokens_cumulative": 6056612,
+            "output_tokens": 41365,
+            "output_tokens_cumulative": 41365,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T11:14:47.423Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 15,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10351995,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1150.53,
+          "generated_tokens": 80004,
+          "generation_seconds": 1040.018,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 110.512,
+          "peak_input_tokens": 165081,
+          "tokens_per_second": 76.93,
+          "wall_tokens_per_second": 69.54
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-probe-answers-unknown-for-a-history-it-cannot-read",
+          "session_id": "5426d001-8718-4c30-a76e-49033173e4a2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T11:14:47.423Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.7,
+          "at_complete": 0.82,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_a_promotion_never_creates_a_ledger.py"
+          ],
+          "declaration": "make the shallow-history question always answer that the repository is complete, so the probe returns never-tracked for a truncated history again: the depth-1 clone case in tests/test_a_promotion_never_creates_a_ledger.py must go red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read/negative-control-truncation-always-complete.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read/negative-control-truncation-always-complete.log",
+          "reason": "paraphrase differing by one noun for the same probe. Declared: make the shallow-history question always answer that the repository is complete. Recorded first line: make the truncation question always answer that the repository is complete. Both name the single question the fix added, and the discriminator agrees \u2014 the control reddens 4 tests including test_an_info_grafts_file_does_not_initialise_a_ledger, which only the truncation branch can reach. Its reviewer independently raised the wording mismatch and scored goal_fidelity and scope_discipline at 20, so the objection is to the record and not to the mutation."
+        },
+        "tool_steps": 49.0,
+        "orientation_input_tokens": 1043381.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -257399,6 +257632,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2065
+    "_version": 2066
   }
 }
