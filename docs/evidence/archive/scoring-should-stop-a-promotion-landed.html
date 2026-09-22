@@ -925,6 +925,48 @@
     <code>logs/after-restore-review-prompt-contract.log</code> in the run directory
     <code>r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail</code>.</p>
   </section>
+
+  <section id="s5c-revision-canonical-key">
+    <h2>One fact, five store spellings, one canonical key</h2>
+    <p><strong>Measure.</strong> <code>parse_review</code> and <code>store_review</code> record the
+    revision a review read under <code>reviewed_revision</code>, resolved from whichever spelling
+    the record or the emitted line carries. The focused gate over
+    <code>tests/test_review_records_its_revision.py</code> and
+    <code>tests/test_review_scoring.py</code> ran at this node's base
+    <code>9d208d1e</code> and after the change, one instrument each time, the base figure taken
+    from a <code>git archive HEAD</code> scratch tree so the legacy module was measured rather
+    than inferred:</p>
+    <table>
+      <thead><tr><th>Run</th><th>Failing</th><th>Passed</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>Base <code>9d208d1e</code>, <code>test_review_scoring.py</code> alone</td><td>5</td><td>18</td><td>the pre-existing red cohort</td></tr>
+        <tr><td>After, both named files</td><td>5</td><td>50</td><td>identical five failure ids; 32 new passing cases; <strong>0 added</strong></td></tr>
+      </tbody>
+    </table>
+    <p>The five base failures are unchanged in identity and are outside this node's declared write
+    scope (<code>tests/test_review_scoring.py</code> and the review prompt, both another node's
+    file), so they are reported rather than triaged here.</p>
+    <p><strong>Declared negative control.</strong> Key presence replaced by truthiness in
+    <code>carried_revision</code>, applied to a scratch archive of the fixed tree:</p>
+    <table>
+      <thead><tr><th>Scratch-tree state</th><th>Focused test result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Fixed tree, no mutation</td><td>32 passed; exit 0</td><td>All five spellings resolve and the two absent shapes stay distinct.</td></tr>
+        <tr><td>Key presence replaced by truthiness</td><td>5 failed, 27 passed; exit 1</td><td>A spelling carried empty falls through to a lower-precedence spelling, collapsing a recorded absence into a value.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The red failures are specific.</strong>
+    <code>test_a_spelling_carried_empty_is_a_recorded_absence</code>,
+    <code>test_presence_is_the_authority_and_does_not_fall_through</code> and
+    <code>test_the_store_writes_a_recorded_absence_as_a_present_key</code> all fail under the
+    mutation, and none fails without it. The receipt's first line is the declared mutation
+    verbatim: <code>negative-control-key-presence.log</code> in the run directory.</p>
+    <p><strong>Isolation.</strong> The assigned worktree was clean after the control; neither
+    <code>reckon/crew/review.py</code> nor any other tracked source path in it was mutated. This
+    node records the focused evidence only; merged-head verification belongs to its separately
+    scoped gate. Figure:
+    <a href="/reckon/figures/scoring-should-stop-a-promotion/revision_normalisation.png">revision normalisation</a>.</p>
+  </section>
 </main>
 </body>
 </html>

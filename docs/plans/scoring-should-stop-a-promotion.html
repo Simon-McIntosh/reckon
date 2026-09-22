@@ -2502,6 +2502,39 @@
 <div class="r-comment" data-section="§5c" data-id="c-run-r-20260921T090942172410-a-review-records-the-revision-it-read" data-who="reckon-ship" data-when="2026-09-21T09:15:54.194Z">
     <div class="r-comment-body"><p>no work produced; the run degraded silently on the local lane, which a peer measured at 30 concurrent against a computed ceiling of 22 with zero queueing at the same hour</p></div>
 </div>
+<div class="r-comment" data-section="§5c" data-id="c-run-r-20260922T103004298925-the-parser-records-which-revision-a-review-read" data-who="crew-worker" data-when="2026-09-22T11:45:00Z">
+    <div class="r-comment-body">
+      <p><strong>The parser records the revision a review read under one canonical key.</strong>
+      <code>parse_review</code>, <code>store_review</code> and their falsifiers carry this node's
+      change at <code>c287d2bc</code>, landing <code>reviewed_revision</code> from whichever
+      spelling a record or an emitted line carries — <code>reviewed_head_sha</code>,
+      <code>reviewed_commit</code>, <code>commits_read</code>, <code>reviewed_base_sha</code>,
+      <code>reviewed_base</code> — with head spellings outranking base spellings because the
+      staleness comparison is against the reviewed run's landed head.</p>
+      <p><strong>The discriminating half is key presence, never truthiness.</strong> A spelling
+      carried with an empty value leaves the canonical key <em>present with</em>
+      <code>None</code> — a recorded absence — and a record carrying none of the spellings leaves
+      it <em>absent</em>, an unread field whose age is unknown. Reading truthiness and falling
+      through to a lower-precedence spelling collapses those two claims into one, which is the
+      defect the plan's own census found one level up. The legacy spellings are preserved beside
+      the canonical key: the store is annotated from, not rewritten.</p>
+      <p><strong>Measure.</strong> The new falsifier file reports <strong>32 passed</strong>, and
+      the pair the done-when names reports <strong>5 failed / 50 passed</strong> against
+      <strong>5 failed / 18 passed</strong> for <code>tests/test_review_scoring.py</code> alone at
+      the node base <code>9d208d1e</code> — the identical five failure ids, so <strong>0
+      added</strong>. Those five are pre-existing at that revision, outside this node's write
+      fence, and are carried as a follow-on rather than triaged here. Declared negative control
+      (key presence replaced by truthiness, applied to a scratch archive of the fixed tree):
+      <strong>5 failed / 27 passed</strong>, reddening exactly the recorded-absence and
+      presence-not-truthiness assertions.</p>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/revision_normalisation.png" alt="Five store spellings resolving in precedence order into one canonical key, and the two outcomes that must stay distinct: a spelling carried empty yields the key present with a null value, and no spelling carried leaves the key absent.">
+      </figure>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing
+      contract requires its own append-only plan and cumulative-evidence records; shared
+      lifecycle state, followup resolution and terminal status remain coordinator-owned.</p>
+    </div>
+</div>
 <div class="r-comment" data-section="§2d" data-id="c-run-r-20260921T090607852896-promotion-write-cannot-shrink-the-ledger" data-who="reckon-ship" data-when="2026-09-21T09:43:02.920Z">
     <div class="r-comment-body"><p>a ledger write that would reduce the committed run count is refused, naming both counts</p></div>
 </div>

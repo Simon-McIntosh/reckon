@@ -37,6 +37,19 @@ left absent so a missing measurement cannot be mistaken for a measured zero.
 A label with no usable value is also left absent, but carries a machine-readable
 emission state so a partial answer is not confused with an omitted question.
 
+It records the revision the review read under one canonical key,
+``reviewed_revision``. A review is evidence about a revision: once a repair
+lands, a stored verdict describes code that no longer exists, so a guard that
+reads the presence of a review as evidence about the code being promoted is
+reading a true statement that stopped being the one required. Staleness is
+detectable today and nothing looks, because the store spells that one fact
+five ways — ``reviewed_head_sha``, ``reviewed_commit``, ``commits_read``,
+``reviewed_base_sha`` and ``reviewed_base`` — and no reader knows any of them.
+The canonical key is populated from whichever spelling a record carries, by
+key presence rather than truthiness, so a record holding the field with an
+empty value is a *recorded absence* and a record holding none of them is an
+*unread field*; those are different claims and stay distinguishable.
+
 The parser is on the live path, not a library awaiting a caller: dispatch and
 runs resolve the review store through :func:`review_store_root`,
 ``reckon/crew/promotion.py`` reduces a stored record to the ledger block it
@@ -86,10 +99,71 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "call_sites",
 )
 
+# ── The revision a review read, under one canonical key ─────────────────────
+# The fact is recorded in the store under five different names. Reading any one
+# of them makes the comparison a guess about which field a given reviewer set,
+# so the record is normalised onto REVIEW_REVISION_KEY from whichever spelling
+# it carries. Preserving the legacy spellings is deliberate: they are what the
+# stored records already hold, and rewriting them would churn the store.
+REVIEW_REVISION_KEY = "reviewed_revision"
+
+# Precedence, and why. The staleness comparison is against the reviewed run's
+# landed head, so head spellings outrank base spellings: a record naming both
+# is compared on the revision the review looked at rather than the one it
+# diffed against. Within a class the explicit sha field outranks the commit
+# list, whose last entry is the head it read.
+REVISION_FIELDS: tuple[str, ...] = (
+    "reviewed_head_sha",
+    "reviewed_commit",
+    "commits_read",
+    "reviewed_base_sha",
+    "reviewed_base",
+)
+
+# The emitted form gains a slot for the revision, so a review written from now
+# on states it rather than having it inferred from a call site's metadata. The
+# legacy spellings are accepted as labels too, because the store's own records
+# were emitted by prompts that asked for them by name.
+_REVISION_LABELS = frozenset({"revision", REVIEW_REVISION_KEY, *REVISION_FIELDS})
+
 # The prompt is a versioned, diffable file rather than a string inside this
 # module, so editing it is a text change rather than a code change. It is read
 # from disk on every call: the module holds the path, not the text.
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "review.md"
+
+
+def _sha_from(value: Any) -> str | None:
+    """Reduce a stored or emitted revision value to one sha, or ``None``.
+
+    A commit list reduces to its last entry, which is the head the review read;
+    an empty string, ``None`` and an empty list all reduce to ``None``. The
+    caller decides what that means — a spelling carried with no usable value is
+    a recorded absence, which is why this returns ``None`` rather than raising.
+    """
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, (list, tuple)):
+        for item in reversed(value):
+            if isinstance(item, str) and item.strip():
+                return item.strip()
+        return None
+    return None
+
+
+def carried_revision(record: Mapping[str, Any]) -> tuple[bool, str | None]:
+    """Resolve the revision a review read from whichever spelling ``record`` carries.
+
+    Returns ``(carried, revision)``. ``carried`` is **key presence, never
+    truthiness**: a record holding ``reviewed_commit: null`` carries the field,
+    and its ``None`` is a recorded absence — a different claim from a record
+    carrying none of the spellings, whose age is unknown rather than absent.
+    Falling through to a later spelling on an empty value would collapse those
+    two claims back together, which is the defect this key exists to remove.
+    """
+    for field in REVISION_FIELDS:
+        if field in record:
+            return True, _sha_from(record[field])
+    return False, None
 
 
 class ReviewScoreError(ValueError):
@@ -137,6 +211,7 @@ _VERDICT_RE = re.compile(
 )
 _CALL_SITES_RE = re.compile(r"^CALL_SITES\s*:\s*(.*)$", re.IGNORECASE)
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
+_REVISION_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$")
 
 
 def _as_int(text: str) -> int | None:
@@ -146,7 +221,9 @@ def _as_int(text: str) -> int | None:
         return None
 
 
-def parse_review(text: str) -> dict[str, Any]:
+def parse_review(
+    text: str, *, record: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     """Parse emitted review text into the five-dimension schema.
 
     Returns a record shaped like the stored one, without the run metadata a
@@ -179,12 +256,26 @@ def parse_review(text: str) -> dict[str, Any]:
       is present, otherwise ``None``. The total is never computed over a
       subset: a total taken over fewer dimensions is a lower score
       indistinguishable from a worse one.
+    - ``reviewed_revision`` — the revision the review read, under the one
+      canonical key. It is taken from an emitted revision line when the text
+      carries one, otherwise from ``record`` if a spelling of it was supplied,
+      otherwise the key is left **absent** rather than empty. ``None`` as the
+      value is a recorded absence: a spelling was carried and held no sha,
+      which is a different claim from a key that is not there at all.
     - ``raw_text`` — the verbatim emitted text, so a later reader can
       re-derive the parse from the record alone.
+
+    ``record`` is the merged record a call site already holds — the stored
+    metadata carrying one of the legacy spellings of the revision. Supplying
+    it lets an existing stored record be parsed *and* canonicalised in one
+    call, which is the retrofit path: the emitted slot (``REVISION:`` and the
+    legacy labels) serves reviews written from now on, and ``record`` serves
+    the ones already in the store.
 
     A score outside ``0..REVIEW_MAX_SCORE`` raises :class:`ReviewScoreError`
     naming the dimension and the value; it is never clamped into range.
     """
+    source_record = record
     scores: dict[str, int] = {}
     justifications: dict[str, str] = {}
     item_verdicts: dict[str, str] = {}
@@ -192,6 +283,8 @@ def parse_review(text: str) -> dict[str, Any]:
     call_sites: list[str] = []
     call_sites_seen = False
     call_sites_emission: str | None = None
+    revision_carried = False
+    revision: str | None = None
     for raw in text.splitlines():
         line = raw.strip()
         match = _SCORE_RE.match(line)
@@ -236,6 +329,15 @@ def parse_review(text: str) -> dict[str, Any]:
                     call_sites_seen = False
                     call_sites_emission = "empty"
             continue
+        match = _REVISION_RE.match(line)
+        if match and match.group(1).lower() in _REVISION_LABELS:
+            # The revision line is the one line whose label is not a fixed
+            # prefix: a review may state it canonically or under any of the
+            # five spellings the store already uses, so the label is matched
+            # against the accepted set rather than the shape of the line.
+            revision_carried = True
+            revision = _sha_from(match.group(2).split(","))
+            continue
         match = _FIND_RE.match(line)
         if match:
             ref, finding_text = match.group(1), match.group(2).strip()
@@ -271,6 +373,13 @@ def parse_review(text: str) -> dict[str, Any]:
         record["call_site_count"] = len(call_sites)
     if call_sites_emission == "empty":
         record["call_sites_emission"] = call_sites_emission
+    if not revision_carried and source_record is not None:
+        # The emitted text states the revision when it can; otherwise a record
+        # the caller already holds is canonicalised, so an existing stored
+        # entry carrying a legacy spelling gains the canonical key too.
+        revision_carried, revision = carried_revision(source_record)
+    if revision_carried:
+        record["reviewed_revision"] = revision
     return record
 
 
@@ -313,9 +422,13 @@ def store_review(
 
     The record must name ``project`` and ``reviewed_run_id``, which key the
     file. A missing ``timestamp`` is stamped with the current UTC moment so
-    every stored record carries one; an existing timestamp is preserved. The
-    write is atomic: the record lands in a temporary sibling and is renamed
-    into place.
+    every stored record carries one; an existing timestamp is preserved. A
+    record carrying one of the legacy spellings of the revision it read gains
+    the canonical key before it is written, so every review this machinery
+    stores answers the staleness question under one name whatever the call
+    site supplied; a record already stating the canonical key is left as it
+    states it. The write is atomic: the record lands in a temporary sibling
+    and is renamed into place.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -323,6 +436,10 @@ def store_review(
         raise ValueError("review record is missing project")
     if not reviewed_run_id:
         raise ValueError("review record is missing reviewed_run_id")
+    carried, revision = carried_revision(record)
+    if carried and REVIEW_REVISION_KEY not in record:
+        record = dict(record)
+        record[REVIEW_REVISION_KEY] = revision
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
