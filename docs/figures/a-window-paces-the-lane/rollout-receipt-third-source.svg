@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 620" width="1020" height="620" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect x="0" y="0" width="1020" height="620" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#1a1a1a">A third home for a group's windows, and the pointer read that is scoped to one project</text>
+  <text x="24" y="55" font-size="12.5" fill="#5a5a5a">An in-flight run carries no lane_receipt, but it names the session whose rollout the lanes view already reads. That session is now asked too.</text>
+
+  <!-- the crew home, with the project filter on the way in -->
+  <rect x="24" y="86" width="286" height="132" rx="8" fill="#f4f6fa" stroke="#b9c2d4"/>
+  <text x="38" y="110" font-size="12.5" font-weight="600" fill="#243044">the crew home holds every project's pointers</text>
+  <text x="38" y="132" font-size="11.5" fill="#3d4a60">crew.list_live() reads them all, and the read</text>
+  <text x="38" y="150" font-size="11.5" fill="#3d4a60">is scoped here rather than at the call: a</text>
+  <text x="38" y="168" font-size="11.5" fill="#3d4a60">pointer is asked only when its project is the</text>
+  <text x="38" y="204" font-size="11.5" fill="#3d4a60">so all three are excluded together for a foreign run.</text>
+
+  <line x1="310" y1="152" x2="374" y2="152" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <rect x="378" y="112" width="222" height="82" rx="8" fill="#f7eef4" stroke="#c79dbb"/>
+  <text x="392" y="136" font-size="12.5" font-weight="600" fill="#4a1f3a">record["project"] == project</text>
+  <text x="392" y="158" font-size="11.5" fill="#5a2f4a">one comparison, all three sources</text>
+  <text x="392" y="176" font-size="11.5" fill="#5a2f4a">and the session excluded together</text>
+
+  <!-- the three sources -->
+  <rect x="24" y="250" width="286" height="98" rx="8" fill="#eef6ee" stroke="#9dc39d"/>
+  <text x="38" y="274" font-size="12.5" font-weight="600" fill="#1f4a1f">committed ledger row: lane_receipt</text>
+  <text x="38" y="296" font-size="11.5" fill="#2f5a2f">a promoted run's harness-owned receipt,</text>
+  <text x="38" y="314" font-size="11.5" fill="#2f5a2f">which carries its own observed_at, with the</text>
+  <text x="38" y="332" font-size="11.5" fill="#2f5a2f">rows keyed by window_minutes</text>
+
+  <rect x="24" y="362" width="286" height="92" rx="8" fill="#fdf6e6" stroke="#d8b871"/>
+  <text x="38" y="386" font-size="12.5" font-weight="600" fill="#6b4e10">live pointer: lane_receipt</text>
+  <text x="38" y="408" font-size="11.5" fill="#6b4e10">a run still in flight, not yet in the ledger;</text>
+  <text x="38" y="426" font-size="11.5" fill="#6b4e10">the receipt is harvested at promotion</text>
+
+  <rect x="24" y="468" width="286" height="116" rx="8" fill="#eef2fa" stroke="#9db0d4"/>
+  <text x="38" y="492" font-size="12.5" font-weight="600" fill="#1f3350">live pointer: the session's rollout</text>
+  <text x="38" y="514" font-size="11.5" fill="#2f4460">its session_id, then read_rollout_receipt,</text>
+  <text x="38" y="532" font-size="11.5" fill="#2f4460">the same reader the lanes view injects;</text>
+  <text x="38" y="550" font-size="11.5" fill="#2f4460">quota_readings keyed by window_minutes.</text>
+  <text x="38" y="568" font-size="11.5" fill="#2f4460">No stamp of its own, so the run record ages it</text>
+
+  <line x1="310" y1="299" x2="374" y2="300" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+  <line x1="310" y1="408" x2="374" y2="330" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+  <line x1="310" y1="526" x2="374" y2="362" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <rect x="378" y="264" width="222" height="152" rx="8" fill="#f4f6fa" stroke="#b9c2d4"/>
+  <text x="392" y="288" font-size="12.5" font-weight="600" fill="#243044">candidate readings</text>
+  <text x="392" y="310" font-size="11.5" fill="#3d4a60">each a position with a date, so the</text>
+  <text x="392" y="328" font-size="11.5" fill="#3d4a60">choice follows the stamps and not the</text>
+  <text x="392" y="346" font-size="11.5" fill="#3d4a60">dialect that wrote them</text>
+  <text x="392" y="370" font-size="11.5" fill="#3d4a60">a marker for a gap (unmeasured, no</text>
+  <text x="392" y="388" font-size="11.5" fill="#3d4a60">rollout) contributes no candidate at all</text>
+  <text x="392" y="406" font-size="11.5" fill="#3d4a60">so the committed row stands</text>
+
+  <line x1="600" y1="340" x2="664" y2="340" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <rect x="668" y="244" width="330" height="192" rx="8" fill="#f7eef4" stroke="#c79dbb"/>
+  <text x="682" y="268" font-size="12.5" font-weight="600" fill="#4a1f3a">the freshest dated reading wins, wholesale</text>
+  <text x="682" y="292" font-size="11.5" fill="#5a2f4a">max(candidates, key=observed_at), one</text>
+  <text x="682" y="310" font-size="11.5" fill="#5a2f4a">reading per group member</text>
+  <text x="682" y="336" font-size="11.5" fill="#7a4a6a">because the win is whole, a rollout that</text>
+  <text x="682" y="354" font-size="11.5" fill="#7a4a6a">carries only the weekly window leaves</text>
+  <text x="682" y="372" font-size="11.5" fill="#7a4a6a">five_hour unknown, exactly as the stream</text>
+  <text x="682" y="390" font-size="11.5" fill="#7a4a6a">path already did: same behaviour, unwidened</text>
+  <text x="682" y="414" font-size="11.5" fill="#7a4a6a">nothing dated: the group stays unknown</text>
+
+  <text x="24" y="606" font-size="11.5" fill="#7a8699">Measured on this workstation: the rollout path resolves real receipts for live codex sessions, but the committed rows out-dated them in both projects read.</text>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6"/>
+    </marker>
+  </defs>
+</svg>

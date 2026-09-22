@@ -980,6 +980,70 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     drop the project filter &mdash; is applied to a scratch copy, the foreign-pointer case is
     observed to fail there, and the red log's first line repeats the mutation verbatim.</p>
 
+    <h4 id="s6-rollout-receipt-landed">Landing &mdash; the session's rollout is the third home, and the pointer read is scoped to the project</h4>
+    <p><strong>Landed 2026-09-22.</strong> <code>recorded_windows</code> now builds a third candidate
+    reading from the rollout receipt of each member's newest live run, read by its
+    <code>session_id</code> through <code>rollout_module.read_rollout_receipt</code> &mdash; the same
+    reader the lanes view injects, and injectable here for the same reason. The receipt's
+    <code>quota_readings</code> are keyed by window length in minutes, which is the keying the other
+    two sources already use, so one competition on <code>observed_at</code> now covers all three
+    homes.</p>
+
+    <p><strong>The receipt carries no stamp of its own, so the run record ages it.</strong> A
+    <code>QuotaReading</code> has a window, a percentage and a reset but no observation time, so the
+    reading is dated by the record the session was named by: its own budget block first, then the
+    run's lifecycle stamps newest-first, and nothing at all from a record carrying none. A record
+    that cannot be dated supplies no candidate, which is what keeps an undatable receipt from
+    displacing a dated ledger row. Only a pointer for a run still in flight is read for its rollout:
+    a promoted run's receipt is already committed, and its rollout would be the same reading recorded
+    a second time.</p>
+
+    <p><strong>A marker for a gap is not a reading.</strong> The production reader answers every gap
+    with an explicit unmeasured marker rather than raising, and that marker is a string, so a reset
+    time taken naively from it would print a reason in the place a deadline belongs; the reset is read
+    through a guard that treats the marker as no reset. A receipt whose quotas are unmeasured or absent
+    resolves no clock and contributes no candidate, so the group falls back to the ledger row rather
+    than reporting an invented position or dropping to unknown while a good row sat unread.</p>
+
+    <table>
+      <tr><th>case</th><th>the member's sources</th><th>the reading the group reports</th></tr>
+      <tr><td>a live run with no <code>lane_receipt</code> whose session has a readable rollout</td><td>ledger receipt 3 h old (0.42), rollout receipt 1 min old (0.11 five_hour / 0.17 seven_day)</td><td>the rollout's: both clocks, <code>observed_at</code> 1 min old</td></tr>
+      <tr><td>the reader answers unmeasured, or the rollout is absent</td><td>ledger receipt 3 h old (0.42), no usable rollout</td><td>the ledger's: <code>util 0.42</code>, its 3 h stamp</td></tr>
+      <tr><td>a pointer of another project carries the freshest receipt</td><td>this project's ledger row 3 h old (0.42), a foreign pointer 1 min old (0.91)</td><td>this project's: <code>util 0.42</code>, its 3 h stamp</td></tr>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/rollout-receipt-third-source.svg" alt="The crew home's pointers pass a single project comparison, and the three window sources behind it feed one candidate set. The third is the session's rollout receipt, read by session id, which carries quota readings keyed by window length and no stamp of its own, so the run record ages it. A marker for a gap contributes no candidate, and the freshest dated reading wins wholesale, so a receipt carrying only the weekly window leaves the five-hour clock unknown exactly as the stream path already did.">
+    </figure>
+
+    <p><strong>What the workstation shows, and what it does not.</strong> The rollout path resolves
+    real receipts on this machine: the live codex sessions of <code>nova</code> each answer a
+    <code>seven_day</code> reading, 46 and 56&nbsp;percent, where before this change nothing read them.
+    <strong>Neither project read reported a rollout reading, because the committed rows out-dated
+    them.</strong> For <code>reckon</code>, <code>codex-sub</code> reports
+    <code>utilisation 0.31</code> at <code>observed_at 2026-09-21T20:53:30Z</code>, the newest receipt
+    in that ledger, and no pointer of that project carries a codex session at all, so the third source
+    had nothing to offer there. For <code>nova</code>, <code>codex-sub</code> reports
+    <code>0.54</code> at <code>2026-09-22T13:54:12Z</code> from a committed row, while the live
+    sessions' rollouts carry their readings at 12:08 and 12:22 &mdash; real, readable, and older by
+    their run stamps than the row that won. The third source is therefore reachable in production and
+    did not win in either project; a case where a rollout receipt is the freshest reading is asserted
+    from the injected reader and has not been observed in production.</p>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q tests/test_preflight_pace.py</code> &mdash;
+    <strong>34 passed</strong>, exit 0 (three added cases, one parametrised over the two unmeasured
+    markers). The base revision's own copy of the file, its 30 cases, run against this tree:
+    <strong>30 passed</strong>, exit 0, so the added cases are additive. The declared negative control
+    &mdash; <em>drop the project filter</em>, verbatim on the red log's first line &mdash; was applied
+    at one site in a scratch copy of this tree: the foreign-pointer case passed before the mutation and
+    the mutation reddens exactly it at
+    <code>assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)</code> with
+    <code>assert 0.91 == 0.42</code>, reporting the foreign receipt where this project's row belonged
+    (1 failed, 33 passed for the whole file, and the mutated read printed the scratch copy's
+    <code>budget.py</code> so the traceback could not cite the worktree). Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-rollout-receipt">the landed evidence
+    record</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">

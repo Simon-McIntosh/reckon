@@ -1239,6 +1239,129 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     </ul>
   </section>
 
+  <section id="s6-rollout-receipt">
+    <h2>&sect;6 &mdash; The session's rollout is the third home, and the pointer read is scoped to the project</h2>
+
+    <h3>The measure</h3>
+
+    <p><code>budget.recorded_windows</code> builds a third candidate reading from the
+    <strong>rollout receipt of each declared-group member's newest live run</strong>, read by that
+    run's <code>session_id</code> through <code>rollout_module.read_rollout_receipt</code> &mdash;
+    the same reader the lanes view injects, and injectable here for the same reason, so a test
+    supplies a reader interchangeable with the production one instead of depending on whichever
+    rollout this machine happens to hold. The receipt's <code>quota_readings</code> are keyed by
+    window length in minutes, the keying the other two sources already use, so one competition on
+    <code>observed_at</code> now spans all three homes.</p>
+
+    <p><strong>The receipt carries no stamp of its own, so the run record ages it.</strong> A
+    <code>QuotaReading</code> holds a window, a percentage and a reset, and no observation time; the
+    reading is therefore dated by the record the session was named by &mdash; its own budget block
+    first, then the run's lifecycle stamps newest-first &mdash; and a record carrying none of them
+    supplies no candidate at all. That last clause is what stops an undatable receipt from displacing
+    a dated ledger row. Only a pointer for a run still in flight is read for its rollout: a promoted
+    run's receipt is already committed, so its rollout would be the same reading recorded twice.</p>
+
+    <p><strong>A marker for a gap is not a reading.</strong> The production reader answers every gap
+    with an explicit unmeasured marker rather than raising, and that marker is a string
+    subclass, so a reset time taken naively from it would print a reason where a deadline belongs;
+    the reset is read through a guard that treats the marker as no reset. A receipt whose quotas are
+    unmeasured or absent resolves no clock and contributes no candidate, and the group falls back to
+    the ledger row rather than reporting an invented position or dropping to unknown while a good row
+    sat unread.</p>
+
+    <p>The pointer read is filtered to the project the caller named. The crew home holds every
+    project's pointers, and every source below reads that one filtered list, so a foreign run's
+    receipt, stream and session are excluded together by the one comparison.</p>
+
+    <table>
+      <caption>The three added cases, one row each, with the unmeasured case parametrised over the
+        two markers the production reader returns.</caption>
+      <thead><tr><th>Case</th><th>The member's sources</th><th>The reading the group reports</th></tr></thead>
+      <tbody>
+        <tr><td>a live run with no <code>lane_receipt</code> whose session has a readable rollout</td><td>ledger receipt 3&nbsp;h old (0.42), rollout receipt 1&nbsp;min old (0.11 five_hour / 0.17 seven_day)</td><td>the rollout's: both clocks, <code>observed_at</code> 1&nbsp;min old, and the reader asked for that one session</td></tr>
+        <tr><td>the reader answers unmeasured, or the rollout is absent</td><td>ledger receipt 3&nbsp;h old (0.42), no usable rollout</td><td>the ledger's: <code>utilisation 0.42</code>, its 3&nbsp;h stamp</td></tr>
+        <tr><td>a pointer of another project carries the freshest receipt</td><td>this project's ledger row 3&nbsp;h old (0.42), a foreign pointer 1&nbsp;min old (0.91)</td><td>this project's: <code>utilisation 0.42</code>, its 3&nbsp;h stamp</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/rollout-receipt-third-source.svg" alt="The crew home's pointers pass a single project comparison, and the three window sources behind it feed one candidate set. The third is the session's rollout receipt, read by session id, which carries quota readings keyed by window length and no stamp of its own, so the run record ages it. A marker for a gap contributes no candidate, and the freshest dated reading wins wholesale, so a receipt carrying only the weekly window leaves the five-hour clock unknown exactly as the stream path already did.">
+    </figure>
+
+    <h3>Gate</h3>
+
+    <p><code>pytest -q tests/test_preflight_pace.py</code> &mdash; <strong>34 passed</strong>, exit 0
+    (<code>6</code> lines: the revision line, the tree, the command, the progress line, the summary,
+    <code>sha256 3359a397&hellip;</code>, re-run at the formatted head). Three cases were added, one of them parametrised over the
+    two unmeasured markers, so the file grew from 30 to 34.</p>
+
+    <p><strong>The existing cases pass unchanged, measured rather than inferred.</strong> The base
+    revision's own copy of the file &mdash; <code>git show HEAD:tests/test_preflight_pace.py</code>
+    at <code>f29aa1fb</code>, its 30 cases &mdash; was run against this tree:
+    <strong>30 passed</strong>, exit 0 (<code>4</code> lines, <code>sha256 68a46068&hellip;</code>).
+    Every assertion that existed before this change still holds against the new source.</p>
+
+    <h3>The real workstation</h3>
+
+    <p><code>reckon crew preflight --project reckon --pretty</code>, run from this worktree and
+    captured whole (<code>445</code> lines, <code>sha256 fe6a7c21&hellip;</code>), reports
+    <code>codex-sub</code> <code>state: observed</code> from <code>codex-astra</code> at
+    <code>seven_day utilisation 0.31</code>, <code>age_seconds 63849.771537</code>,
+    <code>observed_at 2026-09-21T20:53:30+00:00</code>, with <code>spark-sub</code> unknown. That
+    stamp is the newest receipt in this project's ledger
+    (<code>r-20260921T195804074649-the-rollback-asks-head-instead-of-inferring</code>,
+    <code>codex-astra</code>, <code>10080 &rarr; 31.0</code>), and <strong>no pointer of this project
+    carries a codex session at all</strong>, so the third source had nothing to offer here.</p>
+
+    <p><strong>A second project, to test whether the rollout source ever wins.</strong> The rollout
+    path does resolve real receipts on this machine: the live codex sessions of <code>nova</code>
+    each answer a <code>seven_day</code> reading &mdash; 46.0 and 56.0&nbsp;percent &mdash; where
+    before this change nothing read them. But
+    <code>reckon crew preflight --project nova --pretty</code>
+    (<code>451</code> lines, <code>sha256 55a27b51&hellip;</code>) reports <code>codex-sub</code>
+    <code>0.54</code> at <code>observed_at 2026-09-22T13:54:12+00:00</code>, which is a committed row
+    (<code>r-20260922T112528428825</code>, <code>codex-astra</code>, <code>10080 &rarr; 54.0</code>),
+    while those live sessions' rollouts carry their readings at <code>12:08:38Z</code> and
+    <code>12:22:08Z</code> &mdash; real, readable, and <em>older by their run stamps</em> than the row
+    that won. So in both projects read the third source was reachable and did not win.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> drop the project filter &mdash; the first line
+    of the red log, <code>sha256 7db8f0ec&hellip;</code> (141 lines). It was applied to a scratch copy
+    of this tree at exactly one site: the pointer read in <code>recorded_windows</code>, where the
+    project comparison in the <code>crew.list_live()</code> list comprehension was removed so every
+    project's pointer enters this project's group. The package and tests were copied with
+    <code>-a</code> and every <code>__pycache__</code> cleared, and the mutated run's own import check
+    printed <code>budget module file: &lt;the scratch copy&gt;/reckon/budget.py</code>, so a traceback
+    cannot cite the worktree. <strong>Positive control first:</strong> the foreign-pointer case passes
+    in the unmutated tree (it is one of the 34 passed above). After the mutation it is red:
+    <code>1 failed</code>, exit 1, failing at
+    <code>assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)</code> with
+    <code>assert 0.91 == 0.42</code> &mdash; the foreign project's receipt reported where this
+    project's own committed row belonged. The whole file in the scratch copy gives
+    <code>1 failed, 33 passed</code>, so the mutation reddens exactly the foreign-pointer case. The
+    scratch copy was removed once the logs were captured; the logs are the artifacts.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>No production run has yet been paced by a rollout reading.</strong> The third source
+      is read and resolves real receipts, but in the two projects measured the committed rows
+      out-dated them. A rollout receipt being the freshest reading is asserted through the injected
+      reader and has not been observed in production here.</li>
+      <li><strong>The rollout receipts on this workstation carry only the weekly window</strong>
+      (<code>window_minutes 10080</code>), so a rollout reading that did win would leave
+      <code>five_hour</code> unknown beside it. That is not new: the win is wholesale, and the stream
+      path already behaves this way. It is recorded as a follow-on rather than repaired here.</li>
+      <li><strong>Lint is measured by delta.</strong> The new helper and its comments carry no new
+      finding against the base revision's copy of these two files, counted per rule. No pre-existing
+      finding in either file was fixed in passing.</li>
+      <li><strong>The measure ranges over this node's own change.</strong> A merged-head verification
+      is a separately dispatched node's job.</li>
+    </ul>
+  </section>
+
   <section id="gate-recapture">
     <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
 
