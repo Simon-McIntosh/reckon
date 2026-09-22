@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="980" height="460" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill: #fbfbfd; stroke: #c8cdd6; stroke-width: 1.5; rx: 6; }
+    .entry { fill: #eef2f9; stroke: #5a6f96; stroke-width: 2; rx: 6; }
+    .known { fill: #eef7ee; stroke: #4c8a4c; stroke-width: 1.8; rx: 6; }
+    .unknown { fill: #fdf3ec; stroke: #c07a3a; stroke-width: 1.8; rx: 6; }
+    .h { font-size: 14px; font-weight: 700; fill: #1c2430; }
+    .t { font-size: 12px; fill: #41505f; }
+    .m { font-size: 11px; fill: #6a7787; font-family: ui-monospace, monospace; }
+    .lab { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; fill: #7a8798; }
+    .arrow { stroke: #8a94a4; stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+    .arrow-bad { stroke: #b05050; stroke-width: 1.6; fill: none; marker-end: url(#arb); }
+    .strike { stroke: #b05050; stroke-width: 1.8; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a4"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b05050"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="24" y="30">The lanes view is asked where a caller asks it</text>
+  <text class="t" x="24" y="50">Both cases compose the view over one run; neither calls the dating helper directly, because a direct call proves the function and not the wiring.</text>
+
+  <text class="lab" x="24" y="84">the entry point a case uses</text>
+  <rect class="entry" x="24" y="96" width="440" height="70"/>
+  <text class="m" x="40" y="120">mcp_views.crew_lanes_view(config, [run], ...)</text>
+  <text class="t" x="40" y="140">probe_reader returns nothing, so no probe overrides the receipt</text>
+  <text class="t" x="40" y="157">and the receipt's own stamp is what a lane can publish.</text>
+
+  <rect class="box" x="516" y="96" width="440" height="70"/>
+  <text class="m" x="532" y="120">budget.run_observed_stamp(row)</text>
+  <text class="t" x="532" y="140">One helper holds the field list; it parses before it returns, so a</text>
+  <text class="t" x="532" y="157">value that does not parse is passed over rather than published.</text>
+  <path class="arrow" d="M 464 131 L 508 131"/>
+
+  <!-- case 1 -->
+  <text class="lab" x="24" y="204">case — a run whose only stamp is created_at</text>
+  <rect class="box" x="24" y="216" width="280" height="66"/>
+  <text class="m" x="40" y="240">{ "created_at": "2029-12-31T22:00:00Z" }</text>
+  <text class="t" x="40" y="259">no budget block, no other stamp</text>
+  <text class="t" x="40" y="276">datable by the pace reader, not by the old list</text>
+  <path class="arrow" d="M 304 249 L 352 249"/>
+  <rect class="box" x="352" y="216" width="196" height="66"/>
+  <text class="m" x="368" y="240">run_observed_stamp</text>
+  <text class="t" x="368" y="259">parses the stamp</text>
+  <text class="t" x="368" y="276">returns it</text>
+  <path class="arrow" d="M 548 249 L 596 249"/>
+  <rect class="known" x="596" y="216" width="184" height="66"/>
+  <text class="m" x="612" y="240">lane["observed_at"]</text>
+  <text class="t" x="612" y="259">2029-12-31T22:00:00Z</text>
+  <text class="t" x="612" y="276">no unmeasured key</text>
+  <rect class="unknown" x="796" y="216" width="160" height="66"/>
+  <text class="m" x="812" y="238">pre-change list</text>
+  <text class="t" x="812" y="256">stopped one key short</text>
+  <text class="t" x="812" y="273">&rarr; "unmeasured"</text>
+  <path class="strike" d="M 810 262 L 942 262" opacity="0.75"/>
+
+  <!-- case 2 -->
+  <text class="lab" x="24" y="322">case — a budget stamp present but unparsable</text>
+  <rect class="box" x="24" y="334" width="280" height="66"/>
+  <text class="m" x="40" y="358">{ "budget": { "observed_at": "yesterday afternoon" },</text>
+  <text class="m" x="40" y="374">  "completed_at": "2029-12-31T21:00:00Z" }</text>
+  <text class="t" x="40" y="391">the malformed value sits ahead of a readable one</text>
+  <path class="arrow" d="M 304 367 L 352 367"/>
+  <rect class="box" x="352" y="334" width="196" height="66"/>
+  <text class="m" x="368" y="358">run_observed_stamp</text>
+  <text class="t" x="368" y="377">passes over what will not parse</text>
+  <text class="t" x="368" y="394">reads the next stamp</text>
+  <path class="arrow" d="M 548 367 L 596 367"/>
+  <rect class="known" x="596" y="334" width="184" height="66"/>
+  <text class="m" x="612" y="358">lane["observed_at"]</text>
+  <text class="t" x="612" y="377">2029-12-31T21:00:00Z</text>
+  <text class="t" x="612" y="394">not the malformed text</text>
+  <rect class="unknown" x="796" y="334" width="160" height="66"/>
+  <text class="m" x="812" y="356">a truthy-field helper</text>
+  <text class="t" x="812" y="374">hands the text back</text>
+  <text class="t" x="812" y="391">&rarr; "yesterday afternoon"</text>
+  <path class="strike" d="M 810 380 L 942 380" opacity="0.75"/>
+</svg>
