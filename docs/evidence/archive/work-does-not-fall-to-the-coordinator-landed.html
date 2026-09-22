@@ -1914,9 +1914,26 @@ AGREE: False</code></pre>
     <code>test_recorded_report_names_the_command_that_actually_ran</code> and
     <code>test_verify_gate_accepts_a_command_on_a_run_with_no_stored_gate</code>, while
     <code>test_verify_gate_without_the_option_runs_the_stored_command</code> stays green
-    because it never supplies a command. The mutation is stated verbatim on the first line
-    of <code>negative-control.log</code> and <code>reckon/crew/promotion.py</code> was
-    restored byte-identically afterwards (empty diff).</p>
+    because it never supplies a command. <code>reckon/crew/promotion.py</code> was restored
+    byte-identically afterwards (empty diff), and the selection line reads
+    <code>command = supplied or stored_command</code> again at <code>promotion.py:672</code>.</p>
+
+    <p><strong>Correction to this anchor&#8217;s own receipt, recorded rather than
+    removed.</strong> This anchor first stated that the mutation was &#8220;stated verbatim on
+    the first line of <code>negative-control.log</code>&#8221;, and that was false when
+    written. The declared mutation had never been supplied to this node: its dispatch carried
+    the required first-line property but not the string to place there, and the log&#8217;s
+    first line held only the node&#8217;s own code-level restatement of the edit. Promotion
+    matches the first line against the declared string, so the receipt would have been refused
+    for naming a property it did not hold. The declaration was recovered from the node&#8217;s
+    review &#8212; traced to <code>compose_prompt</code> withholding it, found independently
+    on another node, and landed as section 11 of this plan &#8212; and the log&#8217;s first
+    line now carries it verbatim: <em>&#8220;ignore the supplied command so verify-gate
+    falls back to the stored gate_check command whenever the row carries one&#8221;</em>.
+    The code-level restatement is retained beneath it, because it names the exact edit the
+    red run exercised and the declaration alone does not. The mutation, the three reddened
+    cases and the byte-identical restore above are unchanged; only the receipt&#8217;s stated
+    property was wrong.</p>
 
     <p><strong>Zero added failure ids at the base.</strong> The same three pre-existing
     cohort files ran at base <code>37de7907</code> in a detached worktree and reported the
