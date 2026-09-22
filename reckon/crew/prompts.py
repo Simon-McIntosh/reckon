@@ -5,7 +5,12 @@ import sys
 from pathlib import Path
 from typing import Iterable, Mapping
 
-from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode, negative_control_is_none
+from reckon.crew.node import (
+    NEEDS_HELP_MARKER,
+    TaskNode,
+    is_test_path,
+    negative_control_is_none,
+)
 
 # The commit-and-manifest-early contract, embedded in every composed prompt.
 # It lives here so it reaches a worker who never reads a reference document:
@@ -139,6 +144,21 @@ NEGATIVE_CONTROL_DECLARED_RULE = (
     "  Name that log's path in the `negative_control_log` line. Declared string:\n"
 )
 
+# The same declaration on a node whose scope reaches no test path. Promotion
+# discharges a declared mutation only for a node that writes a check — it exempts
+# a node whose write paths hold no test path with `node-writes-no-test-path`
+# before it reads the declaration — so telling this worker it writes a check sends
+# it to produce a red log nothing consumes. The branch is selected on the same
+# predicate promotion applies, so the prompt states the property the node actually
+# holds; the declaration is still rendered, because it is the node's record and a
+# mutation the worker applies of its own accord belongs in the manifest.
+NEGATIVE_CONTROL_DECLARED_NO_CHECK_RULE = (
+    "  This node declares a mutation, but its write paths reach no test path, so\n"
+    "  promotion reads no red log for it and no log is required. If you apply this\n"
+    "  or another mutation to falsify a check you add, record it in the manifest\n"
+    "  anyway. Declared string:\n"
+)
+
 NEGATIVE_CONTROL_NONE_RULE = (
     "  This node declares that no mutation applies. Such a declaration is expected\n"
     "  to carry its reason after `none:`; for a node that writes a check, promotion\n"
@@ -162,16 +182,20 @@ def _negative_control_declaration(node: TaskNode) -> str:
     The declaration is interpolated as written and never reflowed or re-indented,
     because it is the string a delivered red log's first line has to repeat and
     promotion matches it against that log's text. A node that declares nothing is
-    told so rather than having the subject dropped.
+    told so rather than having the subject dropped. A declared mutation is stated
+    as a required red log only when the node's write paths reach a test path — the
+    predicate promotion applies before it reads the declaration — so a node whose
+    scope holds no test path is not told a property of its own node that is false.
     """
     declaration = str(node.negative_control or "").strip()
     if not declaration:
         return NEGATIVE_CONTROL_UNDECLARED
-    rule = (
-        NEGATIVE_CONTROL_NONE_RULE
-        if negative_control_is_none(declaration)
-        else NEGATIVE_CONTROL_DECLARED_RULE
-    )
+    if negative_control_is_none(declaration):
+        rule = NEGATIVE_CONTROL_NONE_RULE
+    elif any(is_test_path(path) for path in node.write_paths):
+        rule = NEGATIVE_CONTROL_DECLARED_RULE
+    else:
+        rule = NEGATIVE_CONTROL_DECLARED_NO_CHECK_RULE
     return NEGATIVE_CONTROL_DECLARATION_HEADER + rule + "  " + declaration + "\n"
 
 

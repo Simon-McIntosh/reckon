@@ -8,7 +8,10 @@ the only party who can answer it is the coordinator. These cases measure the
 repair at the surface the worker reads: the composed prompt states this node's
 declaration string verbatim, states that the red log's first line must repeat it,
 tells a node that declares nothing that none was declared rather than dropping
-the subject, and carries a declaration containing quotes and newlines unaltered.
+the subject, carries a declaration containing quotes and newlines unaltered, and
+selects the branch that requires a red log on the same predicate promotion
+applies — whether the node's write paths reach a test path — so a node whose
+scope holds no test path is not told it writes a check.
 """
 
 from __future__ import annotations
@@ -24,7 +27,7 @@ TEST_PATH = "tests/test_guard.py"
 DECLARATION = "removing the guard from reckon/crew/prompts.py turns this case red"
 
 
-def _prompt(*, negative_control: str = "") -> str:
+def _prompt(*, negative_control: str = "", write_paths: list[str] | None = None) -> str:
     return compose_prompt(
         node=TaskNode(
             id="declaration-node",
@@ -33,7 +36,7 @@ def _prompt(*, negative_control: str = "") -> str:
             section="guard",
             role="implement",
             done_when="the prompt states the declaration the red log must repeat",
-            write_paths=[TEST_PATH],
+            write_paths=[TEST_PATH] if write_paths is None else write_paths,
             time_budget="20m",
             negative_control=negative_control,
         ),
@@ -127,3 +130,60 @@ def test_a_declaration_with_quotes_and_newlines_reaches_the_prompt_unaltered():
     assert declaration in prompt
     # Unaltered means neither reflowed nor re-indented on insertion.
     assert f"  {declaration}\n" in prompt
+
+
+# ── The declared branch matches the predicate promotion applies ───────────
+#
+# Promotion discharges a declared mutation only for a node whose write paths
+# reach a test path; a node whose paths hold none is exempted with
+# `node-writes-no-test-path` before the declaration is read. The branch is
+# selected on that same predicate, so a prompt never tells a worker a property
+# of its own node that is false.
+
+NO_TEST_PATH = "reckon/crew/prompts.py"
+WRITES_A_CHECK = "This node writes a check"
+ASKS_FOR_THE_LOG = "Name that log's path in the `negative_control_log` line."
+
+
+def test_a_declared_mutation_without_a_test_path_neither_claims_a_check_nor_asks_for_a_log():
+    block = _flat(
+        _declaration_block(
+            _prompt(negative_control=DECLARATION, write_paths=[NO_TEST_PATH])
+        )
+    )
+
+    # The declaration is still rendered — it is the node's record.
+    assert DECLARATION in block
+    # But the two assertions the exemption makes false are absent.
+    assert WRITES_A_CHECK not in block
+    assert ASKS_FOR_THE_LOG not in block
+
+
+def test_a_declared_mutation_with_a_test_path_still_gets_both_assertions():
+    block = _flat(_declaration_block(_prompt(negative_control=DECLARATION)))
+
+    assert WRITES_A_CHECK in block
+    assert ASKS_FOR_THE_LOG in block
+
+
+def test_the_none_branch_is_unchanged_by_the_write_paths():
+    for write_paths in ([NO_TEST_PATH], [TEST_PATH]):
+        block = _flat(
+            _declaration_block(
+                _prompt(
+                    negative_control="none: the guard is a constant fold",
+                    write_paths=write_paths,
+                )
+            )
+        )
+        assert "no mutation applies" in block
+        assert "no red log is required" in block
+
+
+def test_the_undeclared_branch_is_unchanged_by_the_write_paths():
+    block = _flat(
+        _declaration_block(_prompt(negative_control="", write_paths=[NO_TEST_PATH]))
+    )
+
+    assert "None was declared on this node" in block
+    assert "Declared string:" not in block

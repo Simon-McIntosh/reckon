@@ -2041,6 +2041,79 @@ AGREE: False</code></pre>
     <code>negative-control-red.log</code>, <code>green-restored.log</code>,
     <code>repro-declaration-absent-base.log</code>, <code>after-declaration-present.log</code>).</p>
   </section>
+
+  <section id="the-declared-branch-matches-the-promotion-predicate">
+    <h2>&sect;11 &mdash; The declared-control branch is selected on the predicate promotion applies</h2>
+    <p><strong>Defect reproduced before repair.</strong> The block above the manifest template told every
+    node whose declaration was not a <code>none</code> form that <em>this node writes a check</em> and asked
+    it to name a red log's path. Promotion discharges a declared mutation only for a node whose write paths
+    reach a test path and exempts any other with <code>node-writes-no-test-path</code> before it reads the
+    declaration, so a node that declared a mutation and wrote no test file was told a false property of its
+    own node and sent to produce a red log nothing consumes. Composing a prompt for a node declaring
+    <em>removing the guard turns this case red</em> with <code>write_paths</code> holding only a source
+    path returned <em>This node writes a check</em> <strong>present</strong> and <em>Name that log's path in
+    the <code>negative_control_log</code> line</em> <strong>present</strong>, while promotion's own
+    predicate reports no test path for that node. Receipt:
+    <code>repro-noncheck-node.log</code> in this node's run directory.</p>
+
+    <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/prompt-branch-matches-the-promotion-predicate.svg"
+         alt="A declaration forks first on its shape — empty, a none form, or a mutation — reproducing the undeclared and none branches unchanged. A mutation then forks on the predicate promotion applies, any(is_test_path(p)): yes selects the declared rule that states the node writes a check and asks for the red log's path; no selects the repaired declared-no-check rule that states the declaration is recorded and no log is required. A footnote records that before the repair the branch was chosen on the declaration form alone, so the no branch was never reached." />
+
+    <p><strong>The repair selects the branch on the predicate, not on the declaration form alone.</strong>
+    <code>_negative_control_declaration</code> in <code>reckon/crew/prompts.py</code> now picks its rule by
+    <code>negative_control_is_none</code> first (the branch the none form has always taken), then by
+    <code>any(is_test_path(path) for path in node.write_paths)</code> &mdash; the same predicate promotion
+    evaluates before it reads the declaration. A node whose scope reaches a test path keeps the requirement
+    and the log-path instruction; a node whose scope reaches none is told the declaration is recorded and
+    that no log is required, and the declaration string is still rendered because it is the node's record.
+    The <code>none</code> and undeclared branches are unchanged.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>d53318f6</code></th><th>Landed <code>77d8196c</code></th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>A prompt for a declared mutation with no test path &mdash; claims a check, and asks for a log</td><td>claim <strong>present</strong>, log-path ask <strong>present</strong></td><td>claim <strong>absent</strong>, log-path ask <strong>absent</strong>, declaration still present</td><td>the prompt no longer states a false property of the node</td></tr>
+        <tr><td>A prompt for a declared mutation with a test path &mdash; claim and log-path ask</td><td>both present</td><td>both present</td><td>the requirement the check-writing node needs is untouched</td></tr>
+        <tr><td><code>tests/test_prompt_carries_the_declaration.py</code></td><td>6 cases</td><td>10 passed</td><td>4 new cases, all entering through <code>compose_prompt</code></td></tr>
+        <tr><td>Focused cohort (15 files, prompts and negative-control surface)</td><td>8 failed, 164 passed</td><td>8 failed, 168 passed</td><td>0 added failure IDs (identical 8 names, diffed)</td></tr>
+        <tr><td>The declared control applied</td><td>&mdash;</td><td>1 failed, 9 passed</td><td>the no-test-path case reddens; the other three new cases stay green</td></tr>
+        <tr><td>Ruff and <code>ruff format --check</code>, both changed paths</td><td><code>prompts.py</code>: 2 findings</td><td><code>prompts.py</code>: 2 findings; new cases: 0</td><td>the commit adds none</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Falsified before trusting it</h3>
+    <p><strong>The declared control is the branch selector itself</strong>, and it is the declaration the
+    run's <code>node.negative_control</code> carries: <em>select the declared-control branch on whether the
+    declaration is a none form alone, ignoring whether the node write paths reach a test path</em>. Realised
+    by reverting the selector to <code>NONE_RULE if none else DECLARED_RULE</code>, the file reddens
+    <strong>1 failed, 9 passed</strong>: the new no-test-path case fails because the prompt again asserts the
+    node writes a check, while the three other new cases hold. That is the sharpest form of the control
+    &mdash; the mutation is exactly the defect, so the case written for it is the only one that moves, and a
+    case that reddened for any other reason could not be it. The mutation is the red log's first line
+    verbatim, and <code>reckon/crew/prompts.py</code> was restored afterwards with <code>git diff</code>
+    empty at that path and the file re-run green at the same revision. Logs:
+    <code>negative-control-red.log</code>, <code>green-restored.log</code>.</p>
+
+    <p><strong>What this does not claim.</strong> The gate measures this node's own change against its base
+    at <code>d53318f6</code>; the merged head is a separately dispatched test node's measurement. The
+    focused cohort carries eight failures, present identically at base and diffed to be the same names, and
+    they are outside this node's declared scope. One is on this plan's surface and is reported as a
+    follow-on rather than repaired here: <code>test_crew_negative_control_header.py</code>'s refusal case
+    meets promotion's unreviewed-run classification before it reaches the negative-control refusal.
+    <code>reckon/crew/node.py</code> was in this node's fence and is untouched, because
+    <code>is_test_path</code> was already importable and enforcing the <code>none: reason</code> form at
+    dispatch remains a separate follow-on.</p>
+
+    <p>Changed paths: <code>reckon/crew/prompts.py</code>,
+    <code>tests/test_prompt_carries_the_declaration.py</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/prompt-branch-matches-the-promotion-predicate.svg</code>,
+    <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>. Base revision
+    <code>d53318f6</code>; commit <code>77d8196c</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/</code>
+    (<code>green-focused.log</code>, <code>base-focused.log</code>,
+    <code>negative-control-red.log</code>, <code>green-restored.log</code>,
+    <code>repro-noncheck-node.log</code>).</p>
+  </section>
   </main>
 </body>
 </html>
