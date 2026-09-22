@@ -25,9 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-21">
+<meta name="plan-modified" content="2026-09-22">
 <meta name="plan-impl" content="0.944">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 </head>
 <body>
   <main class="plan-doc">
@@ -1276,6 +1276,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-20260921T2000-sweep-lift-landed" data-who="reckon-ship" data-when="2026-09-21T20:00:00+02:00">
     <div class="r-comment-body">Gate passed: 20 cases in the wait-shape file, 17 pre-existing unchanged and 3 added, with a focused gate of 136 passed exit 0 over eleven wait and sweep suites and a sweep-consumer gate of 46 passed exit 0. The declared mutation — make the sweep derive terminal false for a file condition whose paths all exist — reddened 2. The three added cases enter where the sweep enters rather than through the reader: the sweep lifts a wait whose declared paths all exist, it does NOT lift the same wait when one path is absent, and the derived terminal is recorded true. That second case is what distinguishes a lift from a function that always returns true, and its absence is why section 15's gate was green while the mechanism was inert. The chain that began with three workers filling the wait block three wrong ways in one hour now closes: the contract has a file-condition shape, an unrecognised shape is refused by name rather than reduced to silence, and the wait the reader accepts is the wait the sweep lifts.</div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20260921T172748855785-the-sweep-lifts-the-wait-the-reader-accepted" data-who="reckon-ship" data-when="2026-09-21T17:58:07.181Z">
+    <div class="r-comment-body"><p>the wait the reader accepts is now the wait the sweep lifts: three cases enter where the sweep enters rather than through the reader, asserting that a file condition whose declared paths all exist is lifted, that the same wait with one path absent is NOT lifted, and that the derived terminal is recorded true. That second case is what distinguishes a lift from a function that always returns true, and its absence is why section 15&#x27;s gate was green while the mechanism was inert. 20 passed in the wait-shape file (17 unchanged plus 3 added), 136 passed across eleven wait and sweep suites, 46 passed on the sweep consumers, and the declared mutation reddened 2. Review 91/100, its finding that the three cited gate logs carry no revision, tree or command on any line — which is section 17&#x27;s defect exactly, and this run predates section 17&#x27;s template change, so it could only have learned the convention from its brief.</p></div>
 </div>
 </section>
 </main>
