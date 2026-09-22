@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="a-review-can-see-the-figure-landed">
+  <meta name="plan-title" content="A lane declares its input modalities — landed record">
+  <meta name="plan-status" content="active">
+  <title>A lane declares its input modalities — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A lane declares its input modalities</h1>
+    <p>Execution record for <a href="/reckon/plans/a-review-can-see-the-figure">a-review-can-see-the-figure</a> §1. A backend now states which input modalities its model actually receives, and a profile that needs one a lane does not declare is refused by name rather than falling through to <code>default_backend</code>.</p>
+
+    <section id="s1-input-modalities" data-reckon="section">
+      <h2>The slot, and the refusal it makes possible</h2>
+      <p><code>BackendConfig</code> gained <code>input_modalities</code>, ranging over a closed <code>InputModality</code> enum of <code>text</code> here, <code>image</code> for a lane whose model receives an attached figure. The LinkML source is authoritative and both derived artifacts were regenerated from it; the committed round-trip tests report <strong>2 passed, exit 0, not skipped</strong>, so the Pydantic model and the served JSON schema regenerate byte-identically from the source.</p>
+      <p>Resolution runs through <code>select_profile_backend</code>. The candidate is the lane the caller named, or the resolved <code>default_backend</code> when none is named. A candidate that does not declare a modality the profile requires is refused by name — the message carries the backend, the missing modality and the modalities that were declared. No second backend is tried, and <code>default_backend</code> is never substituted for a named candidate: the substitution is not a cheaper or slower lane, it is a lane that never receives the image and still answers.</p>
+
+      <table>
+        <thead><tr><th>Profile</th><th>Modalities required</th><th>Lane declaring them</th><th>Lane declaring none</th></tr></thead>
+        <tbody>
+          <tr><td><code>text</code></td><td>none — every lane receives a prompt</td><td>served</td><td>served</td></tr>
+          <tr><td><code>figure</code></td><td><code>image</code></td><td>served</td><td><strong>refused by name</strong></td></tr>
+        </tbody>
+      </table>
+
+      <p>A lane that declares nothing is read as having no declared modality, never every modality. That asymmetry is the measure: the text profile demands no declaration, so a layer predating the slot still serves the text review, while the figure profile can only be served by a lane that says it receives the image.</p>
+
+      <h3>The refusal, reproduced</h3>
+      <pre><code>flight.FlightConfigError: &lt;resolved flight&gt;: backends.local-flash.input_modalities:
+backend 'local-flash' cannot serve a 'figure' profile: it does not declare
+image input (declared input modalities: none). Declare the modality on a lane
+whose model actually receives it; no fallback to another backend is taken,
+because a lane that does not receive the image returns a well-formed verdict
+formed from the filename and the diff</code></pre>
+
+      <h3>The falsifier, and its negative control</h3>
+      <p>The falsifier is applied literally: point the figure profile at a lane declaring no image input and require a refusal. In the fixture the <em>default</em> lane does declare image input, so a resolver that ignored the slot would return it and the assertion would pass on the defect. Asserting against that arrangement is what makes the check discriminate.</p>
+      <p>The declared negative control - make the figure-profile resolver ignore the input-modalities slot and fall through to default_backend - was applied, and <strong>exactly the two refusal tests failed</strong> with <code>DID NOT RAISE FlightConfigError</code>, the other 84 tests in the declared gate unaffected. The resolver was restored and the gate re-run green.</p>
+
+      <h3>Gate</h3>
+      <p><code>tests/test_flight.py tests/test_backend_reference_contract.py</code> - <strong>93 passed, exit 0</strong>. The six new cases cover the slot's presence in the LinkML source, the generated model and the served JSON schema; acceptance on a codex-declaring lane; the refusal naming the backend and the missing modality; the no-fall-through case; the default-candidate case; and the undeclared-modality and unknown-lane/unknown-profile refusals.</p>
+
+      <h3>Not landed here</h3>
+      <p>The codex backends themselves live in the operator's flight configuration - <code>~/.config/reckon/flight.yaml</code> and <code>docs/state/reckon/flight.yaml</code> - which are outside this node's write scope. The schema accepts the declaration now and a codex-declaring lane is exercised by the tests; adding <code>input_modalities: [text, image]</code> to those backends is the step that makes the existing codex lanes eligible for a figure profile.</p>
+      <p><strong>Figure not produced.</strong> The decision is naturally a three-box flow - profile requires, candidate resolves, declared or refused - and a graphic would carry it better than prose. It was not rendered before this node's time fence was spent, so this record states the decision in the table and prose rather than describing a figure that is not there.</p>
+    </section>
+  </main>
+</body>
+</html>
