@@ -779,6 +779,111 @@ def negative_control_finding(node: TaskNode) -> dict[str, str] | None:
     }
 
 
+# ── A gate population names files the repository has ────────────────────────
+
+# The finding name for a gate population the repository cannot resolve. It is
+# not one of the eight contract properties: those judge the node's own
+# definition, while this judges the working tree the node will run in, so a
+# reader can tell a malformed node from a misdirected one.
+GATE_POPULATION_FIELD = "gate-population"
+
+# A gate population is a repository-relative token that names a SET of files,
+# which is what a glob metacharacter spells. The token needs at least one path
+# separator, so a prose word cannot be read as a population. A single literal
+# path is a file claim rather than a population, and one the repository lacks
+# fails loudly inside the worker's own gate run, so it is not this finding's
+# subject; a glob matching nothing is, because it silently narrows the set the
+# gate was meant to cover. Beyond that the spelling is never judged: the
+# question put to the repository is whether it holds a match.
+_GATE_POPULATION = re.compile(
+    r"(?<![\w.*?\[\]{}/-])([\w.*?\[\]{}-]+(?:/[\w.*?\[\]{}-]+)+)"
+)
+_GATE_POPULATION_IS_A_SET = re.compile(r"[?*\[]")
+
+
+def gate_population_patterns(gate_command: str) -> list[str]:
+    """Return the population patterns a gate command names, deduplicated.
+
+    Order is preserved so a refusal reads in the order the brief wrote them.
+    """
+    seen: dict[str, None] = {}
+    for match in _GATE_POPULATION.finditer(str(gate_command or "")):
+        # Trailing sentence punctuation belongs to the prose around the token,
+        # not to the pattern the repository is asked about.
+        token = match.group(1).rstrip(".,;:)\"'")
+        if not token or token.startswith("/"):
+            continue
+        if _GATE_POPULATION_IS_A_SET.search(token):
+            seen.setdefault(token, None)
+    return list(seen)
+
+
+def _gate_population_matches(repository: Path, pattern: str) -> bool:
+    """Whether the repository's working tree holds at least one match.
+
+    The store answers the question, so a pattern the glob engine cannot parse is
+    admitted rather than refused: an unreadable query is not evidence of
+    absence, and refusing one would reject a pattern for its spelling.
+    """
+    import glob as _glob
+
+    try:
+        return bool(_glob.glob(str(repository / pattern), recursive=False))
+    except (ValueError, OSError):
+        return True
+
+
+def _population_covers_a_declared_write_path(pattern: str, declared: set[str]) -> bool:
+    """Whether a gate population resolves against a path this node will write.
+
+    A node that creates the files its own gate runs names them in the gate
+    command before they exist, so the pattern is asked of the store the node is
+    about to extend: each declared write path is matched against the pattern as
+    a glob. That is the door the exemption leaves open, so a node writing its
+    own evidence population is not refused for an absence it is there to fill.
+    """
+    import fnmatch
+
+    return any(fnmatch.fnmatchcase(path, pattern) for path in declared if path)
+
+
+def gate_population_finding(
+    node: TaskNode, *, repository: str | Path
+) -> dict[str, str] | None:
+    """Compose the dispatch refusal for a gate population the repository lacks.
+
+    The gate command is the node's own measure — the check the brief tells the
+    worker to run — and the populations it names are evidence about what was run.
+    A population matching no file is caught here, where it costs a refusal,
+    rather than inside the worker, where it costs the worker's judgement about
+    which substitute the coordinator meant. The repository is asked whether it
+    holds a match; the pattern's spelling is never the subject.
+    """
+    repository_path = Path(repository)
+    declared = {
+        str(path).strip().strip("/") for path in node.write_paths if str(path).strip()
+    }
+    missing = [
+        pattern
+        for pattern in gate_population_patterns(node.done_when)
+        if not _population_covers_a_declared_write_path(pattern, declared)
+        and not _gate_population_matches(repository_path, pattern)
+    ]
+    if not missing:
+        return None
+    named = ", ".join(missing)
+    return {
+        "property": GATE_POPULATION_FIELD,
+        "detail": (
+            f"the gate command names {named}, and the repository "
+            f"{repository_path} holds no file matching "
+            + ("that pattern" if len(missing) == 1 else "those patterns")
+            + "; name a population the repository has, or add the path to the "
+            "node's write paths when this node creates it"
+        ),
+    }
+
+
 def validate_node(
     node: TaskNode,
     *,

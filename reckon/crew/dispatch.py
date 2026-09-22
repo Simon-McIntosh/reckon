@@ -43,6 +43,7 @@ from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     normalize_section,
     negative_control_finding,
+    gate_population_finding,
     parse_duration,
     placement_query_undeclared,
     placement_requirement_node_local,
@@ -2764,6 +2765,19 @@ def plan_dispatch(
         verdict = NodeValidation(
             ok=False, findings=[*verdict.findings, control_finding]
         )
+    # The gate command is the check the brief tells the worker to run, so a
+    # population that names no file the repository holds is caught here, where
+    # it costs a refusal, rather than inside the worker, where it costs the
+    # worker's judgement about which substitute the coordinator meant. A
+    # caller that named no repository has no store to ask and is left alone.
+    if repo is not None:
+        population_finding = gate_population_finding(
+            node, repository=Path(repo).resolve()
+        )
+        if population_finding is not None:
+            verdict = NodeValidation(
+                ok=False, findings=[*verdict.findings, population_finding]
+            )
     if not execution_fit.allowed:
         verdict = NodeValidation(
             ok=False,
