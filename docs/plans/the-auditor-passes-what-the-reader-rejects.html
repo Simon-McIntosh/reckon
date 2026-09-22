@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
   <meta name="reckon-type" content="plan">
-  <meta name="plan-slug" content="the-auditor-balances-only-one-tag">
-  <meta name="plan-title" content="The Auditor Balances Only One Tag">
-  <meta name="plan-summary" content="The doc auditor balances section tags only, so an evidence record with four unclosed table rows passes the gate that runs before every commit.">
+  <meta name="plan-slug" content="the-auditor-passes-what-the-reader-rejects">
+  <meta name="plan-title" content="The Auditor Passes What The Reader Rejects">
+  <meta name="plan-summary" content="audit-doc validates a document without checking what its readers require, so it passed the file that broke every plan read in the project.">
   <meta name="plan-status" content="draft">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.5">
@@ -19,7 +19,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-standalone" content="The document auditor is its own surface: no plan waits on this repair and this repair waits on none, so wiring it to the plan whose evidence file happened to expose it would assert a dependency that does not exist.">
-  <title>The Auditor Balances Only One Tag | reckon</title>
+  <title>The Auditor Passes What The Reader Rejects | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
@@ -126,6 +126,45 @@
     copy, the fixture case is observed to fail there, and the red log's first
     line repeats the declared mutation verbatim.</p>
 
+    <h2 id="s3-the-island">&sect;3 &mdash; The stronger case: a document the reader cannot parse at all</h2>
+
+    <p>The tag finding above is the small end of this. The large end was measured
+    the same evening, by walking into it. A sprint document landed carrying its
+    metadata and its rendered item list but no
+    <code>reckon-resource-state</code> script, and that script is not decoration
+    &mdash; it is the authority the reader parses, with the visible list being
+    its rendering. Resolving <em>any</em> plan enumerates every sprint document,
+    so one file without an island made every plan read in the project fail, for
+    every session sharing the checkout, from the moment it landed. The reader's
+    message named the file; nothing named the cause.</p>
+
+    <p><strong>The auditor reported that file OK.</strong> Not a warning, not an
+    informational note &mdash; clean, at every severity, on the document that had
+    just taken the plan surface down. That is the same shape as the unclosed rows
+    and it is worth stating as one sentence rather than two findings: <em>the
+    auditor validates a document against the authoring rules and never against
+    the contract its readers require.</em> A file can satisfy every check it has
+    and still be unreadable by the only code that reads it.</p>
+
+    <p>The asymmetry is what makes this worth building. Authoring mistakes are
+    caught by a person noticing something looks wrong on the page. A missing
+    state island looks like nothing at all &mdash; the page renders, the metadata
+    is right, the list is there &mdash; and the failure surfaces somewhere else
+    entirely, as every plan in the project becoming unreadable at once.</p>
+
+    <h3 id="s3-done">Done when</h3>
+
+    <p>A document of each resource type that carries no state island is reported
+    as an error by the auditor, shown against the real file that caused this,
+    preserved as a fixture with its island removed; an island whose JSON does not
+    parse, and one whose declared type or id disagrees with the document's own
+    metadata, are reported as distinct errors rather than one; every sprint,
+    plan and evidence document currently in the repository passes the new checks,
+    which is the measure that catches a rule written more strictly than the
+    corpus; and the declared negative control &mdash; remove the island check
+    &mdash; is applied to a scratch copy, the fixture case is observed to pass
+    there, and the log's first line repeats the declared mutation verbatim.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="balanced-tags" data-choice="" data-by="" data-when="">
@@ -144,7 +183,7 @@
 <article class="r-fu" data-id="f-abo-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Widen the balance scan before repairing anything it would name</h4>
     <div class="r-fu-body"><p>The scan lands first and is observed to fail on a fixture built from the real evidence record, because a repair made before the check exists proves only that someone edited the file. The tag list is a locked decision, so resolve <code>balanced-tags</code> before dispatching; the three measured files and their counts are in &sect;1.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship the-auditor-balances-only-one-tag §2</pre>
+    <pre class="r-fu-prompt">/reckon-ship the-auditor-passes-what-the-reader-rejects §2</pre>
     </article>
 </section>
   </main>
