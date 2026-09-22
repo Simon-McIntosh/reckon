@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="95">
+<meta name="plan-version" content="96">
 <meta name="plan-impl" content="0.94">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
@@ -1041,6 +1041,9 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
 <div class="r-comment" data-section="s9" data-id="c-a-manifest-that-records-nothing-passes-the-check" data-who="reckon-ship" data-when="2026-09-22T17:45:00+00:00">
     <div class="r-comment-body"><p><strong>A manifest that records nothing satisfies the write-time check vacuously.</strong> Found by accident, not by looking: a node delivered <code>status: complete</code> with <code>commits</code>, <code>changed_paths</code> and <code>tests</code> all empty, over two real commits sitting in its worktree. The worker ran <code>crew check-manifest</code> against it and reported <code>ok: true</code>, no findings — correctly, by the contract as written.</p><p><strong>The reason is the shape of the guard.</strong> <code>_require_commit_for_changed_manifest</code> refuses a complete manifest that <em>names an in-repo path</em> with no commits. A manifest naming no paths at all gives it nothing to object to, so the check passes hardest on the manifest that records least. It is the same defect the reviews kept finding in test assertions this session — a check that cannot fail for the case it exists to catch — sitting in the checking machinery rather than in a test.</p><p><strong>What it costs.</strong> The hollow manifest was recoverable only because the work was committed and the coordinator read the worktree rather than the manifest. Had the check been trusted, a node with two commits would have promoted recording neither, and the row would have cited nothing while every check on it passed. That is §3's defect reached through a different door.</p><p><strong>The repair is a floor, not a new guard:</strong> a manifest declaring <code>complete</code> asserts that something was delivered, so it should name at least one of a commit, a changed path, or an explicit statement that it produced none and why — the same shape as the <code>--no-commit</code> reason promotion already requires.</p></div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260922T161133582427-review-of-a-reclaimed-worktree-does-not-become-its-own-repository" data-who="reckon-ship" data-when="2026-09-22T16:43:35.627Z">
+    <div class="r-comment-body"><p>independent review of the reclaimed-worktree resolution: 88/100, three findings - a control log restating rather than repeating its declaration, a false verbatim claim in the plan&#x27;s landing record which is corrected by a later appended comment, and the prompts.py root cause that the declaration never reaches the worker, which became section 11</p></div>
+</div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260921T123329168721-reuse-map-for-the-unbuilt-hand-compensations" data-who="reckon-ship" data-when="2026-09-21T14:18:48.562Z">
     <div class="r-comment-body"><p>reuse map for sections 3, 4 and 5: _write_shadow_patch (promotion.py:1175) plus run_dir (runs.py:69) are the durable-artifact shape section 3 needs, synthesize_landed_record (evidence.py:244) already composes the record section 4 hand-authors, and _worker_seconds (ledger.py:1959) plus concurrency_bounds (summary.py:397) already hold section 5's arithmetic</p></div>
 </div>
@@ -1112,7 +1115,7 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
     <div class="r-comment-body"><p>independent third review of the widening command: 94/100, five prior findings carried and cleared; one new finding, a corrected clause claiming of two revisions what held at one</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260922T174144725086-review-of-the-prompt-carrying-its-declaration" data-who="reckon-ship" data-when="2026-09-22T18:00:48.774Z">
-    <div class="r-comment-body"><p>independent review of the prompt carrying its declaration: 97/100, two findings - a gate log naming a revision that predates the repair the tree already held, and NEGATIVE_CONTROL_NONE_RULE telling the worker the node states its reason when nothing enforces that at dispatch and only promotion refuses it, which is this section&#x27;s own subject one layer along</p></div>
+    <div class="r-comment-body"><p>independent review of the prompt carrying its declaration: 97/100, two findings - a gate log naming a revision that predates the repair the tree already held, and NEGATIVE_CONTROL_NONE_RULE telling the worker the node states its reason when nothing enforces that at dispatch and only promotion refuses it, which is this section's own subject one layer along</p></div>
 </div>
 </section>
 </main>
