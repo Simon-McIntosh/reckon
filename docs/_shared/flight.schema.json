@@ -124,6 +124,16 @@
                         "null"
                     ]
                 },
+                "input_modalities": {
+                    "description": "Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.",
+                    "items": {
+                        "$ref": "#/$defs/InputModality"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "input_rate_per_million": {
                     "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
                     "minimum": 0,
@@ -351,6 +361,16 @@
                     "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
                     "type": [
                         "string",
+                        "null"
+                    ]
+                },
+                "input_modalities": {
+                    "description": "Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.",
+                    "items": {
+                        "$ref": "#/$defs/InputModality"
+                    },
+                    "type": [
+                        "array",
                         "null"
                     ]
                 },
@@ -841,6 +861,15 @@
                 "continue"
             ],
             "title": "GateFailureAction",
+            "type": "string"
+        },
+        "InputModality": {
+            "description": "A kind of input a backend's model actually receives beside the prompt. Closed structural vocabulary: a value names an input channel, never a provider, a model or an effort level.",
+            "enum": [
+                "text",
+                "image"
+            ],
+            "title": "InputModality",
             "type": "string"
         },
         "LaunchMode": {
