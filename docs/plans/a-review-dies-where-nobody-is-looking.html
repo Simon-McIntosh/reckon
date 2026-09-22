@@ -79,14 +79,17 @@
       local nodes were in flight on another session's lane. A counter flat across a wave that contains
       the failure is the strongest negative available, and it retires the hypothesis this plan carried
       for one afternoon.</p>
-      <p><strong>One sub-case survives and it is a single command, not an open question.</strong> A
-      flat counter cannot distinguish <em>no memory kill</em> from <em>a memory kill in a scope outside
-      the slice being watched</em>, because neither moves it. Read <code>/proc/&lt;pid&gt;/cgroup</code>
-      on a live worker and compare it against the slice the counter belongs to. If the worker sits
-      inside it the hypothesis is finished; if it does not, the counter was aimed at the wrong scope all
-      along and the reading must be retaken where the worker actually runs. <strong>Do not leave this as
-      a candidate — it costs one read and it is the difference between a closed question and a
-      comfortable assumption.</strong></p>
+      <p><strong>The last sub-case was read rather than assumed, and it finishes the hypothesis.</strong>
+      A live worker on the lane reads its own cgroup as
+      <code>0::/user.slice/user-39486.slice/session-143284.scope</code> — <em>inside</em> the slice the
+      counter belongs to, so the counter was aimed correctly. That scope's <code>memory.max</code> is
+      <code>max</code>: <strong>there is no per-scope limit for a worker to hit</strong>, its
+      <code>memory.current</code> is 6.1 GiB, and its own <code>oom_kill</code> is 0. Memory is done.</p>
+      <p><strong>The same read settles the plan's ordering, which is the more valuable half.</strong>
+      The launcher runs workers in the login session's scope rather than a <code>systemd-run</code>
+      scope of their own, so <strong>no cgroup event can ever attribute a worker's death</strong> —
+      there is no per-worker scope to carry one. The terminal record this section asks for first is not
+      merely the cheapest instrument, it is the <em>only</em> place the cause can come from.</p>
       <p><strong>The candidate that survives:</strong> whether the read-only sandbox imposes a
       wall-clock or idle ceiling that a long review turn crosses. Deaths arriving at 15 to 35 minutes
       fit a time bound; record counts at death spanning 220 to 12,105 — two orders of magnitude — fit
