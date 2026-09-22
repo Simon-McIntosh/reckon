@@ -702,11 +702,13 @@
     first-line rule. The string is never reflowed or re-indented on insertion, because it is exactly what
     a delivered log's first line has to contain &mdash; a declaration carrying quotes and newlines
     survives intact. A node that declares nothing keeps the subject and is told plainly that none was
-    declared, and a declaration of <code>none: &lt;reason&gt;</code> is told that no mutation applies so
-    no red log is required; three shapes, three statements, because collapsing them would make the
+    declared, and a declaration of <code>none: &lt;reason&gt;</code> is told that no mutation applies, that
+    its reason is expected after <code>none:</code>, and that promotion refuses a bare one for a node that
+    writes a check; three shapes, three statements, because collapsing them would make the
     absence of a declaration read the same as a declaration that nothing applies.</p>
 
-    <p><strong>Proven by six cases that enter through the composed prompt. 6 passed.</strong> One requires
+    <p><strong>Proven by six cases that enter through the composed prompt, all six green at the revision
+    below.</strong> One requires
     the declaration string in the prompt exactly once; one requires the prompt to state that the string is
     what the red log's first line must repeat, read from the block alone rather than from the surrounding
     prose; one requires the block to precede the manifest template and the template's own gloss to keep
@@ -730,6 +732,14 @@
     measures only this node's own change; the merged head is a separately dispatched node's measurement.
     The question &sect;11 leaves open &mdash; whether the match should stay a substring test at all, when a
     worker naming file and symbol has written the better artifact &mdash; is untouched by this change.
+    <p><strong>One sentence corrected on review, because it claimed a check that does not exist.</strong>
+    The <code>none:</code> branch originally told the worker that the node <em>states</em> the reason, but
+    nothing enforces that when the node is cut &mdash; a bare <code>none</code> passes the dispatch check and
+    is refused only once promotion discharges the declaration on a passing gate. Telling a worker a property
+    of its own node that no check upholds is the substitution this contract exists to remove, so the sentence
+    now states the condition that actually holds. Enforcing the reason at dispatch is outside this node's
+    fence and is named for a later node against <code>reckon/crew/node.py</code>.</p>
+
     Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-prompt-carries-the-declaration-it-demands">the cumulative evidence</a>.</p>
 
