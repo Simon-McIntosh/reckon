@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="A Review Dies Where Nobody Is Looking">
+  <meta name="plan-summary" content="Review runs are killed by a per-scope memory limit under a slice that is never near its cap, and every surface reports the death as something else.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S19">
+  <meta name="plan-blocks" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <meta name="plan-informs" content="scoring-should-stop-a-promotion">
+  <title>A Review Dies Where Nobody Is Looking | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Review Dies Where Nobody Is Looking</h1>
+
+    <p><strong>Two coordinator sessions instrumented the same failure independently on 2026-09-22 and
+    arrived at a cause nobody had suspected: review workers are being SIGKILLed by a memory limit on a
+    scope that no surface reports.</strong> Across 192 streams on the locally served lane, 57 carry no
+    result record and 36 end mid-thinking with the process gone, empty stderr, zero error records and
+    zero rate-limit events. <strong>34 of the 36 are review-role runs in the read-only sandbox. Zero
+    implement-role runs died this way.</strong></p>
+
+    <p><strong>The kill is visible in exactly one place and it is not a reckon surface.</strong> One
+    death carried <code>Exit code 137</code> — SIGKILL — from a command as trivial as
+    <code>pwd &amp;&amp; git rev-parse HEAD</code>. The user slice reports
+    <code>oom_kill 529</code> while <code>memory.events.local</code> reads <code>0</code> and no
+    surviving child cgroup owns a kill, so 529 kills landed in transient scopes that no longer exist.
+    <strong>The slice itself sits at 31.9 of 64 GiB and is never near its cap</strong>, which is what
+    makes this invisible: nobody inspects a limit that is not being approached. Reviews hold the
+    largest contexts of any role, which is why the role split is the shape the data show.</p>
+
+    <p><strong>Every surface then reports it as something else</strong> — a stalled run, an abandoned
+    run, an unreliable lane, a model that cannot be trusted at high effort. Sessions responded
+    rationally to those reports by moving reviews onto the lane that runs the orchestrators, which is a
+    second failure caused entirely by the first being misattributed.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — Find the limit, then prove the repair against the counter</h2>
+      <p><strong>Measure.</strong> Establish what sets a memory bound on the worker scope — the
+      read-only sandbox, the launcher, or a <code>systemd-run</code> scope with <code>MemoryMax</code> —
+      and report it where a dispatch can read it. A worker killed for memory is then recorded as
+      <em>killed for memory</em> rather than as a stall, an abandonment or a lane fault.</p>
+      <p><strong>The instrument already exists and it is a counter, not an impression.</strong> The
+      baseline <code>oom_kill 529</code> was recorded at 21:22 on 2026-09-22 against
+      <code>/sys/fs/cgroup/user.slice/user-39486.slice/memory.events</code>. <strong>The repair is
+      proven by that counter not advancing across a wave of reviews, and by nothing else.</strong>
+      A later reading showing fewer deaths without the counter held flat measures the weather.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — The experiment neither session could run</h2>
+      <p><strong>Both sessions report the same confound and both say so rather than guessing around
+      it: every review ran at <code>xhigh</code> and every implement ran at <code>high</code>, so
+      effort and role cannot be separated in the observed data.</strong> The role split is real; the
+      claim that <em>effort</em> causes the deaths is not established by anything measured.</p>
+      <p><strong>Measure.</strong> Re-dispatch a review on the same lane at effort <code>high</code>,
+      against the same class of node, and compare death rate and the OOM counter against the
+      <code>xhigh</code> population. One of three results follows: effort discriminates and the fix is
+      partly routing; role discriminates and the fix is wholly provisioning; neither does and the cause
+      is elsewhere. <strong>Until this runs, no fix may be justified by effort.</strong></p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — A deliverable that exists is not an abandoned run</h2>
+      <p><strong>13 of the 36 deaths had already written a complete manifest and their review record.
+      The process ended on the final turn, after the work.</strong> The sweep reads those as abandoned
+      and the reviews are lost, so a third of the losses are recoverable without touching a memory
+      limit at all.</p>
+      <p><strong>Measure.</strong> Classification reads the deliverable before it reads the process: a
+      run whose manifest is complete and whose review record parses is terminal-with-deliverable
+      whatever its exit looked like. Falsify by presenting a run with a complete record and a killed
+      process and requiring it not to be classified abandoned; and by presenting one with a killed
+      process and no record and requiring that it still is.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The sweep's composition is deterministic, attributable and printed</h2>
+      <p><strong>The two sessions disagree about what the sweep does, and that disagreement is itself
+      the finding.</strong> One measured the review taking the sweeping session's runtime default. The
+      other tabulated six compositions and found it matching neither the sweeper's rationing nor the
+      owning run's lane consistently — a local run reviewed on the orchestrator lane, the same node
+      re-composed locally after a discard, another session's run composed on the orchestrator lane under
+      that session's id with an auto-registered member. <strong>Two competent readers watching one
+      surface cannot agree what it does, which means the composition is not observable.</strong></p>
+      <p><strong>Measure.</strong> The review lane is composed from the owning run's recorded backend
+      and the owning coordinator's recorded rationing, never from whichever runtime happens to be
+      sweeping, and the composed argv is printed on the scoring row. The sweep bookends only runs whose
+      pointer session matches the follower's own session. The copyable next-action carries the owning
+      lane rather than <code>--local</code>, which it did in every observation from both sessions.</p>
+      <p><strong>This is where the orchestrator-lane reviews came from</strong>, and it matters for
+      sequencing: a fence at the dispatch boundary would not have refused them, because the party
+      choosing the lane was a project-wide sweep attributing its own default to someone else's run.</p>
+    </section>
+
+    <section id="s5" data-reckon="section">
+      <h2>§5 — A rollback must not replace the cause it was rolling back</h2>
+      <p><strong>Verbatim, reproduced three times:</strong> a dispatch printed <em>refusing to remove
+      worktree … claimed by live runs r-…-review-of-cca-one-certificate-row-per-process</em> — naming
+      the run that same dispatch had just created. The real cause was found only by running the
+      registration by hand: <em>cannot commit roster registration: uncommitted member registration(s);
+      commit or discard that roster write before retrying</em>, against a session capture that
+      <code>crew resume</code> had written into the ledger and nobody had committed.</p>
+      <p><strong>Mechanism:</strong> the pointer is published, <code>_register_session_member</code>
+      raises, the except block signals the worker and calls <code>_remove_worktree</code>, which refuses
+      on the pointer the same call just published, and <em>its</em> error replaces the original. The
+      worker reads <code>dispatched → abandoned</code> after six seconds with only an init record.</p>
+      <p><strong>Measure.</strong> The original exception survives its own rollback — chained, not
+      replaced — and the removal skips the claim check for a pointer published by the same call.
+      Separately, a capture-only dirty ledger does not block a registration. Falsify by forcing the
+      registration to raise and requiring the raised error to name the registration, not the worktree.</p>
+    </section>
+
+    <section id="s6" data-reckon="section">
+      <h2>§6 — One meta key, one line, and a guard that says so</h2>
+      <p><strong>Measured here rather than accepted:</strong> reckon's parser is <strong>last-wins</strong>
+      on a duplicated <code>plan-*</code> scalar — a file carrying <code>plan-impl</code> twice, 0.9 then
+      0.1, parses as 0.1 — and <code>audit-doc</code> returns <code>OK</code> on a file carrying six
+      duplicated pairs. Four evidence records in this repository carry duplicates today.</p>
+      <p><strong>Why it bites:</strong> a union-resolved merge of two landing records leaves two
+      <code>plan-version</code> lines; the writer updates one and the reader takes the other, so two
+      successful <code>set impl</code> calls coexist with a promotion refusing that impl did not move.
+      One project measured an audit plan reading <code>impl 0.0</code> to the roadmap while its writer
+      kept updating the first line.</p>
+      <p><strong>Measure.</strong> <code>audit-doc</code> errors on any <code>plan-*</code> scalar
+      appearing twice; the reader refuses or dedupes deterministically rather than silently taking one;
+      and <code>impl</code>, <code>version</code> and <code>modified</code> are written as one
+      contiguous block so a three-way merge treats them as a single hunk rather than three
+      independently unionisable lines. The structural fix is the one that prevents recurrence; the guard
+      is what makes the existing four visible.</p>
+    </section>
+
+    <section id="s7" data-reckon="section">
+      <h2>§7 — The declared window is not the effective one</h2>
+      <p><strong>A second death shape, distinct from the kills and not to be folded into them:</strong>
+      runs ending at three records with a result reading <em>Prompt is too long</em>, dispatched against
+      an evidence record of 780 KB. <strong>The context-fit check passed at 285k of a declared 480k
+      window and the endpoint refused anyway</strong>, so the declared figure overstates what the lane
+      accepts. Same family as a lane publishing a concurrency ceiling that does not describe what a
+      consumer gets.</p>
+      <p><strong>Measure.</strong> Establish the effective refusal boundary for the lane and make the
+      context-fit check use it, so a node that will be refused is refused before launch by reckon with a
+      reason, rather than after launch by the endpoint with three records and no deliverable.</p>
+    </section>
+
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-ardwnil-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1">
+        <h3 class="r-fu-title">Find the memory bound first; §3 and §5 are cheap and independent</h3>
+        <div class="r-fu-body"><p><strong>§1 is the cause and §2 is the experiment that tells you how much of it is routing versus provisioning — run §2 before anyone justifies a fix by effort, because effort and role are confounded in every observation so far.</strong> §3 and §5 do not wait on either: §3 recovers a third of the losses by classifying on the deliverable rather than the exit, and §5 is a two-line exception-handling repair whose absence cost three reproductions and a hand-run command to diagnose. §6 has a guard half and a structural half; land the structural one or it recurs. §4 carries a disagreement between two sessions that is itself the finding — build for determinism and print the composed argv rather than adjudicating which reading was right.</p><p><strong>Do not close the orchestrator-lane fence until §1 reports.</strong> Reviews went to that lane because this one was killing them, and a fence over an unrepaired lane costs the review loop entirely.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship a-review-dies-where-nobody-is-looking §1</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

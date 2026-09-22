@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <meta name="plan-title" content="The Orchestrator Lane Is Not A Worker Lane">
+  <meta name="plan-summary" content="Background work on the lane that runs the orchestrators spends the capacity every session needs, so saturating it stops all work, not one node.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="advise-the-lane-never-force-it,background-agent-fitness-and-dispatch-scope">
+  <title>The Orchestrator Lane Is Not A Worker Lane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S19">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The Orchestrator Lane Is Not A Worker Lane</h1>
+
+    <p><strong>One subscription runs every orchestrator on this workstation. Background work dispatched
+    to the same lane spends the capacity the orchestrators need, and when it saturates nothing stops
+    partially — every session stops, including the ones that would have noticed.</strong> That is the
+    difference between this fence and an ordinary routing preference: the failure is not a slow node,
+    it is the loss of the layer that dispatches, merges, promotes and records. Work already in flight
+    is then unreachable by the only processes that could reconcile it.</p>
+
+    <p><strong>It is already happening and for a defensible reason.</strong> The locally served lane
+    died mid-turn nine times in one day at high effort, so sessions moved their reviews to the
+    orchestrator lane to keep the review reflex working. That was a reasonable field decision under a
+    broken alternative, and it is exactly why an instruction is the wrong instrument. <em>A rule an
+    agent must remember is not a rule when the alternative is failing in front of it.</em> The
+    remedy is a refusal at the dispatch boundary, paired with repairing the lane that drove them
+    there — neither half works alone.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — The dispatch refuses, and names what to do instead</h2>
+      <p><strong>Measure.</strong> A crew dispatch whose resolved backend is an orchestrator lane is
+      refused before anything is written, and the refusal names the lane, states that it carries this
+      workstation's orchestrators, and names a discharge — the lane to use instead, or the explicit
+      override and what it costs. A refusal with no way through is a stop, and this plan's sibling
+      already counts 42 refusal sites against 5 discharges; this one arrives with its discharge.</p>
+      <p><strong>Which lanes, declared rather than pattern-matched.</strong> The orchestrator role is a
+      property of the deployment, not of a backend's name — matching on the string <code>claude</code>
+      would break the moment an orchestrator runs elsewhere, and would miss an alias. A backend declares
+      that it serves orchestrators, the fence reads the declaration, and a lane that declares nothing is
+      dispatchable as now.</p>
+      <p><strong>Falsifier.</strong> Dispatch a background node to a lane declaring the orchestrator
+      role and require the refusal; dispatch the same node to a lane that does not and require it to
+      launch. Then remove the declaration and require the refusal to stop firing — a fence that refuses
+      regardless of the declaration is not reading it.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — The override is explicit, recorded, and rare</h2>
+      <p><strong>Measure.</strong> A deliberate dispatch to an orchestrator lane requires a flag whose
+      reason is recorded on the run and reaches the ledger row, so the cost is attributable afterwards
+      rather than inferred from a spend curve. The default is refusal; the override is not a
+      preference and does not persist across runs.</p>
+      <p><strong>Why an override exists at all.</strong> A fence with no exception invites the exception
+      to be taken by editing config, which is invisible. One recorded override is cheaper to audit than
+      a silent configuration change, and it keeps the fence honest about being a policy rather than a
+      physical impossibility.</p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — The rule reaches the surfaces an agent actually reads</h2>
+      <p><strong>Measure.</strong> The prohibition is stated where dispatch decisions are made rather
+      than only in a plan: the crew dispatch help and its refusal text, the ship and sprint skills where
+      a coordinator chooses a lane, and the tool descriptions an agent reads before calling. Each states
+      the same fact in the same terms — this lane runs the orchestrators, background work here costs
+      orchestrator capacity, and a saturated orchestrator lane stops every session rather than one node.</p>
+      <p><strong>Falsifier.</strong> Read each surface and require the rule and its reason to be
+      present. A surface carrying the prohibition without the reason fails: an agent that knows only
+      the rule will route around it the next time the alternative is failing, which is precisely what
+      happened.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The lane they were escaping is fixed, or the fence is a cage</h2>
+      <p><strong>This section is a dependency, not a courtesy.</strong> Closing the escape hatch while
+      the locally served lane still dies nine times a day converts a degraded review loop into no
+      review loop. The fence and the repair land together or the fence waits.</p>
+      <p><strong>Measure.</strong> The local-lane death rate at the effort the review reflex uses is
+      measured before and after the repair carried by the review-reliability work, and the fence is
+      enabled by default only once the after-rate is stated. Until then it warns and records rather
+      than refusing, which still removes the silent case without stopping the reviews.</p>
+    </section>
+
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-tolinawl-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship the-orchestrator-lane-is-not-a-worker-lane §1">
+        <h3 class="r-fu-title">Declare the orchestrator role, then refuse on the declaration</h3>
+        <div class="r-fu-body"><p>Start at §1 and declare rather than pattern-match: an orchestrator lane is a property of this deployment, so matching the backend name would break when an orchestrator moves and would miss an alias. §3 can land beside it since it is text on surfaces already being edited. §2 follows. <strong>§4 gates whether the fence refuses or merely warns</strong> — do not enable refusal by default until the local-lane death rate after repair is stated, because closing the hatch over a broken lane costs the review loop entirely.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship the-orchestrator-lane-is-not-a-worker-lane §1</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
