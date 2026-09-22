@@ -89,6 +89,41 @@
     successive armings in one session, and a yes-or-no answer on sweep-launched workers with the
     file and line that decides it.</p>
 
+    <section id="s2-census-landed">
+      <h3>&sect;2 landing record &mdash; the cause census</h3>
+      <p><strong>Landed.</strong> <code>docs/research/data/monitor-staleness-census.json</code>
+      carries one row per cause over 2026-09-16&ndash;2026-09-23 across the reckon, nova,
+      imas-efit and imas-ambix checkouts (1384 transcript directories, 1292 Monitor calls).</p>
+      <p>The positive control holds: the imas-efit transcripts for 2026-09-22 yield
+      <strong>17</strong> expiry notices against the coordinator's reported nine. Every armed
+      follower in the window falls into exactly one of three outcomes, a complete partition of
+      700 armings: <strong>600</strong> met the host's thirty-minute expiry, <strong>100</strong>
+      ended early because the seat was released, and <strong>0</strong> failed to arm. On the
+      host's parameters, <strong>453</strong> Monitor calls passed <code>persistent</code> and
+      none of them met the expiry, while 730 non-persistent calls did; every one of the 453
+      predates the window, so not one of the 700 in-window armings carried the flag. The median
+      interval between successive armings in one session is
+      <strong>30.23&nbsp;minutes</strong> across 64 sessions.</p>
+      <p>Sweep-launched workers: <strong>yes as to parentage, no as to the kill.</strong> The
+      sweep reaches <code>subprocess.Popen</code> at <code>reckon/crew/dispatch.py:4585</code>,
+      which makes the worker the follower's child, but it passes <code>start_new_session=True</code>
+      at <code>reckon/crew/dispatch.py:4592</code>, so the worker sits in its own process group and
+      survives the follower's death.</p>
+      <figure>
+        <img src="/reckon/figures/the-monitor-under-measurement/staleness-causes.png"
+             alt="Left: 600 host expiries, 100 seat releases, 0 arming failures. Right: 0% of
+                  persistent Monitor calls met the 30-minute expiry against 87% of the rest.">
+        <figcaption>The complete partition of 700 in-window armings, and the expiry rate split by
+        the <code>persistent</code> flag. All 453 persistent calls predate the window.</figcaption>
+      </figure>
+      <p><strong>Caveats.</strong> The code-reload row counts 198 commits touching
+      <code>reckon/cli.py</code> or <code>reckon/crew/*.py</code> &mdash; the opportunity for a
+      re-exec, not reloads observed, because the in-place re-exec leaves no banner a transcript
+      distinguishes from prose. The .events streams carry time-of-day only, and the imas-efit
+      stream holds no ticker rows at all, so producer gaps are derived from the transcripts;
+      two baseline bursts are visible where the streams do carry rows.</p>
+    </section>
+
     <h2 id="s3">&sect;3 &mdash; What a row actually renders: a cell census</h2>
     <p>Render every recorded transition from the project watch streams through the current
     ticker and count what each cell carries. The streams are the append-only
