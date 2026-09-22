@@ -633,6 +633,7 @@ def rerun_gate_at_integrated_revision(
     base_verdict: str = "passed",
     integrated_revision: str = "HEAD",
     timeout_seconds: float = 300.0,
+    command: str | None = None,
 ) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
@@ -652,6 +653,12 @@ def rerun_gate_at_integrated_revision(
     A gate that did not run, or did not finish within the bound, is reported
     as ``not-run`` with its reason, never as passed: an unmeasured re-run must
     not read as a verified one.
+
+    An explicit ``command`` is run in place of the run's stored gate command,
+    so a caller can measure a wider suite — a whole-repository one — than the
+    node's own gate, and can do so on a run that stored none. The report names
+    the command actually executed and whether it came from the option or the
+    stored row, so a reader can tell a supplied command from the recorded one.
     """
     base = str(base_verdict).strip().lower()
     if base not in ledger.GATE_VERDICTS:
@@ -660,7 +667,10 @@ def rerun_gate_at_integrated_revision(
             f"{', '.join(ledger.GATE_VERDICTS)}; the base verdict is the gate "
             "the run already recorded, which this re-run is compared against"
         )
-    command = str((gate_check or {}).get("command") or "").strip()
+    stored_command = str((gate_check or {}).get("command") or "").strip()
+    supplied = str(command or "").strip()
+    command = supplied or stored_command
+    command_source = "option" if supplied else ("stored" if stored_command else None)
     integrated = _commit_canonical_id(repository, str(integrated_revision))
     checkout = _commit_canonical_id(repository, "HEAD")
     report: dict[str, Any] = {
@@ -672,6 +682,7 @@ def rerun_gate_at_integrated_revision(
             integrated and checkout and integrated == checkout
         ),
         "gate_command": command or None,
+        "gate_command_source": command_source,
         "ran": False,
         "exit_status": None,
         "timed_out": False,
@@ -737,6 +748,7 @@ def record_gate_rerun_at_integrated_revision(
     integrated_revision: str = "HEAD",
     timeout_seconds: float = 300.0,
     root: str | Path | None = None,
+    command: str | None = None,
 ) -> dict[str, Any]:
     """Production caller: re-run a run's gate at the integrated revision and record it.
 
@@ -749,6 +761,12 @@ def record_gate_rerun_at_integrated_revision(
     run's ledger row (finding present or absent, so a reader sees the merged
     tree was re-checked either way), keeps the shadow store in agreement, and
     commits the edit in one landing.
+
+    A ``command`` supplied here replaces the stored gate command for the
+    re-run, so a coordinator can measure a suite wider than the node's own
+    gate — or measure a run that stored no gate command at all — against the
+    merged head. The report records which command ran and whether it came from
+    the option or the stored row.
     """
     checkout = Path(repository).expanduser().resolve()
     ledger_root = root if root is not None else checkout
@@ -779,6 +797,7 @@ def record_gate_rerun_at_integrated_revision(
         base_verdict=str(row.get("gate") or "passed"),
         integrated_revision=integrated_revision,
         timeout_seconds=timeout_seconds,
+        command=command,
     )
     patched = [dict(item) for item in data["runs"]]
     for index, item in enumerate(patched):
