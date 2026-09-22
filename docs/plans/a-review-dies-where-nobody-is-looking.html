@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking">
-  <meta name="plan-summary" content="Review runs are killed by a per-scope memory limit under a slice that is never near its cap, and every surface reports the death as something else.">
+  <meta name="plan-summary" content="Review runs die mid-thinking carrying no record of how they ended, so every account of the cause is inferred and the leading one was refuted.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="18.0">
@@ -30,21 +30,29 @@
 
     <h1>A Review Dies Where Nobody Is Looking</h1>
 
-    <p><strong>Two coordinator sessions instrumented the same failure independently on 2026-09-22 and
-    arrived at a cause nobody had suspected: review workers are being SIGKILLed by a memory limit on a
-    scope that no surface reports.</strong> Across 192 streams on the locally served lane, 57 carry no
-    result record and 36 end mid-thinking with the process gone, empty stderr, zero error records and
-    zero rate-limit events. <strong>34 of the 36 are review-role runs in the read-only sandbox. Zero
-    implement-role runs died this way.</strong></p>
+    <p><strong>Two coordinator sessions instrumented the same failure independently on 2026-09-22.
+    The shape is now precisely characterised and the cause is not known.</strong> Across 192 streams on
+    the locally served lane, 57 carry no result record and 36 end mid-thinking with the process gone,
+    empty stderr, zero error records and zero rate-limit events. <strong>34 of the 36 are review-role
+    runs in the read-only sandbox. Zero implement-role runs died this way.</strong> Deaths arrive 15 to
+    35 minutes in, at record counts from 220 to 12,105, and thinking length does not discriminate.</p>
 
-    <p><strong>The kill is visible in exactly one place and it is not a reckon surface.</strong> One
-    death carried <code>Exit code 137</code> — SIGKILL — from a command as trivial as
-    <code>pwd &amp;&amp; git rev-parse HEAD</code>. The user slice reports
-    <code>oom_kill 529</code> while <code>memory.events.local</code> reads <code>0</code> and no
-    surviving child cgroup owns a kill, so 529 kills landed in transient scopes that no longer exist.
-    <strong>The slice itself sits at 31.9 of 64 GiB and is never near its cap</strong>, which is what
-    makes this invisible: nobody inspects a limit that is not being approached. Reviews hold the
-    largest contexts of any role, which is why the role split is the shape the data show.</p>
+    <p><strong>A memory kill was the leading hypothesis and its own instrument refuted it.</strong> The
+    user slice reports <code>oom_kill 529</code> with <code>memory.events.local</code> at <code>0</code>
+    and no surviving child cgroup owning a kill, while sitting at 31.9 of 64 GiB — a compelling story
+    for a limit nobody watches. Then a review died at 21:21:31 in exactly this shape and the counter
+    read <strong>529 at 21:28:23, unchanged</strong>. The one <code>Exit code 137</code> that seemed to
+    confirm it belongs to a different failure: the stray sweep review that died sixteen seconds after
+    dispatch on the uncommitted capture of §5, where the dispatch tore its sandbox down and the tool
+    result recorded the kill. <strong>So the SIGKILL had a nearer explanation and the counter never
+    moved.</strong> The hypothesis survives only if the sandboxed client runs outside that slice, which
+    is a launcher question and is checkable.</p>
+
+    <p><strong>This is recorded rather than quietly replaced because the retraction is the useful
+    part.</strong> Two sessions and this coordinator found a cause, cross-confirmed it, and it was
+    refuted within the hour by the counter proposed as its acceptance test. Every surviving
+    discriminator is a property of the shape, not of a mechanism: review role in the read-only sandbox,
+    no implement-role deaths, no error text, thinking length irrelevant.</p>
 
     <p><strong>Every surface then reports it as something else</strong> — a stalled run, an abandoned
     run, an unreliable lane, a model that cannot be trusted at high effort. Sessions responded
@@ -52,16 +60,29 @@
     second failure caused entirely by the first being misattributed.</p>
 
     <section id="s1" data-reckon="section">
-      <h2>§1 — Find the limit, then prove the repair against the counter</h2>
-      <p><strong>Measure.</strong> Establish what sets a memory bound on the worker scope — the
-      read-only sandbox, the launcher, or a <code>systemd-run</code> scope with <code>MemoryMax</code> —
-      and report it where a dispatch can read it. A worker killed for memory is then recorded as
-      <em>killed for memory</em> rather than as a stall, an abandonment or a lane fault.</p>
-      <p><strong>The instrument already exists and it is a counter, not an impression.</strong> The
-      baseline <code>oom_kill 529</code> was recorded at 21:22 on 2026-09-22 against
-      <code>/sys/fs/cgroup/user.slice/user-39486.slice/memory.events</code>. <strong>The repair is
-      proven by that counter not advancing across a wave of reviews, and by nothing else.</strong>
-      A later reading showing fewer deaths without the counter held flat measures the weather.</p>
+      <h2>§1 — Make the death say what killed it, before theorising again</h2>
+      <p><strong>Every account of this failure so far has been inferred from what the run stopped
+      doing, because the runs carry no record of how they ended.</strong> That is the defect to close
+      first, and it is the reason a plausible cause survived an afternoon: with no terminal record,
+      any hypothesis fits.</p>
+      <p><strong>Measure.</strong> The run directory carries the client's own exit status and signal as
+      a terminal record, written by the launcher rather than inferred by a reader. A worker that was
+      signalled says so and names the signal; one that exited says so and names the status. Falsify by
+      killing a worker with a known signal and requiring the record to name it, and by letting one exit
+      cleanly and requiring the record to differ.</p>
+      <p><strong>Then the two candidates that survive the refuted one, in order of cheapness.</strong>
+      Whether the read-only sandbox imposes a wall-clock or idle ceiling that a long review turn
+      crosses — deaths at 15 to 35 minutes are consistent with a ceiling and inconsistent with a
+      context bound, since record counts at death span two orders of magnitude. And whether the
+      sandboxed client runs outside <code>user-39486.slice</code>, which would restore the memory
+      hypothesis and is a launcher question rather than a measurement.</p>
+      <p><strong>The counter remains the instrument for the memory question and nothing else.</strong>
+      Baseline <code>oom_kill 529</code> at 21:22 on 2026-09-22, unchanged at 21:28:23 across a death.
+      It is kept because a later repair must still show it flat; it is no longer evidence that memory
+      is the cause, and a plan that cited it as such for one afternoon is why it is written down.</p>
+      <p><strong>One fact constrains every candidate:</strong> resume continues a dead review in the
+      same session and it streams again. Whatever kills the process does not poison the session, so the
+      cause is bounded to the run rather than the conversation.</p>
     </section>
 
     <section id="s2" data-reckon="section">
