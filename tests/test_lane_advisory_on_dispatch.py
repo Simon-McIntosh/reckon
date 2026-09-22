@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import copy
 import importlib
+import json
+import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
 
+from reckon import _plan_html, crew
 from reckon import cli as cli_module
-from reckon import crew
+from reckon.crew.runs import _write_json, pointer_path
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -396,3 +400,237 @@ def test_the_refusal_renders_the_count_that_fired_it_not_the_lane_total() -> Non
     assert "3 usable run(s)" in clause["detail"]
     assert "10 needed" in clause["detail"]
     assert "12 usable run(s)" not in clause["detail"]
+
+
+# ── The advisory must also reach the committed ledger row, which is the
+# surface a later reader has once the live pointer has been deleted by the
+# promotion that made the run evidence.
+
+PROMOTION_PROJECT = "advisory-project"
+PROMOTION_PLAN = "advisory-plan"
+PROMOTED_AT = "2030-01-02T03:04:05Z"
+
+
+def _git(repository: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+@pytest.fixture()
+def ledger_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A synthesised project whose ledger is writable, never a real checkout."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    root = tmp_path / "repo"
+    (root / "docs" / "state" / PROMOTION_PROJECT).mkdir(parents=True)
+    plan_path = root / "docs" / "plans" / f"{PROMOTION_PLAN}.html"
+    plan_path.parent.mkdir(parents=True)
+    plan = (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROMOTION_PROJECT}">'
+        f"<title>{PROMOTION_PLAN} title</title>"
+        '</head><body><main class="plan-doc"></main></body></html>\n'
+    )
+    plan_path.write_text(
+        _plan_html.write_state(
+            plan,
+            {
+                "type": "plan",
+                "slug": PROMOTION_PLAN,
+                "title": "Advisory plan",
+                "status": "active",
+                "version": 0,
+                "comments": {},
+            },
+        ),
+        encoding="utf-8",
+    )
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROMOTION_PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "test: seed repository"),
+    ):
+        _git(root, *arguments)
+    return root
+
+
+def _advisory(*, cheaper_lane: str | None) -> dict[str, Any]:
+    """One emitted advisory, shaped as the dispatch writes it."""
+    return {
+        "state": "emitted",
+        "detail": "alpha sits near its horizon",
+        "backend": "alpha",
+        "metered": True,
+        "utilisation_pct": 46.0,
+        "burn_multiple": 5.7,
+        "projected_exhaustion_at": "2030-01-02T03:30:00Z",
+        "resets_at": "2030-01-08T03:00:00Z",
+        "seconds_until_reset": 6 * 24 * 3600,
+        "observed_at": "2030-01-02T03:20:00Z",
+        "horizon_seconds": 1800,
+        "horizon_ends_at": "2030-01-02T03:45:00Z",
+        "precedes_horizon": True,
+        "cheaper_lane": {"lane": cheaper_lane, "state": "measured", "detail": ""},
+    }
+
+
+def _declaration() -> dict[str, Any]:
+    return {
+        "backend": "alpha",
+        "resolved_backend": "alpha",
+        "headroom": "known",
+        "metered": True,
+        "utilisation_pct": 46.0,
+        "observed_at": "2030-01-02T03:20:00Z",
+        "read_at": "2030-01-02T03:20:00Z",
+    }
+
+
+def _reading() -> dict[str, Any]:
+    return {
+        "state": "known",
+        "headroom": 22,
+        "running": 19,
+        "waiting": 0,
+        "observed_at": "2030-01-02T03:20:00Z",
+    }
+
+
+def _write_pointer(
+    repository: Path,
+    run_id: str,
+    *,
+    backend: str,
+    advisory: dict[str, Any] | None,
+) -> None:
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "project": PROMOTION_PROJECT,
+        "repo": str(repository),
+        "worktree": str(repository),
+        "base_sha": _git(repository, "rev-parse", "HEAD"),
+        "launch": "in-harness",
+        "role": "implement",
+        "backend": backend,
+        "created_at": "2030-01-02T03:00:00Z",
+        "lane_declaration": _declaration(),
+        "lane_reading": _reading(),
+        "node": {
+            "id": f"advisory-{run_id}",
+            "plan": PROMOTION_PLAN,
+            "section": "§3",
+            "time_budget": "20m",
+            "write_paths": [],
+        },
+    }
+    # Written only when it exists, matching the dispatch record: a pointer with
+    # a null advisory would read as a lane assessed and found quiet.
+    if advisory is not None:
+        record["lane_advisory"] = advisory
+    _write_json(pointer_path(run_id), record)
+
+
+def _promote(
+    repository: Path,
+    run_id: str,
+    *,
+    backend: str,
+    advisory: dict[str, Any] | None,
+) -> dict[str, Any]:
+    _write_pointer(repository, run_id, backend=backend, advisory=advisory)
+    crew.complete(
+        run_id,
+        gate="passed",
+        completed_at=PROMOTED_AT,
+        root=repository,
+    )
+    return _committed_row(repository, run_id)
+
+
+def _committed_row(repository: Path, run_id: str) -> dict[str, Any]:
+    """Read the row off disk, never the pointer the promotion consumed."""
+    ledger_path = repository / "docs" / "state" / PROMOTION_PROJECT / "crew.json"
+    data = json.loads(ledger_path.read_text(encoding="utf-8"))
+    rows = [row for row in data["data"]["runs"] if row["run_id"] == run_id]
+    assert len(rows) == 1
+    return rows[0]
+
+
+def test_a_promoted_row_carries_the_advisory_and_the_lane_fields(
+    ledger_repository: Path,
+) -> None:
+    run_id = "r-promoted-carries"
+    row = _promote(
+        ledger_repository,
+        run_id,
+        backend="alpha",
+        advisory=_advisory(cheaper_lane="clive"),
+    )
+
+    advised = row["lane_advisory"]["cheaper_lane"]["lane"]
+    assert advised == "clive"
+    assert row["lane_advisory"]["state"] == "emitted"
+    assert row["lane_declaration"] == _declaration()
+    assert row["lane_reading"] == _reading()
+    # The run became evidence: the pointer that held these is deleted, so the
+    # row is now the only place they are readable.
+    assert not pointer_path(run_id).exists()
+
+
+def test_advice_taken_and_advice_declined_are_told_apart_from_the_rows(
+    ledger_repository: Path,
+) -> None:
+    took = _promote(
+        ledger_repository,
+        "r-took-the-advice",
+        backend="clive",
+        advisory=_advisory(cheaper_lane="clive"),
+    )
+    declined = _promote(
+        ledger_repository,
+        "r-declined-the-advice",
+        backend="alpha",
+        advisory=_advisory(cheaper_lane="clive"),
+    )
+
+    def _advised_lane(row: dict[str, Any]) -> str | None:
+        return row["lane_advisory"]["cheaper_lane"]["lane"]
+
+    # Both rows are read from the committed ledger alone, and the question the
+    # row carries is whether the lane chosen equals the one advised.
+    assert took["backend"] == _advised_lane(took)
+    assert declined["backend"] != _advised_lane(declined)
+    assert _advised_lane(took) == _advised_lane(declined) == "clive"
+    assert took["backend"] == "clive" and declined["backend"] == "alpha"
+
+
+def test_a_run_with_no_advisory_promotes_with_no_advisory_key(
+    ledger_repository: Path,
+) -> None:
+    row = _promote(
+        ledger_repository,
+        "r-no-advisory",
+        backend="alpha",
+        advisory=None,
+    )
+
+    # A key holding null would read as a lane measured and found quiet; the
+    # absence must be truly absent.
+    assert "lane_advisory" not in row
+    # The row landed, so the absence belongs to the advisory rather than to a
+    # record that was never written.
+    assert row["lane_declaration"] == _declaration()
+    assert row["lane_reading"] == _reading()
