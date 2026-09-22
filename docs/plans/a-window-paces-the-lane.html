@@ -312,6 +312,23 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html">a-window-paces-the-lane-landed</a>,
     commit <code>b2594d65</code>.</p>
 
+    <p><span class="badge badge-shipped">&#10003; landed 2026-09-21</span>
+    The section's gate has now been re-run at the shipped head with its log kept, rather than
+    passing into the record as a summarised count. In the canonical checkout at
+    <code>a7723e07</code>, <code>tests/test_reserve.py</code> exits 0 with 8 tests passed and
+    0 failed, captured to <code>test_reserve.log</code> under
+    <code>~/.config/reckon/crew/reports/reckon/gate-recapture/</code>, with the per-gate
+    commands, exit statuses, counts and absolute log paths gathered in
+    <code>summary.md</code> beside it. The three sibling gate files the recapture named
+    &mdash; <code>tests/test_pace.py</code>, <code>tests/test_staleness.py</code> and
+    <code>tests/test_lane_document.py</code> &mdash; are <strong>absent</strong> at head:
+    pytest reports file-or-directory-not-found, runs no tests and exits 4. They are recorded
+    with the word absent rather than dropped, because an empty selection and a passing run
+    &mdash; a green summary line either way &mdash; cannot be told apart without reading the exit
+    status. A positive control in the same interpreter, directory and command
+    form ran the reserve gate green, so the not-found exits evidence absence rather than a
+    broken selector.</p>
+
     <h2 id="s5">&sect;5 &mdash; Reading the windows without inventing them</h2>
 
     <p><strong>Most runs do not carry the windows, and this is the correction that shapes the

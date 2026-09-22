@@ -1033,6 +1033,49 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       verification is a separately dispatched node's job.</li>
     </ul>
   </section>
+
+  <section id="gate-recapture">
+    <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
+
+    <p><strong>What was captured.</strong> Four focused gates were each run once at the
+    shipped head. The shipped head is the canonical checkout at
+    <code>a7723e07</code>: at capture time neither <code>reckon/crew/reserve.py</code>
+    nor <code>tests/test_reserve.py</code> had any copy on <code>origin/main</code>, and
+    the checkout's HEAD is a descendant of the node's base <code>b81bdfd1</code>, so a
+    run resolving the package from a worktree would have measured a different tree than
+    the one that shipped. The interpreter was the checkout's own
+    <code>.venv/bin/python</code>, with <code>PYTHONPATH</code> and the working
+    directory both set to it; before capturing, <code>import reckon</code> and
+    <code>import reckon.crew.reserve</code> were shown to resolve beneath that checkout,
+    and its editable <code>.pth</code> names the same path.</p>
+
+    <table>
+      <caption>One row per gate, each with its own log; the summary file repeats these
+        fields so a promotion can cite a log and have its asserted exit status agree with
+        what the log records.</caption>
+      <thead><tr><th>Gate</th><th>State at head</th><th>Exit</th><th>Passed</th><th>Failed</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_reserve.py</code></td><td>present</td><td>0</td><td>8</td><td>0</td><td><code>test_reserve.log</code></td>
+        <tr><td><code>tests/test_pace.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_pace.log</code></td>
+        <tr><td><code>tests/test_staleness.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_staleness.log</code></td>
+        <tr><td><code>tests/test_lane_document.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_lane_document.log</code></td>
+      </tbody>
+    </table>
+
+    <p><strong>Three of the four are absent, and that is the finding rather than a
+    gap.</strong> <code>tests/test_pace.py</code>, <code>tests/test_staleness.py</code>
+    and <code>tests/test_lane_document.py</code> do not exist at head: pytest reports
+    <code>ERROR: file or directory not found</code>, runs no tests and exits 4. They are
+    recorded with the word absent rather than dropped, because a file that was never
+    selected and a file that ran green both print a summary line, and only the exit
+    status separates them.</p>
+
+    <p><strong>Evidence that could have failed.</strong> A positive control runs in the
+    same interpreter, from the same working directory, through the same command form:
+    <code>tests/test_reserve.py</code> exits 0 with <code>8 passed</code>. So a
+    file-not-found exit evidences absence at head.
+    </p>
+  </section>
 </main>
 </body>
 </html>...
