@@ -37,8 +37,9 @@ PLAN = "preservation-target"
 RUN_IDS = (
     "r-20260922T120000000001-cited-log-outside",
     "r-20260922T120000000002-copy-outlives-original",
-    "r-20260922T120000000003-log-already-inside",
-    "r-20260922T120000000004-cited-log-absent",
+    "r-20260922T120000000003-cited-log-in-repo-output",
+    "r-20260922T120000000004-log-already-inside",
+    "r-20260922T120000000005-cited-log-absent",
 )
 
 
@@ -233,32 +234,77 @@ def test_the_recorded_copy_outlives_the_cited_original(
     assert recorded.read_bytes() == payload.encode()
 
 
+# ── The second transient location: inside the repository, outside the run ───
+
+
+def test_a_cited_log_in_the_repository_output_is_copied_out_of_the_worktree(
+    repository: Path,
+) -> None:
+    """The worktree-output shape, transient even though it sits in the repository.
+
+    The other place a worker's log really lives. A path under the repository's
+    gitignored output directory is released with the worktree by the very
+    promotion that reads it, so it vanishes exactly as a ``/tmp`` path does. The
+    row must name a path under the run directory, and the bytes there must be
+    the cited log's, or the row cites a location that is already gone.
+    """
+    run_id = RUN_IDS[2]
+    cited = repository / "output" / "gate.log"
+    cited.parent.mkdir(parents=True, exist_ok=True)
+    payload = "pytest -q tests/test_gate_log_is_preserved.py\n3 passed\nEXIT=0\n"
+    cited.write_text(payload, encoding="utf-8")
+    _pointer(repository, run_id)
+
+    _promote(
+        repository,
+        run_id,
+        "a cited log under the repository's output directory",
+        gate_check=_gate_check(cited),
+    )
+
+    recorded = Path(_row(repository, run_id)["gate_check"]["log_path"])
+    assert recorded.is_relative_to(run_dir(run_id))
+    assert recorded != cited
+    assert recorded.read_bytes() == payload.encode()
+
+
 # ── The non-copy: a log already inside the run directory is left alone ──────
 
 
 def test_a_log_already_in_the_run_directory_is_recorded_unchanged(
     repository: Path,
 ) -> None:
-    """A durable citation is not re-copied, so it is neither moved nor doubled.
+    """A durable citation is not re-copied, so it is neither moved nor overwritten.
 
     A worker that already wrote its log into the run directory has recorded the
-    durable path itself. Promotion must carry that path through unchanged and
-    must not leave a second copy beside it.
+    durable path itself, so promotion carries that path through and leaves every
+    other file in the directory alone. The name preservation would copy to holds
+    a sibling run's log, which must survive byte-for-byte: a promotion of this
+    run must neither move its own citation nor clobber the sibling's.
     """
-    run_id = RUN_IDS[2]
+    run_id = RUN_IDS[3]
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
-    cited = directory / "gate.log"
-    cited.write_text("3 passed\nEXIT=0\n", encoding="utf-8")
+    payload = "pytest -q tests/test_gate_log_is_preserved.py\n4 passed\nEXIT=0\n"
+    cited = directory / "worker-gate.log"
+    cited.write_text(payload, encoding="utf-8")
+    sibling_payload = "a different run's gate log\n"
+    (directory / "gate.log").write_text(sibling_payload, encoding="utf-8")
     _pointer(repository, run_id)
 
     _promote(
         repository, run_id, "an inside log is left alone", gate_check=_gate_check(cited)
     )
 
-    recorded = _row(repository, run_id)["gate_check"]["log_path"]
-    assert Path(recorded) == cited
-    assert sorted(path.name for path in directory.glob("*.log")) == ["gate.log"]
+    recorded = Path(_row(repository, run_id)["gate_check"]["log_path"])
+    assert recorded.is_relative_to(run_dir(run_id))
+    assert recorded.read_bytes() == payload.encode()
+    assert recorded == cited
+    assert (directory / "gate.log").read_bytes() == sibling_payload.encode()
+    assert sorted(path.name for path in directory.glob("*.log")) == [
+        "gate.log",
+        "worker-gate.log",
+    ]
 
 
 # ── The limit: a citation this machine cannot read is left exactly as given ──
@@ -271,11 +317,13 @@ def test_a_cited_log_that_cannot_be_read_leaves_the_citation_and_the_verdict(
 
     Promotion may run from a machine the worker's log never reached, so a cited
     path that does not resolve here has no text to contradict the verdict and
-    must not turn a passing promotion into a refusal. The row records the
-    citation exactly as given, no placeholder lands in the run directory, and the
-    verdict the caller supplied is the verdict that lands.
+    must not turn a passing promotion into a refusal. The row records a path
+    outside the run directory rather than one invented inside it, nothing is
+    written into the run directory in the citation's place, and the verdict the
+    caller supplied is the verdict that lands.
     """
-    run_id = RUN_IDS[3]
+    run_id = RUN_IDS[4]
+    directory = run_dir(run_id)
     absent = tmp_path / "worker-scratch" / "never-written.log"
     _pointer(repository, run_id)
 
@@ -287,6 +335,8 @@ def test_a_cited_log_that_cannot_be_read_leaves_the_citation_and_the_verdict(
     )
 
     row = _row(repository, run_id)
-    assert Path(row["gate_check"]["log_path"]) == absent
+    recorded = Path(row["gate_check"]["log_path"])
+    assert not recorded.is_relative_to(directory)
+    assert not recorded.exists()
     assert row["gate"] == "passed"
-    assert not (run_dir(run_id) / "gate.log").exists()
+    assert not directory.exists() or not list(directory.glob("*.log"))
