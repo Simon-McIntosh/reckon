@@ -58,6 +58,31 @@ def _clone(source: Path, destination: Path, *, depth: int | None = None) -> Path
     return destination
 
 
+def _partial_clone(source: Path, destination: Path) -> Path:
+    """A genuine blobless partial clone; the origin must allow filtering."""
+    _git(source, "config", "uploadpack.allowFilter", "true")
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "-q",
+            "--filter=blob:none",
+            f"file://{source}",
+            str(destination),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return destination
+
+
+def _grafts_path(clone: Path) -> Path:
+    reported = _git(clone, "rev-parse", "--git-path", "info/grafts").stdout.strip()
+    grafts = Path(reported)
+    return grafts if grafts.is_absolute() else clone / grafts
+
+
 def _origin_with_removed_ledger(tmp_path: Path) -> Path:
     """An origin whose ledger was committed and deleted inside its history.
 
@@ -198,6 +223,56 @@ def test_a_full_clone_never_tracking_the_ledger_initialises_it(tmp_path: Path) -
     assert result["version"] == version == 1
     assert [row["run_id"] for row in stored["runs"]] == ["r-first"]
     assert path.exists()
+
+
+def test_a_partial_clone_does_not_initialise_a_ledger(tmp_path: Path) -> None:
+    """A partial clone may be missing the objects the answer rests on."""
+    origin = _origin_never_tracking_ledger(tmp_path)
+    clone = _partial_clone(origin, tmp_path / "partial")
+    path = ledger.ledger_path(PROJECT, clone)
+    assert (
+        _git(clone, "config", "--get", "remote.origin.promisor").stdout.strip()
+        == "true"
+    ), "fixture must be a partial clone"
+    assert _history(clone, path) == "", "git's own answer would read never-tracked"
+
+    with pytest.raises(ledger.LedgerError):
+        ledger.append_run(PROJECT, _record(), root=clone)
+
+    assert not path.exists()
+
+
+def test_a_replace_ref_does_not_initialise_a_ledger(tmp_path: Path) -> None:
+    """A replace ref rewrites history, so an empty log speaks for nothing."""
+    origin = _origin_never_tracking_ledger(tmp_path)
+    clone = _clone(origin, tmp_path / "replaced")
+    _git(clone, "replace", "--graft", "HEAD")
+    path = ledger.ledger_path(PROJECT, clone)
+    assert _git(
+        clone, "for-each-ref", "--format=%(refname)", "refs/replace/"
+    ).stdout.strip(), "fixture must carry a replace ref"
+    assert _history(clone, path) == "", "git's own answer would read never-tracked"
+
+    with pytest.raises(ledger.LedgerError):
+        ledger.append_run(PROJECT, _record(), root=clone)
+
+    assert not path.exists()
+
+
+def test_an_info_grafts_file_does_not_initialise_a_ledger(tmp_path: Path) -> None:
+    """The classic graft file hides history the same way a replace ref does."""
+    origin = _origin_never_tracking_ledger(tmp_path)
+    clone = _clone(origin, tmp_path / "grafts")
+    grafts = _grafts_path(clone)
+    grafts.write_text(_git(clone, "rev-parse", "HEAD").stdout.strip() + "\n")
+    path = ledger.ledger_path(PROJECT, clone)
+    assert grafts.exists(), "fixture must carry a grafts file"
+    assert _history(clone, path) == "", "git's own answer would read never-tracked"
+
+    with pytest.raises(ledger.LedgerError):
+        ledger.append_run(PROJECT, _record(), root=clone)
+
+    assert not path.exists()
 
 
 def test_a_ledger_outside_a_checkout_still_requires_explicit_initialisation(
