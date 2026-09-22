@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T20:57:14",
+  "updated": "2026-09-22T21:58:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -3317,10 +3317,15 @@
         "id": "session-438023841e30a4c4015b",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-22"
+        "session_id": "fda81894-6453-4160-8fec-2aaa6afb2a97",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "fda81894-6453-4160-8fec-2aaa6afb2a97"
+        },
+        "created": "2026-09-22",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "ship-cdocw-20260922"
+        }
       },
       {
         "id": "session-479f1c1369daec269701",
@@ -267201,6 +267206,280 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a711",
+        "node": "the-prompt-branch-matches-the-predicate-promotion-uses",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 620,
+                "cached_input_tokens": 205312,
+                "input_tokens": 205934,
+                "output_tokens": 212,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 206146,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260922"
+          },
+          "done_when": "Composing a prompt for a node that declares a mutation and whose write paths hold no test path neither asserts the node writes a check nor asks for a red log path, while a node whose write paths do hold one still gets both; the none and undeclared branches are unchanged. New cases enter through compose_prompt, and the focused cohort adds no failure ids against its base.",
+          "estimated_hours": 0.4,
+          "goal": "compose_prompt selects the declared-control branch on the predicate promotion itself uses \u2014 whether the node writes a check \u2014 so no worker is told a property of its own node that is false.",
+          "id": "the-prompt-branch-matches-the-predicate-promotion-uses",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T18:37:00Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/manifest.md",
+          "negative_control": "select the declared-control branch on whether the declaration is a none form alone, ignoring whether the node write paths reach a test path",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "reckon/crew/node.py",
+            "tests/test_prompt_carries_the_declaration.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-manifest-keys",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T18:37:07Z",
+        "completed_at": "2026-09-22T19:12:35.859Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2117,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2128,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d53318f6ccf70d555f2b14d4e4b19290db34ba65",
+        "commits": [
+          "77d8196cc0563ca7d5f01599886b2997a1826e57",
+          "343ee2a86a5f34bd7785b3078fe488f9ad34249f"
+        ],
+        "changed_lines": {
+          "added": 286,
+          "removed": 10,
+          "files": 5
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m pytest -p no:cacheprovider -q tests/test_prompt_carries_the_declaration.py tests/test_the_prompt_carries_the_contract.py tests/test_the_prompt_carries_the_evidence_contract.py tests/test_prompt_prefix_identity.py tests/test_crew_negative_control_header.py tests/test_negative_control_log_is_a_path.py tests/test_crew_negative_control_interface.py tests/test_crew_prompts.py tests/test_worker_prompt_contract.py tests/test_review_prompt_contract.py tests/test_a_brief_points_rather_than_quotes.py tests/test_crew_orientation.py tests/test_wait_marker_is_not_a_stub.py tests/test_crew_test_role.py tests/test_role_write_scope.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/logs/green-focused.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/manifest.md",
+        "scope_changed": false,
+        "session_id": "142f3507-024d-4680-a3c5-0a2e7ce4ffc4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4489970,
+            "input_tokens_cumulative": 4489970,
+            "output_tokens": 26742,
+            "output_tokens_cumulative": 26742,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T19:12:35.859Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 18,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 97
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6586907,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 873.281,
+          "generated_tokens": 40289,
+          "generation_seconds": 749.91,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.4,
+          "machine_seconds": 123.371,
+          "peak_input_tokens": 136361,
+          "tokens_per_second": 53.73,
+          "wall_tokens_per_second": 46.14
+        },
+        "follow_on_paths": [
+          "reckon/crew/node.py",
+          "tests/test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260922/the-prompt-branch-matches-the-predicate-promotion-uses",
+          "session_id": "142f3507-024d-4680-a3c5-0a2e7ce4ffc4",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T19:12:35.859Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.99,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.99,
+          "at_complete": 1.0,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_prompt_carries_the_declaration.py"
+          ],
+          "declaration": "select the declared-control branch on whether the declaration is a none form alone, ignoring whether the node write paths reach a test path",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/logs/negative-control-red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T183658872547-the-prompt-branch-matches-the-predicate-promotion-uses/logs/negative-control-red.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T19:22:00.257067+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T18:37:00Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 27.0,
+        "orientation_input_tokens": 1176628.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -267499,6 +267778,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2117
+    "_version": 2119
   }
 }
