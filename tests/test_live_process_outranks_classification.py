@@ -9,6 +9,12 @@ invalid read unreadable even for a positively live process, while its siblings
 consulted liveness. What this locks in: every manifest state a live run can
 reach classifies from liveness or from the declared wait, never as unreadable,
 and the incomplete-wait reading stays unreadable only once the process is gone.
+
+The other direction of the same precedence is locked here too: the deliverable
+is read before the process. A run whose manifest is complete and whose stored
+review parses is terminal-with-deliverable whatever its exit looked like — a
+killed process does not turn it into an abandoned run — while a killed process
+with no manifest and no review is still abandoned.
 """
 
 from __future__ import annotations
@@ -23,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery
+from reckon.crew import recovery, review
 
 HOST = socket.gethostname()
 
@@ -211,3 +217,143 @@ def test_a_gone_process_keeps_the_invalid_wait_unreadable(tmp_path: Path) -> Non
     assert row["classification"] == "unreadable"
     assert "wait_condition" in row["manifest_error"]
     assert "wait_condition" in row["detail"]
+
+
+# ── The deliverable outranks the process ──────────────────────────────────
+# The same precedence read from the other side. A killed worker that had
+# already written its manifest and its review delivered the run before it died,
+# so the classifier reads that delivery before it reads the process and never
+# folds the run into abandoned: the stored phase is the last writer's label,
+# not evidence of what the run left behind.
+
+
+@pytest.fixture()
+def review_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Isolate the durable review store from the operator's crew state."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+def _parsed_review(project: str, run_id: str) -> dict:
+    """A review that parses with every scored dimension present."""
+    emitted = "\n".join(
+        f"SCORE {dimension}: 18" for dimension in review.REVIEW_DIMENSIONS
+    )
+    record = review.parse_review(emitted)
+    record.update(
+        {
+            "project": project,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"{run_id}-review",
+        }
+    )
+    return record
+
+
+# The phases a killed pointer has frozen on: the last writer's label, not
+# evidence of anything. A death mid-work freezes on a non-terminal phase and a
+# death after the worker's final turn can freeze on a terminal one, so neither
+# shape may decide the classification.
+_KILLED_EXIT_SHAPES = ("working", "complete", "failed")
+
+
+@pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+def test_a_killed_process_does_not_abandon_the_delivered_run(
+    tmp_path: Path, review_home: Path, phase: str
+) -> None:
+    # The falsifier of this precedence: a complete manifest and a parsed review
+    # behind a process the table has killed. Every exit shape yields the same
+    # delivered reading, because the delivery is what the classifier reads and
+    # the phase is only the last writer's label.
+    run_id = f"r-killed-delivered-{phase}"
+    pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+    pointer["phase"] = phase
+    review.store_review(_parsed_review(pointer["project"], run_id))
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["process_alive"] is False
+    assert row["liveness_proven"] is True
+    assert row["classification"] == "promotable"
+    assert row["classification"] != "abandoned"
+
+
+@pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+def test_a_killed_process_does_not_abandon_a_delivered_review_run(
+    tmp_path: Path, review_home: Path, phase: str
+) -> None:
+    # A review-role run's deliverable is the review it wrote for another run,
+    # so no stored review of this run exists or is required: its own completed
+    # manifest is the delivery.
+    run_id = f"r-killed-review-{phase}"
+    pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+    pointer["phase"] = phase
+    pointer["role"] = "review"
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["process_alive"] is False
+    assert row["classification"] == "promotable"
+    assert row["classification"] != "abandoned"
+
+
+def test_a_killed_run_with_a_complete_manifest_and_no_review_waits_in_scoring(
+    tmp_path: Path, review_home: Path
+) -> None:
+    # The manifest is read before the process even when the review is missing:
+    # the run is waiting for the review promotion requires, and the row names
+    # that rather than the death.
+    row = recovery.classify_pointer(
+        _pointer(
+            tmp_path, "r-killed-awaiting-review", pid=_absent_pid(), case="complete"
+        ),
+        now_seconds=time.time(),
+    )
+
+    assert row["process_alive"] is False
+    assert row["classification"] == "scoring"
+    assert row["classification"] != "abandoned"
+
+
+def test_a_killed_run_whose_review_does_not_parse_is_not_abandoned(
+    tmp_path: Path, review_home: Path
+) -> None:
+    # A review that is stored but unreadable is evidence the run delivered
+    # something, so it cannot become an abandonment; the row keeps the run
+    # waiting on a repair rather than inviting a redispatch over it.
+    run_id = "r-killed-bad-review"
+    pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+    review.store_review(
+        {
+            "project": pointer["project"],
+            "reviewed_run_id": run_id,
+            "status": "unparsed",
+        }
+    )
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["process_alive"] is False
+    assert row["classification"] == "scoring"
+    assert row["classification"] != "abandoned"
+
+
+@pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+def test_a_killed_process_with_no_manifest_and_no_review_is_still_abandoned(
+    tmp_path: Path, review_home: Path, phase: str
+) -> None:
+    # The dead control: the same killed process with nothing delivered is still
+    # abandoned, so reading the deliverable first did not disable the reading —
+    # it reserved the delivered classification for a run that delivered.
+    pointer = _pointer(
+        tmp_path, f"r-killed-nothing-{phase}", pid=_absent_pid(), case="absent"
+    )
+    pointer["phase"] = phase
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["process_alive"] is False
+    assert row["liveness_proven"] is True
+    assert row["classification"] == "abandoned"
