@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T17:51:10",
+  "updated": "2026-09-22T17:54:27",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -261002,6 +261002,246 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a73",
+        "node": "the-cited-gate-log-is-preserved-where-the-row-can-find-it",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 939,
+                "cached_input_tokens": 706906,
+                "input_tokens": 707847,
+                "output_tokens": 554,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 708401,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260922"
+          },
+          "done_when": "tests/test_gate_log_is_preserved.py enters through the promotion path rather than calling a copy helper directly, and asserts four things, that promoting a run whose gate log lies outside its run directory records on the ledger row a log path inside that run directory, that the recorded path still resolves and its bytes match the original after the original file is deleted, that a log already inside the run directory is recorded unchanged and not duplicated, and that a promotion whose cited log is absent at promotion time is still refused rather than recording a copy of nothing; the node also reports its focused cohort at a named base revision and at its own head so the delta is judged rather than the absolute; and the declared mutation is applied, tests/test_gate_log_is_preserved.py is observed to fail under it, and the red log is recorded in the run directory with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "Copy the cited gate log into the run directory at promotion and record the copy path on the ledger row, so the row cites something durable rather than something that was true when written.",
+          "id": "the-cited-gate-log-is-preserved-where-the-row-can-find-it",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T11:32:57Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/manifest.md",
+          "negative_control": "remove the copy so promotion records the cited gate log path exactly as the caller gave it, leaving the row pointing at the original location",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_gate_log_is_preserved.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-438023841e30a4c4015b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T11:33:11Z",
+        "completed_at": "2026-09-22T15:06:34.582Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12791,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12803,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "01eeb308caec57684d5bb79664dbd0749b2d1798",
+        "commits": [
+          "bd576e662d744f12a3471c44a26ccc7dce13da1e",
+          "54d0a8d2fdb5fee3ad90668adf8cdc691d44d9cb",
+          "1911969e3da28758b59488d8ff03b2998bd6d9c6",
+          "fe1bf82030194dca7cc87dfcf7e6887ded362be8",
+          "db4e9a58bac061c95d70b3fbefaa79195331ef41"
+        ],
+        "changed_lines": {
+          "added": 622,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_log_is_preserved.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/test-logs/head-cohort.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/manifest.md",
+        "scope_changed": false,
+        "session_id": "6750e4a3-8ff1-419d-8d8a-750901fb1d46",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2202102,
+            "input_tokens_cumulative": 2202102,
+            "output_tokens": 10472,
+            "output_tokens_cumulative": 10472,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T15:06:34.582Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 25121924,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 170.36,
+          "generated_tokens": 158931,
+          "generation_seconds": 156.246,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.1,
+          "machine_seconds": 14.114,
+          "peak_input_tokens": 163839,
+          "tokens_per_second": 1017.18,
+          "wall_tokens_per_second": 932.91
+        },
+        "follow_on_paths": [
+          "tests/test_crew_gate_log_agrees.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 5,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260922/the-cited-gate-log-is-preserved-where-the-row-can-find-it",
+          "session_id": "6750e4a3-8ff1-419d-8d8a-750901fb1d46",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T15:06:34.582Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.85,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.85,
+          "at_complete": 0.88,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_gate_log_is_preserved.py"
+          ],
+          "declaration": "remove the copy so promotion records the cited gate log path exactly as the caller gave it, leaving the row pointing at the original location",
+          "log": "negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/negative-control.log"
+        },
+        "tool_steps": 102.0,
+        "orientation_input_tokens": 3743380.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -261300,6 +261540,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2087
+    "_version": 2088
   }
 }
