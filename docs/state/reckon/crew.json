@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T22:07:44",
+  "updated": "2026-09-22T22:13:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -267748,6 +267748,276 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row",
+        "plan": "advise-the-lane-never-force-it",
+        "section": "\u00a73",
+        "node": "the-advisory-survives-promotion-onto-the-row",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2795,
+                "cached_input_tokens": 210931,
+                "input_tokens": 213728,
+                "output_tokens": 417,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 214145,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "45540d71-8cda-4f8b-9d41-dfd0a267786d",
+            "session_id": "ship-window-20260922"
+          },
+          "done_when": "a promoted run whose dispatch carried an advisory has lane_advisory, lane_declaration and lane_reading on its COMMITTED ledger row, asserted by reading the row and never the pointer; a promoted run whose backend equals the advised lane and one whose backend differs are told apart from the committed rows alone, asserted as a pair over one promoted run of each kind; a run dispatched with no advisory promotes with no lane_advisory key at all rather than a null; the existing promotion tests show no added failures against a base measured in the SAME run with both figures recorded; and the declared negative control is APPLIED to a scratch copy, the row-carries-the-advisory case is OBSERVED to fail there, and the red log's first line repeats the declared mutation verbatim and in full",
+          "estimated_hours": null,
+          "goal": "carry the lane advisory across the promotion boundary so a promoted run's committed ledger row holds what its live pointer held",
+          "id": "the-advisory-survives-promotion-onto-the-row",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T18:46:36Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row/manifest.md",
+          "negative_control": "drop lane_advisory from the promotion carry so the committed ledger row does not receive it",
+          "plan": "advise-the-lane-never-force-it",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_lane_advisory_on_dispatch.py",
+            "docs/plans/advise-the-lane-never-force-it.html",
+            "docs/evidence/archive/advise-the-lane-never-force-it-landed.html",
+            "docs/figures/advise-the-lane-never-force-it"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-bar-b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T18:46:47Z",
+        "completed_at": "2026-09-22T19:15:59.284Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1738,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1752,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "5ebc9f28a393c367ee0331f46c3976e9916896ca",
+        "commits": [
+          "3377932872bc16606715b246370818a0d9c33a06",
+          "17401e4d6248b11a8ac0574dbbb007a993735e99",
+          "debba812b1a36fd9fee9fcdee39ad56cac207ffa"
+        ],
+        "changed_lines": {
+          "added": 331,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_advisory_on_dispatch.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row/logs/gate-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "dfeb4220-89d7-4a99-ad3a-6625fdb2c47f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5670401,
+            "input_tokens_cumulative": 5670401,
+            "output_tokens": 20855,
+            "output_tokens_cumulative": 20855,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T19:15:59.284Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 99
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10886142,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 780.485,
+          "generated_tokens": 49386,
+          "generation_seconds": 601.196,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.8,
+          "machine_seconds": 179.289,
+          "peak_input_tokens": 157249,
+          "tokens_per_second": 82.15,
+          "wall_tokens_per_second": 63.28
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-window-20260922/the-advisory-survives-promotion-onto-the-row",
+          "session_id": "dfeb4220-89d7-4a99-ad3a-6625fdb2c47f",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T19:15:59.284Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.3,
+        "impl_move": {
+          "plan": "advise-the-lane-never-force-it",
+          "at_dispatch": 0.3,
+          "at_complete": 0.4,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_lane_advisory_on_dispatch.py"
+          ],
+          "declaration": "drop lane_advisory from the promotion carry so the committed ledger row does not receive it",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row/logs/negative_control_lane_advisory_row.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T184635520321-the-advisory-survives-promotion-onto-the-row/logs/negative_control_lane_advisory_row.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T19:16:36.852442+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T18:46:36Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 57.0,
+        "orientation_input_tokens": 2836665.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -268046,6 +268316,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2122
+    "_version": 2123
   }
 }
