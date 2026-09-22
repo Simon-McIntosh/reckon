@@ -2523,6 +2523,93 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
+# The one pointer phase a fence may be widened in: a blocked run has stopped and
+# is waiting for a decision, so its boundary can move without a live process
+# already writing against it.
+WIDENABLE_PHASE = "blocked"
+
+
+@crew.command(name="widen")
+@click.option("--run", "run_id", required=True, help="Run whose fence to widen.")
+@click.option(
+    "--write-path",
+    "write_paths",
+    multiple=True,
+    required=True,
+    help="Path to add to the run's declared write scope. Repeat for each path.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_widen(run_id, write_paths, pretty):
+    """Add a path to a blocked run's own fence, in place and without a redispatch.
+
+    A worker that blocks because its write scope was drawn too narrowly can be
+    answered but not re-scoped: ``--write-path`` is read once, at dispatch, and
+    no later command touches scope, so the fence is fixed for the life of the
+    run. The coordinator's remaining moves were a redispatch that discards the
+    run's session and whatever it had committed, or a hand-edit of the live
+    pointer. This is that edit, declared and auditable.
+
+    Only the run's own pointer changes, and only its ``write_paths``: every
+    other field — the session id, the recorded commits, the worktree — is
+    carried through byte for byte, so the widened run resumes on its own
+    session with its own work intact. The field written is the one promotion
+    reads, so a scope granted here is the scope the promotion validator honours.
+
+    The run must be blocked. A working run's fence is the boundary it is
+    currently writing against, so widening one would move that boundary under a
+    live process that already read it. A run whose phase is not ``blocked`` is
+    refused and its pointer is left untouched.
+    """
+    crew_module, _ = _crew_modules()
+    try:
+        record = crew_module.read_pointer(run_id)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    phase = str(record.get("phase") or "")
+    if phase != WIDENABLE_PHASE:
+        raise click.ClickException(
+            f"run {run_id!r} is {phase or 'unphased'}, not {WIDENABLE_PHASE!r}: only a "
+            "blocked run's fence is widened, because a working run is already "
+            "writing against the boundary this would move"
+        )
+    if not isinstance(record.get("node"), Mapping):
+        raise click.ClickException(
+            f"live pointer for {run_id!r} records no node holding a write scope"
+        )
+
+    requested = [str(path).strip() for path in write_paths if str(path).strip()]
+    added: list[str] = []
+
+    def widen(pointer: dict[str, Any]) -> dict[str, Any]:
+        node = dict(pointer.get("node") or {})
+        declared = [str(path) for path in node.get("write_paths") or ()]
+        for path in requested:
+            if path not in declared:
+                declared.append(path)
+                added.append(path)
+        node["write_paths"] = declared
+        pointer["node"] = node
+        return pointer
+
+    updated = crew_module._mutate_pointer(run_id, widen)
+    _emit(
+        {
+            "ok": True,
+            "run_id": run_id,
+            "phase": str(updated.get("phase") or ""),
+            "node": str((updated.get("node") or {}).get("id") or ""),
+            "session_id": str(updated.get("session_id") or ""),
+            "added": added,
+            "write_paths": [
+                str(path)
+                for path in (updated.get("node") or {}).get("write_paths") or ()
+            ],
+        },
+        pretty,
+    )
+
+
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
