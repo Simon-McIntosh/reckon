@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-death-is-recorded-landed">
+  <meta name="plan-title" content="Worker Death Is Recorded — landed evidence">
+  <meta name="plan-summary" content="The reaper keeps each reaped worker's wait status on its run: the exit code where the process chose one, the signal number and name where a signal ended it.">
+  <meta name="plan-evidence-for" content="worker-death-is-recorded">
+  <meta name="plan-verifies" content="worker-death-is-recorded#s5">
+  <meta name="plan-commits" content="ff1c26cf,b0c8ff90">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment, login node">
+  <meta name="plan-tags" content="crew,dispatch,reaper,wait-status,signal">
+  <title>Worker Death Is Recorded — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>Worker Death Is Recorded</h1>
+      <p class="lead">A launched worker's wait status is kept on its run:
+      the exit code where the process chose one, and the signal number and name
+      where a signal ended it, so a worker ended by a signal stops reading like a
+      live one.</p>
+    </header>
+
+    <section id="s5-1">
+      <h2>&sect;5.1 &mdash; The launcher keeps the wait status it already holds</h2>
+      <p>Plan &sect;5.1. The reaper was the only place that ever observed a worker's end:
+      it held <code>os.waitstatus_to_exitcode(status)</code> at the moment the child was
+      reaped and threw it away whenever the stream was non-empty, so a worker ended by a
+      signal kept its <code>working</code> phase and carried nothing about its process
+      having gone. That is the whole of this node: the status is now kept.</p>
+
+      <img src="/reckon/figures/worker-death-is-recorded/reap-wait-status.svg"
+           alt="The reaper branches on whether the stream is empty: an empty stream records a launch failure and sets the phase; an unplaced run with a non-empty stream records the wait status and leaves the phase alone; a placed launch whose payload ran records nothing."
+           style="max-width:100%">
+
+      <table>
+        <thead><tr><th>How the wait ended</th><th>Recorded on the run</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>process exited, code N</td><td><code>exit_code: N</code></td>
+              <td>it chose to end</td></tr>
+          <tr><td>process signalled, signal S</td>
+              <td><code>signal: S</code>, <code>signal_name: SIGTERM</code></td>
+              <td>it ended by nothing it chose, and the two cases want different responses</td></tr>
+        </tbody>
+      </table>
+      <p>A signalled process chose nothing, so it records no exit code; a signal number
+      outside the named set is still recorded by number, so an unfamiliar kill is legible
+      rather than dropped. The record lives in the pointer's <code>wait_status</code> and
+      in the same three fields on a run's launch-failure entry.</p>
+
+      <h3>What was measured</h3>
+      <p>Two cases in <code>tests/test_crew_launch_failure.py</code>, each spawning a stub
+      backend through the real spawn and reaped on a real tick, each reading the run record
+      rather than a log:</p>
+      <ul>
+        <li>a stub that writes one turn and then <code>kill -TERM $$</code> records
+        <code>signal: 15</code> and <code>signal_name: SIGTERM</code>, with
+        <code>exit_code</code> absent, its phase left <code>working</code> and no
+        launch-failure entry;</li>
+        <li>a stub that writes one turn and then <code>exit 3</code> records
+        <code>exit_code: 3</code> with no signal.</li>
+      </ul>
+      <p>Both streams are non-empty, which is the case the launcher was discarding, so the
+      record can only have come from the wait. The existing empty-stream cases are
+      unchanged, and the focused gate runs 7 passed at <code>b0c8ff90</code>.</p>
+      <p>The declared negative control restores the branch that discards the wait status
+      when the stream is non-empty; the signal case is then observed to fail, and that log
+      is <code>negative-control-discard-wait-status.log</code> in the node's run directory.
+      Gate log: <code>gate-wait-status-focused.log</code>, same directory.</p>
+
+      <h3>Corrected inside the node</h3>
+      <p>The first cut recorded the wait status for a placed launch too. A scheduler
+      client's wait status is the client's rather than the worker's, and a placed run whose
+      payload log shows a turn ran must gain no record at all —
+      <code>tests/test_crew_placed_liveness.py::test_the_payload_log_decides_that_the_work_ran</code>
+      caught it, failing on a record it was
+      never meant to see. The placement case now returns before any pointer write, and
+      that file and this node's gate are green together (25 passed).</p>
+
+      <h3>Boundary</h3>
+      <p>A run already in a terminal phase is left untouched: the existing guard that never
+      relabels a finished run is unchanged, so a straggler reap arriving after a promotion
+      adds nothing. Classifying an interrupted run, and the phase that names it, are
+      &sect;5.3 — a different node.</p>
+    </section>
+  </main>
+</body>
+</html>

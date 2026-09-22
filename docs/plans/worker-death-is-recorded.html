@@ -152,6 +152,12 @@
       resumed and completes. Done when that sequence passes as a test rather than as a
       manual demonstration.</li>
     </ol>
+    <p class="landed-summary"><strong>§5.1 landed 2026-09-22.</strong> The reaper now keeps the
+    wait status it always held: the exit code where the process chose one, and the signal
+    number and name where a signal ended it, both read from the run record. A non-empty
+    stream no longer discards it, and a placed launch — whose wait is the scheduler client's,
+    not the worker's — is left alone. <a href="/reckon/evidence/archive/worker-death-is-recorded-landed#s5-1">§5.1
+    landed</a>.</p>
     <p>Steps one and two are independent and can land in either order. Step three depends
     on both. Step four is independent of all of them and is the one that decides whether
     the remedy is reachable in practice.</p>
