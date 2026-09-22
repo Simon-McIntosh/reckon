@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T13:31:25",
+  "updated": "2026-09-22T13:32:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -254175,6 +254175,247 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72d",
+        "node": "the-receipt-says-which-of-the-two-states-the-row-is-in",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 664,
+                "cached_input_tokens": 486903,
+                "input_tokens": 487569,
+                "output_tokens": 163,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 487732,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "when the landing fails and the rollback restores the ledger so the working tree no longer carries the appended row, the raised CrewError states that the row was written and has been rolled back and that re-promotion is the recovery once the landing failure is resolved; when the ledger still carries the row, the present wording naming it already written and warning against re-promotion stands unchanged; the branch is decided by what the rollback reports for the ledger path together with reading the row back from the ledger the promotion resolved, never by the fact that the append returned; both cases are asserted in tests/test_receipt_names_the_rolled_back_row.py by driving the promotion path with a real failing landing commit rather than by patching the message; and PYTHONPATH set to the main checkout with the root interpreter, pytest over that file and tests/test_rollback_asks_head.py is green with both counts in the manifest",
+          "estimated_hours": null,
+          "goal": "the failure receipt distinguishes a ledger row that survived the failed landing from one the rollback reverted, and names the recovery that fits the case it reports",
+          "id": "the-receipt-says-which-of-the-two-states-the-row-is-in",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T10:26:45Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/manifest.md",
+          "negative_control": "make the receipt report the surviving-row wording unconditionally, as it does today: the rolled-back case in tests/test_receipt_names_the_rolled_back_row.py must go red",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72d",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_receipt_names_the_rolled_back_row.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-hold",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T10:27:02Z",
+        "completed_at": "2026-09-22T11:10:23.442Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2590,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2601,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "654d1f0b9c652c345d6e673a971ba84b72b02ae8",
+        "commits": [
+          "73cb04f97eb3c1533b4779c89469101eac6501fa",
+          "52f08a09517ad2afcc024fb90880bc40394c31d5",
+          "01277e552f4482bf26b9a74e6c10396074eb7628",
+          "24ead5c90f8a153415a953c4ef15651257687c6a"
+        ],
+        "changed_lines": {
+          "added": 467,
+          "removed": 14,
+          "files": 6
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_receipt_names_the_rolled_back_row.py tests/test_rollback_asks_head.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-gates/receipt-gate-provenanced.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/manifest.md",
+        "scope_changed": false,
+        "session_id": "26d2580b-6532-44fe-a5d8-a68c11f18341",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4850941,
+            "input_tokens_cumulative": 4850941,
+            "output_tokens": 37500,
+            "output_tokens_cumulative": 37500,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T11:10:23.442Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14798233,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 934.164,
+          "generated_tokens": 104368,
+          "generation_seconds": 877.582,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 56.582,
+          "peak_input_tokens": 165781,
+          "tokens_per_second": 118.93,
+          "wall_tokens_per_second": 111.72
+        },
+        "follow_on_paths": [
+          "tests/test_rollback_asks_head.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "tests/test_rollback_asks_head.py",
+            "reason": "granted mid-flight: the node blocked because its done-when required that file green while the fix necessarily changes it \u2014 its [commit] parameter asserted the surviving-row wording for a case whose own git trace shows the restore succeeded and the row reverted, verified by the coordinator before granting"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-receipt-says-which-of-the-two-states-the-row-is-in",
+          "session_id": "26d2580b-6532-44fe-a5d8-a68c11f18341",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T11:10:23.442Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.7,
+          "at_complete": 0.82,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_receipt_names_the_rolled_back_row.py"
+          ],
+          "declaration": "make the receipt report the surviving-row wording unconditionally, as it does today: the rolled-back case in tests/test_receipt_names_the_rolled_back_row.py must go red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/negative-control-rolled-back-branch-deleted.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/negative-control-rolled-back-branch-deleted.log",
+          "reason": "paraphrase, and the log demonstrates the equivalence itself. Declared: make the receipt report the surviving-row wording unconditionally, as it does today. Recorded: replace \"if _ledger_row_was_rolled_back(exc, ledger_path, row_present):\" with \"if False:\" in reckon/crew/promotion.py \u2014 which is that same mutation stated as the edit that produces it. The discriminator that ignores the prose agrees: the reddened test is test_rolled_back_row_receipt_names_re_promotion_as_the_recovery, the exact assertion the declaration targets, and the recorded assertion error shows the surviving-row wording being produced where the rolled-back wording is expected. 1 failed, 2 passed against 3 passed unmutated."
+        },
+        "tool_steps": 83.0,
+        "orientation_input_tokens": 1623327.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -254473,6 +254714,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2051
+    "_version": 2052
   }
 }
