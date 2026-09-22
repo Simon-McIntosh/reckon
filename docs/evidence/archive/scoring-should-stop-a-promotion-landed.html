@@ -967,6 +967,78 @@
     scoped gate. Figure:
     <a href="/reckon/figures/scoring-should-stop-a-promotion/revision_normalisation.png">revision normalisation</a>.</p>
   </section>
+
+  <section id="manifest-check-reaches-the-writer">
+    <h2>The write-time check reaches the worker, and the two refusing fields are named in the prompt</h2>
+    <p><strong>What was measured first, at the base revision.</strong> The composed worker prompt
+    named no self-check at all: composing a prompt at <code>HEAD</code> and searching it returned
+    <code>check-manifest present: False</code>, and neither the status-vocabulary rule nor the
+    bare-path rule for the control log appeared anywhere in it. The
+    <code>crew check-manifest</code> verb already existed and already refused a status outside the
+    reader's vocabulary at parse time; nothing in the template told a worker to run it.</p>
+
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/manifest-check-timeline.svg"
+           alt="Two timelines over one run: refused at promotion, where the reader arrives after the writer has gone and a coordinator hand-edits the record; and refused at the worker's write, where the check runs inside the same turn and the worker repairs the field with the pen in hand.">
+      <figcaption>The sequential relationship the change acts on: the same refusal, read at two
+      points on the run's timeline. Only the earlier one reaches the party who can repair it.</figcaption>
+    </figure>
+
+    <p><strong>What landed.</strong> Commit
+    <code>914533ad22bb3ba044ad5914b418c2a5895d9739</code> adds a
+    <code>MANIFEST_CHECK_CONTRACT</code> slot to the composed worker prompt, placed between the
+    delivery fence and the manifest key block. It requires the worker to run
+    <code>reckon crew check-manifest --run &lt;this run's id&gt;</code> before setting a terminal
+    value and to repair what it reports; the command is composed with the run's own id so the line
+    is executable as written, and a caller supplying no id gets a placeholder rather than a command
+    that silently checks nothing. It names the two fields that refused four promotions on shape
+    alone: <code>status</code>, which must be one of the recognised values because a value outside
+    that vocabulary leaves the whole record unreadable, and <code>negative_control_log</code>,
+    which must be the bare path because an empty field, or one carrying a description or a quoted
+    first line, names nothing a reader can open. It states that a record repaired after the worker
+    has ended is indistinguishable from a fabricated one, which is why the check belongs at the
+    write. Source blob <code>eed03d624262e4255e4bda50fe3e961e3c49aadf</code>.</p>
+
+    <p><strong>Boundary of the check, stated rather than implied.</strong> The write-time verb
+    judges <code>status</code> (at parse), the declared-scope rule and the armed-suite fields. It
+    does <em>not</em> judge the <code>negative_control_log</code> shape — that refusal lives in
+    promotion's log resolver, and the resolver's repository is not in this node's write fence. The
+    instruction therefore carries that rule as prose the worker applies itself rather than claiming
+    a green check covers it. The gap is recorded under <code>follow_ons</code>.</p>
+
+    <p><strong>Evidence that could have failed.</strong> The gate is the composed prompt itself, read
+    out of <code>compose_prompt</code> rather than off the constant, because the discipline reaches
+    a worker only if it survives composition. Nine tests were added to
+    <code>tests/test_worker_prompt_contract.py</code> (blob
+    <code>31a000eb5c65fd35f4fdd98d57312f20c9df36a8</code>): the prompt carries the check, the run
+    id it must judge, both field names, both stated rules, the fabrication warning, the ordering of
+    the contract before the keys it validates, and its survival when no run id is supplied; one
+    further test masks the slot entirely and requires the recomposed prompt to equal the live prompt
+    with exactly that block removed. The focused file reports <strong>4 passed, 0 failed</strong> at
+    the base revision and <strong>13 passed, 0 failed</strong> after — no failure added.</p>
+
+    <p><strong>The declared negative control.</strong> The node declared: <em>remove the self-check
+    sentence from the composed worker prompt so the contract names no validation before completion:
+    tests/test_worker_prompt_contract.py must go red</em>. The mutation removes the
+    <code>{manifest_check_contract}</code> slot from the template. Applied in an isolated copy of the
+    working tree with the import proven to resolve there, it reports
+    <strong>9 failed / 4 passed, exit 1</strong> — exactly the nine tests that read the
+    block, with the four pre-existing manifest-block tests still green. The log's first line repeats
+    the declaration verbatim.</p>
+
+    <p><strong>Ruff, by delta.</strong> Check findings on the two staged paths
+    <strong>2 &rarr; 2</strong>; formatted files <strong>2 &rarr; 2</strong> already formatted, after
+    one wrap the fixer asked for was applied by hand. Both remaining findings are inherited
+    (<code>UP035</code> on the module's <code>typing</code> imports, <code>S608</code> on the existing
+    template).</p>
+
+    <p><strong>Receipts.</strong> <code>gate_base.log</code>, <code>gate_after.log</code> and
+    <code>negative_control.log</code> are in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102837159099-the-worker-checks-its-own-record-before-declaring-it-complete/</code>,
+    all run with the root interpreter and <code>PYTHONPATH</code> set to the tree under test. This
+    node records the landing only: it does not resolve the plan followup, close the section, or
+    verify the merged head, and no promotion was run.</p>
+  </section>
 </main>
 </body>
 </html>

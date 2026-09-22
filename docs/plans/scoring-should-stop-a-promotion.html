@@ -862,6 +862,53 @@
       with the coordinator.</p>
     </div>
 
+    <div class="r-comment" data-section="s2j" data-id="c-write-time-check-reaches-the-worker" data-who="crew-worker" data-when="2026-09-22">
+      <p><strong>The write-time check now reaches the writer.</strong> The first half of
+      §2j's done-when — that a malformed manifest is met by the party who can repair it,
+      inside the turn that writes it — landed in commit
+      <code>914533ad22bb3ba044ad5914b418c2a5895d9739</code>. The composed worker prompt
+      gains a <code>MANIFEST_CHECK_CONTRACT</code> slot, placed between the delivery
+      fence and the manifest key block. It requires the worker to run
+      <code>reckon crew check-manifest --run &lt;this run's id&gt;</code> before setting a
+      terminal value and to repair what it reports; the command carries the run's own id
+      so it is executable as written. It names the two fields that refused four
+      promotions on shape alone: <code>status</code>, which must be one of the
+      recognised values because a value outside that vocabulary leaves the whole record
+      unreadable, and <code>negative_control_log</code>, which must be the bare path
+      because an empty field, or one carrying a description or a quoted first line,
+      names nothing a reader can open. It states that a record repaired after the worker
+      has ended is indistinguishable from a fabricated one — the sentence that makes the
+      requirement land at the write rather than at the read.</p>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/manifest-check-timeline.svg"
+             alt="Two timelines over one run: refused at promotion, where the reader arrives after the writer has gone and a coordinator hand-edits the record, against refused at the worker's write, where the check runs inside the same turn and the worker repairs the field with the pen in hand.">
+        <figcaption>The same refusal read at two points on one run's timeline. Only the
+        earlier one reaches the party who can repair it.</figcaption>
+      </figure>
+      <p><strong>Measured first, at the base revision.</strong> Composing a prompt at
+      <code>HEAD</code> and searching it returned <code>check-manifest present: False</code>,
+      with neither field rule present — the verb already existed and nothing told a worker
+      to run it. Nine tests added to <code>tests/test_worker_prompt_contract.py</code> read
+      the composed prompt (not the constant) for the check, the run id, both field names,
+      both stated rules, the fabrication warning, the ordering before the keys it
+      validates, and its survival without a run id; a tenth masks the slot and requires the
+      recomposed prompt to equal the live prompt with exactly that block removed. The
+      focused file reports <strong>4 passed / 0 failed at base</strong> and <strong>13
+      passed / 0 failed after</strong>. The declared negative control removes the slot in an
+      isolated copy of the tree and reports <strong>9 failed / 4 passed, exit 1</strong>.
+      Ruff on the staged paths is <strong>2 &rarr; 2</strong> findings and <strong>2 &rarr;
+      2</strong> formatted.</p>
+      <p><strong>What this does not cover.</strong> The write-time verb judges
+      <code>status</code> at parse, the declared-scope rule and the armed-suite fields; it
+      does <em>not</em> judge the <code>negative_control_log</code> shape, whose refusal
+      lives in promotion's log resolver — outside this node's write fence. The instruction
+      therefore carries that rule as prose the worker applies itself rather than claiming a
+      green check covers it. Closing that gap, and the waiver surface, remain with
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#manifest-check-reaches-the-writer">the cumulative evidence</a>.
+      This is a worker landing record: section closure, followup resolution and
+      verification at the merged head remain with the coordinator.</p>
+    </div>
+
     <h2 id="s2g">§2g — One gate per kind of work, selected by what the run produced</h2>
 
     <p>§2f widens one gate. That is the substrate and not the design: a single rubric asked of
