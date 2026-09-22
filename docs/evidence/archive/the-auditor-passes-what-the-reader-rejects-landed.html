@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-auditor-passes-what-the-reader-rejects-landed">
+  <meta name="plan-title" content="The Auditor Passes What The Reader Rejects — record">
+  <meta name="plan-summary" content="What was measured before the plan was retired, and where the work went.">
+  <meta name="plan-evidence-for" content="the-auditor-passes-what-the-reader-rejects">
+  <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
+  <title>The Auditor Passes What The Reader Rejects — record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="measured">What was measured</h2>
+
+    <p>All 205 documents under <code>docs/plans</code> and <code>docs/evidence</code>
+    were scanned on 2026-09-22 by counting opening against closing tags, with
+    optional-close tags excluded because HTML permits those to be left open.
+    Three carry a structural imbalance. <code>reckon audit-doc</code> was then run
+    against each.</p>
+
+    <table>
+      <thead>
+        <tr><th>Document</th><th>Tag</th><th>Open</th><th>Close</th><th>Auditor verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>a-live-worker-can-be-reached-landed</code></td><td><code>section</code></td>
+            <td>5</td><td>3</td><td>caught &mdash; <code>section-unclosed</code></td></tr>
+        <tr><td><code>crew-observability-truth-landed</code></td><td><code>section</code></td>
+            <td>57</td><td>53</td><td>caught &mdash; <code>section-unclosed</code></td></tr>
+        <tr><td><code>a-window-paces-the-lane-landed</code></td><td><code>tr</code></td>
+            <td>67</td><td>63</td><td><strong>OK</strong> &mdash; no finding at any severity</td></tr>
+      </tbody>
+    </table>
+
+    <p>The first two rows are the positive control: they establish that the
+    auditor is not silent in general, only silent about this. An unclosed row is
+    not cosmetic &mdash; every element after it reflows into the open cell.</p>
+
+    <h2 id="retired">Why this plan was retired without running</h2>
+
+    <p>Forty minutes after it was opened, and before any node ran, the same
+    validator gap was found already owned by <strong>a-review-dies-where-nobody-is-looking</strong>
+    section six, in more depth: it carries the missing sprint state island and a
+    duplicated plan scalar that parses last-wins, with four evidence records in
+    this repository already carrying duplicates. A second plan aimed at the same
+    file would have been two implementations of one truth.</p>
+
+    <p>The measurement above moved to that section as a comment, where it also
+    narrows the section's own framing. That section had said the two defects the
+    validator misses are both about the authoritative state rather than the prose
+    around it; the table-row case is not about state at all, so the gap is wider
+    than it stated.</p>
+
+    <p>The pre-flight rule that should have prevented this exists &mdash; search
+    existing titles and summaries before creating a resource. It was skipped. The
+    owning section's heading names the mechanism rather than the symptom, which is
+    the ordinary reason such a search misses, and reading the sprint the finding
+    belonged to would have surfaced it.</p>
+  </main>
+</body>
+</html>
