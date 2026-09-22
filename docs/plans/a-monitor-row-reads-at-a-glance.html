@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-monitor-row-reads-at-a-glance">
+  <meta name="plan-title" content="A Monitor Row Reads At A Glance">
+  <meta name="plan-summary" content="The follower row spends its width on cells nobody reads, goes ragged on wide model names, and clips the reason clause that is the row's actual payload.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="medium">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-09-22">
+  <meta name="plan-version" content="1">
+  <meta name="plan-informs" content="the-monitor-under-measurement">
+  <title>A Monitor Row Reads At A Glance | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What the row carries, and what its readers use</h2>
+    <p>The lead's pane on 2026-09-22 showed this row, among others:</p>
+    <pre>21:34:16  review  review-of-pta-adopted-read-cost-red…  working &rarr; unpromoted  dsv4.1-flash xhigh  3w&middot; 1b&middot; 7u  57:01  &ndash;  1mu</pre>
+    <p>Four coordinators said which cells they use. All four act on the destination state, the node
+    name, and the reason text at the end of an actionable row. Three use the elapsed time to spot a
+    run over its budget. Three used the model and effort pair to catch a review routed to a metered
+    lane despite <code>--local</code>, so that pair earns its place. None of the four could decode
+    the age cell, which prints the age of the oldest unpromoted run as minutes followed by the bucket
+    letter. None used the generation-rate cell, which renders the absence marker whenever the
+    transition carries no rate. The row census in
+    <a href="/reckon/plans/the-monitor-under-measurement#s3">the measurement plan &sect;3</a>
+    supplies the counts across four projects.</p>
+    <p>Two layout defects compound this. The model cell is ten columns and deliberately lets a wider
+    alias overflow, and the locally served lane's alias <code>dsv4.1-flash</code> is twelve, so every
+    row on that lane shifts the cells after it. The node cell cuts at 36 columns from the right, so
+    two reviews of similarly named nodes render identically, which nova-37 and imas-efit-e3 both hit.
+    And ANSI colour reaches an agent reader as escape sequences inside the notification, as
+    imas-ambix-b6 reported, so any state carried by colour alone is lost to the reader who most
+    needs it.</p>
+    <p>The open section
+    <a href="/reckon/plans/crew-observability-truth#s20">crew-observability-truth &sect;20</a> measured
+    the same dead cells over 366 rows, with the rate populated in 1.9 percent of them, and moves here.
+    Its sibling &sect;19, where a discard and a stop render as <code>promoted</code>, stays with that
+    plan because it waits on the lead's disposition decision there.</p>
+    <p>All changes here are in <code>reckon/crew/ticker.py</code>, with its tests in
+    <code>tests/test_crew_ticker.py</code> and <code>tests/test_crew_ticker_layout.py</code>. The
+    sections share those files and run one after another.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The state cell shows the destination only</h2>
+    <p>Render only the state the run moved into. Drop the from-state cell and the arrow between
+    them. A baseline row is marked by the word <code>now</code> before the state rather than by a
+    bullet glyph, because a glyph at small size is the entire signal and imas-ambix-b6 read three
+    baseline rows as fresh dispatches.</p>
+    <p><strong>Done when</strong> a rendered transition from working to unpromoted contains the word
+    <code>unpromoted</code> once and neither the word <code>working</code> nor an arrow, and a
+    baseline row contains <code>now</code> immediately before its state. The row is at least
+    thirteen columns narrower than the base revision's rendering of the same event at the same width,
+    measured on the reason cell's room. Existing ticker tests that assert on the from-state are
+    updated to assert its absence, and the delta against the base revision's test run is stated.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Every model name fits one aligned cell</h2>
+    <p>Size the model cell from the aliases the resolved flight config declares, taking the longest,
+    instead of a fixed ten. An alias outside the configured set is cut to the cell with an ellipsis
+    rather than allowed to overflow, so the grid never shifts.</p>
+    <p><strong>Done when</strong> rows rendered for <code>dsv4.1-flash</code>, <code>astra6</code> and
+    <code>sonnet 5</code> start their effort cell at the same column, and an unconfigured
+    twenty-character model id renders cut with an ellipsis at that width. The negative control is
+    executed and logged: with the fixed ten-column cell the effort columns differ and the test
+    fails.</p>
+
+    <h2 id="s4">&sect;4 &mdash; The row drops the cells nobody reads</h2>
+    <p>Remove the generation-rate cell and the age cells from the row. Keep the elapsed time, and
+    render it in hours and minutes, as in <code>57m</code> or <code>1h33m</code>, rather than as a
+    clock. The age of a run that needs the coordinator moves into the needs-you line of
+    <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a>,
+    where it is spelled beside the node it belongs to.</p>
+    <p><strong>Done when</strong> no rendered row matches the pattern of a number followed by
+    <code>m</code> and a bucket letter, no row carries the absence marker in a rate position, and a
+    run with 3,421 seconds elapsed renders <code>57m</code>. The width recovered is stated as a
+    column count.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A long node name keeps the part that distinguishes it</h2>
+    <p>Cut a node name longer than its cell from the middle, keeping its start and its end. When two
+    rows in the same follower would still render identical node text, append the last four
+    characters of the run id to both.</p>
+    <p><strong>Done when</strong> <code>review-of-sgc-sweep-control-at-the-banked-seam</code> and
+    <code>review-of-sgc-sweep-control-at-the-four-of-twenty</code> render with different node text
+    at the default width, and a name that fits is unchanged.</p>
+
+    <h2 id="s6">&sect;6 &mdash; The reason clause is cut at a word</h2>
+    <p>When the reason clause is longer than its room, cut it at the last word boundary that fits and
+    end it with an ellipsis, rather than mid-word. The full text remains in the transition record and
+    in the live view.</p>
+    <p><strong>Done when</strong> a reason clause of forty words rendered into thirty columns ends in
+    a whole word followed by an ellipsis, and a clause that fits is unchanged.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2>Decisions</h2>
+<div class="r-dec" data-key="which-measures-stay-on-the-row" data-choice="keep-elapsed-drop-rate-and-ages" data-by="Simon McIntosh" data-when="2026-09-22T20:10:00+00:00">
+    <p class="r-dec-q">Which time and spend measures stay on the row?</p>
+    <p class="r-dec-opts">
+      <span class="r-dec-opt" data-value="keep-elapsed-drop-rate-and-ages">Keep elapsed time; drop rate and ages</span>
+      <span class="r-dec-opt" data-value="drop-every-measure">Drop every time and spend measure</span>
+    </p>
+    <p class="r-dec-rat">The lead doubted the time and token figures were useful. Three of four coordinators used the elapsed time to find runs over budget, and none used the rate or the age cells, so elapsed stays and the rest go. The lead may reverse this; §4 is the only section it governs.</p>
+</div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2>Followups</h2>
+<article class="r-fu" data-id="f-amrraag-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-monitor-row-reads-at-a-glance" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the row legible</h4>
+    <div class="r-fu-body"><p>Five nodes, serial, because every one edits <code>reckon/crew/ticker.py</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-monitor-row-reads-at-a-glance</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-title" content="A Dispatch Returns Without Its Worker">
+  <meta name="plan-summary" content="A CLI dispatch holds its shell for minutes after its worker starts, so each one adds a background shell beside the one follower a session should show.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="medium">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-09-22">
+  <meta name="plan-version" content="1">
+  <meta name="plan-informs" content="a-follower-outlives-its-monitor">
+  <title>A Dispatch Returns Without Its Worker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; One session, one monitor, and during a wave it is five</h2>
+    <p>The lead's requirement is that a coordinator session shows exactly one monitor, the
+    follower, so the lead can track progress from one place. Measured on 2026-09-22 in the reckon
+    session that wrote this plan: four investigation nodes dispatched to the locally served lane at
+    21:50:30 left four background shells running beside the follower. Each shell was a
+    <code>reckon crew dispatch</code> process that had not returned. The process tree for each was
+    the dispatch process, a second <code>reckon</code> process beneath it, and the
+    <code>claude</code> worker beneath that. All four dispatch processes exited at 21:56:20 and
+    21:56:38, close to six minutes after launch, and all four workers were still alive and
+    streaming afterwards. The skill tells coordinators to background every CLI dispatch, which is
+    why the hold shows up as extra monitors rather than as a blocked turn.</p>
+    <p>The worker is launched with <code>start_new_session=True</code> in <code>_spawn</code> in
+    <code>reckon/crew/dispatch.py</code>, and it survives its dispatch process exiting normally. What
+    holds the dispatch process for six minutes is not established. An earlier session recorded that
+    wrapping dispatch in <code>timeout</code> reaped its worker, so a dispatch ended by a signal
+    during the hold may still take the worker with it. That is the case a host which expires
+    background shells would hit.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Measure what holds the dispatch open and what its death does</h2>
+    <p>Establish two facts with a trivial backend, never a real worker. First, which code path
+    holds <code>reckon crew dispatch</code> open for about six minutes after the worker is
+    launched and its pointer written: the launched-worker reaper in <code>reckon/crew/dispatch.py</code>, an
+    explicit wait, or the second <code>reckon</code> process in the tree. Second, what happens to
+    the worker when the dispatch process receives SIGTERM, SIGKILL and SIGHUP, each in turn.</p>
+    <p>Use a stub backend whose command is a shell script that sleeps for sixty seconds and then
+    writes a marker file, dispatched in a temporary repository with a temporary crew config home,
+    so nothing reaches the real pointer directory.</p>
+    <p><strong>Done when</strong> <code>docs/research/data/dispatch-lifetime.json</code> names the
+    file and line that keeps the dispatch process alive with the quoted source, lists the process
+    tree observed after launch with each process's role, and states for each of the three signals
+    whether the stub's marker file appeared. The test harness that produced it is committed as
+    <code>tests/test_dispatch_lifetime_probe.py</code> and asserts on the real pointer directory
+    being untouched afterwards.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Dispatch returns once the worker is launched</h2>
+    <p>Make a CLI dispatch print its JSON result and exit as soon as the worker process is running
+    and its live pointer is written. The worker must survive the dispatch process ending by any of
+    the three signals in &sect;2, including a signal that arrives during what is today the hold. Collection of the worker's exit moves off the dispatching
+    process: liveness is already read from the pointer's recorded pid by
+    <code>record_process_alive</code>, and a worker whose parent has exited is reparented and
+    collected by the system. Keep the launched-worker reaper for the follower's own sweep-launched
+    workers only if &sect;2 shows it is still needed there.</p>
+    <p><strong>Done when</strong> a test dispatches the stub backend of &sect;2 and observes the
+    dispatch process exit within five seconds with the run id in its JSON output, then kills
+    nothing and observes the stub's marker file appear. A second test sends SIGKILL to the dispatch
+    process before it returns and still observes the marker. The negative control is recorded:
+    reinstating the wait that &sect;2 identified makes the first test fail on the five-second
+    bound, and the log of that failing run is kept with the manifest. The write paths are
+    <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_returns_without_worker.py</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
+    <p>Once &sect;3 lands, a dispatch is an ordinary short command. Change every instruction that
+    says to background a CLI dispatch or to yield after it, so a coordinator runs it in the
+    foreground and reads its JSON. The follower remains the only long-lived process a session
+    owns.</p>
+    <p><strong>Done when</strong> <code>grep -rn "background the call\|run_in_background" skills/</code>
+    returns no instruction to background a dispatch, the launch-kind table in
+    <code>skills/reckon-ship/SKILL.md</code> says a CLI dispatch returns once its worker runs, and
+    <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code> names the
+    follower as the session's only monitor. The write paths are those two files.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A refused dispatch leaves nothing that reads as a death</h2>
+    <p>imas-ambix-b6 received a row at 20:41:11 reading <code>abandoned</code> with the reason
+    <code>the process is gone without a complete manifest</code>, four seconds after a dispatch. The
+    dispatch had been refused because its member could not be resolved, and it had left a live
+    pointer behind. The coordinator removed a worktree on the strength of the misreading. Find where
+    a refusal can occur after the pointer is written, and remove the pointer on refusal, or order the
+    checks so every refusal precedes the write.</p>
+    <p><strong>Done when</strong> a test forces a member-resolution refusal in a temporary crew
+    config home and asserts the live pointer directory holds no pointer for that node afterwards, and
+    the watch stream carries no transition for it. The negative control is executed and logged at the
+    base revision, where a pointer remains. The write paths are <code>reckon/crew/dispatch.py</code>
+    and <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2>Followups</h2>
+<article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure, detach, then correct the skill</h4>
+    <div class="r-fu-body"><p>Three nodes in order. The detach node waits on the measurement because the holding code path is not yet known.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-dispatch-returns-without-its-worker</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

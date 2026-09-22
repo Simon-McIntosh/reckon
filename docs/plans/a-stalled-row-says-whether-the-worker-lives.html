@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-stalled-row-says-whether-the-worker-lives">
+  <meta name="plan-title" content="A Stalled Row Says Whether The Worker Lives">
+  <meta name="plan-summary" content="A dead worker surfaces only after fifteen minutes of silence, and when it does its row reads the same as a live one that is busy compiling.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="medium">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-09-22">
+  <meta name="plan-version" content="1">
+  <meta name="plan-depends-on" content="the-monitor-under-measurement">
+  <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
+  <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; One word for two situations with opposite remedies</h2>
+    <p>The follower marks a run <code>stalled</code> when its stream has been quiet for the stall
+    window, which is <code>DEFAULT_WATCH_STALL_WINDOW</code> in <code>reckon/crew/node.py</code>,
+    fifteen minutes. Four coordinators reported on 2026-09-22 that the word covers a dead worker,
+    which needs a resume, and a live worker in a long quiet step, which needs nothing. Each had to
+    check the process and the stream by hand to tell them apart.</p>
+    <ul>
+      <li><strong>A live worker read as stalled.</strong> imas-efit-e3's run
+      <code>r-20260922T140247463532-rail-env-remaining-eighteen</code> was flagged after 2,759 seconds
+      of quiet while compiling under <code>srun</code>, then completed normally after 2h28m. nova-a9
+      saw the same on codex workers waiting on scheduler jobs inside their turn.</li>
+      <li><strong>A dead worker read as nothing, then as stalled.</strong> nova-37's review died at
+      21:21:31 and surfaced as stalled only at 21:36. nova-37 found it at 21:28 by checking the pid.
+      The process is observable at once. The stream silence takes fifteen minutes to become a
+      fact.</li>
+      <li><strong>A resume offer while the worker lives.</strong> nova-37 received a row reading
+      <code>ready to resume</code> at 20:20:54 while the worker was alive and running its own probe.
+      <code>crew resume</code> correctly refused, but the row read as an instruction.</li>
+      <li><strong>A record the classifier cannot read is silent forever.</strong> nova-a9 met six
+      manifests carrying a status word outside <code>complete</code>, <code>blocked</code> and
+      <code>failed</code>. Each classified as unreadable and never emitted a terminal transition.</li>
+    </ul>
+    <p>imas-ambix-f6 also recorded the other side: past about twenty-two concurrent workers the lane
+    degrades without any refusal, and three reviews stalled at almost exactly 900 seconds with no
+    error record. The silence detector caught every one of them. So stream silence stays a signal.
+    What changes is that the row says whether the process is alive, and a dead process is reported
+    when it dies. The stall census in
+    <a href="/reckon/plans/the-monitor-under-measurement#s5">the measurement plan &sect;5</a>
+    supplies the seven-day split. How a worker's exit is recorded is owned by
+    <a href="/reckon/plans/a-review-dies-where-nobody-is-looking">a-review-dies-where-nobody-is-looking</a>.
+    This plan owns only what the follower emits.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A worker's death is a row within one poll</h2>
+    <p>When the watcher's snapshot finds a non-terminal run whose recorded process is gone, emit a
+    transition for it on that snapshot, rather than waiting for the stall window. Liveness is read
+    through <code>record_process_alive</code>, which is already folded into each pointer. The row's
+    state is the classifier's reading of what the dead worker left, and its reason names that the
+    process exited.</p>
+    <p><strong>Done when</strong> <code>tests/test_watch_reports_death_at_once.py</code> builds a
+    live pointer whose pid is a process the test starts and then kills, runs one watcher snapshot
+    after the kill, and asserts a transition for that run whose reason says the process exited, with
+    the elapsed quiet time under the stall window. The negative control is executed and logged:
+    with the base revision the snapshot emits nothing for the run. The write paths are
+    <code>reckon/crew/recovery.py</code> and that test.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A stalled row says alive or gone</h2>
+    <p>Every row entering <code>stalled</code> carries the process state in its reason, in words:
+    <code>alive, quiet 46m</code> or <code>process gone, quiet 15m</code>. The words carry the
+    distinction without colour.</p>
+    <p><strong>Done when</strong> two rendered stalled rows, one with a live process and one with a
+    dead one, contain <code>alive</code> and <code>process gone</code> respectively, and neither
+    contains the other's word. The write paths are <code>reckon/crew/recovery.py</code>,
+    <code>reckon/crew/ticker.py</code> and <code>tests/test_stalled_row_names_liveness.py</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; A resume offer is not shown while the worker lives</h2>
+    <p>A row that offers a resume, including the sweep's <code>ready to resume</code>, is emitted
+    only when the run's process is gone. While it lives, the same row reads as a wait on the named
+    condition.</p>
+    <p><strong>Done when</strong> a test renders the sweep's ready-to-resume event for a run with a
+    live process and asserts the row does not contain <code>resume</code>, and renders it for a dead
+    process and asserts it does. The write paths are <code>reckon/crew/resumption.py</code> and
+    <code>tests/test_resume_offer_needs_a_dead_process.py</code>.</p>
+
+    <h2 id="s5">&sect;5 &mdash; An unreadable manifest names the word it could not read</h2>
+    <p>When the classifier reads a manifest whose status word is outside the recognised set, emit a
+    transition into <code>unreadable</code> whose reason quotes the word, as in
+    <code>status "in-progress" is not complete, blocked or failed</code>. Validating the manifest
+    when the worker writes it is owned by
+    <a href="/reckon/plans/crew-runtime-positive-controls">crew-runtime-positive-controls</a>. This
+    section only makes the existing case visible.</p>
+    <p><strong>Done when</strong> a test writes a manifest with <code>status: in-progress</code>
+    beside a pointer whose process is gone, runs one snapshot, and asserts one transition into
+    unreadable whose reason contains <code>in-progress</code>. The write paths are
+    <code>reckon/crew/recovery.py</code> and <code>tests/test_unreadable_names_its_word.py</code>.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A live worker with a running job is not stalled at fifteen minutes</h2>
+    <p>This section waits on the stall census. If the census shows that stalls with a live process
+    mostly completed without a resume, the stall window for a run whose process is alive and has a
+    live descendant process extends to the run's time budget. A run with no live descendant keeps the
+    fifteen-minute window. If the census shows the opposite, record the figure and close the section
+    with no change.</p>
+    <p><strong>Done when</strong> a test holds a live pointer whose worker process has a sleeping
+    child, advances the clock past fifteen minutes, and asserts no stalled transition, then kills the
+    child and asserts the stalled transition on the next snapshot. The write paths are
+    <code>reckon/crew/recovery.py</code> and <code>tests/test_stall_window_respects_a_child.py</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2>Followups</h2>
+<article class="r-fu" data-id="f-asrswtwl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make a stall say whether the worker lives</h4>
+    <div class="r-fu-body"><p>&sect;2, &sect;3 and &sect;5 all edit <code>reckon/crew/recovery.py</code> and run in order. &sect;4 is independent. &sect;6 waits on the stall census.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-stalled-row-says-whether-the-worker-lives</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

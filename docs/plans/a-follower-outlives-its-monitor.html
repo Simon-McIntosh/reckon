@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-follower-outlives-its-monitor">
+  <meta name="plan-title" content="A Follower Outlives Its Monitor">
+  <meta name="plan-summary" content="The host kills every follower at thirty minutes, and the re-arm then hides exactly the runs that changed during the gap and need the coordinator.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="medium">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-09-22">
+  <meta name="plan-version" content="1">
+  <meta name="plan-depends-on" content="the-monitor-under-measurement">
+  <title>A Follower Outlives Its Monitor | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; The follower does not go stale; the host ends it</h2>
+    <p>Four coordinators reported on 2026-09-22 how their followers stopped, and every stop had one
+    cause. The Claude Code host ends a Monitor at thirty minutes and announces it only with its own
+    <code>Monitor expired after 30m with N events delivered</code> notice. The Monitor tool's
+    <code>timeout_ms</code> is capped at 1,800,000, and it has no <code>persistent</code> parameter,
+    although the harness reference tells coordinators to pass <code>persistent: true</code>.</p>
+    <table>
+      <thead><tr><th>Coordinator</th><th>Hours</th><th>Expiries</th><th>Other stops</th></tr></thead>
+      <tbody>
+        <tr><td>nova-a9, session s19-codex-20260916</td><td>9.5</td><td>14</td><td>first arming exit 127</td></tr>
+        <tr><td>imas-efit-e3, session ship-s13-20260922</td><td>8</td><td>9</td><td>first arming exit 127</td></tr>
+        <tr><td>nova-37, session s18-fable-20260922</td><td>6</td><td>5</td><td>none</td></tr>
+        <tr><td>imas-ambix-b6, session slurm-fleet-placement</td><td>1.5</td><td>2</td><td>none</td></tr>
+      </tbody>
+    </table>
+    <p>The expiry costs three things, and only the first is visible. The next dispatch is refused
+    with <code>watcher-required</code>, because the session has no delivering follower. The first
+    arming often fails outright, because <code>attach_line</code> names a bare <code>reckon</code>
+    that is not on the Monitor shell's path, and a Monitor that dies in under a second looks like a
+    quiet fleet. And the re-arm hides the runs that changed during the gap, which is the costly
+    part.</p>
+    <p>The hiding is two mechanisms together, both in the source. On attach the follower emits one
+    baseline row per live run, and <code>_row_is_stale_inventory</code> in <code>reckon/cli.py</code>
+    drops every baseline whose state is in <code>SETTLED_STATES</code> in
+    <code>reckon/crew/ticker.py</code>. That set holds <code>completed_unpromoted</code>,
+    <code>failed</code> and <code>abandoned</code>, which are the states that need the coordinator.
+    Separately, <code>_follow_watch_lines</code> reports a run only when its state differs from the
+    last one reported, so a run is shown once. imas-efit-e3 lost three unpromoted runs this way for
+    1h21m, 2h07m and 2h42m. The cause census in
+    <a href="/reckon/plans/the-monitor-under-measurement#s2">the measurement plan &sect;2</a>
+    supplies the seven-day counts.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The attach line names an executable that resolves</h2>
+    <p>Make <code>_watch_attach_line</code> in <code>reckon/crew/runs.py</code> name the absolute
+    path of the reckon entry point that is running, not the bare word <code>reckon</code>. Resolve it
+    from the running interpreter's scripts directory, falling back to <code>shutil.which</code>, and
+    refuse to compose a line whose executable does not exist. Every surface that prints the line
+    inherits the change, because they all call this function.</p>
+    <p><strong>Done when</strong> <code>tests/test_attach_line_resolves.py</code> composes the attach
+    line, asserts its first token is an absolute path to an executable file, and runs that token with
+    the arguments <code>crew follow --help</code> under an environment whose <code>PATH</code> is
+    <code>/usr/bin:/bin</code>, requiring exit 0. The negative control is executed and logged:
+    restoring the bare word makes the run exit 127 and the test fail. The write paths are
+    <code>reckon/crew/runs.py</code> and <code>tests/test_attach_line_resolves.py</code>.</p>
+
+    <h2 id="s3">&sect;3 &mdash; The follower announces its own end before the host does</h2>
+    <p>Add a <code>--lifetime</code> option to <code>reckon crew follow</code>, taking a duration.
+    When the lifetime is about to elapse, the follower prints one final line and exits cleanly,
+    releasing its registration. The line is marked as the follower's end rather than a fleet event,
+    names the attach line to re-arm with, and lists the owning session's runs that need the
+    coordinator. The host's notice then arrives after a line the reader can act on, and the
+    registration is released rather than left to be discovered dead.</p>
+    <p>This is the one deliberate exception to the rule that the stream carries only worker
+    transitions and fleet posture, because the end of the stream is the one fact about the follower
+    a reader must act on.</p>
+    <p><strong>Done when</strong> a test runs the follower with <code>--lifetime 3s</code> over a
+    fixture holding one unpromoted run of the owning session, observes exit status 0 within five
+    seconds, and asserts the last line names the absolute attach line and that run's node. Without
+    the option the follower is asserted to keep running past five seconds. The write paths are
+    <code>reckon/cli.py</code> and <code>tests/test_follow_lifetime.py</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; A re-attach replays the gap instead of hiding it</h2>
+    <p>Persist each session's last delivered state per run, keyed by session, in the follower
+    registration directory named by <code>follower_dir</code> in <code>reckon/crew/runs.py</code>.
+    Write it whenever the follower delivers a row. When a follower attaches for a session that has a
+    persisted record, emit the owning session's runs whose state differs from the record, as
+    ordinary transitions from the recorded state. Emit no row for a run whose state is unchanged.
+    Emit one header line first saying the follower re-attached, how many live runs it found and how
+    many changed since the recorded time.</p>
+    <p>Remove <code>completed_unpromoted</code>, <code>failed</code> and <code>abandoned</code> from
+    the set the human path suppresses, because those rows are what the reader must see. A run
+    already promoted stays suppressed.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_replays_the_gap.py</code> runs a follower
+    for a session, stops it, moves one owned run from working to unpromoted and leaves a second owned
+    run unchanged, then attaches a new follower. The new follower's first line is the header, the
+    unpromoted run appears once as a transition from working, and the unchanged run does not appear.
+    The negative control is executed and logged: with the base revision's baseline filter the
+    unpromoted run does not appear and the test fails. The write paths are
+    <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code>, <code>reckon/crew/ticker.py</code>
+    and <code>tests/test_follow_replays_the_gap.py</code>.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A host that kills the follower does not kill its workers</h2>
+    <p>The follower's recovery sweep resumes held runs and dispatches reviews, and those workers are
+    launched from the follower's own process. If the census in
+    <a href="/reckon/plans/the-monitor-under-measurement#s2">the measurement plan &sect;2</a> finds
+    that a host expiry kills them, detach them the way
+    <a href="/reckon/plans/a-dispatch-returns-without-its-worker">a-dispatch-returns-without-its-worker</a>
+    detaches a dispatched worker. If the census finds they survive, record the evidence and close
+    this section as done with no change.</p>
+    <p><strong>Done when</strong> a test starts a follower whose sweep launches a stub worker, sends
+    the follower SIGKILL, and observes the stub's marker file appear. The write paths are
+    <code>reckon/crew/dispatch.py</code> and <code>tests/test_sweep_worker_survives_follower.py</code>.</p>
+
+    <h2 id="s6">&sect;6 &mdash; The harness reference says what the host actually does</h2>
+    <p>Correct <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code>. Remove
+    <code>persistent: true</code>, which the Monitor tool does not accept. State the thirty-minute
+    cap as a fact of the host. Arm with the absolute attach line and <code>--lifetime 29m</code>, and
+    re-arm on the follower's final line. Say that ANSI colour reaches an agent reader as escape
+    sequences inside the notification, so the state word must carry the state on its own.</p>
+    <p><strong>Done when</strong> <code>grep -n persistent</code> over that file returns nothing, the
+    arming example uses <code>--lifetime</code> and an absolute path, and the file states the cap as
+    1,800,000 milliseconds. The write path is that file alone.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2>Followups</h2>
+<article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Keep the follower attached across the host's expiry</h4>
+    <div class="r-fu-body"><p>&sect;2, &sect;3 and &sect;6 are independent. &sect;4 shares <code>reckon/cli.py</code> with &sect;3 and runs after it. &sect;5 waits on the measurement plan's staleness census.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-follower-outlives-its-monitor</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
