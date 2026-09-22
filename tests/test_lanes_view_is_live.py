@@ -266,3 +266,74 @@ def test_codex_probe_parser_retains_every_window_keyed_by_length() -> None:
     }
     assert block["quota_windows"][SHORT_WINDOW_MINUTES]["used_percent"] == 29
     assert block["quota_windows"][LONG_WINDOW_MINUTES]["used_percent"] == 71
+
+
+def _lane_for_run(run: dict[str, Any], *, composed_at: datetime) -> dict[str, Any]:
+    """Compose the lanes view over one run, entering where a caller enters.
+
+    The entry point is the composer rather than the dating helper, because a
+    direct call proves the function and not the wiring: a lane can only be shown
+    to report a stamp if the view that publishes it is the thing asked.
+    """
+    view = mcp_views.crew_lanes_view(
+        {"backends": {"solo": {"launch": "cli", "command": "codex"}}},
+        [run],
+        receipt_reader=lambda session_id: _receipt(11, 22, SHARED_LONG_RESET),
+        probe_reader=lambda backend, settings: None,
+        composed_at=_stamp(composed_at),
+    )
+    return _lanes(view)["solo"]
+
+
+def test_the_lane_dates_a_run_whose_only_stamp_is_created_at() -> None:
+    """A record dated only by created_at is datable, and the lane publishes it.
+
+    The field list this view kept used to stop before created_at, so a record
+    whose only stamp is that one rendered unmeasured here while the pace reader
+    dated the same record. The same stamp decides which of a backend's sessions
+    is the newest, so the two surfaces could disagree about which run a figure
+    came from.
+    """
+    composed = datetime(2030, 1, 1, tzinfo=UTC)
+    created = composed - timedelta(hours=2)
+
+    lane = _lane_for_run(
+        {
+            "backend": "solo",
+            "session_id": "sess-created-at",
+            "created_at": _stamp(created),
+        },
+        composed_at=composed,
+    )
+
+    assert lane["receipt_state"] == "readable"
+    assert lane["observed_at"] == _stamp(created)
+    # A lane with no date carries the refusal under this key; a lane that
+    # resolved one carries no refusal at all, which is the distinction asserted.
+    assert lane.get("unmeasured", {}).get("observed_at") is None
+
+
+def test_the_lane_passes_over_a_budget_stamp_it_cannot_parse() -> None:
+    """A malformed budget stamp loses to the readable stamp behind it.
+
+    The shared helper parses before it returns, so a value that is present but
+    unreadable is passed over rather than published: the lane dates the run by
+    its next readable stamp. A helper that returned the first truthy field would
+    hand the malformed text back as a date instead.
+    """
+    composed = datetime(2030, 1, 1, tzinfo=UTC)
+    completed = composed - timedelta(hours=3)
+
+    lane = _lane_for_run(
+        {
+            "backend": "solo",
+            "session_id": "sess-malformed-stamp",
+            "budget": {"observed_at": "yesterday afternoon"},
+            "completed_at": _stamp(completed),
+        },
+        composed_at=composed,
+    )
+
+    assert lane["observed_at"] == _stamp(completed)
+    assert lane["observed_at"] != "yesterday afternoon"
+    assert lane.get("unmeasured", {}).get("observed_at") is None
