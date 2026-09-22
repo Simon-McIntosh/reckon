@@ -2114,6 +2114,68 @@ AGREE: False</code></pre>
     <code>negative-control-red.log</code>, <code>green-restored.log</code>,
     <code>repro-noncheck-node.log</code>).</p>
   </section>
+
+  <section id="the-cohort-delta-at-the-merged-head">
+    <h2>&sect;11 &mdash; The cohort delta at the merged head</h2>
+    <p><strong>Measured, not inferred: the fifteen-file cohort adds no failure id at the merged head of
+    main.</strong> The prompts-and-negative-control cohort was run whole at <code>8cb11888</code> &mdash; the
+    merged head of <code>main</code>, the revision this worktree is checked out at &mdash; with the repository
+    read-only, because for this node the measurement is the deliverable. Result <strong>8 failed, 168 passed in
+    32.82s</strong>, terminal <code>EXIT=1</code>, against the promoted node's own base run at
+    <code>d53318f6</code> of <strong>8 failed, 164 passed</strong>. The eight failure ids, sorted and diffed,
+    are <strong>identical</strong>: the added set is empty and there is no id to attribute. The only movement in
+    the totals is four added passes, which are the reviewed change's four new cases in
+    <code>tests/test_prompt_carries_the_declaration.py</code>.</p>
+
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>d53318f6</code> (the promoted node's own run, cited here as the stated base)</td><td>8 failed, 164 passed, <code>EXIT=1</code></td><td>the eight, in <code>base-fail-ids.txt</code></td></tr>
+        <tr><td>merged head <code>8cb11888</code></td><td>8 failed, 168 passed, <code>EXIT=1</code></td><td>the same eight; the sorted sets diff clean</td></tr>
+        <tr><td><strong>added</strong><td colspan="2"><strong>none</strong> &mdash; the sorted diff is empty, so no failure id is added and none is attributed</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Commits merged between the reviewed change and this head, and whether each could reach the
+    cohort.</strong> Three code commits sit in <code>343ee2a8..8cb11888</code>: <code>33779328</code>
+    (<em>carry the lane advisory onto the promoted ledger row</em>, touching
+    <code>reckon/crew/promotion.py</code> and <code>tests/test_lane_advisory_on_dispatch.py</code>), which does
+    reach the cohort's promotion surface and added no id; and <code>4cbdffcf</code> and <code>caec89a0</code>,
+    whose only file, <code>tests/test_lanes_view_is_live.py</code>, is outside the cohort by construction. Every
+    other commit in the range is a docs, sprint or record commit. The attribution table is therefore empty
+    rather than unanswered:</p>
+
+    <table>
+      <thead><tr><th>Added failure id</th><th>Candidate commit</th><th>Could reach it?</th></tr></thead>
+      <tbody>
+        <tr><td colspan="3">none &mdash; the added set is empty</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The instrument is shown to see failures rather than trusted to be silent.</strong> Four checks,
+    each run: the same invocation reports eight failures and exits 1 at this revision, so the run is not a
+    silently-empty pass; the ids are read from the same <code>FAILED &hellip;</code> summary shape the base set
+    was read from, extracted with <code>grep -h '^FAILED'</code> and compared with <code>diff</code> after
+    <code>sort</code>, so the comparison cannot be satisfied by matching counts alone; the resolved module was
+    printed at the measured tree
+    (<code>reckon: &hellip;/the-cohort-delta-at-the-merged-head/reckon/__init__.py</code>) so the run is known
+    to have carried the worktree's source rather than another checkout's; and the reviewed change's own
+    selector is present in the measured tree, so the head under measurement is the integrated head that
+    carries the change the cohort exists to watch. The eight pre-existing failures are unchanged from base and
+    outside this node's declared scope; two of them sit on this plan's surface
+    (<code>tests/test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement</code>
+    and the template-gloss case) and are reported rather than repaired here. No figure accompanies this record:
+    the relation measured is a set comparison of two id lists, which is a table, not something a picture shows
+    better.</p>
+
+    <p>Changed paths: <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>. Measured revision <code>8cb11888</code>;
+    stated base <code>d53318f6</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T200901675133-the-cohort-delta-at-the-merged-head/</code> &mdash;
+    <code>logs/cohort-merged-head.log</code> (first line names the revision, the tree and the command; terminal
+    <code>EXIT=1</code>), with the two id-set files <code>logs/head-ids-sorted.txt</code> and
+    <code>logs/base-ids-sorted.txt</code> beside it.</p>
+  </section>
   </main>
 </body>
 </html>
