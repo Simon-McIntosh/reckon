@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4">
 <meta name="plan-impl" content="0.95">
@@ -1275,6 +1275,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260922T1500-rollout-receipt-landed" data-who="reckon-ship" data-when="2026-09-22T15:00:00Z">
     <div class="r-comment-body">GATE .venv/bin/python -m pytest -q tests/test_preflight_pace.py PASSED, 34 of 34, exit 0; the base revision's 30 cases pass unchanged against the new tree; the declared control (project filter dropped in a scratch copy) reds the foreign-pointer case, 1 failed 33 passed, mutation verbatim on the red log's first line. Merged at e6dd0dc4. REVIEW 94 of 100 (goal 20, evidence 19, scope 20, durability 17, fit 18), three findings and the first is the most valuable of the session: THE PRODUCTION BRANCH OF _read_rollout IS ASSERTED BY NO CASE — both new cases inject a reader and the command-line case's pointer carries no session_id, so the reviewer replaced that branch's reader call with an unmeasured answer in a scratch copy and the gate stayed at 34 passed exit 0. A regression removing the third source entirely would be silent. Second: _run_observed_at duplicates mcp_views._receipt_observed_at with a differing key list, and the divergence is measured rather than theoretical — 29 of 35 live records on this workstation are datable by the new helper and undated by the lanes view's, every one carrying only created_at, so the two surfaces date the same session differently. Third, disclosed by the node itself: the competition takes one reading per member wholesale, and real rollout receipts carry only the weekly window, so a winning rollout reading leaves five_hour unknown where the row it displaced may have carried a figure. DRAIN LEDGER @ 2026-09-22T15:00Z — rollout receipt as third source and the untested project filter: folded → the-window-source-reads-the-rollout-receipt-of-a-live-session, landed; unasserted production reader branch, the duplicated dating helper, and the mixed-clock outcome: folded → the-window-source-proves-its-own-reader-and-dates-one-way (dispatched next, same member); no-commit promotion guard: foreign-owner → scoring-should-stop-a-promotion. rows 3, foldable-remaining 0 pending the dispatched node.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session" data-who="reckon-ship" data-when="2026-09-22T14:49:40.364Z">
+    <div class="r-comment-body"><p>recorded_windows reads each declared-group member&#x27;s newest live run by session_id through the same rollout reader the lanes view uses, so a run in flight supplies the freshest reading its pointer cannot yet carry; 34 passed, base 30 unchanged, control (project filter dropped) reds the foreign-pointer case</p></div>
 </div>
 </section>
 </main>

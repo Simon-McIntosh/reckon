@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T17:48:01",
+  "updated": "2026-09-22T17:51:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -260770,6 +260770,238 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a76",
+        "node": "the-window-source-reads-the-rollout-receipt-of-a-live-session",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1127,
+                "cached_input_tokens": 639475,
+                "input_tokens": 640634,
+                "output_tokens": 1760,
+                "reasoning_output_tokens": 240,
+                "total_tokens": 642394,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "45540d71-8cda-4f8b-9d41-dfd0a267786d",
+            "session_id": "ship-window-20260922"
+          },
+          "done_when": "tests/test_preflight_pace.py exits 0 with these cases added and named: a live pointer with no lane_receipt but a readable rollout receipt (through an injectable reader shaped like rollout_module.read_rollout_receipt) newer than any ledger row makes the group report that receipt's clocks and observed_at; a reader returning unmeasured or an absent rollout contributes no candidate and the group falls back to the ledger row; a pointer whose project differs from the caller's is ignored even when it carries the freshest receipt; the existing 30 cases pass unchanged; a real run of reckon crew preflight --project reckon --pretty from this worktree is captured to the run directory's preflight-with-rollout.log and shows codex-sub observed with the observed_at of whichever source was freshest; and the declared negative control is applied to a scratch copy, the foreign-pointer case is observed to fail there, and the red log's first line repeats the declared mutation verbatim",
+          "estimated_hours": 0.6,
+          "goal": "recorded_windows reads the rollout receipt of each declared-group member's newest live run by session_id as a third candidate reading, with the pointer read's project filter asserted",
+          "id": "the-window-source-reads-the-rollout-receipt-of-a-live-session",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T14:22:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session/manifest.md",
+          "negative_control": "drop the project filter on the live pointer read in recorded_windows",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_preflight_pace.py",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+            "docs/figures/a-window-paces-the-lane",
+            "docs/plans/a-window-paces-the-lane.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-preflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T14:23:10Z",
+        "completed_at": "2026-09-22T14:49:40.364Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1561,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1590,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "f29aa1fb100c2b6e6a4afbedaf4416e4f21261e9",
+        "commits": [
+          "e5cf008ed0df6e7dce7753982446256e873f186e",
+          "6001f577d9c4e525f1959a9d7ef21bf8a278e81f"
+        ],
+        "changed_lines": {
+          "added": 607,
+          "removed": 7,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q tests/test_preflight_pace.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session/gate-preflight-pace.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session/manifest.md",
+        "scope_changed": false,
+        "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5161542,
+            "input_tokens_cumulative": 11060771,
+            "output_tokens": 29045,
+            "output_tokens_cumulative": 60370,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T14:49:40.364Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 19,
+            "fit": 18,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 44292430,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1581.824,
+          "generated_tokens": 264043,
+          "generation_seconds": 1401.588,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.3,
+          "machine_seconds": 180.236,
+          "peak_input_tokens": 164592,
+          "tokens_per_second": 188.39,
+          "wall_tokens_per_second": 166.92
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-window-20260922/the-window-source-reads-the-rollout-receipt-of-a-live-session",
+          "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T14:49:40.364Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.93,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": 0.93,
+          "at_complete": 0.95,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_preflight_pace.py"
+          ],
+          "declaration": "drop the project filter on the live pointer read in recorded_windows",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T142253993246-the-window-source-reads-the-rollout-receipt-of-a-live-session/negative-control.log",
+          "reason": "truncation, not substitution: the red log's first line reads 'DECLARED MUTATION, VERBATIM: drop the project filter', the head of the declared sentence 'drop the project filter on the live pointer read in recorded_windows'; its second line names the site (recorded_windows, the project comparison removed from the crew.list_live() comprehension) and the run went red on the declared foreign-pointer case, 1 failed 33 passed exit 1, verified by reading the log rather than its prose"
+        },
+        "tool_steps": 95.0,
+        "orientation_input_tokens": 2392921.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -261068,6 +261300,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2086
+    "_version": 2087
   }
 }
