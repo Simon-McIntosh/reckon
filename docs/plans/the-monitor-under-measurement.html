@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-monitor-under-measurement">
+  <meta name="plan-title" content="The Monitor Under Measurement">
+  <meta name="plan-summary" content="Four measurements of the crew follower from recorded streams and transcripts, so the repair plans are sized from counts rather than impressions.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-09-22">
+  <meta name="plan-version" content="1">
+  <meta name="plan-informs" content="a-scoped-follower-counts-its-own-session">
+  <title>The Monitor Under Measurement | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What the lead and three coordinators reported</h2>
+    <p>The lead reported five defects in <code>reckon crew follow</code> from one pane on
+    2026-09-22, following the nova session <code>s18-fable-20260922</code>. The rows are scoped to
+    a session while the trailing <code>5w&middot; 1b&middot; 5u</code> figures count the whole
+    project. A blocked or unpromoted run is shown once, so a coordinator must remember it. The
+    grid goes ragged because model aliases have different widths. The from-and-to transition
+    spends two state cells where the destination alone is what a reader acts on. Several cells
+    always read <code>&ndash;</code>, and a cell reading <code>0mu</code> is not decodable.
+    Above all, followers go stale and are re-armed regularly.</p>
+    <p>Two coordinators answered a request for their experience the same evening, and their
+    reports agree on the main cause. nova-a9 re-armed fourteen times in nine and a half hours and
+    imas-efit-e3 nine times in eight hours. Every re-arm followed the host's
+    <code>Monitor expired after 30m</code> notice, and neither saw a follower die on its own. Both
+    first armings failed with exit 127, because the <code>attach_line</code> reckon emits is a bare
+    <code>reckon</code> that is not on the Monitor shell's path. imas-efit-e3 lost three
+    unpromoted runs for between 1h21m and 2h42m each because the transition was shown once, during
+    a re-arm gap. nova-a9 found that observing a peer session caused the follower's recovery sweep
+    to dispatch a review onto that peer's run from its own runtime.</p>
+    <p>Reading the code confirms three of the lead's points directly. The <code>0mu</code> cell is
+    the age of the oldest unpromoted run, printed as minutes followed by the bucket letter, from
+    <code>_age_cells</code> in <code>reckon/crew/ticker.py</code>. The <code>&ndash;</code> cell is
+    the generation rate, rendered as the absence marker whenever the transition carries no rate.
+    The model cell is ten columns wide and deliberately lets a wider alias overflow, and the
+    locally served lane's alias <code>dsv4.1-flash</code> is twelve. The session-scoped count
+    helper landed on 2026-09-15, but the follow command at <code>reckon/cli.py</code> still calls
+    <code>format_watch_transition</code> without <code>session=</code>, which is open work on
+    <a href="/reckon/plans/a-scoped-follower-counts-its-own-session">a-scoped-follower-counts-its-own-session</a>.</p>
+    <p>The sections below measure what the reports claim, so that the repair plans are sized from
+    counts. Each is one node on the locally served lane, delivering one JSON data file under
+    <code>docs/research/data/</code> and a manifest. Every node runs as the implement role in a
+    full worktree sandbox, because on this lane read-only workers die mid-thinking in 34 of 36
+    measured cases. No node changes source code.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Why followers go stale: a cause census</h2>
+    <p>Count every way a follower stopped delivering over the last seven days, across the reckon,
+    nova, imas-efit and imas-ambix projects, and attribute each stop to one cause. The inputs are
+    the Claude Code transcripts under <code>~/.claude/projects/</code> for those four checkouts,
+    the follower registrations under the crew config home, and the git history of the files
+    <code>follower_code_stamp</code> in <code>reckon/crew/runs.py</code> hashes.</p>
+    <p>The causes to count are these. A host expiry is a notice reading
+    <code>Monitor expired after</code>. An arming failure is a Monitor whose command exited 127 or
+    printed <code>command not found</code>. A code reload is an in-place re-exec by
+    <code>_FollowerReloader</code> in <code>reckon/cli.py</code>, whose frequency follows from how
+    often any session edits <code>reckon/cli.py</code> or <code>reckon/crew/*.py</code>. A
+    producer gap is a re-attach baseline burst after the project seat was released. Anything else
+    is its own row, with an example.</p>
+    <p>Also record two facts about the host. The first is the parameter set of every Monitor
+    tool call in the transcripts, stating how many passed <code>persistent</code> and whether
+    those calls still met the thirty-minute expiry. The harness reference tells coordinators to
+    pass <code>persistent: true</code>. The second is whether a worker launched by the follower's
+    own recovery sweep is a child of the follower process, so that a host expiry which kills the
+    follower also kills it. Answer that from the dispatch and resumption code with file and line,
+    and look for a resumed run whose stream ends within a minute of an expiry notice.</p>
+    <p><strong>Done when</strong> <code>docs/research/data/monitor-staleness-census.json</code>
+    exists with one row per cause, each carrying a count, the pattern searched, the population
+    searched and up to three quoted example lines with their transcript path. The positive control
+    must hold: the imas-efit transcripts for 2026-09-22 yield at least nine expiry notices, because
+    that coordinator reported nine. If fewer are found the matcher is wrong and must be fixed
+    before any other count is reported. The file also states the number of Monitor calls that
+    passed <code>persistent</code>, the number of expiries among them, the median interval between
+    successive armings in one session, and a yes-or-no answer on sweep-launched workers with the
+    file and line that decides it.</p>
+
+    <h2 id="s3">&sect;3 &mdash; What a row actually renders: a cell census</h2>
+    <p>Render every recorded transition from the project watch streams through the current
+    ticker and count what each cell carries. The streams are the append-only
+    <code>.events</code> files named by <code>watch_stream_path</code> in
+    <code>reckon/crew/runs.py</code>, for the reckon, nova, imas-efit and imas-ambix projects.
+    Render with <code>format_watch_transition</code> from <code>reckon/crew/recovery.py</code> and
+    a <code>Ticker</code> at width 160 with colour off.</p>
+    <p>For each project, count these. The distribution of model-cell text lengths, and the rows
+    where it exceeds the ten-column cell. The rows whose wall cell and whose rate cell render the
+    absence marker. The rows carrying an age cell of the <code>0mu</code> form. The rows whose
+    reason clause was cut by <code>single_clause</code> or by the margin. The node names longer
+    than the 36-column node cell, and the pairs of live nodes whose truncated names are identical.
+    The share of rows that are baselines rather than transitions. The rows whose from-state and
+    to-state are both present, which are the rows a destination-only layout would shorten.</p>
+    <p><strong>Done when</strong> <code>docs/research/data/monitor-row-census.json</code> exists
+    with every figure stated as a count over a stated denominator for each project. The positive
+    control must hold: the alias <code>dsv4.1-flash</code> appears among the overflowing model
+    cells. The file names the width at which the current grid first clips the reason clause on a
+    blocked row, measured by rendering one real blocked row at widths from 100 to 220.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Where scope and push are decided: a path map</h2>
+    <p>Answer four questions from the source, each with the file, the line and the quoted source
+    line that decides it.</p>
+    <ol>
+      <li>Where the trailing figures on a follower row are computed, every call site of
+      <code>format_watch_transition</code> and <code>_fleet_counts</code>, and which of them pass a
+      session.</li>
+      <li>Where the follower de-duplicates a run's state, so a blocked or unpromoted run is
+      printed once, and which existing hook a periodic line could use without breaking the rule
+      that the stream carries only transitions and posture. <code>on_poll</code> in
+      <code>_follow_watch_lines</code> is the candidate to confirm or reject.</li>
+      <li>Whether the recovery sweep a follower runs acts on runs of sessions other than the
+      follower's own. Trace <code>_sweep_lapsed_holds</code> into
+      <code>reckon/crew/resumption.py</code> and any review dispatch it reaches. Check the record
+      of run <code>r-20260922T161442206389</code>, which nova-a9 reported was dispatched onto a peer's
+      run from its runtime, and state which session and process launched it.</li>
+      <li>Where <code>attach_line</code> is composed, what executable it names, and every surface
+      that prints it to a coordinator.</li>
+    </ol>
+    <p><strong>Done when</strong> <code>docs/research/data/monitor-scope-path-map.json</code>
+    answers all four with file, line and quoted source. Question three carries a yes or no backed
+    by the named run's own record. Question four states whether the emitted command resolves from
+    a shell whose path lacks the reckon virtual environment.</p>
+
+    <h2 id="s5">&sect;5 &mdash; How often a stall or unreadable row misleads</h2>
+    <p>Count every transition into <code>stalled</code> over the last seven days across the four
+    projects and split it by what was true at that moment and afterwards. The splits are these:
+    the worker process was alive or gone, the run later completed with no resume or needed one,
+    and the run's role and backend. Record where the stall window is set and its value. Use the
+    run directories under the crew config home and the watch streams.</p>
+    <p>Separately, count the manifests whose <code>status:</code> is outside
+    <code>complete</code>, <code>blocked</code> and <code>failed</code>, grouped by the word
+    written, and state for each group whether the run ever emitted a terminal transition.</p>
+    <p><strong>Done when</strong> <code>docs/research/data/monitor-stall-census.json</code> holds
+    both counts with denominators. The positive controls must hold. Run
+    <code>r-20260922T140247463532-rail-env-remaining-eighteen</code> appears as a stall that later
+    completed without a resume. The nova runs for 2026-09-22 include at least one manifest whose
+    status word is outside the recognised set, because nova-a9 repaired six by hand.</p>
+
+    <h2 id="s6">&sect;6 &mdash; What follows from the measurements</h2>
+    <p>The coordinator reads the four data files, records the findings in
+    <code>docs/research/why-the-monitor-goes-stale.html</code>, and writes the repair plans in the
+    same session. The repair plans cover the follower staying attached across the host's expiry,
+    a standing per-session inventory pushed to the reader, a legible row, and stall and wait rows
+    that say whether the process is alive. Those plans are not sections of this one, because each
+    has its own lifecycle and its own done-when.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2>Followups</h2>
+<article class="r-fu" data-id="f-tmum-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship the-monitor-under-measurement" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Take the four measurements</h4>
+    <div class="r-fu-body"><p>Four independent nodes on the locally served lane, one data file each, no source change.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-monitor-under-measurement</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
