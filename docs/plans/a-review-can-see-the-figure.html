@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-review-can-see-the-figure">
+  <meta name="plan-title" content="A Review Can See The Figure">
+  <meta name="plan-summary" content="The metered lane accepts attached images and nothing can declare it, so a figure review routes to a lane that ignores them and answers anyway.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="scoring-should-stop-a-promotion">
+  <title>A Review Can See The Figure | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Review Can See The Figure</h1>
+
+    <p><strong>A text reviewer reads a diff, and the rules this repository enforces on figures are
+    visual ones.</strong> Legible at a glance, high data-ink, labels that clear contrast on their
+    background, and the rule most often broken — never an image of what is naturally a table. None of
+    those can be judged from a diff, so every figure that has shipped here shipped unreviewed against
+    its own rules. For the poloidal-flux work in the physics repositories the gap is worse than
+    cosmetic: a flux plot is the evidence, and a review that cannot open it is reviewing a filename.</p>
+
+    <p><strong>The capability exists and has existed throughout.</strong> The codex dialect composes
+    <code>codex exec</code> at <code>reckon/_backends.py:957</code>, and that subcommand takes
+    <code>-i, --image &lt;FILE&gt;...</code> — optional images attached to the initial prompt. Nothing
+    had to be built to make the lane see; what was missing was any way to say which lanes can.</p>
+
+    <p><strong>That absence is the whole risk, and it fails open.</strong> <code>BackendConfig</code>
+    carries 27 slots and not one expresses modality. So a figure profile has nothing to select on and
+    falls through to <code>default_backend</code> — plausibly a lane that ignores <code>-i</code>
+    entirely and answers from the filename, the path and the diff. The reply is well-formed, scored,
+    and stored. <em>A review that reports a judgement it could not have formed is worse than no review,
+    because it produces a record.</em> This plan therefore declares before it dispatches, and refuses
+    rather than degrades.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — A lane declares whether it can read an image</h2>
+      <p><strong>Measure.</strong> <code>BackendConfig</code> gains a slot naming the input modalities a
+      backend accepts, the codex backends declare images, and a backend that does not declare them is
+      refused for a figure profile by name rather than silently accepted. The flight configuration is
+      LinkML-generated, so the schema is edited and regenerated rather than the generated file being
+      patched; a check asserts the generated config and the schema agree.</p>
+      <p><strong>Falsifier.</strong> Point a figure profile at a backend declaring no image modality and
+      require a refusal that names the backend and the missing capability. A fallback to
+      <code>default_backend</code> is the defect, not the behaviour.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — The dispatch attaches the figure</h2>
+      <p><strong>Measure.</strong> The dialect's <code>argv()</code> accepts the images a node declares
+      and emits one <code>-i &lt;path&gt;</code> per file for a backend that declares the modality. A
+      dialect that cannot carry images raises rather than dropping them, so an attachment never
+      disappears between the node and the command line.</p>
+      <p><strong>Falsifier.</strong> Compose a dispatch carrying two figures and assert both paths
+      appear in the resolved argv; then drop the modality declaration and require a refusal rather than
+      an argv with the flags quietly absent. Assert against the argv the launcher would run, not against
+      a helper's return value — a direct call proves the function, not the wiring.</p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — What the lane can actually judge, measured against known-bad input</h2>
+      <p><strong>This is an evaluation and it needs a negative control or it measures nothing.</strong>
+      Asking whether the lane can see is nearly answered by the flag. The question is whether it can
+      apply <em>these</em> rules, and the only way to learn that is to give it figures whose verdict is
+      already known and require it to discriminate.</p>
+      <table>
+        <thead><tr><th>Pair</th><th>Known-bad input</th><th>Known-good input</th></tr></thead>
+        <tbody>
+          <tr><td>the most-broken rule</td><td>a rendered table of labels and values</td><td>a genuine continuous plot</td></tr>
+          <tr><td>contrast</td><td>grey text on a dark or saturated fill</td><td>near-white on dark, or dark on light</td></tr>
+          <tr><td>legibility</td><td>body text well below the stated floor</td><td>text at or above it</td></tr>
+          <tr><td>data-ink</td><td>gradients, shadows, decorative fills</td><td>hairline rules and direct labels</td></tr>
+          <tr><td>the physics case</td><td>a poloidal-flux plot with an unlabelled or mis-signed axis</td><td>the same plot, correct</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Measure.</strong> Each pair is presented independently and the verdicts are recorded
+      per pair. A lane that passes the good figure and fails the bad one on the same rule has
+      discriminated; a lane that returns a plausible critique of both has not, and the figure profile is
+      not enabled on the strength of a reply that reads well.</p>
+      <p><strong>The format boundary is part of the measurement, not an afterthought.</strong> Most
+      figures in this repository are SVG and vision models generally take raster input. If SVG is not
+      accepted, the capability does not reach the artifacts it was built for, and the finding is either
+      a render-to-PNG step in the figure contract or a scoped claim that only PNG figures are reviewable.
+      Measure it rather than assuming either way.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — Selection by artifact, and the cheap review first</h2>
+      <p><strong>No coordinator chooses text or text-plus-image.</strong> The choice is available as a
+      fact and taking it as a decision is how a guess enters. A run that changed an image under a
+      figures directory gets the figure profile; a run that did not, does not. This is §2g's existing
+      rule — selection by what the run wrote, never by the role it was dispatched under — applied to the
+      one profile that needs a different lane.</p>
+      <p><strong>Sequence, and what it bounds.</strong> The text review runs first on the freely served
+      lane at high concurrency, as it does now. The figure review fires only when the diff carries an
+      image, so metered spend is bounded to exactly the runs that produced figures rather than to every
+      run that might have.</p>
+      <p><strong>Two reviews, not one review with pictures.</strong> They take different inputs, apply
+      different rules, run on different lanes and cost differently; their findings meet in one record
+      and are attributed separately. A blended score cannot say which half failed, and a vision model
+      reading a diff is a text reviewer with a more expensive tokenizer.</p>
+      <p><strong>The figure reviewer writes one thing.</strong> Per §6 of the scoring plan it may write
+      the caption and nothing else, flagging every other defect for the node that drew it. A reviewer
+      that redraws becomes a second author with no reviewer, and its findings stop being falsifiable
+      because the evidence moved.</p>
+    </section>
+
+    <section id="s5" data-reckon="section">
+      <h2>§5 — Sequencing</h2>
+      <p>§1 precedes everything: until a lane can declare the capability, any figure reviewer routes by
+      luck and the failure is silent. §2 follows, since an attachment that never reaches the command
+      line makes §3 unmeasurable. §3 gates §4 — the profile is enabled on measured discrimination, not
+      on the flag existing. §4 is the smallest of the four and is mostly the application of a rule §2g
+      already carries.</p>
+    </section>
+
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-arcstf-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-can-see-the-figure §1">
+        <h3 class="r-fu-title">Declare the modality before building anything that routes on it</h3>
+        <div class="r-fu-body"><p>Start at §1. The slot on <code>BackendConfig</code> is small and it is the only thing standing between a figure reviewer and a silent wrong verdict, because without it the profile falls through to <code>default_backend</code>. Remember the config is LinkML-generated: edit the schema and regenerate, never patch the generated yaml. Then §2, then the §3 evaluation with its known-bad inputs, and only then enable the profile in §4.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship a-review-can-see-the-figure §1</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
