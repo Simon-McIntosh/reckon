@@ -69,8 +69,13 @@
     imas-ambix-f6 asked for, because a quiet pane must not look the same for a healthy follower and a
     dead one. The cadence defaults to ten minutes and is set with <code>--remind</code>. The line is
     composed in Python beside the fleet partition in <code>reckon/crew/recovery.py</code>, so the
-    live MCP view can return the same list. The follower emits it from the <code>on_poll</code> hook
-    in <code>_follow_watch_lines</code> in <code>reckon/cli.py</code>.</p>
+    live MCP view can return the same list. The follower emits it from inside the generator
+    <code>_follow_watch_lines</code> in <code>reckon/cli.py</code>, in its wait pass where
+    <code>_tick()</code> is already called, because that code can yield to the pane. The
+    <code>on_poll</code> hook cannot carry it: the path map in
+    <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> found
+    that <code>_tick</code> discards <code>on_poll</code>'s return value, so nothing it produces
+    reaches the reader.</p>
     <p><strong>Done when</strong> <code>tests/test_follow_needs_you_line.py</code> runs a follower
     over a fixture holding two sessions. The owning session has one unpromoted and one working run,
     and the other session has one blocked run. With the cadence set to one second, the needs-you line
