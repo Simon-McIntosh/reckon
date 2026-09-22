@@ -11,6 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -121,6 +122,7 @@ def _invoke(
     node: str,
     lane: str = "alpha",
     runs: list[dict] | None = None,
+    live: bool = False,
 ):
     config = copy.deepcopy(existing_backend_tests.CONFIG)
     monkeypatch.setattr(
@@ -134,9 +136,14 @@ def _invoke(
         "_lane_advisory_ledger_runs",
         lambda *_args, **_kwargs: list(runs or []),
     )
+    arguments = existing_backend_tests._arguments(repo, node=node, dry_run=not live)
+    if live:
+        # A real dispatch arms the follower unless the caller waives it; the
+        # written pointer is the deliverable a dry run never produces.
+        arguments.append("--no-watch")
     result = CliRunner().invoke(
         cli_module.main,
-        [*existing_backend_tests._arguments(repo, node=node), "--backend", lane],
+        [*arguments, "--backend", lane],
     )
     return existing_backend_tests._payload(result), result
 
@@ -300,3 +307,92 @@ def test_a_cheaper_lane_is_named_from_its_rework_charged_cost() -> None:
     assert clause["lane"] == "clive"
     assert clause["cost_per_durable_node"] < clause["resolved_cost_per_durable_node"]
     assert clause["samples"] == 12
+
+
+def test_an_emitted_advisory_reaches_the_written_pointer(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _observation(monkeypatch, projected_in_seconds=300)
+    runs = _dear_lane_runs("alpha") + _cheap_lane_runs("clive")
+    payload, result = _invoke(
+        dispatch_repo, monkeypatch, node="pointer-carries", runs=runs, live=True
+    )
+
+    assert result.exit_code == 0
+    # Read the record the run actually wrote rather than the payload the CLI
+    # echoed: the record assembly is where the advisory was dropped, and a
+    # payload assembled from a different object cannot show that.
+    pointer = crew.read_pointer(payload["run_id"])
+    advisory = pointer["lane_advisory"]
+    assert advisory["state"] == "emitted"
+    assert advisory["utilisation_pct"] == 46.0
+    assert advisory["burn_multiple"] == 5.7
+    assert advisory["projected_exhaustion_at"] is not None
+    assert advisory["resets_at"] is not None
+    assert advisory["cheaper_lane"]["lane"] == "clive"
+    assert pointer["lane_declaration"]["resolved_backend"] == "alpha"
+
+
+def test_an_absent_advisory_writes_no_key_rather_than_a_null(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _observation(monkeypatch, projected_in_seconds=300)
+    real_plan_dispatch = dispatch_module.plan_dispatch
+
+    def _without_advisory(**kwargs):
+        resolution = real_plan_dispatch(**kwargs)
+        resolution.lane_advisory = None
+        return resolution
+
+    monkeypatch.setattr(dispatch_module, "plan_dispatch", _without_advisory)
+    payload, result = _invoke(dispatch_repo, monkeypatch, node="no-advisory", live=True)
+
+    assert result.exit_code == 0
+    pointer = crew.read_pointer(payload["run_id"])
+    assert "lane_advisory" not in pointer
+    # The run wrote its record: the neighbouring lane fields are present, so
+    # the absence belongs to the advisory rather than to a record that never
+    # landed. A null here would read as a lane that was assessed. It is a
+    # null the reader cannot tell from a measured absence.
+    assert pointer["lane_declaration"]["resolved_backend"] == "alpha"
+    assert pointer["lane_reading"] is not None
+
+
+def test_the_refusal_renders_the_count_that_fired_it_not_the_lane_total() -> None:
+    # Twelve usable runs, but only three carry a paired worker-and-coordinator
+    # reading, and the charged median is drawn from those three. Counting the
+    # nine unpaired runs toward the floor would show "12 usable run(s), 10
+    # needed" beside a refusal citing ten -- a count that already meets the
+    # floor. The rendered count must be the one that fired the clause.
+    charged = _cheap_lane_runs("alpha", count=3)
+    uncharged = [
+        _run(
+            lane="alpha",
+            plan=f"plan-uncharged-{index}",
+            index=index,
+            input_tokens=None,
+            coordinator_tokens=None,
+        )
+        for index in range(9)
+    ]
+    for run in uncharged:
+        run.pop("input_tokens")
+        run["node_definition"].pop("coordinator")
+
+    evidence = dispatch_module._lane_advisory_costs(
+        [*charged, *uncharged], role=ROLE, spec_level=SPEC_LEVEL
+    )
+    assert evidence["alpha"]["samples"] == 12
+    assert evidence["alpha"]["input_samples"] == 3
+
+    clause = dispatch_module._lane_advisory_cheaper_lane(
+        [*charged, *uncharged],
+        resolved_lane="alpha",
+        role=ROLE,
+        spec_level=SPEC_LEVEL,
+        configured_lanes=["alpha", "clive"],
+    )
+    assert clause["state"] == "insufficient_evidence"
+    assert "3 usable run(s)" in clause["detail"]
+    assert "10 needed" in clause["detail"]
+    assert "12 usable run(s)" not in clause["detail"]
