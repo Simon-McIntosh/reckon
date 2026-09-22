@@ -4171,15 +4171,16 @@ def _launch_failure_record(
 def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
     """Record how a launched worker's process ended, on its run.
 
-    Every reap records the exit the launcher observed. A run whose stream is
+    Every reap records the exit the launcher observed, except where the payload log
+    tells us the status is not the worker's to report. A run whose stream is
     non-empty otherwise reads as still working with no trace of its process
     having gone, which is how a worker ended by a signal stays
     indistinguishable from a live one. The payload log, not the step's exit
     status, still decides whether a worker turn ran: a placed launch's exit
     status belongs to the scheduler client, and a step the scheduler reports
     COMPLETED can still have aborted before reaching a model. A non-empty
-    stream is a turn that ran whatever the status says, so its run keeps its
-    phase and gains only the wait status.
+    stream is a turn that ran whatever the status says, so an unplaced run
+    keeps its phase and gains the wait status.
 
     A launch that wrote no byte at all reached no model: there is nothing to
     resume from and nothing the lift loop can usefully retry. That one is a
@@ -4201,6 +4202,13 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     # still in the system means the worker has not ended and there is no failure
     # to record yet. Only a job that has left the queue is judged.
     if placement and _placement_job_alive(placement, job_id) is True:
+        return
+    if size and placement:
+        # A placed launch's wait status is the scheduler client's, not the
+        # worker's, so a run whose payload log shows a turn ran has nothing
+        # here that describes the worker: the client's status says nothing
+        # about a process the scheduler still owns. A placed run that wrote no
+        # byte is judged on the payload log, exactly as before.
         return
     wait_status = _wait_status_record(exit_status)
     failure = (
