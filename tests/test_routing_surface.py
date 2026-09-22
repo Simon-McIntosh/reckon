@@ -10,6 +10,7 @@ import pytest
 
 from reckon import capabilities, capability, crew, ledger, mcp, serve
 from reckon.calibration import calibration_configuration_key
+from reckon.crew import routing
 from reckon.crew.routing import _competence_verdict
 
 
@@ -565,3 +566,111 @@ def test_competence_lookup_resolves_horizon_for_a_pooled_configuration(
     assert verdict["allowed"] is True
     assert verdict["competence_horizon_hours"] == 6.0
     assert verdict["agent_key"] == calibration_configuration_key({"agent": behavioural})
+
+
+_DECLARED_WINDOW_TOKENS = 480_000
+_RECORDED_BOUNDARY_TOKENS = 200_000
+
+
+def _lane_resolution(*, write_paths: list[str]) -> crew.DispatchPlan:
+    """Build a resolution whose lane declares a window wider than its record."""
+
+    return crew.DispatchPlan(
+        run_id="run",
+        backend="clive",
+        launch="cli",
+        backend_settings={
+            "backend": "clive",
+            "launch": "cli",
+            "model": "deepseek-v4-flash",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "usable_input_window": _DECLARED_WINDOW_TOKENS,
+            "effective_input_window": _RECORDED_BOUNDARY_TOKENS,
+        },
+        node=crew.TaskNode(
+            id="node",
+            goal="exercise the recorded lane boundary",
+            plan="plan-a",
+            estimated_hours=2.0,
+            write_paths=write_paths,
+        ),
+        budget_ceiling="1h",
+        validation=crew.NodeValidation(ok=True),
+        execution_fit=capability.ExecutionFit(
+            role="implement",
+            execution_capable=True,
+            matched_measure=None,
+            override=False,
+        ),
+    )
+
+
+def _fixed_standing(standing: int):
+    def _stub(*_args: Any, **_kwargs: Any) -> tuple[int, dict[str, Any]]:
+        return standing, {"effective_tokens": standing}
+
+    return _stub
+
+
+def test_estimate_between_the_record_boundary_and_the_declared_window_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The smaller of the two figures gates the refusal, and both are named.
+
+    The declared window is what the lane claims the endpoint accepts; the
+    effective boundary is what its recorded refusals show it rejecting. A node
+    sized between them would otherwise pass this check and die at the endpoint,
+    so the refusal has to cite both figures: a reader who sees only the declared
+    window looks for the fault in the node size instead of in the lane.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "large_module.py").write_text("x" * 1_000_000, encoding="utf-8")
+    standing = 20_000
+    monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing(standing))
+    resolution = _lane_resolution(write_paths=["large_module.py"])
+
+    verdict = routing._context_fit_verdict(resolution=resolution, repo=repo)
+
+    assert verdict is not None
+    assert verdict["estimated_tokens"] == standing + routing._tokens_for_bytes(
+        1_000_000
+    )
+    assert (
+        _RECORDED_BOUNDARY_TOKENS
+        < verdict["estimated_tokens"]
+        < _DECLARED_WINDOW_TOKENS
+    )
+    assert verdict["allowed"] is False
+    assert verdict["window_tokens"] == _RECORDED_BOUNDARY_TOKENS
+    assert verdict["declared_window_tokens"] == _DECLARED_WINDOW_TOKENS
+    assert verdict["effective_boundary_tokens"] == _RECORDED_BOUNDARY_TOKENS
+    assert verdict["shortfall_tokens"] == (
+        verdict["estimated_tokens"] - _RECORDED_BOUNDARY_TOKENS
+    )
+    assert str(_RECORDED_BOUNDARY_TOKENS) in verdict["reason"]
+    assert str(_DECLARED_WINDOW_TOKENS) in verdict["reason"]
+
+
+def test_estimate_below_the_record_boundary_is_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A node under the recorded boundary is not refused by the tighter figure."""
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "small_module.py").write_text("x" * 100_000, encoding="utf-8")
+    standing = 20_000
+    monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing(standing))
+    resolution = _lane_resolution(write_paths=["small_module.py"])
+
+    verdict = routing._context_fit_verdict(resolution=resolution, repo=repo)
+
+    assert verdict is not None
+    assert verdict["estimated_tokens"] < _RECORDED_BOUNDARY_TOKENS
+    assert verdict["allowed"] is True
+    assert verdict["shortfall_tokens"] == 0
+    assert verdict["reason"] == "within-context-window"
+    assert verdict["window_tokens"] == _RECORDED_BOUNDARY_TOKENS
+    assert verdict["effective_boundary_tokens"] == _RECORDED_BOUNDARY_TOKENS
