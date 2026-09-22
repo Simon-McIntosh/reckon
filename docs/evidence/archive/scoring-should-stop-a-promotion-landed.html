@@ -301,6 +301,81 @@
     count of refusals.</p>
   </section>
 
+  <section id="s2d-receipt-two-states">
+    <h2>The receipt says which of the two states the row is in</h2>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/receipt-two-states.png"
+           alt="Two-panel flow. Left: the append writes the row, the landing commit fails, git restore succeeds over the landing paths, the row is gone from the ledger, and the receipt says the row was written and has been rolled back and names re-promotion as the recovery. Right: the same append and the same commit failure, but the restore is refused, the row is still in the ledger, and the receipt keeps the already-written wording that warns against re-promoting." />
+      <figcaption>The two states a failed landing leaves the ledger in, and the receipt each
+      one composes. The landing commit failure is identical on both sides; only the rollback's
+      outcome for the ledger path differs, which is why the append returning proves nothing.</figcaption>
+    </figure>
+    <p><strong>Defect reproduced before repair.</strong> A real failing landing commit was driven
+    against a temporary repository whose ledger was committed and seeded, entering the receipt span
+    exactly as production enters it. The pre-repair receipt read
+    <em>the ledger row for run 'rolled-back-row' is already written; do not re-promote</em>
+    while <code>ledger.load</code> returned an empty <code>runs</code> list and
+    <code>git status --porcelain</code> was clean: the rollback had restored the tracked ledger to
+    HEAD and taken the appended row with it. The git trace of that run is
+    <code>[('rev-parse', 0), ('add', 0), ('restore', 0)]</code> — the restore succeeded, which is
+    the incident's own shape. The receipt therefore reported a write a later step of the same
+    operation had deliberately undone, and forbade the one action that recovers it.</p>
+    <p><strong>What changed.</strong> <code>_restore_landing_writes</code> returns a per-path
+    report instead of nothing: <code>True</code> for a path no longer carrying the landing write —
+    restored from HEAD, or dropped when HEAD never had it — and <code>False</code> for one whose
+    write survives because the restore was refused. <code>_commit_landing_writes</code> carries
+    that report on the refusal it raises, and the receipt wrapper branches in
+    <code>_ledger_row_was_rolled_back</code>: the rollback's report for the ledger path, and a
+    read-back of the row from the ledger the promotion resolved, must both say the row is gone
+    before the reverted wording is emitted. An unreadable ledger answers present, so a receipt
+    never claims a rollback the reader cannot confirm. The already-written wording is unchanged for
+    a row the rollback preserved, which is the state the surviving case actually is.</p>
+    <p><strong>Evidence that could fail.</strong>
+    <code>tests/test_receipt_names_the_rolled_back_row.py</code> reports <strong>3 passed</strong>
+    over a real checkout fixture. The commit failure is produced by an executable
+    <code>pre-commit</code> hook that writes a marker and exits <strong>1</strong>, not by a stubbed
+    return code, so the rollback that follows runs against real git state; the marker's existence
+    asserts the real commit path reached the hook. The reverted case asserts the message names the
+    row written and rolled back with the ledger and names re-promotion as the recovery, asserts
+    <code>do not re-promote</code> is absent from it, and asserts the row is gone from both the
+    working tree and <code>HEAD:&lt;ledger&gt;</code> with a clean status. The surviving case
+    asserts the already-written wording and the row still in the ledger. The third test gives the
+    branch a rollback report claiming the ledger reverted while the ledger still carries the row,
+    and requires the read-back to win.</p>
+    <p><strong>Negative control.</strong> Replacing the branch decision with
+    <code>if False:</code> in a scratch copy of the fixed tree turns the reverted case red —
+    <strong>1 failed, 2 passed</strong> — with the old wording in the assertion output, and the log
+    records the scratch module resolving under the scratch tree
+    (<code>/tmp/rc2-1HgE/tree/reckon/crew/promotion.py</code>) so the traceback path is not
+    provenance. The log's first line repeats the mutation verbatim. The two surviving-case tests
+    stay green under the mutation, which is what keeps them a measure of the other side rather than
+    restatements of it.</p>
+    <p><strong>Gate.</strong> <code>tests/test_receipt_names_the_rolled_back_row.py</code> plus
+    <code>tests/test_rollback_asks_head.py</code> at the node head:
+    <strong>14 passed, 1 failed</strong>. The single failure is
+    <code>test_failure_after_append_names_the_written_row[commit]</code>, which asserts the
+    pre-repair wording — <em>is already written</em> and <em>do not re-promote</em> — for the case
+    whose own git trace is <code>[('rev-parse', 0), ('add', 0), ('restore', 0)]</code>: a successful
+    restore of a tracked ledger. That param encodes the defect this node repairs and must move to
+    the reverted expectation; the file is outside this node's fence, so the change is reported
+    rather than made. The other <strong>11</strong> params and cases pass unchanged:
+    <code>[stage]</code> keeps the already-written wording because its refused restore preserves a
+    tracked path, and <code>[capture]</code>, <code>[pointer]</code>, <code>[release]</code> and
+    <code>[fleet]</code> fail after the landing commit already succeeded, so their row is committed
+    and the wording stands.</p>
+    <p><strong>Ruff.</strong> Findings over the two changed paths are <strong>10 at base and 10
+    after</strong>; <code>reckon/crew/promotion.py</code> format deviations are <strong>2 at base
+    and 2 after</strong> and the new test file is format-clean. Two blind <code>except
+    Exception:</code> guards written during the repair were narrowed and one removed before the
+    count was taken, because a guard that reads any failure as <em>the row survived</em> would
+    silently restore the defect.</p>
+    <p><strong>Delivery.</strong> Commit <code>73cb04f9</code> changes
+    <code>reckon/crew/promotion.py</code> and the new test. Receipts live in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102644383943-the-receipt-says-which-of-the-two-states-the-row-is-in/</code>.
+    This worker did not promote, close the section, or resolve its followup; integration and
+    verification at the merged head remain coordinator-owned.</p>
+  </section>
+
   <section id="s3-review-reflex-sweep">
     <h2>The reflexive sweep: the review a scoring run already composed</h2>
     <p><strong>Measure.</strong> The reflex only earns its name when it fires on the path a healthy
