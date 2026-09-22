@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking-landed">
+  <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
+  <meta name="plan-summary" content="The audit reads the state a document carries, not only the prose around it: a duplicated plan-* scalar, a typed resource with no state island, and an unclosed table row each report a named error where three fixtures passed clean today, with the corpus population measured.">
+  <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s6">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
+  <meta name="plan-commits" content="910657ad">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py">
+  <title>A Review Dies Where Nobody Is Looking &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A Review Dies Where Nobody Is Looking &mdash; landed evidence</h1>
+    <p class="plan-summary">Three fixtures that reported <code>OK</code> before this change now
+    each report a named error code, and the corpus population is measured rather than
+    asserted.</p>
+  </header>
+
+  <section id="state-audit">
+    <h2>&sect;6 &mdash; The validator does not check the state it validates against</h2>
+    <p><strong>Node:</strong> <code>audit-doc-errors-on-the-state-it-skips</code> joined the
+    raw-tag scanner that already reported <code>section-unclosed</code>.</p>
+    <p><strong>Method.</strong> Four fixture documents are built by the test rather than read
+    from a live file, and each is audited with the command a reader runs. The
+    reproduction below is the pass-half of the measurement: the three defective fixtures
+    report OK today, so each new check is the change that makes them fail.</p>
+
+    <h3>The reproduction, quoted</h3>
+    <p>With the change reverted, the audit reports:</p>
+    <pre>dup-scalar.html: OK
+island-missing.html: OK
+unclosed-tr.html: OK
+clean.html: OK
+EXIT=0</pre>
+    <p>With the change in place, the same four documents report:</p>
+    <pre>dup-scalar.html: FAIL (1 error, 0 warn, 0 info)
+  ✗ [duplicate-plan-scalar] &lt;meta name="plan-impl"&gt; appears 2 times ('0.9', '0.1')
+island-missing.html: FAIL (1 error, 0 warn, 0 info)
+  ✗ [resource-island-missing] sprint resource with no
+    &lt;script id="reckon-resource-state"&gt; state island
+unclosed-tr.html: FAIL (1 error, 0 warn, 0 info)
+  ✗ [tr-unclosed] 3 &lt;tr&gt; opened and never closed
+clean.html: OK
+EXIT=1</pre>
+
+    <h3>What each defect is</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>fixture</th>
+          <th>what it is, and why nothing caught it</th>
+          <th>code now reported</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>a plan carrying <code>plan-impl</code> twice</td>
+          <td>The state reader is last-wins: it walks every <code>&lt;meta&gt;</code> in
+          document order and overwrites the shared field. The fixture's two lines parse to
+          <code>0.1</code>, not <code>0.9</code>. A union-resolved merge of two landing
+          records produces exactly this shape, and the writer updating the first line sees
+          every write reported as a change to a value no read returns.</td>
+          <td><code>duplicate-plan-scalar</code></td>
+        </tr>
+        <tr>
+          <td>a sprint resource with its island removed</td>
+          <td>The island <em>is</em> the resource's state; the markup around it is
+          presentation. With it absent the page still renders and still passes every
+          presentation check, while resolving any plan in the project fails &mdash; the
+          project enumerates every sprint document, so one unreadable member fails the whole
+          read for every session.</td>
+          <td><code>resource-island-missing</code>, and
+          <code>resource-island-malformed</code> when it is present and does not parse</td>
+        </tr>
+        <tr>
+          <td>a document with an unclosed <code>&lt;tr&gt;</code></td>
+          <td>A row's end tag is omittable in HTML, so the browser folds the rows after it
+          into one cell and both a browser and the parser present a repaired document. The
+          balance question is about what was authored, which only the raw tag stream
+          carries &mdash; the same stream that already answers it for
+          <code>&lt;section&gt;</code>.</td>
+          <td><code>tr-unclosed</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The population, over the whole corpus</h3>
+    <p>Audited over every HTML document under <code>docs/</code>:</p>
+    <table>
+      <thead>
+        <tr><th>code</th><th>findings</th><th>documents</th><th>denominator</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>duplicate-plan-scalar</code></td><td>14</td><td>4</td>
+        <td>262 documents</td></tr>
+        <tr><td><code>tr-unclosed</code></td><td>1</td><td>1</td><td>262 documents</td></tr>
+        <tr><td><code>resource-island-missing</code></td><td>0</td><td>0</td>
+        <td>21 typed-resource pages, every one carrying a parseable island</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/state-check-population.png"
+           alt="Upper panel: findings by code over 262 documents, showing fourteen duplicate-plan-scalar findings in four documents and one tr-unclosed in one, with the island codes silent. Lower panel: the raw tag stream of the unclosed-row specimen, four row opens against a single close, with the three missing end tags marked.">
+      <figcaption>The population the checks report over, and the token stream the row check
+      reads. The island codes return nothing against a non-empty population of 21 pages,
+      while the row check returns nothing from the tree a parser hands back — neither gap
+      survives the repair, which is why the check reads the stream.</figcaption>
+    </figure>
+    <p><strong>Positive control.</strong> The island check reports nothing, and that reading
+    is a measurement rather than an absence because the same check reports the fixture
+    whose island was removed and the one whose island does not parse. The duplicate check
+    is likewise the same collection logic that returns nothing for the
+    <code>clean.html</code> fixture, so an empty result over the corpus is the check
+    running and finding nothing rather than the check not running.</p>
+    <p><strong>What the population is made of.</strong> The four documents carrying
+    <code>duplicate-plan-scalar</code> are each an evidence record whose whole header block
+    was written twice: two <code>plan-title</code> lines, two <code>plan-summary</code>, two
+    <code>plan-recorded-at</code>, two <code>plan-verdict</code>. That is a union-resolved
+    merge of two landing records left in one file, which is the shape the defect was
+    described for. The <code>tr-unclosed</code> document is a table whose last three rows
+    carry no end tag.</p>
+    <p><strong>Caveat.</strong> Those five documents are pre-existing and are not repaired
+    here: they are outside this node's write scope, and repairing a document the audit has
+    only just learned to see is the work of the nodes that follow it. They are recorded so
+    the repair has a named population rather than a fresh search.</p>
+  </section>
+</main>
+</body>
+</html>
