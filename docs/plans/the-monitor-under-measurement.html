@@ -109,6 +109,31 @@
     cells. The file names the width at which the current grid first clips the reason clause on a
     blocked row, measured by rendering one real blocked row at widths from 100 to 220.</p>
 
+    <h3>Row census landed</h3>
+    <p>The census is measured and written to
+    <code>docs/research/data/monitor-row-census.json</code>, rendered through
+    <code>format_watch_transition</code> at width 160 with colour off over every JSON transition
+    in the four project streams. The positive control holds in all four projects:
+    <code>dsv4.1-flash</code> (twelve characters against a ten-column cell) is the largest single
+    overflow population in each, 1403 / 1241 / 795 / 515 rows. Overflow is common rather than
+    exceptional &mdash; 47.5&nbsp;% / 55.3&nbsp;% / 78.2&nbsp;% / 63.5&nbsp;% of records carry a
+    model cell wider than its column.</p>
+    <p>The lead&rsquo;s five complaints are each now a count. The undecodable
+    <code>0mu</code>/<code>0mb</code> form renders in all four projects (126/223, 443/375,
+    65/46, 169/73 rows). The generation-rate cell is the absence marker in 92&ndash;99&nbsp;% of
+    rows (3847, 4884, 1008, 1041), far more often than the wall cell (1812, 2257, 266, 510).
+    The reason clause is cut in 381 / 1234 / 208 / 97 rows. Node names over the 36-column cell
+    appear in 2291 / 1378 / 186 / 68 rows, with 4 / 9 live-name collisions where two distinct
+    live runs truncate to one string. The from-and-to pair is present on every transition, so a
+    destination-only layout shortens exactly the transition rows: 2889 / 3887 / 748 / 844. The
+    blocked-row clip point is width 145, and no row ever blanks a reason for want of margin at
+    width 160 &mdash; the margin binds only below the floor where the reason stops rendering at
+    all. Baselines are 28.2&nbsp;% / 21.3&nbsp;% / 26.5&nbsp;% / 25.4&nbsp;% of records, and
+    each project&rsquo;s stream also carries pre-JSON plain-text lines (444 / 1164 / 0 / 262)
+    that hold no structured fields and are counted separately rather than rendered.</p>
+    <p>Evidence anchor:
+    <a href="/reckon/plans/the-monitor-under-measurement-landed">the-monitor-under-measurement-landed</a>.</p>
+
     <h2 id="s4">&sect;4 &mdash; Where scope and push are decided: a path map</h2>
     <p>Answer four questions from the source, each with the file, the line and the quoted source
     line that decides it.</p>
