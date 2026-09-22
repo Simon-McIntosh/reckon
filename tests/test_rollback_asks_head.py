@@ -137,7 +137,16 @@ def _pointer(repository):
 @pytest.mark.parametrize(
     "failure", ["stage", "commit", "capture", "pointer", "release", "fleet"]
 )
-def test_failure_after_append_names_the_written_row(repository, monkeypatch, failure):
+def test_failure_after_append_names_the_row_state(repository, monkeypatch, failure):
+    """The receipt names the state the append's row is in after the failure.
+
+    The rollback decides that state, so the expectation is derived from the
+    recorded git trace rather than listed per parameter: whichever way the
+    restore ran decides whether the appended row left the ledger with it, and
+    the wording that follows must be the one that matches. A parameter whose
+    restore was refused keeps a row a reader can still open; one whose restore
+    succeeded left a row the operator has to re-promote to recover.
+    """
     run_id = _pointer(repository)
     real_append = ledger.append_run
     real_git = promotion._git
@@ -192,9 +201,31 @@ def test_failure_after_append_names_the_written_row(repository, monkeypatch, fai
     print(f"failure={failure}; appended={appended}; git={calls}; error={caught.value}")
     assert appended == [run_id]
     assert isinstance(caught.value, promotion.CrewError)
-    assert f"ledger row for run {run_id!r} is already written" in str(caught.value)
-    assert "do not re-promote" in str(caught.value)
     assert caught.value.__cause__ is not None
+
+    # The rollback's own recorded outcome decides the case. A parameter that
+    # never reached a rollback (its commit landed before the injected failure)
+    # records no restore call and keeps the row the commit wrote.
+    restore_codes = {code for verb, code in calls if verb == "restore"}
+    assert len(restore_codes) <= 1, f"mixed restore outcomes: {calls}"
+    rolled_back = restore_codes == {0}
+
+    message = str(caught.value)
+    rows = [
+        str(row.get("run_id") or "")
+        for row in ledger.load("sample", root=repository)[0]["runs"]
+    ]
+    assert (run_id in rows) is not rolled_back, (
+        f"ledger state must match the recorded rollback outcome; rows={rows}"
+    )
+    if rolled_back:
+        assert "was written and has been rolled back" in message
+        assert "re-promote once the landing failure is resolved" in message
+        assert "do not re-promote" not in message
+    else:
+        assert f"ledger row for run {run_id!r} is already written" in message
+        assert "do not re-promote" in message
+        assert "rolled back" not in message
     if failure == "stage":
         assert ("add", 128) in calls
         assert ("restore", 128) in calls
