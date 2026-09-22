@@ -184,6 +184,72 @@ FAILED tests/test_lane_advisory_on_dispatch.py::test_the_refusal_renders_the_cou
       was reproduced at the base revision and is outside this node's declared scope, so it is
       recorded as a follow-on rather than triaged here. The edited module adds no lint finding
       against its own baseline (9 at base, 9 at head, same command).</p>
+
+      <h3 id="s3-row">The row carries the advisory once the pointer is gone</h3>
+      <p>Commit <code>33779328</code> carries the advisory, its lane declaration and its lane
+      reading onto the committed ledger row. Promotion assembles the row in
+      <code>reckon/crew/promotion.py</code> and reads the live pointer for the durable fields it
+      rebuilds; the three lane keys were written onto the pointer at dispatch and never copied,
+      so an advisory reaching only the pointer was readable exactly until the promotion that
+      made the run evidence deleted that pointer. The row already names the chosen lane as
+      <code>backend</code>, so the pair on the row is what makes taking the advice
+      distinguishable from declining it, and no second field is needed to record the choice.</p>
+
+      <figure>
+        <img src="/reckon/figures/advise-the-lane-never-force-it/advisory-survives-promotion.png"
+             alt="Left, the dispatch record assembly writes lane_advisory, lane_declaration and
+                  lane_reading onto the live pointer. Centre, the live pointer carries those three
+                  keys beside backend; a dashed red arrow downwards marks that promotion deletes
+                  the pointer. Right, the committed ledger row carries backend and lane_receipt,
+                  and now also lane_advisory, lane_declaration and lane_reading.">
+        <figcaption>The advisory's path across the promotion boundary. The pointer is deleted by
+        the promotion that writes the row, so before this change the advisory was readable only
+        while the run was live.</figcaption>
+      </figure>
+
+      <h3>The row carries the advisory, read back from the committed ledger</h3>
+      <p>A promoted run whose dispatch carried an advisory has <code>lane_advisory</code> on its
+      committed row together with the <code>lane_declaration</code> and <code>lane_reading</code>
+      it was derived from. The assertions read the row off disk from
+      <code>docs/state/&lt;project&gt;/crew.json</code>, never the pointer the promotion consumed,
+      and the run becomes evidence: the pointer file no longer exists once the row is read.</p>
+
+      <h3>Advice taken and advice declined are told apart from the rows alone</h3>
+      <p>A promoted run whose <code>backend</code> equals the lane the advisory named and one
+      whose <code>backend</code> differs are distinguished by the committed rows alone, asserted
+      as a pair over one promoted run of each kind. The advisory names the same lane in both
+      rows; the rows differ in the lane that was chosen.</p>
+
+      <h3>An absent advisory leaves no key, rather than a null</h3>
+      <p>A run promoted from a pointer that never held an advisory carries no
+      <code>lane_advisory</code> key at all. A null would read as a lane that was assessed and
+      found quiet, which is the opposite of a run whose dispatch emitted no advisory; the row's
+      neighbouring lane fields are asserted present, so the absence belongs to the advisory and
+      not to a row that never landed.</p>
+
+      <h3>The negative control</h3>
+      <p>The gate was shown to fail on the thing it protects, on a scratch copy of the fixed tree
+      (<code>git archive</code> of this commit). The declared mutation drops
+      <code>lane_advisory</code> from the promotion carry, and reddens exactly the
+      row-carries-the-advisory case:</p>
+      <pre><code>drop lane_advisory from the promotion carry so the committed ledger row does not receive it
+E       KeyError: 'lane_advisory'
+FAILED tests/test_lane_advisory_on_dispatch.py::test_a_promoted_row_carries_the_advisory_and_the_lane_fields
+1 failed, 14 deselected</code></pre>
+
+      <h3>Verification</h3>
+      <p>The promotion test set &mdash; the twelve existing promotion files plus this node's
+      file &mdash; was run at the base revision <code>5ebc9f28</code> and at this commit
+      <code>33779328</code> in one pass. Base: 4 failed, 153 passed. Head: 4 failed, 156 passed.
+      The failing ids are identical and no failure appears at head that was not already present
+      at base, so this change adds nothing to the set. The three additional passing cases are the
+      ones this node adds. The four pre-existing failures
+      (<code>test_promotion_audits_only_its_own_worktree</code>,
+      <code>test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger</code>,
+      and two in <code>test_promotion_reads_the_terminal_record.py</code>) reproduce at base and
+      live outside this node's declared scope, so they are recorded rather than triaged here. The
+      edited module adds no lint finding against its own baseline (10 at base, 10 at head, same
+      command).</p>
     </section>
   </main>
 </body>
