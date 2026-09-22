@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420"
+     role="img" aria-labelledby="title desc">
+  <title id="title">The agreement cases pin the recorded copy, not the caller's citation</title>
+  <desc id="desc">Before: the row's gate_check.log_path is the path the caller cited, which a
+  worker's scratch log loses to the reaper. After: promotion copies the cited log into the run
+  directory and the row cites that copy, so four agreement cases assert the path lies inside the
+  run directory and its bytes equal the cited source. The unreadable-citation case is left alone,
+  because an absent citation is handed on unchanged.</desc>
+
+  <style>
+    .figcap      { font: 12px/1.35 ui-sans-serif, system-ui, sans-serif; fill: #555; }
+    .panel       { fill: #f6f8fb; stroke: #c3ccd8; stroke-width: 1; }
+    .mono        { font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #333; }
+    .mono-dim    { font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #888; }
+    .mono-bad    { font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #a14a4a; }
+    .mono-good   { font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; fill: #2f6b46; }
+    .box         { fill: #ffffff; stroke: #c3ccd8; stroke-width: 1; }
+    .box-run     { fill: #eef5f0; stroke: #7aa88c; stroke-width: 1.4; }
+    .arrow       { stroke: #444; stroke-width: 1.6; fill: none; }
+    .arrow-dash  { stroke: #a14a4a; stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+    .rule        { stroke: #d7dee7; stroke-width: 1; }
+    .badge-keep  { fill: #eef5f0; stroke: #7aa88c; stroke-width: 1; }
+    .badge-change{ fill: #fbf3ea; stroke: #c99a4a; stroke-width: 1; }
+  </style>
+
+  <rect x="0" y="0" width="960" height="420" fill="#ffffff"/>
+  <text class="figcap" x="24" y="28">Promotion redirects the row's citation to a copy inside the run directory; the agreement cases assert both halves of that claim.</text>
+
+  <!-- Panel A: before -->
+  <rect class="panel" x="24" y="48" width="912" height="120" rx="6"/>
+  <text class="mono" x="40" y="72" font-weight="600">Before the copy step: the row cited where the log lay</text>
+
+  <rect class="box" x="40" y="88" width="200" height="34" rx="4"/>
+  <text class="mono" x="54" y="110">--gate-log-path /tmp/w/gate.log</text>
+
+  <line class="arrow" x1="248" y1="105" x2="330" y2="105"/>
+  <polygon class="arrow" points="330,105 320,100 320,110" fill="#444"/>
+
+  <rect class="box" x="338" y="88" width="330" height="34" rx="4"/>
+  <text class="mono" x="352" y="110">gate_check.log_path = "/tmp/w/gate.log"</text>
+
+  <line class="arrow-dash" x1="676" y1="105" x2="742" y2="105"/>
+  <polygon points="742,105 730,99 730,111" fill="#a14a4a"/>
+  <text class="mono-bad" x="752" y="102">/tmp reaped,</text>
+  <text class="mono-bad" x="752" y="116">worktree removed</text>
+  <text class="mono-dim" x="40" y="150">A path that was true only when it was written: every check on the row passes, and the evidence is gone.</text>
+
+  <!-- Panel B: after -->
+  <rect class="panel" x="24" y="184" width="912" height="140" rx="6"/>
+  <text class="mono" x="40" y="208" font-weight="600">After: the row cites a copy the run directory keeps</text>
+
+  <rect class="box" x="40" y="224" width="200" height="34" rx="4"/>
+  <text class="mono" x="54" y="246">cited /tmp/w/gate.log</text>
+
+  <line class="arrow" x1="248" y1="241" x2="308" y2="241"/>
+  <polygon points="308,241 298,235 298,247" fill="#444"/>
+  <text class="mono-dim" x="256" y="235">copy</text>
+
+  <rect class="box-run" x="316" y="224" width="190" height="34" rx="4"/>
+  <text class="mono-good" x="330" y="246">&lt;run-dir&gt;/gate.log</text>
+
+  <line class="arrow" x1="514" y1="241" x2="574" y2="241"/>
+  <polygon points="574,241 564,235 564,247" fill="#444"/>
+
+  <rect class="box" x="582" y="224" width="330" height="34" rx="4"/>
+  <text class="mono" x="596" y="246">gate_check.log_path = "&lt;run-dir&gt;/gate.log"</text>
+
+  <text class="mono-dim" x="40" y="290">The assertion is the pair: citation.parent == run_dir(run_id), and citation's bytes == the cited source's bytes.</text>
+  <text class="mono-dim" x="40" y="308">Either half alone is satisfiable without the evidence surviving with it.</text>
+
+  <!-- what changed -->
+  <rect class="badge-change" x="24" y="342" width="452" height="60" rx="6"/>
+  <text class="mono" x="40" y="364" font-weight="600">Retargeted to the recorded copy (4 cases)</text>
+  <text class="mono" x="40" y="382">agreeing exit status · executed exit beside a quote</text>
+  <text class="mono" x="40" y="396">fixture diagnostic beside a summary · log and command agree</text>
+
+  <rect class="badge-keep" x="492" y="342" width="444" height="60" rx="6"/>
+  <text class="mono" x="508" y="364" font-weight="600">Left unmodified (1 case)</text>
+  <text class="mono" x="508" y="382">a citation this machine cannot read is handed on unchanged,</text>
+  <text class="mono" x="508" y="396">so an absent log still cannot turn a passing gate into a refusal.</text>
+
+  <line class="rule" x1="24" y1="336" x2="936" y2="336"/>
+</svg>
