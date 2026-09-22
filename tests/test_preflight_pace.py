@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import budget
+from reckon import budget, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
@@ -314,7 +314,7 @@ def test_the_bar_is_drawn_against_the_five_hour_window_not_the_week() -> None:
 
     bar = _group(report, "sol")["bar"]
     assert bar["window_fill"] == 0.1
-    assert bar["bar" if False else "state"] == budget.OBSERVED
+    assert bar["state"] == budget.OBSERVED
 
 
 def test_the_bar_value_is_the_one_the_bar_module_returns_at_that_fill() -> None:
@@ -649,3 +649,306 @@ def test_the_preflight_command_emits_one_group_block_per_declared_wallet(
         assert entry["clocks"]["five_hour"]["utilisation"] is None
         assert entry["allowance"]["derived"] is None
         assert entry["allowance"]["reason"]
+
+
+# ── The windows come from what runs recorded ──────────────────────────────
+
+
+def _reset_in(hours: float) -> int:
+    """An epoch-second reset this many hours ahead of the moment of asking.
+
+    Derived from the clock rather than written down, because the command being
+    driven takes no injectable "now": a literal reset would sit in the past on
+    some future day and move the allowance derivation under the test.
+    """
+    return int((datetime.now(UTC) + timedelta(hours=hours)).timestamp())
+
+
+def _write_ledger(root: Path, project: str, rows: list[dict]) -> None:
+    """Write the project's ledger directly, so the test owns the recorded rows."""
+    ledger.write(project, {"members": [], "runs": rows, "holds": []}, 0, root=root)
+
+
+def _receipt_record(
+    backend: str,
+    *,
+    windows: list[tuple[int, float]],
+    observed_at: str,
+    run_id: str = "r-receipt",
+) -> dict:
+    """One completed run whose lane receipt records ``windows``.
+
+    Each window is ``(window_minutes, used_percent)``. One observation stamp
+    covers the whole receipt, which is how the harness writes it: the receipt
+    is the reading, and its rows are the clocks that reading carried.
+    """
+    stamp = observed_at
+    return ledger.build_record(
+        run_id=run_id,
+        plan="a-plan",
+        gate="passed",
+        backend=backend,
+        completed_at=stamp,
+        lane_receipt={
+            "quota_state": "measured",
+            "observed_at": stamp,
+            "quota_windows": [
+                {
+                    "window_minutes": minutes,
+                    "used_percent": used,
+                    "resets_at": _reset_in(100.0),
+                    "observed_at": stamp,
+                }
+                for minutes, used in windows
+            ],
+        },
+    )
+
+
+def _stream_record(backend: str, *, run_id: str) -> dict:
+    """One completed run that records no receipt, so only its stream can speak."""
+    return ledger.build_record(
+        run_id=run_id,
+        plan="a-plan",
+        gate="passed",
+        backend=backend,
+        completed_at=_iso(NOW - timedelta(minutes=2)),
+    )
+
+
+def _write_stream(path: Path, events: list[dict]) -> None:
+    """Write a run's stream as JSON lines, the shape the reader parses."""
+    path.write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n", encoding="utf-8"
+    )
+
+
+def _preflight_command(tmp_path: Path, *extra: str):
+    """Invoke the command against the tmp flight config, keeping its JSON payload."""
+    return CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "preflight",
+            "--project",
+            "demo",
+            "--checkout-path",
+            str(tmp_path),
+            *extra,
+        ],
+        catch_exceptions=False,
+    )
+
+
+def test_the_command_reads_a_groups_clocks_from_a_runs_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A recorded receipt is the codex dialect's window source, read at the command.
+
+    The receipt names both metered windows by length in minutes and stamps the
+    reading it recorded, so both clocks come back observed with an age. The
+    ready node is judged against its own group's bar, which is the second half
+    of what a pre-flight is for: the admitted subset, not just the pace.
+    """
+    home = tmp_path / "home"
+    (home / "crew").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(minutes=7)),
+            )
+        ],
+    )
+
+    result = _preflight_command(tmp_path, "--ready", "mid=sol:0.4")
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    sol = _group(payload["groups"], "sol")
+    assert sol["member"] == "sol-a"
+    assert sol["state"] == budget.OBSERVED
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
+    assert sol["clocks"]["five_hour"]["age_seconds"] is not None
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
+    assert sol["clocks"]["seven_day"]["age_seconds"] is not None
+    entry = next(
+        item for item in sol["bar"]["recommendations"] if item["name"] == "mid"
+    )
+    assert entry["verdict"] is not None
+
+
+def test_a_groups_clock_is_read_from_the_stream_a_run_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The claude dialect reports its windows on the run's stream, not its receipt.
+
+    A run recording no measured receipt is the case the stream source exists
+    for, so the observed state here comes from the ``unifiedWindows`` event and
+    nothing else.
+    """
+    home = tmp_path / "home"
+    stream_dir = home / "crew" / "runs" / "r-stream"
+    stream_dir.mkdir(parents=True)
+    _write_stream(
+        stream_dir / "stream.jsonl",
+        [_stamped(90), _window_event(0.31, 0.44), _stamped(1)],
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(tmp_path, "demo", [_stream_record("other-a", run_id="r-stream")])
+
+    result = _preflight_command(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    other = _group(json.loads(result.output)["groups"], "other")
+    assert other["member"] == "other-a"
+    assert other["state"] == budget.OBSERVED
+    assert other["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.31)
+    assert other["clocks"]["five_hour"]["age_seconds"] is not None
+
+
+def test_a_receipt_carrying_only_the_week_reports_one_clock_observed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The weekly clock divides while the five-hour clock stays unknown.
+
+    Neither clock is inferred from the other: a receipt that recorded only the
+    week leaves the fill unread, so the allowance derives and the bar stays
+    undecided for every node whose lane the window could have changed.
+    """
+    home = tmp_path / "home"
+    (home / "crew").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(hours=2)),
+            )
+        ],
+    )
+
+    result = _preflight_command(tmp_path, "--ready", "mid=sol:0.4")
+
+    assert result.exit_code == 0, result.output
+    sol = _group(json.loads(result.output)["groups"], "sol")
+    assert sol["state"] == budget.OBSERVED
+    assert sol["clocks"]["seven_day"]["state"] == budget.OBSERVED
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
+    assert sol["clocks"]["seven_day"]["age_seconds"] is not None
+    assert sol["clocks"]["five_hour"]["state"] == budget.UNKNOWN
+    assert sol["clocks"]["five_hour"]["utilisation"] is None
+    assert sol["allowance"]["derived"] is not None
+    assert sol["allowance"]["utilisation"] == pytest.approx(0.21)
+    assert sol["bar"]["window_fill"] is None
+    assert sol["bar"]["recommendations"][0]["verdict"] is None
+
+
+def test_the_budget_view_reads_the_same_recorded_windows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The MCP budget view supplies the same source and reads its ready set.
+
+    Its ready set arrives through the tool's existing ``candidates`` parameter,
+    so the view and the command judge a wave from one payload rather than two
+    implementations of the pace.
+    """
+    from reckon import mcp
+
+    home = tmp_path / "home"
+    (home / "crew").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(minutes=7)),
+            )
+        ],
+    )
+
+    report = mcp._crew(
+        "demo",
+        view="budget",
+        checkout_path=str(tmp_path),
+        candidates=[{"name": "mid", "group": "sol", "score": 0.4}],
+    )
+
+    sol = _group(report["groups"], "sol")
+    assert sol["state"] == budget.OBSERVED
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
+    assert sol["clocks"]["five_hour"]["age_seconds"] is not None
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
+    entry = next(
+        item for item in sol["bar"]["recommendations"] if item["name"] == "mid"
+    )
+    assert entry["verdict"] is not None
+
+
+def test_the_recorded_windows_read_no_lane_declaring_no_wallet() -> None:
+    """A lane outside every declared group is not read, and reaches no group."""
+    rows = [
+        _receipt_record(
+            "orphan",
+            windows=[(300, 99.0), (10080, 99.0)],
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+        )
+    ]
+
+    windows = budget.recorded_windows("demo", CONFIG, records=rows)
+
+    assert windows == {}
+
+
+def test_an_unreadable_receipt_window_leaves_the_group_unknown() -> None:
+    """A receipt naming no window this reader knows is not a zero reading.
+
+    The two-sided assertion is the point: the group reports unknown *and* the
+    clocks are not ``0.0``, because a zero utilisation reads as an empty window
+    and admits everything.
+    """
+    rows = [
+        ledger.build_record(
+            run_id="r-odd",
+            plan="a-plan",
+            gate="passed",
+            backend="sol-a",
+            completed_at=_iso(NOW - timedelta(minutes=1)),
+            lane_receipt={
+                "quota_state": "measured",
+                "observed_at": _iso(NOW - timedelta(minutes=1)),
+                "quota_windows": [
+                    {
+                        "window_minutes": 1440,
+                        "used_percent": 80.0,
+                        "resets_at": _reset_in(10.0),
+                        "observed_at": _iso(NOW - timedelta(minutes=1)),
+                    }
+                ],
+            },
+        )
+    ]
+
+    windows = budget.recorded_windows("demo", CONFIG, records=rows)
+
+    assert "sol-a" not in windows
+    sol = _group(budget.group_pace(CONFIG, windows=windows, now=NOW), "sol")
+    assert sol["state"] == budget.UNKNOWN
+    for period in ("five_hour", "seven_day"):
+        assert sol["clocks"][period]["state"] == budget.UNKNOWN
+        assert sol["clocks"][period]["utilisation"] not in (0.0, 1.0)
+        assert sol["clocks"][period]["utilisation"] is None

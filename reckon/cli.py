@@ -869,6 +869,30 @@ def _peer_scopes(values) -> dict:
     return peers
 
 
+def _parse_ready_node(statement: str) -> dict[str, Any]:
+    """Read one ``--ready NAME=GROUP:SCORE`` node statement.
+
+    The score is the node's open-endedness, which is what the bar judges, and
+    the group names the wallet it will spend. The name is split on the first
+    ``=`` and the score on the last ``:`` so a node name carrying either
+    character still reads. A statement missing any of the three parts, or
+    carrying a score that is not a number, is refused here rather than passed
+    on: a node silently dropped from the admitted set is the failure the
+    pre-flight exists to prevent.
+    """
+    name, separator, rest = statement.partition("=")
+    group, score_separator, score = rest.rpartition(":")
+    if not (separator and score_separator) or not (name.strip() and group.strip()):
+        raise ValueError(f"a ready node must read NAME=GROUP:SCORE, not {statement!r}")
+    try:
+        value = float(score)
+    except ValueError:
+        raise ValueError(
+            f"ready node {name.strip()!r} needs a numeric score, not {score!r}"
+        ) from None
+    return {"name": name.strip(), "group": group.strip(), "score": value}
+
+
 @crew.command(name="preflight")
 @click.option("--project", required=True, help="Project whose run records are read.")
 @click.option(
@@ -903,8 +927,18 @@ def _peer_scopes(values) -> dict:
     metavar="KEY=VALUE",
     help="Flight override for this check; always wins over config layers.",
 )
+@click.option(
+    "--ready",
+    "ready",
+    multiple=True,
+    metavar="NAME=GROUP:SCORE",
+    help="A node a wave would open with: its name, its declared wallet and its "
+    "open-endedness score. Repeat as needed.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, pretty):
+def crew_preflight(
+    project, roles, backends, purpose, checkout_path, overrides, ready, pretty
+):
     """Report whether backend budget state allows a wave to open, without spending it.
 
     Reads the budget signal that earlier runs already recorded, so the check
@@ -912,6 +946,12 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     its own account surface read, which runs no model either. Exits 3 when any
     backend is held, naming its utilisation and reset time; a backend reporting no
     headroom is never held, because absence of a signal is not exhaustion.
+
+    The pace beside the hold is read from the same recorded evidence: each
+    declared group's windows come from its members' run receipts or from a window
+    a run's stream reported, and a ``--ready`` node is judged against its own
+    group's bar. Neither is invented: a group no reading reached reports unknown
+    for both clocks.
     """
     from reckon import budget as budget_module
     from reckon import ledger as ledger_module
@@ -919,6 +959,8 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     crew_module, flight_module = _crew_modules()
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     try:
+        ready_nodes = [_parse_ready_node(statement) for statement in ready]
+        windows = budget_module.recorded_windows(project, config, root=checkout_path)
         report = budget_module.preflight(
             project,
             config,
@@ -926,6 +968,8 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
             roles=list(roles) or None,
             root=checkout_path,
             purpose=purpose,
+            windows=windows,
+            ready=ready_nodes,
         )
         report["hold_history"] = budget_module.record_checks(
             project,

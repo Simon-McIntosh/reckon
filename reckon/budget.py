@@ -50,7 +50,7 @@ rather than a zero, which is the first rule above applied to a second quantity.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
@@ -1877,6 +1877,202 @@ def group_pace(
             }
         )
     return report
+
+
+# The window lengths a lane receipt names, mapped to the clock a group's pace
+# reads. A receipt identifies its windows by length in minutes rather than by
+# name, so this map is what lets a recorded receipt and a stream-carried event
+# speak one vocabulary. A length the map does not name is skipped rather than
+# guessed onto a clock: a window nobody can name is not a reading this reader
+# may place.
+WINDOW_MINUTES_CLOCK = {300: CLOCK_FIVE_HOUR, 10080: CLOCK_SEVEN_DAY}
+
+# How many of a backend's newest runs are opened looking for a window-carrying
+# stream. Most streams carry no window at all, so the newest run is not always
+# the one that reported; the scan is bounded because each candidate is a whole
+# file read and a run older than these has been superseded by anything they
+# reported.
+STREAM_SCAN_LIMIT = 3
+
+
+def recorded_windows(
+    project: str,
+    config: Mapping[str, Any],
+    *,
+    root: str | Path | None = None,
+    now: datetime | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
+) -> dict[str, window_reading.WindowReading]:
+    """One window reading per member of a declared group, from recorded evidence.
+
+    A metered backend's windows are recorded in one of two places and the
+    dialect decides which. A codex lane writes them into its *receipt* —
+    ``lane_receipt.quota_windows``, one row per length in minutes — while a
+    claude lane reports them on the stream of the run that observed them, as a
+    ``unifiedWindows`` event. Both carry an observation time, so both carry an
+    age, and :func:`group_pace` reads the freshest dated member of a group
+    whichever source supplied it.
+
+    Only members of a declared group are read. A lane declaring no wallet has no
+    group whose pace it could inform, and reading its stream would spend a file
+    read on a figure nothing consults.
+
+    A stream is consulted only where no receipt reading exists, because a source
+    that carries nothing never competes with one that does: the fork is over
+    which dialect recorded a figure, not over which figure is newer. A backend
+    nothing reached is absent from the returned mapping rather than mapped to an
+    empty reading, so the group reports unknown exactly as it does when no window
+    source is supplied at all.
+    """
+    moment = _now(now)
+    members = {
+        member
+        for group_members in budget_group.declared_groups(config).values()
+        for member in group_members
+    }
+    rows = ledger.runs(project, root) if records is None else list(records)
+    receipts: dict[str, tuple[datetime, Mapping[str, Any]]] = {}
+    runs_by_backend: dict[str, list[tuple[str, str]]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        name = _run_backend(row)
+        if name not in members:
+            continue
+        run_id = str(row.get("run_id") or "").strip()
+        if run_id:
+            runs_by_backend.setdefault(name, []).append((_run_order(row), run_id))
+        receipt = row.get("lane_receipt")
+        if not isinstance(receipt, Mapping):
+            continue
+        observed = _parse_stamp(receipt.get("observed_at"))
+        if observed is None:
+            continue
+        known = receipts.get(name)
+        if known is None or observed > known[0]:
+            receipts[name] = (observed, receipt)
+
+    windows: dict[str, window_reading.WindowReading] = {}
+    for name in sorted(members):
+        reading: window_reading.WindowReading | None = None
+        receipt = receipts.get(name)
+        if receipt is not None:
+            candidate = _receipt_reading(receipt[1], moment=moment)
+            reading = candidate if candidate.known else None
+        if reading is None:
+            reading = _newest_stream_reading(
+                runs_by_backend.get(name, ()), moment=moment
+            )
+        if reading is not None:
+            windows[name] = reading
+    return windows
+
+
+def _run_backend(row: Mapping[str, Any]) -> str:
+    """The configured backend a run record names, from either durable shape."""
+    backend = str(row.get("backend") or "").strip()
+    if backend:
+        return backend
+    agent = row.get("agent")
+    if isinstance(agent, Mapping):
+        return str(agent.get("backend") or "").strip()
+    return ""
+
+
+def _run_order(row: Mapping[str, Any]) -> str:
+    """A run's recency as a sortable stamp, newest-last by string order.
+
+    The stamps the ledger writes are UTC ISO text of one width, so the string
+    comparison and the instant comparison agree; a row carrying neither stamp
+    sorts before every dated row rather than ahead of them.
+    """
+    return str(row.get("completed_at") or row.get("dispatched_at") or "")
+
+
+def _receipt_reading(
+    receipt: Mapping[str, Any], *, moment: datetime
+) -> window_reading.WindowReading:
+    """One receipt's quota windows as a reading, aged against ``moment``.
+
+    A receipt names its windows by length in minutes and measures them in
+    percent, so both are translated here: the length selects the clock and the
+    percent becomes the fraction a group's pace reads. A row whose length is
+    unnamed, whose figure is not a number, or which carries no observation time
+    contributes no clock, and the periods that did resolve are still returned
+    rather than the whole reading being dropped — a receipt carrying only its
+    weekly window is an honest reading with its five-hour clock unknown.
+    """
+    windows = receipt.get("quota_windows")
+    fallback = _parse_stamp(receipt.get("observed_at"))
+    figures: list[window_reading.WindowFigure] = []
+    for row in windows if isinstance(windows, list) else ():
+        if not isinstance(row, Mapping):
+            continue
+        period = WINDOW_MINUTES_CLOCK.get(row.get("window_minutes"))
+        if period is None:
+            continue
+        used = row.get("used_percent")
+        if isinstance(used, bool) or not isinstance(used, (int, float)):
+            continue
+        observed = _parse_stamp(row.get("observed_at")) or fallback
+        if observed is None:
+            continue
+        figures.append(
+            window_reading.WindowFigure(
+                period=period,
+                utilisation=float(used) / 100.0,
+                observed_at=observed,
+                age_seconds=(moment - observed).total_seconds(),
+                resets_at=_instant_text(row.get("resets_at")),
+            )
+        )
+    if not figures:
+        return window_reading.WindowReading(
+            reason="the recorded receipt carried no usable quota window"
+        )
+    newest = max(figure.observed_at for figure in figures)
+    return window_reading.WindowReading(
+        figures=tuple(figures),
+        observed_at=newest,
+        age_seconds=(moment - newest).total_seconds(),
+    )
+
+
+def _newest_stream_reading(
+    runs: Iterable[tuple[str, str]], *, moment: datetime
+) -> window_reading.WindowReading | None:
+    """The newest window-carrying stream among a backend's recent runs.
+
+    A served run reports its windows on its own stream, and most streams carry
+    none, so the newest run is not always the one that reported. A stream that
+    cannot be read, or that carries no window, is skipped in favour of the next
+    candidate; ``None`` means no recent stream reported a window at all.
+    """
+    for _order, run_id in sorted(runs, reverse=True)[:STREAM_SCAN_LIMIT]:
+        path = crew.run_dir(run_id) / "stream.jsonl"
+        if not path.is_file():
+            continue
+        reading = window_reading.read_windows(path, now=moment)
+        if reading.known:
+            return reading
+    return None
+
+
+def _instant_text(value: Any) -> str | None:
+    """A reset time as ISO text, from an epoch second or an ISO string.
+
+    A receipt's ``resets_at`` is written as epoch seconds and a stream event's
+    as epoch or text, so both spellings resolve here; anything else is no
+    readable reset rather than an invented one.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        try:
+            return datetime.fromtimestamp(float(value), tz=UTC).isoformat()
+        except (OSError, OverflowError, ValueError):
+            return None
+    return value if isinstance(value, str) else None
 
 
 def _earliest_reset(held: Iterable[Mapping[str, Any]]) -> str | None:
