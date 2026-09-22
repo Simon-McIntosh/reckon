@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
 <meta name="plan-impl" content="0.944">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 </head>
 <body>
   <main class="plan-doc">
@@ -1238,6 +1238,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260921T165140068358-the-mapping-branch-guard-is-reachable-by-a-case" data-who="reckon-ship" data-when="2026-09-21T17:24:36.645Z">
     <div class="r-comment-body"><p>deleting the mapping-branch guard now reddens a case, which the previous declared mutation could not because no case reached that branch; 9 passed exit 0 at integrated revision dd8b0d58; population 3 failed 139 passed at head against 3 failed 136 passed at base, so no failure added and the added passes are the new cases. Review 96/100, its remaining finding that the object branch still stringifies an explicit null label while the mapping branch falls back to the value, so two spellings of one input store different labels.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260921T174159749232-decision-option-gate-recaptured-at-the-merged-head" data-who="reckon-ship" data-when="2026-09-21T17:59:45.609Z">
+    <div class="r-comment-body"><p>the decision-option focused gate re-run at integrated revision dd8b0d58: 9 passed EXIT=0, the log naming the revision, the tree, the command and the resolved module path of reckon/_store.py on its first line. Review 93/100.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-20260921T1825-arming-fallback-landed" data-who="reckon-ship" data-when="2026-09-21T18:25:00+02:00">
     <div class="r-comment-body">Gate passed: 17 passed exit 0 across the fallback file and the two watcher files it touches, 5 new cases and 12 pre-existing, ruff clean on both changed paths, and the declared mutation reddened 2. Arming now survives a service manager that cannot be reached, and reports which path it took rather than raising. Two cases beyond the brief are the reason this section is worth more than its size: a unit the manager genuinely refuses still raises, so the fallback swallows no real refusal, and a fallback that could not start a watcher does not report success — the silent-success failure this whole plan exists to remove, guarded without being asked for. The decision the arming path makes is drawn in docs/figures/crew-runtime-positive-controls/watcher-arming-fallback.png. This closes the last of the seven sections folded in from the open followups at the start of the session.</div>
 </div>
@@ -1281,7 +1284,7 @@
     <div class="r-comment-body"><p>the wait the reader accepts is now the wait the sweep lifts: three cases enter where the sweep enters rather than through the reader, asserting that a file condition whose declared paths all exist is lifted, that the same wait with one path absent is NOT lifted, and that the derived terminal is recorded true. That second case is what distinguishes a lift from a function that always returns true, and its absence is why section 15's gate was green while the mechanism was inert. 20 passed in the wait-shape file (17 unchanged plus 3 added), 136 passed across eleven wait and sweep suites, 46 passed on the sweep consumers, and the declared mutation reddened 2. Review 91/100, its finding that the three cited gate logs carry no revision, tree or command on any line — which is section 17's defect exactly, and this run predates section 17's template change, so it could only have learned the convention from its brief.</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20260921T180734291802-review-of-the-sweep-lifts-the-wait-the-reader-accepted" data-who="reckon-ship" data-when="2026-09-22T10:33:45.745Z">
-    <div class="r-comment-body"><p>independent review of the sweep-lift repair: 91/100, its finding that the cited gate logs name no revision, tree or command, which is section 17&#x27;s defect and predates section 17&#x27;s landing</p></div>
+    <div class="r-comment-body"><p>independent review of the sweep-lift repair: 91/100, its finding that the cited gate logs name no revision, tree or command, which is section 17's defect and predates section 17's landing</p></div>
 </div>
 </section>
 </main>
