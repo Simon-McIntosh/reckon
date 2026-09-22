@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="66">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4">
-<meta name="plan-impl" content="0.95">
+<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418">
+<meta name="plan-impl" content="0.97">
 </head>
 <body>
   <main class="plan-doc">
@@ -1142,6 +1142,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-prove-the-reader">the landed evidence
     record</a>.</p>
 
+    <h3 id="s6-lanes-view-covers-the-stamp">Remaining &mdash; the surface that shares the helper has no case for it</h3>
+    <p><strong>This clause was refuted by the worker it was given to, which is why it is a section
+    rather than a footnote.</strong> The node's done-when asked that the lanes-view tests covering
+    the moved dating helper pass. They did &mdash; and they would have passed just as well without
+    the change: reinstating the pre-change key list in a scratch copy left
+    <code>test_crew_lanes_view</code>, <code>test_lanes_view_is_live</code>,
+    <code>test_lanes_view_serving_state</code> and <code>test_lane_evidence</code> at exactly
+    <strong>2 failed, 36 passed</strong>. Those four files do not exercise
+    <code>_receipt_observed_at</code> at all, so the unification is held only by the pace module's
+    own gate, and the lanes view could drift back to a private key list with its own suite green.</p>
+    <p><strong>The behaviour also changed, quietly.</strong> The old lanes-view helper returned any
+    truthy field without parsing it; the shared one parses first and passes over a field that does
+    not parse. That is the better rule, and no case on either side would notice if it were
+    reversed.</p>
+    <p><strong>Done when</strong> a case in the lanes-view test files asserts that a run record whose
+    only stamp is <code>created_at</code> is dated by the lanes view, which the pre-change key list
+    could not do, so reinstating that list reddens it; a case asserts that a record whose
+    <code>budget.observed_at</code> is present but unparsable is dated by the next lifecycle stamp
+    rather than by the malformed value, which is the parse-first behaviour the move introduced; both
+    cases are asserted through the lanes view's own entry point rather than by calling the helper
+    directly, since a direct call proves the function and not the wiring; the existing lanes-view
+    cases pass with no added failures against a base measured in the same run; and the declared
+    negative control &mdash; restore the private key list in <code>mcp_views</code> &mdash; is
+    applied to a scratch copy, the first case is observed to fail there, and the red log's first
+    line repeats the declared mutation verbatim.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
@@ -1345,6 +1371,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260922T144949841055-review-of-the-window-source-reads-the-rollout-receipt-of-a-live-session" data-who="reckon-ship" data-when="2026-09-22T15:07:25.133Z">
     <div class="r-comment-body"><p>independent review of the rollout-receipt third source stored at 94 of 100 with three findings, the first proven with its own scratch-copy falsifier: the production branch of _read_rollout is asserted by no case and the gate stayed at 34 passed exit 0 without it; the reviewed gate re-ran green at 6001f577</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260922T1625-reader-proves-itself" data-who="reckon-ship" data-when="2026-09-22T16:25:00Z">
+    <div class="r-comment-body">GATE .venv/bin/python -m pytest -q tests/test_preflight_pace.py PASSED, 37 of 37, exit 0, the 34 that stood before plus three. DELTA measured in the same run rather than quoted: the five files covering the moved helper read 2 failed 73 passed at head against 2 failed 70 passed at base c0e95c1b, the same two ids, zero added. CONTROL red with the declared mutation verbatim on the log's first line, 1 failed 36 passed. Merged at 87c98418, with both halves proved: run_observed_stamp is defined once in budget and called from mcp_views, and the duplicated key list is GONE from mcp_views, which is the removed-marker half a positive check alone would miss. THE WORKER REFUTED A CLAUSE OF THIS COORDINATOR'S OWN DONE-WHEN, WITH A MEASUREMENT. The clause asked that the lanes-view tests covering the moved helper pass. The worker reinstated the pre-change key list in a scratch copy and those four files stayed at exactly 2 failed 36 passed: they do not cover the helper at all, so the clause was satisfiable without any test behind it and the gate file is the only place the unification is held. That correction is the node's most valuable output and it is recorded here rather than smoothed, because a done-when that cannot fail is the defect this plan exists to catch one layer up. DRAIN LEDGER @ 2026-09-22T16:25Z — unasserted production reader branch, duplicated dating helper, mixed-clock outcome: folded → the-window-source-proves-its-own-reader-and-dates-one-way, landed; lanes-view coverage of the moved helper, measured absent: NOT folded here and not hidden either, it is a test-coverage node scoped to the lanes-view files and is named in the section below; no-commit promotion guard: foreign-owner → scoring-should-stop-a-promotion. rows 3, foldable-remaining 1 pending the section below.</div>
 </div>
 </section>
 </main>
