@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="72">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8">
 <meta name="plan-impl" content="0.98">
@@ -1211,6 +1211,26 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <code>claude</code> took over its own account surface. Neither is repaired here: each repair is a
     decision about a surface this section does not own.</p>
 
+    <h3 id="s6-the-red-inside-the-fence">Remaining &mdash; one of those reds was inside the fence and is a fixture defect</h3>
+    <p><strong>The independent review found that the first of the two is not a surface this section
+    does not own &mdash; it is a broken fixture in a file the node already held.</strong> The case at
+    <code>tests/test_crew_lanes_view.py:228</code> patches the rollout reader with a bare dictionary
+    lookup, while <code>reckon/mcp_views.py</code> calls that reader with a keyword argument. A
+    <code>TypeError</code> is raised before the assertion is ever reached, so the case has been red
+    for a reason unrelated to the behaviour it guards, and it guards nothing while it stays that
+    way.</p>
+    <p><strong>That makes it the same defect class this whole section has been closing:</strong> a
+    check that cannot fail for the right reason. It was diagnosed rather than repaired, and the
+    repair is a stub that accepts the keyword.</p>
+    <p><strong>Done when</strong> the fixture at <code>tests/test_crew_lanes_view.py:228</code>
+    accepts the keyword the caller passes, so the case runs its own assertion rather than raising
+    before it; that case passes; the four lanes-view files show <strong>one</strong> remaining
+    failure rather than two, against a base measured in the same run with both figures recorded, and
+    the remaining one is the account-surface case this section already names as foreign; no other
+    case changes; and the declared negative control is applied to a scratch copy, the repaired case
+    is observed to fail there with the original <code>TypeError</code>, and the red log's first line
+    repeats the declared mutation verbatim and in full.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
@@ -1429,6 +1449,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260922T1910-lanes-view-holds-the-stamp" data-who="reckon-ship" data-when="2026-09-22T19:10:00Z">
     <div class="r-comment-body">GATE the two added cases pass through mcp_views.crew_lanes_view rather than by calling the helper, 2 passed exit 0. DELTA MEASURED IN THE SAME PASS, which is the discipline this section kept asking for: the four lanes-view files read 2 failed 38 passed at head 3f0e9621 against 2 failed 36 passed at base f4ba8f01, the same two ids either side, zero added. CONTROL reddens exactly the two named cases, 2 failed 9 deselected, after a positive control of those same two green at head; the whole modified file in the scratch copy is 3 failed 8 passed. The declared mutation is on the red log's first line VERBATIM AND IN FULL, which the done-when asked for after three waivers today on truncated or reworded declarations, and it arrived on the first pass. LINT BY DELTA: 0 findings at base, 0 at head, format clean. Merged at 798f87f8. THE CLAUSE THIS SECTION OPENED WITH IS NOW CLOSED THE RIGHT WAY ROUND. It began as a done-when clause that could not fail, was refuted by the worker it was given to, became its own section with a measure that can, and that measure was met with a control that reddens it. SECTION 6 REMAINS OPEN, and only for the half it always said belonged elsewhere: one week of committed rows reproducing the pace curve and the lane split, which needs a week of rows to exist and is recorded against s9. The node also reports that a pre-existing red, test_a_dialect_without_a_probe_never_calls_the_probe_reader, guards a population with no member left since the claude dialect began owning its account surface — out of fence, recorded, not repaired. DRAIN LEDGER @ 2026-09-22T19:10Z — lanes-view coverage of the shared helper: folded → the-lanes-view-has-a-case-for-the-stamp-it-shares, landed; week-of-rows half of this section's measure: recorded against s9, needs elapsed time rather than work; the empty-population guard: foreign to this fence, recorded above; no-commit promotion guard: foreign-owner → scoring-should-stop-a-promotion. rows 4, foldable-remaining 0.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260922T1945-lanes-view-review" data-who="reckon-ship" data-when="2026-09-22T19:45:00Z">
+    <div class="r-comment-body">REVIEW 99 of 100 — the session's highest and its cleanest, with evidence, fit, goal fidelity and scope discipline all at 20 and durability at 19. It cost a resume: the review process died once with its manifest in-progress, the third turn-end death of the session, and the watcher's 901-second line said STALLED where the fact was that the process was gone. The threshold is not a measurement; the liveness read is. TWO FINDINGS, and the first is actionable and was inside the fence. One of the two standing reds in tests/test_crew_lanes_view.py is a fixture defect this node could have written: the case patches the rollout reader with a bare dict lookup while mcp_views calls that reader with a keyword argument, so a TypeError precedes the assertion and the case has been failing for a reason unrelated to what it guards. A stub accepting the keyword is one line, in a file this node already held. It was diagnosed and not repaired, so it is folded rather than filed. The second is residual by the node's own declaration: _latest_backend_runs decides which of a backend's sessions the lane dates, which is the remaining path by which the two surfaces could disagree about which run a figure came from, and no case covers that ordering. Recorded as the residual gap in the area this section closes rather than as a defect of this landing.</div>
 </div>
 </section>
 </main>
