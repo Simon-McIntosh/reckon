@@ -133,6 +133,31 @@
     copy's path, so the row cites something durable rather than something that was true when
     written.</p>
 
+    <p><strong>Landed 2026-09-22.</strong> The copy exists, and the row cites it. A promotion
+    now resolves the path a worker cited and copies the file into the run directory before the
+    ledger record is built, so <code>gate_check.log_path</code> names
+    <code>&lt;run_dir&gt;/gate.log</code> rather than a <code>/tmp</code> path or a worktree's
+    <code>output/</code> &mdash; the run directory outlives both, pruned only by
+    <code>crew gc</code>. <code>crew complete --gate-log-path</code> is unchanged on the command
+    line; the copy is made by the surface, at the last moment it still can be, and no coordinator
+    has to remember it. A log already inside the run directory is carried through unchanged
+    rather than copied beside itself, and when a passing gate cites a log that cannot be found
+    and records no digest the promotion is <em>refused</em> &mdash; writing no row and leaving no
+    placeholder &mdash; because a recorded path pointing at nothing is the defect this section
+    exists to close, one layer along from a fabricated identifier.</p>
+
+    <p>The copy runs before the record is built and therefore before any plan write, so this
+    section adds a refusal that joins the ordering the &sect;4 landing established: every
+    refusal precedes the landing comment, and a retry after one finds the plan exactly as it
+    was. The case with 27 hand-copied logs is now one line of surface behaviour. Measured: the
+    declared mutation reddened exactly the two copy assertions and left the no-op and refusal
+    assertions green, so the red log is the declared mutation rather than a failure for another
+    reason; and the focused cohort at the node's own head adds only failures in files outside
+    its declared scope, which are reported rather than triaged. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-cited-gate-log-is-copied-where-the-row-can-find-it">cited gate log preservation evidence</a>,
+    with the figure at
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg</code>.</p>
+
     <h2 id="s4">&sect;4 &mdash; An evidence record that has to be authored before a plan can ship</h2>
 
     <p>Shipping a plan requires a cumulative evidence record. When a plan's landings are

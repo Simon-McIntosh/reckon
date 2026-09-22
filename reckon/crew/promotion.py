@@ -4,6 +4,7 @@ import html
 import json
 import os
 import re
+import shutil
 import subprocess
 import time
 from contextlib import contextmanager
@@ -531,6 +532,74 @@ def _require_gate_log_agrees(
             "command ran. Re-run the check and cite its log, or re-promote "
             "with the verdict the evidence actually shows"
         )
+
+
+_PRESERVED_GATE_LOG_NAME = "gate.log"
+
+
+def _preserve_cited_gate_log(
+    run_id: str,
+    gate_check: Mapping[str, Any] | None,
+    *,
+    verdict: str,
+) -> dict[str, Any] | None:
+    """Copy a cited gate log into the run directory so the row cites a durable path.
+
+    ``crew complete --gate-log-path`` records where a log *lies*, and a worker's
+    log routinely lies somewhere that will not survive: ``/tmp`` is reaped, and a
+    worktree's gitignored output directory goes with the worktree the promotion
+    releases. The ledger row then cites a path that resolves to nothing — every
+    check a reader runs on the row passes, and the evidence is gone.
+    Compensating by hand does not scale: two coordinators independently copied 27
+    gate logs into a reports directory before citing them.
+
+    The run directory outlives the worktree and is pruned only by ``crew gc`` on
+    a retention window, so a copy placed there is the durable form of the cited
+    log. A cited log already inside the run directory is therefore returned
+    unchanged — nothing needs copying, and a second copy would only duplicate it.
+
+    A cited log that cannot be found is refused for a passing gate rather than
+    recorded as a path pointing at nothing, unless a digest was recorded in its
+    place: ``--gate-log-digest`` exists precisely for a check whose log is
+    deliberately not kept, so refusing there would refuse that option's purpose.
+    A non-passing gate is never refused on its absent log, because its own
+    verdict is what states the evidence could not be produced.
+    """
+    if not isinstance(gate_check, Mapping):
+        return None
+    raw = str(gate_check.get("log_path") or "").strip()
+    if not raw:
+        return None
+    source = Path(raw).expanduser()
+    directory = run_dir(run_id)
+    try:
+        inside = source.resolve().is_relative_to(directory.resolve())
+    except (OSError, RuntimeError, ValueError):
+        inside = False
+    if inside and source.is_file():
+        return dict(gate_check)
+    if not source.is_file():
+        if verdict != "passed" or str(gate_check.get("log_digest") or "").strip():
+            return dict(gate_check)
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' citing log {raw!r}, which "
+            "does not exist, and records no digest in its place: the ledger row "
+            "would cite a path that resolves to nothing. Copy the log where you "
+            "can see it and cite that path, or record a digest with "
+            "--gate-log-digest when the log itself is not kept"
+        )
+    destination = directory / _PRESERVED_GATE_LOG_NAME
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
+    except OSError as exc:
+        raise CrewError(
+            f"run {run_id!r} cites gate log {raw!r}, but copying it into the "
+            f"run directory at {destination} failed: {exc}. The row cannot cite "
+            "a durable path, so the promotion is refused rather than recording "
+            "a path that will vanish with the worktree"
+        ) from exc
+    return {**dict(gate_check), "log_path": str(destination)}
 
 
 def _merged_gate_finding(
@@ -3606,6 +3675,14 @@ def _complete_locked(
     # five dimension scores and their total survive the loss of the crew
     # configuration home. The store keeps the verbatim text and findings; the
     # row keeps the compact block that joins to the run which earned it.
+    # The cited gate log is copied into the run directory before the record is
+    # built, so the row names a path that outlives the worktree and the reaper
+    # rather than one that was true only when it was written. A log already in
+    # the run directory, or a check that recorded a digest instead, is carried
+    # through unchanged.
+    gate_check = _preserve_cited_gate_log(
+        run_id, gate_check, verdict=str(gate).strip().lower()
+    )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
