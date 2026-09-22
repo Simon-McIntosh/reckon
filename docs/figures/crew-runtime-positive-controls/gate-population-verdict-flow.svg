@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 700" width="980" height="700" role="img" aria-labelledby="title desc" style="background:#fbfaf7;font-family:ui-sans-serif,system-ui,sans-serif">
+  <title id="title">Verdict flow for a gate population at dispatch</title>
+  <desc id="desc">The gate command's path-shaped tokens are read as populations only when they carry a glob metacharacter.
+  Each population is put to the repository's working tree: at least one match is admitted; no match takes one more
+  question, whether the population resolves against a path the node declared it will write, before the dispatch is
+  refused with the pattern named.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a55"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="40" font-size="21" font-weight="600" fill="#23232b">A gate population, asked of the repository at dispatch</text>
+  <text x="30" y="66" font-size="14" fill="#5b5b66">The gate command is the node's measure (its done-when). Reading the tree, never the spelling.</text>
+
+  <!-- start -->
+  <rect x="330" y="92" width="320" height="58" rx="8" fill="#eef1f6" stroke="#4a4a55"/>
+  <text x="490" y="117" font-size="15" text-anchor="middle" fill="#23232b">the gate command names</text>
+  <text x="490" y="137" font-size="15" text-anchor="middle" fill="#23232b">path-shaped tokens</text>
+
+  <line x1="490" y1="150" x2="490" y2="184" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- population test -->
+  <rect x="300" y="184" width="380" height="60" rx="8" fill="#fff" stroke="#4a4a55"/>
+  <text x="490" y="209" font-size="15" text-anchor="middle" fill="#23232b">a glob metacharacter and one separator?</text>
+  <text x="490" y="230" font-size="12.5" text-anchor="middle" fill="#5b5b66">tests/test_crew_resum*.py &#8212; not a population: the worker's own gate run reports it inside the worker</text>
+
+  <!-- yes branch -->
+  <line x1="490" y1="244" x2="490" y2="278" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="500" y="266" font-size="13" fill="#5b5b66">yes &#8212; a population</text>
+
+  <rect x="300" y="278" width="380" height="58" rx="8" fill="#fff" stroke="#4a4a55"/>
+  <text x="490" y="303" font-size="15" text-anchor="middle" fill="#23232b">ask the tree: glob(repository / pattern)</text>
+  <text x="490" y="323" font-size="12.5" text-anchor="middle" fill="#5b5b66">the store answers, so an unparseable query is admitted rather than refused</text>
+
+  <!-- branches -->
+  <line x1="490" y1="336" x2="490" y2="368" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="170" y1="368" x2="812" y2="368" stroke="#4a4a55" stroke-width="1.6"/>
+  <line x1="170" y1="368" x2="170" y2="396" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="812" y1="368" x2="812" y2="396" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="182" y="388" font-size="13" text-anchor="start" fill="#5b5b66">&#8805; 1 match</text>
+  <text x="800" y="388" font-size="13" text-anchor="end" fill="#5b5b66">no match</text>
+
+  <rect x="60" y="396" width="220" height="56" rx="8" fill="#e8f2ea" stroke="#2f6b46"/>
+  <text x="170" y="421" font-size="15" text-anchor="middle" fill="#1d4a30" font-weight="600">admitted</text>
+  <text x="170" y="441" font-size="12.5" text-anchor="middle" fill="#3d5a49">the gate population is there</text>
+
+  <rect x="700" y="396" width="224" height="56" rx="8" fill="#fff" stroke="#4a4a55"/>
+  <text x="812" y="419" font-size="14.5" text-anchor="middle" fill="#23232b">declared in the node's write paths?</text>
+  <text x="812" y="439" font-size="12.5" text-anchor="middle" fill="#5b5b66">asked as a glob, the store it will extend</text>
+
+  <line x1="812" y1="452" x2="812" y2="486" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="830" y="474" font-size="13" fill="#5b5b66">no</text>
+  <line x1="670" y1="424" x2="560" y2="424" stroke="#4a4a55" stroke-width="1.6"/>
+  <line x1="560" y1="424" x2="560" y2="486" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="596" y="416" font-size="13" fill="#5b5b66">yes</text>
+
+  <rect x="440" y="486" width="240" height="56" rx="8" fill="#e8f2ea" stroke="#2f6b46"/>
+  <text x="560" y="511" font-size="15" text-anchor="middle" fill="#1d4a30" font-weight="600">admitted</text>
+  <text x="560" y="531" font-size="12.5" text-anchor="middle" fill="#3d5a49">the absence it is there to fill</text>
+
+  <rect x="700" y="486" width="224" height="56" rx="8" fill="#f7e9e3" stroke="#a34a22"/>
+  <text x="812" y="509" font-size="15" text-anchor="middle" fill="#7a3517" font-weight="600">refused: gate-population</text>
+  <text x="812" y="529" font-size="12.5" text-anchor="middle" fill="#8a4a2a">the pattern is named, before a worktree exists</text>
+
+  <!-- measured case -->
+  <line x1="490" y1="542" x2="490" y2="576" stroke="#4a4a55" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="240" y="576" width="500" height="66" rx="8" fill="#f2f1ec" stroke="#4a4a55" stroke-dasharray="5 4"/>
+  <text x="490" y="601" font-size="14.5" text-anchor="middle" fill="#23232b">the measured case: tests/test_crew_resum*.py &#8594; 0 matches, not declared, <tspan font-weight="600">refused</tspan></text>
+  <text x="490" y="623" font-size="14.5" text-anchor="middle" fill="#23232b">the case beside it: tests/test_crew_dispatch*.py &#8594; 1 seeded match, <tspan font-weight="600">admitted</tspan></text>
+  <text x="490" y="663" font-size="13" text-anchor="middle" fill="#5b5b66">Two globs, one store: the verdicts differ because of what the repository holds, not because of how the patterns are spelt.</text>
+</svg>

@@ -1514,6 +1514,89 @@ nothing has been launched</code></pre>
       which another session's run holds; it is carried as a follow-on rather than attempted here, so this node
       changes no guard.</p>
     </section>
+
+    <section id="s19">
+      <h2>&sect;19 &mdash; A gate population names files the repository has</h2>
+      <p>A coordinator-authored gate population named a set the repository does not hold. The
+      launch-resolution node's brief carried <code>tests/test_crew_resum*.py</code> among its gate paths and no
+      file matches that glob, so the worker had to choose a substitute for a population nobody had measured
+      &mdash; and a substitution is invisible in the evidence afterwards, because the gate it ran passes.
+      The same rule the previous section states about an identifier applies one surface earlier: ask the store
+      rather than police the form. A glob is not wrong for being a glob; it is wrong for matching nothing.</p>
+      <p>The refusal is composed in <code>reckon/crew/node.py</code> beside the other node-contract findings
+      (<code>gate_population_patterns</code>, <code>gate_population_finding</code>) and appended in
+      <code>plan_dispatch</code> in <code>reckon/crew/dispatch.py</code>, so it fires before a worktree exists.
+      It is deliberately <em>not</em> one of the eight contract properties: those judge the node's own
+      definition, while this judges the working tree the node will run in, and a reader needs to tell a
+      malformed node from a misdirected one. The finding name is <code>gate-population</code>.</p>
+      <p><strong>A population is a set.</strong> A pattern is read as a population when it carries a glob
+      metacharacter and at least one path separator. A single literal path is a file claim rather than a
+      population, and one the repository lacks fails loudly inside the worker's own gate run: pytest prints
+      <code>file or directory not found</code> beside the name it could not find, so the worker is not left
+      choosing a substitute. The substitution this finding prevents is only possible where a <em>subset</em> of a
+      population is silently dropped. That boundary is measured, not asserted: the fixtures in
+      <code>tests/test_role_write_scope.py</code> build nodes whose measure names a literal path the repository
+      does not hold, and those nodes are admitted &mdash; which is why the check refuses populations rather than
+      absent files. Six of the eight cases in
+      <code>tests/test_gate_population_resolves.py</code> are the fence's, and the seventh pins this boundary
+      so a later reader meets it as a decision rather than as an omission.</p>
+      <table>
+        <thead><tr><th>Case</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>A brief naming <code>tests/test_crew_resum*.py</code>, a glob matching nothing</td><td>refused through <code>crew.dispatch</code>, the pattern named in the message, no live pointer written and the launcher never reached &mdash; the refusal lands before a worktree exists</td></tr>
+          <tr><td>A brief naming a glob matching at least one file</td><td>admitted, asked of the same store</td></tr>
+          <tr><td>The two put side by side in one case</td><td>one refused and one admitted, so the verdict turns on what the repository holds rather than on how the patterns are spelt</td></tr>
+          <tr><td>A measure naming no path at all</td><td>admitted: no claim about files was made</td></tr>
+          <tr><td>A measure naming a population the node declares in its write paths</td><td>admitted: the population resolves against the store the node is about to extend</td></tr>
+          <tr><td>A measure reporting a ratio (<code>110/135</code>)</td><td>admitted: an arithmetic ratio is not a file claim</td></tr>
+          <tr><td>A measure naming a single literal path the repository lacks</td><td>admitted, deliberately &mdash; the boundary above</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Evidence that could have failed.</strong> The declared mutation &mdash;
+      <em>removing the gate-population match check admits a pattern matching nothing</em> &mdash; was applied to
+      the fixed tree by disabling the check in <code>plan_dispatch</code>, and the two refusal cases were
+      observed to fail while the five negative halves stayed green: <strong>2 failed, 5 passed</strong>, exit 1.
+      That split is what distinguishes a mutation that reddens the refusal from one that breaks something else.
+      The red log's first line repeats the declared mutation verbatim, and the mutation is absent from the
+      committed tree (the check reads <code>if repo is not None:</code> at
+      <code>reckon/crew/dispatch.py:2773</code>).</p>
+      <p><strong>The gate adds no failure to its population.</strong> The same selection &mdash;
+      <code>test_crew_dispatch*.py test_crew_watch*.py test_crew_recovery*.py test_role_write_scope.py</code>,
+      plus this node's own test file at head &mdash; run in a clean extraction of the base revision
+      <code>eb2ffd60</code>, gives <strong>14 failed</strong> of 155, and at the fixed head <strong>14
+      failed</strong> of 162: the failure sets are identical, so the delta is zero added and zero removed. The
+      fourteen are pre-existing in this checkout and outside this node's scope; they are named in the log
+      beside the run rather than triaged here.</p>
+      <p><strong>A narrowing this node made, and why.</strong> The first version of the check asked the store
+      about every path-shaped token, literal ones included, and it added nine failures to
+      <code>tests/test_role_write_scope.py</code> &mdash; nodes measuring a placeholder literal file the fixture
+      repository does not hold. Those fixtures are outside this node's write scope, and landing a change that
+      reddens a peer suite is not a repair. Narrowing to glob populations keeps the measured incident refused,
+      keeps the two globs differing only by what the repository holds, and has a defect-shaped reason of its
+      own: a subset silently dropped is the harm. The cost is stated rather than hidden &mdash; a brief naming
+      one absent literal file is not caught here.</p>
+      <p><strong>The check refuses this node's own brief, which is worth knowing before dispatching it.</strong>
+      Read against every live pointer on this host (37 at the time of reading, a measurement with a shelf life
+      rather than a standing figure), exactly one is refused: this node's own, because its gate command names
+      <code>tests/test_crew_resum*.py</code> as the pattern under study rather than as a path it runs. A future
+      brief that needs to quote an absent population should say so in a form that is not a population claim,
+      or name the file in its write paths.</p>
+      <p><strong>Durable receipts.</strong> Logs for this node live under
+      <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/</code>:
+      <code>gate-population.red.log</code> (first line the mutation verbatim), <code>gate-population.green.log</code>,
+      and the two-tree comparison <code>delta-base.log</code> / <code>delta-head.log</code>. The run directory is
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120119468216-a-gate-population-names-files-the-repository-has/</code>.
+      The figure beside this section is
+      <a href="/reckon/figures/crew-runtime-positive-controls/gate-population-verdict-flow.svg">the verdict
+      flow</a>; the case results above are a table and are left as one.</p>
+      <p><strong>Follow-ons.</strong> The nine role-scope fixtures whose measures name an absent literal file
+      are the reason for the boundary above and would each need a scope grant to touch; a rule that also
+      refuses literal paths would have to land with them. Separately, this node's gate selection inherits
+      pre-existing failures in <code>test_crew_watch_*</code>, <code>test_crew_recovery</code> and
+      <code>test_role_write_scope</code> that are identical at base and head, and one of them
+      (<code>test_crew_surface</code>'s expected surface) is unaffected by this change because no new name is
+      registered in <code>reckon/crew.py</code>'s export list.</p>
+    </section>
   </main>
 </body>
 </html>
