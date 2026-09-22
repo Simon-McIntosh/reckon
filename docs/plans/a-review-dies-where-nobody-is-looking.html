@@ -24,6 +24,8 @@
   <title>A Review Dies Where Nobody Is Looking | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-22">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -70,19 +72,31 @@
       signalled says so and names the signal; one that exited says so and names the status. Falsify by
       killing a worker with a known signal and requiring the record to name it, and by letting one exit
       cleanly and requiring the record to differ.</p>
-      <p><strong>Then the two candidates that survive the refuted one, in order of cheapness.</strong>
-      Whether the read-only sandbox imposes a wall-clock or idle ceiling that a long review turn
-      crosses — deaths at 15 to 35 minutes are consistent with a ceiling and inconsistent with a
-      context bound, since record counts at death span two orders of magnitude. And whether the
-      sandboxed client runs outside <code>user-39486.slice</code>, which would restore the memory
-      hypothesis and is a launcher question rather than a measurement.</p>
-      <p><strong>The counter remains the instrument for the memory question and nothing else.</strong>
-      Baseline <code>oom_kill 529</code> at 21:22 on 2026-09-22, unchanged at 21:28:23 across a death.
-      It is kept because a later repair must still show it flat; it is no longer evidence that memory
-      is the cause, and a plan that cited it as such for one afternoon is why it is written down.</p>
-      <p><strong>One fact constrains every candidate:</strong> resume continues a dead review in the
-      same session and it streams again. Whatever kills the process does not poison the session, so the
-      cause is bounded to the run rather than the conversation.</p>
+      <p><strong>The memory candidate is closed for the instrumented slice, on three readings.</strong>
+      <code>oom_kill</code> held at <strong>529 at 21:22, 21:28:23 and 21:52:08</strong> on 2026-09-22
+      while <code>memory.current</code> sat near 32 GiB of a 64 GiB cap — and across that window two
+      local-lane reviews ran continuously, one died in the thinking shape at 21:21:31, and five more
+      local nodes were in flight on another session's lane. A counter flat across a wave that contains
+      the failure is the strongest negative available, and it retires the hypothesis this plan carried
+      for one afternoon.</p>
+      <p><strong>One sub-case survives and it is a single command, not an open question.</strong> A
+      flat counter cannot distinguish <em>no memory kill</em> from <em>a memory kill in a scope outside
+      the slice being watched</em>, because neither moves it. Read <code>/proc/&lt;pid&gt;/cgroup</code>
+      on a live worker and compare it against the slice the counter belongs to. If the worker sits
+      inside it the hypothesis is finished; if it does not, the counter was aimed at the wrong scope all
+      along and the reading must be retaken where the worker actually runs. <strong>Do not leave this as
+      a candidate — it costs one read and it is the difference between a closed question and a
+      comfortable assumption.</strong></p>
+      <p><strong>The candidate that survives:</strong> whether the read-only sandbox imposes a
+      wall-clock or idle ceiling that a long review turn crosses. Deaths arriving at 15 to 35 minutes
+      fit a time bound; record counts at death spanning 220 to 12,105 — two orders of magnitude — fit
+      neither a context bound nor a memory one, which is the only asymmetry between the candidates that
+      needed no new instrumentation.</p>
+      <p><strong>One fact constrains every candidate and has now held twice:</strong> resume continues a
+      dead review in the same session and it streams again. Both reviews resumed after mid-turn deaths
+      on 2026-09-22 completed and stored their records, scoring 91 and 88. So the work is sound when it
+      finishes, whatever kills the process does not poison the conversation, and the cause is bounded to
+      the run.</p>
     </section>
 
     <section id="s2" data-reckon="section">
@@ -199,14 +213,20 @@
       reason, rather than after launch by the endpoint with three records and no deliverable.</p>
     </section>
 
-    <section data-reckon="followups">
-      <article class="r-fu" data-id="f-ardwnil-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1">
-        <h3 class="r-fu-title">Find the memory bound first; §3 and §5 are cheap and independent</h3>
-        <div class="r-fu-body"><p><strong>§1 is the cause and §2 is the experiment that tells you how much of it is routing versus provisioning — run §2 before anyone justifies a fix by effort, because effort and role are confounded in every observation so far.</strong> §3 and §5 do not wait on either: §3 recovers a third of the losses by classifying on the deliverable rather than the exit, and §5 is a two-line exception-handling repair whose absence cost three reproductions and a hand-run command to diagnose. §6 has a guard half and a structural half; land the structural one or it recurs. §4 carries a disagreement between two sessions that is itself the finding — build for determinism and print the composed argv rather than adjudicating which reading was right.</p><p><strong>Do not close the orchestrator-lane fence until §1 reports.</strong> Reviews went to that lane because this one was killing them, and a fence over an unrepaired lane costs the review loop entirely.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship a-review-dies-where-nobody-is-looking §1</pre>
-      </article>
-    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ardwnil-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Find the memory bound first; §3 and §5 are cheap and independent</h4>
+    <div class="r-fu-body"><p><strong>§1 is the cause and §2 is the experiment that tells you how much of it is routing versus provisioning — run §2 before anyone justifies a fix by effort, because effort and role are confounded in every observation so far.</strong> §3 and §5 do not wait on either: §3 recovers a third of the losses by classifying on the deliverable rather than the exit, and §5 is a two-line exception-handling repair whose absence cost three reproductions and a hand-run command to diagnose. §6 has a guard half and a structural half; land the structural one or it recurs. §4 carries a disagreement between two sessions that is itself the finding — build for determinism and print the composed argv rather than adjudicating which reading was right.</p><p><strong>Do not close the orchestrator-lane fence until §1 reports.</strong> Reviews went to that lane because this one was killing them, and a fence over an unrepaired lane costs the review loop entirely.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-review-dies-where-nobody-is-looking §1</pre>
+    </article>
+</section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-20260922T200000-peer-trace-and-a-third-miss" data-who="ship-window-20260922" data-when="2026-09-22T20:00:00Z">
+    <div class="r-comment-body"><p>From the session that traced the island case, with the measurements, plus one result that <em>narrows</em> this section's framing and one that defends a claim in &sect;1.</p><p><strong>The island trace, as measured.</strong> Seventeen sprint documents exist; exactly one carried no <code>reckon-resource-state</code> script. Every plan read in the project failed from the moment it landed until it was repaired, because resolving any plan enumerates every sprint document. <code>audit-doc</code> reported that file clean at every severity, and the two other structurally broken documents in the repository it does catch, so the instrument was demonstrably aimed and still silent here. No committed revision of the file ever carried an island, so nothing was recoverable and nothing was lost; the repair takes id, version, theme and items from the document itself, leaves the remaining scalars empty because that is what the file evidences, and sets status to the value the code itself defaults to, so it asserts nothing about scheduling.</p><p><strong>A third miss, which this section's framing currently excludes.</strong> The section says the two defects it misses are both about the authoritative state rather than the prose around it. Measured across all 205 documents under the plan and evidence directories, three carry a structural tag imbalance. The validator catches the two whose imbalance is <code>&lt;section&gt;</code> and reports OK on the third, whose imbalance is four unclosed <code>&lt;tr&gt;</code> against 67 opens. That one is not authoritative state at all &mdash; an unclosed row reflows every following element into a table cell, so it is the browser's contract rather than the reader's. The scanner it would extend is the same one that already emits <code>section-unclosed</code>, so this costs a tag list rather than a new mechanism. I had opened a separate plan for it before finding this section; that plan is retired in favour of this one, because one validator with one owner is the point.</p><p><strong>For &sect;1 and &sect;3 &mdash; an independent session, and a discriminator that defends the role claim.</strong> Five runs of mine vanished tonight and I had been pooling them as one failure. Reading each first attempt's last stream record separates them cleanly: both <strong>implement</strong> runs ended on <code>result/success</code>, meaning the turn completed normally and only the manifest was never written, while all three <strong>review</strong> runs ended on a system record with no result at all, the process simply gone mid-stream. So the apparent counter-examples to <q>zero are implement-role</q> are not counter-examples, and the two must not be pooled &mdash; one is a contract defect in what a worker owes before ending its turn, the other is this plan's subject. The last stream record type is a one-line discriminator and it cost nothing to compute.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
