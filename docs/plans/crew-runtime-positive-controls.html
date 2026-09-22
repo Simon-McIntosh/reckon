@@ -948,6 +948,23 @@
     promotion citing no commit at all, with the deliberate no-commit declaration, is unaffected. The declared
     mutation is applied, the named cases are observed to fail, and the red log is recorded with the mutation
     verbatim on its first line.</p>
+    <p><strong>Widened 2026-09-21 by a second measured instance, and the widening changes the check rather
+    than only its scope.</strong> A peer session hand-composed a node's write path with a reconstructed run id,
+    <code>&hellip;T200217000000&hellip;</code> against a real <code>&hellip;T200201376670&hellip;</code> &mdash;
+    correct prefix, plausible remainder, no such run. Same defect as the sha: an identifier assembled rather
+    than copied, passing every shape check anyone would write, resolving to nothing. In both cases the only
+    thing that caught it was a consumer that had to resolve the identifier for its own reasons &mdash;
+    <code>git merge</code> for one, a reviewer reading the run under review for the other &mdash; and no check
+    aimed at the identifier found either. So the rule is general: <strong>any identifier a record cites must
+    resolve in the store that owns it</strong>, a commit in the object database and a run id in the pointer
+    listing.</p>
+    <p><strong>And the check must not police the form.</strong> Measured 2026-09-04 in this repository: a width
+    requirement on a sha <em>caused</em> a confabulation and then concealed it, because the check demanded forty
+    characters the producer's tooling does not hand it, so compliance meant guessing. A node that writes
+    <em>forty hex characters and resolves</em> recreates that defect. The correct form accepts whatever
+    abbreviation the producer honestly has and asks the store &mdash; <code>git cat-file -e</code> on the value
+    as cited, refusing on a non-zero return and never on length. Policing the form is what manufactured the
+    fabrication; asking the store is what catches it.</p>
     <p><strong>Files.</strong> <code>reckon/crew/promotion.py</code> and a test file. The file is held by
     another session's run at the time this section was written, so the section is authored and left
     dispatchable rather than dispatched; whoever takes it should confirm the claim first by running
