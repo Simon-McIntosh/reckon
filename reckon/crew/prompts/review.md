@@ -38,6 +38,32 @@ this node at all. So, explicitly:
   are out of scope for this verdict; name them only if the landed change makes
   them reachable.
 
+## The assertions the run added
+
+Durability asks whether a test exists that fails if the change regresses, and a
+test that is present and green does not answer it. Read the diff for the
+assertions it adds, and for each one say what would have to be true of the code
+for that assertion to fail. An assertion that cannot name a condition under
+which it fails is not a guard, and counting it as coverage overstates what the
+change protects.
+
+Name any assertion that compares a value against the same variable the test
+itself passed in rather than against an independent source. The shape is an
+assertion whose two sides move together — a value supplied to the code under
+test on one side, a call to that code on the other — so it holds whatever the
+code does and survives the very regression it was added to catch. Reverting the
+input it was handed leaves the assertion true.
+
+The remedy is the negative-control discipline applied to a single line: an
+assertion added to prevent a regression is verified by reinstating the
+regression, not by observing the test pass. So read each added assertion
+against the defect it claims to guard: state the code change you would put back
+and why the assertion would redden on it. Where an assertion is not independent
+of the value under test, emit a FINDING naming its file and line; where a
+durability score rests on such an assertion, say so in its JUSTIFICATION. This
+is a reading, not an experiment — the reading bound above still holds, so you do
+not modify the node to test it.
+
 ## The five dimensions
 
 Score the landed change on each dimension with an integer from 0 to 20,
@@ -49,7 +75,9 @@ one another; never rank, weigh or compare them.
   is recorded, not merely claimed.
 - **scope_discipline** — the diff stays inside the declared write paths and
   carries nothing the goal does not imply.
-- **durability** — a test exists that fails if this change regresses.
+- **durability** — a test exists that fails if this change regresses. A present
+  and green assertion is not that test on its own; judge it by the rule under
+  *The assertions the run added* above.
 - **fit** — the change matches the idiom of the code around it and introduces
   no name the repository naming rules forbid.
 

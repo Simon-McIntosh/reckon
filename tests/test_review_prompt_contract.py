@@ -7,6 +7,11 @@ silently: nothing fails when a bound stops being stated, or when the module
 that carries it starts claiming it is not on any live path. The falsifiers here
 read the prompt and the module as files and assert the claims that hold them.
 
+The prompt also asks the reviewer to check that each assertion a run added can
+actually fail, because an assertion true by construction passes, reddens no
+control, and reports a guarantee that is not there. That instruction is a
+sentence of prompt text like any other, so it is held by the same falsifier.
+
 The other half of the contract is a limit: per-item verdicts are recorded and
 their absence named, but they must NOT enter the completeness predicate a
 promotion reads. Reviews stored before the verdict line existed carry none, and
@@ -32,6 +37,24 @@ READING_BOUND_EXCLUSIONS = (
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# The rule that an added assertion must be able to fail. The review is the
+# only instrument that catches an assertion true by construction — it passes,
+# the control reddens, and the guarantee is absent — so the prompt has to ask
+# the question, name the independent-source shape, and state the remedy. Each
+# phrase is load-bearing: a rewrite that drops one is a prompt that no longer
+# asks, and nothing else in the gate stack would notice.
+ASSERTION_INDEPENDENCE_PHRASES = (
+    "what would have to be true of the code for that assertion to fail",
+    (
+        "the same variable the test itself passed in rather than against an "
+        "independent source"
+    ),
+    (
+        "an assertion added to prevent a regression is verified by reinstating "
+        "the regression, not by observing the test pass"
+    ),
+)
+
 DIMENSION_ONLY_REVIEW = "\n".join(
     f"SCORE {dimension}: 12" for dimension in review_module.REVIEW_DIMENSIONS
 )
@@ -42,6 +65,17 @@ def test_prompt_states_the_reading_bound_with_all_three_exclusions() -> None:
     for exclusion in READING_BOUND_EXCLUSIONS:
         assert exclusion in loaded, (
             f"the prompt no longer states the reading bound: {exclusion!r}"
+        )
+
+
+def test_prompt_requires_an_added_assertion_to_be_able_to_fail() -> None:
+    # Whitespace is collapsed because the clauses wrap across lines in the
+    # prompt; a line-wrapped clause is still one instruction to the reviewer.
+    prompt = " ".join(review_module.load_review_prompt().split())
+    for phrase in ASSERTION_INDEPENDENCE_PHRASES:
+        assert phrase in prompt, (
+            "the prompt no longer asks the reviewer to check that an added "
+            f"assertion can fail: {phrase!r} is missing"
         )
 
 

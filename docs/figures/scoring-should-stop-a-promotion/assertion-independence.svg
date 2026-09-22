@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="440" viewBox="0 0 940 440" role="img" aria-labelledby="title desc">
+<title id="title">An assertion whose two sides are the same variable cannot fail</title>
+<desc id="desc">Left: the assertion as written compares the recorded pid against the very variable the test passed in, so it passes. Middle: the regression reinstated supplies a literal the host decides, and the same assertion still passes because both sides moved together. Right: an assertion against a source the test did not supply fails on the reinstated literal. The prompt asks the reviewer to state, per added assertion, what would have to be true of the code for it to fail, and to name one comparing a value against the variable the test itself passed in rather than against an independent source.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker></defs>
+<g font-family="sans-serif" font-size="14" fill="#172033">
+<text x="24" y="30" font-size="18" font-weight="bold">An assertion that moves with its input cannot fail</text>
+
+<g fill="#f8fafc" stroke="#64748b"><rect x="24" y="56" width="288" height="252" rx="4"/></g>
+<text x="40" y="84" font-weight="bold">As written</text>
+<g font-family="monospace" font-size="13" fill="#0f172a">
+<text x="40" y="120">worker_pid = os.getpid()</text>
+<text x="40" y="142">assert first["pid"] == worker_pid</text>
+</g>
+<text x="40" y="184">Both sides are the same variable</text>
+<text x="40" y="204">the test itself passed in, so the</text>
+<text x="40" y="224">assertion holds whatever the code</text>
+<text x="40" y="244">does.</text>
+<rect x="40" y="262" width="112" height="30" rx="4" fill="#e2e8f0" stroke="#64748b"/>
+<text x="58" y="282" font-weight="bold" fill="#334155">PASSES</text>
+
+<g fill="#fef2f2" stroke="#b91c1c"><rect x="338" y="56" width="288" height="252" rx="4"/></g>
+<text x="354" y="84" font-weight="bold" fill="#7f1d1d">Regression reinstated</text>
+<g font-family="monospace" font-size="13" fill="#0f172a">
+<text x="354" y="120">worker_pid = 4242</text>
+<text x="354" y="142">assert first["pid"] == worker_pid</text>
+</g>
+<text x="354" y="184">The assertion moved with the</text>
+<text x="354" y="204">input it was handed. It reddens</text>
+<text x="354" y="224">on nothing, and the defect it was</text>
+<text x="354" y="244">added to catch survives.</text>
+<rect x="354" y="262" width="150" height="30" rx="4" fill="#fee2e2" stroke="#b91c1c"/>
+<text x="372" y="282" font-weight="bold" fill="#7f1d1d">STILL PASSES</text>
+
+<g fill="#f0fdf4" stroke="#15803d"><rect x="652" y="56" width="288" height="252" rx="4"/></g>
+<text x="668" y="84" font-weight="bold" fill="#14532d">Independent assertion</text>
+<g font-family="monospace" font-size="13" fill="#0f172a">
+<text x="668" y="120">assert first["pid"] == fixture_pid</text>
+<text x="668" y="142"># fixture_pid read from the host</text>
+</g>
+<text x="668" y="184">The compared value is not the one</text>
+<text x="668" y="204">the test supplied, so the assertion</text>
+<text x="668" y="224">reddens on the reinstated literal</text>
+<text x="668" y="244">and passes only on a real pid.</text>
+<rect x="668" y="262" width="150" height="30" rx="4" fill="#dcfce7" stroke="#15803d"/>
+<text x="686" y="282" font-weight="bold" fill="#14532d">FAILS on 4242</text>
+
+<g fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)">
+<path d="M312 182 H336"/><path d="M626 182 H650"/>
+</g>
+
+<path d="M24 336 H916" stroke="#94a3b8"/>
+<text x="24" y="366" font-size="15" font-weight="bold">The review prompt asks, per added assertion:</text>
+<text x="24" y="394">what would have to be true of the code for it to fail, and to name any one comparing a value</text>
+<text x="24" y="416">against the variable the test itself passed in rather than against an independent source.</text>
+</g></svg>
