@@ -1486,24 +1486,44 @@ worktree+repo from pointer:       []</code></pre>
     <table>
       <thead><tr><th>Measure</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td><code>tests/test_fence_widening.py</code>, every case through the CLI runner</td><td>6 passed in 0.5&ndash;0.8s</td></tr>
-        <tr><td>Declared mutation applied to the landed source</td><td>1 failed, 5 passed &mdash; exactly the not-blocked refusal case</td></tr>
+        <tr><td><code>tests/test_fence_widening.py</code>, every case through the CLI runner</td><td>7 passed in 0.6&ndash;1.2s</td></tr>
+        <tr><td>The declared control (<code>node.negative_control</code>): report the added path without writing it into the pointer</td><td>1 failed, 6 passed &mdash; exactly the add-and-read-back case. The command exits 0 reporting <code>["reckon/crew/node.py"]</code> while the pointer's <code>node.write_paths</code> still reads <code>["reckon/crew/runs.py"]</code>: the grant exists only in the command output, which is the vacuous pass the read-back exists to catch.</td></tr>
+        <tr><td>The additional control: the blocked-phase boundary removed from both checks</td><td>2 failed, 5 passed &mdash; the working-run refusal and the mid-flight flip case. Removing only the outer check reddens nothing (7 passed), because the under-lock re-check catches both.</td></tr>
         <tr><td>Pointer bytes outside <code>write_paths</code> after a widening</td><td>identical: <code>session_id</code> and <code>commits</code> asserted equal, and every other key of both the pointer and its <code>node</code> compared for equality</td></tr>
-        <tr><td>Ruff, <code>reckon/cli.py</code></td><td>4 findings at the base, 4 after: the commit adds none</td></tr>
+        <tr><td>Ruff, <code>reckon/cli.py</code></td><td>2 findings at the base, 2 after: the commit adds none (counted as finding lines; ruff's trailing summary line is its fixable tally, not the finding count)</td></tr>
         <tr><td>Ruff and <code>ruff format --check</code>, <code>tests/test_fence_widening.py</code></td><td>0 findings; formatted</td></tr>
       </tbody>
     </table>
 
-    <h3>The declared mutation, and that the guard it removes is real</h3>
-    <p>The declared mutation replaces the line
-    <code>    if phase != WIDENABLE_PHASE:</code> with <code>    if False:</code>, removing the
-    blocked-phase guard. Applied to the landed source, and the red log captured to this node's run
-    directory with the declaration verbatim on its first line; the source was then restored and the
-    gate re-run green at the same revision. The red output is the useful part: under the mutation the
-    command reports <code>"ok": true, "phase": "working"</code> and returns
-    <code>"added": ["reckon/crew/node.py"]</code> with exit 0, so a live run's fence is widened in place
-    while its owner reads a success. The uncovered behaviour is the boundary the command exists to
-    protect, not an API misuse.</p>
+    <h3>Two controls: the declared one, and the boundary it holds</h3>
+    <p><strong>The declared control is the persistence mutation</strong> &mdash; the declaration the run's
+    <code>node.negative_control</code> carries, <em>make the widening command report success without
+    writing the new path into the run live pointer, so the grant exists only in the command output</em>.
+    Realise it by replacing <code>declared.append(path)</code> with <code>pass</code>: the command still
+    reports the path as added and exits 0, while <code>node.write_paths</code> is left as it was. The
+    first case reddens (<code>1 failed, 6 passed</code>) on its read-back, which is the assertion that
+    would otherwise pass vacuously &mdash; a command that printed a grant it never persisted would look
+    identical in its own output. The declared wording is the control log's first line and so is a
+    substring of it.</p>
+
+    <p><strong>The additional control removes the blocked-phase boundary</strong>, replacing both
+    <code>if phase != WIDENABLE_PHASE:</code> and <code>if locked_phase != WIDENABLE_PHASE:</code> with
+    <code>if False:</code>. Under it <code>2 failed, 5 passed</code>: the working run's pointer is
+    rewritten in place while its owner reads <code>"ok": true</code>, and the run that flips mid-flight
+    is widened. Removing only the outer check is subsumed by the under-lock re-check &mdash; measured,
+    that shape passes 7 &mdash; so the boundary control removes both, and both are recorded in the same
+    log beside one another. The uncovered behaviour is the boundary the command exists to protect, not
+    an API misuse.</p>
+
+    <p><strong>The race the boundary had, and the check that closes it.</strong> An independent review
+    found the phase checked once, on a read taken before the per-run lock, while the pointer mutation
+    re-read the record under that lock without re-checking it: a run that leaves the blocked phase in
+    that window was widened in place. The mutation now re-checks the phase on the record it read under
+    the lock and raises before the under-lock write, so a refusal leaves the pointer as the mutation
+    found it. A case drives that window by answering the pointer read <code>blocked</code> once and
+    <code>working</code> afterwards; it reddens under the boundary control and passes on the fixed
+    source. The outer check is kept &mdash; it refuses an obviously wrong request without taking the
+    lock &mdash; with the under-lock check as the authoritative one.</p>
 
     <p><strong>What this does not claim.</strong> The gate measures this node's own change against its
     own base; the merged head is a separately dispatched test node's measurement, and no full-suite run
@@ -1513,9 +1533,10 @@ worktree+repo from pointer:       []</code></pre>
 
     <p>Changed paths: <code>reckon/cli.py</code>, <code>tests/test_fence_widening.py</code>,
     <code>docs/figures/work-does-not-fall-to-the-coordinator/widening-writes-the-pointer.svg</code>.
-    Commit <code>9a6130d1</code>. Receipts in this node's run directory
-    <code>r-20260922T122851730217-the-widening-command-writes-the-pointer</code>:
-    <code>widen-green.log</code>, <code>widen-red-mutation.log</code>.</p>
+    Commits <code>9a6130d1</code> and <code>03aab7e7</code>. Receipts in this node's
+    run directory <code>r-20260922T122851730217-the-widening-command-writes-the-pointer</code>:
+    <code>widen-green.log</code>, <code>widen-red-mutation.log</code> (two control sections: the
+    declared persistence control first, the additional boundary control beneath it).</p>
   </section>
 
 

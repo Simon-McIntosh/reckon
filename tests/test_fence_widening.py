@@ -243,6 +243,47 @@ def test_widening_a_working_run_is_refused_and_writes_nothing(
     crew_home_watch.assert_untouched()
 
 
+def test_a_run_that_leaves_blocked_before_the_pointer_write_is_refused(
+    blocked_run: dict, crew_home_watch: CrewHomeWatch, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The phase is re-read on the record the pointer mutation itself read.
+
+    The command reads the pointer once to decide, then the pointer mutation
+    reads it again under the per-run lock. A run that leaves the blocked phase
+    in that window has started writing against its boundary, so a widening that
+    trusts the first read moves that boundary under a live process -- the exact
+    case the guard exists to refuse. The flip is injected between the two reads
+    by making the pointer read answer `blocked` once and `working` afterwards,
+    which is the shape of the race, and the case fails unless the under-lock
+    read is re-checked rather than assumed.
+    """
+    from reckon.crew import runs as runs_module
+
+    read_through = runs_module.read_pointer
+    reads = {"count": 0}
+
+    def leaving_blocked(run_id: str) -> dict:
+        pointer = read_through(run_id)
+        reads["count"] += 1
+        if reads["count"] == 1:
+            return pointer
+        return {**pointer, "phase": "working"}
+
+    monkeypatch.setattr(runs_module, "read_pointer", leaving_blocked)
+    monkeypatch.setattr("reckon.crew.read_pointer", leaving_blocked)
+
+    before = _tree_bytes(pointer_path(BLOCKED_RUN_ID).parent)
+
+    result = _widen(BLOCKED_RUN_ID, GRANTED)
+
+    assert result.exit_code != 0, result.output
+    on_disk = _read(BLOCKED_RUN_ID)
+    assert on_disk["phase"] == "blocked"
+    assert on_disk["node"]["write_paths"] == [DECLARED]
+    assert _tree_bytes(pointer_path(BLOCKED_RUN_ID).parent) == before
+    crew_home_watch.assert_untouched()
+
+
 def test_an_unknown_run_is_refused_rather_than_widened(
     blocked_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:

@@ -611,18 +611,24 @@
     non-zero exit with its pointer untouched, because a working run is already writing against the
     boundary the command would move.</p>
 
-    <p><strong>Proven by six cases that enter through the CLI runner. 6 passed.</strong> One adds the
+    <p><strong>Proven by seven cases that enter through the CLI runner. 7 passed.</strong> One adds the
     path and reads it back from the pointer; one asserts the session and the commits survive; one
     re-declares an already-present path and requires no duplicate entry; one requires the refusal and
     an unchanged pointer for a working run; one requires an unknown run to be refused rather than
-    silently widened; and the last makes the isolation witness fire on a substitute root, so the guard
-    that keeps the case's pointer write out of the fleet's crew home is shown to speak.
-    <strong>Falsified before trusting it.</strong> The declared mutation removes the blocked-phase
-    guard, and the file reddens <code>1 failed, 5 passed</code> &mdash; under it the working run's
-    pointer is rewritten in place and the command exits 0. The mutation sits verbatim on the red log's
-    first line and <code>reckon/cli.py</code> was restored, verified by the gate re-running green at
-    the same revision. This gate measures only this node's own change; the merged head is a separately
-    dispatched node's measurement. Full record:
+    silently widened; one requires a run that leaves the blocked phase between the pre-lock read and
+    the under-lock write to be refused there rather than widened in place; and the last makes the
+    isolation witness fire on a substitute root, so the guard that keeps the case's pointer write out
+    of the fleet's crew home is shown to speak.
+    <strong>Two controls, and the declared one is not the guard.</strong> The declared control
+    (<code>node.negative_control</code>) reports the added path without writing it into the pointer: the
+    file reddens <code>1 failed, 6 passed</code> on the read-back, so a grant that lived only in the
+    command output cannot pass. An additional control removes the blocked-phase boundary from both
+    checks and reddens <code>2 failed, 5 passed</code> &mdash; the working run's pointer rewritten in
+    place, and the mid-flight flip widened. Both sections sit in the red log, the declared wording on
+    the first line of its section, and <code>reckon/cli.py</code> was restored byte-identically after
+    each, verified by an empty <code>git diff</code> and the gate re-running green at the same revision.
+    This gate measures only this node's own change; the merged head is a separately dispatched node's
+    measurement. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#widening-writes-the-pointer">the cumulative evidence</a>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">

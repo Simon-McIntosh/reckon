@@ -2558,7 +2558,10 @@ def crew_widen(run_id, write_paths, pretty):
     The run must be blocked. A working run's fence is the boundary it is
     currently writing against, so widening one would move that boundary under a
     live process that already read it. A run whose phase is not ``blocked`` is
-    refused and its pointer is left untouched.
+    refused and its pointer is left untouched. The phase is checked twice: once
+    on the pointer as it stands and again on the record read under the per-run
+    lock, so a run that leaves the blocked phase between those two reads is
+    refused rather than widened in place.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -2582,6 +2585,19 @@ def crew_widen(run_id, write_paths, pretty):
     added: list[str] = []
 
     def widen(pointer: dict[str, Any]) -> dict[str, Any]:
+        # The phase above was read before the per-run lock, so it is a claim about
+        # the pointer as it was, not as it is. Re-check it on the record this
+        # mutation read under the lock: between the two reads a run can leave the
+        # blocked phase and start writing against its boundary, and widening there
+        # would move that boundary under a live process. Raising before the write
+        # leaves the pointer as this mutation found it.
+        locked_phase = str(pointer.get("phase") or "")
+        if locked_phase != WIDENABLE_PHASE:
+            raise click.ClickException(
+                f"run {run_id!r} became {locked_phase or 'unphased'} before the widening "
+                f"reached the pointer: only a {WIDENABLE_PHASE!r} run's fence is widened, "
+                "and nothing was written"
+            )
         node = dict(pointer.get("node") or {})
         declared = [str(path) for path in node.get("write_paths") or ()]
         for path in requested:
