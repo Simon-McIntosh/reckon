@@ -1655,6 +1655,127 @@ worktree+repo from pointer:       []</code></pre>
     &mdash; <code>gate-green.log</code>, <code>gate-base-no-preservation.log</code>,
     <code>gate-red-mutation.log</code> (mutation verbatim on line 1).</p>
   </section>
+
+
+  <section id="the-cited-gate-log-is-copied-where-the-row-can-find-it">
+    <h2>&sect;3 &mdash; A promotion copies the gate log it cites where the row can still find it</h2>
+
+    <p><strong>The row cited a path that was true when written and dead when read.</strong>
+    <code>crew complete --gate-log-path</code> records where a log <em>lies</em> rather than
+    copying it, and a worker's log routinely lies somewhere that will not survive the promotion
+    that reads it: <code>/tmp</code> is reaped, and a worktree's gitignored output directory is
+    released with the worktree. Every check a reader then runs on the ledger row passes &mdash;
+    the path is well-formed, the command is recorded &mdash; and the evidence is gone, which is
+    the same defect as a fabricated identifier one layer along. Two coordinators independently
+    invented the same compensation, copying 27 gate logs into a reports directory by hand before
+    citing them, which is the signal that it belongs in the surface.</p>
+
+    <p><strong>The repair copies the cited log into the run directory and records the copy's
+    path.</strong> <code>_preserve_cited_gate_log</code>
+    (<code>reckon/crew/promotion.py</code>) runs before <code>ledger.build_record</code>, so the
+    row names <code>&lt;run_dir&gt;/gate.log</code> &mdash; a directory that outlives the
+    worktree and is pruned only by <code>crew gc</code> on a retention window &mdash; instead of
+    the transient original. The command line is unchanged; the copy is made by the surface at
+    the last moment it still can be, so no coordinator has to remember it.</p>
+
+    <p><strong>What each case pins.</strong> Five, and each is a falsifier under a declared
+    mutation rather than a snapshot of the code that happens to hold. A citation outside the run
+    directory entirely (the <code>--gate-log-path /tmp/gate.log</code> shape) must be recorded
+    <em>inside</em> the run directory and not at the caller's path. The recorded copy must
+    resolve <em>after the original is deleted</em>, with the original's bytes, which is what
+    reaping and worktree release actually do to it. A citation under the repository's own
+    gitignored output directory &mdash; the second place a worker's log really lives, transient
+    because the promotion releases the worktree rather than because it leaves the repository
+    &mdash; must likewise be copied, by containment and by bytes. A citation <em>already</em>
+    inside the run directory must be carried through unchanged: not moved, not duplicated, and
+    not copied over a sibling run's log that already sits under the copy's name. And a citation
+    this machine cannot read must be left exactly as given.</p>
+
+    <p><strong>The adjudicated carve-out, which is the rule that governs the last case.</strong>
+    Preservation is best-effort and changes no verdict. Promotion may run from a machine the
+    worker's log never reached, so a cited path that does not resolve here has no text to
+    contradict the verdict: it is left exactly as given, nothing is written into the run
+    directory in its place, and the gate verdict and exit status are the caller's, which this
+    step reads neither of. An earlier brief asked for the opposite &mdash; a refusal for a
+    passing gate whose log is absent &mdash; and that request was withdrawn by its author
+    because it contradicted a contract the codebase had already reasoned: a log path that does
+    not resolve <strong>must not</strong> turn a landed run into a refusal. The pre-existing case
+    that states it, <code>test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion</code>,
+    passes at both the base revision and this node's head, so the contract is honoured rather
+    than restated.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg"
+           alt="Left: the worker's gate log, cited under /tmp where reaping takes it and under the worktree output directory where the promotion that reads it takes it. Middle: promotion resolves the cited path, copies it into the run directory, and hands the row the copy's path; a citation already inside the run directory is carried through with no second copy; the step is best-effort and verdict-neutral, reading no verdict and refusing nothing. Right: the run directory, durable, holding the byte-identical copy, with the ledger row citing it. Below, a lifetime bar showing the /tmp and worktree-output originals ending early against the run directory lasting until crew gc, and a footnote lane recording that a citation which does not resolve on the promoting machine, and a copy that cannot be written, both hand the check on unchanged.">
+      <figcaption>Where a cited gate log lives, where its copy lives, and the two cases the step
+      leaves exactly as it found them.</figcaption>
+    </figure>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation removes the copy so
+    promotion records the cited gate log path exactly as the caller gave it, leaving the row
+    pointing at the original location. Applied, the gate reddens <code>3 failed, 2 passed in
+    13.82s</code>: the <code>/tmp</code> citation, the copy-outliving-its-original case and the
+    repository-output citation, so the red log is the declared mutation rather than a failure for
+    another reason. It leaves green only the two cases where the mutation and the fix coincide by
+    construction &mdash; an already-inside citation is a no-op under both, and an unreadable one
+    is left as given under both &mdash; so no single no-copy mutation can differentiate those
+    two. Each therefore has its own declared control, run and recorded: deleting the early return
+    that carries an inside citation through relocates it onto the canned copy name and reddens
+    the already-inside case (<code>1 failed, 4 passed</code>), and replacing the best-effort
+    carry-through with a raise reddens the unreadable-citation case
+    (<code>1 failed, 4 passed</code>). All three mutations were reverted and
+    <code>reckon/crew/promotion.py</code> is byte-identical to the landed revision, verified by
+    an empty <code>git diff</code> at that path.</p>
+
+    <p><strong>Two earlier assertions in this gate were replaced because they proved nothing.</strong>
+    Both compared the row's recorded value against the path the test itself had supplied, so they
+    held whether or not the copy was made. They now assert the recorded path is inside the run
+    directory, that the bytes there are the worker's, and that a sibling's log under the copy's
+    name survives &mdash; properties the mutations above break and the path-string comparison
+    could not distinguish.</p>
+
+    <p><strong>Delta measured against the base revision, not against green.</strong> The declared
+    cohort &mdash; this node's gate, the gate-log agreement tests, the promotion tests and the
+    gate-evidence tests &mdash; is measured at the base revision and at the head over the
+    identical test set.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>01eeb308</code></th><th>Landed <code>fe1bf820</code></th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>Focused gate (<code>tests/test_gate_log_is_preserved.py</code>, 5 cases)</td><td>3 failed, 2 passed</td><td>5 passed</td><td>the three copy cases recovered</td></tr>
+        <tr><td>Declared four-file cohort</td><td>16 failed, 81 passed</td><td>17 failed, 80 passed</td><td>4 added IDs, 3 removed IDs</td></tr>
+        <tr><td>Added IDs, by file</td><td>&mdash;</td><td><code>tests/test_crew_gate_log_agrees.py</code> &times; 4</td><td>all outside this node's declared scope</td></tr>
+      </tbody>
+    </table>
+
+    <p>The three removed IDs are this node's own falsifiers failing at base, which is the property
+    that makes them falsifiers rather than snapshots. The four added IDs are
+    <code>test_promotion_whose_log_and_command_agree_lands_unchanged</code>,
+    <code>test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted</code>,
+    <code>test_fixture_command_not_found_beside_a_passing_summary_is_accepted</code> and
+    <code>test_an_agreeing_recorded_exit_status_does_not_refuse</code>. Each asserts
+    <code>stored["log_path"] == str(&lt;the path the test itself passed&gt;)</code>, which is
+    precisely the citation this change rewrites when the cited log lies outside the run
+    directory: the row must name the durable copy, so that assertion cannot hold. They are
+    reported for redispatch rather than triaged here, because the file is outside this node's
+    write fence and editing it would encode the pre-change behaviour as correct.</p>
+
+    <p><strong>What this does not claim.</strong> The gate measures this node's own change against
+    its own base; the merged head is a separately dispatched test node's measurement. No
+    full-suite run is claimed here.</p>
+
+    <p>Changed paths: <code>reckon/crew/promotion.py</code>,
+    <code>tests/test_gate_log_is_preserved.py</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg</code>.
+    Base revision <code>01eeb308</code>; commits <code>bd576e66</code>, <code>54d0a8d2</code>,
+    <code>1911969e</code> and <code>fe1bf820</code>, which is the revision these claims hold at.
+    Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/</code>
+    (<code>test-logs/head-cohort.log</code>, <code>test-logs/base-cohort.log</code>,
+    <code>negative-control.log</code>, <code>negative-control-relocation.log</code>,
+    <code>negative-control-refusal.log</code>).</p>
+  </section>
   </main>
 </body>
 </html>
