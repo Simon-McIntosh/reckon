@@ -161,6 +161,31 @@
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-cited-gate-log-is-copied-where-the-row-can-find-it">cited gate log preservation evidence</a>,
     with the figure at
     <code>docs/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg</code>.</p>
+    <p class="landed-summary"><strong>Landed 2026-09-22 &mdash; the agreement cases were asserting
+    the behaviour the copy step changes.</strong> With the copy in place, four cases that read
+    <code>gate_check.log_path == str(cited_log)</code> were pinning the old citation. Each now
+    asserts the durable claim in both halves: the row's path lies inside the run directory, and the
+    bytes at it equal the cited source's bytes. Either half alone is satisfiable without the
+    evidence surviving with it, which is why the pair is the assertion rather than the path.</p>
+
+    <p class="landed-summary">The fifth case is deliberately untouched.
+    <code>test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion</code> asserts that an
+    absent citation cannot turn a passing promotion into a refusal, which is the contract the copy
+    step now honours by handing such a check on unchanged; retargeting it would assert the opposite
+    of what it exists to protect.</p>
+
+    <p class="landed-summary">Measured, and the tree matters: the copy step landed on a concurrent
+    node whose <code>promotion.py</code> commit is not an ancestor of this worktree's base, so the
+    green run is against a scratch export carrying that hunk &mdash; the construction the merge
+    produces &mdash; and reports <strong>17 passed</strong>. Against the base without the copy, the
+    same file reports 4 failed, 13 passed, and the four are exactly the retargeted cases; the
+    declared mutation, the helper handing the check on unchanged in place of the copied path,
+    reddens those same four and leaves the unreadable-citation case passing. The file is therefore
+    red at this branch's own base for exactly the reason it exists: the dependency has not merged
+    here yet. Verifying the merged head belongs to a separately dispatched test node. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-agreement-cases-cite-the-recorded-copy">agreement-cases evidence</a>,
+    with the figure at
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/gate-agreement-cites-the-recorded-copy.svg</code>.</p>
 
     <h2 id="s4">&sect;4 &mdash; An evidence record that has to be authored before a plan can ship</h2>
 

@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Cumulative implementation evidence for removing coordinator hand-compensations from the crew surface: the roster write that commits itself, and scope-claim derivation reads that no longer hydrate every plan document.">
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="work-does-not-fall-to-the-coordinator">
-  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2,work-does-not-fall-to-the-coordinator#s5,work-does-not-fall-to-the-coordinator#s9">
+  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2,work-does-not-fall-to-the-coordinator#s3,work-does-not-fall-to-the-coordinator#s5,work-does-not-fall-to-the-coordinator#s9">
   <meta name="plan-recorded-at" content="2026-09-17">
   <meta name="plan-verdict" content="pass">
   <title>Work Does Not Fall To The Coordinator &mdash; cumulative execution evidence | reckon</title>
@@ -1516,6 +1516,118 @@ worktree+repo from pointer:       []</code></pre>
     Commit <code>9a6130d1</code>. Receipts in this node's run directory
     <code>r-20260922T122851730217-the-widening-command-writes-the-pointer</code>:
     <code>widen-green.log</code>, <code>widen-red-mutation.log</code>.</p>
+  </section>
+
+
+  <section id="the-agreement-cases-cite-the-recorded-copy">
+    <h2>&sect;3 &mdash; The agreement cases cite the recorded copy, not the caller's path</h2>
+
+    <p><strong>Four agreement cases were asserting the behaviour the copy step deliberately
+    changes.</strong> They read <code>gate_check.log_path == str(cited_log)</code>, which held
+    while promotion recorded where the log lay. Once promotion copies the cited log into the run
+    directory and records the copy's path, the row names the copy instead.</p>
+
+    <p><strong>The retargeted claim is the pair, not the path alone.</strong> Each of the four now
+    asserts that the row's citation <em>lies inside the run directory</em> and that the bytes at it
+    <em>equal the cited source's bytes</em>. Either half alone is satisfiable without the evidence
+    surviving with it: a path inside the directory proves nothing about its contents, and a
+    matching copy proves nothing about where the row points.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/gate-agreement-cites-the-recorded-copy.svg"
+           alt="Before: the row's gate_check.log_path is the path the caller cited, which a worker's
+                scratch log loses to the reaper. After: promotion copies the cited log into the run
+                directory and the row cites that copy, so the four retargeted cases assert both the
+                path inside the run directory and the bytes matching the cited source."
+           width="960" height="420" style="max-width:100%;height:auto">
+      <figcaption>The citation is redirected to a copy; the assertion is the redirect plus the
+      identity of the bytes at its far end.</figcaption>
+    </figure>
+
+    <p><strong>The five cases and their before/after identities.</strong></p>
+
+    <table>
+      <thead>
+        <tr><th>Case</th><th>Before</th><th>After</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_an_agreeing_recorded_exit_status_does_not_refuse</code></td>
+          <td><code>stored["log_path"] == str(passing_log)</code></td>
+          <td>citation inside <code>run_dir(run_id)</code>, name <code>gate.log</code>, bytes equal</td>
+        </tr>
+        <tr>
+          <td><code>test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted</code></td>
+          <td><code>log_path == str(executed_log)</code></td>
+          <td>same pair, source <code>executed_log</code></td>
+        </tr>
+        <tr>
+          <td><code>test_fixture_command_not_found_beside_a_passing_summary_is_accepted</code></td>
+          <td><code>log_path == str(captured_log)</code></td>
+          <td>same pair, source <code>captured_log</code></td>
+        </tr>
+        <tr>
+          <td><code>test_promotion_whose_log_and_command_agree_*</code></td>
+          <td><code>log_path == str(passing_log)</code></td>
+          <td>same pair, source <code>passing_log</code></td>
+        </tr>
+        <tr>
+          <td><code>test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion</code></td>
+          <td>unmodified</td>
+          <td>unmodified &mdash; an unreadable citation must not change a verdict</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The gate, and the tree it ran against.</strong> The declared mutation reverses the
+    copy the four cases now assert, and the copy step itself belongs to a concurrent node whose
+    commit (<code>54d0a8d2</code>, <code>reckon/crew/promotion.py</code>) is not an ancestor of
+    this worktree's base <code>8b1b31e6</code>. So the green run is against a scratch export of the
+    base with that node's <code>promotion.py</code> hunk applied &mdash; the same construction the
+    merge produces &mdash; rather than against the base tree. The base tree is the positive
+    control, not a pass.</p>
+
+    <table>
+      <thead>
+        <tr><th>Tree</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>base <code>8b1b31e6</code> + <code>54d0a8d2</code> promotion hunk (scratch tree)</td>
+          <td><strong>17 passed</strong> &mdash; the whole file, against the tree that carries the copy</td>
+        </tr>
+        <tr>
+          <td>base <code>8b1b31e6</code> without the copy step</td>
+          <td>4 failed, 13 passed &mdash; exactly the four retargeted cases, nothing else</td>
+        </tr>
+        <tr>
+          <td>base + copy step, with the declared mutation applied</td>
+          <td>4 failed, 13 passed &mdash; the same four, so the red is the mutation</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Declared mutation: <code>_preserve_cited_gate_log</code> returns
+    <code>dict(gate_check)</code> unchanged in place of the copied path, so the row re-cites the
+    original citation.</strong> Applied, the four retargeted cases redden and the
+    unreadable-citation case still passes &mdash; run on its own in the mutated tree it reports
+    <code>1 passed, 16 deselected</code>. The two failures that are <em>not</em> observed are as
+    important as the four that are: no refusal case reddens, so the mutation moves the citation and
+    leaves every verdict alone.</p>
+
+    <p><strong>What this does not claim.</strong> This gate measures this node's own change; the
+    merged result is a separately dispatched test node's measurement. The retargeted file is red at
+    this worktree's own base for exactly four cases, because the copy step it asserts is not yet on
+    this branch &mdash; that red is the dependency, not a regression, and the merge that lands
+    <code>54d0a8d2</code> is what makes it green. No product file changed here.</p>
+
+    <p>Changed paths: <code>tests/test_crew_gate_log_agrees.py</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/gate-agreement-cites-the-recorded-copy.svg</code>,
+    this evidence record, and the plan's &sect;3 landing record. Commit
+    <code>e1dbe859</code> (the retargeted cases). Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T132151082793-the-agreement-tests-assert-the-recorded-copy/</code>
+    &mdash; <code>gate-green.log</code>, <code>gate-base-no-preservation.log</code>,
+    <code>gate-red-mutation.log</code> (mutation verbatim on line 1).</p>
   </section>
   </main>
 </body>

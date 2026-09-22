@@ -18,7 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
-from reckon.crew.runs import _write_json, pointer_path
+from reckon.crew.runs import _write_json, pointer_path, run_dir
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -132,6 +132,22 @@ def _complete_arguments(
     ]
 
 
+def _assert_cites_the_recorded_copy(
+    record: dict, run_id: str, source: Path
+) -> None:
+    """The row cites a log inside the run directory whose bytes equal the source.
+
+    Promotion copies the cited log into the run directory so the row names a
+    path that outlives the worktree and the reaper, rather than the citation the
+    caller supplied. The durable claim is both halves together: the path lies
+    inside that directory, and the bytes at it are the ones that were cited.
+    """
+    citation = Path(record["gate_check"]["log_path"])
+    assert citation.parent == run_dir(run_id)
+    assert citation.name == "gate.log"
+    assert citation.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
+
+
 # ── An empty cited log refuses a passing gate ───────────────────────────────
 
 
@@ -214,9 +230,10 @@ def test_an_agreeing_recorded_exit_status_does_not_refuse(
     )
 
     assert result.exit_code == 0, result.output
-    stored = json.loads(result.output)["record"]["gate_check"]
+    record = json.loads(result.output)["record"]
+    stored = record["gate_check"]
     assert stored["exit_status"] == 0
-    assert stored["log_path"] == str(passing_log)
+    _assert_cites_the_recorded_copy(record, run_id, passing_log)
 
 
 # ── The captured exit sentinel is read by value, not by presence ────────────
@@ -251,7 +268,7 @@ def test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted(
     record = json.loads(result.output)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 1
-    assert record["gate_check"]["log_path"] == str(executed_log)
+    _assert_cites_the_recorded_copy(record, run_id, executed_log)
     # The accepted promotion consumed the pointer as usual.
     assert not pointer_path(run_id).exists()
 
@@ -418,7 +435,7 @@ def test_fixture_command_not_found_beside_a_passing_summary_is_accepted(
     assert result.exit_code == 0, result.output
     record = json.loads(result.output)["record"]
     assert record["gate"] == "passed"
-    assert record["gate_check"]["log_path"] == str(captured_log)
+    _assert_cites_the_recorded_copy(record, run_id, captured_log)
     # The agreeing promotion consumed the pointer as usual.
     assert not pointer_path(run_id).exists()
 
@@ -477,7 +494,7 @@ def test_promotion_whose_log_and_command_agree_lands_unchanged(
     assert record["gate"] == "passed"
     assert record["gate_check"]["command"] == _COMMAND
     assert record["gate_check"]["exit_status"] == 0
-    assert record["gate_check"]["log_path"] == str(passing_log)
+    _assert_cites_the_recorded_copy(record, run_id, passing_log)
     # The agreeing promotion consumed the pointer as usual.
     assert not pointer_path(run_id).exists()
 
