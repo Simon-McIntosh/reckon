@@ -1977,22 +1977,23 @@ AGREE: False</code></pre>
     <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/declaration-reaches-the-worker.svg"
          alt="Two composed prompts side by side. Before: the manifest template states the requirement that the red log's first line repeat the declared mutation verbatim, while the declaration is interpolated nowhere, so the worker paraphrases and promotion refuses. After: a block above the manifest template carries the node's declaration as written, beside the requirement it answers, so the worker copies the string and the match holds. A strip beneath separates the three shapes the block keeps apart: a declared mutation, a declaration of no applicable mutation, and no declaration at all." />
 
-    <p>Commit <code>fb68d3fb</code> renders the node's declaration through
+    <p>Commits <code>fb68d3fb</code> and <code>8ba6c011</code> render the node's declaration through
     <code>_negative_control_declaration</code> in <code>reckon/crew/prompts.py</code> and interpolates the
     result immediately before the manifest template that holds the requirement. The declaration is
     inserted as written and never reflowed or re-indented, because it is the exact string the delivered
     log's first line must contain. Three shapes are kept apart rather than collapsed: a declared mutation
     states the string and requires the log; a declaration of <code>none: &lt;reason&gt;</code> states that
-    no mutation applies, so no red log is required and the reason stands for a later reader; and a node
-    that declares nothing keeps the subject and is told plainly that none was declared, because an
-    omitted subject reads as a requirement that does not apply.</p>
+    no mutation applies, that its reason is expected after <code>none:</code>, and that promotion refuses a
+    bare one for a node that writes a check, so no red log is required and the reason stands for a later
+    reader; and a node that declares nothing keeps the subject and is told plainly that none was declared,
+    because an omitted subject reads as a requirement that does not apply.</p>
 
     <table>
       <thead><tr><th>Measure</th><th>Base</th><th>Landed</th><th>Delta</th></tr></thead>
       <tbody>
         <tr><td>Declaration occurrences in a composed prompt</td><td>0 in 9,989 chars</td><td>1 in 10,490 chars</td><td>the string the red log must repeat is now in the prompt</td></tr>
-        <tr><td><code>tests/test_prompt_carries_the_declaration.py</code></td><td>file absent</td><td>6 passed in 0.47s</td><td>6 new cases, all entering through <code>compose_prompt</code></td></tr>
-        <tr><td>Focused cohort (15 files, prompts and negative-control surface)</td><td>8 failed, 158 passed at <code>37de7907</code></td><td>8 failed, 164 passed</td><td>0 added failure IDs</td></tr>
+        <tr><td><code>tests/test_prompt_carries_the_declaration.py</code></td><td>file absent</td><td>6 passed at the landed revision</td><td>6 new cases, all entering through <code>compose_prompt</code></td></tr>
+        <tr><td>Focused cohort (15 files, prompts and negative-control surface)</td><td>8 failed, 158 passed at <code>37de7907</code></td><td>8 failed, 164 passed at <code>8ba6c011</code></td><td>0 added failure IDs (same 8 names)</td></tr>
         <tr><td>The declared control applied</td><td>&mdash;</td><td>6 failed, 0 passed</td><td>every case in the file reddens under it</td></tr>
         <tr><td>Ruff and <code>ruff format --check</code>, both changed paths</td><td><code>prompts.py</code>: 2 findings</td><td><code>prompts.py</code>: 2 findings; new test: 0</td><td>the commit adds none</td></tr>
       </tbody>
@@ -2009,6 +2010,18 @@ AGREE: False</code></pre>
     <code>reckon/crew/prompts.py</code> was restored afterwards with the file green again at the same
     revision. Logs: <code>negative-control-red.log</code>, <code>green-restored.log</code>.</p>
 
+    <p><strong>One sentence corrected on review, because it claimed a check that does not exist</strong>
+    (commit <code>8ba6c011</code>). The <code>none:</code> branch originally told the worker that the node
+    <em>states</em> the reason, but nothing enforces that when the node is cut: a bare <code>none</code>
+    passes the dispatch check and is refused only once promotion discharges the declaration on a passing
+    gate. A prompt asserting a property of its own node that no check upholds is the substitution this
+    contract exists to remove, so the sentence now states the condition that actually holds. Enforcing the
+    reason at dispatch &mdash; the better repair &mdash; is outside this node's fence and is carried as a
+    follow-on against <code>reckon/crew/node.py</code>. This correction also restates two log labels that
+    named the base revision while the tree already held the repair: <code>green-focused.log</code> and
+    <code>green-restored.log</code> now name the revision they ran at, and the cohort, the red control and
+    the green re-run are all taken at <code>8ba6c011</code>.</p>
+
     <p><strong>What this does not claim.</strong> The gate measures this node's own change against its
     own base at <code>37de7907</code>; the merged head is a separately dispatched test node's
     measurement. The focused cohort carries eight failures, present identically at base, and they are
@@ -2022,7 +2035,7 @@ AGREE: False</code></pre>
     <code>tests/test_prompt_carries_the_declaration.py</code>,
     <code>docs/figures/work-does-not-fall-to-the-coordinator/declaration-reaches-the-worker.svg</code>,
     <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>. Base revision
-    <code>37de7907</code>; commit <code>fb68d3fb</code>. Receipts:
+    <code>37de7907</code>; commits <code>fb68d3fb</code> and <code>8ba6c011</code>. Receipts:
     <code>~/.config/reckon/crew/runs/r-20260922T171701435432-the-prompt-carries-the-declaration-it-demands/</code>
     (<code>green-focused.log</code>, <code>base-focused.log</code>,
     <code>negative-control-red.log</code>, <code>green-restored.log</code>,
