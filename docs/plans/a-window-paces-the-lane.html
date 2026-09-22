@@ -1267,6 +1267,50 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     record: <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-the-red-inside-the-fence">the
     landed evidence record</a>.</p>
 
+        <h2 id="s6-the-probe-reader-and-the-undeclared-dialect">&sect;6 &mdash; The probe reader is called for a dialect that declares no probe</h2>
+
+    <p>The fixture repair left one case red in the four lanes-view files, and the
+    node that landed it recorded, out of fence, that the case could no longer
+    fail for the right reason because every known dialect declares a probe and
+    its guarded population was therefore empty. <strong>That reading is
+    wrong</strong>, and it is recorded here because a plausible cause accepted
+    without a check is exactly what this section has been closing all evening.</p>
+
+    <p>The test does not scan the live inventory. It builds its own backend
+    &mdash; <code>{"plain": {"launch": "cli", "command": "claude"}}</code> &mdash;
+    which declares no probe, so its guarded population has exactly one member and
+    the falsifier already ranges over the input domain rather than over what
+    happens to be configured. Run alone it fails on its first assertion,
+    <code>assert 1 == 0</code>: the probe reader was invoked once for a dialect
+    that declares no probe. So the case is red because the composer does the
+    thing the case exists to forbid, not because it has nothing left to
+    forbid.</p>
+
+    <p>Two readings remain and the node settles which by measurement, not by
+    argument. Either the composer should not reach for a probe here and the
+    defect is production behaviour; or probe support is now inferred from the
+    command name, <code>claude</code> is a known probe carrier, and the fixture's
+    backend stopped being probe-less when that inference landed &mdash; which
+    would make the test's chosen name a stable one whose referent had moved.
+    The distinction matters because the first is a bug and the second is a test
+    asserting yesterday's contract, and the repairs point in opposite
+    directions.</p>
+
+    <h3 id="s6-probe-reader-done">Done when</h3>
+
+    <p>The composer's decision to call a probe reader is located and the reason
+    it fires for this backend is stated from the code that decides it, not
+    inferred from the failure; whichever of the two readings the measurement
+    supports is the side that changes, with the rejected reading named and the
+    evidence against it recorded; the case passes at head for the reason it was
+    written for, shown by a probe-less dialect whose command is <em>not</em> a
+    known probe carrier leaving the reader uninvoked; the four lanes-view files
+    are measured before and after in the same pass with both figures recorded,
+    and the after figure carries no failure the before figure did not; and the
+    declared negative control is applied to a scratch copy, the case is observed
+    to fail there, and the red log's first line repeats the declared mutation
+    verbatim and in full.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
