@@ -1557,8 +1557,15 @@ nothing has been launched</code></pre>
       the fixed tree by disabling the check in <code>plan_dispatch</code>, and the two refusal cases were
       observed to fail while the five negative halves stayed green: <strong>2 failed, 5 passed</strong>, exit 1.
       That split is what distinguishes a mutation that reddens the refusal from one that breaks something else.
-      The red log's first line repeats the declared mutation verbatim, and the mutation is absent from the
-      committed tree (the check reads <code>if repo is not None:</code> at
+      The red log's first line does NOT repeat the declared mutation verbatim, and the claim that it does was
+      corrected by the coordinator after the independent review caught it: the pointer declares <em>remove the
+      gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is
+      admitted</em>, while the log opens <em>removing the gate-population match check admits a pattern matching
+      nothing</em>. That is a faithful paraphrase of the same experiment rather than a different one, and the
+      promotion carries a recorded waiver saying so instead of the declaration being edited to match &mdash; a
+      check satisfiable by rewriting its own input measures nothing. What the record must not do is claim a
+      verbatim match it does not have, which is this plan's own subject appearing in its own evidence. The
+      mutation is absent from the committed tree (the check reads <code>if repo is not None:</code> at
       <code>reckon/crew/dispatch.py:2773</code>).</p>
       <p><strong>The gate adds no failure to its population.</strong> The same selection &mdash;
       <code>test_crew_dispatch*.py test_crew_watch*.py test_crew_recovery*.py test_role_write_scope.py</code>,
@@ -1583,7 +1590,8 @@ nothing has been launched</code></pre>
       or name the file in its write paths.</p>
       <p><strong>Durable receipts.</strong> Logs for this node live under
       <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/</code>:
-      <code>gate-population.red.log</code> (first line the mutation verbatim), <code>gate-population.green.log</code>,
+      <code>gate-population.red.log</code> (first line a paraphrase of the mutation, not verbatim; see the
+      correction above), <code>gate-population.green.log</code>,
       and the two-tree comparison <code>delta-base.log</code> / <code>delta-head.log</code>. The run directory is
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120119468216-a-gate-population-names-files-the-repository-has/</code>.
       The figure beside this section is
