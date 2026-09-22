@@ -149,7 +149,7 @@
     </section>
 
     <section id="s6" data-reckon="section">
-      <h2>§6 — One meta key, one line, and a guard that says so</h2>
+      <h2>§6 — The validator does not check the state it validates against</h2>
       <p><strong>Measured here rather than accepted:</strong> reckon's parser is <strong>last-wins</strong>
       on a duplicated <code>plan-*</code> scalar — a file carrying <code>plan-impl</code> twice, 0.9 then
       0.1, parses as 0.1 — and <code>audit-doc</code> returns <code>OK</code> on a file carrying six
@@ -159,8 +159,27 @@
       successful <code>set impl</code> calls coexist with a promotion refusing that impl did not move.
       One project measured an audit plan reading <code>impl 0.0</code> to the roadmap while its writer
       kept updating the first line.</p>
+      <p><strong>The same gap has a second, worse face on sprint resources, measured against a
+      working instrument.</strong> A sprint whose <code>reckon-resource-state</code> island is removed
+      entirely passes <code>audit-doc</code> with <code>OK</code> — while <code>roadmap</code> and
+      <code>read_plan</code> fail for every session in the project, because that island <em>is</em> the
+      resource's state and the markup around it is presentation. One was authored by hand from a
+      sibling sprint on 2026-09-22, the island omitted, the validator run, its <code>OK</code>
+      believed, and the surface broken for every reader until a peer session traced it.</p>
+
+      <p><strong>The instrument is sound, which is what makes this a finding rather than an
+      impression.</strong> The same validator fails a plan carrying a relative image source
+      (<code>img-relative-src</code>) from the same fixture set, and it implements roughly fifty checks
+      including <code>meta-missing</code>, <code>header-duplicate</code> and
+      <code>section-unclosed</code>. So it is not that nothing is checked; it is that <strong>the two
+      defects it misses are both about the authoritative state rather than the prose around it</strong>
+      — a duplicated scalar and an absent island. A validator that reads presentation and skips the
+      state is checking the part a human would notice anyway.</p>
+
       <p><strong>Measure.</strong> <code>audit-doc</code> errors on any <code>plan-*</code> scalar
-      appearing twice; the reader refuses or dedupes deterministically rather than silently taking one;
+      appearing twice and on a typed resource whose state island is absent or unparseable, each
+      falsified by the fixture that currently passes; the reader refuses or dedupes deterministically
+      rather than silently taking one;
       and <code>impl</code>, <code>version</code> and <code>modified</code> are written as one
       contiguous block so a three-way merge treats them as a single hunk rather than three
       independently unionisable lines. The structural fix is the one that prevents recurrence; the guard
