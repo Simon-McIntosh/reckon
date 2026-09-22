@@ -1644,13 +1644,42 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     <code>_latest_backend_runs</code>, which decides which of a backend's sessions is the newest. That
     ordering is the reason the divergence mattered, and a case for it is not added here.</p>
 
-    <p><strong>Two pre-existing failures remain, fenced out of this node.</strong>
-    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> lives in
-    <code>tests/test_crew_lanes_view.py</code>, which is within this node's write scope, but the defect
-    is in the case's own patch of the receipt reader rather than in the source under test; and
-    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> asserts an invocation
-    count that the probe path no longer produces. Both reproduce identically at base and are reported
-    rather than repaired, so this node adds no failures and leaves the failure set as it found it.</p>
+    <p><strong>Both files cannot exit 0 while two pre-existing stale cases remain, and the clause is
+    recorded as a delta rather than as green.</strong> The done-when's literal form asks the
+    lanes-view files to exit 0. They do not, and they did not at the base revision: two cases are red
+    before this node and are red after it. The operative clause is therefore the one that follows
+    &mdash; no added failures against a base measured in the same run &mdash; because an absolute
+    green is not available; the two added cases themselves exit 0 (<strong>2 passed</strong>). Both
+    cases are in files this node owns, and each is diagnosed below rather than left as a symptom;
+    neither is repaired, because each repair is a decision about a surface this node does not own and
+    has no evidence for.</p>
+
+    <p><strong>Failure one: the case's patch predates the reader's signature.</strong>
+    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> patches
+    <code>mcp_views.rollout_module.read_rollout_receipt</code> with the fixture's bare
+    <code>dict.__getitem__</code>, while <code>reckon/mcp_views.py:685</code> now calls that reader as
+    <code>read_rollout_receipt(session_id, model_identifier=...)</code>, so
+    <code>dict.__getitem__</code> refuses the keyword. The production signature is settled and its
+    comment states why &mdash; only the production reader prices the receipt, and the served model
+    passes through from the backend configuration &mdash; so the drift is in the test's stub, not in
+    the call. A reader accepting the keyword repairs it without weakening the assertion; it is
+    diagnosed here rather than applied because the same file's second red case does not have that
+    shape.</p>
+
+    <p><strong>Failure two: the guard's population is now empty.</strong>
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> is parametrised by a
+    fixture backend whose <code>command</code> is <code>claude</code>, and asserts the probe reader is
+    never invoked and the lane reports <code>not_declared</code>. <code>_ClaudeDialect</code> now
+    overrides <code>read_account_surface</code> (<code>reckon/_backends.py:1526</code>, against the
+    base at 877), so <code>_owns_account_surface_reading</code> is true for it and
+    <code>_declared_probe_command</code> returns <code>("claude", "account-surface probe
+    declared")</code>: the probe reader is invoked once, by design. Measured over
+    <code>known_dialects()</code>, <strong>no dialect is probe-less any more</strong> &mdash;
+    <code>codex</code> declares a quota probe and both <code>claude</code> and <code>clive</code>
+    declare an account-surface probe &mdash; so the population the guard was written over has no
+    member left, and its premise cannot be satisfied by any real command. Choosing a replacement
+    fixture would therefore change what the guard covers rather than repair it; that is a decision
+    about the account-surface surface, which another node owns, and it is reported instead.</p>
   </section>
 
   <section id="gate-recapture">
