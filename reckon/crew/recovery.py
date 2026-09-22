@@ -305,13 +305,16 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
     review dispatch names is, so a hand-launched review is found by identity.
     A recorded run whose pointer is gone is not in flight — the review died —
     and the reflex is free to dispatch again rather than wait on a run that no
-    longer exists.
+    longer exists. A promoted or abandoned review leaves no live pointer, and a
+    sweep that reads the missing one as a pointer to inspect raises out of the
+    reflex rather than recomposing: the probe would fail on exactly the case it
+    was written to route.
     """
     fields = _review_dispatch_fields(record)
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if isinstance(recorded, Mapping):
         run_id = str(recorded.get("run_id") or "")
-        if run_id and read_pointer(run_id):
+        if run_id and runs.pointer_path(run_id).exists() and read_pointer(run_id):
             return run_id
     project = fields["project"]
     if not project:
@@ -329,6 +332,7 @@ def _record_review_dispatch(
     status: str,
     reason: str,
     review_run_id: str = "",
+    backend: str = "",
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
 
@@ -336,6 +340,11 @@ def _record_review_dispatch(
     node found that a review which ran and wrote nothing is indistinguishable
     from one that was never dispatched, and a reflex that fires into that
     ambiguity re-fires against the same run forever.
+
+    The backend the attempt targeted is recorded beside its outcome, because it
+    is the only durable fact that lets the next attempt know which lane already
+    dropped this run. A recorded run_id does not carry that: once the review
+    dies its pointer is gone, and the run goes back to looking unattempted.
     """
     if not run_id:
         return
@@ -345,6 +354,7 @@ def _record_review_dispatch(
             "status": status,
             "reason": reason,
             "run_id": review_run_id or None,
+            "backend": backend or None,
             "at": _utc_now(),
             "attempt": int(
                 (pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0
@@ -354,6 +364,36 @@ def _record_review_dispatch(
         return pointer
 
     _mutate_pointer(run_id, record)
+
+
+def _failed_review_backend(record: Mapping[str, Any]) -> str:
+    """The lane a run's most recent recorded attempt used, or empty.
+
+    A recorded attempt that produced neither a stored nor an in-flight review
+    has failed, and the caller reaches selection only when neither exists — so
+    whatever backend the record names is one this run has already been dropped
+    by, and recomposing onto it repeats the attempt rather than advancing it.
+    """
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return ""
+    return str(recorded.get("backend") or "").strip()
+
+
+def _review_lane_candidates(config: Mapping[str, Any]) -> list[str]:
+    """Configured backends a composed review may run on, the local lane first.
+
+    The local lane leads because it is the configured default and the unmetered
+    destination; it is a preference, not an assertion, so a caller can drop it
+    from the list and still have somewhere to compose the review.
+    """
+    backends = config.get("backends") or {}
+    names = sorted(str(name) for name in backends)
+    local = str(config.get("local_backend") or "").strip()
+    if local in names:
+        names.remove(local)
+        names.insert(0, local)
+    return names
 
 
 def _resolved_review_config(
@@ -459,6 +499,34 @@ def dispatch_review_for_run(
             "reason": reason,
         }
 
+    # The lane is selected rather than asserted: the local one is the
+    # preference, and it is dropped when this run already records a failed
+    # attempt on it. Without that, a sweep that fires on every completion
+    # recomposes the same review onto the lane that just dropped it, which the
+    # reflex was measured doing twice in two minutes against a saturated pool.
+    local_lane = str(resolved.get("local_backend") or "").strip()
+    previous_lane = _failed_review_backend(record)
+    candidates = [
+        name for name in _review_lane_candidates(resolved) if name != previous_lane
+    ]
+    if not candidates:
+        reason = (
+            f"the review for {run_id} was already dropped by backend "
+            f"{previous_lane!r} and no other configured backend can carry it"
+        )
+        _record_review_dispatch(
+            run_id, status="awaiting-lane", reason=reason, backend=previous_lane
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "awaiting_lane": True,
+            "backend": previous_lane,
+            "reason": reason,
+        }
+    backend = candidates[0]
+    on_local_lane = backend == local_lane
+
     node = TaskNode(
         id=fields["node_id"],
         goal=fields["goal"],
@@ -479,16 +547,20 @@ def dispatch_review_for_run(
             session=fields["session"],
             launcher=launcher,
             watch_required=True,
-            local=True,
+            local=on_local_lane,
+            backend_override=None if on_local_lane else backend,
             unreconciled_override=allow_unreconciled_runs,
         )
     except BudgetHold as exc:
-        reason = f"the local lane is unavailable: {exc}"
-        _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
+        reason = f"the {backend} lane is unavailable: {exc}"
+        _record_review_dispatch(
+            run_id, status="awaiting-lane", reason=reason, backend=backend
+        )
         return {
             "run_id": run_id,
             "dispatched": False,
             "awaiting_lane": True,
+            "backend": backend,
             "lane": getattr(exc, "verdict", None),
             "reason": reason,
         }
@@ -497,11 +569,14 @@ def dispatch_review_for_run(
         # refusals all arrive here. The automatic path must not be the one place
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
-        _record_review_dispatch(run_id, status="refused", reason=str(exc))
+        _record_review_dispatch(
+            run_id, status="refused", reason=str(exc), backend=backend
+        )
         return {
             "run_id": run_id,
             "dispatched": False,
             "refused": True,
+            "backend": backend,
             "reason": str(exc),
         }
 
@@ -511,10 +586,12 @@ def dispatch_review_for_run(
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",
         review_run_id=review_run_id,
+        backend=backend,
     )
     return {
         "run_id": run_id,
         "dispatched": True,
+        "backend": backend,
         "review_run_id": review_run_id,
         "reason": f"dispatched the composed review as run {review_run_id}",
     }
