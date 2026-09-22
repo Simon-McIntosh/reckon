@@ -418,6 +418,47 @@
     <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#rollback-asks-head">cumulative evidence</a>.
     No full suite or promotion was run.</p>
 
+    <h3 id="receipt-two-states-landed">The receipt now says which of the two states the row is in</h3>
+    <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
+    <p><strong>Defect reproduced, then repaired. Locally committed at <code>73cb04f9</code>.</strong>
+    A failed landing commit rolls its own writes back, and the ledger is one of them: a successful
+    <code>git restore</code> returns the tracked file to HEAD and takes the appended row with it.
+    Driving that path with a real failing commit produced
+    <em>the ledger row for run 'rolled-back-row' is already written; do not re-promote</em> while
+    <code>ledger.load</code> returned no runs, <code>git status</code> was clean, and the git trace
+    showed <code>restore</code> exiting <strong>0</strong> — the operator was told not to perform
+    the one action that recovers the row. The receipt now branches: the rollback returns a per-path
+    report, the refusal carries it, and a reverted row is reported as
+    <em>written and has been rolled back with the ledger</em>, naming re-promotion as the recovery
+    once the landing failure is resolved. The branch is decided by that report for the ledger path
+    together with a read-back of the row from the ledger the promotion resolved, never by the append
+    returning; an unreadable ledger answers <em>present</em>, so no receipt claims a rollback it
+    cannot show.</p>
+    <p><code>tests/test_receipt_names_the_rolled_back_row.py</code> reports <strong>3 passed</strong>
+    over a real checkout, with the commit failure produced by an executable <code>pre-commit</code>
+    hook rather than a stubbed return code. Replacing the branch decision with <code>if False:</code>
+    in a scratch copy turns the reverted case red (<strong>1 failed, 2 passed</strong>) and leaves
+    the surviving case green. Over the new file and
+    <code>tests/test_rollback_asks_head.py</code>: <strong>15 passed</strong> — <strong>3</strong>
+    in the new file and <strong>12</strong> in the existing one (committed at
+    <code>01277e55</code>). Reaching that green was not a matter of relaxing a wording:
+    <code>test_failure_after_append_names_the_written_row</code> asserted the surviving-row wording
+    for every parameter, while its own recorded git trace shows the rollback outcome <em>differs</em>
+    — where the restore exits 0 the appended row leaves the ledger with it, and only a refused
+    restore leaves a row a reader can still open. That file was outside this node's write fence, and
+    the node reported it rather than editing it; the coordinator granted the extension and the test
+    now derives its case from the restore exit codes it recorded, asserting the rolled-back wording
+    where the restore succeeded and the already-written wording where it did not (renamed
+    <code>test_failure_after_append_names_the_row_state</code>, since it now covers both states). The
+    ledger is read back to require its contents match the recorded outcome, so the expectation cannot
+    drift from the behaviour. Neither wording was weakened; the case the brief's own words describe
+    is the one retained throughout. Ruff findings are <strong>10 → 10</strong> over the changed paths
+    and formatting deviations <strong>2 → 2</strong>.</p>
+    <p>Full record:
+    <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s2d-receipt-two-states">the two states of a failed landing's row</a>.
+    This worker has not promoted, closed this section, or resolved its followup; integration and
+    verification at the merged head remain coordinator-owned.</p>
+
     <h2 id="s2e">§2e — Promotion destroys the path a finding needs</h2>
 
     <p>The three arguments for §2's refusal so far are all about the <em>score</em>: an unreviewed

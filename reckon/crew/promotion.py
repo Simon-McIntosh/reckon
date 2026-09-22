@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from reckon import _backends, _store, capabilities, ledger
 from reckon.crew import review as review_module
@@ -1624,7 +1624,9 @@ def _plan_comment_store_path(
     return [plan_file] if plan_file is not None else []
 
 
-def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
+def _restore_landing_writes(
+    checkout: Path, paths: Sequence[Path]
+) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1632,7 +1634,15 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
     promotion) is dropped from the index and the working tree. Recovery is
     best-effort because the refusal that triggers it (a stuck index or other
     git failure) can itself block these git calls.
+
+    The result is a per-path report keyed by the path as written: True for a
+    path that no longer carries the landing write — restored from HEAD, or
+    dropped because HEAD never had it — and False for one whose write
+    survives, because the restore was refused and HEAD holds a copy the
+    caller preserves. A caller reporting a store it wrote reads this to tell
+    a row that survived the rollback from one the rollback reverted.
     """
+    report: dict[str, bool] = {}
     for path in paths:
         target = str(path)
         restored = _git(
@@ -1646,21 +1656,46 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
             check=False,
         )
         if restored.returncode == 0:
+            report[target] = True
             continue
         try:
             relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
         except ValueError:
+            report[target] = False
             continue
         present = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
         if present.returncode == 0:
+            report[target] = False
             continue
         _git(checkout, "rm", "--cached", "--force", "--", target, check=False)
         Path(path).unlink(missing_ok=True)
+        report[target] = True
+    return report
+
+
+# A refused landing commit carries its rollback's per-path report here, so the
+# receipt composed around it can tell a reverted row from one that survived.
+LANDING_ROLLBACK_ATTRIBUTE = "landing_rollback"
 
 
 @contextmanager
-def _report_written_ledger_row(run_id: str):
+def _report_written_ledger_row(
+    run_id: str,
+    *,
+    ledger_path: str | Path | None = None,
+    row_present: Callable[[], bool] | None = None,
+):
     """Keep the append receipt visible when a later landing operation fails.
+
+    The append returning is not the row being present: a landing that fails
+    commits, then rolls its own writes back, reverts the ledger to HEAD and
+    takes the appended row with it. So the receipt states which of the two
+    states the row is in, and the branch is decided by what the rollback
+    reported for the ledger path together with reading the row back from the
+    ledger this promotion resolved — never by the fact that the append
+    returned. The already-written wording warns against re-promotion, which is
+    correct only while the row survives it; when the rollback reverted the
+    row, re-promotion is the recovery once the landing failure is resolved.
 
     Exceptions escaping this span lose their type, which is safe only while no
     typed exception handler can be reached by an exception raised within it.
@@ -1668,10 +1703,87 @@ def _report_written_ledger_row(run_id: str):
     try:
         yield
     except Exception as exc:
+        if _ledger_row_was_rolled_back(exc, ledger_path, row_present):
+            raise CrewError(
+                f"the ledger row for run {run_id!r} was written and has been "
+                f"rolled back with {ledger_path}; re-promote once the landing "
+                f"failure is resolved. Landing or cleanup failed: {exc}"
+            ) from exc
         raise CrewError(
             f"the ledger row for run {run_id!r} is already written; "
             f"do not re-promote. Landing or cleanup failed: {exc}"
         ) from exc
+
+
+def _ledger_row_was_rolled_back(
+    exc: BaseException,
+    ledger_path: str | Path | None,
+    row_present: Callable[[], bool] | None,
+) -> bool:
+    """Whether a failing landing reverted the ledger row it had appended.
+
+    Two facts, and neither alone is enough. The rollback's own per-path report
+    says whether it returned this ledger path to HEAD, which is why the append
+    returning proves nothing; the row read back from the ledger the promotion
+    resolved says whether the row a reader will open is actually there. A
+    report that preserved the path, or a read-back that finds the row, keeps
+    the already-written wording. Anything unreadable counts as present, so the
+    receipt never claims a rollback it cannot show.
+    """
+    if ledger_path is None or row_present is None:
+        return False
+    report = getattr(exc, LANDING_ROLLBACK_ATTRIBUTE, None)
+    if not isinstance(report, Mapping):
+        return False
+    target = _resolved_path_key(ledger_path)
+    reverted = next(
+        (
+            bool(state)
+            for path, state in report.items()
+            if _resolved_path_key(path) == target
+        ),
+        False,
+    )
+    if not reverted:
+        return False
+    return row_present() is False
+
+
+def _resolved_path_key(path: str | Path) -> str:
+    """A path's absolute form, so a report key and a lookup resolve together."""
+    try:
+        return str(Path(path).expanduser().resolve())
+    except (OSError, ValueError):
+        return str(path)
+
+
+def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
+    """A refused landing commit that carries its rollback's per-path report.
+
+    The receipt around the landing decides which state the appended row is in
+    from this report, so it must travel with the refusal rather than be
+    recomputed: only the rollback knows which restore calls git refused.
+    """
+    error = CrewError(message)
+    setattr(error, LANDING_ROLLBACK_ATTRIBUTE, dict(rollback))
+    return error
+
+
+def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
+    """Whether the ledger this promotion resolved carries ``run_id``.
+
+    The row is read back from the same store the append targeted rather than
+    inferred from the append's return: a rollback can have re-read the file
+    since. An unreadable ledger answers present, so a receipt never claims a
+    rollback the reader cannot confirm.
+    """
+    try:
+        data, _version = ledger.load(project, root=root)
+    except (OSError, ValueError, ledger.LedgerError):
+        return True
+    return any(
+        str(item.get("run_id") or "") == run_id for item in data.get("runs", [])
+    )
 
 
 def _commit_landing_writes(
@@ -1703,10 +1815,11 @@ def _commit_landing_writes(
         return {"committed": False, "reason": "no_write"}
     staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
     if staged.returncode != 0:
-        _restore_landing_writes(checkout, targets)
-        raise CrewError(
+        rollback = _restore_landing_writes(checkout, targets)
+        raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
-            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
+            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}",
+            rollback,
         )
     subject = subject or f"promote({run_id}): {verdict}"
     body = body or (
@@ -1724,10 +1837,11 @@ def _commit_landing_writes(
         check=False,
     )
     if committed.returncode != 0:
-        _restore_landing_writes(checkout, targets)
-        raise CrewError(
+        rollback = _restore_landing_writes(checkout, targets)
+        raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
-            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}"
+            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}",
+            rollback,
         )
     return {"committed": True, "subject": subject, "paths": [str(p) for p in targets]}
 
@@ -3240,7 +3354,11 @@ def _complete_locked(
         None,
     )
     if existing is not None:
-        with _report_written_ledger_row(run_id):
+        with _report_written_ledger_row(
+            run_id,
+            ledger_path=ledger.ledger_path(project, ledger_root),
+            row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
+        ):
             comment = (
                 {"recorded": False, "reason": "shadow evidence does not land code"}
                 if shadow
@@ -3651,7 +3769,11 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
-    with _report_written_ledger_row(run_id):
+    with _report_written_ledger_row(
+        run_id,
+        ledger_path=ledger.ledger_path(project, ledger_root),
+        row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
+    ):
         # The shadow store outcome rides on the ordinary payload, not a flag or a
         # log stream: a promotion that otherwise succeeded is the exact consumer
         # that must see a silently failing shadow. When this call did not perform
