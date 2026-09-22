@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285">
 <meta name="plan-impl" content="0.93">
@@ -1171,6 +1171,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest" data-who="reckon-ship" data-when="2026-09-22T13:27:49.145Z">
     <div class="r-comment-body"><p>recorded_windows reads live pointers beside ledger rows and takes the freshest dated reading per member whichever source carried it; 30 passed, base 27 unchanged, control (receipt-first precedence restored) reds the newer-stream case; live pointers on this host carry no lane_receipt, so the pointer home is asserted from a synthesised pointer</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260922T132759382201-review-of-the-window-source-reads-live-pointers-and-takes-the-freshest" data-who="reckon-ship" data-when="2026-09-22T14:12:37.724Z">
+    <div class="r-comment-body"><p>independent review of the freshest-reading window source stored at 93 of 100 with two findings: the project filter on the pointer read has no case, and the gate log lacks the revision/tree/command header; the reviewed gate re-ran green, 30 passed</p></div>
 </div>
 </section>
 </main>
