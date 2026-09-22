@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
-<meta name="plan-impl" content="0.3">
+<meta name="plan-impl" content="0.4">
 <meta name="plan-commits" content="7059a778,b78dcb95,b952879c">
 </head>
 <body>
@@ -301,10 +301,16 @@
     <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
     <p class="r-fu-outcome">The advisory half landed: a dispatch onto a lane whose projected exhaustion precedes the work horizon now carries the utilisation, the burn multiple, the projected exhaustion and the reset on its payload, unasked and without a second probe, and the resolved backend is identical with and without it. Commit abfee217, merged at bd2a5438, gate 9 cases green at the merged head, negative control red under both the worker's mutation and the declared one. The local measurement half did not run in the same wave: it is gated, because the deployment's declared context window does not agree with what the endpoint serves and a ceiling curve drawn against a window that does not exist measures nothing. The concurrency figure it needs is now settled at 19 concurrent against an aggregate throughput knee near 22, recorded on the section with the correction that the throughput knee and the cache cliff are one curve rather than two limits.</p>
     </article>
-<article class="r-fu" data-id="f-20260921T210138951945" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20260921T210138951945" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship" data-resolved-at="2026-09-22T20:10:23+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">The advisory has no reader outside the payload object — §3 next</h4>
     <div class="r-fu-body"><p>The independent review of the advisory node found the half that the payload test could not see: <strong>the live dispatch record assembles <code>lane_declaration</code> and <code>lane_reading</code> and omits <code>lane_advisory</code></strong>, so the ledger read and the cheaper-lane clause are computed on every emitting real dispatch and discarded, with no reader anywhere in <code>reckon/</code> outside <code>as_dict</code>. The deferral is this plan's, but the cost is paid on the path that cannot show it.</p><p>That is §3's deliverable and it is the next node: the advisory reaches the live pointer and the promoted ledger row, which is also what the locked delivery-point decision requires, since a follower line is the channel that reaches a coordinator without being asked and the payload alone was disproven rather than untested.</p><p>The review's second finding belongs with it because it is the same surface: the insufficient-evidence clause reports a sample shortfall against a floor of ten while naming a count the reader can already see is met, because <code>input_samples</code> counts the real shortfall at dispatch and is never carried into the message.</p></div>
     <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §3</pre>
+    <p class="r-fu-outcome">§3 closes. The advisory now reaches the live pointer and survives onto the committed ledger row, so the choice is recorded where a later reader asks whether the advice was taken. Landed 33779328, 17401e4d, debba812, merged db19ad17. Node gate 15 passed exit 0; the promotion set measured in one pass went 4 failed 153 passed at base 5ebc9f28 to 4 failed 156 passed at head with identical failing ids and zero head-only failures. Independent review 99 of 100. The insufficient-evidence clause named in this followup's second paragraph landed with the pointer half earlier in the session.</p>
+    </article>
+<article class="r-fu" data-id="f-20260922T2010-advisory-at-the-choice" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The advisory is recorded; next it has to arrive where the choice is made</h4>
+    <div class="r-fu-body"><p>§3 proved the record survives. §2 is the half that makes the record worth keeping: an advisory a coordinator reads only after the fact advises nobody. §5 stays shut behind its own gate — the local lane's declared context window must be shown to agree with what its endpoint serves before any ceiling curve is drawn against it — so §2 is the ready one.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -425,6 +431,9 @@ NEGATIVE CONTROL. Applied to a scratch copy of the fixed tree (git archive of th
 VERIFICATION. The promotion test set - the twelve existing promotion files plus this node's file - was run at base 5ebc9f28 and at this commit in one pass: base 4 failed 153 passed, head 4 failed 156 passed, identical failing ids and no failure at head that was not already present at base. The four pre-existing failures reproduce at base and live outside this node's fence, so they are recorded rather than triaged here. Full record: docs/evidence/archive/advise-the-lane-never-force-it-landed.html#s3-row, figure docs/figures/advise-the-lane-never-force-it/advisory-survives-promotion.png.
 
 This section is not closed here: the driving followup and the section status remain the coordinator's, which observes the other nodes this worker cannot.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260922T201500-row-half-lands" data-who="reckon-ship" data-when="2026-09-22T20:15:00Z">
+    <div class="r-comment-body"><p>Both halves of §3 are now in. The worker authored its own landing record above; this adds only what it could not see.</p><p><strong>Gate and closure.</strong> Node gate 15 passed, exit 0. The wider promotion set, thirteen files, was measured at base and at head in one pass: 4 failed 153 passed against 4 failed 156 passed, identical failing identifiers, zero head-only failures, three tests added. The declared control reddens exactly the row-carries-the-advisory case with a KeyError on the dropped key. Independent review 99 of 100 &mdash; goal fidelity, scope discipline, fit and durability at 20, evidence at 19.</p><p><strong>The review's one finding, verified.</strong> The manifest's <code>baseline_suite</code> and <code>after_suite</code> blocks state their command as the prose placeholder <q>twelve promotion test files plus the advisory test</q> rather than the vector that ran. I checked: the resolved thirteen-file command is on the second line of each log those blocks name, and the resolved revision is on the first, so every figure stays traceable and only the manifest alone cannot be re-run. The ledger row records the resolved command rather than the placeholder, so the defect does not propagate into the committed record.</p><p><strong>How the figure moved.</strong> <code>impl</code> goes 0.3 to 0.4 on one of four executable sections closing, with §2, §5 and §6 open and §5 held by its own gate. It is a ratio over sections rather than over nodes, stated so the next person moves it by the same rule.</p><p><strong>The node died once at turn end</strong> with its work committed and its manifest unwritten, and was recovered by resume rather than redispatch; nothing was lost.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
