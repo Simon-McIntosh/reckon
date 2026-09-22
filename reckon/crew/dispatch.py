@@ -10,6 +10,7 @@ import os
 import re
 import select
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -4101,6 +4102,31 @@ def _placed_record_identity(run_id: str) -> tuple[dict[str, Any] | None, Any]:
     return dict(placement), pointer.get("job_id")
 
 
+def _wait_status_record(exit_status: int) -> dict[str, Any]:
+    """How the launcher's wait on its own child ended, as two distinct cases.
+
+    ``os.waitstatus_to_exitcode`` negates the signal number when the process was
+    terminated rather than exited, so the sign carries the whole distinction and
+    a reader must not have to know that to act on it: the two cases want
+    different responses. A signalled process chose nothing, so it records no
+    exit code and names the signal that ended it; an exited one records its code
+    and names no signal. A signal outside the named set — a realtime signal, for
+    instance — is still recorded by number, so an unfamiliar kill is legible
+    rather than dropped.
+    """
+    record: dict[str, Any] = {"exit_code": None, "signal": None, "signal_name": None}
+    if exit_status < 0:
+        number = -exit_status
+        record["signal"] = number
+        try:
+            record["signal_name"] = signal.Signals(number).name
+        except ValueError:
+            record["signal_name"] = f"signal {number}"
+    else:
+        record["exit_code"] = exit_status
+    return record
+
+
 def _launch_failure_record(
     launched: Mapping[str, Any],
     *,
@@ -4134,6 +4160,7 @@ def _launch_failure_record(
         "argv": list(launched.get("argv") or ()),
         "stderr_tail": stderr_tail,
         "stream_path": str(launched.get("stream_path") or ""),
+        **_wait_status_record(exit_status),
     }
     if placement:
         record["scheduler_state"] = state
@@ -4142,13 +4169,23 @@ def _launch_failure_record(
 
 
 def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
-    """Record one launch failure on its run, and stop its lift loop.
+    """Record how a launched worker's process ended, on its run.
 
-    A worker that exited with an empty stream is not a worker turn: no model
-    was reached, so there is nothing to resume from and nothing the lift loop
-    can usefully retry. Recording happens once per failure and the phase stops
-    a further lift until a person resumes or completes the run, which is what
-    breaks the measured loop of one 0-byte stream every two minutes.
+    Every reap records the exit the launcher observed. A run whose stream is
+    non-empty otherwise reads as still working with no trace of its process
+    having gone, which is how a worker ended by a signal stays
+    indistinguishable from a live one. The payload log, not the step's exit
+    status, still decides whether a worker turn ran: a placed launch's exit
+    status belongs to the scheduler client, and a step the scheduler reports
+    COMPLETED can still have aborted before reaching a model. A non-empty
+    stream is a turn that ran whatever the status says, so its run keeps its
+    phase and gains only the wait status.
+
+    A launch that wrote no byte at all reached no model: there is nothing to
+    resume from and nothing the lift loop can usefully retry. That one is a
+    launch failure as well — it records the failure and sets the phase, which
+    stops a further lift until a person resumes or completes the run, the
+    measured loop of one 0-byte stream every two minutes.
     """
     stream = Path(str(launched.get("stream_path") or ""))
     try:
@@ -4156,12 +4193,6 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     except OSError:
         # A stream that was never created is the same fact as an empty one.
         size = 0
-    # The payload log, not the step's exit status, decides whether the work ran:
-    # a placed launch's exit status belongs to the scheduler client, and a step
-    # the scheduler reports COMPLETED can still have aborted before reaching a
-    # model. A non-empty stream is a turn that ran whatever the status says.
-    if size:
-        return
     run_id = str(launched.get("run_id") or "")
     if not run_id:
         return
@@ -4171,20 +4202,28 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     # to record yet. Only a job that has left the queue is judged.
     if placement and _placement_job_alive(placement, job_id) is True:
         return
-    record = _launch_failure_record(
-        launched,
-        exit_status=exit_status,
-        placement=placement,
-        job_id=job_id,
+    wait_status = _wait_status_record(exit_status)
+    failure = (
+        None
+        if size
+        else _launch_failure_record(
+            launched,
+            exit_status=exit_status,
+            placement=placement,
+            job_id=job_id,
+        )
     )
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         phase = str(pointer.get("phase") or "")
         if phase == LAUNCH_FAILED_PHASE or phase in _TERMINAL_RUN_PHASES:
             return pointer
+        pointer["wait_status"] = wait_status
+        if failure is None:
+            return pointer
         pointer["phase"] = LAUNCH_FAILED_PHASE
         failures = list(pointer.get("launch_failures") or ())
-        failures.append(record)
+        failures.append(failure)
         pointer["launch_failures"] = failures
         return pointer
 

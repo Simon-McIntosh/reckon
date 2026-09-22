@@ -14,6 +14,7 @@ hand-built pointer.
 from __future__ import annotations
 
 import importlib
+import signal
 import time
 from pathlib import Path
 
@@ -174,6 +175,112 @@ def test_a_launch_that_wrote_a_turn_is_not_a_launch_failure(
     record = runs.read_pointer(run_id)
     assert record.get("launch_failures") in (None, [])
     assert record["phase"] == "working"
+
+
+def _wait_for_wait_status(run_id: str, timeout: float = 15.0) -> dict:
+    """Poll until the reaper has written the wait status, or fail loudly.
+
+    The assertion is on the record, not on the stream: what a reader acts on is
+    what the launcher kept, so the test reads the same surface.
+    """
+    deadline = time.monotonic() + timeout
+    record = runs.read_pointer(run_id)
+    while time.monotonic() < deadline:
+        record = runs.read_pointer(run_id)
+        if record.get("wait_status"):
+            return record
+        dispatch_module._reap_launched_workers()
+        time.sleep(0.05)
+    raise AssertionError(
+        f"run {run_id!r} never recorded a wait status; record={record!r}"
+    )
+
+
+def _spawn_a_stub_backend(tmp_path: Path, run_id: str, body: str) -> Path:
+    """Spawn a stub backend whose last act is ``body``, and reap it ourselves.
+
+    The child is consumed with the same tight poll the control above uses, so a
+    test asserting the absence of a launch failure cannot pass because nothing
+    was reaped.
+    """
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True)
+    runs._write_json(runs.pointer_path(run_id), _pointer(run_id, directory))
+    backend = tmp_path / "stub-backend"
+    backend.write_text(body, encoding="utf-8")
+    plan = dispatch_module.resolve_launch_executable(
+        importlib.import_module("reckon._backends").LaunchPlan(
+            backend="alpha",
+            dialect="claude",
+            argv=["/bin/sh", str(backend)],
+            cwd=str(directory),
+            stdin_text="",
+            environment={},
+            final_message_path=None,
+            resumed_session=None,
+        )
+    )
+    prompt = directory / "prompt.txt"
+    prompt.write_text("do the work\n", encoding="utf-8")
+    dispatch_module._spawn(
+        plan,
+        log_path=directory / "stream.jsonl",
+        stderr_path=directory / "stderr.log",
+        prompt_path=prompt,
+    )
+    stream = directory / "stream.jsonl"
+    deadline = time.monotonic() + 15.0
+    while time.monotonic() < deadline:
+        dispatch_module._reap_launched_workers()
+        with dispatch_module._LAUNCHED_WORKERS_LOCK:
+            outstanding = list(dispatch_module._LAUNCHED_WORKER_RUNS.values())
+        if not any(entry.get("stream_path") == str(stream) for entry in outstanding):
+            break
+        time.sleep(0.05)
+    return directory
+
+
+def test_a_worker_that_ends_by_signal_records_that_signal_on_its_run(
+    isolated_home: Path, tmp_path: Path
+) -> None:
+    """A worker killed by a signal is legible on its own run record.
+
+    The stream is non-empty, so the record can only have come from the wait the
+    launcher held: discarding the status for a run that wrote a turn is what
+    leaves a killed worker reading as a live one. The phase stays ``working``
+    because this node records the death and does not yet classify it.
+    """
+    run_id = "r-signalled-worker"
+    body = '#!/bin/sh\necho \'{"type": "assistant"}\'\nkill -TERM $$\n'
+    directory = _spawn_a_stub_backend(tmp_path, run_id, body)
+
+    record = _wait_for_wait_status(run_id)
+    wait = record["wait_status"]
+    assert wait["signal"] == signal.SIGTERM
+    assert wait["signal_name"] == "SIGTERM"
+    assert wait["exit_code"] is None
+    # Non-empty: this run wrote a turn, so it is not a launch failure and the
+    # status is the only place the death appears.
+    assert (directory / "stream.jsonl").stat().st_size > 0
+    assert record["phase"] == "working"
+    assert list(record.get("launch_failures") or ()) == []
+
+
+def test_a_worker_that_exits_records_its_code_and_no_signal(
+    isolated_home: Path, tmp_path: Path
+) -> None:
+    """An orderly exit records the code it chose, and names no signal."""
+    run_id = "r-exiting-worker"
+    body = '#!/bin/sh\necho \'{"type": "assistant"}\'\nexit 3\n'
+    directory = _spawn_a_stub_backend(tmp_path, run_id, body)
+
+    record = _wait_for_wait_status(run_id)
+    wait = record["wait_status"]
+    assert wait["exit_code"] == 3
+    assert wait["signal"] is None
+    assert wait["signal_name"] is None
+    assert (directory / "stream.jsonl").stat().st_size > 0
+    assert list(record.get("launch_failures") or ()) == []
 
 
 def test_an_empty_stream_is_recorded_once_and_stops_the_lift(
