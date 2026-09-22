@@ -1902,6 +1902,7 @@ def recorded_windows(
     root: str | Path | None = None,
     now: datetime | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, window_reading.WindowReading]:
     """One window reading per member of a declared group, from recorded evidence.
 
@@ -1910,19 +1911,29 @@ def recorded_windows(
     ``lane_receipt.quota_windows``, one row per length in minutes — while a
     claude lane reports them on the stream of the run that observed them, as a
     ``unifiedWindows`` event. Both carry an observation time, so both carry an
-    age, and :func:`group_pace` reads the freshest dated member of a group
-    whichever source supplied it.
+    age.
+
+    A receipt is read from either home a run's record occupies. While a run is in
+    flight its record is a pointer under the crew home, and on promotion it lands
+    in the repository's committed ledger; reading only one would lose the freshest
+    signal or the history behind it. The two homes are read as one set of
+    candidates, so the newest dated receipt a member has, in either home, is the
+    one that competes.
+
+    The freshest dated reading wins, whichever source carried it: a stream that
+    reported after the member's last receipt is the reading the group paces to,
+    and a receipt newer than the stream is the reading instead. Only readings that
+    resolved a clock compete, so a source that carried nothing never displaces one
+    that did; the fork is over which figure is newer, never over which dialect
+    spelled it.
 
     Only members of a declared group are read. A lane declaring no wallet has no
     group whose pace it could inform, and reading its stream would spend a file
     read on a figure nothing consults.
 
-    A stream is consulted only where no receipt reading exists, because a source
-    that carries nothing never competes with one that does: the fork is over
-    which dialect recorded a figure, not over which figure is newer. A backend
-    nothing reached is absent from the returned mapping rather than mapped to an
-    empty reading, so the group reports unknown exactly as it does when no window
-    source is supplied at all.
+    A backend nothing reached is absent from the returned mapping rather than
+    mapped to an empty reading, so the group reports unknown exactly as it does
+    when no window source is supplied at all.
     """
     moment = _now(now)
     members = {
@@ -1931,9 +1942,21 @@ def recorded_windows(
         for member in group_members
     }
     rows = ledger.runs(project, root) if records is None else list(records)
+    if pointers is None:
+        # The crew home holds every project's pointers, so the read is scoped
+        # here rather than at the call: one project's pace is not informed by
+        # another's runs, and a pointer is asked by project only when it is
+        # this one's.
+        live = [
+            record
+            for record in crew.list_live()
+            if str(record.get("project") or "") == project
+        ]
+    else:
+        live = list(pointers)
     receipts: dict[str, tuple[datetime, Mapping[str, Any]]] = {}
     runs_by_backend: dict[str, list[tuple[str, str]]] = {}
-    for row in rows:
+    for row in [*rows, *(record for record in live if isinstance(record, Mapping))]:
         if not isinstance(row, Mapping):
             continue
         name = _run_backend(row)
@@ -1954,18 +1977,29 @@ def recorded_windows(
 
     windows: dict[str, window_reading.WindowReading] = {}
     for name in sorted(members):
-        reading: window_reading.WindowReading | None = None
+        candidates: list[window_reading.WindowReading] = []
         receipt = receipts.get(name)
         if receipt is not None:
             candidate = _receipt_reading(receipt[1], moment=moment)
-            reading = candidate if candidate.known else None
-        if reading is None:
-            reading = _newest_stream_reading(
-                runs_by_backend.get(name, ()), moment=moment
-            )
-        if reading is not None:
-            windows[name] = reading
+            if candidate.known:
+                candidates.append(candidate)
+        stream = _newest_stream_reading(runs_by_backend.get(name, ()), moment=moment)
+        if stream is not None:
+            candidates.append(stream)
+        if candidates:
+            windows[name] = max(candidates, key=_reading_stamp)
     return windows
+
+
+def _reading_stamp(reading: window_reading.WindowReading) -> datetime:
+    """A reading's observation time, for choosing the freshest of two.
+
+    A reading that resolved a clock carries the time it was observed, and a
+    reading that resolved none is never a candidate, so the fallback only keeps
+    the comparison total: an undated reading sorts behind every dated one rather
+    than ahead of it.
+    """
+    return reading.observed_at or datetime.min.replace(tzinfo=UTC)
 
 
 def _run_backend(row: Mapping[str, Any]) -> str:
@@ -1982,11 +2016,18 @@ def _run_backend(row: Mapping[str, Any]) -> str:
 def _run_order(row: Mapping[str, Any]) -> str:
     """A run's recency as a sortable stamp, newest-last by string order.
 
-    The stamps the ledger writes are UTC ISO text of one width, so the string
-    comparison and the instant comparison agree; a row carrying neither stamp
-    sorts before every dated row rather than ahead of them.
+    The stamps a record carries are UTC ISO text of one width, whether the record
+    is a committed ledger row or a live pointer, so the string comparison and the
+    instant comparison agree; a record carrying none of them sorts before every
+    dated one rather than ahead of it.
     """
-    return str(row.get("completed_at") or row.get("dispatched_at") or "")
+    return str(
+        row.get("completed_at")
+        or row.get("dispatched_at")
+        or row.get("observed_at")
+        or row.get("created_at")
+        or ""
+    )
 
 
 def _receipt_reading(
