@@ -175,6 +175,41 @@
     completed without a resume. The nova runs for 2026-09-22 include at least one manifest whose
     status word is outside the recognised set, because nova-a9 repaired six by hand.</p>
 
+    <section class="section-landed">
+      <header><span class="badge badge-shipped">measured 2026-09-22</span></header>
+      <p class="landed-summary">The census is written and both counts carry their denominators.
+      118 transitions into <code>stalled</code> fell in the seven-day window across the four
+      projects, and <strong>97 of them were a worker process that had already stopped
+      writing</strong>; a further 9 have no attempt stream alive at the stall instant, so the row
+      describes nothing live in 106 of 118. Of the 12 stalls where the writer <em>was</em> alive,
+      9 later completed with no resume. 41 of the 118 completed with no resume at all. Separately,
+      194 of 4,378 manifest files declare a status outside <code>complete</code>,
+      <code>blocked</code>, <code>failed</code>, in 41 spellings; 32 of those are words no reader
+      recognises, and the rest are a recognised word with prose appended on the same line.</p>
+      <p class="landed-summary">A stall transition carries no process-liveness field, so liveness
+      is derived from the attempt stream active at the stall instant &mdash; a record in that same
+      file after the stall means alive, none means gone. Nine stalls fall before any attempt's
+      first record and are reported <code>unknown</code> rather than guessed. The stall window is
+      <code>DEFAULT_WATCH_STALL_WINDOW</code> in <code>reckon/crew/node.py</code>,
+      <code>"15m"</code> (900 s), emitted as <code>stream quiet for &lt;N&gt;s</code>.</p>
+      <p class="landed-summary">Both positive controls this section set are qualified, and neither
+      is reconciled away. Run <code>r-20260922T140247463532-rail-env-remaining-eighteen</code>
+      appears as a stall at <code>2026-09-22T14:32:30Z</code> and later completed under its own
+      run id with no redispatch &mdash; but it completed <em>after a resume</em>, not without
+      one: <code>resume-1.jsonl</code> holds the completing attempt, the ledger records attempt 2
+      with <code>attempt_kind: "resume"</code>, and the stream emits
+      <code>completed_unpromoted</code> at <code>15:21:12Z</code>, three records agreeing. The
+      nova control holds only on the literal reading: 17 nova manifests from 2026-09-22 are
+      outside <code>complete</code>/<code>blocked</code>/<code>failed</code>, as <code>in-progress</code> and
+      <code>waiting</code> &mdash; but no nova manifest carries a word outside the reader's
+      vocabulary at all. The two invented words (<code>ready-for-review</code>,
+      <code>delivered-awaiting-coordinator-adjudication</code>) are imas-efit's, and are the
+      reason the as-delivered manifest copies were scanned rather than the live ones.</p>
+      <p class="landed-summary">Full record:
+      <a href="/reckon/evidence/the-monitor-under-measurement-landed#stalls">stall and manifest
+      counts</a>.</p>
+    </section>
+
     <h2 id="s7">&sect;7 &mdash; Who should sweep a session nobody is following</h2>
     <p>Today every follower runs the recovery sweep over the whole project, so a follower resumes and
     reviews other sessions' runs. <a href="/reckon/plans/a-follower-keeps-your-work-in-view#s4">a-follower-keeps-your-work-in-view &sect;4</a>
