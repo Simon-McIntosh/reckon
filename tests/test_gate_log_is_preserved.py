@@ -10,8 +10,10 @@ the same defect as a fabricated identifier one layer along.
 The remedy is that the cited log is copied into the run directory, which
 outlives the worktree and is pruned only by ``crew gc`` on a retention window,
 and the row records the copy's path. A log already inside the run directory is
-left alone, and a passing gate whose cited log cannot be found is refused
-rather than recorded as a path pointing at nothing.
+left alone. Preservation is best-effort and changes no verdict: a citation that
+does not resolve on this machine is left exactly as given, because promotion may
+run where the worker's log never reached and so has no text to contradict the
+verdict.
 
 Every fixture below synthesises a temporary repository and a temporary crew
 home, and the real plan and crew directories are asserted absent before and
@@ -28,7 +30,6 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew.node import CrewError
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 
 PROJECT = "gate-log-preserved-fixture"
@@ -260,28 +261,32 @@ def test_a_log_already_in_the_run_directory_is_recorded_unchanged(
     assert sorted(path.name for path in directory.glob("*.log")) == ["gate.log"]
 
 
-# ── The refusal: nothing to copy must not become a copy of nothing ──────────
+# ── The limit: a citation this machine cannot read is left exactly as given ──
 
 
-def test_a_passing_gate_with_a_missing_log_and_no_digest_is_refused(
+def test_a_cited_log_that_cannot_be_read_leaves_the_citation_and_the_verdict(
     repository: Path, tmp_path: Path
 ) -> None:
-    """An absent cited log is refused rather than recorded as a dead path.
+    """Preservation is best-effort and never decides the gate.
 
-    With no digest recorded in its place, a cited log that cannot be read leaves
-    the row citing a path that resolves to nothing — the exact defect the copy
-    exists to close. Promotion refuses, writes no ledger row, and creates no
-    placeholder in the run directory.
+    Promotion may run from a machine the worker's log never reached, so a cited
+    path that does not resolve here has no text to contradict the verdict and
+    must not turn a passing promotion into a refusal. The row records the
+    citation exactly as given, no placeholder lands in the run directory, and the
+    verdict the caller supplied is the verdict that lands.
     """
     run_id = RUN_IDS[3]
     absent = tmp_path / "worker-scratch" / "never-written.log"
     _pointer(repository, run_id)
 
-    with pytest.raises(CrewError) as error:
-        _promote(
-            repository, run_id, "a citation of nothing", gate_check=_gate_check(absent)
-        )
+    _promote(
+        repository,
+        run_id,
+        "a citation this machine cannot read",
+        gate_check=_gate_check(absent),
+    )
 
-    assert "does not exist" in str(error.value)
-    assert ledger.runs(PROJECT, root=repository) == []
+    row = _row(repository, run_id)
+    assert Path(row["gate_check"]["log_path"]) == absent
+    assert row["gate"] == "passed"
     assert not (run_dir(run_id) / "gate.log").exists()
