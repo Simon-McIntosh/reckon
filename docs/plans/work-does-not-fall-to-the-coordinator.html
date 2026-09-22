@@ -743,6 +743,61 @@
     Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-prompt-carries-the-declaration-it-demands">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-22 &mdash; the declared-control branch is selected on the
+    predicate promotion applies.</strong> The block above the manifest template told every node whose declaration
+    was not a <code>none</code> form that <em>this node writes a check</em> and asked it to name a red log's path.
+    Promotion discharges a declared mutation only for a node whose write paths reach a test path and exempts any
+    other with <code>node-writes-no-test-path</code> before it reads the declaration, so a node that declared a
+    mutation and wrote no test file was told a false property of its own node and sent to produce a red log
+    nothing consumes. Reproduced at base <code>d53318f6</code>: a node declaring a mutation with
+    <code>write_paths</code> holding only a source path got the check claim <strong>present</strong> and the
+    log-path ask <strong>present</strong>, while promotion's own predicate reports no test path for that node.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/prompt-branch-matches-the-promotion-predicate.svg"
+           alt="A declaration forks first on its shape — empty, a none form, or a mutation — reproducing the
+                undeclared and none branches unchanged. A mutation then forks on the predicate promotion applies,
+                any(is_test_path(p) — yes selects the declared rule that states the node writes a check and asks
+                for the red log's path; no selects the repaired declared-no-check rule that states the declaration
+                is recorded and no log is required. A footnote records that before the repair the branch was
+                chosen on the declaration form alone, so the no branch was never reached." />
+      <figcaption>The three shapes kept apart, and the predicate that now decides between the two mutation
+      branches: the same test-path test promotion evaluates before it reads the declaration.</figcaption>
+    </figure>
+
+    <p><strong>The repair selects the branch on the predicate, not on the declaration form alone.</strong>
+    <code>_negative_control_declaration</code> in <code>reckon/crew/prompts.py</code> keeps
+    <code>negative_control_is_none</code> first and then branches on
+    <code>any(is_test_path(path) for path in node.write_paths)</code> &mdash; the same predicate
+    <code>_require_declared_negative_control</code> evaluates before it reads the declaration. A node whose scope
+    reaches a test path keeps the requirement and the log-path instruction; one whose scope reaches none is told
+    the declaration is recorded and that no log is required, with the declaration string still rendered because
+    it is the node's record. The <code>none</code> and undeclared branches are unchanged. The third shape is kept
+    apart rather than collapsed, for the same reason the earlier landing separated its three: an omitted or
+    mis-stated subject reads as a requirement that does not apply.</p>
+
+    <p><strong>Proven by four new cases that enter through <code>compose_prompt</code>, and the focused cohort
+    adds no failure ids.</strong> One requires a declared mutation with no test path to state neither the check
+    claim nor the log-path ask while still carrying the declaration; one requires the check-writing node to keep
+    both; one requires the <code>none</code> branch to be unchanged across both write-path shapes; one requires
+    the undeclared branch to be unchanged. The file is <strong>10 passed</strong>. The focused cohort of fifteen
+    files is <strong>8 failed, 168 passed</strong> against <strong>8 failed, 164 passed</strong> at base
+    <code>d53318f6</code> &mdash; the six existing cases plus the four new ones and nothing else &mdash; with the
+    eight failure names diffed and identical, so zero added. Those eight are present at base and outside this
+    node's scope; one sits on this plan's surface and is reported rather than repaired here.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation reverts the selector to
+    <code>NONE_RULE if none else DECLARED_RULE</code>, ignoring the write paths. Applied, the file reddens
+    <strong>1 failed, 9 passed</strong>: the no-test-path case fails because the prompt again asserts the node
+    writes a check, while the other three new cases hold &mdash; the mutation is the defect itself, so only the
+    case written for it moves. The mutation is the red log's first line verbatim, and
+    <code>reckon/crew/prompts.py</code> was restored afterwards with an empty <code>git diff</code> at that path
+    and the file re-run green at the same revision. This gate measures only this node's own change; the merged
+    head is a separately dispatched node's measurement. <code>reckon/crew/node.py</code> was in this node's fence
+    and is untouched, because <code>is_test_path</code> was already importable; enforcing the
+    <code>none: reason</code> form at dispatch remains a separate follow-on. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-declared-branch-matches-the-promotion-predicate">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
