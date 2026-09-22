@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree; matplotlib">
-  <meta name="plan-commits" content="91a4e14e">
+  <meta name="plan-commits" content="91a4e14e,73cbb5c0">
   <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png">
   <title>The Monitor Under Measurement &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -92,11 +92,14 @@
 
     <h3>The clip point</h3>
     <p>One real blocked row (<code>n-resolve-cross-module-refs</code>, detail 66 characters) is
-    rendered at every width from 100 to 220. The reason first clips at <strong>width
-    145</strong>. Between 100 and 144 the reason does not render at all: the margin is below the
-    twelve-column floor, so the cell is suppressed rather than truncated. That is why no row
-    blanks a reason for want of margin at the operating width of 160 &mdash; the margin question
-    only arises below the width at which the clause stops appearing entirely.</p>
+    rendered at every width from 100 to 220. The reason is clipped across a single contiguous
+    window, <strong>widths 145 to 198</strong>, and fits whole again at 199. Below 145 the
+    reason does not render at all: the margin is below the twelve-column floor, so the cell is
+    suppressed rather than truncated. The <strong>operating width of 160 lies inside the clip
+    window</strong>, so this row's clause is cut in ordinary use &mdash; and 199 columns is what
+    it would take to carry a 66-character reason whole. That is why no row blanks a reason for
+    want of margin at width 160: the margin question only arises below the width at which the
+    clause stops appearing entirely, and at 160 the clause is present but shortened.</p>
 
     <h3>What the counts settle</h3>
     <p>The from-and-to pair is present on every transition in every project, so a

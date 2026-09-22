@@ -126,9 +126,10 @@
     appear in 2291 / 1378 / 186 / 68 rows, with 4 / 9 live-name collisions where two distinct
     live runs truncate to one string. The from-and-to pair is present on every transition, so a
     destination-only layout shortens exactly the transition rows: 2889 / 3887 / 748 / 844. The
-    blocked-row clip point is width 145, and no row ever blanks a reason for want of margin at
-    width 160 &mdash; the margin binds only below the floor where the reason stops rendering at
-    all. Baselines are 28.2&nbsp;% / 21.3&nbsp;% / 26.5&nbsp;% / 25.4&nbsp;% of records, and
+    blocked-row reason is clipped across a contiguous window, widths 145 to 198, and fits whole
+    again at 199 &mdash; the operating width of 160 sits inside that window, so a clause of this
+    length is cut in ordinary use. No row ever blanks a reason for want of margin at width 160;
+    the margin binds only below the floor where the reason stops rendering at all. Baselines are 28.2&nbsp;% / 21.3&nbsp;% / 26.5&nbsp;% / 25.4&nbsp;% of records, and
     each project&rsquo;s stream also carries pre-JSON plain-text lines (444 / 1164 / 0 / 262)
     that hold no structured fields and are counted separately rather than rendered.</p>
     <p>Evidence anchor:
