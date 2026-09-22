@@ -3801,6 +3801,21 @@ def _complete_locked(
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
         run["execution_fit"] = dict(execution_fit)
+    # The advisory a dispatch computed rides the committed row the same way it
+    # rode the live pointer, together with the lane declaration and reading it
+    # was derived from. Promotion deletes that pointer, so an advisory reaching
+    # only the pointer is readable exactly until the run becomes evidence, and
+    # the row is where a later reader asks whether the advice was taken --
+    # ``backend`` already names the lane that was chosen, so the pair on the row
+    # is what tells taking the advice apart from declining it. Each key is
+    # written only when the pointer carried it: a row holding a null advisory
+    # would read as a lane that was assessed and found quiet, which is the
+    # opposite of a run whose dispatch never emitted one.
+    for lane_key in ("lane_advisory", "lane_declaration", "lane_reading"):
+        lane_value = record.get(lane_key)
+        if lane_value is None:
+            continue
+        run[lane_key] = dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
     # A shadow whose stream read its primary's landed answer is void as
     # calibration evidence; the stream is still on disk at this point (the run
     # directory is released after the append) so promotion scans it rather than
