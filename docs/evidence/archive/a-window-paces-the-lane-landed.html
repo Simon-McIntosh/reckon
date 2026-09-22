@@ -195,6 +195,42 @@
     first line the mutation verbatim.</p>
   </section>
 
+  <section id="wave-integration-gate">
+    <h2>The wave's selection at the merged head</h2>
+    <p>One pytest run at the merged head (main <code>48bf51b2</code>) over the eight test files the
+    wave's nodes wrote or touched: <strong>122 passed, 2 failed</strong>. The two failures are
+    <strong>pre-existing</strong> — the identical two ids fail at the wave's base revision
+    <code>1d2e70cc</code>, and neither file appears in <code>git diff --stat 1d2e70cc..HEAD</code>.
+    Added failures: <strong>zero</strong>.</p>
+    <p>Five of the eight files do not exist at the base revision, so they cannot be collected there.
+    An eight-name selection at base is a pytest usage error that collects nothing, which would read
+    as a clean base; the base figure is therefore taken over the three files present at both
+    revisions, and the five absent files are recorded as absent rather than as zero failures.</p>
+    <table>
+      <caption>The delta, over the three files present at both revisions.</caption>
+      <thead><tr><th>Revision</th><th>Files</th><th>Passed</th><th>Failed</th></tr></thead>
+      <tbody>
+        <tr><td>head <code>48bf51b2</code></td><td>8 (full selection)</td><td>122</td><td>2</td></tr>
+        <tr><td>head <code>48bf51b2</code></td><td>3 (comparable subset)</td><td>71</td><td>2</td></tr>
+        <tr><td>base <code>1d2e70cc</code></td><td>3 (comparable subset)</td><td>44</td><td>2</td></tr>
+        <tr><td><strong>delta</strong></td><td>3</td><td><strong>+27</strong></td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Which tree was measured.</strong> Interpreter
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> (CPython 3.14.2, pytest 9.1.1),
+    working directory the main checkout <code>/home/ITER/mcintos/Code/reckon</code>, entered with
+    <code>uv run --directory &hellip; --no-sync</code>. <code>import reckon</code> resolves to
+    <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code> and the editable pointer holds
+    that path, so the run measured the shipped tree rather than a worktree revision of it. The base
+    tree was materialised with <code>git archive 1d2e70cc</code>——no branch switch, no stash—and
+    entered with <code>env -C &lt;base tree&gt; PYTHONPATH=&lt;base tree&gt;</code>.</p>
+    <p>Logs, none under <code>/tmp</code>: <code>head-48bf51b2.log</code>,
+    <code>head-3shared-48bf51b2.log</code> and <code>base-1d2e70cc.log</code> under
+    <code>~/.config/reckon/crew/reports/reckon/wave-integration/</code>, beside the report
+    <code>merged-head-report.md</code>. This gate measures this node's own change; verifying the
+    merged result belongs to a separately dispatched node at the merged head.</p>
+  </section>
+
   <section id="what-this-does-not-claim">
     <h2>What this record does not claim</h2>
     <p>It claims a reader, not a fence. Nothing here paces a wave, opens a lane or refuses a
@@ -665,6 +701,78 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     </ul>
   </section>
 
+  <section id="gate-at-the-current-head">
+    <h2>The gate ran at the head it names</h2>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/head-vs-base-gate.svg" alt="Top: a revision line from base 1d2e70cc, through the predecessor gate's cited head 48bf51b2, to the pinned head 8257741, with the interval between the latter two labelled 193 commits and 22 merges. Bottom left: a two-by-two grid in which both named failing tests are marked failing at base and at head, so the failure is pre-existing rather than added. Bottom right: four successive readings of the main checkout's HEAD while the node ran, where the first two runs were superseded because the pair spanning them did not share one revision and the last held.">
+      <figcaption>The predecessor's tally was taken 193 commits and 22 merges behind the head
+      it was cited for. Re-measured at the head itself, the two failures are pre-existing, both
+      reproducing at base on the same assertion, and the added-failure count is zero.</figcaption>
+    </figure>
+
+    <p><strong>The revision this is valid for, and no other.</strong> Every count below was
+    produced at <code>825774198f7a637aa7aa6afc2d428390879fa45b</code> on <code>main</code>. A later
+    reader must not cite this anchor for a different head. The preceding integration gate recorded
+    its run at <code>48bf51b2</code>, which at that head is <strong>193 commits and 22 merges
+    behind</strong>; its tally of 122 passed and 2 failed was taken over a different, eight-file
+    selection and cannot speak for the interval that separates it from the head.</p>
+
+    <p><strong>The selection and the counts.</strong> The eleven declared files
+    (<code>test_window_reading</code>, <code>test_budget_group</code>, <code>test_binding_window</code>,
+    <code>test_lanes_borrowed_figure</code>, <code>test_reserve</code>, <code>test_pace</code>,
+    <code>test_staleness</code>, <code>test_lane_document</code>, <code>test_cached_account_age</code>,
+    <code>test_crew_lanes_view</code>, <code>test_lanes_view_is_live</code>) give
+    <strong>112 passed, 2 failed</strong>. Nine of the eleven do not exist at base
+    <code>1d2e70cc</code> &mdash; an absent file is not a file that ran clean, so the base
+    comparison is over the two files present at both revisions,
+    <code>test_crew_lanes_view.py</code> and <code>test_lanes_view_is_live.py</code>: 25 passed and
+    2 failed at base, 25 passed and 2 failed at head, a delta of zero in both columns.</p>
+
+    <p><strong>The two failures are pre-existing, and the added-failure count is zero.</strong>
+    <code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code> fails with
+    <code>TypeError: dict.__getitem__() takes no keyword arguments</code> at
+    <code>reckon/mcp_views.py:691</code>, and
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> fails on
+    <code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code>.
+    Both reproduce identically at base, and no commit between base and head touches either test file
+    or <code>reckon/mcp_views.py</code>. Both sit outside this node's write scope and are carried
+    under follow-ons rather than triaged here.</p>
+
+    <p><strong>The instrument, and the refusal it made.</strong> The main checkout is live and
+    peer sessions commit to it, so a count reported against "the head" is worthless unless a revision
+    is attached to it. HEAD advanced four times while this node ran
+    (<code>b72eb947</code>, <code>b97335e0</code>, <code>7ce2ab3a</code>, <code>8257741</code>). The
+    first selection was run at <code>b97335e0</code> and the subset at <code>7ce2ab3a</code>, each
+    with HEAD unchanged immediately before and after its own invocation &mdash; and the check still
+    refused the pair, because comparing the two runs' revisions found them unequal. Counts split
+    across two revisions cannot be put in one table, so both were discarded and the pair was re-run
+    together. That re-run held: HEAD read <code>8257741</code> before and after, and its counts are
+    the ones recorded here. The refusal is the receipt &mdash; an instrument that had simply reported
+    the earlier pair would have published a comparison spanning two revisions, which is the
+    predecessor's defect in a subtler form.</p>
+
+    <p><strong>The run resolved to the shipped tree.</strong> Interpreter
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python3</code> (CPython 3.14.2, pytest 9.1.1),
+    working directory
+    <code>/home/ITER/mcintos/Code/reckon</code>. <code>import reckon</code> resolves to
+    <code>/home/ITER/mcintos/Code/reckon/reckon/__init__.py</code>, and the editable pointer
+    <code>_editable_impl_reckon_plans.pth</code> holds that same main-checkout path &mdash; not a
+    worktree path, so the run measured the tree that shipped. The base run entered a tree extracted
+    by <code>git archive 1d2e70cc | tar -x</code> (no branch switch, no stash) with
+    <code>PYTHONPATH</code> pointing at it, and its own check confirmed <code>import reckon</code>
+    resolved there, so base and head were measured as two distinct trees.</p>
+
+    <p><strong>Logs.</strong> All under
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/wave-integration-current/</code> &mdash;
+    <code>head-825774198f7a637aa7aa6afc2d428390879fa45b.log</code> (the declared eleven-file run),
+    <code>head-subset-825774198f7a637aa7aa6afc2d428390879fa45b.log</code>,
+    <code>base-1d2e70cc.log</code>, the extracted
+    <code>base-tree-1d2e70cc/</code>, the environment and pointer captures, and
+    <code>superseded/</code> holding the two refused runs with their revisions in the filenames.
+    None under <code>/tmp</code>, <code>/dev/shm</code> or <code>/run/user</code>.</p>
+  </section>
+
   <section id="follow-ons">
     <h2>Follow-ons</h2>
     <ul>
@@ -924,6 +1032,49 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       <li><strong>The measure ranges over this node's own change.</strong> A merged-head
       verification is a separately dispatched node's job.</li>
     </ul>
+  </section>
+
+  <section id="gate-recapture">
+    <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
+
+    <p><strong>What was captured.</strong> Four focused gates were each run once at the
+    shipped head. The shipped head is the canonical checkout at
+    <code>a7723e07</code>: at capture time neither <code>reckon/crew/reserve.py</code>
+    nor <code>tests/test_reserve.py</code> had any copy on <code>origin/main</code>, and
+    the checkout's HEAD is a descendant of the node's base <code>b81bdfd1</code>, so a
+    run resolving the package from a worktree would have measured a different tree than
+    the one that shipped. The interpreter was the checkout's own
+    <code>.venv/bin/python</code>, with <code>PYTHONPATH</code> and the working
+    directory both set to it; before capturing, <code>import reckon</code> and
+    <code>import reckon.crew.reserve</code> were shown to resolve beneath that checkout,
+    and its editable <code>.pth</code> names the same path.</p>
+
+    <table>
+      <caption>One row per gate, each with its own log; the summary file repeats these
+        fields so a promotion can cite a log and have its asserted exit status agree with
+        what the log records.</caption>
+      <thead><tr><th>Gate</th><th>State at head</th><th>Exit</th><th>Passed</th><th>Failed</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_reserve.py</code></td><td>present</td><td>0</td><td>8</td><td>0</td><td><code>test_reserve.log</code></td>
+        <tr><td><code>tests/test_pace.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_pace.log</code></td>
+        <tr><td><code>tests/test_staleness.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_staleness.log</code></td>
+        <tr><td><code>tests/test_lane_document.py</code></td><td><strong>absent</strong></td><td>4</td><td>0</td><td>0</td><td><code>test_lane_document.log</code></td>
+      </tbody>
+    </table>
+
+    <p><strong>Three of the four are absent, and that is the finding rather than a
+    gap.</strong> <code>tests/test_pace.py</code>, <code>tests/test_staleness.py</code>
+    and <code>tests/test_lane_document.py</code> do not exist at head: pytest reports
+    <code>ERROR: file or directory not found</code>, runs no tests and exits 4. They are
+    recorded with the word absent rather than dropped, because a file that was never
+    selected and a file that ran green both print a summary line, and only the exit
+    status separates them.</p>
+
+    <p><strong>Evidence that could have failed.</strong> A positive control runs in the
+    same interpreter, from the same working directory, through the same command form:
+    <code>tests/test_reserve.py</code> exits 0 with <code>8 passed</code>. So a
+    file-not-found exit evidences absence at head.
+    </p>
   </section>
 </main>
 </body>
