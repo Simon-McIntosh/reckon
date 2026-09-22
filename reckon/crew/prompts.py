@@ -140,9 +140,11 @@ NEGATIVE_CONTROL_DECLARED_RULE = (
 )
 
 NEGATIVE_CONTROL_NONE_RULE = (
-    "  This node declares that no mutation applies, and states the reason. There is\n"
-    "  therefore no string for a red log's first line to repeat, and no red log is\n"
-    "  required; the declaration is recorded so a later reader can judge the reason.\n"
+    "  This node declares that no mutation applies. Such a declaration is expected\n"
+    "  to carry its reason after `none:`; for a node that writes a check, promotion\n"
+    "  refuses a bare one on a passing gate. No string is required for a red log's\n"
+    "  first line to repeat, and no red log is required; the declaration stands\n"
+    "  recorded for a later reader to judge.\n"
     "  Declared negative control:\n"
 )
 
