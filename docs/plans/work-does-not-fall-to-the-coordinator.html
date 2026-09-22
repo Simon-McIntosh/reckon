@@ -22,10 +22,10 @@
   <title>Work Does Not Fall To The Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="72">
+<meta name="plan-modified" content="2026-09-22">
+<meta name="plan-version" content="74">
 <meta name="plan-impl" content="0.85">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -444,6 +444,38 @@
     one implementation reachable from both surfaces; having dispatch enumerate files instead
     of granting a directory would also close it, but it moves the fix away from the contract
     and into the caller, which is the drift this section already warns about.</p>
+
+    <h2 id="s10">&sect;10 &mdash; A fence that can only be drawn once</h2>
+
+    <p>A worker that blocks because its write scope is too narrow can be answered but not
+    re-scoped. Verified in the source rather than recalled: <code>--write-path</code> occurs
+    <strong>exactly once</strong> in <code>reckon/cli.py</code>, under the
+    <code>dispatch</code> command, and <code>crew resume</code> accepts
+    <code>--advice</code>, <code>--backend</code>, <code>--reason</code> and
+    <code>--print-only</code> and nothing that touches scope. So the fence is decided at
+    dispatch and is immutable for the life of the run.</p>
+
+    <p>The coordinator is then left with two moves, and both are the kind this plan exists to
+    remove. <strong>Redispatch</strong> throws away a worker that has already done the
+    reading &mdash; its session, its accumulated context, and whatever it had committed &mdash;
+    to change one string. <strong>Editing the live pointer's <code>write_paths</code> by
+    hand</strong> keeps the work but is an undeclared mutation of run state, performed
+    slightly differently by each coordinator that reaches for it; it is already the recorded
+    workaround, which is the signal that the surface is missing rather than that coordinators
+    are careless.</p>
+
+    <p>It compounds with the promotion contract. A granted extension is not honoured by
+    <code>crew complete</code> unless the pointer itself carries the wider paths &mdash;
+    <code>--scope-changed</code> records that the scope moved without waiving the validator
+    &mdash; so a coordinator who grants scope in conversation and not in the pointer meets a
+    refusal at promotion, hours later, with the worker long gone. That is the same late-refusal
+    shape as &sect;9, reached by a different route.</p>
+
+    <p><strong>The measure, in &sect;8's terms:</strong> a run blocked on a too-narrow fence is
+    widened by a command, keeps its session and its commits, and promotes without the
+    coordinator having edited any file under the crew state directory by hand. Widening writes
+    the pointer's own <code>write_paths</code>, which is what promotion already reads, so one
+    change closes both halves.</p>
 
     <p class="landed-summary"><strong>Landed 2026-09-21 &mdash; the check command now supplies
     the scope it resolves against.</strong> The resolution step landed on the audit and the
