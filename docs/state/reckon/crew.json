@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T16:16:29",
+  "updated": "2026-09-22T16:18:32",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -258792,6 +258792,238 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a76",
+        "node": "the-window-source-reads-live-pointers-and-takes-the-freshest",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1109,
+                "cached_input_tokens": 402506,
+                "input_tokens": 403647,
+                "output_tokens": 2213,
+                "reasoning_output_tokens": 759,
+                "total_tokens": 405860,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "45540d71-8cda-4f8b-9d41-dfd0a267786d",
+            "session_id": "ship-window-20260922"
+          },
+          "done_when": "tests/test_preflight_pace.py exits 0 with these cases added and named: a live pointer carrying a newer lane_receipt than any ledger row for the same backend makes the group's reported observed_at the pointer's; a stream reading newer than the member's receipt makes the group report the stream's clocks and age; the reverse case, a receipt newer than the stream, reports the receipt's; the existing 27 cases pass unchanged; and the declared negative control is applied to a scratch copy, the newer-stream case is observed to fail there, and the red log's first line repeats the declared mutation verbatim",
+          "estimated_hours": 0.5,
+          "goal": "recorded_windows reads live run pointers beside committed ledger rows and, per declared-group member, the freshest dated reading wins whichever source carried it",
+          "id": "the-window-source-reads-live-pointers-and-takes-the-freshest",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T12:02:01Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest/manifest.md",
+          "negative_control": "restore receipt-first precedence in recorded_windows so a receipt with any usable clock is taken before a newer stream reading; the newer-stream case must fail",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_preflight_pace.py",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+            "docs/figures/a-window-paces-the-lane",
+            "docs/plans/a-window-paces-the-lane.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-preflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T12:02:22Z",
+        "completed_at": "2026-09-22T13:27:49.145Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5084,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5127,
+        "stalled": true,
+        "time_budget": "35m",
+        "base_sha": "eb2ffd60d634d3510f35e77880322564095e9aa9",
+        "commits": [
+          "95ba8ea7ecdefa34a76d989d381ea7843dad25a5",
+          "cb69a87f84923d1d3fae84577ba14f7199aa3e24"
+        ],
+        "changed_lines": {
+          "added": 451,
+          "removed": 23,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q tests/test_preflight_pace.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest/gate-preflight-pace.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest/manifest.md",
+        "scope_changed": false,
+        "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 5899229,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 31325,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T13:27:49.145Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 33065767,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1658.987,
+          "generated_tokens": 192966,
+          "generation_seconds": 1573.142,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 85.845,
+          "peak_input_tokens": 165369,
+          "tokens_per_second": 122.66,
+          "wall_tokens_per_second": 116.32
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-window-20260922/the-window-source-reads-live-pointers-and-takes-the-freshest",
+          "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T13:27:49.145Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.9,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": 0.9,
+          "at_complete": 0.93,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_preflight_pace.py"
+          ],
+          "declaration": "restore receipt-first precedence in recorded_windows so a receipt with any usable clock is taken before a newer stream reading; the newer-stream case must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T120158949653-the-window-source-reads-live-pointers-and-takes-the-freshest/negative-control.log",
+          "reason": "truncation, not substitution: the red log's first line is 'restore receipt-first precedence', the head of the declared sentence; the mutation applied is the declared one at the declared site (reckon/budget.py per-member candidate loop, receipt taken before a newer stream reading) and the test that went red is the declared newer-stream case, 1 failed 29 passed exit 1, verified by reading the log and the scratch-copy description rather than the prose"
+        },
+        "tool_steps": 72.0,
+        "orientation_input_tokens": 3704273.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -259090,6 +259322,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2075
+    "_version": 2076
   }
 }
