@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T17:20:09",
+  "updated": "2026-09-22T17:48:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -260531,6 +260531,245 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T122851730217-the-widening-command-writes-the-pointer",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a710",
+        "node": "the-widening-command-writes-the-pointer",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 703,
+                "cached_input_tokens": 727121,
+                "input_tokens": 727826,
+                "output_tokens": 316,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 728142,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "1866b7a5-f39a-47af-b81b-612972b5fa5c",
+            "session_id": "ship-cdocw-20260922"
+          },
+          "done_when": "tests/test_fence_widening.py enters through the CLI runner and asserts four things, that widening a blocked run adds the named path to that run live pointer write_paths, that the run session id and its recorded commits are byte-identical before and after the widening, that widening with a path already present leaves write_paths unchanged rather than duplicating the entry, and that widening a run whose phase is not blocked is refused with a non-zero exit and leaves the pointer untouched; and the declared mutation is applied, tests/test_fence_widening.py is observed to fail under it, and the red log is recorded in the run directory with the mutation verbatim on its first line",
+          "estimated_hours": null,
+          "goal": "Add a command that widens a blocked run write scope by adding a path to that run own live pointer.",
+          "id": "the-widening-command-writes-the-pointer",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T12:28:53Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/manifest.md",
+          "negative_control": "make the widening command report success without writing the new path into the run live pointer, so the grant exists only in the command output",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_fence_widening.py",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T12:29:03Z",
+        "completed_at": "2026-09-22T15:18:11.745Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 10136,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 10148,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "8b1b31e6168199c5c2ab8f2701151a3cdf7a797f",
+        "commits": [
+          "9a6130d15c207b1c6c9434053c1b978b55e5e3bf",
+          "40149b0389c20f52bc53b6fcf49f286735987efa",
+          "03aab7e756f2600f8b5a5e663b6bd6934bca74b3",
+          "5c16ea5f61ffbcbfeae14cf935e72c46e5754e91",
+          "76521cfdbc164da363d259230fcfd157bf670594",
+          "e2b1fb4cb7b5abb3d411d96bf14369c3be264f72"
+        ],
+        "changed_lines": {
+          "added": 624,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fence_widening.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/widen-green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/manifest.md",
+        "scope_changed": false,
+        "session_id": "1caca554-660f-4f8a-b0fc-14b6d5ffe867",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 795272,
+            "input_tokens_cumulative": 795272,
+            "output_tokens": 5770,
+            "output_tokens_cumulative": 5770,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T15:18:11.745Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 20,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 97
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 25826812,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 315.637,
+          "generated_tokens": 134887,
+          "generation_seconds": 296.613,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 17.3,
+          "machine_seconds": 19.024,
+          "peak_input_tokens": 82887,
+          "tokens_per_second": 454.76,
+          "wall_tokens_per_second": 427.35
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 6,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260922/the-widening-command-writes-the-pointer",
+          "session_id": "1caca554-660f-4f8a-b0fc-14b6d5ffe867",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T15:18:11.745Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.85,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 0.85,
+          "at_complete": 0.88,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_fence_widening.py"
+          ],
+          "declaration": "make the widening command report success without writing the new path into the run live pointer, so the grant exists only in the command output",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/widen-red-mutation.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/widen-red-mutation.log"
+        },
+        "tool_steps": 130.0,
+        "orientation_input_tokens": 2399998.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -260829,6 +261068,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2085
+    "_version": 2086
   }
 }
