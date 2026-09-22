@@ -1725,6 +1725,53 @@ def _shadow_store_append(project: str, record: Mapping[str, Any]) -> dict[str, A
     return {"status": "written"}
 
 
+def _git_stdout(checkout: Path, *args: str) -> str | None:
+    """Run a git query in ``checkout``; ``None`` when git declines to answer."""
+    done = subprocess.run(
+        ["git", "-C", str(checkout), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return done.stdout if done.returncode == 0 else None
+
+
+def _history_is_truncated(checkout: Path) -> bool:
+    """Whether this checkout holds a history git cannot answer a query from.
+
+    A shallow, grafted or partial clone answers a path-history query only from
+    the commits it carries, so a path whose commits fall outside a shallow
+    boundary reads exactly like a path never recorded. Git can report that its
+    own history is incomplete — ``rev-parse --is-shallow-repository`` for a
+    shallow clone, a ``refs/replace`` ref or an ``info/grafts`` file for a
+    grafted one, and a promisor remote (``extensions.partialClone`` or
+    ``remote.<name>.promisor``) for a partial clone — and where it does, an
+    empty log is evidence of a truncation, never of an absence.
+    """
+    shallow = _git_stdout(checkout, "rev-parse", "--is-shallow-repository")
+    if shallow is not None and shallow.strip() == "true":
+        return True
+    replacements = _git_stdout(
+        checkout, "for-each-ref", "--format=%(refname)", "refs/replace/"
+    )
+    if replacements is not None and replacements.strip():
+        return True
+    grafted = _git_stdout(checkout, "rev-parse", "--git-path", "info/grafts")
+    if grafted:
+        grafts = Path(grafted.strip())
+        if not grafts.is_absolute():
+            grafts = checkout / grafts
+        if grafts.exists():
+            return True
+    partial = _git_stdout(
+        checkout,
+        "config",
+        "--get-regexp",
+        r"^(extensions\.partialclone|remote\..*\.promisor)$",
+    )
+    return bool(partial and partial.strip())
+
+
 def _ledger_ever_tracked(path: Path) -> bool | None:
     """Ask git whether this checkout ever recorded the ledger path.
 
@@ -1734,9 +1781,10 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
     in the repository's history, so its absence is a deletion to recover;
     ``False`` means git has never recorded it, so the project is genuinely new.
     ``None`` is returned when the question cannot be answered here — the path
-    is outside any checkout, or the checkout carries no commits — so a caller
-    keeps its conservative refusal rather than reading silence as a fresh
-    start.
+    is outside any checkout, the checkout carries no commits, or its history is
+    shallow, grafted or partial, so an empty log would report a truncation as
+    an absence — and a caller keeps its conservative refusal rather than
+    reading silence as a fresh start.
     """
     resolved = path.expanduser().resolve()
     discovery_root = resolved.parent
@@ -1754,6 +1802,8 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
     try:
         relative_path = resolved.relative_to(checkout)
     except ValueError:
+        return None
+    if _history_is_truncated(checkout):
         return None
     logged = subprocess.run(
         [
@@ -1802,15 +1852,18 @@ def append_run(
         raise LedgerError("a run record must carry a run_id")
     ledger_root = _run_ledger_root(project, root)
     path = ledger_path(project, ledger_root)
-    if not path.exists() and not allow_create:
-        if _ledger_ever_tracked(path) is not False:
-            raise LedgerError(
-                f"refusing to promote run {run_id!r} for {project!r}: ledger file "
-                f"{path} does not exist. The run store at {_run_store_location()} "
-                "is the independent authority that holds every promoted run; "
-                "recover the ledger or initialise a genuinely new project with "
-                "allow_create=True."
-            )
+    if (
+        not path.exists()
+        and not allow_create
+        and _ledger_ever_tracked(path) is not False
+    ):
+        raise LedgerError(
+            f"refusing to promote run {run_id!r} for {project!r}: ledger file "
+            f"{path} does not exist. The run store at {_run_store_location()} "
+            "is the independent authority that holds every promoted run; "
+            "recover the ledger or initialise a genuinely new project with "
+            "allow_create=True."
+        )
     stored_record = dict(record)
     last: LedgerError | None = None
     store_outcome: dict[str, Any] | None = None

@@ -1175,6 +1175,79 @@
     Receipts in the run directory: <code>gate-after.log</code>, <code>gate-base.log</code>,
     <code>gate-neighbours.log</code>, <code>negative-control.log</code>.</p>
   </section>
+
+  <section id="s2d-shallow-history-refusal">
+    <h2>A truncated history stops the tracked-ness probe answering</h2>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/shallow-history-probe.png"
+           alt="Origin history with the ledger added and removed, a depth-1 boundary drawn past both, and a table of what the probe answers for a full clone, a depth-1 clone before the change, and a depth-1 clone after it" />
+      <figcaption>The origin history and where a depth-1 clone cuts it, beside what the probe
+      answers in each case. The ledger's add and removal both fall behind the boundary, so the
+      clone's log query returns nothing and the probe read that silence as an absence.</figcaption>
+    </figure>
+    <p><strong>Defect reproduced before repair, against the unfixed module.</strong> The origin
+    history is <code>index v0</code> &rarr; <code>record promotion</code> (ledger committed)
+    &rarr; <code>remove the ledger</code> &rarr; <code>advance the project index</code>. A
+    <code>--depth=1</code> clone of it reports
+    <code>rev-parse --is-shallow-repository</code> as <code>true</code>, and
+    <code>git log --all --format=%H -- docs/state/proj/crew.json</code> <strong>exits 0 with
+    empty stdout</strong>. The probe answered <code>False</code> and
+    <code>append_run</code> <strong>returned version 1 and created the ledger</strong> — the
+    incident outcome, in the circumstance the guard exists for. The same origin cloned in full
+    returns two commits for the path, the probe answers <code>True</code>, and the promotion
+    refuses: the truncation, not the path's history, is what flipped the answer. The unfixed
+    module was read from a scratch copy of <code>HEAD</code> at
+    <code>/tmp/prefix/reckon/ledger.py</code> (sha256
+    <code>83fc08d3fc3bdb1785254c71eaf45167dc38fea6862ea98c91f5add35454a3c5</code>) and the run
+    printed that file as the imported <code>reckon.ledger</code>, so the receipt names the code
+    it measured.</p>
+    <p><strong>What changed.</strong> <code>ledger._history_is_truncated</code> asks whether the
+    checkout can answer at all, and <code>_ledger_ever_tracked</code> returns <code>None</code>
+    where it cannot: <code>rev-parse --is-shallow-repository</code> reporting
+    <code>true</code>, a <code>refs/replace</code> ref or an <code>info/grafts</code> file, and a
+    promisor remote (<code>extensions.partialClone</code> or
+    <code>remote.&lt;name&gt;.promisor</code>). The call site already refuses on
+    <code>is not False</code>, so no behaviour change was needed there; its nested
+    <code>if</code> collapsed to one condition, which is where the SIM102 finding went. The
+    refusal is deliberately conservative for a partial clone: a blobless clone can often answer,
+    but the design refuses to distinguish the flavours it cannot inspect.</p>
+    <p><strong>Evidence that could fail.</strong> The focused gate over
+    <code>tests/test_a_promotion_never_creates_a_ledger.py</code> and
+    <code>tests/test_rollback_asks_head.py</code>, run with the shared root interpreter, reports
+    <strong>22 passed, exit 0</strong> (10 + 12) against base <code>45ecc873</code>'s
+    <strong>17 passed, exit 0</strong> (5 + 12) — a delta of five new tests and zero failures on
+    either side. Running the new tests against the unfixed module reddens <strong>exactly the
+    four truncation tests</strong> (shallow, partial, replace ref, grafts file) and leaves the
+    other six green, so each branch of the guard is load-bearing rather than decorative. The
+    declared negative control — <em>make the truncation question always answer that the repository
+    is complete</em>, applied to a scratch copy of the fixed tree — reports
+    <strong>4 failed, 6 passed</strong> with <code>DID NOT RAISE LedgerError</code>, the shallow
+    depth-1 case among them; the log's first line repeats the declaration verbatim. The
+    outside-a-checkout case pins <code>GIT_CEILING_DIRECTORIES</code> to the temporary root, so it
+    no longer depends on the ambient git ancestry of <code>tmp_path</code>. Ruff findings over
+    <code>reckon/ledger.py</code> are <strong>13 at head with zero SIM102</strong>, against
+    <strong>13 at base <code>c16659ff</code> excluding I001</strong> (15 raw; the two extra are
+    import-sorting findings on a block a later commit already sorted) under the pinned ruff and
+    the project's declared rule set.</p>
+    <p><strong>Which branches the tests exercise.</strong> The shallow case is a real
+    <code>--depth=1</code> clone of an origin whose ledger was committed and then deleted before
+    the boundary. The grafted branches are real mechanisms — <code>git replace --graft</code>
+    creating a <code>refs/replace</code> ref, and a written <code>info/grafts</code> file. The
+    partial branch is a genuine blobless clone, built by setting
+    <code>uploadpack.allowFilter</code> on the origin and cloning with
+    <code>--filter=blob:none</code>, and the test asserts
+    <code>remote.origin.promisor</code> is <code>true</code>. None of the four patches or mocks
+    the probe.</p>
+    <p><strong>Delivery.</strong> Commits <code>529f9d9f</code> (probe and call site) and
+    <code>e4f67a21</code> (the grafted and partial-clone tests) change
+    <code>reckon/ledger.py</code> and
+    <code>tests/test_a_promotion_never_creates_a_ledger.py</code>. Receipts live in
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read/</code>:
+    <code>gate-after.log</code>, <code>gate-base.log</code>,
+    <code>negative-control-truncation-always-complete.log</code>, and
+    <code>ruff-ledger-combined.log</code>. This node has not closed the section, resolved its
+    followup, or run the merged-head verification; integration remains coordinator-owned.</p>
+  </section>
 </main>
 </body>
 </html>
