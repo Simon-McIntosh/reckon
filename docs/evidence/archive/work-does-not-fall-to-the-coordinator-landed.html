@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Cumulative implementation evidence for removing coordinator hand-compensations from the crew surface: the roster write that commits itself, and scope-claim derivation reads that no longer hydrate every plan document.">
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="work-does-not-fall-to-the-coordinator">
-  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2,work-does-not-fall-to-the-coordinator#s3,work-does-not-fall-to-the-coordinator#s5,work-does-not-fall-to-the-coordinator#s9">
+  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2,work-does-not-fall-to-the-coordinator#s3,work-does-not-fall-to-the-coordinator#s5,work-does-not-fall-to-the-coordinator#s6,work-does-not-fall-to-the-coordinator#s9">
   <meta name="plan-recorded-at" content="2026-09-17">
   <meta name="plan-verdict" content="pass">
   <title>Work Does Not Fall To The Coordinator &mdash; cumulative execution evidence | reckon</title>
@@ -1860,6 +1860,88 @@ AGREE: False</code></pre>
     <code>~/.config/reckon/crew/runs/r-20260922T155613014205-a-reclaimed-worktree-does-not-become-its-own-repository/</code>
     (<code>cohort_head.log</code>, <code>cohort_base.log</code>, <code>negative_control.log</code>,
     <code>repro-reclaimed-scope.log</code>, <code>repro-reclaimed-scope-head.log</code>).</p>
+  </section>
+
+  <section id="verify-gate-command-selection">
+    <h2>verify-gate can be given the command it runs</h2>
+
+    <p><strong>The gap was half a capability, and the missing half is now an
+    option.</strong> <code>crew verify-gate</code> re-ran a run&#8217;s own recorded gate
+    command at the integrated revision; it had no way to run something
+    <em>wider</em>, so the fleet-wide suite the hand-check needed could not be
+    measured through it. The verb now declares <code>--command</code>, which runs the
+    given command in place of the stored one &#8212; and on a run that stored no gate
+    command at all &#8212; against the tree at <code>--checkout-path</code>.</p>
+
+    <p><strong>Where the selection happens.</strong> At the read from the run&#8217;s
+    committed ledger row, <code>reckon/crew/promotion.py</code>:
+    <code>command = supplied or stored_command</code>. The supplied command wins
+    only when it is non-empty, so the absent option is inert and every existing
+    caller is unchanged. The re-run report carries <code>gate_command</code> &#8212; the
+    command that actually executed, not the stored one &#8212; and
+    <code>gate_command_source</code>, <code>option</code> or <code>stored</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/verify-gate-command-selection.svg"
+           alt="A decision chain from a verify-gate call: if --command is supplied and non-empty the supplied command runs with source option; otherwise the run's stored gate command runs with source stored; if neither is
+           present the re-run is not-run with the reason that no gate command is stored.">
+      <figcaption>One selection point, three outcomes, and the source recorded beside
+      the command that ran.</figcaption>
+    </figure>
+
+    <p><strong>Four behaviours asserted, each entering through the CLI runner</strong>
+    (<code>tests/test_verify_gate_command_option.py</code>): a supplied command runs in
+    place of the stored one and the report records its source; without the option the
+    stored command runs exactly as before; the report recorded on the run&#8217;s committed
+    row names the command that executed rather than the stored one when they differ; and
+    a supplied command on a run with no stored gate command is accepted rather than
+    refused for the absence. Execution is proved by a marker each command writes, so the
+    field&#8217;s own value is not the evidence that a command ran.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>37de7907</code></th><th>Head</th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>New option gate</td><td>file absent</td><td>4 passed</td><td>four cases, all green</td></tr>
+        <tr><td>Focused cohort (three pre-existing files)</td><td>5 failed, 102 passed</td><td>5 failed, 106 passed</td><td>same five failure ids, four added passes</td></tr>
+        <tr><td>Declared mutation (supplied command ignored)</td><td>&mdash;</td><td>3 failed, 1 passed</td><td>exactly the three option-dependent cases</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Falsified rather than asserted.</strong> The declared mutation replaces
+    the selection with <code>command = stored_command</code>, so a supplied
+    <code>--command</code> is ignored and the stored command runs instead. It reddens
+    exactly <code>test_verify_gate_runs_the_supplied_command_not_the_stored_one</code>,
+    <code>test_recorded_report_names_the_command_that_actually_ran</code> and
+    <code>test_verify_gate_accepts_a_command_on_a_run_with_no_stored_gate</code>, while
+    <code>test_verify_gate_without_the_option_runs_the_stored_command</code> stays green
+    because it never supplies a command. The mutation is stated verbatim on the first line
+    of <code>negative-control.log</code> and <code>reckon/crew/promotion.py</code> was
+    restored byte-identically afterwards (empty diff).</p>
+
+    <p><strong>Zero added failure ids at the base.</strong> The same three pre-existing
+    cohort files ran at base <code>37de7907</code> in a detached worktree and reported the
+    same five failure ids: <code>test_promotion_audits_only_its_own_worktree</code>, two
+    crew-verb documentation contracts and two <code>reckon-ship</code> skill-budget
+    contracts. None touches <code>verify-gate</code> or the option, and all five are
+    pre-existing at base.</p>
+
+    <p><strong>What this does not claim.</strong> This gate measures this node&#8217;s own
+    change against its own base; the merged result at the integrated head is a separately
+    dispatched test node&#8217;s measurement. The section&#8217;s second half &#8212; comparing a
+    suite run against a fresh baseline worktree &#8212; is deliberately not built here: the
+    reusable parts already exist as the ledger&#8217;s suite-observation and
+    new-failure-set-difference helpers, which promotion consumes through
+    <code>baseline_suite</code> and <code>after_suite</code>.</p>
+
+    <p>Changed paths: <code>reckon/cli.py</code>,
+    <code>reckon/crew/promotion.py</code>,
+    <code>tests/test_verify_gate_command_option.py</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>,
+    <code>docs/figures/work-does-not-fall-to-the-coordinator/verify-gate-command-selection.svg</code>.
+    Base revision <code>37de7907</code>; commit <code>e4209d1a</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260922T171735051817-verify-gate-can-be-given-the-command-it-runs/</code>
+    (<code>gate-fixed.log</code>, <code>cohort-head.log</code>, <code>cohort-base.log</code>,
+    <code>negative-control.log</code>).</p>
   </section>
   </main>
 </body>
