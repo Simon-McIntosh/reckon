@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T13:40:34",
+  "updated": "2026-09-22T13:44:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1640,10 +1640,15 @@
         "id": "pace-preflight",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-21"
+        "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "5aae70d2-9336-4414-85c8-46aef8139ccd"
+        },
+        "created": "2026-09-21",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-window-20260922"
+        }
       },
       {
         "id": "pace-refusal",
@@ -255634,6 +255639,238 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a74b",
+        "node": "the-reflex-selects-a-backend-rather-than-asserting-one",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1669,
+                "cached_input_tokens": 492911,
+                "input_tokens": 494582,
+                "output_tokens": 229,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 494811,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "660d357e-1ede-4027-b678-d89d9391ff8f",
+            "session_id": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          },
+          "done_when": "dispatch_review_for_run in reckon/crew/recovery.py no longer passes local=True unconditionally; it selects a backend, and a review recomposed after a previous attempt on the same run failed does not select the backend that attempt used; the selection is asserted by a test that composes a review for a run whose prior review attempt is recorded against a named backend and requires the new composition to name a different one, and by a test that a first composition with no prior attempt still succeeds; both live in tests/test_review_reflex_selects_a_backend.py; and PYTHONPATH set to the main checkout with the root interpreter, pytest over that file and tests/test_review_gate_coverage.py reports no more failures than the same two files report at base, with both counts in the manifest",
+          "estimated_hours": null,
+          "goal": "the automatic review reflex selects the backend it dispatches to rather than hardcoding the locally served one, and does not recompose a review onto a backend that just dropped the same review",
+          "id": "the-reflex-selects-a-backend-rather-than-asserting-one",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T10:28:13Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one/manifest.md",
+          "negative_control": "restore the unconditional local=True so every composed review names the locally served backend regardless of what the previous attempt used: the recomposition case in tests/test_review_reflex_selects_a_backend.py must go red",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74b",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_review_reflex_selects_a_backend.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-clauses",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T10:28:26Z",
+        "completed_at": "2026-09-22T10:59:28.761Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1853,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1862,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "aa267565830f08144840d73ca6d8cb90af2af2a3",
+        "commits": [
+          "7cb989af1fff794dc2992f8828cdd870f7c2da49",
+          "aed7e8ab1729322ab706212ff1308a877a6c8ea0"
+        ],
+        "changed_lines": {
+          "added": 417,
+          "removed": 6,
+          "files": 5
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_reflex_selects_a_backend.py tests/test_review_gate_coverage.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.cache/reckon-gates/reflex-gate-provenanced.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the review reflex selects a backend instead of hardcoding the local lane and will not recompose onto the lane that just dropped the same review; 26 passed at the merged head against 4 failed at base. Its review scored 88 and named three remainders carried forward, including that any recorded backend on a refusal is read as a lane that dropped the review",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one/manifest.md",
+        "scope_changed": false,
+        "session_id": "9a268c57-76f2-45a2-8cf0-7da364e5793c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11768673,
+            "input_tokens_cumulative": 11768673,
+            "output_tokens": 61369,
+            "output_tokens_cumulative": 61369,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T10:59:28.761Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 17,
+            "goal_fidelity": 17,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 88
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11935178,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1858.306,
+          "generated_tokens": 68275,
+          "generation_seconds": 1646.889,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 211.417,
+          "peak_input_tokens": 165205,
+          "tokens_per_second": 41.46,
+          "wall_tokens_per_second": 36.74
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-reflex-selects-a-backend-rather-than-asserting-one",
+          "session_id": "9a268c57-76f2-45a2-8cf0-7da364e5793c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T10:59:28.761Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.7,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.7,
+          "at_complete": 0.82,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_review_reflex_selects_a_backend.py"
+          ],
+          "declaration": "restore the unconditional local=True so every composed review names the locally served backend regardless of what the previous attempt used: the recomposition case in tests/test_review_reflex_selects_a_backend.py must go red",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T102812527148-the-reflex-selects-a-backend-rather-than-asserting-one/negative-control.log",
+          "reason": "substitution rather than paraphrase, so the coordinator measured the declared mutation rather than accepting the recorded one. Declared: restore the unconditional local=True so every composed review names the local lane whatever the previous attempt used. Recorded: blank the recorded previous lane so the dropped lane is reselected \u2014 which breaks the recomposition half only. Measured in a scratch worktree of HEAD with module resolution asserted under it, log at /home/ITER/mcintos/.cache/reckon-gates/reflex-declared-control.log: unmutated 4 passed; declared mutation 1 failed 3 passed, reddening test_a_not_already_attempted_lane_is_not_reselected. The recorded mutation reddens 3, so it is broader rather than weaker and the check discriminates both."
+        },
+        "tool_steps": 114.0,
+        "orientation_input_tokens": 2019761.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -255932,6 +256169,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2057
+    "_version": 2059
   }
 }
