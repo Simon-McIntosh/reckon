@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T13:47:23",
+  "updated": "2026-09-22T13:55:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -256280,6 +256280,245 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line",
+        "plan": "a-window-paces-the-lane",
+        "section": "\u00a76",
+        "node": "the-preflight-reads-its-windows-from-the-command-line",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1609,
+                "cached_input_tokens": 299249,
+                "input_tokens": 300890,
+                "output_tokens": 1662,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 302552,
+                "uncached_input_tokens": 32
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "45540d71-8cda-4f8b-9d41-dfd0a267786d",
+            "session_id": "ship-window-20260922"
+          },
+          "done_when": "tests/test_preflight_pace.py exits 0 with these cases added and named: a CliRunner run of crew preflight against a RECKON_HOME holding one run record whose lane_receipt.quota_windows carries window_minutes 300 and 10080 for a backend in a declared group emits that group with state observed, both clocks utilisation and age_seconds not None, and a --ready NAME=GROUP:SCORE node named in that group's bar recommendations with a verdict; a stream-carried unifiedWindows reading on a claude-dialect backend in a declared group emits state observed; the MCP crew budget view given candidates of name, group and score emits the same fields; a receipt carrying only window_minutes 10080 emits seven_day observed and five_hour unknown with allowance derived not None; the existing unknown-group command-line case passes unchanged; bar['bar' if False else 'state'] at tests/test_preflight_pace.py:317 reads bar['state']; a real run of reckon crew preflight --project reckon --pretty from this worktree is captured to the run directory's preflight-at-workstation.log and shows codex-sub state observed with seven_day utilisation and age_seconds present; and the declared negative control is applied to a scratch copy, the observed-group command-line case is observed to fail there, and the red log is recorded",
+          "estimated_hours": 1.0,
+          "goal": "the crew preflight command and the crew budget MCP view report each declared group's observed clocks, allowance and admitted ready set from recorded receipts and streams",
+          "id": "the-preflight-reads-its-windows-from-the-command-line",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T10:48:41Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line/manifest.md",
+          "negative_control": "bypass the recorded-windows source at the crew preflight command's call site so budget.preflight receives windows=None; the observed-group command-line case must fail",
+          "plan": "a-window-paces-the-lane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "reckon/mcp_views.py",
+            "tests/test_preflight_pace.py",
+            "docs/evidence/archive/a-window-paces-the-lane-landed.html",
+            "docs/figures/a-window-paces-the-lane",
+            "docs/plans/a-window-paces-the-lane.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-preflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T10:48:51Z",
+        "completed_at": "2026-09-22T11:25:02.509Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2162,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2171,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "70f23383b10e8ca71e06654ac7a34cf177c9f0b0",
+        "commits": [
+          "4d043fd0f7c05d347f5b25831aa94d22badcde8b",
+          "fd4a158f7ad6126a93fe33262bac1677f64418cf"
+        ],
+        "changed_lines": {
+          "added": 767,
+          "removed": 5,
+          "files": 7
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_preflight_pace.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line/gate-preflight-pace.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line/manifest.md",
+        "scope_changed": false,
+        "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 17966838,
+            "input_tokens_cumulative": 17966838,
+            "output_tokens": 79324,
+            "output_tokens_cumulative": 79324,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T11:25:02.509Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 18,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18135096,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2167.194,
+          "generated_tokens": 87342,
+          "generation_seconds": 1940.983,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.8,
+          "machine_seconds": 226.211,
+          "peak_input_tokens": 166958,
+          "tokens_per_second": 45.0,
+          "wall_tokens_per_second": 40.3
+        },
+        "follow_on_paths": [
+          "reckon/crew/window_reading.py",
+          "reckon/mcp_views.py",
+          "reckon/cli.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-window-20260922/the-preflight-reads-its-windows-from-the-command-line",
+          "session_id": "5aae70d2-9336-4414-85c8-46aef8139ccd",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T11:25:02.509Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.8,
+        "impl_move": {
+          "plan": "a-window-paces-the-lane",
+          "at_dispatch": 0.8,
+          "at_complete": 0.9,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_preflight_pace.py"
+          ],
+          "declaration": "bypass the recorded-windows source at the crew preflight command's call site so budget.preflight receives windows=None; the observed-group command-line case must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T104839658773-the-preflight-reads-its-windows-from-the-command-line/negative-control.log",
+          "reason": "paraphrase, not substitution: the log's first line reads 'recorded-witness source' for the declared 'recorded-windows source' (a typo); the mutation applied is the declared one, at the declared call site (reckon/cli.py, windows = {} in place of recorded_windows), and the test that went red is the declared one, test_the_command_reads_a_groups_clocks_from_a_runs_receipt, 1 failed 26 deselected exit 1; verified by reading the log and the scratch-copy diff description, not the prose"
+        },
+        "tool_steps": 164.0,
+        "orientation_input_tokens": 6805577.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -256578,6 +256817,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2060
+    "_version": 2061
   }
 }
