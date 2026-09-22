@@ -169,6 +169,20 @@ class SummaryOccasion(str, Enum):
     """
 
 
+class InputModality(str, Enum):
+    """
+    A kind of input a backend's model actually receives beside the prompt. Closed structural vocabulary: a value names an input channel, never a provider, a model or an effort level.
+    """
+    text = "text"
+    """
+    The prompt and any text the running harness reads for itself. Every backend accepts this, so a lane that declares nothing is still usable for work that asks only for text.
+    """
+    image = "image"
+    """
+    A raster image attached to the prompt and received by the model rather than only accepted by the command line. Declared only where the attachment reaches the model: a lane whose launcher accepts an image flag but whose dialect never forwards it must not declare this, because a review composed there answers from the filename and the diff and returns a well-formed verdict it could not have formed.
+    """
+
+
 
 class FlightConfig(ConfiguredBaseModel):
     """
@@ -199,6 +213,7 @@ class BackendConfig(ConfiguredBaseModel):
     lane_document: Optional[str] = Field(default=None, description="""Optional path to a document a serving lane publishes, carrying the lane's measured state, its remaining headroom, whether a worker binding was observed, the stamp the reading was taken at, and the shelf life the lane itself suggests the reading stays fresh for. Availability probing reads it to report the lane observation beside the serving verdict: a reading older than its own suggested shelf life reports unknown while keeping the figure and its age, and an absent, unreadable or unparsable document reports unknown with a reason and never raises. User data naming one host's own publication; the schema supplies no path, and the probe never reads it over the network.""")
     environment: Optional[dict[str, Union[str, EnvironmentVariable]]] = Field(default=None, description="""Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.""")
     model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    input_modalities: Optional[list[InputModality]] = Field(default=None, description="""Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.""")
     input_rate_per_million: Optional[float] = Field(default=None, description="""Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.""", ge=0)
     output_rate_per_million: Optional[float] = Field(default=None, description="""Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.""", ge=0)
     as_of: Optional[date] = Field(default=None, description="""Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.""")
