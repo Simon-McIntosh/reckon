@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import budget, ledger
+from reckon import budget, ledger, mcp_views
 from reckon.cli import main as cli_main
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
@@ -1347,3 +1347,143 @@ def test_a_foreign_pointer_does_not_enter_this_projects_group(
     assert datetime.fromisoformat(
         sol["clocks"]["five_hour"]["observed_at"]
     ) == NOW - timedelta(hours=3)
+
+
+def test_the_uninjected_reader_is_the_production_rollout_reader(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With no reader injected, the branch that runs is the production one.
+
+    Every other case here supplies ``rollouts=``, so all the module-level reader
+    this delegates to was never exercised: replacing that reader with an
+    unmeasured answer left the whole file green. This case calls with no
+    injection at all and patches the rollout module's own reader, so the
+    assertion fails unless the uninjected path reaches it, and its answer is
+    what the group reports.
+    """
+    rows = [
+        _receipt_record(
+            "sol-a",
+            windows=[(300, 42.0), (10080, 21.0)],
+            observed_at=_iso(NOW - timedelta(hours=3)),
+            run_id="r-committed",
+        )
+    ]
+    pointers = [
+        _live_session(
+            "sol-a",
+            session_id="sess-production",
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+            run_id="r-in-flight",
+        )
+    ]
+    asked: list[str] = []
+
+    def production(session_id: str) -> object:
+        asked.append(session_id)
+        return _rollout_receipt({300: _quota(300, 11.0), 10080: _quota(10080, 17.0)})
+
+    monkeypatch.setattr(rollout_module, "read_rollout_receipt", production)
+
+    windows = budget.recorded_windows(
+        "demo", CONFIG, now=NOW, records=rows, pointers=pointers
+    )
+
+    assert asked == ["sess-production"], (
+        "the uninjected path must reach the module-level rollout reader"
+    )
+    reading = windows["sol-a"]
+    assert reading.figure("five_hour").utilisation == pytest.approx(0.11)
+    assert reading.figure("seven_day").utilisation == pytest.approx(0.17)
+    assert reading.observed_at == NOW - timedelta(minutes=1)
+
+
+def test_one_stamp_reader_dates_a_record_for_both_surfaces() -> None:
+    """The lanes view and the pace reader read a record's date the same way.
+
+    A record whose only stamp is ``created_at`` is the case that tells the two
+    apart: the lanes view's own field list stopped one key short of the pace
+    reader's, so the same record was datable by one surface and undated by the
+    other. The helper lives in the budget module, which the lanes view imports,
+    and this asserts the identity rather than either side's answer.
+    """
+    run = {
+        "run_id": "r-created",
+        "created_at": _iso(NOW - timedelta(hours=2)),
+    }
+
+    stamp = budget.run_observed_stamp(run)
+
+    assert stamp == _iso(NOW - timedelta(hours=2))
+    assert mcp_views._receipt_observed_at(run) == stamp
+
+    undated: dict[str, object] = {"run_id": "r-undated", "created_at": "not a stamp"}
+    assert budget.run_observed_stamp(undated) is None
+    assert mcp_views._receipt_observed_at(undated) is None
+
+    # The lanes view is the surface a reader reaches, so the stamp is asserted
+    # where it is published rather than only where it is computed. The lane
+    # carries the run's own date, and an unmeasured one would report the gap
+    # instead -- the lanes suite is blind to this: reinstating the shorter field
+    # list leaves every one of its cases exactly as it was.
+    lanes = mcp_views.crew_lanes_view(
+        {"backends": {"solo": {"launch": "cli", "command": "codex"}}},
+        [{**run, "backend": "solo", "session_id": "sess-created-at"}],
+        receipt_reader=lambda session_id: _rollout_receipt({300: _quota(300, 11.0)}),
+        composed_at=_iso(NOW),
+    )
+    lane = next(item for item in lanes["lanes"] if item["backend"] == "solo")
+    assert lane["observed_at"] == stamp
+
+    undated_lanes = mcp_views.crew_lanes_view(
+        {"backends": {"solo": {"launch": "cli", "command": "codex"}}},
+        [{**undated, "backend": "solo", "session_id": "sess-undated"}],
+        receipt_reader=lambda session_id: _rollout_receipt({300: _quota(300, 11.0)}),
+        composed_at=_iso(NOW),
+    )
+    undated_lane = next(
+        item for item in undated_lanes["lanes"] if item["backend"] == "solo"
+    )
+    assert undated_lane["observed_at"] != stamp
+    assert undated_lane["observed_at"] == "unmeasured"
+
+
+def test_a_wholly_chosen_reading_leaves_the_other_clock_unknown() -> None:
+    """The newest reading wins wholesale, so its gaps are the group's gaps.
+
+    A rollout receipt on this workstation carries the weekly window only. When
+    such a reading is the newest, the group reports the week it measured and
+    nothing for the five-hour clock -- even though the older committed row it
+    beat held one. That is the existing shape of the competition rather than a
+    per-window choice, and it is asserted so a later change to either has to
+    face it.
+    """
+    rows = [
+        _receipt_record(
+            "sol-a",
+            windows=[(300, 42.0), (10080, 21.0)],
+            observed_at=_iso(NOW - timedelta(hours=3)),
+            run_id="r-committed",
+        )
+    ]
+    pointers = [
+        _live_session(
+            "sol-a",
+            session_id="sess-weekly-only",
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+            run_id="r-in-flight",
+        )
+    ]
+
+    def reader(session_id: str) -> object:
+        return _rollout_receipt({10080: _quota(10080, 88.0)})
+
+    windows = budget.recorded_windows(
+        "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
+    )
+
+    reading = windows["sol-a"]
+    assert reading.figure("seven_day").utilisation == pytest.approx(0.88)
+    assert reading.figure("five_hour") is None
+    assert reading.known, "the week resolved, so the reading is not wholly unknown"
+    assert reading.observed_at == NOW - timedelta(minutes=1)

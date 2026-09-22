@@ -1362,6 +1362,170 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     </ul>
   </section>
 
+  <section id="s6-prove-the-reader">
+    <h2>&sect;6 &mdash; The reader proves itself, and one helper dates a node's run for both surfaces</h2>
+
+    <h3>The measure</h3>
+
+    <p><strong>The production branch of the rollout read is exercised, and the case that does it was
+    observed to fail under the declared mutation.</strong> Every earlier case in
+    <code>tests/test_preflight_pace.py</code> supplied <code>rollouts=</code>, an injected reader, so
+    the uninjected branch &mdash; the one that runs in production &mdash; was never reached: the
+    reviewer replaced it with an unmeasured answer and the gate stayed at <strong>34 passed, exit
+    0</strong>. <code>test_the_uninjected_reader_is_the_production_rollout_reader</code> calls
+    <code>budget.recorded_windows</code> with no <code>rollouts=</code> and a live pointer carrying a
+    <code>session_id</code>, patches <code>rollout_module.read_rollout_receipt</code> at the module,
+    and asserts both that the uninjected path called it with that session's id and that the group
+    reports its clocks: <code>five_hour</code> 0.11 and <code>seven_day</code> 0.17, at the pointer's
+    one-minute age, against a committed row three hours old carrying 0.42 and 0.21.</p>
+
+    <p><strong>One helper, both shapes of one answer.</strong> The pace reader's dating rule and the
+    lanes view's were duplicated lists, and the lanes view's stopped one key short: of the 35 live
+    records on this workstation, 29 were datable by the pace reader and undated by the lanes view,
+    every one of them a record whose only stamp is <code>created_at</code>. The date also decides
+    which of a backend's sessions is the newest, so the two surfaces could disagree about which run a
+    figure came from. <code>budget.run_observed_stamp(row)</code> now holds the shared field list
+    &mdash; <code>observed_at</code>, <code>completed_at</code>, <code>terminal_at</code>,
+    <code>dispatched_at</code>, <code>started_at</code>, <code>created_at</code>, behind the record's
+    own budget block &mdash; <code>budget._run_observed_at</code> is the instant form parsed from it,
+    and <code>mcp_views._receipt_observed_at</code> is a one-line delegate keeping its name and both
+    call sites. It returns text because the lanes view publishes text, and a value that does not
+    parse is passed over rather than returned, so a malformed budget stamp cannot shadow a lifecycle
+    stamp behind it. <strong>No key list remains in <code>mcp_views</code>.</strong></p>
+
+    <p><strong>The mixed-clock outcome is asserted, not changed.</strong>
+    <code>test_a_wholly_chosen_reading_leaves_the_other_clock_unknown</code> pits a rollout reading
+    one minute old carrying only <code>window_minutes 10080</code> (88.0 %) against a committed row
+    three hours old carrying both clocks, and requires <code>seven_day</code> observed and
+    <code>five_hour</code> <code>None</code>: the competition takes one reading per member wholesale
+    on its stamp, so the row's five-hour figure is discarded rather than borrowed. A per-window
+    choice is a separate decision and was not taken here; this case is what such a change has to
+    face.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/one-stamp-reader-and-the-wholesale-winner.svg"
+           alt="Three candidate readings for one wallet; the newest is chosen whole, so the group reports the weekly clock it measured and leaves the five-hour clock unknown while the older row's figure is discarded" width="980"/>
+      <figcaption>One reading per member, chosen wholesale; the winner's gaps are the group's gaps.</figcaption>
+    </figure>
+
+    <h3>Gate</h3>
+
+    <p><code>tests/test_preflight_pace.py</code> at the formatted head: <strong>37 passed, exit
+    0</strong> &mdash; the 34 cases that stood before, unchanged, plus three. Log
+    <code>sha256 ba46eb11&hellip;</code> (2 lines), captured once to a file.</p>
+
+    <p><strong>Delta, not absolute green.</strong> The same five files at the base revision
+    <code>c0e95c1b</code>: <strong>2 failed, 70 passed</strong>. At this head: <strong>2 failed, 73
+    passed</strong>. Both failures are the same two ids, so <strong>zero failures added</strong> and
+    the three added cases are additive. Log <code>sha256 b64e5e8d&hellip;</code>.</p>
+
+    <table>
+      <caption>The two pre-existing failures, identical at base and at head</caption>
+      <thead><tr><th>Test</th><th>Failure</th><th>At base</th><th>At head</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code></td>
+        <td><code>TypeError: dict.__getitem__() takes no keyword arguments</code> at
+        <code>reckon/mcp_views.py</code>, where the production reader is called with
+        <code>model_identifier=</code> while the case patches in a bare
+        <code>dict.__getitem__</code></td><td>fails</td><td>fails</td></tr>
+        <tr><td><code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code></td>
+        <td><code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code></td>
+        <td>fails</td><td>fails</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Lint by delta.</strong> The three changed files counted against the base revision's own
+    copies, mode preserved at 644 so no executable bit inflates the count: <strong>6 findings at
+    base, 6 at head</strong> (UP017 ×2, FURB162, UP035, TRY301, PERF401), none of them new. No
+    pre-existing finding was fixed in passing. <code>ruff format --check</code> is clean on all
+    three.</p>
+
+    <h3>The lanes suite does not cover the moved helper</h3>
+
+    <p><strong>Measured, because the Done-when asserted the opposite and the assertion was
+    vacuous.</strong> The clause reads &ldquo;the lanes-view tests that cover the moved helper
+    pass&rdquo;. There are none behind it. In a scratch copy with
+    <code>mcp_views._receipt_observed_at</code> reinstated with its pre-change key list &mdash; the
+    divergence this node repairs &mdash; the four lanes-view files give <strong>2 failed, 36
+    passed</strong>: <em>exactly</em> the two ids above and nothing else. The regression this change
+    repairs is invisible to the entire lanes suite.</p>
+
+    <p>So the unification is held by the gate file, not by the lanes files: the named case asserts the
+    identity directly, and is extended to assert the stamp <strong>where a reader reaches it</strong>
+    &mdash; a lane whose only stamp is <code>created_at</code> reports that stamp, and a record with
+    no readable stamp reports <code>unmeasured</code> rather than a borrowed date, through
+    <code>mcp_views.crew_lanes_view</code> itself. Both halves of that case were shown to bind. In the
+    regressed copy it fails at <code>assert mcp_views._receipt_observed_at(run) == stamp</code>
+    (<code>assert None == '2026-09-21T16:00:00Z'</code>); and because that first assert short-circuits
+    the lanes assertion, the lanes half was measured directly in both trees rather than inferred:
+    <strong>regressed the lane's <code>observed_at</code> is <code>unmeasured</code>, at this head it
+    is <code>2026-09-21T16:00:00Z</code></strong>. A case belonging in the lanes-view files would be
+    the durable home for this; those files are outside this node's write scope, so it is reported
+    here instead of assumed closed. Log <code>sha256 8590a31e&hellip;</code>.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim on the red log's first line: replace the production
+    branch of <em>_read_rollout</em> with an unmeasured answer.</strong> Applied at exactly one site
+    in a scratch copy of this tree (<code>reckon/budget.py</code>, <code>_read_rollout</code>:
+    <code>return rollout_module.read_rollout_receipt(session_id)</code> becomes <code>return
+    rollout_module.Unmeasured.MISSING_ROLLOUT</code>), with <code>reckon/</code> and
+    <code>tests/</code> copied with <code>-a</code> and every <code>__pycache__</code> cleared. The
+    mutated run prints its own provenance &mdash; <code>budget module file:
+    /tmp/nc-window-reader.qsijZn/reckon/budget.py</code> &mdash; measured with the scratch tree as the
+    working directory, because a bare <code>python -c</code> from the worktree resolves the worktree
+    copy first and would have made the citation false.</p>
+
+    <p><strong>Positive control first, in the unmutated tree at this head:</strong> the named case
+    passes, and it is one of the 37 in the gate log. <strong>After the mutation the same case is red:
+    1 failed, 36 passed</strong> at <code>assert [] == ['sess-production']</code> &mdash; the
+    uninjected path never reached the module reader, so the committed row's 0.42 was reported where
+    the session's own 0.11 belonged. The whole file in the scratch copy gives the same 1 failed, 36
+    passed, so the mutation reddens exactly the named case and nothing else. Log
+    <code>sha256 81f831ec&hellip;</code> (127 lines). The scratch copy was removed once the logs were
+    captured; the logs are the artifacts.</p>
+
+    <table>
+      <caption>The three added cases and what each one holds</caption>
+      <thead><tr><th>Case</th><th>What it asserts</th><th>Red under</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_the_uninjected_reader_is_the_production_rollout_reader</code></td>
+        <td>with no injected reader, the module-level rollout reader is the branch that runs and the
+        group reports its clocks</td>
+        <td>the declared mutation (production branch returns an unmeasured answer)</td></tr>
+        <tr><td><code>test_one_stamp_reader_dates_a_record_for_both_surfaces</code></td>
+        <td>a record whose only stamp is <code>created_at</code> dates identically through
+        <code>budget.run_observed_stamp</code> and <code>mcp_views._receipt_observed_at</code>, and
+        the lanes view publishes that stamp rather than an unmeasured one</td>
+        <td>the pre-change lanes key list, reinstated in a scratch copy</td></tr>
+        <tr><td><code>test_a_wholly_chosen_reading_leaves_the_other_clock_unknown</code></td>
+        <td>a winning weekly-only rollout reading reports <code>seven_day</code> observed and
+        <code>five_hour</code> unknown, the older row's figure discarded rather than borrowed</td>
+        <td>not measured; it records the existing wholesale shape</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>No case in the lanes-view files covers the moved helper.</strong> This node's own
+      gate file holds the only assertion of it, and the measurement above shows the lanes suite is
+      unchanged whether the divergence is present or repaired. A node scoped to
+      <code>tests/test_crew_lanes_view.py</code> or <code>tests/test_lanes_view_is_live.py</code>
+      should add one.</li>
+      <li><strong>The mixed clock is recorded, not resolved.</strong> A reading that wins is chosen
+      wholesale, so a weekly-only rollout receipt leaves <code>five_hour</code> unknown beside a
+      known week even though the row it beat carried one. Making that a per-window choice is a
+      separate decision and is not taken here.</li>
+      <li><strong>Two failures are pre-existing and are not this node's.</strong> They reproduce
+      identically at the base revision and the first sits in a <code>mcp_views.py</code> call site
+      that predates this change, but the case that exercises it lives outside this node's write
+      scope, so it is reported as a follow-on rather than repaired here.</li>
+      <li><strong>This measures only this node's change.</strong> Verifying the merged result is a
+      separately dispatched node's job.</li>
+    </ul>
+  </section>
+
   <section id="gate-recapture">
     <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
 
