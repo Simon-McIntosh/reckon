@@ -1311,6 +1311,57 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     to fail there, and the red log's first line repeats the declared mutation
     verbatim and in full.</p>
 
+    <div class="r-comment-body">
+      <p><strong>Settled from the code that decides it: the fixture's referent moved, and no
+      production behaviour changed.</strong> The composer enters the reader seam at exactly one
+      site &mdash; <code>crew_lanes_view</code> keys a command into <code>probe_by_command</code> by
+      calling <code>_cached_probe_reading(&hellip;, reader=read_probe)</code>, and it keys
+      <em>only a non-None command</em>. Whether a command is non-None is decided by
+      <code>_declared_probe_command</code>: it resolves the dialect from the command's stem and asks
+      <code>_owns_account_surface_reading</code>, which is true when the dialect class overrides
+      <code>read_account_surface</code>. The claude dialect does &mdash; commit
+      <code>fab092da</code>, <em>&ldquo;claude dialect owns the account-surface budget read&rdquo;</em>
+      (2026-09-14) &mdash; so <code>claude</code> was returned as a declared probe carrier
+      (<code>"account-surface probe declared"</code>) and the reader fired, once.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-window-paces-the-lane/why-the-probe-reader-fires.svg"
+             alt="The composer's decision, per backend: an empty command and a command no dialect translates both return None, so the reader seam is not entered; a declared probe exchange (codex) and an owned account surface (claude, clive) both return the command, which is keyed and enters the reader. The fixture's command claude sits in the owned-surface branch, which the repair moves to the no-dialect branch.">
+        <figcaption>The one site the composer enters the reader; the fixture's <code>claude</code>
+        moved from the no-dialect branch into the owned-surface branch.</figcaption>
+      </figure>
+
+      <p><strong>The rejected reading, named with the evidence against it.</strong> The other
+      candidate was that the composer should not reach for a reader here and the defect is production
+      behaviour. It is refuted by the read path under the seam: the default reader is
+      <code>_run_budget_probe</code> &rarr; <code>_backends.probe_budget</code>, which calls
+      <code>dialect.read_account_surface</code> <em>first</em> and consults the probe exchange only
+      when that answers <code>None</code>. For claude and clive the account surface <em>is</em> the
+      live reading, and the lanes view exists so a live reading replaces an ancient receipt;
+      suppressing the call would leave every claude and clive lane serving a stale receipt as a
+      position, which is the failure &sect;5b exists to prevent.</p>
+
+      <p><strong>The repair, and the case passes for the reason it was written for.</strong> The
+      fixture's command became one no dialect translates (<code>ollama</code>), so
+      <code>_declared_probe_command</code> returns <code>(None, &hellip;)</code>, nothing is keyed and
+      the reader is never entered. The case keeps its name and its three assertions, and a docstring
+      records why <code>claude</code> can no longer be the stand-in. The four lanes-view files,
+      measured before and after in the same pass: <strong>612fa8fb &mdash; 1 failed, 38 passed,
+      exit 1</strong>, the single red being this case; <strong>this head &mdash; 39 passed, exit
+      0</strong>, carrying no failure the base did not. Lint by delta 1 &rarr; 1, no new finding;
+      <code>ruff format --check</code> clean.</p>
+
+      <p><strong>The declared mutation reddens the case on a scratch copy.</strong> The composer's
+      probe call was restored unconditionally by returning the declared command on the two
+      <code>"no quota probe"</code> paths of <code>_declared_probe_command</code>, so a command no
+      dialect translates is keyed and the reader fires. Positive control first: the same scratch tree
+      with only <code>reckon/mcp_views.py</code> restored is green (<code>1 passed</code>); mutated,
+      the case is red on <code>assert 1 == 0</code>. The red log's first line repeats the declared
+      mutation verbatim and in full. Full record:
+      <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s6-probe-reader-undeclared-dialect">the
+      landed evidence record</a>.</p>
+    </div>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">

@@ -196,6 +196,15 @@ def test_two_reads_inside_the_declared_cache_lifetime_probe_once() -> None:
 
 
 def test_a_dialect_without_a_probe_never_calls_the_probe_reader() -> None:
+    """A command with no readable surface leaves the reader uninvoked.
+
+    The command names a harness reckon cannot translate, so the composer
+    declares no probe for it and the reader's seam is never entered.  This case
+    once used ``claude`` as its stand-in for a probe-less dialect; that stopped
+    being true when the claude dialect took over its own account-surface read,
+    so ``claude`` became a probe carrier and the fixture no longer described the
+    absence this case exists to assert.
+    """
     invocations = 0
 
     def probe_reader(backend, settings):
@@ -208,7 +217,7 @@ def test_a_dialect_without_a_probe_never_calls_the_probe_reader() -> None:
             probe_reader,
             config={
                 "backends": {
-                    "plain": {"launch": "cli", "command": "claude"},
+                    "plain": {"launch": "cli", "command": "ollama"},
                 }
             },
         )
