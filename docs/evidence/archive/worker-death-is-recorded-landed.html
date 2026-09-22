@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-death-is-recorded-landed">
+  <meta name="plan-title" content="A worker's death is recorded — landed evidence">
+  <meta name="plan-summary" content="Liveness is re-derived on every read: the accessor that owns the pid lookup now carries the recorded start tick, so a pointer whose process is gone, or whose pid was reused, stops reporting as running wherever the record is read.">
+  <meta name="plan-evidence-for" content="reckon:worker-death-is-recorded">
+  <meta name="plan-verifies" content="reckon:worker-death-is-recorded#s5">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; login node; Python in the repository's own root environment; detached git worktree">
+  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log">
+  <title>A worker's death is recorded — landed evidence | reckon">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A worker's death is recorded — landed evidence</h1>
+    <p class="plan-summary">§5.2 only. Liveness is re-derived from the record on every
+    read, and the reuse check that was written at one call site is now the accessor's
+    own work, so no read path has to remember it.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>This node lands the second executable step of §5 alone: a pointer whose recorded
+    pid has no process, or whose recorded start tick no longer matches the running
+    process, is reported as not running rather than taken at face value. The
+    <code>interrupted</code> phase that consumes this fact is §5.3 and a different
+    node; the wait-status record is §5.1; the session-id gap is §5.4. Nothing here is an
+    end-to-end proof that a killed worker reports <code>interrupted</code> — that is
+    §5.6.</p>
+  </section>
+
+  <section id="s5-2-mechanism">
+    <h2>&sect;5.2 &mdash; the read re-derives liveness, and the reuse check moves into the accessor</h2>
+    <p>The measured gap was a duplicate: the start-time comparison that stops a reused
+    pid reading as a survivor was written by hand at <code>list_live</code>, at
+    <code>producer_live</code>, at <code>follower_state</code> and at
+    <code>watch_state</code>, and absent everywhere else that decides liveness from a
+    record. A pointer read through <code>drain</code>, <code>claims</code>,
+    <code>node</code>, <code>directory</code>, <code>routing</code> or
+    <code>promotion</code> re-derived only the bare pid answer, so a recycled pid read
+    as a live worker on those paths. Moving the comparison into
+    <code>record_process_alive</code> — the one accessor every path already goes
+    through — makes the re-derivation unconditional and deletes the four hand-written
+    copies.</p>
+    <p><strong>The read path, after.</strong> The decision is:</p>
+    <figure>
+      <img src="/reckon/figures/worker-death-is-recorded/liveness-read-path.svg"
+           alt="Flow: a record is read; if it names no process the answer is None; otherwise the caller's probe answers; if that probe is the module's own process table and the record carries a start tick and the process is running: keep the probe's answer only when the running start tick equals the recorded one, otherwise not running. A placed run is answered by its scheduler job first.">
+      <figcaption>The accessor's decision. The reuse check is taken only when the
+      module's own <code>process_alive</code> answered, so a caller that substitutes its
+      own probe owns the whole read.</figcaption>
+    </figure>
+    <p><strong>Why the check is not taken on a substituted probe.</strong> The reuse
+    check reads the process table, and a caller that hands in its own probe has already
+    answered the liveness question with something that is not the process table.
+    Substituting a probe and then consulting <code>/proc</code> behind it would answer
+    liveness from two different instruments and can contradict the caller. The callers
+    that pass this module's own <code>process_alive</code> through — dispatch,
+    promotion, resumption — still get the check on every read, and the default path
+    (<code>alive=None</code>) resolves to that same function. Measured: a fixture that
+    fabricated liveness for a placeholder pid found the host had since handed
+    <code>4242</code> to an unrelated process, and the check correctly read the record
+    as not the registered one; the substitution rule is what keeps the fabricated probe
+    authoritative.</p>
+    <p><strong>One caller deliberately opts out.</strong> The seat guard asks whether
+    the process <em>is running</em>, not whether it is the registered one — a
+    <code>watcher_live</code> reading must not go false because the record's identity
+    was damaged — so <code>_record_producer_running</code> and
+    <code>_record_producer_dead</code> pass <code>match_start_time=False</code> rather
+    than depending on the check being absent. That preserves the measured behaviour
+    where a running producer with a rewritten start tick still reads live — which the
+    seat-guard case asserts.</p>
+  </section>
+
+  <section id="evidence">
+    <h2>Evidence</h2>
+    <p>Gate — <code>docs/figures/worker-death-is-recorded/gate.log</code>: the node's
+    test file plus the four pre-existing liveness files, <strong>54 passed, exit 0</strong>.
+    See the figure above for the shape the cases hold: a pointer whose process is gone
+    reads <code>process_alive</code> false through <code>list_live</code>; a live pid
+    under a disagreeing start tick reads false; a matching tick reads true; a record
+    with no tick is unchanged.</p>
+    <p>Negative control — <code>docs/figures/worker-death-is-recorded/negative-control.log</code>,
+    first line repeating the declared mutation verbatim: making
+    <code>record_process_alive</code> skip the start-time comparison leaves the other
+    eight cases green and turns the reused-pid case red
+    (<strong>1 failed, 8 passed</strong>), which is the case the check exists for.</p>
+    <p>Delta against base. The focused liveness set is <strong>no new failures against
+    base</strong>. The broader contact set (watch visibility, removed-flag migration,
+    receipt-after-release) carries <strong>seven failures present at base</strong> —
+    a promotion review-waiver refusal, unrelated to this node — recorded under
+    <code>follow_ons</code> rather than triaged here.</p>
+  </section>
+
+  <section id="follow-ons">
+    <h2>Follow-ons</h2>
+    <ul>
+      <li>Seven failures in <code>test_crew_watch_visibility.py</code>,
+      <code>test_removed_flag_migration.py</code> and
+      <code>test_receipt_after_release.py</code> reproduce at the integration head
+      unchanged: <code>promotion._require_review_waiver</code> raises for a run whose
+      manifest names repository paths, before the receipt path under test is reached.
+      Pre-existing, outside this node's fence.</li>
+      <li><code>claims.py</code> and <code>recovery.py</code> each still hand-write the
+      start-time comparison after calling the accessor. Redundant rather than wrong
+      now, and outside this node's write paths.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

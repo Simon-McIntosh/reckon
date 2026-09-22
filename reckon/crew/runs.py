@@ -441,17 +441,14 @@ def list_live(
     """Return matching live pointers, newest run id last."""
     records = _list_live_records(project=project, phase=phase)
     for record in records:
-        pid = record.get("pid")
-        if not pid:
+        if not record.get("pid"):
             continue
-        alive = record_process_alive(record)
-        expected_start = record.get("pid_start_time")
-        if alive is True and expected_start is not None:
-            alive = _process_start_time(pid) == expected_start
         # Return the re-derived fact without mutating the pointer. A read must
         # not report a worker as live merely because the last observer did,
         # while all consumers of this one snapshot must see the same answer.
-        record["process_alive"] = alive
+        # The accessor carries the reuse check now, so the pid-start-time
+        # comparison is not repeated here.
+        record["process_alive"] = record_process_alive(record)
     if project is not None and phase is None:
         _publish_watch_stream(project, records)
     return records
@@ -1311,11 +1308,7 @@ def producer_live(project: str) -> bool:
         record = _read_watch_record(handle)
     if not record:
         return False
-    pid = record.get("pid")
     alive = record_process_alive(record) is True
-    if alive:
-        expected = record.get("pid_start_time")
-        alive = expected is None or _process_start_time(pid) == expected
     if not alive:
         _erase_confirmed_dead_seat(path, record)
     return alive
@@ -1333,13 +1326,15 @@ def _record_producer_running(record: Mapping[str, Any]) -> bool:
     question than whether it is running.
     """
     pid = record.get("pid")
-    return bool(pid) and record_process_alive(record) is True
+    return bool(pid) and record_process_alive(record, match_start_time=False) is True
 
 
 def _record_producer_dead(record: Mapping[str, Any]) -> bool:
     """Report whether a seat record names a process that is no longer running."""
     pid = record.get("pid")
-    return bool(pid) and record_process_alive(record) is not True
+    return (
+        bool(pid) and record_process_alive(record, match_start_time=False) is not True
+    )
 
 
 def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
@@ -1642,9 +1637,6 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
 
     pid = record.get("pid")
     running = record_process_alive(record) is True
-    expected = record.get("pid_start_time")
-    if expected is not None:
-        running = running and _process_start_time(pid) == expected
 
     # An orphaned follower has lost the session it was reporting to, so its
     # lines go nowhere even while the process runs.
@@ -1887,13 +1879,7 @@ def project_watch_visibility(
         registration = {}
 
     pid = registration.get("pid")
-    expected_start = registration.get("pid_start_time")
-    actual_start = _process_start_time(pid)
     registering_process_alive = record_process_alive(registration)
-    if expected_start is not None:
-        registering_process_alive = bool(
-            registering_process_alive is True and actual_start == expected_start
-        )
 
     observer_alive: bool | None = None
     if "parent_pid" in registration:
@@ -2838,6 +2824,7 @@ def record_process_alive(
     record: Mapping[str, Any] | None,
     alive: Callable[[Any], bool | None] | None = None,
     job_alive: Callable[[Mapping[str, Any] | None], bool | None] | None = None,
+    match_start_time: bool = True,
 ) -> bool | None:
     """Report whether the process a run record names is still running.
 
@@ -2846,6 +2833,17 @@ def record_process_alive(
     bare pid. A record that names no process answers None, the same shape
     :func:`process_alive` already returns for a missing pid, so a caller cannot
     read "no process recorded yet" as a stopped worker.
+
+    A pid the kernel has since handed to another process is not the one the
+    record names, and a bare process-table probe cannot tell the two apart: it
+    answers liveness for whatever now holds the number. When the record carries
+    the kernel start tick written at registration, the probe's answer is kept
+    only if the running process is the registered one, so a reused pid stops
+    reading as a survivor on every read rather than only where a caller
+    remembered to compare. An unreadable start tick is not proof of reuse — the
+    same stance :func:`process_alive` takes toward an unreadable process record
+    — so the probe's answer stands, which is also what keeps a peer's live
+    process readable.
 
     A placed run is charged to a scheduler job rather than to the coordinator's
     own login slice, so its recorded pid names the scheduler client rather than
@@ -2856,7 +2854,15 @@ def record_process_alive(
 
     ``alive`` is the caller's own probe. A module that keeps the primitive
     bound under its own name — so a test can substitute liveness for that
-    module — hands it in rather than having its substitution bypassed.
+    module — hands it in rather than having its substitution bypassed. The
+    reuse check needs the process table, so it is taken only when that real
+    primitive answered: a substituted probe is the whole answer for the read.
+
+    ``match_start_time`` is for the one caller that asks whether the process
+    itself is running rather than whether it is the registered one. A seat
+    guard needs the process that holds the seat, and a running holder is a
+    running holder however its recorded identity reads, so it opts out here
+    rather than depending on this check being absent.
     """
     if not record:
         return None
@@ -2864,7 +2870,23 @@ def record_process_alive(
     if placed is not None:
         return placed
     probe = process_alive if alive is None else alive
-    return probe(record.get("pid"))
+    pid = record.get("pid")
+    running = probe(pid)
+    # The reuse check reads the process table, which is the only thing that can
+    # say whether the pid still names the registered process. A caller that
+    # substitutes its own probe owns the whole read — its probe answers for
+    # liveness and there is nothing left for a second lookup to decide — so the
+    # check is skipped when the real primitive is the one that answered. The
+    # callers that pass this module's own ``process_alive`` through still get
+    # the check on every read they make, and ``alive=None`` resolves to that
+    # same function, so the default path is covered by the same identity.
+    if running is True and match_start_time and probe is process_alive:
+        expected = record.get("pid_start_time")
+        if expected is not None:
+            actual = _process_start_time(pid)
+            if actual is not None:
+                running = actual == expected
+    return running
 
 
 def _process_stat_fields(pid: Any) -> list[str]:
