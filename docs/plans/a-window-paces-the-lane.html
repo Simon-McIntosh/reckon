@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f">
 <meta name="plan-impl" content="0.9">
@@ -1083,6 +1083,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260922T112547875020-review-of-the-preflight-reads-its-windows-from-the-command-line" data-who="reckon-ship" data-when="2026-09-22T11:50:11.033Z">
     <div class="r-comment-body"><p>independent review of the pre-flight window source stored at 92 of 100 with one finding: the receipt is preferred over a newer stream reading instead of the freshest of the two; the reviewed gate re-ran green, 27 passed</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260922T1205-verify-gate-instrument" data-who="reckon-ship" data-when="2026-09-22T12:05:00Z">
+    <div class="r-comment-body">INTEGRATED GATE PASSED at 4633c695: pytest -q tests/test_preflight_pace.py exit 0, recorded on the ledger row as integrated_gate_check with no finding. The first verify-gate attempt on the same tree reported FAILED with pytest exit 4 and no test output, and exit 4 is a usage error, not a test failure: the recorded gate command names a bare pytest, which on this host resolves to ~/.local/bin/pytest 9.0.2 rather than the project environment's. Re-running the same command with the project environment first on PATH passed. Two consequences recorded rather than repaired here: a gate command cited at promotion should name its interpreter, and verify-gate's finding text reads a usage error as a merge that changed what the gate proves. Both belong to the promotion boundary and travel with the pointer followup naming scoring-should-stop-a-promotion. FOLDED NODE DISPATCHED: the-window-source-reads-live-pointers-and-takes-the-freshest, run r-20260922T120158949653, same member, 35-minute budget, control: restore receipt-first precedence.</div>
 </div>
 </section>
 </main>
