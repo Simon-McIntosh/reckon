@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 430" width="980" height="430" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect x="0" y="0" width="980" height="430" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#1a1a1a">Which reading a group paces to, and which sources can be that reading</text>
+  <text x="24" y="55" font-size="12.5" fill="#5a5a5a">Three sources are read: this change adds a second home for the receipt, and replaces receipt-first precedence with freshest-of-the-two.</text>
+
+  <!-- column 1: the three sources -->
+  <rect x="24" y="86" width="264" height="86" rx="8" fill="#eef6ee" stroke="#9dc39d"/>
+  <text x="38" y="110" font-size="12.5" font-weight="600" fill="#1f4a1f">committed ledger row: lane_receipt</text>
+  <text x="38" y="132" font-size="11.5" fill="#2f5a2f">a promoted run's harness-owned receipt,</text>
+  <text x="38" y="150" font-size="11.5" fill="#2f5a2f">with its own observed_at</text>
+
+  <rect x="24" y="182" width="264" height="86" rx="8" fill="#fdf6e6" stroke="#d8b871"/>
+  <text x="38" y="206" font-size="12.5" font-weight="600" fill="#6b4e10">live pointer: lane_receipt</text>
+  <text x="38" y="228" font-size="11.5" fill="#6b4e10">a run still in flight, whose record has not</text>
+  <text x="38" y="246" font-size="11.5" fill="#6b4e10">been committed yet — the source this adds</text>
+
+  <rect x="24" y="278" width="264" height="86" rx="8" fill="#eef2fa" stroke="#9db0d4"/>
+  <text x="38" y="302" font-size="12.5" font-weight="600" fill="#1f3350">run stream: unifiedWindows</text>
+  <text x="38" y="324" font-size="11.5" fill="#2f4460">a claude-dialect run's own report, read</text>
+  <text x="38" y="342" font-size="11.5" fill="#2f4460">through window_reading.read_windows</text>
+
+  <!-- arrows into the candidate set. Each source already carries its own date -->
+  <line x1="288" y1="129" x2="352" y2="200" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+  <line x1="288" y1="225" x2="352" y2="225" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+  <line x1="288" y1="321" x2="352" y2="250" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <rect x="356" y="176" width="242" height="98" rx="8" fill="#f4f6fa" stroke="#b9c2d4"/>
+  <text x="370" y="200" font-size="12.5" font-weight="600" fill="#243044">candidate readings</text>
+  <text x="370" y="222" font-size="11.5" fill="#3d4a60">each one a position with its own date,</text>
+  <text x="370" y="240" font-size="11.5" fill="#3d4a60">so the choice follows the stamps</text>
+  <text x="370" y="260" font-size="11.5" fill="#3d4a60">and never the dialect that wrote them</text>
+
+  <line x1="598" y1="225" x2="662" y2="225" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#a)"/>
+
+  <rect x="666" y="150" width="288" height="150" rx="8" fill="#f7eef4" stroke="#c79dbb"/>
+  <text x="680" y="176" font-size="12.5" font-weight="600" fill="#4a1f3a">freshest dated reading wins</text>
+  <text x="680" y="200" font-size="11.5" fill="#5a2f4a">a group's member reports this one reading,</text>
+  <text x="680" y="218" font-size="11.5" fill="#5a2f4a">with the age of the stamp it carried</text>
+  <text x="680" y="246" font-size="11.5" fill="#7a4a6a">receipt older than a stream: the stream wins,</text>
+  <text x="680" y="264" font-size="11.5" fill="#7a4a6a">which receipt-first precedence prevented</text>
+  <text x="680" y="288" font-size="11.5" fill="#7a4a6a">nothing dated: the group stays unknown</text>
+
+  <text x="24" y="404" font-size="11.5" fill="#7a8699">Asserted from three stamps in tests/test_preflight_pace.py; the pointer home is exercised from a synthesised pointer, because no pointer on this workstation carries lane_receipt yet.</text>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6"/>
+    </marker>
+  </defs>
+</svg>

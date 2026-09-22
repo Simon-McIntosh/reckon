@@ -901,6 +901,59 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     receipt-first precedence &mdash; is applied to a scratch copy, the newer-stream case is observed
     to fail there, and the red log is recorded.</p>
 
+    <h4 id="s6-freshest-source-landed">Landing &mdash; both homes are read, and the freshest dated reading wins</h4>
+    <p><strong>Landed 2026-09-22.</strong> <code>budget.recorded_windows</code> now reads live run
+    pointers beside the committed ledger rows and, per member, keeps the freshest <em>dated</em>
+    reading whichever source carried it &mdash; one change per finding. <strong>The pointer is a
+    second home for a receipt</strong>: a run still in flight records its receipt in its pointer
+    under the crew home and only later commits it, so a source reading the ledger alone reports a
+    position as old as the last promotion. <strong>Precedence follows the stamps, not the
+    dialect</strong>: the reader builds one candidate reading per source that resolved a clock and
+    takes the newest <code>observed_at</code>, so a stream that reported after the member's last
+    receipt is the reading the group paces to. Receipt-first precedence, which preferred the receipt
+    whenever it yielded any clock, is gone.</p>
+
+    <p><strong>Scoped to the project it is asked about.</strong> The crew home holds every project's
+    pointers, so the pointer read is filtered to the project the caller named, as the pointer-side
+    budget readings already are. A source that carried no clock resolves no reading and so is never a
+    candidate: nothing undated displaces something dated.</p>
+
+    <table>
+      <tr><th>case</th><th>member's sources</th><th>the reading the group reports</th></tr>
+      <tr><td>a run in flight records a receipt the ledger has not committed</td><td>ledger receipt 3 h old (0.42), pointer receipt 1 min old (0.11)</td><td>the pointer's: <code>util 0.11</code>, <code>observed_at</code> the pointer's stamp</td></tr>
+      <tr><td>a stream reported after the last receipt</td><td>receipt 3 h old (0.42), stream ~1 min old (0.31)</td><td>the stream's: <code>util 0.31</code></td></tr>
+      <tr><td>the receipt is the newer of the two</td><td>receipt 1 min old (0.42), stream ~2 h old (0.31)</td><td>the receipt's: <code>util 0.42</code>, <code>observed_at</code> 1 min old</td></tr>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/window-reading-precedence.svg" alt="Three window sources feeding one candidate set from which the freshest dated reading is chosen. A committed ledger row's lane_receipt, a live pointer's lane_receipt for a run still in flight, and a run stream's unifiedWindows event each produce a candidate reading carrying its own observation stamp. Taking the newest stamp means a stream that reported after the member's last receipt is the reading the group paces to, which receipt-first precedence prevented; a group no dated reading reached stays unknown.">
+    </figure>
+
+    <p><strong>What the workstation shows, and what it does not.</strong>
+    <code>reckon crew preflight --project reckon --pretty</code> reads <strong>four</strong> live
+    pointers for this project and reports <code>codex-sub</code> <code>state: observed</code> from
+    <code>codex-astra</code>, its <code>seven_day</code> clock at <code>utilisation 0.31</code>, age
+    56687.6 s, <code>observed_at 2026-09-21T20:53:30Z</code>, with <code>spark-sub</code> unknown.
+    <strong>None of those four pointers carries a <code>lane_receipt</code></strong>: the pointers on
+    this machine declare <code>lane_declaration</code>, <code>lane_reading</code> and a budget
+    block, and the harness-owned receipt is harvested at the promotion boundary. So the pointer home
+    was read and had nothing newer to say here, the reported reading is the committed row's, and the
+    pointer as a receipt home is asserted from a synthesised pointer. A pointer carrying its own
+    receipt has not been observed in production and this record does not claim one.</p>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q tests/test_preflight_pace.py</code> &mdash;
+    <strong>30 passed</strong>, exit 0, the 27 prior cases among them with their assertions
+    unmoved. The two unit-level cases that read <code>recorded_windows</code> directly gained an
+    explicit <code>pointers=[]</code> so a synthesised row set cannot reach the real crew home, which
+    is a test-isolation fix and not a behaviour change. The declared negative control &mdash;
+    <em>restore receipt-first precedence</em>, verbatim on the red log's first line &mdash; was
+    applied to a scratch copy of this tree: the named case passed before the mutation, and the
+    mutation reddens exactly the newer-stream case at
+    <code>assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.31)</code> with
+    <code>assert 0.42 == 0.31</code> (1 failed, 29 passed for the whole file). Full record:
+    <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-freshest-source">the landed evidence
+    record</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
