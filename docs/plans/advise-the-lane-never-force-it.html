@@ -365,6 +365,17 @@ COST OF THE CLAUSE. It is computed from the committed ledger through the routing
 
 This section is not closed here. Recording the advisory on the live pointer and the promoted ledger row is section 3's deliverable, and the node that lands it owns that half.</div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20260922T1602-advisory-reaches-the-live-pointer" data-who="reckon-ship" data-when="2026-09-22T16:02:00Z">
+    <div class="r-comment-body">LANDED - commit 7059a778. The advisory a dispatch computed now reaches its live pointer record, and the insufficient-evidence clause renders the count that fired it. The record assembly in reckon/crew/dispatch.py had copied lane_declaration and lane_reading beside requested_backend and dropped lane_advisory, so the cheaper-lane clause was computed on every emitting real dispatch and then discarded, with no reader anywhere in reckon/ outside the payload object's as_dict. The record now carries it when it exists and is left off entirely when it does not.
+
+MEASURE. A real dispatch onto a metered lane whose projection precedes the node's horizon writes lane_advisory onto the record it actually writes, read back through crew.read_pointer rather than the payload the CLI echoed - the payload was already correct, which is why the defect survived. Its figures match the payload's own carry and the cheaper lane is named. A dispatch whose resolution carries no advisory writes no lane_advisory key at all rather than a null, because a null reads as a lane that was assessed and found quiet, which is the opposite of a lane that was never assessed.
+
+THE COUNT THE REFUSAL RENDERS. The cost the clause refuses over is drawn only from the runs carrying a paired worker-and-coordinator reading, while the floor was applied to the resolved lane's total usable runs. A lane with twelve usable runs and three paired readings therefore rendered "12 usable run(s), 10 needed" beside a refusal citing ten - a count that already met the floor. The clause now fires on the chargeable count and renders the same number.
+
+NEGATIVE CONTROL. Two controls on a scratch extraction of the commit. The declared one removes the record insertion and reddens exactly the pointer-carries-the-advisory case with KeyError: 'lane_advisory', 1 failed and 11 passed. An independent second control puts the floor back on the lane's total sample count and reddens exactly the shortfall case, 1 failed and 11 passed.
+
+Full record: docs/evidence/archive/advise-the-lane-never-force-it-landed.html#s3, figure docs/figures/advise-the-lane-never-force-it/advisory-reaches-the-pointer.png. The promoted-ledger-row half of this section is not landed here: it belongs to a node that can write the promotion path. A pre-existing failure in test_a_brief_points_rather_than_quotes was reproduced at the base revision and lives outside this node's scope.</div>
+</div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>

@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Advise The Lane, Never Force It — landed evidence">
   <meta name="plan-summary" content="A dispatch carries its lane's projected exhaustion and the cheaper lane for its role, unasked and without altering the resolution.">
   <meta name="plan-evidence-for" content="advise-the-lane-never-force-it">
-  <meta name="plan-verifies" content="advise-the-lane-never-force-it#s2">
-  <meta name="plan-commits" content="abfee217">
-  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_lane_advisory_on_dispatch.py,docs/figures/advise-the-lane-never-force-it/lane-advisory-decision.png">
+  <meta name="plan-verifies" content="advise-the-lane-never-force-it#s2,advise-the-lane-never-force-it#s3">
+  <meta name="plan-commits" content="abfee217,7059a778">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_lane_advisory_on_dispatch.py,docs/figures/advise-the-lane-never-force-it/lane-advisory-decision.png,docs/figures/advise-the-lane-never-force-it/advisory-reaches-the-pointer.png">
   <meta name="plan-recorded-at" content="2026-09-21">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -112,6 +112,78 @@ E       KeyError: 'burn_multiple'
       node's declared scope; they are recorded as follow-ons rather than repaired here. The
       delta against the stated base is zero added failures, and the module adds no lint finding
       against its own baseline.</p>
+    </section>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; The choice is recorded, so advice becomes evidence</h2>
+      <p>Commit <code>7059a778</code> carries the advisory a dispatch computed onto the run's
+      live pointer record, and makes the insufficient-evidence clause render the count that
+      fired it. The record assembly in <code>reckon/crew/dispatch.py</code> had copied
+      <code>lane_declaration</code> and <code>lane_reading</code> beside
+      <code>requested_backend</code> and dropped <code>lane_advisory</code>, so the
+      cheaper-lane clause was computed on every emitting real dispatch and then discarded, with
+      no reader anywhere in <code>reckon/</code> outside the payload object's
+      <code>as_dict</code>.</p>
+
+      <figure>
+        <img src="/reckon/figures/advise-the-lane-never-force-it/advisory-reaches-the-pointer.png"
+             alt="Top: the lane is read once, the advisory is computed unasked, and the record
+                  assembly writes it onto the live pointer; a dashed arrow marks where the
+                  assembly previously dropped it. Bottom: of twelve usable runs on the resolved
+                  lane, three carry a paired worker-and-coordinator reading, and the floor sits
+                  at ten; the refusal now renders three, where it previously rendered twelve.">
+        <figcaption>The advisory's path into the written record, and the count the refusal
+        renders. The advisory still rides the single lane reading the dispatch already takes;
+        what changed is that the record keeps it, and that the shortfall it reports is the
+        chargeable count rather than the lane's total.</figcaption>
+      </figure>
+
+      <h3>The pointer carries the advisory, read back from the written record</h3>
+      <p>A real dispatch onto a metered lane whose projection precedes the node's horizon writes
+      <code>lane_advisory</code> onto its pointer record with the same four figures and the same
+      cheaper-lane clause the payload object builds. The assertion reads the record the run
+      actually wrote (<code>crew.read_pointer</code>) rather than the payload the CLI echoed,
+      because the payload is assembled from a different object and cannot show a record
+      assembly that omitted the key.</p>
+
+      <h3>An absent advisory leaves no key, rather than a null</h3>
+      <p>A dispatch whose resolution carries no advisory writes no <code>lane_advisory</code>
+      key at all. A null would read as a lane that was assessed and found quiet &mdash; the
+      opposite of a lane that was never assessed &mdash; and a reader cannot tell the two apart
+      once the key exists with a null value. The case is driven by supplying a resolution whose
+      advisory is absent; the pointer's neighbouring lane fields are asserted present, so the
+      absence belongs to the advisory and not to a record that never landed.</p>
+
+      <h3>The refusal renders the count that fired it</h3>
+      <p>The insufficient-evidence clause reported the resolved lane's total usable runs while
+      the cost it refuses over is drawn only from the runs carrying a paired worker-and-
+      coordinator reading. A lane with twelve usable runs and three paired readings therefore
+      rendered <code>12 usable run(s), 10 needed</code> beside a refusal citing ten &mdash; a
+      count that already met the floor. The clause now fires on the chargeable count and renders
+      the same number, so the figure a reader sees is the figure that refused.</p>
+
+      <h3>The negative controls</h3>
+      <p>The gate was shown to fail on the things it protects, on a scratch extraction of the
+      commit. The declared control removes the record insertion, and reddens exactly the
+      pointer-carries-the-advisory case:</p>
+      <pre><code>mutation: remove the record["lane_advisory"] assignment in reckon/crew/dispatch.py so the live pointer omits the advisory
+E       KeyError: 'lane_advisory'
+FAILED tests/test_lane_advisory_on_dispatch.py::test_an_emitted_advisory_reaches_the_written_pointer
+1 failed, 11 passed</code></pre>
+      <p>An independent second control puts the floor back on the lane's total sample count,
+      and reddens exactly the shortfall case:</p>
+      <pre><code>second control: floor reverted to the resolved lane total (len(inputs) -> samples) in reckon/crew/dispatch.py
+FAILED tests/test_lane_advisory_on_dispatch.py::test_the_refusal_renders_the_count_that_fired_it_not_the_lane_total
+1 failed, 11 passed</code></pre>
+
+      <h3>Verification</h3>
+      <p><code>pytest -q tests/test_lane_advisory_on_dispatch.py</code> passed: 12 passed, exit 0
+      &mdash; the nine earlier cases unchanged, and three added. The adjacent
+      <code>test_dispatch_names_its_backend</code> cases pass. A pre-existing failure in
+      <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code>
+      was reproduced at the base revision and is outside this node's declared scope, so it is
+      recorded as a follow-on rather than triaged here. The edited module adds no lint finding
+      against its own baseline (9 at base, 9 at head, same command).</p>
     </section>
   </main>
 </body>
