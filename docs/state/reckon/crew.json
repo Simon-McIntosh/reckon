@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T12:27:30",
+  "updated": "2026-09-22T12:28:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -252096,6 +252096,295 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a717",
+        "node": "the-template-says-a-gate-log-names-its-tree",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1639,
+                "cached_input_tokens": 675691,
+                "input_tokens": 677332,
+                "output_tokens": 142,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 677474,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "cases in tests/test_gate_log_names_its_tree.py enter through compose_prompt and assert the emitted template states a gate log first line names the revision it ran at, the tree, and the command; a separate case asserts the template states a recorded gate command is the one that ran rather than a template; a third case asserts the gate-command gloss carries no placeholder token of the angle-bracket worktree form, which is the negative half and is the shape the first measured instance produced; a fourth case asserts the negative-control first-line convention section 11 landed is unchanged; the declared mutation is applied, tests/test_gate_log_names_its_tree.py is observed to fail, and the red log is recorded with the mutation verbatim on its first line, which is this section own subject applied to itself",
+          "estimated_hours": null,
+          "goal": "the manifest template states that a gate log names the revision, tree and command it ran, and that a recorded gate command is the one that ran",
+          "id": "the-template-says-a-gate-log-names-its-tree",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-21T17:30:16Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/manifest.md",
+          "negative_control": "remove the sentence stating a gate log first line names its revision, tree and command from the manifest template in reckon/crew/prompts.py",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a717",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_gate_log_names_its_tree.py",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/figures/crew-runtime-positive-controls",
+            "docs/plans/crew-runtime-positive-controls.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "gate-log-names-its-tree",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-21T17:30:35Z",
+        "completed_at": "2026-09-21T17:48:25.850Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1061,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1070,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "d061e49b9a76a1c319fce1cbbc0d91a7783aa8f6",
+        "commits": [
+          "d509b7ef5fc5de0f0df05ec98623ccbc79ed7bf5",
+          "7892cb69128523ac598e02f62babaf56b6b71c17"
+        ],
+        "changed_lines": {
+          "added": 197,
+          "removed": 2,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/the-template-says-a-gate-log-names-its-tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_log_names_its_tree.py tests/test_crew_prompts.py tests/test_negative_control_log_is_a_path.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/gate_log.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "the manifest template states that a recorded gate command is the one that ran and never a template carrying an unsubstituted placeholder, and that a gate log first line names the revision, the tree and the command; 32 passed exit 0 across the new file and both sibling prompt-contract files, declared mutation reddened 1. Review 96/100, both findings checked: the first correct and the section's own argument, since this run's gate log names no revision because the node ran against the template before its own change landed; the second refuted against the file, negative_control.log being present at 1541 bytes with the mutation verbatim on its first line. The manifest also cited a 40-character sha whose object does not exist; the real commits are the two recorded here and the defect is carried as section 18.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/manifest.md",
+        "scope_changed": false,
+        "session_id": "b22469ad-8ff6-4a02-ac01-580c001be1c2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6785579,
+            "input_tokens_cumulative": 6785579,
+            "output_tokens": 31244,
+            "output_tokens_cumulative": 31244,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-21T17:48:25.850Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 450,
+              "budget_seconds": 1500,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 1950,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2825,
+              "log_fresh": false,
+              "manifest_commits": [
+                "0a075d70"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "57ec51fdf9dd6b0151569a6bc283968b4b7040ebe78069022fdae8cea711f7ee",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-runtime-positive-controls --section '\u00a715' --role review --spec-level exact --node review-of-wait-shape-failure-is-attributed-to-a-base --goal 'attach an independent review to run r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base' --done-when 'the review for r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base.json --time-budget 25m --session ship-crpc-20260921 --allow-unreconciled-runs --local",
+              "node": "wait-shape-failure-is-attributed-to-a-base",
+              "phase": "starting",
+              "plan": "crew-runtime-positive-controls",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260921T161020457578-wait-shape-failure-is-attributed-to-a-base",
+              "session": "ship-crpc-20260921",
+              "terminal_age_seconds": 2880,
+              "terminal_at": "2026-09-21T16:42:24Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/wait-shape-failure-is-attributed-to-a-base"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6785579,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1066.907,
+          "generated_tokens": 31244,
+          "generation_seconds": 856.348,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.1,
+          "machine_seconds": 210.559,
+          "peak_input_tokens": 135074,
+          "tokens_per_second": 36.49,
+          "wall_tokens_per_second": 29.28
+        },
+        "follow_on_paths": [
+          "reckon/crew/promotion.py",
+          "tests/test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/the-template-says-a-gate-log-names-its-tree",
+          "session_id": "b22469ad-8ff6-4a02-ac01-580c001be1c2",
+          "session_source": "stream",
+          "retained_at": "2026-09-21T17:48:25.850Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.882,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.882,
+          "at_complete": 0.944,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_gate_log_names_its_tree.py"
+          ],
+          "declaration": "remove the sentence stating a gate log first line names its revision, tree and command from the manifest template in reckon/crew/prompts.py",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T173015023952-the-template-says-a-gate-log-names-its-tree/negative_control.log"
+        },
+        "tool_steps": 65.0,
+        "orientation_input_tokens": 1358789.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -252380,6 +252669,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2031
+    "_version": 2032
   }
 }
