@@ -909,7 +909,7 @@ def test_the_recorded_windows_read_no_lane_declaring_no_wallet() -> None:
         )
     ]
 
-    windows = budget.recorded_windows("demo", CONFIG, records=rows)
+    windows = budget.recorded_windows("demo", CONFIG, records=rows, pointers=[])
 
     assert windows == {}
 
@@ -943,7 +943,7 @@ def test_an_unreadable_receipt_window_leaves_the_group_unknown() -> None:
         )
     ]
 
-    windows = budget.recorded_windows("demo", CONFIG, records=rows)
+    windows = budget.recorded_windows("demo", CONFIG, records=rows, pointers=[])
 
     assert "sol-a" not in windows
     sol = _group(budget.group_pace(CONFIG, windows=windows, now=NOW), "sol")
@@ -952,3 +952,190 @@ def test_an_unreadable_receipt_window_leaves_the_group_unknown() -> None:
         assert sol["clocks"][period]["state"] == budget.UNKNOWN
         assert sol["clocks"][period]["utilisation"] not in (0.0, 1.0)
         assert sol["clocks"][period]["utilisation"] is None
+
+
+# ── Both homes, and the freshest reading of the two, whichever carried it ──
+
+
+def _write_pointer(home: Path, run_id: str, record: dict) -> None:
+    """Write one live pointer where the crew home keeps them."""
+    directory = home / "crew" / "live"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{run_id}.json").write_text(json.dumps(record), encoding="utf-8")
+
+
+def _live_receipt(
+    backend: str,
+    *,
+    windows: list[tuple[int, float]],
+    observed_at: str,
+    run_id: str,
+    project: str = "demo",
+) -> dict:
+    """A live pointer for a run that is still in flight, carrying its receipt.
+
+    The pointer is the home an in-flight run's record occupies, so its receipt
+    is the same shape a committed row's is: one observation stamp and one row
+    per window length in minutes.
+    """
+    return {
+        "run_id": run_id,
+        "project": project,
+        "backend": backend,
+        "phase": "running",
+        "observed_at": observed_at,
+        "created_at": observed_at,
+        "lane_receipt": {
+            "quota_state": "measured",
+            "observed_at": observed_at,
+            "quota_windows": [
+                {
+                    "window_minutes": minutes,
+                    "used_percent": used,
+                    "resets_at": _reset_in(100.0),
+                    "observed_at": observed_at,
+                }
+                for minutes, used in windows
+            ],
+        },
+    }
+
+
+def test_a_live_pointer_is_read_beside_the_ledger_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run in flight records its receipt in its pointer, not yet in the ledger.
+
+    Only committed rows would leave the group reading a receipt three hours old
+    while a newer one sits uncommitted in the pointer of a run still running, so
+    the pointer is read as a second home and its newer stamp is the one the
+    group reports.
+    """
+    home = tmp_path / "home"
+    (home / "crew").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    pointer_stamp = _iso(NOW - timedelta(minutes=1))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(hours=3)),
+                run_id="r-committed",
+            )
+        ],
+    )
+    _write_pointer(
+        home,
+        "r-in-flight",
+        _live_receipt(
+            "sol-a",
+            windows=[(300, 11.0), (10080, 55.0)],
+            observed_at=pointer_stamp,
+            run_id="r-in-flight",
+        ),
+    )
+
+    result = _preflight_command(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    sol = _group(json.loads(result.output)["groups"], "sol")
+    assert sol["member"] == "sol-a"
+    assert sol["state"] == budget.OBSERVED
+    assert datetime.fromisoformat(
+        sol["clocks"]["five_hour"]["observed_at"]
+    ) == NOW - timedelta(minutes=1)
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.11)
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.55)
+
+
+def test_a_stream_newer_than_the_receipt_is_the_reading_the_group_paces_to(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The freshest dated reading wins, so a later stream displaces the receipt.
+
+    The backend has both a receipt and a stream, and the stream reported last,
+    so the clocks and the age the group reports are the stream's. Preferring the
+    receipt because of which dialect wrote it would report a reading hours
+    staler than the one this backend had already observed.
+    """
+    home = tmp_path / "home"
+    stream_dir = home / "crew" / "runs" / "r-later"
+    stream_dir.mkdir(parents=True)
+    _write_stream(
+        stream_dir / "stream.jsonl",
+        [_stamped(90), _window_event(0.31, 0.44), _stamped(1)],
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(hours=3)),
+                run_id="r-earlier",
+            ),
+            _stream_record("sol-a", run_id="r-later"),
+        ],
+    )
+
+    result = _preflight_command(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    sol = _group(json.loads(result.output)["groups"], "sol")
+    assert sol["member"] == "sol-a"
+    assert sol["state"] == budget.OBSERVED
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.31)
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.44)
+
+
+def test_a_receipt_newer_than_the_stream_is_the_reading_the_group_paces_to(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The reverse of the case above: the freshest reading is a receipt.
+
+    A stream that reported two hours ago does not displace a receipt stamped a
+    minute ago, so the group reports the receipt's clocks and its age. With the
+    case above this is what the freshest-of-the-two rule has and a rule ordered
+    by source does not: the choice follows the stamps, not the dialect.
+    """
+    home = tmp_path / "home"
+    stream_dir = home / "crew" / "runs" / "r-stream"
+    stream_dir.mkdir(parents=True)
+    _write_stream(
+        stream_dir / "stream.jsonl",
+        [_stamped(200), _window_event(0.31, 0.44), _stamped(120)],
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(minutes=1)),
+                run_id="r-receipt",
+            ),
+            _stream_record("sol-a", run_id="r-stream"),
+        ],
+    )
+
+    result = _preflight_command(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    sol = _group(json.loads(result.output)["groups"], "sol")
+    assert sol["member"] == "sol-a"
+    assert sol["state"] == budget.OBSERVED
+    assert datetime.fromisoformat(
+        sol["clocks"]["five_hour"]["observed_at"]
+    ) == NOW - timedelta(minutes=1)
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
