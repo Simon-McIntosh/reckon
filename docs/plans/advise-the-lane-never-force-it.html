@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
@@ -408,6 +408,9 @@ Full record: docs/evidence/archive/advise-the-lane-never-force-it-landed.html#s3
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260922T1850-advisory-review" data-who="reckon-ship" data-when="2026-09-22T18:50:00Z">
     <div class="r-comment-body">REVIEW 85 of 100 (goal 19, fit 18, durability 17, scope 17, evidence 14), one finding, and the low evidence score is the finding: the control log's first line PARAPHRASES the declared mutation rather than repeating it. Declared, from the run pointer: 'drop lane_advisory from the dispatch record assembly so the pointer does not carry it'. Logged: 'remove the record["lane_advisory"] assignment in reckon/crew/dispatch.py so the live pointer omits the advisory'. WAIVED AT PROMOTION WITH BOTH TEXTS QUOTED, and the reason is which test failed rather than which words were used: the record assignment is the dispatch record assembly, confirmed by reading the merged diff where that one line is the whole addition, and the log reddens test_an_emitted_advisory_reaches_the_written_pointer, the case the declaration names, 1 failed 11 passed. A paraphrase is waivable on that evidence; a substitution would not be, because a substitution reddens a different case and the prose cannot tell you which happened. This is the third such waiver today and all three were the same shape — the log's first line carrying the head or a rewording of the declared sentence — which is a worker-prompt defect rather than three careless workers, and it belongs with the gate-log-header finding already routed to the plan that owns the promotion boundary.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260922T160246768443-the-advisory-reaches-the-live-pointer" data-who="reckon-ship" data-when="2026-09-22T16:29:07.286Z">
+    <div class="r-comment-body"><p>the advisory a dispatch computes now rides the record it writes and an absent one is left off rather than nulled; the insufficient-evidence refusal renders the chargeable observations its median is drawn from, and the worker additionally found and fixed the floor gated on the same wrong population with its own second control. 12 passed, review 85 of 100 marking down control-log discipline</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
