@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-under-measurement-landed">
+  <meta name="plan-title" content="The Monitor Under Measurement &mdash; landed evidence">
+  <meta name="plan-summary" content="A cell census of the crew follower row: every recorded transition in the four project watch streams rendered through the live ticker, so the row defect list becomes a set of counts over stated denominators.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-under-measurement">
+  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s3">
+  <meta name="plan-recorded-at" content="2026-09-22">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree; matplotlib">
+  <meta name="plan-commits" content="91a4e14e,73cbb5c0">
+  <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png">
+  <title>The Monitor Under Measurement &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The Monitor Under Measurement &mdash; landed evidence</h1>
+    <p class="plan-summary">The &sect;3 done-when passes: a row census exists with every figure
+    stated as a count over a stated denominator for each of the four projects. The part worth
+    reading is the pair of facts a repair must start from. The model cell overflows on
+    <em>most</em> rows, not a few &mdash; 47.5&nbsp;% of reckon records, 78.2&nbsp;% of
+    imas-efit's. And the alias <code>dsv4.1-flash</code>, at twelve characters against a
+    ten-column cell, is the single largest overflow population in every project, which is the
+    positive control: a matcher that failed to see it would have reported an overflow count of
+    zero.</p>
+  </header>
+
+  <section id="row-census">
+    <h2>&sect;3 &mdash; What a row actually renders: a cell census</h2>
+    <p><strong>Node:</strong> <code>monitor-row-census</code>. <strong>Method:</strong> every
+    JSON record in the append-only stream named by <code>watch_stream_path</code>, rendered
+    through <code>format_watch_transition</code> with a
+    <code>Ticker(width=160, color=False)</code>; the reason geometry recomputed exactly as
+    <code>Ticker.render</code> computes it, so the margin's own denial is separable from
+    <code>single_clause</code>'s ellipsis. The streams are live, so each figure is a snapshot at
+    the file's <code>generated_at_utc</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png"
+           alt="Left: model-cell text length per project on a log scale, with the ten-column cell
+                boundary marked and every length right of it an overflow. Right: whether the reason
+                clause on one real blocked row is clipped, as the ticker width sweeps from 100 to
+                220 columns, first clipping at 145.">
+      <figcaption>Left: the model cell's length distribution against its ten-column budget.
+      Right: where one real blocked row's reason first clips, over the scanned widths.</figcaption>
+    </figure>
+
+    <h3>Per-project counts</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>figure (rows, over that project's record count)</th>
+          <th>reckon</th><th>nova</th><th>imas-efit</th><th>imas-ambix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>records (denominator)</td><td>4025</td><td>4939</td><td>1017</td><td>1131</td></tr>
+        <tr><td>pre-JSON plain-text lines, excluded</td><td>444</td><td>1164</td><td>0</td><td>262</td></tr>
+        <tr><td>baselines</td><td>1136</td><td>1052</td><td>269</td><td>287</td></tr>
+        <tr><td>baseline share</td><td>28.2&nbsp;%</td><td>21.3&nbsp;%</td><td>26.5&nbsp;%</td><td>25.4&nbsp;%</td></tr>
+        <tr><td>model-cell overflow rows (&gt;10 cols)</td><td>1912</td><td>2730</td><td>795</td><td>718</td></tr>
+        <tr><td>among them, <code>dsv4.1-flash</code></td><td>1403</td><td>1241</td><td>795</td><td>515</td></tr>
+        <tr><td>wall cell = absence marker</td><td>1812</td><td>2257</td><td>266</td><td>510</td></tr>
+        <tr><td>wall cell blank on dispatch</td><td>475</td><td>550</td><td>19</td><td>143</td></tr>
+        <tr><td>rate cell = absence marker</td><td>3847</td><td>4884</td><td>1008</td><td>1041</td></tr>
+        <tr><td>rows carrying an age cell</td><td>3800</td><td>4131</td><td>744</td><td>752</td></tr>
+        <tr><td>of which zero-minute (<code>0mu</code>/<code>0mb</code>)</td><td>349</td><td>818</td><td>111</td><td>242</td></tr>
+        <tr><td>reason cut by <code>single_clause</code></td><td>381</td><td>1234</td><td>208</td><td>97</td></tr>
+        <tr><td>reason blanked by the margin</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>node names over the 36-column cell</td><td>2291</td><td>1378</td><td>186</td><td>68</td></tr>
+        <tr><td>distinct node names over 36 columns</td><td>552</td><td>239</td><td>37</td><td>18</td></tr>
+        <tr><td>live pairs truncating to one string</td><td>4</td><td>9</td><td>0</td><td>0</td></tr>
+        <tr><td>rows with both from and to state</td><td>2889</td><td>3887</td><td>748</td><td>844</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The positive control</h3>
+    <p><code>dsv4.1-flash</code> is twelve characters against a ten-column cell. It appears among
+    the overflowing model cells in all four projects, as the table's second overflow row shows.
+    The matcher is therefore reading the model cell it claims to read: an alias this wide drawn
+    from the live local lane cannot be absent from an overflow count unless the cell is not being
+    measured. The other over-wide aliases the census sees are <code>gpt-5.6-sol</code> (eleven),
+    <code>deepseek-v4-flash</code> (seventeen) and <code>claude-sonnet-5</code> (fifteen).</p>
+
+    <h3>The clip point</h3>
+    <p>One real blocked row (<code>n-resolve-cross-module-refs</code>, detail 66 characters) is
+    rendered at every width from 100 to 220. The reason is clipped across a single contiguous
+    window, <strong>widths 145 to 198</strong>, and fits whole again at 199. Below 145 the
+    reason does not render at all: the margin is below the twelve-column floor, so the cell is
+    suppressed rather than truncated. The <strong>operating width of 160 lies inside the clip
+    window</strong>, so this row's clause is cut in ordinary use &mdash; and 199 columns is what
+    it would take to carry a 66-character reason whole. That is why no row blanks a reason for
+    want of margin at width 160: the margin question only arises below the width at which the
+    clause stops appearing entirely, and at 160 the clause is present but shortened.</p>
+
+    <h3>What the counts settle</h3>
+    <p>The from-and-to pair is present on every transition in every project, so a
+    destination-only layout shortens exactly the transition rows &mdash; 2889 / 3887 / 748 / 844
+    &mdash; and no transition would lose information a destination-only reader needs. The
+    generation-rate cell is unmeasured far more often than the wall cell (92&ndash;99&nbsp;% of
+    rows against 26&ndash;46&nbsp;%), so the absence marker a reader sees is overwhelmingly the
+    rate's. The zero-minute age form renders in all four projects, which is the lead's
+    undecodable-cell report reproduced as a count.</p>
+
+    <h3>Caveats</h3>
+    <p>Each project's stream carries pre-JSON plain-text lines (444 / 1164 / 0 / 262) written
+    before the structured record existed. They hold no fields to render, so they are counted
+    separately and excluded from every denominator rather than guessed at. The streams are
+    append-only and live: denominators drifted by one or two records between the first and last
+    pass of this census, and the committed file is the single frozen snapshot.</p>
+  </section>
+</main>
+</body>
+</html>
