@@ -2067,32 +2067,56 @@ def _run_order(row: Mapping[str, Any]) -> str:
     )
 
 
-def _run_observed_at(row: Mapping[str, Any]) -> datetime | None:
+# The durable stamps a run record carries, newest first.  A rollout receipt
+# keys its quota windows without stamping them, so a reading taken from one is
+# dated by the record the session was named by -- and every surface that prices
+# such a receipt must read that date the same way, or two views of one run
+# disagree about how old its figures are.
+_RUN_STAMP_KEYS = (
+    "observed_at",
+    "completed_at",
+    "terminal_at",
+    "dispatched_at",
+    "started_at",
+    "created_at",
+)
+
+
+def run_observed_stamp(row: Mapping[str, Any]) -> str | None:
     """The closest durable stamp a run record carries to its own reading.
 
-    A rollout receipt carries quota windows without a stamp of its own, so the
-    age of a reading taken from one is the age of the record the session was
-    named by. The record's own budget block is the freshest observation when it
-    has one; otherwise the run's lifecycle stamps stand in, newest first. A
-    record carrying none of them cannot age a reading and so supplies none.
+    A run record has two durable shapes -- a live pointer while the run is in
+    flight and a committed ledger row once it is promoted -- and both carry the
+    same stamp fields, so one reader serves either. The record's own budget
+    block is the freshest observation when it holds one; otherwise the run's
+    lifecycle stamps stand in, newest first.
+
+    The text is returned rather than a parsed instant because a caller may hold
+    it as text, and a value that does not parse is not a stamp: it is passed
+    over for the next field rather than returned, so a malformed budget stamp
+    cannot shadow a lifecycle stamp behind it. A record carrying no stamp
+    supplies none, and a reading dated by such a record is undated.
     """
     block = row.get("budget")
     if isinstance(block, Mapping):
         observed = _parse_stamp(block.get("observed_at"))
         if observed is not None:
-            return observed
-    for key in (
-        "observed_at",
-        "completed_at",
-        "terminal_at",
-        "dispatched_at",
-        "started_at",
-        "created_at",
-    ):
+            return str(block["observed_at"])
+    for key in _RUN_STAMP_KEYS:
         observed = _parse_stamp(row.get(key))
         if observed is not None:
-            return observed
+            return str(row[key])
     return None
+
+
+def _run_observed_at(row: Mapping[str, Any]) -> datetime | None:
+    """The closest durable stamp a run record carries, as an instant.
+
+    The text form is the shared reader; this is the instant form of the same
+    answer, so a run's observation time is decided in one place and the two
+    surfaces cannot drift on which field they read.
+    """
+    return _parse_stamp(run_observed_stamp(row))
 
 
 def _read_rollout(session_id: str, reader: Callable[[str], object] | None) -> object:

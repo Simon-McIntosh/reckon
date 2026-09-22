@@ -76,21 +76,15 @@ def _unmeasured_reason(value: object) -> str | None:
 
 
 def _receipt_observed_at(run: Mapping[str, Any]) -> str | None:
-    """Return the closest durable timestamp to the selected receipt reading."""
+    """Return the closest durable timestamp to the selected receipt reading.
 
-    budget = run.get("budget")
-    if isinstance(budget, Mapping) and budget.get("observed_at"):
-        return str(budget["observed_at"])
-    for key in (
-        "observed_at",
-        "completed_at",
-        "terminal_at",
-        "dispatched_at",
-        "started_at",
-    ):
-        if run.get(key):
-            return str(run[key])
-    return None
+    The field list is the budget module's, because this stamp dates the same
+    reading the pace reader dates: one helper decides which field a run's
+    observation and both surfaces read it, so they cannot disagree about a
+    record that carries only one of them.
+    """
+
+    return budget_module.run_observed_stamp(run)
 
 
 def _parsed_observation(value: str | None) -> datetime | None:
