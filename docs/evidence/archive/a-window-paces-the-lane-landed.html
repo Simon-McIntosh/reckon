@@ -1682,6 +1682,94 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     about the account-surface surface, which another node owns, and it is reported instead.</p>
   </section>
 
+  <section id="s6-the-red-inside-the-fence">
+    <h2>&sect;6 &mdash; The lanes-view fixture accepts the keyword its caller passes</h2>
+
+    <p><strong>The clause's first red was a broken fixture in a file the section already
+    owned.</strong> <code>tests/test_crew_lanes_view.py:228</code> patched
+    <code>mcp_views.rollout_module.read_rollout_receipt</code> with the fixture's bare
+    <code>dict.__getitem__</code>, while <code>reckon/mcp_views.py:685</code> calls that reader as
+    <code>read_rollout_receipt(session_id, model_identifier=&hellip;)</code>. The production
+    signature is settled and its comment states why &mdash; only the production reader prices the
+    receipt, and the served model passes through from the backend configuration &mdash; so the drift
+    is in the test's stub. The bare lookup refused the keyword, the case raised
+    <code>TypeError: dict.__getitem__() takes no keyword arguments</code> at
+    <code>reckon/mcp_views.py:685</code> before its first assertion, and it guarded nothing while it
+    stayed that way: a check that cannot fail for the right reason.</p>
+
+    <h3>The measure</h3>
+
+    <p><strong>The stub now accepts the keyword and the case reaches its own assertion.</strong>
+    The bare <code>lane_fixture["receipts"].__getitem__</code> became a local
+    <code>_receipt(session_id, **_kwargs)</code> returning
+    <code>lane_fixture["receipts"][session_id]</code>. The keyword the production caller passes is
+    accepted and ignored, which is the same one-argument shape the file's other cases already use
+    through the <code>receipt_reader</code> seam (<code>receipts.__getitem__</code> at lines 105, 412
+    and 638 all reach the injected one-argument seam at <code>mcp_views.py:683</code> and none of
+    them patches the production reader), so the case still reads the fixture's own receipts rather
+    than a weaker double. It now asserts on <code>result["lanes"]</code>.</p>
+
+    <h3>Gate</h3>
+
+    <p><strong>Delta, not absolute green, with the base measured in the same pass.</strong> The four
+    lanes-view files &mdash; <code>tests/test_crew_lanes_view.py</code>,
+    <code>tests/test_lanes_view_is_live.py</code>, <code>tests/test_lanes_view_serving_state.py</code>,
+    <code>tests/test_lane_evidence.py</code> &mdash; run at the base revision <code>01659a23</code>
+    in a tree extracted with <code>git archive</code>: <strong>2 failed, 38 passed</strong>, exit 1.
+    At this head: <strong>1 failed, 39 passed</strong>, exit 1. Logs <code>base.log</code> (sha256
+    <code>a9e081ec&hellip;</code>) and <code>head.log</code> (sha256
+    <code>77685f45&hellip;</code>), each carrying its revision, its tree and its command on the first
+    line, and each printing the <code>reckon</code> module file it actually resolved.</p>
+
+    <table>
+      <caption>The two files' failures, base and head</caption>
+      <thead><tr><th>Test</th><th>Failure</th><th>At base</th><th>At head</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code></td>
+        <td><code>TypeError: dict.__getitem__() takes no keyword arguments</code> where the
+        production reader is called with <code>model_identifier=</code> while the case patches in a
+        bare <code>dict.__getitem__</code></td>
+        <td>fails</td><td><strong>passes</strong></td></tr>
+        <tr><td><code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code></td>
+        <td><code>assert 1 == 0</code> at <code>tests/test_lanes_view_is_live.py:217</code></td>
+        <td>fails</td><td>fails</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>One failure remains rather than two, and it is the account-surface case this section
+    already names foreign.</strong> The removed id is the repaired case; the remaining id is
+    unchanged and red at both revisions because the guard's population has no member left since the
+    <code>claude</code> dialect began owning its account surface. Zero other cases changed outcome
+    and no failure was added: exactly one failure removed, none added. The repaired case passes in
+    <code>head.log</code>.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim on the red log's first line: restore the bare dict
+    lookup in the rollout reader fixture so it rejects the keyword its caller passes.</strong>
+    Applied at exactly one site in a scratch copy of this tree, copied with <code>tar</code>
+    excluding <code>.git</code>, <code>.venv</code> and every <code>__pycache__</code> so the
+    traceback cannot cite the original tree. The repaired case is red there with the
+    <em>original</em> <code>TypeError</code> &mdash; <code>dict.__getitem__() takes no keyword
+    arguments</code> at <code>reckon/mcp_views.py:685</code>, <strong>1 failed</strong>, exit 1
+    &mdash; and the mutated run prints its own provenance,
+    <code>mcp_views module file: /tmp/wpl-fixture/scratch/reckon/mcp_views.py</code>, measured with
+    the scratch tree as the working directory. <strong>Positive control first, in the unmutated
+    tree at this head:</strong> the same case is one of the 39 passed in <code>head.log</code>. Log
+    <code>negative-control.log</code> (sha256 <code>b0fc8acc&hellip;</code>).</p>
+
+    <h3>Not claimed</h3>
+
+    <p><strong>The other red is not repaired here and is not this node's.</strong>
+    <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> guards a population with
+    no member left; choosing a replacement fixture is a decision about the account-surface surface
+    another node owns, and it is reported under <code>follow_ons</code> rather than touched.
+    <strong>No figure is added:</strong> the relationship the clause turns on is a two-row before and
+    after, which is a table and not an image. <strong>Only one file changed</strong> &mdash;
+    <code>tests/test_crew_lanes_view.py</code>; the other three lanes-view files are in the gate
+    selection because the clause's delta is stated over the four, and none was edited.</p>
+  </section>
+
   <section id="gate-recapture">
     <h2>The section gate is re-run at the shipped head, and three named siblings are absent</h2>
 

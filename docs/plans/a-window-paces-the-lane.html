@@ -1231,6 +1231,42 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     is observed to fail there with the original <code>TypeError</code>, and the red log's first line
     repeats the declared mutation verbatim and in full.</p>
 
+    <h3 id="s6-the-red-inside-the-fence-landed">Landed &mdash; the fixture accepts the keyword its caller passes, and the case reaches its own assertion</h3>
+    <p><strong>The red was in the stub, not in the call.</strong> The case at
+    <code>tests/test_crew_lanes_view.py:228</code> patched
+    <code>mcp_views.rollout_module.read_rollout_receipt</code> with the fixture's bare
+    <code>dict.__getitem__</code>, while <code>reckon/mcp_views.py:685</code> calls that reader as
+    <code>read_rollout_receipt(session_id, model_identifier=&hellip;)</code>. A
+    <code>TypeError</code> was raised before the case's first assertion, so the case guarded
+    nothing while it stayed that way &mdash; the same defect class this section has been closing, a
+    check that cannot fail for the right reason.</p>
+    <p><strong>The repair is the stub the clause names.</strong> The bare lookup became a local
+    <code>_receipt(session_id, **_kwargs)</code> returning the fixture's receipt for that session
+    id: the keyword the production caller passes is accepted and ignored. That matches the
+    one-argument <code>receipt_reader</code> seam the file's other cases already use, so the case
+    still reads the fixture's own receipts rather than a weaker double &mdash; it reaches its
+    assertion on <code>result["lanes"]</code> instead of dying in the reader.</p>
+
+    <table>
+      <caption>The four lanes-view files, base and head measured in the same pass</caption>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td><code>01659a23</code> (base)</td><td>2 failed, 38 passed, exit 1</td>
+        <td><code>test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal</code>;
+        <code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code></td></tr>
+        <tr><td>this head</td><td><strong>1 failed, 39 passed</strong>, exit 1</td>
+        <td><code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code> &mdash; the
+        account-surface case this section names foreign</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>One failure remains, not two, and it is the foreign one.</strong> The removed id is
+    the repaired case; the remaining id is unchanged and is red at both revisions for its own reason
+    &mdash; the guard's population has no member left since the <code>claude</code> dialect began
+    owning its account surface. Zero other cases changed outcome and no failure was added. Full
+    record: <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-the-red-inside-the-fence">the
+    landed evidence record</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">

@@ -218,10 +218,14 @@ def test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal(
         lambda: {"proj": repository / "docs"},
     )
     monkeypatch.setattr(mcp.crew_module, "list_live", list)
+
+    def _receipt(session_id: str, **_kwargs: Any) -> Any:
+        return lane_fixture["receipts"][session_id]
+
     monkeypatch.setattr(
         mcp_views.rollout_module,
         "read_rollout_receipt",
-        lane_fixture["receipts"].__getitem__,
+        _receipt,
     )
 
     args = CrewArgs(project="proj", view="lanes", checkout_path=str(repository))
