@@ -30,6 +30,7 @@ from reckon import budget, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
+from reckon.crew import rollout as rollout_module
 from reckon.crew import window_reading
 
 # A fixed instant, so every age and every reset stamp is arithmetic rather than
@@ -1139,3 +1140,210 @@ def test_a_receipt_newer_than_the_stream_is_the_reading_the_group_paces_to(
     ) == NOW - timedelta(minutes=1)
     assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
     assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
+
+
+# ── The session's rollout is a third home, and the pointer read is filtered ──
+
+
+def _live_session(
+    backend: str,
+    *,
+    session_id: str,
+    observed_at: str,
+    run_id: str,
+    project: str = "demo",
+    receipt: dict | None = None,
+) -> dict:
+    """A live pointer for a run in flight: its session, and normally no receipt.
+
+    The harness harvests a run's lane receipt only at promotion, so an in-flight
+    pointer is receiptless; what it carries instead is the ``session_id`` whose
+    rollout the lanes view reads for the same clocks.
+    """
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "backend": backend,
+        "phase": "running",
+        "session_id": session_id,
+        "observed_at": observed_at,
+        "created_at": observed_at,
+    }
+    if receipt is not None:
+        record["lane_receipt"] = receipt
+    return record
+
+
+def _rollout_receipt(readings: object) -> object:
+    """A rollout receipt as the production reader returns one, gaps included.
+
+    Built from the real type rather than a private double, so a change to the
+    receipt the lanes view reads fails these tests instead of passing a stand-in
+    the production reader could never return.
+    """
+    return rollout_module.RolloutReceipt(
+        cumulative_input_tokens=0,
+        cumulative_cached_input_tokens=0,
+        cumulative_output_tokens=0,
+        maximum_request_input_tokens=0,
+        requests_over_threshold=0,
+        model_context_window=0,
+        quota_readings=readings,
+        plan_type="pro",
+        generation_seconds=0.0,
+        machine_seconds=0.0,
+    )
+
+
+def _quota(window_minutes: int, used_percent: float) -> object:
+    """One rollout quota window, measured in whole percentage points."""
+    return rollout_module.QuotaReading(
+        window_minutes=window_minutes,
+        used_percent=used_percent,
+        resets_at=_reset_in(100.0),
+    )
+
+
+def test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run() -> None:
+    """The session's rollout is the third home, and it competes on its stamp.
+
+    An in-flight run carries no lane receipt, so before this the source had only
+    an older run's committed row to report while the newer session's own rollout
+    held both clocks. The reader is injected through the same one-argument seam
+    the lanes view injects, so the assertion covers the wiring rather than
+    whichever rollout this machine happens to have.
+    """
+    rows = [
+        _receipt_record(
+            "sol-a",
+            windows=[(300, 42.0), (10080, 21.0)],
+            observed_at=_iso(NOW - timedelta(hours=3)),
+            run_id="r-committed",
+        )
+    ]
+    pointers = [
+        _live_session(
+            "sol-a",
+            session_id="sess-in-flight",
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+            run_id="r-in-flight",
+        )
+    ]
+    asked: list[str] = []
+
+    def reader(session_id: str) -> object:
+        asked.append(session_id)
+        return _rollout_receipt({300: _quota(300, 11.0), 10080: _quota(10080, 17.0)})
+
+    windows = budget.recorded_windows(
+        "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
+    )
+
+    assert asked == ["sess-in-flight"], (
+        "the session of the newest live run is the one read"
+    )
+    reading = windows["sol-a"]
+    assert reading.figure("five_hour").utilisation == pytest.approx(0.11)
+    assert reading.figure("seven_day").utilisation == pytest.approx(0.17)
+    assert reading.observed_at == NOW - timedelta(minutes=1)
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        rollout_module.Unmeasured.NO_RATE_LIMITS,
+        rollout_module.Unmeasured.MISSING_ROLLOUT,
+    ],
+)
+def test_an_unmeasured_or_absent_rollout_leaves_the_committed_row_as_the_reading(
+    marker: object,
+) -> None:
+    """A rollout that resolved nothing contributes no candidate at all.
+
+    The production reader answers every gap with an explicit marker rather than
+    raising, so a receipt that is unmeasured or a session whose rollout was never
+    written must resolve no clock: otherwise the group reports an invented
+    position, or drops to unknown while a perfectly good committed row sat
+    unread. Both markers are exercised, because an absent rollout and an
+    unreadable one reach the source by different paths.
+    """
+    rows = [
+        _receipt_record(
+            "sol-a",
+            windows=[(300, 42.0), (10080, 21.0)],
+            observed_at=_iso(NOW - timedelta(hours=3)),
+            run_id="r-committed",
+        )
+    ]
+    pointers = [
+        _live_session(
+            "sol-a",
+            session_id="sess-unmeasured",
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+            run_id="r-in-flight",
+        )
+    ]
+
+    def reader(session_id: str) -> object:
+        return _rollout_receipt(marker)
+
+    windows = budget.recorded_windows(
+        "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
+    )
+
+    reading = windows["sol-a"]
+    assert reading.figure("five_hour").utilisation == pytest.approx(0.42)
+    assert reading.figure("seven_day").utilisation == pytest.approx(0.21)
+    assert reading.observed_at == NOW - timedelta(hours=3)
+
+
+def test_a_foreign_pointer_does_not_enter_this_projects_group(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The pointer read is scoped to the caller's project, and that is asserted.
+
+    The crew home holds every project's pointers. A run of another project
+    carrying the freshest receipt for the same backend would otherwise inform
+    this project's group with the gate still green, so the case drives the
+    command's own read of the crew home: the committed row is three hours old
+    and the foreign pointer's receipt a minute old, so a filter that stopped
+    applying reports the foreign figure instead.
+    """
+    home = tmp_path / "home"
+    (home / "crew").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_flight_yaml(tmp_path)))
+    _write_ledger(
+        tmp_path,
+        "demo",
+        [
+            _receipt_record(
+                "sol-a",
+                windows=[(300, 42.0), (10080, 21.0)],
+                observed_at=_iso(NOW - timedelta(hours=3)),
+                run_id="r-committed",
+            )
+        ],
+    )
+    _write_pointer(
+        home,
+        "r-foreign",
+        _live_receipt(
+            "sol-a",
+            windows=[(300, 91.0), (10080, 88.0)],
+            observed_at=_iso(NOW - timedelta(minutes=1)),
+            run_id="r-foreign",
+            project="another-project",
+        ),
+    )
+
+    result = _preflight_command(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    sol = _group(json.loads(result.output)["groups"], "sol")
+    assert sol["state"] == budget.OBSERVED
+    assert sol["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
+    assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
+    assert datetime.fromisoformat(
+        sol["clocks"]["five_hour"]["observed_at"]
+    ) == NOW - timedelta(hours=3)

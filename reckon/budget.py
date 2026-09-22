@@ -58,6 +58,7 @@ from reckon import _backends, crew, ledger
 from reckon.crew import bar as bar_module
 from reckon.crew import budget_group, window_reading
 from reckon.crew import pace as pace_module
+from reckon.crew import rollout as rollout_module
 from reckon.crew.refusals import format_refusal
 
 # What a pre-flight is deciding about. The two differ only in whether the resume
@@ -1903,6 +1904,7 @@ def recorded_windows(
     now: datetime | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
     pointers: Iterable[Mapping[str, Any]] | None = None,
+    rollouts: Callable[[str], object] | None = None,
 ) -> dict[str, window_reading.WindowReading]:
     """One window reading per member of a declared group, from recorded evidence.
 
@@ -1927,6 +1929,15 @@ def recorded_windows(
     that did; the fork is over which figure is newer, never over which dialect
     spelled it.
 
+    The run in flight has a third source, and it is the freshest of the three.
+    A live pointer carries no ``lane_receipt`` because the harness harvests that
+    receipt only when the run is promoted; meanwhile the session's own rollout
+    holds the client's quota readings, which is what the lanes view reports from.
+    So each member's newest live run is read by its ``session_id``, and its
+    clocks compete on the same footing as the other two. The age is the run
+    record's, since a rollout receipt carries its windows without a stamp of its
+    own.
+
     Only members of a declared group are read. A lane declaring no wallet has no
     group whose pace it could inform, and reading its stream would spend a file
     read on a figure nothing consults.
@@ -1946,7 +1957,8 @@ def recorded_windows(
         # The crew home holds every project's pointers, so the read is scoped
         # here rather than at the call: one project's pace is not informed by
         # another's runs, and a pointer is asked by project only when it is
-        # this one's.
+        # this one's. Every source below reads this same list, so a foreign
+        # run's receipt, stream and session are all excluded by the one filter.
         live = [
             record
             for record in crew.list_live()
@@ -1956,6 +1968,7 @@ def recorded_windows(
         live = list(pointers)
     receipts: dict[str, tuple[datetime, Mapping[str, Any]]] = {}
     runs_by_backend: dict[str, list[tuple[str, str]]] = {}
+    sessions: dict[str, tuple[str, str, datetime]] = {}
     for row in [*rows, *(record for record in live if isinstance(record, Mapping))]:
         if not isinstance(row, Mapping):
             continue
@@ -1966,14 +1979,29 @@ def recorded_windows(
         if run_id:
             runs_by_backend.setdefault(name, []).append((_run_order(row), run_id))
         receipt = row.get("lane_receipt")
-        if not isinstance(receipt, Mapping):
+        if isinstance(receipt, Mapping):
+            observed = _parse_stamp(receipt.get("observed_at"))
+            if observed is not None:
+                known = receipts.get(name)
+                if known is None or observed > known[0]:
+                    receipts[name] = (observed, receipt)
+    for record in live:
+        # Only a run still in flight is read for its rollout: a promoted run's
+        # receipt is already committed, and its rollout is the same reading
+        # recorded a second time.
+        if not isinstance(record, Mapping):
             continue
-        observed = _parse_stamp(receipt.get("observed_at"))
-        if observed is None:
+        name = _run_backend(record)
+        if name not in members:
             continue
-        known = receipts.get(name)
-        if known is None or observed > known[0]:
-            receipts[name] = (observed, receipt)
+        session_id = str(record.get("session_id") or "").strip()
+        observed = _run_observed_at(record)
+        if not session_id or observed is None:
+            continue
+        order = _run_order(record)
+        known = sessions.get(name)
+        if known is None or order > known[0]:
+            sessions[name] = (order, session_id, observed)
 
     windows: dict[str, window_reading.WindowReading] = {}
     for name in sorted(members):
@@ -1981,6 +2009,15 @@ def recorded_windows(
         receipt = receipts.get(name)
         if receipt is not None:
             candidate = _receipt_reading(receipt[1], moment=moment)
+            if candidate.known:
+                candidates.append(candidate)
+        session = sessions.get(name)
+        if session is not None:
+            candidate = _rollout_reading(
+                _read_rollout(session[1], rollouts),
+                observed_at=session[2],
+                moment=moment,
+            )
             if candidate.known:
                 candidates.append(candidate)
         stream = _newest_stream_reading(runs_by_backend.get(name, ()), moment=moment)
@@ -2027,6 +2064,91 @@ def _run_order(row: Mapping[str, Any]) -> str:
         or row.get("observed_at")
         or row.get("created_at")
         or ""
+    )
+
+
+def _run_observed_at(row: Mapping[str, Any]) -> datetime | None:
+    """The closest durable stamp a run record carries to its own reading.
+
+    A rollout receipt carries quota windows without a stamp of its own, so the
+    age of a reading taken from one is the age of the record the session was
+    named by. The record's own budget block is the freshest observation when it
+    has one; otherwise the run's lifecycle stamps stand in, newest first. A
+    record carrying none of them cannot age a reading and so supplies none.
+    """
+    block = row.get("budget")
+    if isinstance(block, Mapping):
+        observed = _parse_stamp(block.get("observed_at"))
+        if observed is not None:
+            return observed
+    for key in (
+        "observed_at",
+        "completed_at",
+        "terminal_at",
+        "dispatched_at",
+        "started_at",
+        "created_at",
+    ):
+        observed = _parse_stamp(row.get(key))
+        if observed is not None:
+            return observed
+    return None
+
+
+def _read_rollout(session_id: str, reader: Callable[[str], object] | None) -> object:
+    """One session's rollout receipt, through the reader the lanes view uses.
+
+    The injected seam takes the session id alone, which is the same shape the
+    lanes view injects, so a test supplies a reader interchangeable with the
+    production one. Absent an injection the production reader is called, which
+    answers an explicit unmeasured receipt for a session it cannot locate
+    rather than raising.
+    """
+    if reader is not None:
+        return reader(session_id)
+    return rollout_module.read_rollout_receipt(session_id)
+
+
+def _rollout_reading(
+    receipt: object, *, observed_at: datetime, moment: datetime
+) -> window_reading.WindowReading:
+    """One session's rollout receipt as a reading, aged by its run's stamp.
+
+    The receipt keys its quota windows by length in minutes and measures them in
+    percent, so both are translated here exactly as a ``lane_receipt`` row's are:
+    the length selects the clock and the percent becomes the fraction a group's
+    pace reads. A receipt that is unmeasured, that keys nothing, or whose every
+    window is unmeasured resolves no clock, and the periods that did resolve are
+    still returned rather than the whole reading being dropped.
+    """
+    readings = getattr(receipt, "quota_readings", None)
+    if not isinstance(readings, Mapping):
+        return window_reading.WindowReading(
+            reason="the session's rollout receipt carried no keyed quotas"
+        )
+    figures: list[window_reading.WindowFigure] = []
+    for minutes, clock in sorted(WINDOW_MINUTES_CLOCK.items()):
+        row = readings.get(minutes)
+        used = getattr(row, "used_percent", None)
+        if isinstance(used, bool) or not isinstance(used, (int, float)):
+            continue
+        figures.append(
+            window_reading.WindowFigure(
+                period=clock,
+                utilisation=float(used) / 100.0,
+                observed_at=observed_at,
+                age_seconds=(moment - observed_at).total_seconds(),
+                resets_at=_reset_text(getattr(row, "resets_at", None)),
+            )
+        )
+    if not figures:
+        return window_reading.WindowReading(
+            reason="the session's rollout receipt carried no usable quota window"
+        )
+    return window_reading.WindowReading(
+        figures=tuple(figures),
+        observed_at=observed_at,
+        age_seconds=(moment - observed_at).total_seconds(),
     )
 
 
@@ -2097,6 +2219,18 @@ def _newest_stream_reading(
         if reading.known:
             return reading
     return None
+
+
+def _reset_text(value: Any) -> str | None:
+    """A reset time as ISO text, reading an unmeasured marker as no reset.
+
+    The unmeasured marker is a string, so it would otherwise pass the text
+    branch below and be reported as a reset time — a reason a figure is absent,
+    printed in the place a deadline belongs.
+    """
+    if isinstance(value, rollout_module.Unmeasured):
+        return None
+    return _instant_text(value)
 
 
 def _instant_text(value: Any) -> str | None:
