@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="58">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285">
+<meta name="plan-impl" content="0.93">
 </head>
 <body>
   <main class="plan-doc">
@@ -954,6 +954,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-freshest-source">the landed evidence
     record</a>.</p>
 
+    <h3 id="s6-rollout-receipt">Remaining &mdash; the rollout receipt of a live session is the third home, and the project filter needs its case</h3>
+    <p><strong>The freshest codex reading on this workstation lives in neither home the source
+    reads.</strong> A live pointer carries no <code>lane_receipt</code>, because the harness-owned
+    receipt is harvested only at promotion; yet <code>crew(view="lanes")</code> showed
+    <code>codex</code> at 41&nbsp;percent observed at 10:00Z while <code>recorded_windows</code>
+    chose a <code>codex-astra</code> row fourteen hours older. The lanes view gets there by reading
+    the codex rollout file for the run's <code>session_id</code> through
+    <code>rollout_module.read_rollout_receipt</code>, which is what the lane's <code>quota_windows</code>
+    are composed from. So the third source is that receipt, read for each declared-group member's
+    newest live run by session id, and it competes on <code>observed_at</code> like the other two.</p>
+    <p><strong>The reviewer's finding travels with it.</strong> The pointer read is scoped to the
+    project the caller named, and nothing asserts that filter: a pointer from another project
+    carrying a fresher receipt for the same backend would inform this project's group with the
+    gate still green.</p>
+    <p><strong>Done when</strong> <code>recorded_windows</code> reads the rollout receipt of each
+    member's newest live run by <code>session_id</code> through the same reader the lanes view uses,
+    injectable for tests, asserted by a case where a live pointer with no <code>lane_receipt</code>
+    but a readable rollout receipt newer than any ledger row makes the group report that receipt's
+    clocks and <code>observed_at</code>; an unreadable or absent rollout contributes no candidate,
+    asserted by a case where the reader returns unmeasured and the group falls back to the ledger
+    row; a pointer whose <code>project</code> differs from the caller's is ignored, asserted by a
+    case where a foreign pointer carries the freshest receipt and the group still reports the
+    ledger row's; the existing 30 cases pass unchanged; and the declared negative control &mdash;
+    drop the project filter &mdash; is applied to a scratch copy, the foreign-pointer case is
+    observed to fail there, and the red log's first line repeats the mutation verbatim.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
@@ -1139,6 +1165,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260922T1205-verify-gate-instrument" data-who="reckon-ship" data-when="2026-09-22T12:05:00Z">
     <div class="r-comment-body">INTEGRATED GATE PASSED at 4633c695: pytest -q tests/test_preflight_pace.py exit 0, recorded on the ledger row as integrated_gate_check with no finding. The first verify-gate attempt on the same tree reported FAILED with pytest exit 4 and no test output, and exit 4 is a usage error, not a test failure: the recorded gate command names a bare pytest, which on this host resolves to ~/.local/bin/pytest 9.0.2 rather than the project environment's. Re-running the same command with the project environment first on PATH passed. Two consequences recorded rather than repaired here: a gate command cited at promotion should name its interpreter, and verify-gate's finding text reads a usage error as a merge that changed what the gate proves. Both belong to the promotion boundary and travel with the pointer followup naming scoring-should-stop-a-promotion. FOLDED NODE DISPATCHED: the-window-source-reads-live-pointers-and-takes-the-freshest, run r-20260922T120158949653, same member, 35-minute budget, control: restore receipt-first precedence.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260922T1405-freshest-source-landed" data-who="reckon-ship" data-when="2026-09-22T14:05:00Z">
+    <div class="r-comment-body">GATE .venv/bin/python -m pytest -q tests/test_preflight_pace.py PASSED, 30 of 30, exit 0; the base revision's 27 cases pass unchanged against the new tree; the declared control (receipt-first precedence restored in a scratch copy) reds exactly the newer-stream case, mutation verbatim on the red log's first line. Merged at 768a9285. REVIEW 93 of 100 (goal 19, evidence 18, scope 20, durability 17, fit 19), two findings: the project filter on the pointer read has no case, so deleting it would let a foreign project's fresher receipt inform this group with the gate still green; and the gate log opens with the pytest progress line rather than naming revision, tree and command as sibling runs' logs do. RUN HISTORY worth keeping: the worker's first attempt ended at end_turn immediately after a context compaction with all four files uncommitted and no manifest, the print-mode turn-end failure this repository already records; a resume with finishing instructions landed it, so no work was lost and nothing was redispatched. The reflex-dispatched review then died mid-review with no terminal record in its stream at the same minute as a peer's review, and a resume completed it. WORKSTATION: four live pointers read, none carries a lane_receipt because the harness-owned receipt is harvested at promotion, so the pointer home is asserted from a synthesised pointer and the fresher reading the lanes view shows comes from the rollout receipt read for a live session, which recorded_windows still does not consult. DRAIN LEDGER @ 2026-09-22T14:05Z — receipt-shadows-stream and ledger-only source: folded → the-window-source-reads-live-pointers-and-takes-the-freshest, landed; harness-owned rollout receipt for a live session as a third source plus the untested project filter: folded → the-window-source-reads-the-rollout-receipt-of-a-live-session (dispatched next, same member); gate-log header: recorded, belongs with the gate-command-names-its-interpreter finding already routed to scoring-should-stop-a-promotion; no-commit guard: foreign-owner → scoring-should-stop-a-promotion. rows 4, foldable-remaining 0 pending the dispatched node.</div>
 </div>
 </section>
 </main>
