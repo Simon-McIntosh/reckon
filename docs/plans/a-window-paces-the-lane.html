@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="62">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285">
-<meta name="plan-impl" content="0.93">
+<meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4">
+<meta name="plan-impl" content="0.95">
 </head>
 <body>
   <main class="plan-doc">
@@ -1044,6 +1044,40 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <a href="/plan/reckon/a-window-paces-the-lane-landed#s6-rollout-receipt">the landed evidence
     record</a>.</p>
 
+    <h3 id="s6-prove-the-reader">Remaining &mdash; the reader proves itself, and one helper dates a run</h3>
+    <p><strong>A guard the suite cannot see fail is not a guard.</strong> The reviewer replaced the
+    production branch of <code>_read_rollout</code> &mdash; the call made when no reader is injected
+    &mdash; with an unmeasured answer in a scratch copy, and the gate stayed at <strong>34 passed,
+    exit 0</strong>. Both new cases inject a reader and the command-line case's pointer carries no
+    <code>session_id</code>, so nothing exercises the branch that actually runs in production: a
+    regression removing the third source entirely would be silent.</p>
+    <p><strong>Two surfaces date the same session differently, and the divergence is
+    measured.</strong> <code>budget._run_observed_at</code> duplicates
+    <code>mcp_views._receipt_observed_at</code> with a different key list. Of the 35 live records on
+    this workstation, <strong>29 are datable by the new helper and undated by the lanes view's</strong>,
+    every one of them a record whose only stamp is <code>created_at</code>. <code>mcp_views</code>
+    imports <code>budget</code>, so <code>budget</code> is the lower layer and owns the shared
+    helper.</p>
+    <p><strong>A winning rollout reading can hide a clock.</strong> The competition takes one reading
+    per member wholesale on <code>observed_at</code>, and real rollout receipts carry only the weekly
+    window, so a rollout reading that wins leaves <code>five_hour</code> unknown where the committed
+    row it displaced may have carried a figure. The node disclosed this itself. Assert the outcome
+    rather than changing it: a per-window choice is a separate decision and is not taken here.</p>
+    <p><strong>Done when</strong> a case in <code>tests/test_preflight_pace.py</code> exercises
+    <code>recorded_windows</code> with no injected reader and a live pointer carrying a
+    <code>session_id</code>, monkeypatching the module-level rollout reader so the production branch
+    is the one that runs, and asserts the group reports that receipt's clocks;
+    <code>mcp_views._receipt_observed_at</code> is replaced by a call to the single helper in
+    <code>budget</code>, asserted by a case where a record whose only stamp is
+    <code>created_at</code> dates identically through both surfaces, with no second definition of
+    the key list left in <code>mcp_views</code>; a case asserts the mixed-clock outcome explicitly
+    &mdash; a winning rollout reading carrying only the weekly window reports
+    <code>seven_day</code> observed and <code>five_hour</code> unknown, so the behaviour is recorded
+    rather than incidental; the existing 34 cases pass unchanged, as do the lanes-view tests that
+    cover the moved helper; and the declared negative control is applied to a scratch copy, the
+    named production-branch case is observed to fail there, and the red log's first line repeats the
+    declared mutation verbatim.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
@@ -1238,6 +1272,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260922T132759382201-review-of-the-window-source-reads-live-pointers-and-takes-the-freshest" data-who="reckon-ship" data-when="2026-09-22T14:12:37.724Z">
     <div class="r-comment-body"><p>independent review of the freshest-reading window source stored at 93 of 100 with two findings: the project filter on the pointer read has no case, and the gate log lacks the revision/tree/command header; the reviewed gate re-ran green, 30 passed</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260922T1500-rollout-receipt-landed" data-who="reckon-ship" data-when="2026-09-22T15:00:00Z">
+    <div class="r-comment-body">GATE .venv/bin/python -m pytest -q tests/test_preflight_pace.py PASSED, 34 of 34, exit 0; the base revision's 30 cases pass unchanged against the new tree; the declared control (project filter dropped in a scratch copy) reds the foreign-pointer case, 1 failed 33 passed, mutation verbatim on the red log's first line. Merged at e6dd0dc4. REVIEW 94 of 100 (goal 20, evidence 19, scope 20, durability 17, fit 18), three findings and the first is the most valuable of the session: THE PRODUCTION BRANCH OF _read_rollout IS ASSERTED BY NO CASE — both new cases inject a reader and the command-line case's pointer carries no session_id, so the reviewer replaced that branch's reader call with an unmeasured answer in a scratch copy and the gate stayed at 34 passed exit 0. A regression removing the third source entirely would be silent. Second: _run_observed_at duplicates mcp_views._receipt_observed_at with a differing key list, and the divergence is measured rather than theoretical — 29 of 35 live records on this workstation are datable by the new helper and undated by the lanes view's, every one carrying only created_at, so the two surfaces date the same session differently. Third, disclosed by the node itself: the competition takes one reading per member wholesale, and real rollout receipts carry only the weekly window, so a winning rollout reading leaves five_hour unknown where the row it displaced may have carried a figure. DRAIN LEDGER @ 2026-09-22T15:00Z — rollout receipt as third source and the untested project filter: folded → the-window-source-reads-the-rollout-receipt-of-a-live-session, landed; unasserted production reader branch, the duplicated dating helper, and the mixed-clock outcome: folded → the-window-source-proves-its-own-reader-and-dates-one-way (dispatched next, same member); no-commit promotion guard: foreign-owner → scoring-should-stop-a-promotion. rows 3, foldable-remaining 0 pending the dispatched node.</div>
 </div>
 </section>
 </main>
