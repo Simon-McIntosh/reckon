@@ -674,6 +674,65 @@
     measurement. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#widening-writes-the-pointer">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-22 &mdash; the prompt carries the declaration its
+    red log must repeat.</strong> The declaration was interpolated nowhere: composing a prompt for a node
+    whose <code>negative_control</code> named a mutation returned that string zero times in 9,989 prompt
+    characters, because every mention of the field was template text <em>about</em> it. A worker required
+    to reproduce a string it was never shown could only paraphrase it, and
+    <code>_require_declared_negative_control</code>'s substring test then refused the promotion after the
+    worker's process had ended &mdash; leaving the coordinator to waive, resume or edit the log, which is
+    the shape &sect;9 already names.</p>
+
+    <figure>
+      <img src="/reckon/figures/work-does-not-fall-to-the-coordinator/declaration-reaches-the-worker.svg"
+           alt="Two composed prompts side by side. Before: the manifest template states that the red log's
+                first line repeats the declared mutation verbatim while the declaration appears nowhere, so
+                the worker paraphrases and promotion refuses. After: a block above the manifest template
+                carries the node's declaration as written, beside the requirement it answers, so the worker
+                copies the string and the match holds. A strip beneath separates the three shapes the block
+                keeps apart: a declared mutation, a declaration of no applicable mutation, and no
+                declaration at all." />
+      <figcaption>The substitution, and why the block keeps three shapes apart rather than collapsing them:
+      an omitted subject reads as a requirement that does not apply.</figcaption>
+    </figure>
+
+    <p><strong>The repair renders the node's declaration beside the requirement.</strong>
+    <code>compose_prompt</code> now interpolates <code>node.negative_control</code> as written, immediately before the manifest
+    template whose <code>negative_control_log</code> gloss states the
+    first-line rule. The string is never reflowed or re-indented on insertion, because it is exactly what
+    a delivered log's first line has to contain &mdash; a declaration carrying quotes and newlines
+    survives intact. A node that declares nothing keeps the subject and is told plainly that none was
+    declared, and a declaration of <code>none: &lt;reason&gt;</code> is told that no mutation applies so
+    no red log is required; three shapes, three statements, because collapsing them would make the
+    absence of a declaration read the same as a declaration that nothing applies.</p>
+
+    <p><strong>Proven by six cases that enter through the composed prompt. 6 passed.</strong> One requires
+    the declaration string in the prompt exactly once; one requires the prompt to state that the string is
+    what the red log's first line must repeat, read from the block alone rather than from the surrounding
+    prose; one requires the block to precede the manifest template and the template's own gloss to keep
+    stating the requirement the declaration answers, so a later edit to either is caught; one requires an
+    undeclared node to be told none was declared rather than to have the subject dropped; one requires a
+    <code>none:</code> declaration to state that no red log is required; and one requires a declaration
+    with quotes and newlines to reach the prompt unaltered. The focused cohort of fifteen files adds
+    <strong>no failure ids</strong> against the named base <code>37de7907</code>: eight failures at base
+    and eight with the change, 158 to 164 passing, which is the six new cases and nothing else.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation deletes the
+    <code>{negative_control_declaration}</code> interpolation from the template, so the prompt emits the
+    requirement without ever including the declaration. Applied, the file reddens <strong>6 failed, 0
+    passed</strong> &mdash; every case, including the block-scoped one and the quotes-and-newlines one.
+    The mutation is the red log's first line verbatim, and <code>reckon/crew/prompts.py</code> was
+    restored afterwards and re-run green at the same revision. The eight cohort failures are identical at
+    base and outside this node's declared scope; two of them sit on this plan's surface and are reported
+    rather than repaired here &mdash; the template gloss is asserted to contain the phrase <em>red
+    log</em> while it says <em>the log's first line</em>, and the header test's refusal case now meets
+    promotion's unreviewed-run classification before it reaches the negative-control refusal. This gate
+    measures only this node's own change; the merged head is a separately dispatched node's measurement.
+    The question &sect;11 leaves open &mdash; whether the match should stay a substring test at all, when a
+    worker naming file and symbol has written the better artifact &mdash; is untouched by this change.
+    Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-prompt-carries-the-declaration-it-demands">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">

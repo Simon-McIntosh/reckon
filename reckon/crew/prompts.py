@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import Iterable, Mapping
 
-from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
+from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode, negative_control_is_none
 
 # The commit-and-manifest-early contract, embedded in every composed prompt.
 # It lives here so it reaches a worker who never reads a reference document:
@@ -116,6 +116,61 @@ MANIFEST_CHECK_CONTRACT = (
     "  and nothing else on that line: an empty field, or one carrying a\n"
     "  description or a quoted first line, names nothing a reader can open."
 )
+
+# A node that writes a check declares the mutation that check must fail against,
+# and promotion matches that declaration against the delivered red log's own text.
+# The declaration was never shown to the worker, so the only available response
+# was a paraphrase — refused by the same substring test the prompt gave it nothing
+# to satisfy. The node's declaration is interpolated here beside the manifest
+# requirement it answers, so the worker copies a string rather than inventing one.
+# The declaration is rendered as written and never reflowed or re-indented: it is
+# the exact string the log's first line has to repeat. A node that declares
+# nothing keeps the subject and is told so, because an omitted subject reads as a
+# requirement that does not apply.
+NEGATIVE_CONTROL_DECLARATION_HEADER = (
+    "CONTRACT — THE NEGATIVE CONTROL THIS NODE DECLARES\n"
+)
+
+NEGATIVE_CONTROL_DECLARED_RULE = (
+    "  This node writes a check, so it declares the mutation that check must fail\n"
+    "  against. The string your red log's first line must repeat, verbatim, is the\n"
+    "  one below: promotion matches that exact string against the log's own text,\n"
+    "  so a paraphrase, or a log that failed for any other reason, is refused.\n"
+    "  Name that log's path in the `negative_control_log` line. Declared string:\n"
+)
+
+NEGATIVE_CONTROL_NONE_RULE = (
+    "  This node declares that no mutation applies, and states the reason. There is\n"
+    "  therefore no string for a red log's first line to repeat, and no red log is\n"
+    "  required; the declaration is recorded so a later reader can judge the reason.\n"
+    "  Declared negative control:\n"
+)
+
+NEGATIVE_CONTROL_UNDECLARED = (
+    "CONTRACT — THE NEGATIVE CONTROL THIS NODE DECLARES\n"
+    "  None was declared on this node, so this dispatch states no string for a red\n"
+    "  log's first line to repeat. If you apply a mutation of your own to falsify a\n"
+    "  check you add, record it in the manifest anyway.\n"
+)
+
+
+def _negative_control_declaration(node: TaskNode) -> str:
+    """Render this node's declared negative control where the worker can copy it.
+
+    The declaration is interpolated as written and never reflowed or re-indented,
+    because it is the string a delivered red log's first line has to repeat and
+    promotion matches it against that log's text. A node that declares nothing is
+    told so rather than having the subject dropped.
+    """
+    declaration = str(node.negative_control or "").strip()
+    if not declaration:
+        return NEGATIVE_CONTROL_UNDECLARED
+    rule = (
+        NEGATIVE_CONTROL_NONE_RULE
+        if negative_control_is_none(declaration)
+        else NEGATIVE_CONTROL_DECLARED_RULE
+    )
+    return NEGATIVE_CONTROL_DECLARATION_HEADER + rule + "  " + declaration + "\n"
 
 
 # This portion is deliberately constant for every worker, regardless of the
@@ -234,6 +289,7 @@ RUNTIME FILESYSTEM
             else "reckon crew check-manifest --run <this run's id>"
         )
     )
+    negative_control_declaration = _negative_control_declaration(node)
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     if node.role == "test":
         evidence_role_note = (
@@ -288,6 +344,7 @@ FENCE — DELIVERY
 
 {manifest_check_contract}
 
+{negative_control_declaration}
 MANIFEST (write exactly these keys; after reading the plan, observe path and revision in the assigned tree and make these first three lines your first write; those three lines are the orientation write — record them under status: in-progress with a checkpoint line, and leave the wait fields empty until you are actually waiting on an external condition)
   orientation_worktree: <output of pwd>
   orientation_base_sha: <output of git rev-parse HEAD>
