@@ -23,8 +23,8 @@
   <title>A Window Paces The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-21">
-<meta name="plan-version" content="49">
+<meta name="plan-modified" content="2026-09-22">
+<meta name="plan-version" content="50">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17">
 <meta name="plan-impl" content="0.8">
@@ -799,6 +799,46 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     group unknown. The caller is outside this node's write paths. The second half of this section's
     measure &mdash; one week of committed rows reproducing the pace curve and the lane split &mdash;
     needs a week of rows to exist and belongs with &sect;9.</p>
+
+    <h3 id="s6-entry-point">The entry point &mdash; the windows come from the receipt, and the reader is the command</h3>
+    <p><strong>The declared groups are codex lanes, and a codex stream carries no
+    <code>unifiedWindows</code> event.</strong> Measured 2026-09-22: of the newest 400 run streams
+    on this workstation, the five that carry <code>unifiedWindows</code> are all clive runs, which
+    are unmetered and declare no group; the four newest codex ledger rows carry none. A codex lane's
+    windows are in its <em>receipt</em> &mdash; <code>lane_receipt.quota_windows</code>, one row per
+    <code>window_minutes</code> (300 for <code>five_hour</code>, 10080 for <code>seven_day</code>)
+    with <code>used_percent</code>, <code>resets_at</code> in epoch seconds and
+    <code>observed_at</code> &mdash; which is what <code>crew(view="lanes")</code> already composes
+    into <code>quota_windows</code> per lane. So the pre-flight's window source is one
+    <code>WindowReading</code> per backend built from the freshest of two readings: the lane's
+    receipt or probe quota windows (codex dialect), and the newest window-carrying stream event
+    read by <code>window_reading.read_windows</code> (claude dialect). Both carry
+    <code>observed_at</code>, so both carry an age, and <code>group_pace</code> already picks the
+    freshest dated member per group.</p>
+    <p><strong>Two readers, one source.</strong> <code>crew preflight</code> supplies that source
+    by default and accepts a stated ready set as a repeated <code>--ready NAME=GROUP:SCORE</code>;
+    <code>crew(view="budget")</code> supplies the same source and reads its ready set from the
+    tool's existing <code>candidates</code> parameter, each item a mapping of <code>name</code>,
+    <code>group</code> and <code>score</code>. Neither path invents: a group whose members have no
+    dated reading in either source stays unknown; and <code>codex-sub</code>, whose receipts carry
+    only the weekly window today, reports its <code>seven_day</code> clock observed and its
+    <code>five_hour</code> clock unknown, so the allowance derives while the bar stays undecided for
+    every unprescribed node. That asymmetry is the honest reading and is asserted, not smoothed.</p>
+    <p><strong>Done when</strong> a command-line run of <code>crew preflight</code> against a
+    <code>RECKON_HOME</code> holding one run record whose receipt carries both windows for a backend
+    in a declared group reports that group <code>state: observed</code> with both clocks'
+    <code>utilisation</code> and <code>age_seconds</code> present, and a <code>--ready</code> node
+    naming that group appears in the bar's <code>recommendations</code> with a verdict; the same
+    observed state is asserted for a stream-carried <code>unifiedWindows</code> reading on a
+    claude-dialect backend in a declared group; the MCP budget view given <code>candidates</code>
+    reports the same fields; a receipt carrying only the weekly window yields a group whose
+    <code>seven_day</code> clock is observed and whose <code>five_hour</code> clock is unknown; the
+    existing unknown-group command-line case passes unchanged; the residue
+    <code>bar["bar" if False else "state"]</code> in the test reads <code>bar["state"]</code>; and
+    at the real workstation the command reports <code>codex-sub</code> observed with a
+    <code>seven_day</code> utilisation and age, captured to a log. Negative control: with the
+    recorded-windows source bypassed at the command's call site, the observed-group command-line
+    assertion fails.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
