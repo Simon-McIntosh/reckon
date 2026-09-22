@@ -1812,6 +1812,131 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     file-not-found exit evidences absence at head.
     </p>
   </section>
+
+  <section id="s6-probe-reader-undeclared-dialect">
+    <h2>&sect;6 &mdash; The probe reader was called because the command became a probe carrier</h2>
+
+    <h3>Where the call is decided</h3>
+
+    <p>The composer reaches the reader at one site, <code>reckon/mcp_views.py</code> in
+    <code>crew_lanes_view</code>: for each configured backend it asks
+    <code>_declared_probe_command(settings)</code> for a command, and <strong>only a non-None
+    command</strong> is keyed into <code>probe_by_command</code> by calling
+    <code>_cached_probe_reading(&hellip;, reader=read_probe, &hellip;)</code> &mdash; the call that
+    enters the reader seam. So the question is exactly which backends
+    <code>_declared_probe_command</code> hands back a command for.</p>
+
+    <p><strong>It hands one back for a dialect that owns its account surface, and that is the
+    decision.</strong> The function resolves <code>_backends.dialect_for(settings)</code> from the
+    command's stem, then asks <code>_owns_account_surface_reading(dialect)</code> &mdash; true when
+    the dialect class overrides <code>read_account_surface</code>, which the base returns
+    <code>None</code> from. For such a dialect the probe exchange is never consulted; the function
+    returns the command with the reason <code>"account-surface probe declared"</code>.</p>
+
+    <p>Measured directly against the registry, all four known dialect names:</p>
+
+    <table>
+      <caption><code>_declared_probe_command</code> per command, and the reader's fate.</caption>
+      <thead><tr><th>command</th><th>dialect</th><th>owns account surface</th><th>budget probe</th><th>returned</th></tr></thead>
+      <tbody>
+        <tr><td><code>codex</code></td><td>_CodexDialect</td><td>no</td><td>yes</td><td><code>('codex', 'quota probe declared')</code></td></tr>
+        <tr><td><code>claude</code></td><td>_ClaudeDialect</td><td><strong>yes</strong></td><td>None</td><td><code>('claude', 'account-surface probe declared')</code></td></tr>
+        <tr><td><code>clive</code></td><td>_ClaudeDialect</td><td><strong>yes</strong></td><td>None</td><td><code>('clive', 'account-surface probe declared')</code></td></tr>
+        <tr><td>a command no dialect translates</td><td>none (BackendError)</td><td>&mdash;</td><td>&mdash;</td><td><code>(None, 'dialect declares no quota probe &mdash; &hellip;')</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Which reading the measurement supports</h3>
+
+    <p><strong>The fixture's referent moved: this is a test asserting yesterday's contract, not a
+    production defect.</strong> The case was written with <code>{"command": "claude"}</code> standing
+    for a probe-less dialect. Commit <code>fab092da</code> (2026-09-14) <em>&ldquo;claude dialect
+    owns the account-surface budget read&hellip;&rdquo;</em> gave the claude dialect its own
+    <code>read_account_surface</code>, and from that commit <code>claude</code> became a command the
+    composer declares a reading for. The fixture kept asserting the absence of a probe against a
+    command that now has one.</p>
+
+    <p><strong>The rejected reading, and the evidence against it.</strong> The other candidate is
+    that the composer should not reach for a reader here and the behaviour is a bug. It is refuted by
+    the read path underneath the seam: the default reader is
+    <code>_run_budget_probe</code> &rarr; <code>_backends.probe_budget</code>, which resolves the
+    dialect and calls <code>dialect.read_account_surface(backend=&hellip;)</code> <em>first</em>, and
+    only falls back to the probe exchange when that answers <code>None</code>. For claude and clive
+    the account surface <em>is</em> the live reading &mdash; the whole purpose of the lanes view is
+    that a live reading replaces an ancient receipt. Suppressing the call for a dialect that owns its
+    surface would leave every claude and clive lane carrying a stale receipt as though it were a
+    position, which is the failure &sect;5b exists to prevent, and it would do so while every focused
+    lane case stayed green.</p>
+
+    <h3>The repair</h3>
+
+    <p>The fixture's command became a <strong>deliberately synthetic token</strong>
+    (<code>synthetic-no-dialect-harness</code>) that names no harness at all, which is what
+    &ldquo;not a known probe carrier&rdquo; means in the composer's own vocabulary: the function
+    returns <code>(None, 'dialect declares no quota probe&hellip;')</code>, no command is keyed, and
+    the reader seam is never entered. <strong>The name is synthetic because a real one re-fuses the
+    case.</strong> The composer resolves a dialect from the command, so every real harness name is a
+    candidate to become a dialect and re-fuse the fixture the way <code>claude</code> did &mdash; a
+    first attempt at this repair used a real local-model runner and was rejected on review for
+    exactly that reason. A token no dialect can claim cannot acquire one. The case keeps its name and
+    its three assertions (<code>invocations == 0</code>, <code>probe_status == "not_declared"</code>,
+    <code>quota_source == "receipt"</code>), and its docstring records both why <code>claude</code>
+    can no longer serve as the stand-in and why the replacement is deliberately not a real name.</p>
+
+    <h3>Gate, before and after in the same pass</h3>
+
+    <p>The four lanes-view files &mdash; <code>tests/test_crew_lanes_view.py</code>,
+    <code>tests/test_lanes_borrowed_figure.py</code>, <code>tests/test_lanes_view_is_live.py</code>,
+    <code>tests/test_lanes_view_serving_state.py</code> &mdash; run at the base revision
+    <code>612fa8fb</code> and at this head in one pass:</p>
+
+    <table>
+      <caption>The four lanes-view files, base and head measured together.</caption>
+      <thead><tr><th>Revision</th><th>Result</th><th>Exit</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td><code>612fa8fb</code> (base, test unmodified)</td><td>1 failed, 38 passed</td><td>1</td>
+        <td><code>test_a_dialect_without_a_probe_never_calls_the_probe_reader</code></td></tr>
+        <tr><td>this head (test repaired)</td><td><strong>39 passed</strong></td><td>0</td><td>none</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>No failure the base did not carry is present at head, because head carries none.</strong>
+    The one red at base is the target case; the second pre-existing red this section named earlier, the
+    account-surface case, was repaired by the earlier node and is green at both revisions here. <code>import
+    reckon</code> resolves to the worktree copy (<code>&hellip;/the-probe-reader-skips-a-dialect-that-declares-none/reckon/__init__.py</code>),
+    printed before the base run. Lint by delta against the base file's own copy: <strong>1 finding at
+    base, 1 at head</strong>, no new finding; <code>ruff format --check</code> clean.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> restore the composer's unconditional probe
+    call so a dialect declaring no probe has its probe reader invoked again &mdash; the first line of
+    the red log <code>negative-control.log</code>. It was applied to a scratch copy of the package by
+    returning the declared command on the two <code>"no quota probe"</code> paths of
+    <code>_declared_probe_command</code>, so a command no dialect translates is keyed into
+    <code>probe_by_command</code> and the reader is entered. The package and its tests were copied with
+    <code>-a</code> and every <code>__pycache__</code> cleared.</p>
+
+    <p><strong>Positive control first:</strong> in the same scratch tree with only
+    <code>reckon/mcp_views.py</code> restored to the worktree's copy, the case is green
+    (<code>1 passed</code>). With the mutation applied it is red on its own first assertion,
+    <code>assert 1 == 0</code> &mdash; the reader was invoked once for a command that declares no
+    probe. So the red is the mutation and not the copy.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Nothing in <code>reckon/mcp_views.py</code> changed.</strong> The measurement
+      located the decision in that module and found the production behaviour correct; the node's only
+      source change is the test fixture, so the module is in the write fence but unused, and no
+      production call path is altered.</li>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      own change at its head; a merged-head verification is a separately dispatched node's job.</li>
+      <li><strong>The four-file selection matches the earlier &sect;6 node's, so its counts are
+      comparable.</strong> The absolute totals here (39) differ from that node's earlier table (40)
+      because <code>main</code> advanced between the two, not because the selection changed.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>...

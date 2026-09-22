@@ -196,6 +196,16 @@ def test_two_reads_inside_the_declared_cache_lifetime_probe_once() -> None:
 
 
 def test_a_dialect_without_a_probe_never_calls_the_probe_reader() -> None:
+    """A command with no readable surface leaves the reader uninvoked.
+
+    The command is deliberately synthetic and names no harness at all, because a
+    real harness name is exactly what failed this case before: it once used
+    ``claude`` as its stand-in for a probe-less dialect, and that stopped being
+    true when the claude dialect took over its own account-surface read, so the
+    fixture silently became a probe carrier.  Any name a dialect is a candidate
+    for carries the same fuse, since the composer resolves the dialect from the
+    command; a token no harness would ever take cannot acquire one.
+    """
     invocations = 0
 
     def probe_reader(backend, settings):
@@ -208,7 +218,10 @@ def test_a_dialect_without_a_probe_never_calls_the_probe_reader() -> None:
             probe_reader,
             config={
                 "backends": {
-                    "plain": {"launch": "cli", "command": "claude"},
+                    "plain": {
+                        "launch": "cli",
+                        "command": "synthetic-no-dialect-harness",
+                    },
                 }
             },
         )
