@@ -63,6 +63,50 @@
     <code>tests/test_dispatch_lifetime_probe.py</code> and asserts on the real pointer directory
     being untouched afterwards.</p>
 
+<p>
+      <strong>Measured 2026-09-23.</strong> The probe
+      <code>tests/test_dispatch_lifetime_probe.py</code> dispatched five stub-backed
+      nodes &mdash; three signalled after the worker appeared, one with the watch
+      producer armed &mdash; and recorded the process tree, each descendant's role, and whether the stub's
+      marker file appeared. No code path holds the dispatch process open after the
+      worker launches: in every trial it ended 0.09&ndash;0.21&nbsp;s after its worker
+      appeared, and the time a dispatch does spend is pre-launch, in
+      <code>reckon/crew/routing.py:880</code> where it blocks on worktree creation.
+      The worker wrote its marker in all five trials, including the three whose
+      dispatch process received SIGTERM, SIGKILL and SIGHUP.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/dispatch_lifetime.png"
+           alt="Left: for each of the five trials, two bars on a seconds axis from dispatch start, the worker's launch and the dispatch process's exit, close enough together to be almost one bar. Right: a bar of one for each trial for whether the stub's marker was written; all five are filled, including the three whose dispatch process was signalled.">
+      <figcaption>
+        Left: every dispatch process ended within a fifth of a second of the worker it
+        had just launched. Right: the worker's marker appeared in every trial,
+        including the three where the dispatch process was signalled.
+      </figcaption>
+    </figure>
+    <p>
+      The measurement is <code>docs/research/data/dispatch-lifetime.json</code>.
+      Evidence at
+      <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html#s2</code>.
+    </p>
+
+    <p>
+      <strong>Opted in, and aimed at the directory it names.</strong> The probe
+      starts real processes and rewrites its artifact, so it now skips unless
+      <code>RECKON_RUN_DISPATCH_PROBE=1</code> is set, with a skip reason that
+      names the variable; a default run reports one skip. The real-pointer guard
+      had been resolving the configuration home when it was called, by which
+      point the suite's own <code>RECKON_HOME</code> fixture had redirected it to
+      a throwaway home, so both directories it compared were the fixture's and
+      the assertion held because the probe writes nowhere near the fixture rather
+      than because the real fleet was left alone. The directory is now captured
+      when the module loads, before any fixture runs, and the artifact records
+      <code>~/.config/reckon/crew/live</code> as the path it checked. The declared
+      negative control &mdash; resolving the directory at call time again, and
+      writing a sentinel into that fixture directory during the test &mdash; makes
+      the guard fail, which is the log kept with the node's manifest.
+    </p>
+
     <h2 id="s3">&sect;3 &mdash; Dispatch returns once the worker is launched</h2>
     <p>Make a CLI dispatch print its JSON result and exit as soon as the worker process is running
     and its live pointer is written. The worker must survive the dispatch process ending by any of

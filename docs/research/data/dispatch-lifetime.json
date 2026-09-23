@@ -1,0 +1,627 @@
+{
+  "generated_at": "2026-09-23T12:11:35Z",
+  "source_revision": "0dc1a8d6df8d8d5f65072be539c60ee1a7985772",
+  "probe": {
+    "driver": "a child process calling reckon.crew.dispatch with a stub backend",
+    "stub_command": "a shell script named claude that records its pid, sleeps 60s, then writes a marker file",
+    "attack_surface": "a temporary repository and a temporary crew configuration home (RECKON_HOME); every dispatch is synchronous and the watch producer is suppressed except in the one trial that measures the arming path"
+  },
+  "holding_code_path": {
+    "file": null,
+    "line": null,
+    "function": null,
+    "source_quoted": null,
+    "finding": "no frame inside the reckon package was on the main thread's stack while the dispatch process lived, so the process was never parked in reckon code"
+  },
+  "holding_note": "the done-when asks for the code path that holds the dispatch process open after the worker launches. This probe measures none: in every trial the dispatch process exited less than a second after the worker's pid file appeared, so no file or line holds it there. What the dispatch process does spend time on is pre-launch, and that is cited under pre_launch_holder.",
+  "pre_launch_holder": {
+    "path": "reckon/crew/routing.py",
+    "line": 880,
+    "source_quoted": "result = subprocess.run(",
+    "enclosing_function": "_create_worktree"
+  },
+  "dispatch_process_life": {
+    "graceful": {
+      "launched_after_seconds": 6.188,
+      "exited_after_seconds": 6.397,
+      "held_after_launch": false,
+      "exited_after_launch_seconds": 0.209
+    },
+    "sigterm": {
+      "launched_after_seconds": 6.395,
+      "exited_after_seconds": 6.587,
+      "held_after_launch": false,
+      "exited_after_launch_seconds": 0.192
+    },
+    "sigkill": {
+      "launched_after_seconds": 4.311,
+      "exited_after_seconds": 4.487,
+      "held_after_launch": false,
+      "exited_after_launch_seconds": 0.176
+    },
+    "sighup": {
+      "launched_after_seconds": 5.312,
+      "exited_after_seconds": 5.506,
+      "held_after_launch": false,
+      "exited_after_launch_seconds": 0.194
+    },
+    "watcher": {
+      "launched_after_seconds": 8.396,
+      "exited_after_seconds": 8.778,
+      "held_after_launch": false,
+      "exited_after_launch_seconds": 0.382
+    }
+  },
+  "candidate_holders": [
+    {
+      "mechanism": "the git helper every routing step shells out through",
+      "citation": {
+        "path": "reckon/crew/routing.py",
+        "line": 243,
+        "source_quoted": "result = subprocess.run(",
+        "enclosing_function": "_git"
+      },
+      "disposition": "each routing step that runs git lands here, and worktree creation is the slow one, so this is where a lifetime in seconds-to-minutes is spent before any worker has been launched"
+    },
+    {
+      "mechanism": "the launched-worker reaper thread",
+      "citation": {
+        "path": "reckon/crew/dispatch.py",
+        "line": 4310,
+        "source_quoted": "name=\"reckon-worker-reaper\",",
+        "enclosing_function": "_ensure_launched_worker_reaper"
+      },
+      "disposition": "cannot hold the process: the thread is constructed with daemon=True, so the interpreter does not wait for it after the main thread returns"
+    },
+    {
+      "mechanism": "the watcher-arming wait",
+      "citation": {
+        "path": "reckon/crew/dispatch.py",
+        "line": 119,
+        "source_quoted": "WATCHER_LOAD_BOUND_SECONDS = 30.0",
+        "enclosing_function": ""
+      },
+      "disposition": "bounded: arming returns once the producer's liveness resolves or the thirty-second bound elapses"
+    },
+    {
+      "mechanism": "the launched worker, if the dispatch process waited on it",
+      "citation": {
+        "path": "reckon/crew/dispatch.py",
+        "line": 4639,
+        "source_quoted": "start_new_session=True,",
+        "enclosing_function": "_spawn"
+      },
+      "disposition": "not awaited: the worker is detached into its own session and its stdio is redirected to files, so neither a wait nor a read bounded by the worker keeps the dispatch process alive"
+    }
+  ],
+  "trials": {
+    "graceful": {
+      "signal": null,
+      "watch_required": false,
+      "follow_claim": false,
+      "dispatch_returncode": 0,
+      "dispatch_exit_elapsed_seconds": 6.397,
+      "dispatch_held_after_launch": false,
+      "dispatch_killed_after_hold": false,
+      "dispatch_exit_after_launch_seconds": 0.209,
+      "dispatch_stdout": "{\"run_id\": \"r-20260923T120606745262-probe-graceful\", \"pid\": 4129835}",
+      "dispatch_stderr_tail": "",
+      "worker_pid": 4129835,
+      "worker_launch_after_seconds": 6.188,
+      "signal_sent": false,
+      "signal_target": null,
+      "signal_sent_after_seconds": null,
+      "signal_error": null,
+      "marker_appeared": true,
+      "marker_after_seconds": 66.029,
+      "process_tree": [
+        {
+          "pid": 4129519,
+          "ppid": 4129249,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-graceful",
+            "--session",
+            "probe-session-graceful",
+            "--worker",
+            "probe-graceful",
+            "--base",
+            "HEAD"
+          ],
+          "state": "S",
+          "role": "worktree-creation",
+          "first_seen_after_seconds": 3.121,
+          "last_seen_after_seconds": 3.526
+        },
+        {
+          "pid": 4129835,
+          "ppid": 4129249,
+          "argv": [
+            "/bin/sh",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/bin-graceful/claude",
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--model",
+            "local-stub",
+            "--effort",
+            "low",
+            "--dangerously-skip-permissions",
+            "--add-dir",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/.reckon-worktrees/repo-graceful-21aabce64659/probe-session-graceful/probe-graceful"
+          ],
+          "state": "S",
+          "role": "stub-worker",
+          "first_seen_after_seconds": 6.004,
+          "last_seen_after_seconds": 6.208
+        },
+        {
+          "pid": 4129839,
+          "ppid": 4129835,
+          "argv": [
+            "sleep",
+            "60"
+          ],
+          "state": "S",
+          "role": "stub-sleep",
+          "first_seen_after_seconds": 6.004,
+          "last_seen_after_seconds": 6.208
+        }
+      ],
+      "reaped_processes": [],
+      "process_timeline": [
+        {
+          "after_seconds": 3.121,
+          "role": "worktree-creation",
+          "pid": 4129519,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-graceful",
+            "--session",
+            "probe-session-graceful",
+            "--worker",
+            "probe-graceful",
+            "--base",
+            "HEAD"
+          ]
+        },
+        {
+          "after_seconds": 6.004,
+          "role": "stub-worker",
+          "pid": 4129835,
+          "argv": [
+            "/bin/sh",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/bin-graceful/claude",
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--model",
+            "local-stub",
+            "--effort",
+            "low",
+            "--dangerously-skip-permissions",
+            "--add-dir",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/.reckon-worktrees/repo-graceful-21aabce64659/probe-session-graceful/probe-graceful"
+          ]
+        },
+        {
+          "after_seconds": 6.004,
+          "role": "stub-sleep",
+          "pid": 4129839,
+          "argv": [
+            "sleep",
+            "60"
+          ]
+        }
+      ]
+    },
+    "sigterm": {
+      "signal": "SIGTERM",
+      "watch_required": false,
+      "follow_claim": false,
+      "dispatch_returncode": -15,
+      "dispatch_exit_elapsed_seconds": 6.587,
+      "dispatch_held_after_launch": false,
+      "dispatch_killed_after_hold": false,
+      "dispatch_exit_after_launch_seconds": 0.192,
+      "dispatch_stdout": "",
+      "dispatch_stderr_tail": "",
+      "worker_pid": 4137390,
+      "worker_launch_after_seconds": 6.395,
+      "signal_sent": true,
+      "signal_target": "dispatch-process",
+      "signal_sent_after_seconds": 6.395,
+      "signal_error": null,
+      "marker_appeared": true,
+      "marker_after_seconds": 66.323,
+      "process_tree": [
+        {
+          "pid": 4136812,
+          "ppid": 4136490,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sigterm",
+            "--session",
+            "probe-session-sigterm",
+            "--worker",
+            "probe-sigterm",
+            "--base",
+            "HEAD"
+          ],
+          "state": "S",
+          "role": "worktree-creation",
+          "first_seen_after_seconds": 3.016,
+          "last_seen_after_seconds": 3.212
+        }
+      ],
+      "reaped_processes": [],
+      "process_timeline": [
+        {
+          "after_seconds": 3.016,
+          "role": "worktree-creation",
+          "pid": 4136812,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sigterm",
+            "--session",
+            "probe-session-sigterm",
+            "--worker",
+            "probe-sigterm",
+            "--base",
+            "HEAD"
+          ]
+        }
+      ]
+    },
+    "sigkill": {
+      "signal": "SIGKILL",
+      "watch_required": false,
+      "follow_claim": false,
+      "dispatch_returncode": -9,
+      "dispatch_exit_elapsed_seconds": 4.487,
+      "dispatch_held_after_launch": false,
+      "dispatch_killed_after_hold": false,
+      "dispatch_exit_after_launch_seconds": 0.176,
+      "dispatch_stdout": "",
+      "dispatch_stderr_tail": "",
+      "worker_pid": 4146337,
+      "worker_launch_after_seconds": 4.311,
+      "signal_sent": true,
+      "signal_target": "dispatch-process",
+      "signal_sent_after_seconds": 4.311,
+      "signal_error": null,
+      "marker_appeared": true,
+      "marker_after_seconds": 64.378,
+      "process_tree": [
+        {
+          "pid": 4145851,
+          "ppid": 4145567,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sigkill",
+            "--session",
+            "probe-session-sigkill",
+            "--worker",
+            "probe-sigkill",
+            "--base",
+            "HEAD"
+          ],
+          "state": "R",
+          "role": "worktree-creation",
+          "first_seen_after_seconds": 1.817,
+          "last_seen_after_seconds": 2.019
+        }
+      ],
+      "reaped_processes": [],
+      "process_timeline": [
+        {
+          "after_seconds": 1.817,
+          "role": "worktree-creation",
+          "pid": 4145851,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sigkill",
+            "--session",
+            "probe-session-sigkill",
+            "--worker",
+            "probe-sigkill",
+            "--base",
+            "HEAD"
+          ]
+        }
+      ]
+    },
+    "sighup": {
+      "signal": "SIGHUP",
+      "watch_required": false,
+      "follow_claim": false,
+      "dispatch_returncode": -1,
+      "dispatch_exit_elapsed_seconds": 5.506,
+      "dispatch_held_after_launch": false,
+      "dispatch_killed_after_hold": false,
+      "dispatch_exit_after_launch_seconds": 0.194,
+      "dispatch_stdout": "",
+      "dispatch_stderr_tail": "",
+      "worker_pid": 4154934,
+      "worker_launch_after_seconds": 5.312,
+      "signal_sent": true,
+      "signal_target": "dispatch-process",
+      "signal_sent_after_seconds": 5.312,
+      "signal_error": null,
+      "marker_appeared": true,
+      "marker_after_seconds": 65.385,
+      "process_tree": [
+        {
+          "pid": 4154735,
+          "ppid": 4154422,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sighup",
+            "--session",
+            "probe-session-sighup",
+            "--worker",
+            "probe-sighup",
+            "--base",
+            "HEAD"
+          ],
+          "state": "R",
+          "role": "worktree-creation",
+          "first_seen_after_seconds": 3.211,
+          "last_seen_after_seconds": 3.423
+        }
+      ],
+      "reaped_processes": [],
+      "process_timeline": [
+        {
+          "after_seconds": 3.211,
+          "role": "worktree-creation",
+          "pid": 4154735,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-sighup",
+            "--session",
+            "probe-session-sighup",
+            "--worker",
+            "probe-sighup",
+            "--base",
+            "HEAD"
+          ]
+        }
+      ]
+    },
+    "watcher": {
+      "signal": null,
+      "watch_required": true,
+      "follow_claim": true,
+      "dispatch_returncode": 0,
+      "dispatch_exit_elapsed_seconds": 8.778,
+      "dispatch_held_after_launch": false,
+      "dispatch_killed_after_hold": false,
+      "dispatch_exit_after_launch_seconds": 0.382,
+      "dispatch_stdout": "{\"run_id\": \"r-20260923T121028672702-probe-watcher\", \"pid\": 4163389}",
+      "dispatch_stderr_tail": "",
+      "worker_pid": 4163389,
+      "worker_launch_after_seconds": 8.396,
+      "signal_sent": false,
+      "signal_target": null,
+      "signal_sent_after_seconds": null,
+      "signal_error": null,
+      "marker_appeared": true,
+      "marker_after_seconds": 68.417,
+      "process_tree": [
+        {
+          "pid": 4162667,
+          "ppid": 4162495,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "-c",
+            "import subprocess, sys; producer = subprocess.Popen(sys.argv[1:], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); raise SystemExit(producer.wait())",
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon",
+            "crew",
+            "watch",
+            "--project",
+            "sample"
+          ],
+          "state": "S",
+          "role": "watch-supervisor",
+          "first_seen_after_seconds": 2.09,
+          "last_seen_after_seconds": 8.416
+        },
+        {
+          "pid": 4162740,
+          "ppid": 4162667,
+          "argv": [
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/review-of-launch-plan-wraps-a-filesystem-fence/.venv/bin/python3",
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon",
+            "crew",
+            "watch",
+            "--project",
+            "sample"
+          ],
+          "state": "S",
+          "role": "watch-producer",
+          "first_seen_after_seconds": 2.708,
+          "last_seen_after_seconds": 8.416
+        },
+        {
+          "pid": 4163035,
+          "ppid": 4162495,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-watcher",
+            "--session",
+            "probe-session-watcher",
+            "--worker",
+            "probe-watcher",
+            "--base",
+            "HEAD"
+          ],
+          "state": "R",
+          "role": "worktree-creation",
+          "first_seen_after_seconds": 5.416,
+          "last_seen_after_seconds": 5.707
+        },
+        {
+          "pid": 4163389,
+          "ppid": 4162495,
+          "argv": [
+            "/bin/sh",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/bin-watcher/claude",
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--model",
+            "local-stub",
+            "--effort",
+            "low",
+            "--dangerously-skip-permissions",
+            "--add-dir",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/.reckon-worktrees/repo-watcher-1e18bbaa1998/probe-session-watcher/probe-watcher"
+          ],
+          "state": "S",
+          "role": "stub-worker",
+          "first_seen_after_seconds": 8.416,
+          "last_seen_after_seconds": 8.416
+        },
+        {
+          "pid": 4163397,
+          "ppid": 4163389,
+          "argv": [
+            "sleep",
+            "60"
+          ],
+          "state": "S",
+          "role": "stub-sleep",
+          "first_seen_after_seconds": 8.416,
+          "last_seen_after_seconds": 8.416
+        }
+      ],
+      "reaped_processes": [
+        4162667,
+        4162740
+      ],
+      "process_timeline": [
+        {
+          "after_seconds": 2.09,
+          "role": "watch-supervisor",
+          "pid": 4162667,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "-c",
+            "import subprocess, sys; producer = subprocess.Popen(sys.argv[1:], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); raise SystemExit(producer.wait())",
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon",
+            "crew",
+            "watch",
+            "--project",
+            "sample"
+          ]
+        },
+        {
+          "after_seconds": 2.708,
+          "role": "watch-producer",
+          "pid": 4162740,
+          "argv": [
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/review-of-launch-plan-wraps-a-filesystem-fence/.venv/bin/python3",
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon",
+            "crew",
+            "watch",
+            "--project",
+            "sample"
+          ]
+        },
+        {
+          "after_seconds": 5.416,
+          "role": "worktree-creation",
+          "pid": 4163035,
+          "argv": [
+            "/home/ITER/mcintos/Code/reckon/.venv/bin/python",
+            "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-probe-is-opt-in/skills/reckon-ship/scripts/worktree_fleet.py",
+            "create",
+            "--repo",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/repo-watcher",
+            "--session",
+            "probe-session-watcher",
+            "--worker",
+            "probe-watcher",
+            "--base",
+            "HEAD"
+          ]
+        },
+        {
+          "after_seconds": 8.416,
+          "role": "stub-worker",
+          "pid": 4163389,
+          "argv": [
+            "/bin/sh",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/bin-watcher/claude",
+            "-p",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--model",
+            "local-stub",
+            "--effort",
+            "low",
+            "--dangerously-skip-permissions",
+            "--add-dir",
+            "/run/user/39486/pytest-of-mcintos/pytest-5325/test_dispatch_lifetime_probe0/.reckon-worktrees/repo-watcher-1e18bbaa1998/probe-session-watcher/probe-watcher"
+          ]
+        },
+        {
+          "after_seconds": 8.416,
+          "role": "stub-sleep",
+          "pid": 4163397,
+          "argv": [
+            "sleep",
+            "60"
+          ]
+        }
+      ]
+    }
+  },
+  "real_pointer_directory": {
+    "path": "/home/ITER/mcintos/.config/reckon/crew/live",
+    "before_mtime_ns": 1790165074376423000,
+    "after_mtime_ns": 1790165492179201000,
+    "probe_pointers": [
+      "r-20260923T120606745262-probe-graceful.json",
+      "r-20260923T120712850427-probe-sigterm.json",
+      "r-20260923T120818262685-probe-sigkill.json",
+      "r-20260923T120924056129-probe-sighup.json",
+      "r-20260923T121028672702-probe-watcher.json"
+    ],
+    "names_from_probe_found_in_real_dir": [],
+    "untouched": true
+  },
+  "figure": "docs/figures/a-dispatch-returns-without-its-worker/dispatch_lifetime.png"
+}
