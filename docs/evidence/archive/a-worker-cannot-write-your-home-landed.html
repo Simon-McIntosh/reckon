@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home-landed">
+  <meta name="plan-title" content="A Worker Cannot Write Your Home &mdash; landed evidence">
+  <meta name="plan-summary" content="One section per node: the launch argv is wrapped in a read-only filesystem fence (§1).">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s1">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
+  <meta name="plan-commits" content="9125b986">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg">
+  <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A Worker Cannot Write Your Home &mdash; landed evidence</h1>
+    <p class="plan-summary">The worker's launch argv is composed inside a bubblewrap
+    fence that overlays every protected path read-only and re-binds the run's own
+    write roots, proved by executing the argv rather than inspecting its shape.</p>
+  </header>
+
+  <section id="s1">
+    <h2>&sect;1 &mdash; Every CLI worker launches inside a filesystem fence</h2>
+    <p><strong>Node:</strong> <code>launch-plan-wraps-a-filesystem-fence</code>.</p>
+
+    <p><strong>What landed.</strong> <code>reckon._backends.launch_plan</code> gained
+    <code>fence</code> (default <code>False</code>) and an injectable
+    <code>fence_home</code>. When asked, it wraps the dialect's argv through
+    <code>fence_argv</code>: <code>bwrap --dev-bind / /</code>, then one
+    <code>--ro-bind</code> per existing protected path, then a <code>--bind</code> for
+    each write root that falls inside a protected path, then <code>--</code> and the
+    harness argv. The protected set is derived by <code>protected_paths(home)</code>
+    from the home in force, so a test stands a temp home in and the operator's real dot
+    directories are never touched. Because every dialect and every entry path &mdash;
+    fresh dispatch, resume and redispatch &mdash; builds its argv at this one point, the
+    wrap cannot be left off for one of the three.</p>
+
+    <p><strong>Why it defaults off.</strong> A read-only <code>~/.claude</code> without a
+    per-run harness home stops the claude harness writing its own transcript (§2), so no
+    field run changes until that section lands. The default is pinned by an exact-argv
+    assertion, not a shape.</p>
+
+    <p><strong>Method.</strong> <code>tests/test_launch_plan_fences_the_home.py</code>
+    builds a synthetic home with a stand-in for every protected class, places a sentinel
+    in each, and runs the composed argv with a stub in place of the harness. The stub
+    attempts an <code>rm -rf</code> of each sentinel and a write into each granted root
+    and records the outcome in the run directory; a non-empty record is itself the proof
+    that the run directory stayed writable.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg"
+           alt="The composed argv in mount order, the home as the worker sees it, and the two assertions.">
+      <figcaption>Mount order decides the outcome: a later <code>--bind</code> re-opens a
+      granted subtree beneath an earlier read-only overlay.</figcaption>
+    </figure>
+
+    <h3>The reproduction, quoted</h3>
+    <p>Run with the fence dropped entirely &mdash; the stub executed unfenced &mdash; the
+    same stub deletes every sentinel, so the fenced survival is not vacuous:</p>
+    <pre>unfenced rc 0 deleted count 15
+claude sentinel exists unfenced: False</pre>
+
+    <p><strong>Fenced.</strong> Every protected sentinel survives an <code>rm -rf</code>
+    and the removal is refused (<q>Read-only file system</q>); every granted root and the
+    worktree are writable. The worktree in the fixture lies inside a protected checkout,
+    so its writability rests on the re-bind rather than on it merely lying outside the
+    set. A second assertion covers the checkout class by expansion: a <code>.git</code>
+    directory under <code>Code</code> is recognised as a main checkout without being named
+    literally.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>drop the --ro-bind for the ~/.claude stand-in so its
+    sentinel can be deleted</em>. Applied, the <code>~/.claude</code> sentinel is
+    deleted and every other overlay still refuses &mdash; so the deleted sentinel is
+    attributable to the removed overlay and not to an unfenced run. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control.log</code>, whose
+    first line is the declared mutation verbatim.</p>
+
+    <h3>Gate</h3>
+    <p>Base revision <code>94d2b091</code> and this commit were run over the same five
+    existing launch-plan test files: both report <code>3 failed, 58 passed</code> with
+    identical failing ids, so zero failures were added. The three base failures reproduce
+    at base and lie outside this node's scope. With this node's two new tests the gate is
+    <code>3 failed, 60 passed</code>. Lint delta is zero on both touched files
+    (<code>_backends.py</code> 6&nbsp;&rarr;&nbsp;6, <code>test_backends.py</code>
+    4&nbsp;&rarr;&nbsp;4, the new test file 0).</p>
+  </section>
+</main>
+</body>
+</html>
