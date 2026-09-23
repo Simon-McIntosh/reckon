@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="7">
+  <meta name="plan-version" content="15">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -79,17 +79,42 @@
     This plan owns only what the follower emits.</p>
 
     <h2 id="s2">&sect;2 &mdash; A worker's death is a row within one poll</h2>
-    <p>When the watcher's snapshot finds a non-terminal run whose recorded process is gone, emit a
-    transition for it on that snapshot, rather than waiting for the stall window. Liveness is read
-    through <code>record_process_alive</code>, which is already folded into each pointer. The row's
-    state is the classifier's reading of what the dead worker left, and its reason names that the
-    process exited.</p>
+    <h3 id="s2-terms">Terms shared by &sect;2 to &sect;8</h3>
+    <p><em>Non-terminal</em> means the manifest's status is not in
+    <code>TERMINAL_MANIFEST_STATUSES</code> in <code>reckon/crew/reports.py</code>
+    (<code>complete</code>, <code>blocked</code>, <code>failed</code>), or no manifest exists.
+    <em>Recognised non-terminal</em> means the status is in <code>MANIFEST_STATUSES</code> but not
+    terminal, for example <code>in-progress</code> or <code>waiting</code>. <em>Process gone</em>
+    means the pointer's recorded worker pid is not alive by the check <code>record_process_alive</code>
+    in <code>reckon/crew/runs.py</code> performs, called at snapshot time. A pointer with no recorded
+    pid is neither alive nor gone, and none of these sections fires for it. <em>Newest stream</em>
+    means the stream file that the newest-stream helper from worker-death-is-recorded &sect;5
+    returns, across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and
+    <code>lane-change-*.jsonl</code>. &sect;2, &sect;6, &sect;7 and &sect;8 call that helper and
+    wait for it to land. <em>The run's time budget</em> is the pointer's
+    <code>budget_seconds</code>.</p>
+    <p><strong>Precedence, so exactly one of these rows fires for a run on a given
+    snapshot.</strong> With the process gone and a non-terminal manifest, the check runs in this
+    order. If the manifest status is outside <code>MANIFEST_STATUSES</code>, &sect;5 fires. Otherwise,
+    if the newest stream's last record has type <code>result</code>, &sect;8 fires. Otherwise &sect;2
+    fires.</p>
+    <p>When the watcher's snapshot finds a non-terminal run whose process is gone and whose newest
+    stream's last record is not a <code>result</code>, emit a transition for it on that snapshot,
+    rather than waiting for the stall window. The row's state is the classifier's reading of what the
+    dead worker left, which on the current main branch is <code>interrupted</code>, from the run
+    phase that worker-death-is-recorded added to <code>reckon/crew/node.py</code>. Its reason names
+    that the process exited. When &sect;3 of a-dispatch-returns-without-its-worker has landed, the
+    reason also carries the exit record's <code>signal_name</code> or <code>exit_code</code> and its
+    <code>last_record_type</code>, which is what separates a kill from a worker's own exit.</p>
     <p><strong>Done when</strong> <code>tests/test_watch_reports_death_at_once.py</code> builds a
-    live pointer whose pid is a process the test starts and then kills, runs one watcher snapshot
-    after the kill, and asserts a transition for that run whose reason says the process exited, with
-    the elapsed quiet time under the stall window. The negative control is executed and logged:
-    with the base revision the snapshot emits nothing for the run. The write paths are
-    <code>reckon/crew/recovery.py</code> and that test.</p>
+    live pointer whose pid is a process the test starts and then kills, whose manifest reads
+    <code>status: in-progress</code>, and whose stream's last record is an <code>assistant</code>
+    record. After the kill it runs one watcher snapshot and asserts one transition for that run whose
+    reason says the process exited, with the elapsed quiet time under the stall window. A second case
+    gives the stream a last record of type <code>result</code> and asserts that the reason is
+    &sect;8's and not this one. The negative control is executed and logged: with the new
+    death branch deleted from the head, the first case's snapshot emits nothing for the run. The
+    write paths are <code>reckon/crew/recovery.py</code> and that test.</p>
 
     <h2 id="s3">&sect;3 &mdash; A stalled row says alive or gone</h2>
     <p>Every row entering <code>stalled</code> carries the process state in its reason, in words:
@@ -106,27 +131,43 @@
     condition.</p>
     <p><strong>Done when</strong> a test renders the sweep's ready-to-resume event for a run with a
     live process and asserts the row does not contain <code>resume</code>, and renders it for a dead
-    process and asserts it does. The write paths are <code>reckon/crew/resumption.py</code> and
+    process and asserts it does. While the process lives, the row's reason names the wait condition
+    and contains the word <code>waiting</code>. The <code>ready to resume</code> text is composed
+    by the classifier in <code>reckon/crew/recovery.py</code>, not in
+    <code>reckon/crew/resumption.py</code>, which does not contain it. The write paths are
+    <code>reckon/crew/recovery.py</code> and
     <code>tests/test_resume_offer_needs_a_dead_process.py</code>.</p>
 
     <h2 id="s5">&sect;5 &mdash; An unreadable manifest names the word it could not read</h2>
-    <p>When the classifier reads a manifest whose status word is outside the recognised set, emit a
-    transition into <code>unreadable</code> whose reason quotes the word, as in
-    <code>status "in-progress" is not complete, blocked or failed</code>. Validating the manifest
+    <p>When the process is gone and the classifier reads a manifest whose status word is outside
+    <code>MANIFEST_STATUSES</code> in <code>reckon/crew/reports.py</code>, emit a transition into
+    <code>unreadable</code> whose reason quotes the word, as in <code>status "ready-for-review" is
+    not a recognised manifest status</code>. <code>in-progress</code> is recognised: it is in
+    <code>NON_TERMINAL_MANIFEST_STATUSES</code>, and every live worker writes it while orienting, so
+    it never triggers this row. While the process lives, this section emits nothing, because a live
+    worker can still rewrite the word. Validating the manifest
     when the worker writes it is owned by
     <a href="/reckon/plans/crew-runtime-positive-controls">crew-runtime-positive-controls</a>. This
     section only makes the existing case visible.</p>
-    <p><strong>Done when</strong> a test writes a manifest with <code>status: in-progress</code>
+    <p><strong>Done when</strong> a test writes a manifest with <code>status: ready-for-review</code>
     beside a pointer whose process is gone, runs one snapshot, and asserts one transition into
-    unreadable whose reason contains <code>in-progress</code>. The write paths are
+    unreadable whose reason contains <code>ready-for-review</code>. A second case writes
+    <code>status: in-progress</code> beside a live process and asserts no unreadable transition. A
+    third writes <code>status: ready-for-review</code> beside a live process and asserts no
+    unreadable transition. The negative control is executed and logged: with the new emission
+    deleted from the head, the first case emits nothing. The write paths are
     <code>reckon/crew/recovery.py</code> and <code>tests/test_unreadable_names_its_word.py</code>.</p>
 
     <h2 id="s6">&sect;6 &mdash; A live worker with a running job is not stalled at fifteen minutes</h2>
-    <p>This section waits on the stall census. If the census shows that stalls with a live process
-    mostly completed without a resume, the stall window for a run whose process is alive and has a
-    live descendant process extends to the run's time budget. A run with no live descendant keeps the
-    fifteen-minute window. If the census shows the opposite, record the figure and close the section
-    with no change.</p>
+    <p>The stall census settled this section's branch: of 12 stalls where the worker process was
+    alive, 9 completed without a resume (&sect;1's table). So the stall window for a run whose process
+    is alive and has a live descendant process extends to the run's time budget,
+    <code>budget_seconds</code>. A run with no live descendant keeps the fifteen-minute window. The
+    census measured whether the worker process was alive, not whether it had a descendant. The
+    descendant condition is a deliberate narrowing chosen here, because a live worker with no running
+    child is the case a stall most often means is hung. A run past its time budget that is alive and
+    quiet is surfaced by a-follower-keeps-your-work-in-view &sect;2's needs-you line rather than by
+    this window.</p>
     <p><strong>Done when</strong> a test holds a live pointer whose worker process has a sleeping
     child, advances the clock past fifteen minutes, and asserts no stalled transition, then kills the
     child and asserts the stalled transition on the next snapshot. The write paths are
@@ -148,7 +189,11 @@
     because the stall check beside the reducer reads the stream's age.</p>
     <p>Derive the row's phase from the run's streams, not from the stored field. A non-terminal run
     whose newest stream, across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and
-    <code>lane-change-*.jsonl</code>, holds an assistant or tool record reads <code>working</code>.
+    <code>lane-change-*.jsonl</code>, contains at least one record whose <code>type</code> is
+    <code>assistant</code> reads <code>working</code>. A stream's record types are
+    <code>system</code>, <code>assistant</code>, <code>user</code> (which carries tool results) and
+    <code>result</code>, and a worker's first <code>assistant</code> record is the first evidence it
+    is doing work rather than starting.
     The newest stream is read through the helper that worker-death-is-recorded &sect;5 adds to
     <code>recovery.py</code>. The watcher emits the <code>dispatched &rarr; working</code>
     transition on the first snapshot that sees such a record. The live MCP view's
@@ -158,10 +203,14 @@
     the test starts. It then appends one assistant record to the run's stream, runs one watcher
     snapshot, and asserts a transition into <code>working</code> for that run. A second case puts the
     record only in <code>resume-1.jsonl</code> and asserts the same. A third asserts that
-    <code>crew(view="live")</code> reports <code>phase</code> as <code>working</code> for the same
-    pointer. The negative control is executed and logged: with the base revision's
-    stored-phase reducer the first snapshot emits no transition and the test fails. The write paths
-    are <code>reckon/crew/recovery.py</code>, <code>reckon/mcp_views.py</code> and that test.</p>
+    <code>crew(view="live")</code>'s row for the same pointer carries <code>phase</code> equal to
+    <code>working</code>. The test reads that field by name from the row, and if the view names it
+    differently the test names the key it reads. The negative control is executed and logged: with
+    the head's reducer reverted to reading the stored phase, the first snapshot emits no transition
+    and the test fails. The write paths are <code>reckon/crew/recovery.py</code>,
+    <code>reckon/mcp_views.py</code> and that test. <code>reckon/mcp_views.py</code> is claimed by
+    the S19 session's worker-death step 5 at the time of writing, so this section is dispatched only
+    after that claim releases.</p>
 
     <h2 id="s8">&sect;8 &mdash; A turn that ended without a manifest is a row at once</h2>
     <p>A print-mode worker whose turn ends has finished, whether or not it delivered. Its stream's
@@ -185,7 +234,10 @@
     transition whose reason contains <code>turn ended</code>, with the quiet time under the stall
     window. A second case, whose stream's last record is an assistant thinking record with no
     <code>result</code>, emits the &sect;2 death reason rather than this one. The negative control
-    is executed and logged: at the base revision the first snapshot emits nothing for the run. The
+    is executed and logged: with the new turn-ended branch deleted from the head, the first
+    snapshot emits nothing for the run. A third case gives the same run a manifest whose status is
+    outside <code>MANIFEST_STATUSES</code> and asserts &sect;5's row fires instead, per the
+    precedence in &sect;2. The
     write paths are <code>reckon/crew/recovery.py</code> and that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
