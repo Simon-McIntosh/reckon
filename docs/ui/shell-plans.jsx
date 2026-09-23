@@ -416,7 +416,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
           return (
             <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}${arrivingKeys.has(navKey) ? " is-arriving" : ""}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
               <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
-              {showsImages && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" />}
+              {showsImages && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" loading="lazy" decoding="async" />}
               <span className="r-artifact-row-main">
                 <span className="r-artifact-row-title">{item.title || item.slug}</span>
                 <code>{item.slug}</code>

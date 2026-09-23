@@ -985,8 +985,17 @@ _TITLE_RE = re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL)
 def parse_meta(path: Path, slug: str | None = None) -> dict:
     """Fast inventory record: <meta> + <title> + a regex open-decision count,
     parsed by regex (no bs4) so a project with thousands of docs stays cheap.
-    Full state is read per-doc via parse_plan.
+    Full state is read per-doc via parse_plan. The record is memoised against
+    the file's stat identity, so an unchanged file is read once.
     """
+    from reckon.file_memo import memoized
+
+    return memoized(
+        "parse_meta", path, lambda: _parse_meta_uncached(path, slug), variant=slug
+    )
+
+
+def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:

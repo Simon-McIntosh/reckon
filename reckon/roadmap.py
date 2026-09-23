@@ -29,6 +29,7 @@ from reckon.doccheck import (
     derived_plan_age,
     unwired_plan_finding,
 )
+from reckon.file_memo import memoized
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -36,7 +37,12 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 from reckon.mcp_views import compose_review, load_composed_review, partition_live_runs
-from reckon.resources import read_plan_record, read_sprint_record, resolve_resource
+from reckon.resources import (
+    read_plan_record,
+    read_sprint_record,
+    resolve_resource,
+    resource_scan_scope,
+)
 from reckon.schedule import derive_schedule
 
 _EFFORT_UNIT = "worker-hours"
@@ -317,11 +323,16 @@ def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | 
         return None
     if resource is None or getattr(resource, "path", None) is None:
         return None
-    try:
-        text = resource.path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-    return standalone_reason(text)
+    path = resource.path
+
+    def read_declaration() -> str | None:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+        return standalone_reason(text)
+
+    return memoized("standalone_reason", path, read_declaration)
 
 
 def _unwired_plan_findings(
@@ -1217,7 +1228,37 @@ def build_roadmap(
     through to the wiring scan so a worktree-scoped roadmap reads standalone
     declarations from the same tree as the rows it judges. Absent, the wiring
     scan falls back to the project's registered mount.
+
+    The pass is read-only, so every slug it resolves shares one scan of each
+    docs tree rather than rescanning the tree per plan.
     """
+
+    with resource_scan_scope():
+        return _build_roadmap(
+            project,
+            inventory,
+            sprints,
+            active_sprint_id=active_sprint_id,
+            sprint_id=sprint_id,
+            max_paths=max_paths,
+            project_manifest=project_manifest,
+            review=review,
+            docs_dir=docs_dir,
+        )
+
+
+def _build_roadmap(
+    project: str,
+    inventory: list[dict[str, Any]],
+    sprints: list[dict[str, Any]],
+    *,
+    active_sprint_id: str | None,
+    sprint_id: str | None,
+    max_paths: int,
+    project_manifest: dict[str, Any] | None,
+    review: dict[str, Any] | None,
+    docs_dir: Path | str | None,
+) -> dict[str, Any]:
 
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
     all_plans: dict[str, dict[str, Any]] = {}

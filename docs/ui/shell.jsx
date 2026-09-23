@@ -179,7 +179,10 @@ function App() {
   const [cmdKOpen, setCmdKOpen] = useState(false);
   const [readingMode, setReadingMode] = useState(false);
 
-  const [projects, setProjects] = useState([]);
+  const [mountNames, setMountNames] = useState([]);
+  const [fleetIndex, setFleetIndex] = useState(null);
+  const [fleetDiscoveries, setFleetDiscoveries] = useState({});
+  const requestedDiscoveries = useRef(new Set());
   const [fleetRuns, setFleetRuns] = useState([]);
   const [hiddenProjects, setHiddenProjects] = useState(() => {
     try {
@@ -191,53 +194,71 @@ function App() {
   });
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch("/_projects/index.json").then(response => response.ok ? response.json() : null),
-      fetch("/crew")
-        .then(response => response.ok ? response.json() : null)
-        .catch(() => ({ runs: [] })),
-    ])
-      .then(async ([data, crew]) => {
-        if (cancelled) return;
-        setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []);
-        if (!data?.projects) return;
-        const discoveries = await Promise.all(data.projects.map(project =>
-          fetch(`/_discover/${project.project}`)
-            .then(response => response.ok ? response.json() : {})
-            .catch(() => ({}))
-        ));
-        if (cancelled) return;
-        const liveCounts = (crew?.runs || []).reduce((counts, run) => {
-          counts.set(run.project, (counts.get(run.project) || 0) + 1);
-          return counts;
-        }, new Map());
-        setProjects(data.projects.map((project, index) => {
-          const state = project.data || {};
-          const summary = Array.isArray(state.projects) ? state.projects[0] : null;
-          const discovery = discoveries[index] || {};
-          const inventory = Array.isArray(discovery.inventory) ? discovery.inventory : [];
-          const plans = Array.isArray(state.plans) ? state.plans : inventory;
-          return {
-            project: project.project,
-            accent: summary?.accent || state.accent || window.ACCENTS?.[project.project] || "var(--accent)",
-            plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
-            live: liveCounts.has(project.project),
-            live_count: liveCounts.get(project.project) || 0,
-            active: Number(summary?.active || 0),
-            blocked: Number(summary?.blocked || 0),
-            pending: Number(summary?.pending || 0),
-            shipped: Number(summary?.shipped || 0),
-            last_edited: summary?.last_edited || summary?.last_modified || "",
-            activity30: Array.isArray(summary?.activity30) ? summary.activity30 : [],
-            active_sprint: summary?.active_sprint || null,
-            artifacts: inventory,
-            state: discovery,
-          };
-        }));
+    // The mount list is a static file, so the project picker is populated at
+    // once and never waits on — or disappears with — the computed rollup.
+    fetch("/_projects/mounts.json")
+      .then(response => response.ok ? response.json() : null)
+      .then(mounts => {
+        if (!cancelled && mounts && typeof mounts === "object") setMountNames(Object.keys(mounts).sort());
       })
+      .catch(() => {});
+    fetch("/crew")
+      .then(response => response.ok ? response.json() : null)
+      .then(crew => { if (!cancelled) setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []); })
+      .catch(() => {});
+    fetch("/_projects/index.json")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => { if (!cancelled && Array.isArray(data?.projects)) setFleetIndex(data); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+  // Other projects' inventories feed only the fleet home and the command
+  // palette, so they are fetched when one of those is shown, one project at a
+  // time, and each arrives on its own rather than behind the slowest.
+  const wantsFleetInventories = canvasView === "home" || cmdKOpen;
+  useEffect(() => {
+    if (!wantsFleetInventories) return;
+    const names = mountNames.length ? mountNames : (fleetIndex?.projects || []).map(entry => entry.project);
+    names.forEach(name => {
+      if (requestedDiscoveries.current.has(name)) return;
+      requestedDiscoveries.current.add(name);
+      fetch(`/_discover/${name}`)
+        .then(response => response.ok ? response.json() : {})
+        .catch(() => ({}))
+        .then(discovery => setFleetDiscoveries(previous => ({ ...previous, [name]: discovery })));
+    });
+  }, [wantsFleetInventories, mountNames, fleetIndex]);
+  const projects = useMemo(() => {
+    const indexed = new Map((fleetIndex?.projects || []).map(entry => [entry.project, entry]));
+    const names = [...new Set([...mountNames, ...indexed.keys()])].sort();
+    const liveCounts = fleetRuns.reduce((counts, run) => {
+      counts.set(run.project, (counts.get(run.project) || 0) + 1);
+      return counts;
+    }, new Map());
+    return names.map(name => {
+      const state = indexed.get(name)?.data || {};
+      const summary = Array.isArray(state.projects) ? state.projects[0] : null;
+      const discovery = fleetDiscoveries[name] || {};
+      const inventory = Array.isArray(discovery.inventory) ? discovery.inventory : [];
+      const plans = Array.isArray(state.plans) ? state.plans : inventory;
+      return {
+        project: name,
+        accent: summary?.accent || state.accent || window.ACCENTS?.[name] || "var(--accent)",
+        plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
+        live: liveCounts.has(name),
+        live_count: liveCounts.get(name) || 0,
+        active: Number(summary?.active || 0),
+        blocked: Number(summary?.blocked || 0),
+        pending: Number(summary?.pending || 0),
+        shipped: Number(summary?.shipped || 0),
+        last_edited: summary?.last_edited || summary?.last_modified || "",
+        activity30: Array.isArray(summary?.activity30) ? summary.activity30 : [],
+        active_sprint: summary?.active_sprint || null,
+        artifacts: inventory,
+        state: discovery,
+      };
+    });
+  }, [mountNames, fleetIndex, fleetDiscoveries, fleetRuns]);
 
   useEffect(() => {
     const refreshRuns = () => fetch("/crew")

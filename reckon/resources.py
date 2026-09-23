@@ -14,7 +14,9 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -398,6 +400,32 @@ def _disambiguate_archived_candidates(resources: list[Resource]) -> list[Resourc
     return resolved
 
 
+_SCAN_SCOPE: ContextVar[dict[tuple, list[Resource]] | None] = ContextVar(
+    "reckon_resource_scan_scope", default=None
+)
+
+
+@contextmanager
+def resource_scan_scope() -> Iterator[None]:
+    """Reuse one tree scan for every resource lookup inside a read-only pass.
+
+    Resolving a slug scans the whole docs tree, and a roadmap resolves one slug
+    per plan, so an unscoped pass costs a scan per plan. Inside the scope each
+    distinct scan runs once. The scope must not span a write: a resource
+    created or moved inside it stays invisible until the scope exits. Nested
+    scopes share the outermost one.
+    """
+
+    if _SCAN_SCOPE.get() is not None:
+        yield
+        return
+    token = _SCAN_SCOPE.set({})
+    try:
+        yield
+    finally:
+        _SCAN_SCOPE.reset(token)
+
+
 def iter_resources(
     docs_dir: Path,
     project: str,
@@ -407,6 +435,35 @@ def iter_resources(
     ignore_invalid: bool = False,
 ) -> list[Resource]:
     """Discover resources in typed roots and bounded flat compatibility paths."""
+    scope = _SCAN_SCOPE.get()
+    if scope is None:
+        return _scan_resources(
+            docs_dir,
+            project,
+            include_archived=include_archived,
+            include_legacy=include_legacy,
+            ignore_invalid=ignore_invalid,
+        )
+    key = (str(docs_dir), project, include_archived, include_legacy, ignore_invalid)
+    if key not in scope:
+        scope[key] = _scan_resources(
+            docs_dir,
+            project,
+            include_archived=include_archived,
+            include_legacy=include_legacy,
+            ignore_invalid=ignore_invalid,
+        )
+    return list(scope[key])
+
+
+def _scan_resources(
+    docs_dir: Path,
+    project: str,
+    *,
+    include_archived: bool,
+    include_legacy: bool,
+    ignore_invalid: bool,
+) -> list[Resource]:
     resources: list[Resource] = []
     for path in sorted(docs_dir.rglob("*.html")):
         try:

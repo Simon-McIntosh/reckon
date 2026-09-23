@@ -8,6 +8,7 @@ contract defines the field-by-field rationale.
 from __future__ import annotations
 
 import subprocess
+import threading
 from collections.abc import Mapping
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,6 +17,70 @@ from reckon.lifecycle import COMPLETED_STATUSES
 
 _ACTIVITY_WINDOW_DAYS = 30
 _ACTIVITY_SUBPATHS = ("plans", "research", "evidence")
+
+# A full-history ``git log`` costs seconds per repository on a shared
+# filesystem, and the fleet index asks for every mounted project on each page
+# load. The dated history is a pure function of the commit graph, so it is
+# memoised against HEAD and bucketed into the window per call.
+_ACTIVITY_DAYS_CACHE: dict[tuple[str, tuple[str, ...]], tuple[str, list[str]]] = {}
+_ACTIVITY_DAYS_LOCK = threading.Lock()
+
+
+def _git_head(repo_dir: Path) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=repo_dir,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    head = result.stdout.strip()
+    return head if result.returncode == 0 and head else None
+
+
+def _commit_days(repo_dir: Path, paths: list[str]) -> list[str] | None:
+    """Return one ``YYYY-MM-DD`` per commit touching ``paths``, or None."""
+
+    key = (str(repo_dir.resolve()), tuple(paths))
+    head = _git_head(repo_dir)
+    if head is not None:
+        with _ACTIVITY_DAYS_LOCK:
+            cached = _ACTIVITY_DAYS_CACHE.get(key)
+        if cached is not None and cached[0] == head:
+            return cached[1]
+    # No --since/--until: those prune traversal by assuming ancestor commits
+    # are monotonically older, which a backdated or rebased commit violates
+    # and silently truncates the walk. Read every date and bucket in Python
+    # instead — still exactly one git invocation per project and HEAD.
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "log",
+                "--format=%ad",
+                "--date=format:%Y-%m-%d",
+                "--",
+                *paths,
+            ],
+            capture_output=True,
+            text=True,
+            cwd=repo_dir,
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    days = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if head is not None:
+        with _ACTIVITY_DAYS_LOCK:
+            _ACTIVITY_DAYS_CACHE[key] = (head, days)
+    return days
 
 
 def _is_actionable_plan(item: dict) -> bool:
@@ -71,32 +136,10 @@ def _activity30(repo_dir: Path, docs_dir: Path, now: datetime) -> list[int]:
     start = today - timedelta(days=_ACTIVITY_WINDOW_DAYS - 1)
     paths = [str(rel_docs / sub) for sub in _ACTIVITY_SUBPATHS]
 
-    # No --since/--until: those prune traversal by assuming ancestor commits
-    # are monotonically older, which a backdated or rebased commit violates
-    # and silently truncates the walk. Read every date and bucket in Python
-    # instead — still exactly one git invocation per project.
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "log",
-                "--format=%ad",
-                "--date=format:%Y-%m-%d",
-                "--",
-                *paths,
-            ],
-            capture_output=True,
-            text=True,
-            cwd=repo_dir,
-            timeout=10,
-            check=False,
-        )
-    except OSError:
-        return []
-    if result.returncode != 0:
+    days = _commit_days(repo_dir, paths)
+    if days is None:
         return []
 
-    days = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     window_end = (today + timedelta(days=1)).strftime("%Y-%m-%d")
     window_start = start.strftime("%Y-%m-%d")
     days = [day for day in days if window_start <= day < window_end]

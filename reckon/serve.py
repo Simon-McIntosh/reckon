@@ -37,8 +37,9 @@ POST versioned write contract — see reckon/serve.py for full details.
 from __future__ import annotations
 
 import contextlib
-import html.parser
+import gzip
 import hashlib
+import html.parser
 import json
 import logging
 import mimetypes
@@ -50,6 +51,7 @@ import struct
 import subprocess
 import tempfile
 import threading
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
 from http import HTTPStatus
@@ -63,16 +65,17 @@ from reckon._store import _config_home, _mounts_path, _state_root
 from reckon.figures import figure_rows
 from reckon.lifecycle import (
     effective_status,
-    unresolved_dependencies,
     unpassed_gate_blockers,
+    unresolved_dependencies,
 )
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
     composed_provenance,
-    resource_map,
     resolve_resource,
     resolve_route,
+    resource_map,
+    resource_scan_scope,
 )
 from reckon.service import ServiceError, node_executable
 
@@ -88,6 +91,8 @@ _SHARED_ROOT: Path | None = None
 _INOTIFY_EVENT = struct.Struct("iIII")
 _INOTIFY_CHANGE_MASK = 0x00000FCC
 _INOTIFY_DIRECTORY = 0x40000000
+_CHANGE_SETTLE_S = 0.25
+_GZIP_MIN_BYTES = 64 * 1024
 
 
 class _ProjectChangeWatch:
@@ -158,6 +163,18 @@ class _ProjectChangeWatch:
                 if candidate.is_dir():
                     self._watch_tree(candidate)
         return True
+
+    def drain(self, settle_s: float) -> None:
+        """Consume further events until none arrive for ``settle_s`` seconds."""
+
+        while True:
+            readable, _, _ = select.select([self.fd], [], [], settle_s)
+            if not readable:
+                return
+            try:
+                os.read(self.fd, 64 * 1024)
+            except OSError:
+                return
 
     def close(self) -> None:
         os.close(self.fd)
@@ -540,10 +557,11 @@ def _finished_crew_rows(
 
 
 def collect_projects(mounts: dict[str, Path]) -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+
     from reckon.project_state import ProjectStateError
 
-    out: list[dict] = []
-    for name, path in sorted(mounts.items()):
+    def project_entry(name: str, path: Path) -> dict:
         proj: dict = {"project": name, "path": str(path)}
         try:
             row = fleet_index.compute_project_row(path, name, state_root=_STATE_ROOT)
@@ -551,7 +569,13 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
         except (OSError, ProjectStateError) as e:
             proj["error"] = str(e)
             proj["data"] = {}
-        out.append(proj)
+        return proj
+
+    # Each row is bound by filesystem and git latency rather than CPU, so the
+    # projects are computed concurrently; the response keeps mount order.
+    ordered = sorted(mounts.items())
+    with ThreadPoolExecutor(max_workers=max(1, min(8, len(ordered)))) as pool:
+        out = list(pool.map(lambda item: project_entry(*item), ordered))
     return {
         "updated": datetime.now().isoformat(timespec="seconds"),
         "mounts_path": str(_MOUNTS_FILE or _mounts_path()),
@@ -640,6 +664,12 @@ class _HeadParser(html.parser.HTMLParser):
 
 def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
     """Return (title, {name: content}) from a plan HTML file's <head>."""
+    from reckon.file_memo import memoized
+
+    return memoized("head_meta", path, lambda: _read_head_meta_uncached(path))
+
+
+def _read_head_meta_uncached(path: Path) -> tuple[str, dict[str, str]]:
     try:
         raw = path.read_bytes()[:8192].decode("utf-8", errors="replace")
         p = _HeadParser()
@@ -655,6 +685,7 @@ class _DiscoveryCacheEntry:
     external_projects: tuple[str, ...]
     external_signatures: tuple[tuple[str, str, tuple[int, int] | None], ...]
     result: dict
+    computed_at: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -664,6 +695,19 @@ class _GitCreationEntry:
 
 
 _DISC_CACHE: dict[tuple[str, str], _DiscoveryCacheEntry] = {}
+# One discovery per project at a time: a page load asks for the same project
+# from several requests at once, and concurrent cold scans of one tree multiply
+# the filesystem load instead of sharing the result.
+_DISC_LOCKS: dict[tuple[str, str], threading.Lock] = {}
+_DISC_LOCKS_GUARD = threading.Lock()
+# Validating a cached discovery walks the whole docs tree, which costs seconds
+# on a shared filesystem and is repeated by every request of one page load. The
+# served process reuses a walk for this many seconds; writes through the
+# server and filesystem change events drop the reuse immediately. Zero, the
+# library default, walks on every call.
+_SIGNATURE_TTL_S = 0.0
+_SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
+_SIGNATURE_MEMO_LOCK = threading.Lock()
 _GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
 _GIT_CREATION_SCHEMA = "reckon.git-creation-map"
 _GIT_CREATION_SCHEMA_VERSION = 1
@@ -1090,35 +1134,96 @@ def _row_times(
 def _discovery_signature(
     docs_dir: Path, project: str, state_root: Path | None
 ) -> tuple[int, int]:
-    html_files = list(docs_dir.rglob("*.html"))
-    figures_dir = docs_dir / "figures"
-    figure_files = (
-        [
-            *figures_dir.rglob("*.png"),
-            *figures_dir.rglob("*.svg"),
-            *figures_dir.rglob("*.gif"),
-        ]
-        if figures_dir.is_dir()
-        else []
-    )
-    state_files = [
-        path
-        for path in (
-            docs_dir / ".reckon" / "project-state-migration.json",
-            docs_dir / "state" / project / "project.json",
-            (
-                state_root / project / "index.json"
-                if state_root is not None
-                else docs_dir / "state" / project / "index.json"
-            ),
-        )
-        if path.is_file()
-    ]
-    signature_files = [*html_files, *figure_files, *state_files]
-    return (
-        len(signature_files),
-        max((path.stat().st_mtime_ns for path in signature_files), default=0),
-    )
+    """Return (file count, newest mtime) over the files discovery reads."""
+
+    key = (str(docs_dir), project, str(state_root))
+    if _SIGNATURE_TTL_S > 0:
+        now = time.monotonic()
+        with _SIGNATURE_MEMO_LOCK:
+            memo = _SIGNATURE_MEMO.get(key)
+        if memo is not None and now - memo[0] < _SIGNATURE_TTL_S:
+            return memo[1]
+    signature = _walk_discovery_signature(docs_dir, project, state_root)
+    if _SIGNATURE_TTL_S > 0:
+        with _SIGNATURE_MEMO_LOCK:
+            _SIGNATURE_MEMO[key] = (time.monotonic(), signature)
+    return signature
+
+
+def _invalidate_discovery_signatures(docs_dir: Path | None = None) -> None:
+    """Forget memoised tree walks — all of them, or one docs tree's."""
+
+    with _SIGNATURE_MEMO_LOCK:
+        if docs_dir is None:
+            _SIGNATURE_MEMO.clear()
+            return
+        root = str(docs_dir)
+        for key in [key for key in _SIGNATURE_MEMO if key[0] == root]:
+            del _SIGNATURE_MEMO[key]
+
+
+_SIGNATURE_FIGURE_SUFFIXES = (".png", ".svg", ".gif")
+
+
+def _walk_discovery_signature(
+    docs_dir: Path, project: str, state_root: Path | None
+) -> tuple[int, int]:
+    # One scandir pass over the tree: every HTML file anywhere, figure images
+    # under the top-level figures directory. Directory symlinks are not
+    # followed, matching the recursive glob this replaces.
+    count = 0
+    newest = 0
+    figures_root = os.path.join(os.fspath(docs_dir), "figures")
+    pending = [os.fspath(docs_dir)]
+    while pending:
+        directory = pending.pop()
+        try:
+            entries = os.scandir(directory)
+        except OSError:
+            continue
+        with entries:
+            for entry in entries:
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        pending.append(entry.path)
+                        continue
+                except OSError:
+                    continue
+                name = entry.name
+                if not (
+                    name.endswith(".html")
+                    or (
+                        name.endswith(_SIGNATURE_FIGURE_SUFFIXES)
+                        and (
+                            directory == figures_root
+                            or directory.startswith(figures_root + os.sep)
+                        )
+                    )
+                ):
+                    continue
+                try:
+                    mtime = entry.stat().st_mtime_ns
+                except OSError:
+                    continue
+                count += 1
+                newest = max(newest, mtime)
+    for path in (
+        docs_dir / ".reckon" / "project-state-migration.json",
+        docs_dir / "state" / project / "project.json",
+        (
+            state_root / project / "index.json"
+            if state_root is not None
+            else docs_dir / "state" / project / "index.json"
+        ),
+    ):
+        try:
+            mtime = path.stat().st_mtime_ns
+        except OSError:
+            continue
+        if path.is_file():
+            count += 1
+            newest = max(newest, mtime)
+    return count, newest
 
 
 def _external_dependency_projects(
@@ -1174,8 +1279,47 @@ def _cache_discovery_result(
         external_projects=external_projects,
         external_signatures=_external_project_signatures(external_projects, state_root),
         result=result,
+        computed_at=time.monotonic(),
     )
     return result
+
+
+def _invalidate_discovery(cache_key: tuple[str, str], changed_at: float) -> None:
+    """Drop a cached discovery computed before ``changed_at``.
+
+    Every open change stream observes the same filesystem event; the stamp
+    lets the first stream's recomputation serve the others instead of each
+    stream discarding the result the previous one just built.
+    """
+
+    cached = _DISC_CACHE.get(cache_key)
+    if cached is not None and cached.computed_at < changed_at:
+        _DISC_CACHE.pop(cache_key, None)
+
+
+def _discovery_lock(cache_key: tuple[str, str]) -> threading.Lock:
+    with _DISC_LOCKS_GUARD:
+        lock = _DISC_LOCKS.get(cache_key)
+        if lock is None:
+            lock = _DISC_LOCKS[cache_key] = threading.Lock()
+        return lock
+
+
+def _fresh_discovery(
+    cache_key: tuple[str, str],
+    docs_dir: Path,
+    project: str,
+    state_root: Path | None,
+) -> tuple[tuple[int, int], dict | None]:
+    sig = _discovery_signature(docs_dir, project, state_root)
+    cached = _DISC_CACHE.get(cache_key)
+    if cached and cached.local_signature == sig:
+        external_signatures = _external_project_signatures(
+            cached.external_projects, state_root
+        )
+        if external_signatures == cached.external_signatures:
+            return sig, cached.result
+    return sig, None
 
 
 def _attach_discovery_provenance(result: dict, docs_dir: Path) -> dict:
@@ -1190,16 +1334,29 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     enrich it. Results are cached per project against a cheap (count, max-mtime)
     signature so an unchanged docs tree returns instantly.
     """
-    sig = _discovery_signature(docs_dir, project, state_root)
     cache_key = (project, str(docs_dir.resolve()))
-    cached = _DISC_CACHE.get(cache_key)
-    if cached and cached.local_signature == sig:
-        external_signatures = _external_project_signatures(
-            cached.external_projects, state_root
-        )
-        if external_signatures == cached.external_signatures:
-            return cached.result
+    _, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
+    if result is not None:
+        return result
+    with _discovery_lock(cache_key):
+        # A concurrent request may have finished the same scan while this one
+        # waited; reuse it rather than scanning the tree a second time.
+        sig, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
+        if result is not None:
+            return result
+        with resource_scan_scope():
+            return _discover_plans_uncached(
+                docs_dir, project, state_root, sig, cache_key
+            )
 
+
+def _discover_plans_uncached(
+    docs_dir: Path,
+    project: str,
+    state_root: Path | None,
+    sig: tuple[int, int],
+    cache_key: tuple[str, str],
+) -> dict:
     # Batch git first-commit lookup — gives true creation time for tracked files.
     # Falls back to inode ctime when a file is untracked or git is unavailable.
     repo_dir = docs_dir.parent
@@ -1487,6 +1644,14 @@ def _read_readiness_state(
 ) -> tuple[list[dict], list[dict], list[dict]]:
     """Read named gate and decision state used to explain readiness."""
 
+    from reckon.file_memo import memoized
+
+    return memoized("readiness_state", path, lambda: _read_readiness_uncached(path))
+
+
+def _read_readiness_uncached(
+    path: Path,
+) -> tuple[list[dict], list[dict], list[dict]]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -1752,8 +1917,52 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_file(self, target: Path, ctype: str) -> None:
+        """Serve a file the browser may keep, revalidated by its stat identity.
+
+        ``no-cache`` makes every use revalidate, so a changed figure or
+        stylesheet is seen on the next load, while an unchanged one costs a
+        304 instead of its bytes — the difference between a refresh that
+        re-downloads every image and one that downloads none.
+        """
+        try:
+            stat = target.stat()
+            etag = f'"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"'
+            if etag in (self.headers.get("If-None-Match") or ""):
+                self.send_response(HTTPStatus.NOT_MODIFIED)
+                self.send_header("ETag", etag)
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                return
+            body = target.read_bytes()
+        except OSError as e:
+            self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.end_headers()
+        self.wfile.write(body)
+
     def _send_json(self, status: int, obj) -> None:
-        self._send(status, json.dumps(obj, indent=2).encode(), "application/json")
+        body = json.dumps(obj, indent=2).encode()
+        accepts = self.headers.get("Accept-Encoding", "") if self.headers else ""
+        if len(body) < _GZIP_MIN_BYTES or "gzip" not in accepts:
+            self._send(status, body, "application/json")
+            return
+        # A project inventory is megabytes of repetitive JSON; compressed it is
+        # a small fraction of that over a tunnelled connection.
+        compressed = gzip.compress(body, compresslevel=5)
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Encoding", "gzip")
+        self.send_header("Vary", "Accept-Encoding")
+        self.send_header("Content-Length", str(len(compressed)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(compressed)
 
     def _send_redirect(
         self, location: str, status: HTTPStatus = HTTPStatus.PERMANENT_REDIRECT
@@ -1783,8 +1992,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Accel-Buffering", "no")
             self.end_headers()
             self._write_project_event("ready", digest)
+            cache_key = (project, str(docs_dir.resolve()))
             while watch.wait(self.connection):
-                _DISC_CACHE.pop((project, str(docs_dir.resolve())), None)
+                # A save or a merge is a burst of events; let it settle so the
+                # burst costs one rediscovery rather than one per event.
+                watch.drain(_CHANGE_SETTLE_S)
+                changed_at = time.monotonic()
+                _invalidate_discovery_signatures(docs_dir)
+                _invalidate_discovery(cache_key, changed_at)
                 current = discover_plans(docs_dir, project, _STATE_ROOT)
                 next_digest = current.get("provenance", {}).get("content_digest", "")
                 if next_digest == digest:
@@ -1829,14 +2044,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.NOT_FOUND, b"shared asset not found")
                 return
             ctype, _ = mimetypes.guess_type(str(target))
-            try:
-                self._send(
-                    HTTPStatus.OK,
-                    target.read_bytes(),
-                    ctype or "application/octet-stream",
-                )
-            except OSError as e:
-                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            self._send_file(target, ctype or "application/octet-stream")
             return
 
         if path.startswith("/_runtime/"):
@@ -1886,10 +2094,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 ctype, _ = mimetypes.guess_type(str(target))
                 ctype = ctype or "application/octet-stream"
-            try:
-                self._send(HTTPStatus.OK, target.read_bytes(), ctype)
-            except OSError as e:
-                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            self._send_file(target, ctype)
             return
 
         if path == "/_projects/index.json":
@@ -1996,6 +2201,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             from reckon.project_state import (
                 RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+            )
+            from reckon.project_state import (
                 ProjectStateError,
                 read_resource,
             )
@@ -2335,12 +2542,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         ctype, _ = mimetypes.guess_type(str(target))
-        try:
-            self._send(
-                HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream"
-            )
-        except OSError as e:
-            self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+        self._send_file(target, ctype or "application/octet-stream")
 
     def _read_body(self) -> tuple[bool, object]:
         length = int(self.headers.get("Content-Length", "0"))
@@ -2606,6 +2808,14 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:  # noqa: N802
+        try:
+            self._handle_post()
+        finally:
+            # A write must be visible to the next read at once, so the reuse
+            # window for tree walks never spans one.
+            _invalidate_discovery_signatures()
+
+    def _handle_post(self) -> None:
         path = unquote(urlsplit(self.path).path)
         if path.startswith("/plan/"):
             self._handle_plan_write(path)
@@ -2742,7 +2952,9 @@ class Handler(BaseHTTPRequestHandler):
 def main(
     port: int = 8765, host: str | None = None, mounts_file: Path | None = None
 ) -> None:
+    global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     _resolve_paths(mounts_file)
+    _SIGNATURE_TTL_S = float(os.environ.get("RECKON_DISCOVERY_REUSE_S", "5"))
     _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
     _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
 
