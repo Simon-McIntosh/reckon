@@ -18,13 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="15">
+  <meta name="plan-version" content="21">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.17">
 </head>
 <body>
   <main class="plan-doc">
@@ -113,16 +114,41 @@
     the three signals in &sect;2, including a signal that arrives during what is today the hold.</p>
     <p><strong>The hold is the post-launch tree snapshot, measured on 2026-09-23.</strong> After the
     worker launches, <code>dispatch</code> calls <code>_repository_tree_snapshot(repo_root)</code>
-    (<code>reckon/crew/dispatch.py:4002</code>). That runs <code>git status
+    (in <code>dispatch</code> in <code>reckon/crew/dispatch.py</code>, the line assigning
+    <code>record["repository_tree_snapshot"]</code>). That runs <code>git status
     --untracked-files=all</code> once in every registered worktree, one after another, so the hold is
     the repository's worktree count multiplied by one tree's status time: 244 &times; 3.3 s on
     reckon. The snapshot is a boundary baseline, so its placement is constrained both ways. It must
     follow dispatch's own writes, as its comment says, and it must predate any write the worker
-    makes in another tree. So the fix takes the baseline before the worker is spawned, or has the
-    supervisor take it before it starts the worker, and never puts a scan that grows with the
-    worktree count between the launch and dispatch's return. A snapshot that raises must not kill a
-    launched worker: after launch, a failed snapshot is recorded on the pointer and dispatch still
-    reports the run it launched.</p>
+    makes in another tree. <strong>The supervisor takes it.</strong> The supervisor takes the
+    snapshot after dispatch's writes and before it spawns the worker, then reports the launch.
+    Dispatch never runs a scan that grows with the worktree count before it returns. If the
+    snapshot raises, the supervisor records the failure in the run directory's
+    <code>snapshot-error.txt</code>, still spawns the worker, and the pointer's
+    <code>repository_tree_snapshot</code> carries <code>{"available": false, "detail": ...}</code>.
+    A snapshot failure never kills a worker and never turns a launch into a refusal.</p>
+    <h3 id="s3-readings">Readings pinned after the read-back</h3>
+    <ul>
+      <li><strong>What dispatch's result means.</strong> Dispatch prints <code>ok: true</code> with
+      the run id once the supervisor reports the worker's pid. It does not wait to see whether the
+      worker lives. A worker that exits before dispatch returns is still <code>ok: true</code>, and
+      its exit record reads <code>ended_during: launch</code>. <code>ok: false</code> means no worker
+      was spawned.</li>
+      <li><strong>The SIGKILL case.</strong> The signal goes to the dispatch process's pid alone,
+      never its process group, which is how a host expiring a background shell ends it. The
+      supervisor and the worker run in their own sessions.</li>
+      <li><strong>The pointer write.</strong> The supervisor updates the pointer only by atomic
+      rename over an existing file. It never creates one, so a discarded pointer stays discarded.</li>
+      <li><strong>The stream count.</strong> <code>stream_records_seen</code> counts records across
+      every path <code>stream_paths_newest_first</code> in <code>reckon/crew/recovery.py</code>
+      returns for the run directory. <code>ended_during</code> is one of the record's fields.</li>
+      <li><strong>&sect;1 and &sect;2 are superseded where they conflict.</strong> &sect;1's
+      "not established" and &sect;2's three candidate holders predate the measurement. The holder
+      is the tree snapshot above. &sect;2's probe, <code>tests/test_dispatch_lifetime_probe.py</code>,
+      is merged and opt-in (<code>RECKON_RUN_DISPATCH_PROBE=1</code>). It measured that the worker
+      survives SIGTERM, SIGKILL and SIGHUP to the dispatch process's pid. That fits &sect;1's
+      <code>timeout</code> anecdote, because <code>timeout</code> signals the process group.</li>
+    </ul>
     <p><strong>Collection of the worker's exit moves to a detached per-run supervisor, never to
     init.</strong> A worker reparented to init has its exit status collected by init, and reckon
     never sees it. Measured on 2026-09-23 on worker-death-is-recorded &sect;5: 0 exit records across
@@ -177,8 +203,10 @@
     receives SIGKILL, and within ten seconds both the run directory's exit record and the pointer
     carry the exit status with signal name <code>SIGKILL</code>. Fourth, the pointer is discarded
     before the worker exits, and after the exit no pointer exists for the run while the run
-    directory's exit record does. The negative control is executed and logged: reinstating the wait
-    that &sect;2 identified makes the first case fail on the five-second bound, and removing the
+    directory's exit record does. The first case runs against a temporary repository holding at
+    least 30 registered worktrees, so a scan that grows with the worktree count is visible in the
+    time. The negative control is executed and logged: putting the tree snapshot back between the
+    launch and dispatch's return makes the first case fail on the five-second bound, and removing the
     supervisor's wait makes the third case fail. Both failing logs are kept with the manifest. The
     real pointer directory under the user's config home is asserted untouched. The write paths are
     <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_returns_without_worker.py</code>.</p>
@@ -187,12 +215,19 @@
     <p>Once &sect;3 lands, a dispatch is an ordinary short command. Change every instruction that
     says to background a CLI dispatch or to yield after it, so a coordinator runs it in the
     foreground and reads its JSON. The follower remains the only long-lived process a session
-    owns.</p>
-    <p><strong>Done when</strong> <code>grep -rn "background the call\|run_in_background" skills/</code>
-    returns no instruction to background a dispatch, the launch-kind table in
-    <code>skills/reckon-ship/SKILL.md</code> says a CLI dispatch returns once its worker runs, and
+    <em>watches</em>. &sect;3's per-run supervisors are detached and belong to their runs, so a
+    session neither watches nor waits on them.</p>
+    <p><strong>Done when</strong> the launch-kind table in <code>skills/reckon-ship/SKILL.md</code>
+    says a CLI dispatch returns once its worker runs and is run in the foreground.
     <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code> names the
-    follower as the session's only monitor. The write paths are those two files.</p>
+    follower as the session's only monitor. No sentence in <code>skills/</code> instructs
+    backgrounding a <code>reckon crew dispatch</code>, checked by
+    <code>grep -rn "dispatch" skills/</code> read line by line, with the lines that mention
+    backgrounding listed in the manifest. A literal grep for "background" is not the measure,
+    because unrelated sentences such as the scout note at
+    <code>skills/reckon-ship/references/sprint-orchestration.md</code> use the word. The write paths
+    are those two files and <code>skills/reckon-ship/references/sprint-orchestration.md</code>. This
+    section runs after &sect;3 merges.</p>
 
     <h2 id="s5">&sect;5 &mdash; A refused dispatch leaves nothing that reads as a death</h2>
     <p>imas-ambix-b6 received a row at 20:41:11 reading <code>abandoned</code> with the reason
@@ -201,11 +236,22 @@
     pointer behind. The coordinator removed a worktree on the strength of the misreading. Find where
     a refusal can occur after the pointer is written, and remove the pointer on refusal, or order the
     checks so every refusal precedes the write.</p>
-    <p><strong>Done when</strong> a test forces a member-resolution refusal in a temporary crew
-    config home and asserts the live pointer directory holds no pointer for that node afterwards, and
-    the watch stream carries no transition for it. The negative control is executed and logged at the
-    base revision, where a pointer remains. The write paths are <code>reckon/crew/dispatch.py</code>
-    and <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>.</p>
+    <p><strong>The reproduction comes first.</strong> The read-back review found that at the
+    current main branch every refusal path in <code>dispatch</code> may already precede the pointer
+    write. So the node first establishes, with a test, whether any refusal still leaves a pointer or
+    a worktree. A related case was observed on 2026-09-23 in this sprint's session. After
+    <code>crew discard</code> of a launch-failed review, its worktree stayed on disk, and a
+    re-dispatch of the same node id was refused with <code>worktree path already exists</code>. The
+    refusal is correct, but the leftover worktree is what a discard should not leave.</p>
+    <p><strong>Done when</strong> <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>
+    forces each refusal <code>dispatch</code> can return after worktree creation starts, in a
+    temporary <code>RECKON_HOME</code> and repository. For each, it asserts that no live pointer and
+    no worktree remain for that node, and that the watcher's transition stream for that home carries
+    no row naming it. The manifest lists every refusal path exercised. If none leaves a trace at the
+    base revision, the manifest says so with the list, and the section closes with the test added
+    and no source change. If one does, the negative control is executed and logged against that
+    path at the base revision. The write paths are <code>reckon/crew/dispatch.py</code> and that
+    test.</p>
 
     <h2 id="s6">&sect;6 &mdash; A refusal is never returned for a dispatch that launched</h2>
     <p>imas-efit-e3 measured this at about 02:58 UTC on 2026-09-23, in session
@@ -238,8 +284,16 @@
     no process. A second test passes an unresolvable <code>--member</code> and asserts a refusal with
     no auto-derived member bound. A third asserts that every result with <code>ok: false</code>, including a
     contract-validation refusal on a done-when holding a literal placeholder, carries a non-null
-    <code>error</code> and a <code>detail</code>. The negative control is executed and logged at the base revision,
-    where a refusal is returned beside a live pointer. The write paths are
+    <code>error</code> and a <code>detail</code>. The read-back review found that a named
+    <code>--member</code> has been refused rather than substituted since 2026-08-24. So the
+    member test verifies existing behaviour and changes no source for it, and the reproduction of
+    imas-efit-e3's refusal beside a live pointer comes first. The candidate cause is the exception
+    handler around the post-launch tree snapshot, which signals the launched worker's process group
+    and returns a refusal. &sect;3 moves that snapshot into the supervisor, so the node reproduces
+    against the base revision and states whether &sect;3's change already removes the path. The
+    negative control is executed and logged at the base revision wherever a refusal is returned
+    beside a live pointer. A missing <code>error</code> on a contract-validation refusal is fixed
+    either way. The write paths are
     <code>reckon/crew/dispatch.py</code> and that test.</p>
 
     <h2 id="s7">&sect;7 &mdash; A promoted run keeps its worker's exit</h2>
@@ -278,6 +332,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T0955-the-hold-is-the-tree-snapshot" data-who="reckon-ship" data-when="2026-09-23T09:55:00Z">
     <div class="r-comment-body"><p><strong>The hold is found, on live dispatches, where the probe's stub path could not reach it.</strong> The §2 probe (<code>r-20260923T044807192716-dispatch-lifetime-probe</code>) established that the worker survives SIGTERM, SIGKILL and SIGHUP to its dispatch process, and that the reaper thread is a daemon. It found no reckon frame holding its stub dispatch open. Its repository was temporary, held one worktree and had no remote. On 2026-09-23 at 09:50 UTC, <code>py-spy dump --nonblocking</code> was run against two live dispatches whose workers had already launched: nova, 24 minutes old, and imas-efit, 10 minutes old. Both main threads were in the same frame: <code>dispatch</code> at <code>reckon/crew/dispatch.py:4002</code>, <code>record["repository_tree_snapshot"] = _repository_tree_snapshot(repo_root)</code>, then <code>_repository_tree_snapshot</code> at <code>reckon/crew/routing.py:403</code>, then <code>_tree_state</code> at <code>routing.py:349</code>, waiting on <code>git status --porcelain=v1 -z --untracked-files=all --no-renames</code>. The snapshot runs that command once in every registered worktree of the repository, one after another. Registered worktrees at the time: reckon 244, nova 308, imas-efit 191, imas-ambix 161. One reckon worktree's status took 3.3 s, so the hold is about 13 minutes on reckon. That matches this session's own dispatch, which launched its worker at 09:32:41 UTC and returned at 09:48:38 UTC. The hold grows with every worktree left behind, which is why §1 measured six minutes on 2026-09-22 and it is sixteen now.</p><p>Two consequences for §3. First, the snapshot is a boundary baseline, and its comment requires it to be taken after dispatch's own writes. It must also predate any write the worker makes in another tree, so it cannot simply move after dispatch returns without a race. Second, the exception handler around it at <code>dispatch.py:4005</code> onward signals the worker's process group, so a snapshot that raises after launch kills a launched worker and returns a refusal. That is a candidate cause of §6's refusal beside a live pointer.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1320-readback-applied" data-who="reckon-ship" data-when="2026-09-23T13:20:00Z">
+    <div class="r-comment-body"><p>§2 is done. The probe merged at <code>e9990b06</code>, opt-in, with review 80; its repair aims the guard at the real pointer directory. The read-back (<code>r-20260923T114521056430-review-of-a-dispatch-returns-without-its-worker</code>) found 44 sentences with more than one reading, 30 of them material. This revision resolves the ranked ones. §3 pins the supervisor as the one place that takes the baseline (R8), defines what <code>ok</code> means (R6), scopes SIGKILL to the pid (R19 and R20), and fixes the pointer-update rule, the stream count and snapshot-failure recording (R11 to R17). It cites functions rather than line numbers (R7) and marks §1 and §2 as superseded where they conflict (R1, R2, R4, R5). §5 and §6 now reproduce before they repair, because both named defects may already be absent at base (R32, R33, R36). §4 no longer uses a literal grep and includes sprint-orchestration.md (R27 to R29). The §3 supervisor gets a second read-back before it is dispatched.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
