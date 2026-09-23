@@ -216,6 +216,16 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
     command that cannot succeed on the runs it is composed for.
     """
     fields = _review_dispatch_fields(record)
+    owning_backend = str(record.get("backend") or "").strip()
+    # The lane the owning run recorded, so a reader retyping the printed command
+    # composes it from the owning run rather than from whichever runtime happens
+    # to be sweeping: a hardcoded local lane attributes the choice to the
+    # sweeper, which is how a project-wide sweep placed reviews on a lane their
+    # owner never chose. A pointer written before a run carried a backend has
+    # none to name, and keeps the local-lane spelling.
+    lane = ["--local"]
+    if owning_backend:
+        lane = ["--backend", owning_backend]
     return [
         "reckon",
         "crew",
@@ -243,7 +253,7 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
         "--session",
         fields["session"],
         "--allow-unreconciled-runs",
-        "--local",
+        *lane,
     ]
 
 
@@ -295,6 +305,11 @@ def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
 # it already launched from one it has not, and so a reader can see why a run is
 # still in scoring rather than guessing.
 REVIEW_DISPATCH_FIELD = "review_dispatch"
+
+# The flight key naming backends a review must never be composed onto. It is a
+# routing rule rather than a preference: the composed lane is a fallback list,
+# so an exclusion a fallback can step over cannot be honoured.
+REVIEW_EXCLUDED_BACKENDS_KEY = "review_excluded_backends"
 
 
 def _review_in_flight(record: Mapping[str, Any]) -> str:
@@ -380,20 +395,64 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     return str(recorded.get("backend") or "").strip()
 
 
-def _review_lane_candidates(config: Mapping[str, Any]) -> list[str]:
-    """Configured backends a composed review may run on, the local lane first.
+def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
+    """Backends the flight configuration removes from review routing.
 
-    The local lane leads because it is the configured default and the unmetered
-    destination; it is a preference, not an assertion, so a caller can drop it
-    from the list and still have somewhere to compose the review.
+    Read as a rule about which lanes may carry a review rather than a
+    preference: it is consulted before any ordering, so a fallback cannot walk
+    around it.
+    """
+    raw = config.get(REVIEW_EXCLUDED_BACKENDS_KEY)
+    return {str(name).strip() for name in raw or () if str(name).strip()}
+
+
+def _review_lane_candidates(
+    config: Mapping[str, Any], *, owning_backend: str = ""
+) -> list[str]:
+    """Configured backends a composed review may run on, in selection order.
+
+    The owning run's recorded backend leads when it is known and not excluded,
+    because the review is of that run and the lane that carried it is the one
+    its coordinator chose; the locally served backend follows, then the rest in
+    a stable alphabetical order. Excluded backends never appear: a coordinator
+    that has removed a backend from review routing must not see a fallback land
+    on it, or the exclusion is a note rather than a rule.
     """
     backends = config.get("backends") or {}
-    names = sorted(str(name) for name in backends)
+    excluded = _review_excluded_backends(config)
+    names = [str(name) for name in sorted(backends) if str(name) not in excluded]
     local = str(config.get("local_backend") or "").strip()
-    if local in names:
-        names.remove(local)
-        names.insert(0, local)
-    return names
+    owning = str(owning_backend or "").strip()
+    ordered: list[str] = []
+    for preferred in (owning, local):
+        if preferred in names and preferred not in ordered:
+            ordered.append(preferred)
+    ordered.extend(name for name in names if name not in ordered)
+    return ordered
+
+
+def _no_review_lane_reason(
+    run_id: str, previous_lane: str, config: Mapping[str, Any]
+) -> str:
+    """Why a scoring run has no lane left, naming an exclusion when one applies.
+
+    An exclusion is a rule, so it is worth naming on its own: a reader told only
+    that no configured backend remains would look for a lane to add, when what
+    the configuration actually says is that the lane is deliberately withheld.
+    """
+    parts: list[str] = []
+    excluded = _review_excluded_backends(config)
+    if excluded:
+        parts.append(
+            f"{REVIEW_EXCLUDED_BACKENDS_KEY} excludes "
+            + ", ".join(sorted(excluded))
+            + " from review routing"
+        )
+    if previous_lane:
+        parts.append(f"backend {previous_lane!r} already dropped it")
+    detail = "; ".join(parts)
+    reason = f"the review for {run_id} has no eligible lane"
+    return f"{reason} ({detail})" if detail else reason
 
 
 def _resolved_review_config(
@@ -505,15 +564,15 @@ def dispatch_review_for_run(
     # recomposes the same review onto the lane that just dropped it, which the
     # reflex was measured doing twice in two minutes against a saturated pool.
     local_lane = str(resolved.get("local_backend") or "").strip()
+    owning_lane = str(record.get("backend") or "").strip()
     previous_lane = _failed_review_backend(record)
     candidates = [
-        name for name in _review_lane_candidates(resolved) if name != previous_lane
+        name
+        for name in _review_lane_candidates(resolved, owning_backend=owning_lane)
+        if name != previous_lane
     ]
     if not candidates:
-        reason = (
-            f"the review for {run_id} was already dropped by backend "
-            f"{previous_lane!r} and no other configured backend can carry it"
-        )
+        reason = _no_review_lane_reason(run_id, previous_lane, resolved)
         _record_review_dispatch(
             run_id, status="awaiting-lane", reason=reason, backend=previous_lane
         )
@@ -597,11 +656,34 @@ def dispatch_review_for_run(
     }
 
 
+def _sweeping_session(project: str | None) -> str:
+    """The session whose follower this process serves, or empty.
+
+    A sweep runs inside one session's follower, and the review it composes for
+    a run belongs to that run's owning session: composing one for another
+    session's run attributes a lane and a member to a coordinator that did not
+    choose either, which is a project-wide sweep placing runs under someone
+    else's runtime. The follower's registration names the session and the
+    process that wrote it, so a registration written by this process is the
+    identity. A process holding no registration — a hand-run sweep — has no
+    session to confine to and returns empty, which the caller reads as no
+    filter.
+    """
+    if not project:
+        return ""
+    for row in runs.list_followers(project):
+        follower = row.get("follower") or {}
+        if follower.get("pid") == os.getpid():
+            return str(row.get("session") or "")
+    return ""
+
+
 def dispatch_awaiting_reviews(
     *,
     project: str | None = None,
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Dispatch the review every scoring run composes, and report each outcome.
 
@@ -611,17 +693,28 @@ def dispatch_awaiting_reviews(
     run whose review is already stored or already in flight is left alone, so
     the sweep is idempotent and the negative half of the property holds — a
     reflex that re-fires would manufacture runs rather than reviews.
+
+    ``session`` names the sweeping session, and only runs whose pointer records
+    that ownership: its lane and its member belong to the coordinator that
+    chose them. Left unset it is resolved from the follower registration this
+    process holds, so a sweep inside a follower is confined to its own session
+    without the caller having to declare it.
     """
     reports: list[dict[str, Any]] = []
     dispatched: list[str] = []
     refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
+    sweeping = session if session is not None else _sweeping_session(project)
     for pointer in list_live(project=project):
         if (
             str(pointer.get("project") or "")
             and project
             and str(pointer.get("project")) != project
         ):
+            continue
+        if sweeping and str(pointer.get("session") or "") != sweeping:
+            # Another session's run: its review is that session's to compose,
+            # because only that coordinator chose its lane and its member.
             continue
         # A review run is never its own source run: counting one as a run
         # awaiting review is what composes a review of a review, and each link

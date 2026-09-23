@@ -9,7 +9,7 @@
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
   <meta name="plan-summary" content="Sections of the plan each recorded by its own node: the death census separates role from effort (§2), classification reads a run's deliverable before its process (§3), the audit reads the state a document carries (§6 guard half), the carryover census (§8), and the compaction demonstration (§9)">
   <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
-  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7,reckon:a-review-dies-where-nobody-is-looking#s9,reckon:a-review-dies-where-nobody-is-looking#s8">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7,reckon:a-review-dies-where-nobody-is-looking#s9,reckon:a-review-dies-where-nobody-is-looking#s8,reckon:a-review-dies-where-nobody-is-looking#s4">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
@@ -501,9 +501,62 @@ EXIT=1</pre>
     admits no first-turn figure.</p>
   </section>
 
+  <section id="s4">
+    <h2>&sect;4 &mdash; The sweep's composition is deterministic, attributable and printed</h2>
+    <p><strong>Node:</strong> <code>the-review-lane-follows-the-owning-run</code> made the review
+    lane a property of the run being reviewed rather than of the session sweeping, and made the
+    flight configuration able to withhold a backend from review routing outright.</p>
+
+    <p><strong>Mechanism.</strong> <code>_review_lane_candidates</code> now orders the owning run's
+    recorded backend first, then the locally served lane, then the configured rest in stable
+    alphabetical order &mdash; and removes every name in the new flight key
+    <code>review_excluded_backends</code> before any ordering, so a fallback cannot step around the
+    exclusion. <code>dispatch_awaiting_reviews</code> bookends only runs whose pointer session
+    matches the follower registration the sweeping process holds; a process holding no registration
+    keeps the unfiltered behaviour. The printed next-action and the composed argv carry
+    <code>--backend &lt;owning&gt;</code> where the run recorded a lane, and keep
+    <code>--local</code> only for a pointer written before runs carried one.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/review-lane-composition.png"
+           alt="Four configurations of the review lane composition: eligible lanes filled, withheld lanes hatched, unconfigured lanes blank">
+      <figcaption>One column per configuration, one row per configured lane: eligible (filled),
+      withheld by <code>review_excluded_backends</code>, a lane not configured (blank). The owning
+      lane leads and the excluded lanes are never reached.</figcaption>
+    </figure>
+
+    <h3>What the gate shows</h3>
+    <ul>
+      <li>a review of a run recorded on <code>clive</code> composes onto <code>clive</code>, not the
+      locally served lane &mdash; the fixture's local lane is deliberately a different backend;</li>
+      <li>a failed attempt on the owning lane falls back only to a lane not excluded, never to the
+      excluded one;</li>
+      <li>when every remaining candidate is excluded the review is refused, and the refusal names
+      <code>review_excluded_backends</code> rather than dispatching;</li>
+      <li>a sweep composes only its own session's runs; another session's run is left untouched;</li>
+      <li>the copyable next-action carries <code>--backend clive</code> and no <code>--local</code>.</li>
+    </ul>
+
+    <h3>Controls</h3>
+    <p><strong>Negative.</strong> The declared mutation &mdash; <em>restore the alphabetical
+    fallback in <code>_review_lane_candidates</code> that ignores the exclusion key</em> &mdash; is
+    applied and the exclusion tests are observed to fail: the fallback lands on the excluded local
+    lane (<code>alpha</code> instead of <code>beta</code>) and the all-excluded case dispatches
+    instead of refusing. The red log is <code>negative-control.log</code> in the node's run
+    directory, its first line the declared string verbatim.</p>
+    <p><strong>Base delta.</strong> <code>tests/test_review_reflex_sweep.py</code> and
+    <code>tests/test_review_reflex_selects_a_backend.py</code> pass 13 tests at base
+    <code>75b39d4d</code> and the same 13 at this node's head: no added failures.</p>
+
+    <p><strong>What this does not claim.</strong> The change composes the lane; it does not verify
+    that a dispatch onto a non-local backend succeeds where the local one would have, which is the
+    merged result's job. The session filter keys on the follower registration this process holds, so
+    a hand-run sweep outside any follower stays unfiltered by design.</p>
+  </section>
+
   <section id="record-scope">
     <h2>Record scope</h2>
-    <p>This record currently covers §2, §3, §6, §7, §8 and §9. The plan's other sections are separate nodes
+    <p>This record currently covers §2, §3, §4, §6, §7, §8 and §9. The plan's other sections are separate nodes
     and their outcomes are not claimed here. Sections land here as their nodes report; a peer landing
     into this file should append its own section rather than replace the file.</p>
     <p>&sect;2 landed after that note was written, by <code>review-deaths-by-effort-and-role</code>. Its

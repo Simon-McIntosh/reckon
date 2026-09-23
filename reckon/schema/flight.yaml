@@ -214,6 +214,16 @@ slots:
       --local`. Must name a key of `backends` once every layer has been merged.
       Absent means this host has no declared local worker route.
 
+  review_excluded_backends:
+    description: >-
+      Names of backends that review routing must never select, whatever lane
+      composes the review and whatever backend has already dropped the
+      dispatch. A review fallback walks a list of configured backends, so an
+      exclusion it can step around is a note rather than a rule; naming a
+      backend here removes it from every composed review lane.
+    range: string
+    multivalued: true
+
   backends:
     description: >-
       Available worker backends, keyed by a name chosen by whoever writes the
@@ -645,6 +655,7 @@ classes:
       - version
       - default_backend
       - local_backend
+      - review_excluded_backends
       - backends
       - roles
       - gates
