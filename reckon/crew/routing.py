@@ -1582,6 +1582,10 @@ def _context_fit_verdict(
     refuses below its declared figure would otherwise pass this check and then
     die at the endpoint with three records and no deliverable, which is the
     loss this comparison exists to prevent.
+
+    Either figure may be absent and neither absence is a zero. A lane that
+    declares no window is unbounded, so its recorded boundary alone gates it; a
+    lane with no recorded boundary keeps its declared window.
     """
 
     declared_window = resolution.backend_settings.get("usable_input_window")
@@ -1589,7 +1593,7 @@ def _context_fit_verdict(
     if declared_window is None and effective_boundary is None:
         return None
     try:
-        window_tokens = int(declared_window)
+        window_tokens = int(declared_window) if declared_window is not None else None
     except (TypeError, ValueError) as exc:
         raise CrewError(
             f"backend {resolution.backend!r} declares a non-integer usable input "
@@ -1604,12 +1608,25 @@ def _context_fit_verdict(
             f"backend {resolution.backend!r} declares a non-integer effective input "
             f"window {effective_boundary!r}"
         ) from exc
-    if window_tokens <= 0 or boundary_tokens <= 0:
+    if window_tokens is not None and window_tokens <= 0:
         raise CrewError(
             f"backend {resolution.backend!r} declares a non-positive usable input "
             f"window {window_tokens}"
         )
-    gating_tokens = min(window_tokens, boundary_tokens)
+    if boundary_tokens is None or boundary_tokens <= 0:
+        raise CrewError(
+            f"backend {resolution.backend!r} declares a non-positive effective input "
+            f"window {boundary_tokens}"
+        )
+    # An absent declared window means unbounded, never zero: a lane that states
+    # no ceiling keeps whatever boundary its own recordings establish, rather
+    # than being refused because the window it never declared reads as nothing.
+    gating_tokens = (
+        boundary_tokens
+        if window_tokens is None
+        else min(window_tokens, boundary_tokens)
+    )
+    narrows = window_tokens is not None and boundary_tokens < window_tokens
 
     standing_tokens, standing = _standing_context_input(
         repo, resolution.backend_settings
@@ -1621,7 +1638,7 @@ def _context_fit_verdict(
     shortfall_tokens = max(0, estimated_tokens - gating_tokens)
     if shortfall_tokens == 0:
         reason = "within-context-window"
-    elif boundary_tokens < window_tokens:
+    elif narrows:
         # Both figures are named, because the remedy differs: an estimate inside
         # this band is refused by reckon for a lane boundary the configuration
         # does not state, so a reader who sees only the declared window would
@@ -1631,6 +1648,12 @@ def _context_fit_verdict(
             f"above the effective boundary {boundary_tokens} recorded for backend "
             f"{resolution.backend!r}, whose declared window is {window_tokens}"
         )
+    elif window_tokens is None:
+        reason = (
+            f"context-window-exceeded: estimated {estimated_tokens} tokens is "
+            f"above the effective boundary {boundary_tokens} recorded for backend "
+            f"{resolution.backend!r}, which declares no window of its own"
+        )
     else:
         reason = "context-window-exceeded"
     return {
@@ -1639,7 +1662,7 @@ def _context_fit_verdict(
         "window_tokens": gating_tokens,
         "declared_window_tokens": window_tokens,
         "effective_boundary_tokens": (
-            boundary_tokens if boundary_tokens < window_tokens else None
+            boundary_tokens if narrows or window_tokens is None else None
         ),
         "shortfall_tokens": shortfall_tokens,
         "reason": reason,

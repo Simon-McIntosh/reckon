@@ -184,15 +184,24 @@ def _refusal_record(path: Path) -> RefusalRecord | None:
     )
 
 
-def refusal_census(runs_dir: str | PathLike[str]) -> dict[str, Any]:
-    """Census every recorded run whose stream ends by refusing the prompt.
+def refusal_census(
+    runs_dir: str | PathLike[str], *, model: str | None = None
+) -> dict[str, Any]:
+    """Census recorded runs whose stream ends by refusing the prompt.
 
-    The effective refusal boundary is the lowest input estimate among the
-    refusals: a node whose own estimate reaches that figure is in the band the
-    endpoint has already been observed to reject, so it is the tightest
-    boundary the recordings support.  An empty census yields an absent
-    boundary rather than zero, so a lane with no recorded refusal keeps its
-    declared window instead of refusing everything.
+    A boundary belongs to one lane, so the census can be narrowed to the runs a
+    lane's own model served: pooling every model would take the minimum across
+    lanes and refuse each of them at the tightest one's limit, which is a
+    different figure from any lane's own.  Runs excluded by that narrowing are
+    reported rather than dropped, so a caller can see what the figure was taken
+    over.
+
+    The effective refusal boundary is the lowest input estimate among the runs
+    counted: a node whose own estimate reaches that figure is in the band the
+    endpoint has already been observed to reject, so it is the tightest boundary
+    the recordings support.  An empty census yields an absent boundary rather
+    than zero, so a lane with no recorded refusal keeps its declared window
+    instead of refusing everything.
     """
     root = Path(runs_dir)
     records = [
@@ -202,14 +211,18 @@ def refusal_census(runs_dir: str | PathLike[str]) -> dict[str, Any]:
         )
         if record is not None
     ]
+    counted = [record for record in records if model is None or record.model == model]
+    excluded = [record for record in records if record not in counted]
     estimates = [
         record.estimated_input_tokens
-        for record in records
+        for record in counted
         if record.estimated_input_tokens is not None
     ]
     return {
         "runs_dir": str(root),
-        "refused_runs": [asdict(record) for record in records],
+        "model": model,
+        "refused_runs": [asdict(record) for record in counted],
+        "excluded_runs": [asdict(record) for record in excluded],
         "effective_boundary_tokens": min(estimates) if estimates else UNMEASURED,
         "boundary_basis": (
             "lowest-estimate-among-refused-runs" if estimates else "no-recorded-refusal"
