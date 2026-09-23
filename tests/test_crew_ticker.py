@@ -186,8 +186,13 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     # Which node, then what it did, then what ran it: the varying fields come
     # first, and the near-constant agent label sits after the state rather than
     # in the position the eye reaches straight after the clock.
-    assert line.index("ticker-node") < line.index("working") < line.index("blocked")
-    assert "working" in line and "→" in line
+    assert line.index("ticker-node") < line.index("blocked")
+    # The row carries the state the run moved into and no other: the source it
+    # came from is not on the line, and no arrow joins the two.
+    assert "blocked" in line
+    assert "working" not in line
+    assert ticker_module.BASELINE_MARKER not in line
+    assert "→" not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter.
     assert " 3w· 1b· 0u" in line
@@ -215,7 +220,9 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     assert result.exit_code == 0
     assert result.output.count("\n") == 1
     assert "ticker-node" in result.output
-    assert "working → blocked" in result.output
+    assert "blocked" in result.output
+    assert "working" not in result.output
+    assert "→" not in result.output
     assert not result.output.startswith("{")
 
 
@@ -376,7 +383,9 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "ticker-node" in result.output
-    assert "working → blocked" in result.output
+    assert "blocked" in result.output
+    assert "working" not in result.output
+    assert "→" not in result.output
 
 
 def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
@@ -588,11 +597,10 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     """Every delivered line is a transition, never a layout artifact.
 
     A coordinator consumes each line a follower delivers as a delivery, so a
-    line that is calibration and not news — with neither a node nor a state
-    either side of an arrow — would be handed to a reader as if it were a
-    transition. Every delivered line must carry the node it happened to and the
-    state pair it moved across; a json caller reads the same pairs from the
-    machine stream.
+    line that is calibration and not news — with no node and no state — would be
+    handed to a reader as if it were a transition. Every delivered line must
+    carry the node it happened to and the state it moved into; a json caller
+    reads the same state, with its source, from the machine stream.
     """
     monkeypatch.setattr(
         cli_module,
@@ -607,8 +615,10 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     assert len(plain_lines) == 2
     for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
         assert node in line, line
-        assert "working" in line, line
+        # The destination is on the line; the source it came from is not.
         assert "blocked" in line, line
+        assert "working" not in line, line
+        assert "→" not in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
@@ -633,12 +643,14 @@ def _follow_rows(monkeypatch, events, *args) -> list[str]:
     return result.output.splitlines()
 
 
-def _arrow_column(row: str) -> int:
-    """Where the arrow column sits, whichever glyph this row put in it."""
-    for glyph in (ticker_module.TRANSITION_ARROW, ticker_module.BASELINE_ARROW):
-        if glyph in row:
-            return row.index(glyph)
-    raise AssertionError(row)
+def _state_cell_start(row: str, state: str) -> int:
+    """Where the fixed-width state cell begins, reached through its own word.
+
+    The marker cell ahead of the state holds one width on every row — the word
+    on a baseline, blanks on a transition — so the state cell sits at the same
+    screen column whoever the row belongs to and whatever it is reporting.
+    """
+    return row.index(state) - ticker_module.MARKER
 
 
 def test_a_baseline_row_reads_differently_from_a_transition_into_it(
@@ -647,11 +659,13 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     """Inventory at attach must not read as news, and the kind decides.
 
     A reattaching follower emits one baseline per live run within a second or
-    two, and a baseline that renders identically to a transition turns a restart
-    into a burst of things that look like they just happened. The distinction is
-    taken from the kind the log records: a genuine first sighting also has no
-    from-state, so inferring it from a null source would mark real transitions
-    as inventory and hide them.
+    two, because a baseline that renders identically to a transition turns a
+    restart into a burst of things that look like they just happened. A word
+    carries that where a lone glyph did not: a reader took three baseline rows
+    marked by a bullet for fresh dispatches. The distinction is taken from the
+    kind the log records: a genuine first sighting also has no from-state, so
+    inferring it from a null source would mark real transitions as inventory and
+    hide them.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -669,19 +683,26 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     assert len(rows) == 3
     assert "settled-node" not in "\n".join(rows)
 
-    # Same destination state, two different records, two different rows.
+    # Same destination state, two different records, two different rows. The
+    # baseline is marked by the word on the row, the transition carries no
+    # marker at all.
     assert "working" in baseline and "working" in transition
     assert baseline != transition
-    assert ticker_module.BASELINE_ARROW in baseline
-    assert ticker_module.TRANSITION_ARROW not in baseline
-    # A baseline claims no movement, so it shows no state it came from.
+    assert ticker_module.BASELINE_MARKER in baseline
+    assert baseline.index(ticker_module.BASELINE_MARKER) < baseline.index("working")
+    assert ticker_module.BASELINE_MARKER not in transition
+    # Neither row claims the state it left, and neither claims any state but
+    # the one it moved into: `dispatched` is the source of the transition and
+    # the destination of the first sighting, and it appears on no row here.
     assert "dispatched" not in baseline
-    assert "dispatched" in transition
+    assert "dispatched" not in transition
+    assert "→" not in "\n".join(rows)
 
     # The kind, never the absent source: this transition has no from-state and
-    # is still rendered as a transition.
-    assert ticker_module.TRANSITION_ARROW in first_sighting
-    assert ticker_module.BASELINE_ARROW not in first_sighting
+    # is still rendered as a transition — no marker, and the state it moved
+    # into is the only state word on the row.
+    assert ticker_module.BASELINE_MARKER not in first_sighting
+    assert "dispatched" in first_sighting
 
 
 def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
@@ -790,7 +811,17 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
 
     assert len(rows) == 4
     assert len({len(row) for row in rows}) == 1
-    assert len({_arrow_column(row) for row in rows}) == 1
+    assert (
+        len(
+            {
+                _state_cell_start(row, state)
+                for row, state in zip(
+                    rows, ("working", "blocked", "blocked", "blocked"), strict=True
+                )
+            }
+        )
+        == 1
+    )
     assert len({row.index("sonnet5") for row in rows}) == 1
     assert len({row.index("implement"[:4]) for row in rows}) == 1
     for letter, spelling in (("w", "working"), ("b", "blocked"), ("u", "unpromoted")):
