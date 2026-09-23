@@ -305,11 +305,91 @@ EXIT=1</pre>
     a separately dispatched node's job.</p>
   </section>
 
+  <section id="s2">
+    <h2>&sect;2 &mdash; The experiment neither session could run</h2>
+    <p><strong>Node:</strong> <code>review-deaths-by-effort-and-role</code> counted every recorded run
+    on the locally served lane and separated its death rate by role and by effort, which is the
+    separation the two earlier sessions could not make from the runs they happened to hold.</p>
+
+    <p><strong>Method.</strong> The population is every run directory under the crew run store whose
+    ledger row names the locally served backend (<code>clive</code>). A run's stream is its terminal
+    attempt &mdash; the highest-numbered <code>resume-<em>N</em>.jsonl</code> when the run was resumed,
+    otherwise <code>stream.jsonl</code> &mdash; because an earlier attempt's stop is not where the run
+    ended. A run is <em>dead</em> when its terminal stream carries no <code>result</code> record and no
+    live pointer reports its process alive; a run whose stream carries a result record is
+    <em>completed</em>, and a stream without one whose pointer reads alive is <em>running</em> and is
+    never counted a death. The record's own success flag is not consulted: a failed turn still wrote a
+    result record, so it still says the turn ended.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/death-rate-by-role-and-effort.png"
+           alt="Death rate per role-by-effort cell, beside the cell population, over the locally served lane">
+      <figcaption>Death rate per role-by-effort cell (left) beside the population each rate is computed
+      over (right, log scale), over 1,572 recorded runs on the locally served lane.</figcaption>
+    </figure>
+
+    <h3>The measurement, by cell</h3>
+    <table>
+      <thead>
+        <tr><th>role</th><th>effort</th><th>sandbox</th><th>runs</th><th>dead</th><th>death rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>implement</td><td>high</td><td>worktree-full</td><td>938</td><td>49</td><td>5.2%</td></tr>
+        <tr><td>review</td><td>xhigh</td><td>read-only</td><td>369</td><td>45</td><td>12.2%</td></tr>
+        <tr><td>investigate</td><td>xhigh</td><td>read-only</td><td>76</td><td>2</td><td>2.6%</td></tr>
+        <tr><td>documentation</td><td>xhigh</td><td>worktree-full</td><td>67</td><td>6</td><td>9.0%</td></tr>
+        <tr><td>implement</td><td>medium</td><td>worktree-full</td><td>52</td><td>4</td><td>7.7%</td></tr>
+        <tr><td>test</td><td>xhigh</td><td>worktree-full</td><td>51</td><td>3</td><td>5.9%</td></tr>
+        <tr><td>review</td><td>high</td><td>read-only</td><td>11</td><td>1</td><td>9.1%</td></tr>
+      </tbody>
+    </table>
+    <p>The remaining cells hold one to three runs each and are in the census artifact's
+    <code>cells</code> list rather than this table, because a rate over one or two runs is not a
+    reading.</p>
+
+    <h3>What the separation shows</h3>
+    <p>At a constant effort of <code>xhigh</code>, role separates the death rate by more than a
+    factor of four: <code>review</code> at 12.2% (45/369) against <code>investigate</code> at 2.6%
+    (2/76) and <code>test</code> at 5.9% (3/51), all on the same effort. So role discriminates while
+    effort is held fixed, which the earlier session's pooled observation could not separate because
+    every review it held ran at <code>xhigh</code> and every implement at <code>high</code>.</p>
+    <p>Effort does not separate within <code>review</code>: <code>xhigh</code> at 12.2% (45/369)
+    against <code>high</code> at 9.1% (1/11), and the <code>high</code> cell is eleven runs, so the
+    interval it supports contains the <code>xhigh</code> rate outright. The plan's requirement that
+    no fix be justified by effort is therefore unrefuted and better supported than before: the
+    observed confound is partly broken by the role side, and the effort side has no cell large enough
+    to carry a claim.</p>
+
+    <h3>Controls</h3>
+    <p><strong>Positive.</strong> A run whose own manifest records <code>status: complete</code> is
+    read by the parser as carrying a <code>result</code> record of subtype <code>success</code>, and
+    is reported <em>not</em> dead (<code>reports_dead: false</code>). This is the check that the
+    parser was aimed at something known present, which an absence count alone cannot show.</p>
+    <p><strong>Negative.</strong> The declared mutation &mdash; <em>make the census parser ignore
+    result records so every run reads as dead</em> &mdash; is applied and the completed fixture is
+    observed to read <code>dead</code>: the unmutated parser reads it <code>completed</code>, the
+    mutated parser reads it <code>dead</code> with totals <code>{'dead': 1}</code>. The red log is
+    <code>negative-control.log</code> in the node's run directory, its first line the declared string
+    verbatim.</p>
+
+    <p><strong>What this does not claim.</strong> The census classifies by the terminal shape of a
+    stream, which has to bracket what produced it before it can separate effort from role with
+    confidence in the <code>review/high</code> cell: eleven runs is a population that neither
+    confirms nor refutes a difference, so the honest reading is <em>role discriminates, effort
+    undetermined at this sample</em>. The unit is the run's terminal attempt, so a run resumed after a
+    first-attempt death is scored by its last attempt; the census artifact's <code>runs</code> list
+    carries each run's <code>stream</code> name so that choice is auditable. The measure ranges over
+    this node's own change only; verifying the merged result is a separately dispatched node's job.</p>
+  </section>
+
   <section id="record-scope">
     <h2>Record scope</h2>
     <p>This record currently covers §7 only. The plan's other sections are separate nodes and their
     outcomes are not claimed here. Sections land here as their nodes report; a peer landing into this
     file should append its own section rather than replace the file.</p>
+    <p>&sect;2 landed after that note was written, by <code>review-deaths-by-effort-and-role</code>. Its
+    section is <a href="#s2">&sect;2 &mdash; the experiment neither session could run</a>; the note
+    above is left as written so the record shows what the earlier landings were told.</p>
   </section>
 
 </main>
