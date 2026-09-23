@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.25">
@@ -189,6 +189,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T010909082010-review-of-a-lane-declares-its-input-modalities" data-who="reckon-ship" data-when="2026-09-23T01:34:37.778Z">
     <div class="r-comment-body"><p>review stored and parsed; the coordinator read its verdict and findings before acting on the reviewed run</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260923T0600-s2-split" data-who="reckon-ship" data-when="2026-09-23T06:00:00Z">
+    <div class="r-comment-body"><p><strong>§2 is cut into three nodes along file ownership.</strong></p><ol><li><strong>Argv half, now.</strong> <code>reckon._backends.launch_plan</code> gains an <code>images</code> argument, which is the plan the launcher runs. Each dialect's <code>argv()</code> receives it: the codex dialect emits one <code>-i &lt;path&gt;</code> per image, and every dialect that cannot carry images raises <code>BackendError</code> naming the dialect when the tuple is non-empty. Files: <code>reckon/_backends.py</code> and one new test file. The test asserts on <code>launch_plan(...).argv</code>, never on a helper.</li><li><strong>Dispatch wiring, after <code>reckon/crew/dispatch.py</code> is released by worker-death step 4.</strong> A node's declared figures reach <code>launch_plan</code> through the real dispatch path, and a dispatch carrying two figures shows both <code>-i</code> flags in the composed argv.</li><li><strong>Declaration, after node 1 lands.</strong> <code>input_modalities: [text, image]</code> is declared on the codex backends in the project flight layer (<code>docs/state/reckon/flight.yaml</code>). This must follow the argv half, because the schema forbids declaring a modality the lane does not deliver.</li></ol></div>
 </div>
 </section>
 </main>
