@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T03:15:38",
+  "updated": "2026-09-23T03:16:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -271336,6 +271336,27 @@
         "orientation_input_tokens": 2009203.0,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "failed",
+          "integrated_revision": "775f8deb8bb041125104d80fb289d50b8262f282",
+          "checkout_revision": "775f8deb8bb041125104d80fb289d50b8262f282",
+          "checkout_on_integrated_revision": true,
+          "gate_command": "PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/test_crew_record_liveness.py tests/test_crew_placed_liveness.py tests/test_liveness_is_read_when_it_is_used.py tests/test_dispatch_guard_consults_liveness.py tests/test_liveness_lookup_is_reachable.py",
+          "gate_command_source": "stored",
+          "ran": true,
+          "exit_status": 4,
+          "timed_out": false,
+          "reason": null,
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "failed",
+            "integrated_revision": "775f8deb8bb041125104d80fb289d50b8262f282",
+            "exit_status": 4,
+            "reason": null,
+            "message": "the gate passed at the worker's base but reports failed on the integrated revision 775f8deb8bb0: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       }
     ],
@@ -271635,6 +271656,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2145
+    "_version": 2146
   }
 }
