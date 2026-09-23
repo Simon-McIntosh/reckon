@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.43">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7">
@@ -245,6 +245,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260923T1210-redispatch-resume-harness" data-who="reckon-ship" data-when="2026-09-23T12:10:00Z">
     <div class="r-comment-body"><p><strong>A run moved across harnesses can be neither resumed nor moved again.</strong> Reported by imas-ambix-af through the S20 coordinator; af holds the run ids. After <code>crew redispatch --backend clive</code> of a run that began on codex, <code>crew resume</code> relaunched the codex harness with the captured codex session and the clive model. Codex refused it with HTTP 400 (<q>model not supported when using Codex with a ChatGPT account</q>). A second redispatch was then refused because the run was already on clive.</p><p>The cause: redispatch updates the backend on the run record, but resume rebuilds its launch from the captured session, which belongs to the old harness. The guard reads the field that changed; the launch reads the one that didn't. It is the same family as worker-death's <q>redispatch leaves the pointer describing the run it replaced</q>.</p><p><strong>Measure for this section:</strong> a run's captured session is recorded with the harness that owns it. <code>crew resume</code> composes a session only if it was captured on the run's current harness, and otherwise starts fresh on that harness with a recorded reason. A test redispatches a stub codex run to clive and requires resume to launch clive without the codex session id, and a further redispatch back to codex to be accepted.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260923T1212-redispatch-evidence" data-who="reckon-ship" data-when="2026-09-23T12:12:00Z">
+    <div class="r-comment-body"><p><strong>Evidence for the cross-harness resume defect</strong>, from imas-ambix-af. The run was <code>r-20260923T111604174547-router-script-finite-time</code> (project imas-ambix, member <code>llac-gate</code>). It was dispatched on codex and redispatched to clive at about 11:27Z. <code>crew resume</code> then launched the codex harness with the clive model, and <code>~/.config/reckon/crew/runs/r-20260923T111604174547-router-script-finite-time/resume-1.jsonl</code> ends in <code>turn.failed</code> 400: <q>The 'deepseek-v4.1-flash' model is not supported when using Codex with a ChatGPT account.</q> A second redispatch to clive was refused as <q>already uses backend 'clive'</q>. The same shape probably affects runs moved clive to codex and back, for example <code>r-20260923T061919862986-engine-scheduler-levers</code>, redispatched at about 11:42Z.</p></div>
 </div>
 </section>
 </main>
