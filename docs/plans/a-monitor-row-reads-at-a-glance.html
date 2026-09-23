@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="7">
+  <meta name="plan-version" content="8">
   <meta name="plan-informs" content="the-monitor-under-measurement">
   <title>A Monitor Row Reads At A Glance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.17">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -169,6 +169,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260923T1100-s2-landed" data-who="reckon-ship" data-when="2026-09-23T11:00:00Z">
     <div class="r-comment-body"><p>§2 landed: merged at <code>9660d3b0</code>, review 89. A transition row shows only its destination state. At width 180 the reason cell gains 13 columns: the landing record says 42 to 55, and the review found the published figure's script labels 48 and 61. The negative control that restores the from-state and the arrow fails 9 tests. <code>tests/test_crew.py</code> stalls and never completes at either base or head, a fault that predates this plan and is carried in the S20 drain ledger. The missing separator between <code>now</code> and the state is §7.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1310-s7-landed" data-who="reckon-ship" data-when="2026-09-23T13:10:00Z">
+    <div class="r-comment-body"><p>§7 landed: merged at <code>a2bf7df9</code>, review 98. A baseline row reads <code>now working</code>. The cell grew one column, <code>STATE_REGION</code> from 14 to 15. The new test fails when the separator is removed, and the ticker files show added failures 0.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T044813655234-row-shows-destination-only" data-who="reckon-ship" data-when="2026-09-23T08:58:32.999Z">
     <div class="r-comment-body"><p>transition rows show only the destination state and a baseline row is marked now; reason cell +13 columns at width 180; negative control fails 9 tests; merged at 9660d3b0; review 89 (missing separator between now and the state, carried as s7; figure labels disagree with the caption). Gate recorded not-run because the worker's per-file logs were node-local /tmp scratch, not durable</p></div>

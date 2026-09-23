@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="25">
+  <meta name="plan-version" content="26">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.56">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -388,11 +388,17 @@
 <div class="r-comment" data-section="_top" data-id="c-20260923T1100-s3-s6-landed" data-who="reckon-ship" data-when="2026-09-23T11:00:00Z">
     <div class="r-comment-body"><p>§3 and §6 landed. §3: <code>--lifetime</code> merged at <code>a7302ba5</code>, review 84. Its first finding is the reload that restarts the lifetime clock, now §8. Its second is an attach-line assertion that compares the line against the composer under test, carried to the §2 attach-line corrective. §6: the harness reference merged at <code>68359e28</code> and its monitor-output guard at <code>eec6b824</code>, review 93. That promotion needed <code>--waive-unreviewed-promotion</code>, because the head-keyed promotion rule refused a legacy-keyed review of the same head; worker-death-is-recorded's owner confirmed it as a regression. §2 remains unmerged until its corrective test node lands. That node rewrites two tests that assert the bare word, and two that compare the line against the composer under test.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1310-s2-s7-landed" data-who="reckon-ship" data-when="2026-09-23T13:10:00Z">
+    <div class="r-comment-body"><p>§2 and §7 landed. §2: the absolute attach line merged at <code>35aef068</code> with review 93, and its shape-asserting tests merged at <code>e5e8f9b4</code>, clearing the two assertions left red between them. §7: the orphaned-follower release merged at <code>adccdba3</code>. The orphan exits within ten seconds of its parent's SIGKILL with nothing written, the lock frees, and a second follower is the holder. Three <code>test_crew_watch_lifetime.py</code> failures seen beside that gate have no base comparison yet; a test node settles whether they predate it. The follower's first real lifetime end, at 14:47 CEST, delivered its <code>follower-end</code> line naming eight runs that needed the coordinator, before the host's cap.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T062721073077-second-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T07:34:00.949Z">
     <div class="r-comment-body"><p>second read-back of a-follower-outlives-its-monitor §4 and §7: 12 multi-reading sentences, 3 material in §4 (record file, unrecorded live run, SETTLED_STATES rationale), all pinned at 9bc0ff65; §7 released</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-set-20260923T1227-s7-orphan-releases" data-who="reckon-ship" data-when="2026-09-23T12:27:16Z">
+    <div class="r-comment-body"><p>The follower now checks its recorded consumer on each wait pass. The consumer is the parent recorded at registration, so a re-parent to init shows up as <code>os.getppid()</code> no longer naming it, and the recorded start time is the pid-reuse guard. When the consumer is gone the follower stops, prints nothing, and releases the registration by leaving, freeing the advisory lock for the session's next follower. Gate: <code>tests/test_orphaned_follower_releases.py</code>, 1 passed in 3.37 s. The negative control is applied and logged: deleting the check from the wait pass leaves the orphan still running ten seconds after the kill. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s7-orphaned-follower-releases">the landed record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T053030852489-review-of-attach-line-resolves" data-who="reckon-ship" data-when="2026-09-23T07:44:31.545Z">
     <div class="r-comment-body"><p>independent review of attach-line-resolves: total 93; findings: the landed record cites a nonexistent sha f8f6617 for f8f36b76, and two edited tests compute the expected line from the composer under test; both carried to the corrective node</p></div>
@@ -420,9 +426,6 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T104315648273-review-of-monitor-output-test-reads-the-new-arming" data-who="reckon-ship" data-when="2026-09-23T11:24:05.357Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-set-20260923T1227-s7-orphan-releases" data-who="reckon-ship" data-when="2026-09-23T12:27:16Z">
-    <div class="r-comment-body"><p>The follower now checks its recorded consumer on each wait pass. The consumer is the parent recorded at registration, so a re-parent to init shows up as <code>os.getppid()</code> no longer naming it, and the recorded start time is the pid-reuse guard. When the consumer is gone the follower stops, prints nothing, and releases the registration by leaving, freeing the advisory lock for the session's next follower. Gate: <code>tests/test_orphaned_follower_releases.py</code>, 1 passed in 3.37 s. The negative control is applied and logged: deleting the check from the wait pass leaves the orphan still running ten seconds after the kill. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s7-orphaned-follower-releases">the landed record</a>.</p></div>
 </div>
 </section>
 </main>
