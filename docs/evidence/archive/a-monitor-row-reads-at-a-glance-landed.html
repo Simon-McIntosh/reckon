@@ -252,6 +252,67 @@
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T131053762821-model-cell-fits-every-alias/logs/negative-control.log</code>.
     </p>
 
+    <h2 id="columns-follow-the-grids-own-width">&sect;3 corrective — every column follows the grid's own width</h2>
+    <p>
+      Commit <code>a45e4387</code> on the <code>ticker-tests-read-the-grid-width</code> worktree,
+      base revision <code>961b288e</code>, on <code>main</code>. Repairs the two defects the review
+      of the first landing named (scored 81): the tests derived their expected columns from the fixed
+      <code>MODEL</code> constant rather than the width the rendered grid uses, and the ticker
+      resolved the model aliases without the row's project.
+    </p>
+
+    <h3>Gate measure, as executed</h3>
+    <p>
+      Both fenced ticker test files derive every expected column from the grid under test
+      (<code>grid.model_width</code> or the value the renderer reports) rather than the module
+      constant, including the <code>_spend_columns</code> prefix. Run with the worktree's venv
+      interpreter under a temporary flight config declaring no alias, and again under one declaring
+      <code>dsv4.1-flash</code>. Both runs are logged.
+    </p>
+    <table>
+      <thead>
+        <tr><th>config</th><th>base <code>961b288e</code></th><th>head <code>a45e4387</code></th><th>log</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>no alias declared</td><td>2 failed, 91 passed</td><td>94 passed</td>
+          <td><code>.../r-20260923T172753966510-ticker-tests-read-the-grid-width/logs/gate-noalias.log</code></td>
+        </tr>
+        <tr>
+          <td><code>dsv4.1-flash</code> declared</td><td>11 failed, 82 passed</td><td>94 passed</td>
+          <td><code>.../r-20260923T172753966510-ticker-tests-read-the-grid-width/logs/gate-alias.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>What changed</h3>
+    <p>
+      The model cell's width is now a property of the grid being rendered: the resolver reads the
+      row's project's alias layer, so the project layer is read alongside the shipped, host and
+      override layers, and a config declaring a wider alias widens the grid so every column
+      downstream moves with it. The tests read the grid's own width rather than the constant, so they
+      assert against the row they render. <code>launch-failed</code> gains a light-theme hue beside
+      <code>failed</code>, which closes the one pre-existing failure
+      (<code>test_the_action_set_is_one_set_with_three_readers</code>) that the first landing left
+      open.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared and repeated verbatim as the log's first line:
+      <em>restore <code>ticker_module.MODEL</code> as the column source in the
+      <code>_spend_columns</code> prefix.</em>
+      Applied by replacing <code>+ model_width</code> with <code>+ ticker_module.MODEL</code> in that
+      prefix and running the gate under the alias-declaring config. Five tests failed as required
+      (<code>test_the_two_measure_cells_occupy_the_same_columns_on_every_row</code>,
+      <code>test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings</code>,
+      <code>test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker</code>,
+      <code>test_the_fleet_counters_precede_the_measures</code>, and one more) — 5 failed, 89 passed.
+      The control was then reverted from a saved copy of the file, the restore verified byte-exact.
+      Log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T172753966510-ticker-tests-read-the-grid-width/logs/gate-negative-control.log</code>.
+    </p>
+
   </main>
 </body>
 </html>
