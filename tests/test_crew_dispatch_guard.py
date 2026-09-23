@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -239,6 +241,32 @@ def test_peer_prompt_omits_shared_landing_paths(
     assert "reckon/crew/ticker.py" in peer_scope
 
 
+def _assert_attach_line_shape(
+    line: str, project: str, session: str | None = None
+) -> None:
+    """Assert the attach line's shape, never a literal or the composer itself.
+
+    The first token has to be an absolute path to the running ``reckon``
+    console script, because the shell that arms the line need not carry the
+    interpreter's bin directory on PATH. The remaining tokens are the fixed
+    command carrying exactly the caller's project and session.
+    """
+    tokens = shlex.split(line)
+    executable = tokens[0] if tokens else ""
+    assert os.path.isabs(executable), f"the first token is not absolute: {line!r}"
+    assert os.path.isfile(executable), f"the first token is not a file: {line!r}"
+    assert os.access(executable, os.X_OK), f"the first token is not runnable: {line!r}"
+    assert os.path.basename(executable) == "reckon", (
+        f"the first token is not the reckon console script: {line!r}"
+    )
+    expected = ["crew", "follow", "--project", project]
+    if session is not None:
+        expected += ["--session", session]
+    assert tokens[1:] == expected, (
+        f"the attach line's arguments are not the fixed command: {line!r}"
+    )
+
+
 def test_no_watch_override_is_recorded_for_an_occupied_project(
     isolated_project: tuple[Path, Path],
 ) -> None:
@@ -247,18 +275,13 @@ def test_no_watch_override_is_recorded_for_an_occupied_project(
 
     waived = _dispatch(config_home, repo, "waived", watch_override=True)
 
-    assert waived["watch_override"] == {
-        "requested": True,
-        "arming_line": "reckon crew watch --project sample",
-        # The attach line is the shared composer's output, so a dispatch that
-        # stopped calling it is caught here rather than by a restated literal.
-        "attach_line": runs._watch_attach_line("sample", session="session-waived"),
-        "watcher_live": True,
-        "session_attached": True,
-    }
-    assert crew.read_pointer(waived["run_id"])["watch_override"] == waived[
-        "watch_override"
-    ]
+    override = waived["watch_override"]
+    assert override["requested"] is True
+    assert override["arming_line"] == "reckon crew watch --project sample"
+    assert override["watcher_live"] is True
+    assert override["session_attached"] is True
+    _assert_attach_line_shape(override["attach_line"], "sample", "session-waived")
+    assert crew.read_pointer(waived["run_id"])["watch_override"] == override
 
 
 def test_occupied_project_with_a_live_watcher_accepts_another_dispatch(

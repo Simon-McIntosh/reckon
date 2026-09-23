@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360" role="img" aria-label="The attach line's tokens, the shape assertion that covers them, and the two assertion styles it replaces">
+  <style>
+    .title { font: 600 16px system-ui, sans-serif; fill: #1b2733; }
+    .sub { font: 400 13px system-ui, sans-serif; fill: #4a5766; }
+    .tok { font: 400 14px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .tok-text { font: 400 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #1b2733; }
+    .brace { fill: none; stroke: #6b7a8c;" }
+    .lbl { font: 400 12px system-ui, sans-serif; fill: #33414f; }
+    .bad { font: 400 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #7a2d2d; }
+    .note { font: 400 12px system-ui, sans-serif; fill: #4a5766; }
+  </style>
+  <rect width="960" height="360" fill="#ffffff"/>
+  <text class="title" x="24" y="34">The attach line: the shape every assertion now checks</text>
+  <text class="sub" x="24" y="56">Composed by _watch_attach_line; asserted by shape, never by a literal or by a fresh call to the composer.</text>
+
+  <g>
+    <rect x="24" y="80" width="212" height="34" rx="5" fill="#eef3f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="34" y="102">/&#8230;/.venv/bin/reckon</text>
+    <rect x="240" y="80" width="58" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="250" y="102">crew</text>
+    <rect x="302" y="80" width="70" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="312" y="102">follow</text>
+    <rect x="376" y="80" width="86" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="386" y="102">--project</text>
+    <rect x="466" y="80" width="58" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="476" y="102">proj</text>
+    <rect x="528" y="80" width="86" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="538" y="102">--session</text>
+    <rect x="618" y="80" width="58" height="34" rx="5" fill="#f4f6f8" stroke="#c3d0dd"/>
+    <text class="tok-text" x="628" y="102">sess</text>
+  </g>
+
+  <path class="brace" d="M24 122 q0 12 12 12 h188 q12 0 12 12 q0 -12 12 -12 h0"/>
+  <path class="brace" d="M24 122 v8 q0 12 12 12 h188 q12 0 12 12 q0 -12 12 -12" fill="none"/>
+  <path class="brace" d="M240 128 v8 q0 12 12 12 h412 q12 0 12 -12 v-8" fill="none"/>
+  <text class="lbl" x="34" y="170">absolute path to an executable file, basename reckon</text>
+  <text class="lbl" x="252" y="170">equals: crew follow --project &lt;project&gt; [--session &lt;session&gt;]</text>
+
+  <line x1="24" y1="204" x2="936" y2="204" stroke="#e2e7ec"/>
+
+  <text class="sub" x="24" y="230">The two assertion styles this replaces, both of which could not fail on a first-token change:</text>
+  <text class="bad" x="40" y="258">&#10007;</text>
+  <text class="bad" x="62" y="258">line.startswith("reckon crew follow ")           # a literal bare-word line</text>
+  <text class="bad" x="40" y="286">&#10007;</text>
+  <text class="bad" x="62" y="286">assert surface == _watch_attach_line(&#8230;)      # the composer under test</text>
+  <text class="note" x="62" y="314">Restoring the bare word reckon as the first token turns all six edited assertions red &mdash; each on the</text>
+  <text class="note" x="62" y="332">absolute-path clause, with the composed line in the failure message.</text>
+</svg>

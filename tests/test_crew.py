@@ -1844,6 +1844,32 @@ def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) 
         assert event["run_id"] == record["run_id"]
 
 
+def _assert_attach_line_shape(
+    line: str, project: str, session: str | None = None
+) -> None:
+    """Assert the attach line's shape, never a literal or the composer itself.
+
+    The first token has to be an absolute path to the running ``reckon``
+    console script, because the shell that arms the line need not carry the
+    interpreter's bin directory on PATH. The remaining tokens are the fixed
+    command carrying exactly the caller's project and session.
+    """
+    tokens = shlex.split(line)
+    executable = tokens[0] if tokens else ""
+    assert os.path.isabs(executable), f"the first token is not absolute: {line!r}"
+    assert os.path.isfile(executable), f"the first token is not a file: {line!r}"
+    assert os.access(executable, os.X_OK), f"the first token is not runnable: {line!r}"
+    assert os.path.basename(executable) == "reckon", (
+        f"the first token is not the reckon console script: {line!r}"
+    )
+    expected = ["crew", "follow", "--project", project]
+    if session is not None:
+        expected += ["--session", session]
+    assert tokens[1:] == expected, (
+        f"the attach line's arguments are not the fixed command: {line!r}"
+    )
+
+
 def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     home, repo, monkeypatch
 ) -> None:
@@ -1881,15 +1907,13 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     assert result.exit_code == 0
     record = json.loads(result.output)
     waiver = record["watch_override"]
-    assert waiver == {
-        "requested": True,
-        "arming_line": "reckon crew watch --project proj",
-        "attach_line": "reckon crew follow --project proj --session sess",
-        "watcher_live": False,
-        # What a waiver waives is now on the record: nobody was listening, and
-        # the caller said so deliberately.
-        "session_attached": False,
-    }
+    assert waiver["requested"] is True
+    assert waiver["arming_line"] == "reckon crew watch --project proj"
+    assert waiver["watcher_live"] is False
+    # What a waiver waives is now on the record: nobody was listening, and the
+    # caller said so deliberately.
+    assert waiver["session_attached"] is False
+    _assert_attach_line_shape(waiver["attach_line"], "proj", "sess")
     assert crew.read_pointer(record["run_id"])["watch_override"] == waiver
     assert (
         crew.complete(record["run_id"], gate="passed")["record"]["watch_override"]
