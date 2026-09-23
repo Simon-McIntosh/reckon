@@ -180,6 +180,74 @@
     and its tests and nothing else.</p>
   </section>
 
+  <section id="s2c-promoted-revision-and-sweep">
+    <h2>A promotion records the revision it asserts, and a sweep tests both halves</h2>
+    <p><strong>What landed and where.</strong> <code>promotion.complete</code> records
+    <code>promoted_revision</code> on the ledger row — the tip of the run's own work, resolved by
+    <code>_promoted_revision</code> in <code>reckon/crew/promotion.py</code> while the run's tree is
+    still present. A shadow run and a run that cited no commit record none, so an absent key never
+    reads as a promotion whose work was verified as landed. The revision is the worker's cited tip
+    rather than the worktree's <code>HEAD</code>, because a shared checkout can advance under other
+    runs between the commit and the promotion, and the cited tip is the revision whose diff
+    promotion already measured.</p>
+    <p><strong>Why the promotion's own commit cannot be the recorded revision.</strong> A promotion
+    commits its ledger row and plan comment into the branch it is promoted into, so that commit is
+    an ancestor of the branch head by construction and an ancestry question asked of it can never
+    fail. Asked of the run's own head it can: measured in a synthesised repository, the promote
+    commit is an ancestor of <code>HEAD</code> while the run's head is not, until a merge carries
+    it.</p>
+    <p><strong>The sweep, and the two questions.</strong>
+    <code>promotion.sweep_promoted_revisions(project, target_head=…, markers=…)</code> reads the
+    ledger and the branch and writes neither. Per promoted row it asks whether the recorded revision
+    is an ancestor of the target head, and whether a caller-declared marker survives there —
+    <code>expect="present"</code> for a change that added content, <code>expect="absent"</code> for
+    one whose purpose was a removal. Findings carry the reason
+    (<code>not-an-ancestor</code>, <code>marker-absent</code>,
+    <code>removed-marker-still-present</code>, <code>unresolvable-revision</code>). A git failure in
+    either probe raises rather than answering absent or not-an-ancestor, because an unreadable tree
+    and a genuinely absent marker otherwise return the same empty result.</p>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/landed_sweep_decision.png" alt="The sweep's two questions and the four outcomes: not-an-ancestor, marker-absent, removed-marker-still-present, and no report for intact work.">
+      <figcaption>Q1 forks to the never-merged report; Q2 forks on whether the passing answer is presence or absence, which is why the removal assertion is not redundant with the addition one.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Synthesised state</th><th>Ancestry</th><th>Marker</th><th>Reported reason</th></tr></thead>
+      <tbody>
+        <tr><td>run head never merged into the target</td><td>fails</td><td>—</td><td><code>not-an-ancestor</code></td></tr>
+        <tr><td>merged, then content stripped by a later commit</td><td>passes</td><td>introduced marker absent</td><td><code>marker-absent</code></td></tr>
+        <tr><td>deletion applied by a merge, then undone</td><td>passes</td><td>removed marker present</td><td><code>removed-marker-still-present</code></td></tr>
+        <tr><td>merged with the change intact</td><td>passes</td><td>introduced marker present</td><td>not reported</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> Five assertions in
+    <code>tests/test_promotion_landed_sweep.py</code> pass against a real promotion driven through
+    <code>crew.complete</code> in a synthesised repository (5 passed), one per row above plus
+    the direct recording assertion. The suite a passing check never shows firing is the sweep's
+    negative half; the declared mutation is what makes the guard speak.</p>
+    <p><strong>The declared negative control, and the mutation behind it.</strong> The declared
+    mutation — <em>record the promote commit rather than the run's worktree head as the promoted
+    revision</em> — was applied to the recording site in a scratch copy of the fixed tree
+    (<code>git archive HEAD</code> into a temp directory, the worktree's own source never touched),
+    and <code>tests/test_promotion_landed_sweep.py</code> ran <strong>2 failed, 3 passed</strong>.
+    The two that redden are the two the declaration predicts:
+    <code>test_complete_records_the_run_head_not_the_promote_commit</code> fails on
+    <code>assert record["promoted_revision"] == head</code>, and
+    <code>test_sweep_reports_a_promotion_whose_work_is_not_an_ancestor</code> fails because the
+    report is empty. The second failure is the plan's own statement made visible:
+    <strong>a recorded revision that is an ancestor by construction makes the ancestry check pass
+    vacuously</strong>, so the never-merged run is no longer reported at all. The red log's first
+    line repeats the declared mutation verbatim.</p>
+    <p><strong>Gate delta.</strong> The focused gate — the new file plus
+    <code>tests/test_crew_promotion.py</code>, <code>tests/test_promotion_harvests_the_receipt.py</code>
+    and <code>tests/test_a_promotion_never_creates_a_ledger.py</code> — reports <strong>1 failed, 71
+    passed</strong>, and the single failure
+    (<code>test_promotion_audits_only_its_own_worktree</code>, a scoring-classification refusal) is
+    pre-existing: the same test fails identically at the base revision against the same three files
+    (<strong>1 failed, 66 passed</strong>). Zero failures are added by this change. Ruff on
+    <code>reckon/crew/promotion.py</code> is <strong>10 → 10</strong>, and the new test file is clean
+    and formatted.</p>
+  </section>
+
   <section id="s2d-ledger-write-cannot-shrink">
     <h2>A ledger write cannot shrink the committed record</h2>
     <p><strong>What landed.</strong> <code>ledger.write</code> now refuses a write whose run count

@@ -274,6 +274,15 @@
     dropped deletion is as silent as a dropped addition. Promotion does not merge: the assertion is
     a later sweep, not a side effect of landing.</p>
 
+    <div class="r-comment" data-section="s2c" data-id="c-run-r-20260923T022234600678-a-promotion-records-the-head-it-promoted" data-who="crew-worker" data-when="2026-09-23">
+      <p><strong>Recording and sweep landed.</strong> <code>promotion.complete</code> now records <code>promoted_revision</code> on the ledger row: the tip of the run's own work (<code>_promoted_revision</code> in <code>reckon/crew/promotion.py</code>), resolved while the run's tree is still present, and left absent for a shadow or a run that cited no commit. Recording the landing commit instead would make the ancestry question true by construction; asserted directly, since the promote commit is an ancestor of the target head while the run's own head is not until a merge carries it. <code>promotion.sweep_promoted_revisions(project, target_head=…, markers=…)</code> is the later read: per promoted row it reports <code>not-an-ancestor</code>, a declared marker's absence, or a removed marker still present, and reports nothing when the work landed intact. No ledger or branch is written.</p>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/landed_sweep_decision.png" alt="The sweep's two questions — is the promoted revision an ancestor of the target head, and does the change's marker survive — and the four outcomes each run reaches.">
+        <figcaption>Neither half subsumes the other: a run can pass ancestry and still have lost its content, and a dropped deletion is silent to a presence-only check.</figcaption>
+      </figure>
+      <p><strong>Evidence that could have failed.</strong> Five assertions in <code>tests/test_promotion_landed_sweep.py</code> pass against a real promotion driven through <code>crew.complete</code> in a synthesised repository: the recorded head differs from the promote commit and only the promote commit is an ancestor; a never-merged run is reported on ancestry; a run merged and then stripped of its content is reported on the marker while ancestry passes; a change whose deletion was undone is reported.</p>
+    </div>
+
     <h2 id="s2d">§2d — A promotion destroyed the ledger it was writing to</h2>
 
     <p>§2 and §2c are about a promotion asserting something false. This one is about a promotion
