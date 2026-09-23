@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="The Page Paints From An Index">
+  <meta name="plan-summary" content="A page paints from a persisted metadata index in milliseconds, loads the rest lazily, and stays in sync from pushed row changes, so refresh is never needed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="spa,reckon-tooling">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan's pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>The Page Paints From An Index | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; A page waits for the whole derived fleet, and a restart forgets it</h2>
+    <p>The <a href="/reckon/plans/a-page-load-reads-each-file-once">discovery repair</a> removed
+    the quadratic parse, and warm <code>/_discover</code> fell below 1.5 s at load average 8 to 12.
+    The operator restarted <code>reckon.service</code> at 20:18 CEST on 2026-09-23 to pick up that
+    plan's &sect;7. The site was then unreachable for about 5.5 minutes, and afterwards
+    <code>/_discover/imas-efit</code> did not answer within 120 s and <code>/crew</code> took 27 s.
+    The login node stood at load average 169. The operator's requirement, in their words: lazy load
+    the plans and thumbnails with only metadata loaded quickly on startup or refresh, make refresh
+    lightning quick and also unnecessary, and keep the site in sync automatically.</p>
+    <p>Five causes, each measured or read from the code on 2026-09-23:</p>
+    <ul>
+      <li><strong>The server listens only after it has watched every tree.</strong>
+      <code>main</code> calls <code>start_fleet_change_watch</code> before
+      <code>serve_forever</code>, and each <code>_ProjectChangeWatch</code> walks its tree with
+      <code>os.walk</code>. <code>py-spy dump</code> at 20:20 put the main thread in
+      <code>_watch_tree</code>, at <code>islink</code>, with 10 of 13 trees done, and the port
+      refused every connection until the walk finished.</li>
+      <li><strong>Every cache lives in process memory.</strong> The per-file parse memo, the
+      discovery cache and the git-history memo start empty after a restart, so the first request
+      for each project re-reads every plan, evidence and figure file from the shared
+      filesystem.</li>
+      <li><strong>One response carries everything, and nothing paints before it.</strong>
+      <code>/_discover/&lt;project&gt;</code> returns every row together with the roadmap, the ready
+      set, readiness state, live crew runs, git creation times and review state. That is 5.5 MB for
+      nova, and the SPA renders nothing until the whole response arrives.</li>
+      <li><strong>A change means a full reload.</strong> <code>/_changes/&lt;project&gt;</code>
+      emits only a content digest, and the SPA answers each event by fetching the whole
+      <code>/_discover</code> payload again.</li>
+      <li><strong>Thumbnails are full-size figures.</strong> The figure list draws each row's image
+      at 50 by 34 pixels from the original file. Loading lazily defers the download but does not
+      shrink it.</li>
+    </ul>
+
+    <h2 id="s2">&sect;2 &mdash; The server listens before it watches</h2>
+    <p><code>main</code> binds and serves first. The fleet change watch is built on a background
+    thread, one tree at a time. A tree is covered by the reuse window until its watch is
+    armed.</p>
+    <p><strong>Done when</strong> <code>tests/test_server_listens_before_it_watches.py</code>
+    starts the served entry point over three temporary mounted projects. It patches
+    <code>_ProjectChangeWatch</code> construction to take 5 s per tree, and asserts that a
+    connection to the port answers <code>/_projects/mounts.json</code> with 200 within 2 s of
+    launch. It also asserts that every tree's watch is armed within 20 s. The negative control is
+    executed and logged: with the watch built before <code>serve_forever</code>, the 2 s
+    assertion fails. The write paths are <code>reckon/serve.py</code> and that test.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A metadata index survives a restart and answers in milliseconds</h2>
+    <p>The server keeps one metadata index per mounted project on disk, under the configuration
+    home's cache directory. Each row carries the fields a list needs: slug, href, type, title,
+    status, sprint, archived, created and edited stamps, and figure dimensions. It also carries the
+    stat identity of the file the row came from. At startup the index is read, and each file is
+    re-parsed only when its stat identity differs from the recorded one, so a restart costs stat
+    calls rather than reads. The change watch updates the rows of the files it reports. A new
+    endpoint <code>/_index/&lt;project&gt;</code> serves the rows and nothing derived: no roadmap,
+    no readiness, no live runs.</p>
+    <p><strong>Done when</strong> <code>tests/test_metadata_index_survives_restart.py</code>
+    builds a temporary project of 200 plan and evidence files and a temporary configuration home.
+    It builds the index once, clears every in-process memo to stand in for a restart, and asserts
+    that the rebuild parses 0 files, counted through <code>_plan_html._parse_meta_uncached</code>.
+    It rewrites one file, and asserts that the next build parses exactly that one and returns its
+    new title. It also asserts that the <code>/_index</code> response carries no key outside the
+    declared row fields. The negative control is executed and logged: with the persisted index
+    ignored, the post-restart build parses all 200 files and the first assertion fails. The write
+    paths are a new module <code>reckon/metadata_index.py</code>, <code>reckon/serve.py</code> and
+    that test. This section runs after &sect;2, which shares <code>reckon/serve.py</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; A page paints from the index, and derived state arrives when ready</h2>
+    <p><code>docs/ui/state-loader.js</code> fetches <code>/_index/&lt;project&gt;</code> first,
+    renders the rows, and resolves the page's first paint. It then fetches
+    <code>/_discover/&lt;project&gt;</code> in the background and merges the derived fields into
+    the rows already on screen, without re-sorting a list the reader is looking at. A plan's body is
+    fetched only when that plan is opened. The derived values are computed in Python, as the
+    served-surface rule requires; the loader only merges them.</p>
+    <p><strong>Done when</strong> <code>tests/test_page_paints_from_the_index.py</code> runs the
+    real loader under <code>node</code> with a recording <code>fetch</code> in which
+    <code>/_discover</code> never resolves. It asserts that <code>window.STATE_READY</code>
+    resolves with every index row present, and that the only requests made before readiness are
+    for <code>/_index</code>. A second case resolves <code>/_discover</code> later and asserts the
+    derived fields, <code>effective_status</code> and the ready set, are merged into the same rows
+    with their order unchanged. The negative control is executed and logged: with readiness gated
+    on <code>/_discover</code> again, the first case never resolves and fails on its timeout. The
+    write paths are <code>docs/ui/state-loader.js</code> and that test. This section runs after
+    &sect;3, whose endpoint it reads.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A change pushes its rows, and the page patches them in place</h2>
+    <p>On a change, <code>/_changes/&lt;project&gt;</code> emits the index rows that changed, were
+    added, or were removed, taken from the &sect;3 index diff, rather than a bare digest. The loader
+    patches those rows into <code>window.STATE</code> and marks new ones as arrivals. It refetches
+    derived state at most once per settle window, in the background. A refresh then has nothing to
+    add.</p>
+    <p><strong>Done when</strong> <code>tests/test_changes_push_rows.py</code> opens a change
+    stream against a temporary project, rewrites one plan's title, and asserts the next event
+    carries exactly that row with its new title within 2 s. A loader case under
+    <code>node</code> feeds that event to the real loader, and asserts the row is patched in
+    <code>window.STATE</code> with no request to <code>/_discover</code> or <code>/_index</code>
+    made to apply it. The negative control is executed and logged: with the stream emitting the
+    bare digest, the row assertion fails. The write paths are <code>reckon/serve.py</code>,
+    <code>docs/ui/state-loader.js</code> and that test. This section runs after &sect;3 and
+    &sect;4, whose files it shares.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A thumbnail is a thumbnail</h2>
+    <p>The server serves a downscaled copy of a figure at <code>/_thumb/&lt;project&gt;/&lt;path&gt;</code>,
+    at most 200 pixels on the long edge. It is generated once, cached on disk under the
+    configuration home keyed by the source file's stat identity, and revalidated by ETag. SVG
+    sources are passed through, because they scale without cost. The figure list draws rows from
+    the thumbnail URL, lazily. Pillow is declared in <code>pyproject.toml</code> rather than
+    reached through another package's dependency.</p>
+    <p><strong>Done when</strong> <code>tests/test_figure_thumbnails.py</code> serves a
+    2000-by-1500 PNG from a temporary project, and asserts the thumbnail answers 200 with an image
+    whose long edge is 200 pixels and whose byte size is under a tenth of the source. It asserts a
+    second request with the ETag answers 304 without regenerating, counted through a counter the
+    test installs, and that an SVG is returned unchanged. The negative control is executed and
+    logged: with the thumbnail route serving the source file, the size assertion fails. The write
+    paths are <code>reckon/serve.py</code>, <code>docs/ui/shell-plans.jsx</code>,
+    <code>pyproject.toml</code>, <code>uv.lock</code> and that test. This section runs after
+    &sect;5, which shares <code>reckon/serve.py</code>.</p>
+
+    <h2 id="s7">&sect;7 &mdash; The first paint is measured cold after a restart</h2>
+    <p>Once &sect;2 to &sect;6 are merged and the operator restarts the service, the page load is
+    measured the way a reader meets it: straight after a restart, and again warm.</p>
+    <p><strong>Done when</strong> a timing report records, for reckon, nova, imas-codex and
+    imas-efit, the wall time of <code>/_index/&lt;project&gt;</code> and of
+    <code>/_discover/&lt;project&gt;</code>. It records them in the first minute after the restart
+    and again at least 60 s later, together with the host, its load average at each pass and each
+    pass's UTC window. It also records how long the port takes to accept a connection after the
+    restart. The gate is hard: every <code>/_index</code> request answers 200 in under 1 s in both
+    passes, and the port accepts a connection within 5 s of the restart. A slower request fails the
+    gate, and the report names it with a <code>py-spy dump</code> frame. The write path is the
+    report under the session's reports directory.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-tppfai-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-page-paints-from-an-index" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Serve metadata first and push changes, so a refresh is never needed</h4>
+        <div class="r-fu-body"><p>&sect;2 comes first because it keeps the site reachable across a restart. &sect;3, &sect;5 and &sect;6 run in that order on <code>reckon/serve.py</code>. &sect;4 follows &sect;3, and &sect;5 follows &sect;4 on <code>docs/ui/state-loader.js</code>. &sect;7 waits on the others and on a restart.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship the-page-paints-from-an-index</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
