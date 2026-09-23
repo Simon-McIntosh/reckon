@@ -1,0 +1,32 @@
+{
+  "measured_at": "2026-09-23T07:58:12+02:00",
+  "window_days": 7,
+  "run_directories_in_window": 1404,
+  "pointers_present": 50,
+  "pointers_without_session_id": 44,
+  "captured": 6,
+  "by_backend": {
+    "claude": 2,
+    "clive": 39,
+    "codex": 1,
+    "codex-astra": 1,
+    "codex-luna": 1
+  },
+  "by_point": {
+    "stream-not-folded": 43,
+    "stream-without-id": 1
+  },
+  "by_backend_and_point": {
+    "claude / stream-not-folded": 2,
+    "clive / stream-not-folded": 39,
+    "codex / stream-not-folded": 1,
+    "codex-astra / stream-not-folded": 1,
+    "codex-luna / stream-without-id": 1
+  },
+  "point_causes": {
+    "stream-not-folded": "a session id is present in the run's own stream, so the pointer simply predates any observation that would record it",
+    "harness-launch": "the run is a task bound in the dispatching harness; it writes no backend stream, so no session id was ever captured for it",
+    "stream-unreadable": "cli launch whose recorded stream path is not a readable file, so capture had nothing to read",
+    "stream-without-id": "cli launch whose stream was read and carries no session id; the backend has not announced one for this run"
+  }
+}

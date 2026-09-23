@@ -1,0 +1,219 @@
+rev: 75b39d4d tree: /tmp/basetree
+cmd: pytest session-keying orientation actual-resume
+FF.F...FF..F...                                                          [100%]
+=================================== FAILURES ===================================
+_______ test_two_dispatches_at_the_same_configuration_resume_one_session _______
+
+home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_two_dispatches_at_the_sam0/config')
+repo = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_two_dispatches_at_the_sam0/repo')
+
+    def test_two_dispatches_at_the_same_configuration_resume_one_session(
+        home: Path, repo: Path
+    ) -> None:
+        _register(repo)
+        first = _dispatch(home, repo, 1)
+        _complete_stream(first, MEDIUM_SESSION)
+    
+        second = _dispatch(home, repo, 2)
+    
+>       assert second["session_id"] == MEDIUM_SESSION
+E       AssertionError: assert None == '066f04b2-75c1-43f0-aa27-0d72a67b340f'
+
+tests/test_crew_session_keying.py:157: AssertionError
+______ test_changed_effort_starts_fresh_and_both_sessions_remain_reusable ______
+
+home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_changed_effort_starts_fre0/config')
+repo = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_changed_effort_starts_fre0/repo')
+
+    def test_changed_effort_starts_fresh_and_both_sessions_remain_reusable(
+        home: Path, repo: Path
+    ) -> None:
+        _register(repo)
+        first = _dispatch(home, repo, 1)
+        _complete_stream(first, MEDIUM_SESSION)
+    
+        changed = _dispatch(home, repo, 2, config=_config(effort="xhigh"))
+        assert changed["session_id"] is None
+        assert "resume" not in changed["argv"]
+        _complete_stream(changed, XHIGH_SESSION)
+    
+        medium_again = _dispatch(home, repo, 3)
+>       assert medium_again["session_id"] == MEDIUM_SESSION
+E       AssertionError: assert None == '066f04b2-75c1-43f0-aa27-0d72a67b340f'
+
+tests/test_crew_session_keying.py:174: AssertionError
+_______ test_legacy_model_key_reuses_when_capture_configuration_matches ________
+
+home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_legacy_model_key_reuses_w0/config')
+repo = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_legacy_model_key_reuses_w0/repo')
+
+    def test_legacy_model_key_reuses_when_capture_configuration_matches(
+        home: Path, repo: Path
+    ) -> None:
+        _write_legacy_member(repo, capturing_agent=MEDIUM_AGENT)
+    
+        dispatched = _dispatch(home, repo, 1)
+    
+>       assert dispatched["session_id"] == MEDIUM_SESSION
+E       AssertionError: assert None == '066f04b2-75c1-43f0-aa27-0d72a67b340f'
+
+tests/test_crew_session_keying.py:229: AssertionError
+__________ test_first_observation_blocks_and_names_a_mismatched_field __________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_first_observation_blocks_0/crew-home')
+
+    def test_first_observation_blocks_and_names_a_mismatched_field(
+        crew_home: Path,
+    ) -> None:
+        record = _pointer(crew_home)
+        manifest = Path(record["manifest_path"])
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(
+            _report(record, orientation_worktree="/repo/the-wrong-worktree")
+        )
+    
+>       observed = crew.observe(record["run_id"], config={})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_crew_orientation.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch.py:4776: in observe
+    return _mutate_pointer(run_id, fold)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/runs.py:353: in _mutate_pointer
+    record = mutation(previous)
+             ^^^^^^^^^^^^^^^^^^
+reckon/crew/dispatch.py:4751: in fold
+    parse_manifest(manifest.read_text()).get("status") or ""
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/reports.py:311: in parse_manifest
+    fields = _refuse_undetermined_status(fields, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+fields = {'orientation_worktree': '/repo/the-wrong-worktree', 'orientation_base_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'orientation_write_paths': '["reckon/crew/dispatch.py", "tests/test_orientation.py"]'}
+path = None
+
+    def _refuse_undetermined_status(
+        fields: dict[str, Any], path: str | None
+    ) -> dict[str, Any]:
+        """Raise when the parsed fields still leave the status undetermined.
+    
+        Three shapes are undetermined rather than merely absent. A body whose
+        parsed top-level fields are all outside the manifest vocabulary is prose
+        wearing a ``key: value`` shape, not a manifest; a body whose parsed fields
+        read as manifest fields but omit the status key entirely is a report
+        wearing a manifest shape, not a worker verdict; and a status naming a word
+        no part of the system recognises would be carried forward as a state it
+        never was. All three raise. A bare list-attribute excerpt (``commits:``
+        without a status, say) keeps parsing — it is a fragment of a manifest being
+        read for its attributes, not a verdictless manifest — and a body declaring
+        itself a recovery artifact through a truthy ``derived`` field keeps parsing
+        too, because recovery fabricates that shape without a status when it
+        preserves a terminal run's evidence. A well-formed terminal, non-terminal
+        or waiting status — and an unsubstituted terminal template, which the
+        classifier reads as unwritten rather than refused — keeps parsing.
+        """
+        if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
+            raise ManifestParseError(
+                _incidental_prose_manifest_message(path, sorted(fields))
+            )
+        if "status" not in fields and not _declares_derived(fields):
+            outcome_fields = set(fields) & _OUTCOME_MANIFEST_FIELDS
+            if outcome_fields:
+>               raise ManifestParseError(
+                    _missing_status_manifest_message(path, sorted(outcome_fields))
+                )
+E               reckon.crew.reports.ManifestParseError: cannot read manifest: the body reads as manifest fields (orientation_base_sha, orientation_worktree, orientation_write_paths) but carries no status key, so its status cannot be determined; expected a JSON object or the 'key: value' text form carrying a status line
+
+reckon/crew/reports.py:684: ManifestParseError
+___________ test_first_observation_leaves_a_matching_phase_untouched ___________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_first_observation_leaves_0/crew-home')
+
+    def test_first_observation_leaves_a_matching_phase_untouched(crew_home: Path) -> None:
+        record = _pointer(crew_home, phase="working")
+        manifest = Path(record["manifest_path"])
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(_report(record))
+    
+>       observed = crew.observe(record["run_id"], config={})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_crew_orientation.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch.py:4776: in observe
+    return _mutate_pointer(run_id, fold)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/runs.py:353: in _mutate_pointer
+    record = mutation(previous)
+             ^^^^^^^^^^^^^^^^^^
+reckon/crew/dispatch.py:4751: in fold
+    parse_manifest(manifest.read_text()).get("status") or ""
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/reports.py:311: in parse_manifest
+    fields = _refuse_undetermined_status(fields, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+fields = {'orientation_worktree': '/repo/worktrees/orientation-run', 'orientation_base_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'orientation_write_paths': '["reckon/crew/dispatch.py", "tests/test_orientation.py"]'}
+path = None
+
+    def _refuse_undetermined_status(
+        fields: dict[str, Any], path: str | None
+    ) -> dict[str, Any]:
+        """Raise when the parsed fields still leave the status undetermined.
+    
+        Three shapes are undetermined rather than merely absent. A body whose
+        parsed top-level fields are all outside the manifest vocabulary is prose
+        wearing a ``key: value`` shape, not a manifest; a body whose parsed fields
+        read as manifest fields but omit the status key entirely is a report
+        wearing a manifest shape, not a worker verdict; and a status naming a word
+        no part of the system recognises would be carried forward as a state it
+        never was. All three raise. A bare list-attribute excerpt (``commits:``
+        without a status, say) keeps parsing — it is a fragment of a manifest being
+        read for its attributes, not a verdictless manifest — and a body declaring
+        itself a recovery artifact through a truthy ``derived`` field keeps parsing
+        too, because recovery fabricates that shape without a status when it
+        preserves a terminal run's evidence. A well-formed terminal, non-terminal
+        or waiting status — and an unsubstituted terminal template, which the
+        classifier reads as unwritten rather than refused — keeps parsing.
+        """
+        if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
+            raise ManifestParseError(
+                _incidental_prose_manifest_message(path, sorted(fields))
+            )
+        if "status" not in fields and not _declares_derived(fields):
+            outcome_fields = set(fields) & _OUTCOME_MANIFEST_FIELDS
+            if outcome_fields:
+>               raise ManifestParseError(
+                    _missing_status_manifest_message(path, sorted(outcome_fields))
+                )
+E               reckon.crew.reports.ManifestParseError: cannot read manifest: the body reads as manifest fields (orientation_base_sha, orientation_worktree, orientation_write_paths) but carries no status key, so its status cannot be determined; expected a JSON object or the 'key: value' text form carrying a status line
+
+reckon/crew/reports.py:684: ManifestParseError
+_____________ test_a_captured_session_is_reported_as_a_resumption ______________
+
+home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_a_captured_session_is_rep0/config')
+repo = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5097/test_a_captured_session_is_rep0/repo')
+
+    def test_a_captured_session_is_reported_as_a_resumption(home: Path, repo: Path) -> None:
+        """The same lane, this time with a session the run actually carried."""
+        _register(repo)
+        _complete_stream(_dispatch(home, repo, 1), MEDIUM_SESSION)
+    
+        second = _dispatch(home, repo, 2)
+    
+        assert second["session_reuse_capable"] is True
+>       assert second["session_resumed"] is True
+E       assert False is True
+
+tests/test_run_record_reports_actual_resume.py:200: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_crew_session_keying.py::test_two_dispatches_at_the_same_configuration_resume_one_session
+FAILED tests/test_crew_session_keying.py::test_changed_effort_starts_fresh_and_both_sessions_remain_reusable
+FAILED tests/test_crew_session_keying.py::test_legacy_model_key_reuses_when_capture_configuration_matches
+FAILED tests/test_crew_orientation.py::test_first_observation_blocks_and_names_a_mismatched_field
+FAILED tests/test_crew_orientation.py::test_first_observation_leaves_a_matching_phase_untouched
+FAILED tests/test_run_record_reports_actual_resume.py::test_a_captured_session_is_reported_as_a_resumption
+6 failed, 9 passed in 96.61s (0:01:36)
