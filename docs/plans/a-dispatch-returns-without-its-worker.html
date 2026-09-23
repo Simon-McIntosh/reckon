@@ -36,8 +36,9 @@
     the dispatch process, a second <code>reckon</code> process beneath it, and the
     <code>claude</code> worker beneath that. All four dispatch processes exited at 21:56:20 and
     21:56:38, close to six minutes after launch, and all four workers were still alive and
-    streaming afterwards. The skill tells coordinators to background every CLI dispatch, which is
-    why the hold shows up as extra monitors rather than as a blocked turn.</p>
+    streaming afterwards. A fifth dispatch at 22:14:34 returned at 22:18:45, a hold of about four
+    minutes. The skill tells coordinators to background every CLI dispatch, which is why the hold
+    shows up as extra monitors rather than as a blocked turn.</p>
     <p>The worker is launched with <code>start_new_session=True</code> in <code>_spawn</code> in
     <code>reckon/crew/dispatch.py</code>, and it survives its dispatch process exiting normally. What
     holds the dispatch process for six minutes is not established. An earlier session recorded that

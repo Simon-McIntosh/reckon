@@ -50,6 +50,23 @@
       manifests carrying a status word outside <code>complete</code>, <code>blocked</code> and
       <code>failed</code>. Each classified as unreadable and never emitted a terminal transition.</li>
     </ul>
+    <p>The stall census in <a href="/reckon/plans/the-monitor-under-measurement#s5">the measurement
+    plan &sect;5</a> split 118 stall transitions from seven days by what was true at the stall.</p>
+    <table>
+      <thead><tr><th>Process at stall</th><th>Completed with no resume</th><th>Needed a resume</th><th>Other</th></tr></thead>
+      <tbody>
+        <tr><td>gone</td><td>29</td><td>64</td><td>4</td></tr>
+        <tr><td>alive</td><td>9</td><td>3</td><td>0</td></tr>
+        <tr><td>unknown</td><td>3</td><td>6</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>So a stall is a dead worker in 97 of 118 cases, and reporting the death at once is where the
+    value is. The session that wrote this plan met it twice in one night: two review workers died
+    mid-thinking in the read-only sandbox at 22:50 and 23:20, and each surfaced as stalled fifteen
+    minutes later. Live stalls are rare, but 9 of 12 finished without help, which is the condition
+    &sect;6 names. The census also found that
+    <code>r-20260922T140247463532-rail-env-remaining-eighteen</code> completed after a resume, not
+    without one, so that example stands only for the fifteen-minute false alarm.</p>
     <p>imas-ambix-f6 also recorded the other side: past about twenty-two concurrent workers the lane
     degrades without any refusal, and three reviews stalled at almost exactly 900 seconds with no
     error record. The silence detector caught every one of them. So stream silence stays a signal.

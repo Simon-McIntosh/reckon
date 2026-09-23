@@ -42,6 +42,14 @@
         <tr><td>imas-ambix-b6, session slurm-fleet-placement</td><td>1.5</td><td>2</td><td>none</td></tr>
       </tbody>
     </table>
+    <p>The census in <a href="/reckon/plans/the-monitor-under-measurement#s2">the measurement plan
+    &sect;2</a> confirms this over seven days and four projects. Of 719 armed followers, 620 ended
+    at the host's expiry, 86 when the project seat was released, 12 on an exit-127 arming failure
+    and 1 on another script failure. The follower also replaced itself in place 198 times when
+    reckon's own source changed. The <code>persistent</code> parameter did once work: 453 calls
+    passed it and none met the expiry. The last such call was at 13:40 UTC on 2026-09-15, and the
+    Monitor tool has not offered it since, which is when every follower started dying at thirty
+    minutes.</p>
     <p>The expiry costs three things, and only the first is visible. The next dispatch is refused
     with <code>watcher-required</code>, because the session has no delivering follower. The first
     arming often fails outright, because <code>attach_line</code> names a bare <code>reckon</code>
@@ -96,6 +104,10 @@
     ordinary transitions from the recorded state. Emit no row for a run whose state is unchanged.
     Emit one header line first saying the follower re-attached, how many live runs it found and how
     many changed since the recorded time.</p>
+    <p>The replayed state is the classifier's current reading, never the pointer's stored phase.
+    Measured on the session that wrote this plan: each re-arm's baseline labelled four runs that had
+    been streaming for 27 minutes as <code>dispatched</code>, and left out both of the session's
+    finished, unpromoted runs.</p>
     <p>Remove <code>completed_unpromoted</code>, <code>failed</code> and <code>abandoned</code> from
     the set the human path suppresses, because those rows are what the reader must see. A run
     already promoted stays suppressed.</p>
@@ -116,13 +128,17 @@
     <a href="/reckon/plans/a-dispatch-returns-without-its-worker">a-dispatch-returns-without-its-worker</a>
     detaches a dispatched worker. If the census finds they survive, record the evidence and close
     this section as done with no change.</p>
+    <p><strong>Measured, no change needed.</strong> The census found that the sweep reaches
+    <code>_spawn</code> in <code>reckon/crew/dispatch.py</code>, which launches the worker with
+    <code>start_new_session=True</code>, so the worker is the follower's child but sits in its own
+    session and survives the follower's death. This section closes as done.</p>
     <p><strong>Done when</strong> a test starts a follower whose sweep launches a stub worker, sends
     the follower SIGKILL, and observes the stub's marker file appear. The write paths are
     <code>reckon/crew/dispatch.py</code> and <code>tests/test_sweep_worker_survives_follower.py</code>.</p>
 
     <h2 id="s6">&sect;6 &mdash; The harness reference says what the host actually does</h2>
     <p>Correct <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code>. Remove
-    <code>persistent: true</code>, which the Monitor tool does not accept. State the thirty-minute
+    <code>persistent: true</code>, which the Monitor tool has not accepted since 2026-09-15. State the thirty-minute
     cap as a fact of the host. Arm with the absolute attach line and <code>--lifetime 29m</code>, and
     re-arm on the follower's final line. Say that ANSI colour reaches an agent reader as escape
     sequences inside the notification, so the state word must carry the state on its own.</p>

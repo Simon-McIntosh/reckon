@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-22">
-  <meta name="plan-version" content="3">
+  <meta name="plan-modified" content="2026-09-23">
+  <meta name="plan-version" content="4">
   <meta name="plan-depends-on" content="a-scoped-follower-counts-its-own-session">
   <title>A Follower Keeps Your Work In View | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -108,20 +108,27 @@
     owning session and filter the candidate runs by it. The path map in
     <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> names
     the exact lines.</p>
-    <p>A run whose session has no follower then has no sweeper. That is the decision below, and the
-    implementing node follows its locked choice.</p>
+    <p>A run whose session has no follower then has no sweeper. The decision below is locked on
+    the measurement in <a href="/reckon/plans/the-monitor-under-measurement#s7">the measurement plan
+    &sect;7</a>: the project watcher sweeps a session once it has had no live follower for ten
+    minutes, records itself as the writer of each action, and leaves alone a session whose pointers
+    name another host. Present coordinators re-arm within a median of 12 seconds and 90 percent
+    within 9.7 minutes, so ten minutes separates a re-arm from an absence.</p>
     <p><strong>Done when</strong> <code>tests/test_follow_sweep_is_session_scoped.py</code> runs a
     sweep through a follower for one session over a fixture where both that session and an observed
     session each own one run whose hold has lapsed. Only the owning session's run is resumed, asserted
-    through a stub launcher that records its calls. The negative control is executed and logged:
+    through a stub launcher that records its calls. Three further cases run through the watcher's
+    tick: a session unattended for eleven minutes is swept and its resumed run records the watcher
+    as writer, a session unattended for nine minutes is not swept, and a session whose pointer names
+    another host is not swept. The negative control is executed and logged:
     calling the sweep without the session resumes both and the test fails. The write paths are
     <code>reckon/cli.py</code>, <code>reckon/crew/resumption.py</code> and that test.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="who-sweeps-an-unfollowed-session" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="who-sweeps-an-unfollowed-session" data-choice="the-project-watcher-sweeps-orphans" data-by="Simon McIntosh" data-when="2026-09-23T00:37:33+00:00">
     <p class="r-dec-q">Once a follower sweeps only its own session, who sweeps the runs of a session that has no follower?</p>
-    <p class="r-dec-rat">The coordinator recommends the project watcher. It already holds the project seat, it is a user service that outlives any session, and the runs of a session that ended still hold scope claims that block every other session&#x27;s dispatch.</p>
+    <p class="r-dec-rat">Measured 2026-09-22 over seven days and four projects. A coordinator that is present re-arms fast: median 12 seconds, 471 of 587 gaps under a minute, 90th percentile 9.7 minutes. The tail, 99th percentile 5.2 hours and maximum 12.9 hours, is coordinators who were absent, and 13 expiries were never re-armed; three sessions were unattended at the census with pointers 24 to 26 hours old. A grace period of ten minutes, just above the 90th percentile, leaves a present coordinator&#x27;s re-arm alone and sweeps the sessions nobody is watching, while the 99th percentile would have disabled the sweep exactly when it is needed. The coordinator&#x27;s own session showed this the same night: its follower was down about two and a half hours during a usage-limit pause, and two finished runs received no review dispatch. No live pointer or registration named another host, so treating a foreign-host pointer as unknown costs nothing today. The watcher records itself as the writer of each sweep action, because no record today carries the sweeping session.</p>
     </div>
 </section>
 
@@ -135,14 +142,18 @@
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-afkywiv-sweep-ownership-measured" data-section="s4" data-gated-sections="s4" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-afkywiv-sweep-ownership-measured" data-section="s4" data-gated-sections="s4" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the re-arm gap distribution, the unattended-session population, the count of cross-session sweep actions and the cross-host record count are measured, and the grace period is derived from the measured 99th percentile re-arm gap</h4>
     <p class="r-gate-required-evidence">the-monitor-under-measurement#s7</p>
-    </div>
+    <a class="r-gate-evidence" href="docs/research/data/monitor-sweep-ownership.json at merge f7a03269: 587 expiry-to-re-arm gaps with median 12 s, 90th percentile 9.7 min, 99th percentile 5.2 h, 13 expiries never re-armed; 3 unattended sessions at census with pointers 24 to 26 h old; 0 records naming another host; the cross-session sweep count is not recoverable because no record carries the sweeping session, so the behaviour rests on the path map at the-monitor-under-measurement#s4, which read it from run r-20260922T161442206389&#x27;s own stream. The grace period is derived from the 90th rather than the 99th percentile the measure named, because the tail beyond it is absent coordinators, the population the sweep exists for.">Evidence</a>
+</div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s4" data-id="c-20260922T2020-sweep-recommendation" data-who="reckon-ship" data-when="2026-09-22T20:20:00+00:00">
     <div class="r-comment-body"><p>Coordinator recommendation, not yet locked: the project watcher sweeps a session once it has had no live follower for a grace period, records itself as the sweep's writer on every run it acts on, and treats a session whose pointers name another login node as unknown rather than orphaned. The lead asked on 2026-09-22 that this rest on measurement, so the decision stays open behind gate <code>g-afkywiv-sweep-ownership-measured</code>. The grace period is the measured 99th percentile re-arm gap rounded up to five minutes, not the fifteen minutes first proposed. If the measurement finds no unattended sessions and no cross-session sweep actions, the recommendation weakens and the alternative option should be reconsidered.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0045-sweep-locked" data-who="reckon-ship" data-when="2026-09-23T00:45:00+00:00">
+    <div class="r-comment-body"><p>Decision locked on measurement: the project watcher sweeps a session after ten minutes with no live follower, records itself as the writer of every sweep action, and treats a session whose pointers name another host as unknown. The grace period comes from the 90th percentile re-arm gap of 9.7 minutes, not the 99th percentile first proposed, because the tail beyond it is absent coordinators. The implementing node adds three tests beside the one this section names: a session unattended for eleven minutes is swept by the watcher and the resumed run records the watcher as its writer; a session unattended for nine minutes is not swept; a session whose pointer names another host is not swept. Its write paths extend to <code>reckon/crew/recovery.py</code> for the watcher's tick.</p></div>
 </div>
 </section>
 </main>
