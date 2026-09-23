@@ -1650,9 +1650,12 @@ _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
 # itself on a source change re-enters through this command with the same
 # arguments, so a deadline computed from the replacement's own start would
 # restart the clock on every reload and could fall after the host's cap.
-# Carrying the instant in the environment lets the value survive ``os.execv``:
-# the replacement reads how much of the original arming is left instead of
-# granting a fresh lifetime.
+# Carrying the instant in the replacement's own environment lets it survive
+# ``os.execve``: the replacement reads how much of the original arming is left
+# instead of granting a fresh lifetime. The value is never written into
+# ``os.environ``, because every child a follower starts inherits that
+# environment and would otherwise carry a deadline that governs no process but
+# the follower itself.
 _FOLLOWER_LIFETIME_ENV = "RECKON_FOLLOWER_LIFETIME_DEADLINE"
 
 
@@ -1662,9 +1665,11 @@ def _carried_lifetime_deadline() -> float | None:
     Absent for a fresh arming, which is the command's normal path: the host
     starts it in its own environment and no deadline is inherited. Present only
     in an image the follower re-executed into, so a reload continues the
-    original arming rather than beginning a new one.
+    original arming rather than beginning a new one. The value is read and
+    removed from ``os.environ`` in the same step, so no child this image goes on
+    to start inherits a deadline that bounds only the follower.
     """
-    raw = os.environ.get(_FOLLOWER_LIFETIME_ENV, "")
+    raw = os.environ.pop(_FOLLOWER_LIFETIME_ENV, "")
     if not raw:
         return None
     try:
@@ -1708,12 +1713,18 @@ def _import_root(module) -> Path:
 class _FollowerReloader:
     """Replace a stale follower only at a complete stream-record boundary."""
 
-    def __init__(self, project: str, registration, *, stream=None) -> None:
+    def __init__(
+        self, project: str, registration, *, stream=None, deadline: float | None = None
+    ) -> None:
         from reckon.crew import runs
 
         self.project = project
         self.registration = registration
         self.stream = stream
+        # The instant this arming ends, handed to the replacement only through
+        # the environment ``os.execve`` passes: it never enters this image's
+        # ``os.environ``, so no child started here inherits it.
+        self.deadline = deadline
         self.code_stamp = runs.follower_code_stamp()
         self.import_root = _import_root(runs)
         self.checked_at: float | None = None
@@ -1754,8 +1765,16 @@ class _FollowerReloader:
             f"sys.path.insert(0, {str(self.import_root)!r}); "
             "from reckon.cli import main; main()"
         )
+        # The carried deadline travels in the environment this exec passes,
+        # not in this image's ``os.environ``: a child the follower starts
+        # inherits ``os.environ`` and would otherwise carry a deadline that
+        # bounds nothing it runs. Building the mapping here keeps the arming's
+        # identity separate from every process but the replacement itself.
+        exec_environment = dict(os.environ)
+        if self.deadline is not None:
+            exec_environment[_FOLLOWER_LIFETIME_ENV] = repr(self.deadline)
         try:
-            os.execv(  # noqa: S606 - replacement preserves descriptors and stdout
+            os.execve(  # noqa: S606 - replacement preserves descriptors and stdout
                 sys.executable,
                 [
                     sys.executable,
@@ -1763,6 +1782,7 @@ class _FollowerReloader:
                     launcher,
                     *sys.argv[1:],
                 ],
+                exec_environment,
             )
         except OSError as exc:
             os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, None)
@@ -2301,15 +2321,22 @@ def crew_follow(
             lifetime_seconds = float(parse_duration(lifetime))
         except runs_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
+    # The absolute instant this arming ends, in UTC epoch. Fixed here and never
+    # rewritten, so a reload continues the original arming rather than granting
+    # a fresh lifetime. Held in a local rather than ``os.environ``: the only
+    # process allowed to see it is the replacement this follower execs into,
+    # which the reloader below carries it to.
     carried_deadline = _carried_lifetime_deadline()
+    deadline_epoch: float | None = None
     if carried_deadline is not None:
         # This image replaced one already armed with a lifetime, so it spends
         # what is left of that arming rather than arming its own. A reload that
         # arrived past the deadline yields a lifetime already elapsed, which
         # ends the follower at once — a reload never extends an arming.
+        deadline_epoch = carried_deadline
         lifetime_seconds = max(0.0, carried_deadline - time.time())
     elif lifetime_seconds is not None:
-        os.environ[_FOLLOWER_LIFETIME_ENV] = repr(time.time() + lifetime_seconds)
+        deadline_epoch = time.time() + lifetime_seconds
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
@@ -2323,7 +2350,7 @@ def crew_follow(
     _adopt_launched_workers_from_reexec()
 
     def stream_events(registration):
-        reloader = _FollowerReloader(project, registration)
+        reloader = _FollowerReloader(project, registration, deadline=deadline_epoch)
 
         def poll(checkpoint) -> None:
             """Take over a registration whose holder has gone, while streaming.

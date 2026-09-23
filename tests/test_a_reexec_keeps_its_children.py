@@ -1,7 +1,7 @@
 """A follower's launched workers survive its own process image replacement.
 
 A follower that adopts newly installed code replaces its own process image
-with ``os.execv``. The replacement keeps the pid and every parent-child
+with ``os.execve``. The replacement keeps the pid and every parent-child
 relationship and destroys every thread and all module state, so a reaper
 thread and the launched-worker set built before the swap vanish even though
 the process is still the parent of the workers it launched. A worker that
@@ -339,7 +339,7 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
     """The reloader hands the pids over at the moment it replaces itself.
 
     The handover belongs in the replacement path's preparation step, beside
-    the reader checkpoint written just before ``os.execv`` — the call site the
+    the reader checkpoint written just before ``os.execve`` — the call site the
     follower actually reaches. The pids appear in the environment the
     replacement image inherits, next to the checkpoint it will resume from.
     """
@@ -356,11 +356,11 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
 
     captured: list[str] = []
 
-    def capture_execv(exe: str, argv: list[str]) -> None:
-        captured.append(os.environ.get(_LAUNCHED_WORKERS_HANDOVER_ENV, ""))
-        raise OSError("execv captured, not executed")
+    def capture_execve(path: str, argv: list[str], env: dict[str, str]) -> None:
+        captured.append(env.get(_LAUNCHED_WORKERS_HANDOVER_ENV, ""))
+        raise OSError("execve captured, not executed")
 
-    monkeypatch.setattr(cli.os, "execv", capture_execv)
+    monkeypatch.setattr(cli.os, "execve", capture_execve)
     reloader.poll({})
     assert captured == [json.dumps([pid])]
     _wait_reaped(pid)

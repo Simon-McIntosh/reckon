@@ -570,6 +570,98 @@
         figure source.</li>
       </ul>
     </section>
+
+    <section id="s8-deadline-reaches-the-replacement">
+      <h2>&sect;8 &mdash; The carried deadline reaches the replacement image and no other process</h2>
+      <p>Commit <code>a3dadfa0</code> at 2026-09-23 &mdash; <em>fix(crew): carry a follower's
+      lifetime deadline only to its replacement image</em>. Carrying the deadline in the
+      environment is what survives the reload, but the environment a process holds is inherited by
+      every child it starts. The follower's recovery sweep starts a condition probe through
+      <code>subprocess.run</code> with no <code>env=</code>, so the probe inherited whatever the
+      follower held in <code>os.environ</code>. A deadline placed there bounded the follower alone;
+      every child that inherited it carried a deadline governing no process of its own.</p>
+      <p>The value is now held in a local, written only into the mapping the re-exec passes to the
+      replacement, and read and removed from <code>os.environ</code> in a single call when the
+      replacement starts. It therefore enters no environment except the replacement's own, and is
+      gone before that image can start anything.</p>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>The gate, at this node's head: 4 passed in 44.53 s</strong>
+        (<code>tests/test_follow_lifetime_survives_reload.py</code>,
+        <code>tests/test_follow_lifetime.py</code> in one invocation, exit 0). The figure belongs
+        to the head: the base revision <code>b52244a8</code> holds three tests in that pair, the
+        reload case red among them.</li>
+      <li><strong>The four-file gate, base against head. Base <code>b52244a8</code>: 3 failed,
+        22 passed. Head: 2 failed, 24 passed. Added failures: 0</strong> &mdash; the two head
+        failures are the same two present at base
+        (<code>test_the_reloader_exports_launched_pids_beside_the_checkpoint</code> and
+        <code>test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]</code>,
+        both on the launched-worker carrier being a mapping where the test expects a bare pid
+        list). The base's third failure is the reload case, which passes at the head.</li>
+        <li><strong>The instrument was proved to see the environment before any absence was
+        read.</strong> The new case parks a live run on a declared external wait whose probe
+        records the sorted variable names of the environment it was handed &mdash; the follower's
+        own sweep is the only path that runs it. The probe records <code>RECKON_HOME</code> (which
+        the test set), so a child that saw its environment shows the instrument working; the same
+        line carries no <code>RECKON_FOLLOWER_LIFETIME_DEADLINE</code>. Read again after the
+        reload, the replacement image's own probe child shows the same: five probe runs across two
+        images, <code>RECKON_HOME</code> present, the deadline absent from every one.</li>
+        <li><strong>The reload still ends the arming by itself:</strong> exit status 0 and the
+        <code>follower end:</code> line, produced by the replacement image.</li>
+      </ul>
+
+      <h3>Negative control</h3>
+      <p>Declared as: <em>set RECKON_FOLLOWER_LIFETIME_DEADLINE in os.environ at arming again
+      instead of only in the re-exec environment</em>. With the arming branch writing the deadline
+      into <code>os.environ</code>, the new case fails red on exactly that mechanism &mdash;
+      <code>AssertionError: a child the follower started inherited
+      RECKON_FOLLOWER_LIFETIME_DEADLINE, so the deadline was placed in the follower's own
+      os.environ</code> &mdash; and the recorded child environment is printed in the log,
+      <code>RECKON_FOLLOWER_LIFETIME_DEADLINE</code> among the names. The mutation was reverted and
+      the gate ran green again. Declared string and log: the red log's first line is the declared
+      string, checked byte-identical before it was written; the path is in the node's manifest.</p>
+
+      <h3>What was owed and left</h3>
+      <p>Two findings sit outside this node's declared scope, so they are reported rather than
+      fixed:</p>
+      <ul>
+        <li><strong>The arming overshoots its own grant by the setup time of each image. The
+        reload case's bound is met with under a second of margin:</strong> measured on this login
+        node, a plain run ends <strong>7.49 s</strong> after the arm against a six-second grant and
+        an eight-second bound (margin <strong>0.51 s</strong>), and a run whose sweep probes every
+        cadence ends <strong>8.61 s</strong>, past that bound. The cause is not the carry: the
+        carried value is an absolute instant, but the watch loop re-anchors it at the replacement
+        image's own <code>started_at</code>, so each reload adds that image's setup time &mdash;
+        including its first sweep, which for a parked run spawns the probe &mdash; to the end.</li>
+        <li><strong>Two other follower variables are still placed in <code>os.environ</code> at
+        arming,</strong> beside the checkpoint handed to the replacement
+        (<code>RECKON_FOLLOWER_CHECKPOINT</code>, <code>RECKON_WATCH_ARMING</code>). They are
+        intentional hand-offs, but they inherit into every child exactly as the deadline did, so
+        they carry the same question this node answered for the deadline.</li>
+        <li><strong>The reload case is unstable in both revisions, and noisily so at the base
+        revision.</strong> At the base revision it was red in 3 of 3 runs, each time ending the
+        arming before the replacement was seen, so the follow
+        <code>follower end: arming lifetime elapsed</code> line arrives instead of a reload. At
+        this node's head it was green in 4 of 5 runs, one run red with the same signature. The
+        gate figures above are single samples of a timing-sensitive case, and the four-file gate's
+        head run is the sample this node relies on.</li>
+      </ul>
+      <p>Verifying the merged result belongs to a separately dispatched test node. This node
+      leaves the archive's <code>plan-verifies</code> and <code>s8-reload-deadline</code>
+      section untouched; the &#167;8 mechanism figure already covers the timeline, and this record
+      adds no second figure for the same axis.</p>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>reckon/cli.py</code> &mdash; the deadline read-and-removed in one call, and the
+        mapping the re-exec passes.</li>
+        <li><code>reckon/cli.py</code> &mdash; the arming branch, which no longer writes the
+        deadline into <code>os.environ</code>.</li>
+        <li><code>tests/test_follow_lifetime_survives_reload.py</code> &mdash; the gate, and its
+        parked-run probe case.</li>
+      </ul>
+    </section>
   </main>
 </body>
 </html>
