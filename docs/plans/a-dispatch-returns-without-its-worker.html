@@ -18,13 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="3">
+  <meta name="plan-version" content="4">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -102,6 +102,34 @@
     the watch stream carries no transition for it. The negative control is executed and logged at the
     base revision, where a pointer remains. The write paths are <code>reckon/crew/dispatch.py</code>
     and <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A refusal is never returned for a dispatch that launched</h2>
+    <p>imas-efit-e3 measured this at about 02:58 UTC on 2026-09-23, in session
+    <code>ship-s13-20260922</code>. Two consecutive dispatches of node
+    <code>review-of-rank-floor-cost-verdict-carrying-rails</code> returned refusals. The first read
+    <code>not-dispatchable</code>. The second read <code>dispatch-refused</code> because the
+    worktree path already existed. Yet run
+    <code>r-20260923T025720725298-review-of-rank-floor-cost-verdict-carrying-rails</code> had a live
+    pointer, an attempt started at 02:58:27, and a stream written eleven seconds before it was
+    checked, so its worker was running. Its member was an auto-derived session member, although both
+    calls passed <code>--member clive-rev-6</code>.</p>
+    <p>Such a refusal invites two harmful moves: a duplicate dispatch of a node already working, and
+    removing a worktree that looks orphaned out from under a live process. Find the path on which a
+    refusal is returned after the pointer is written or the worker is spawned, and make the result
+    agree with what happened. Either the dispatch reports success naming the run it launched, or it
+    launches nothing. Separately, find why an explicit <code>--member</code> was replaced by an
+    auto-derived member, and refuse rather than substitute when the named member cannot be bound.</p>
+    <p>imas-efit-e3 also reported that the command exited 0 on refusal. That is not established. A
+    refused dry run measured here exits 1 as documented, and the report's exit status may have come
+    from a wrapper around the command. The node records the exit status of the failing path it
+    finds, measured on the bare command.</p>
+    <p><strong>Done when</strong> <code>tests/test_dispatch_result_matches_launch.py</code> drives a
+    dispatch through the failing path with a stub backend in a temporary crew config home, and asserts
+    that the result either names the launched run with <code>ok: true</code> or leaves no pointer and
+    no process. A second test passes an unresolvable <code>--member</code> and asserts a refusal with
+    no auto-derived member bound. The negative control is executed and logged at the base revision,
+    where a refusal is returned beside a live pointer. The write paths are
+    <code>reckon/crew/dispatch.py</code> and that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
