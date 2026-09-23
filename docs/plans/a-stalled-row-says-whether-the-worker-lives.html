@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="5">
+  <meta name="plan-version" content="7">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -132,6 +132,62 @@
     child and asserts the stalled transition on the next snapshot. The write paths are
     <code>reckon/crew/recovery.py</code> and <code>tests/test_stall_window_respects_a_child.py</code>.</p>
 
+    <h2 id="s7">&sect;7 &mdash; A working worker reads working within one poll</h2>
+    <p>The follower's row state for a live run comes from the pointer's stored <code>phase</code>. The
+    reducer in <code>reckon/crew/recovery.py</code> reads <code>state = "dispatched" if phase ==
+    "starting" else "working"</code>. The stored phase advances only when something calls
+    <code>observe</code> in <code>reckon/crew/dispatch.py</code>, which folds the stream into the
+    pointer. The watcher's snapshot classifies pointers without calling it. So a worker that has been
+    thinking and editing for an hour still renders <code>dispatched</code>, and no
+    <code>dispatched &rarr; working</code> transition is ever emitted unless a coordinator happens to
+    run <code>crew observe</code>. Measured in session <code>ship-s20-20260923</code> on 2026-09-23:
+    five of six runs dispatched at 06:48 CEST still read <code>dispatched</code> at 07:52, while
+    each had written to its stream within the previous forty seconds. The imas-efit coordinator
+    reported the same across nine live nodes in its own wave, and had to check each log by hand to
+    establish that nothing had stalled. The watcher already computes the evidence that settles it,
+    because the stall check beside the reducer reads the stream's age.</p>
+    <p>Derive the row's phase from the run's streams, not from the stored field. A non-terminal run
+    whose newest stream, across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and
+    <code>lane-change-*.jsonl</code>, holds an assistant or tool record reads <code>working</code>.
+    The newest stream is read through the helper that worker-death-is-recorded &sect;5 adds to
+    <code>recovery.py</code>. The watcher emits the <code>dispatched &rarr; working</code>
+    transition on the first snapshot that sees such a record. The live MCP view's
+    <code>phase</code> reads the same derivation, so the pane and the tool agree.</p>
+    <p><strong>Done when</strong> <code>tests/test_working_reads_working_at_once.py</code> writes a
+    live pointer whose stored phase is <code>starting</code> and whose process is a live process
+    the test starts. It then appends one assistant record to the run's stream, runs one watcher
+    snapshot, and asserts a transition into <code>working</code> for that run. A second case puts the
+    record only in <code>resume-1.jsonl</code> and asserts the same. A third asserts that
+    <code>crew(view="live")</code> reports <code>phase</code> as <code>working</code> for the same
+    pointer. The negative control is executed and logged: with the base revision's
+    stored-phase reducer the first snapshot emits no transition and the test fails. The write paths
+    are <code>reckon/crew/recovery.py</code>, <code>reckon/mcp_views.py</code> and that test.</p>
+
+    <h2 id="s8">&sect;8 &mdash; A turn that ended without a manifest is a row at once</h2>
+    <p>A print-mode worker whose turn ends has finished, whether or not it delivered. Its stream's
+    last record is then a <code>result</code> record, and the process exits. Today that case is
+    silent until the stall window: measured on the same session, the prior-art scout
+    <code>r-20260923T044719237479-follower-repair-reuse-map</code> ended its turn at 06:50:30 CEST
+    with a <code>result</code> record, a clean end of turn, right after writing <em>Now let me verify
+    the symbols with grep</em>. It had written no report and its manifest still read
+    <code>in-progress</code>. The row reached the pane at 07:05:49 as <code>stalled: stream quiet for
+    901s</code>, fifteen minutes late and naming the wrong cause. A resume at 07:06 recovered it.</p>
+    <p>When the watcher's snapshot finds a non-terminal run whose newest stream ends in a
+    <code>result</code> record and whose manifest is not terminal, emit a transition on that
+    snapshot. Its reason says the turn ended without delivering, as in <code>turn ended, manifest
+    in-progress</code>, and its action is <code>reckon crew resume</code>. This is distinct from
+    &sect;2, where the process dies without a <code>result</code> record, and the two reasons must
+    differ, because the remedies differ: a resume continues a turn that ended, while a death needs
+    its cause read first.</p>
+    <p><strong>Done when</strong> <code>tests/test_ended_turn_is_a_row_at_once.py</code> writes a
+    live pointer, a manifest reading <code>status: in-progress</code> and a stream whose last record
+    is a <code>result</code> record, with no live process. One watcher snapshot then emits a
+    transition whose reason contains <code>turn ended</code>, with the quiet time under the stall
+    window. A second case, whose stream's last record is an assistant thinking record with no
+    <code>result</code>, emits the &sect;2 death reason rather than this one. The negative control
+    is executed and logged: at the base revision the first snapshot emits nothing for the run. The
+    write paths are <code>reckon/crew/recovery.py</code> and that test.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-asrswtwl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
@@ -146,6 +202,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T0445-backend-gone-is-a-cause" data-who="reckon-ship" data-when="2026-09-23T04:45:00Z">
     <div class="r-comment-body"><p><strong>A candidate follow-on for after §2 lands: a death row names its backend when the backend is gone.</strong> At 04:12:04Z on 2026-09-23, <code>scancel -u</code> from an imas-efit worker cancelled the locally served lane's serving job. <code>lane.json</code> read <code>unavailable</code> with zero endpoints from 04:12:05Z. Several sessions then saw their workers die with no stated cause and began diagnosing their own nodes. imas-ambix-b6 reported it. §2 reports a death within one poll, but its reason names only the process. If the run's backend declares a lane document that reads unavailable at that snapshot, saying so in the same reason would make it read as one cause across every session. Not added as a section yet: §2 should land first, so the reason text has a place to go.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0610-s7-s8-added" data-who="reckon-ship" data-when="2026-09-23T06:10:00Z">
+    <div class="r-comment-body"><p>§7 and §8 were added at the lead's request on 2026-09-23, after the imas-efit coordinator reported the <code>dispatched</code> lag across nine nodes. Both edit <code>reckon/crew/recovery.py</code>, so they join the serial chain. Both build on the newest-stream helper that worker-death-is-recorded §5 lands, so they run after it. §7 also writes <code>reckon/mcp_views.py</code>, which the S19 session's worker-death step 5 holds, so §7 waits for that claim to release.</p></div>
 </div>
 </section>
 </main>
