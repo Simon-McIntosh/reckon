@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="17">
+  <meta name="plan-version" content="18">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-impl" content="0.2">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.43">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -270,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T0625-readback-applied" data-who="reckon-ship" data-when="2026-09-23T06:25:00Z">
     <div class="r-comment-body"><p>The read-back review (<code>r-20260923T044801073919-review-of-a-follower-outlives-its-monitor</code>, report under the S20 session's reports directory) found 41 sentences with more than one reading, and 9 of them material. The revisions resolve them. <strong>§7:</strong> the start-time clause is a pid-reuse guard on the <em>recorded</em> parent (R32). The test launches the follower through <code>sys.executable -m reckon</code> or an absolute path, never the bare word (R36). The config home is redirected with <code>RECKON_HOME</code> (R39). Silence on the release path is a requirement (R34). The registration holder is asserted by pid through <code>follower_state</code>, and the lock by a non-blocking acquire (R38). <strong>§4:</strong> the suppressed set means the human path's filter, not the <code>SETTLED_STATES</code> constant (R19); a delivered row means an emitted row (R16); a live run means every live pointer the session holds (R2). <strong>§3</strong> was already dispatched before the read-back returned. Its review checks R10 (how the end line is marked), R11 (which states count as needing the coordinator) and R14 (no default lifetime) against the node's delivery, rather than editing text a running worker has already read. <strong>§5</strong> is closed outright by the census measurement, and its done-when test is not owed (R23).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1100-s3-s6-landed" data-who="reckon-ship" data-when="2026-09-23T11:00:00Z">
+    <div class="r-comment-body"><p>§3 and §6 landed. §3: <code>--lifetime</code> merged at <code>a7302ba5</code>, review 84. Its first finding is the reload that restarts the lifetime clock, now §8. Its second is an attach-line assertion that compares the line against the composer under test, carried to the §2 attach-line corrective. §6: the harness reference merged at <code>68359e28</code> and its monitor-output guard at <code>eec6b824</code>, review 93. That promotion needed <code>--waive-unreviewed-promotion</code>, because the head-keyed promotion rule refused a legacy-keyed review of the same head; worker-death-is-recorded's owner confirmed it as a regression. §2 remains unmerged until its corrective test node lands. That node rewrites two tests that assert the bare word, and two that compare the line against the composer under test.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>

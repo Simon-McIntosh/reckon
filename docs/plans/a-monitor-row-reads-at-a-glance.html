@@ -18,13 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="3">
+  <meta name="plan-version" content="5">
   <meta name="plan-informs" content="the-monitor-under-measurement">
   <title>A Monitor Row Reads At A Glance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.17">
 </head>
 <body>
   <main class="plan-doc">
@@ -124,6 +125,19 @@
     <p><strong>Done when</strong> a reason clause of forty words rendered into thirty columns ends in
     a whole word followed by an ellipsis, and a clause that fits is unchanged.</p>
 
+    <h2 id="s7">&sect;7 &mdash; The baseline marker is its own word</h2>
+    <p>The independent review of &sect;2's landing, scored 89 on 2026-09-23, found that a baseline
+    row renders the marker and the state with no separator. On this workstation's panes the row
+    reads the single token <code>nowworking</code>, and neither word has a boundary a reader can
+    scan for, which undoes what &sect;2 set out to do. A baseline row renders <code>now</code>, one
+    space, then the state word. A transition row is unchanged.</p>
+    <p><strong>Done when</strong> a test renders a baseline row and asserts it contains
+    <code>now working</code> as two words separated by a single space. It also asserts the row does
+    not contain <code>nowworking</code>, and that the state cell's column position matches a
+    transition row's at the same width. The negative control is executed and logged: removing the
+    separator makes the test fail. The write paths are <code>reckon/crew/ticker.py</code> and
+    <code>tests/test_crew_ticker.py</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="which-measures-stay-on-the-row" data-choice="keep-elapsed-drop-rate-and-ages" data-by="Simon McIntosh" data-when="2026-09-22T20:10:00+00:00">
@@ -140,6 +154,11 @@
     <pre class="r-fu-prompt">/reckon-ship a-monitor-row-reads-at-a-glance</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20260923T1100-s2-landed" data-who="reckon-ship" data-when="2026-09-23T11:00:00Z">
+    <div class="r-comment-body"><p>§2 landed: merged at <code>9660d3b0</code>, review 89. A transition row shows only its destination state. At width 180 the reason cell gains 13 columns: the landing record says 42 to 55, and the review found the published figure's script labels 48 and 61. The negative control that restores the from-state and the arrow fails 9 tests. <code>tests/test_crew.py</code> stalls and never completes at either base or head, a fault that predates this plan and is carried in the S20 drain ledger. The missing separator between <code>now</code> and the state is §7.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
