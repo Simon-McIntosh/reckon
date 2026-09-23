@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-ledger-is-one-file-per-run">
+  <meta name="plan-title" content="The Ledger Is One File Per Run">
+  <meta name="plan-summary" content="Every promotion rewrote one 14.5 MB ledger and every session queued on it; each run becomes its own committed file, with SQLite only as a rebuildable index.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="history-persists-as-detail-washes-out,new-work-gets-a-new-worker">
+  <title>The Ledger Is One File Per Run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S19">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The Ledger Is One File Per Run</h1>
+
+    <p><strong>Measured 2026-09-23.</strong> The run ledger, <code>docs/state/reckon/crew.json</code>, is
+    one file of 14.5 MB and 300,870 lines. It holds 1,429 promoted runs (11 MB; median row 6 KB,
+    largest 65 KB), 391 roster members and 22 holds. <code>ledger.append_run</code> reads all of it,
+    appends one row and writes all of it back, retrying from the top when a concurrent write
+    intervenes. So a promotion's cost grows with history and every session promoting in the project
+    queues on one file. Five <code>crew complete</code> processes from three sessions were observed
+    waiting behind one another for more than ten minutes each. 184 commits touched the file in one
+    day. Session capture writing onto roster members also left it uncommitted under a peer twice in
+    the same day, which blocked every session's <code>member add</code>.</p>
+
+    <p><strong>The decision</strong> is locked on
+    <code>history-persists-as-detail-washes-out</code> (<code>committed-export-scope</code>, by the
+    lead). Each promoted run is its own committed file, and those files are the record. The SQLite
+    store at <code>~/.config/reckon/crew/run_store.db</code>, today a shadow nothing reads, becomes an
+    <em>index</em> derived from the files, which can be deleted and rebuilt with no loss. Git stays the
+    durable, distributed transport, and a promotion never rewrites another run. The earlier plan's
+    database-as-store direction is superseded by this one, while its rotation and detail-horizon work
+    stays there.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — A promotion writes one new file and touches no other</h2>
+      <p><strong>Measure.</strong> <code>ledger.append_run</code> writes
+      <code>docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json</code>, holding the same record it
+      appends today, and commits that one path. It never reads or rewrites another run's file. It
+      refuses when a file for that run already exists, so promoting a run twice is still refused. The
+      index is updated after the file commits, and a failed index write never fails the promotion.</p>
+      <p><strong>Falsifier.</strong> Two promotions in two processes started together both land, and
+      neither retries. Each commit's file list names exactly one run file. A third promotion of an
+      existing run id is refused, naming the file. The negative control makes <code>append_run</code>
+      rewrite a shared file, and the two concurrent promotions must then show a retry or a conflict.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — Every reader reads the files, and the index is disposable</h2>
+      <p><strong>Measure.</strong> <code>ledger.load</code> and every reader of the run list, including
+      recovery, calibration, the census tools and the MCP views, read the per-run files. Keyed
+      questions go through the index when it exists and fall back to the files when it does not.</p>
+      <p><strong>Falsifier.</strong> Every existing test that reads runs passes against a project
+      holding only per-run files. A reader's answer is identical with the index present, deleted, and
+      rebuilt from the files. The negative control makes a reader ignore the files when the index is
+      absent, and that reader must return nothing.</p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — The existing ledger is split once, row for row</h2>
+      <p><strong>Measure.</strong> A one-time migration writes each row of every mounted project's
+      <code>crew.json</code> <code>runs</code> list to its own file. It moves <code>members</code> to
+      <code>docs/state/&lt;project&gt;/crew/members.json</code> and <code>holds</code> to
+      <code>crew/holds.json</code>, then removes <code>runs</code> from the old file. It runs as its own
+      commit per project, with nothing else in it.</p>
+      <p><strong>Falsifier.</strong> For every mounted project, the row count before equals the file
+      count after, and the canonical JSON of each row equals its file byte for byte. A second run of the
+      migration changes nothing. A dry run prints the counts without writing.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The roster is a small file that dispatch does not churn</h2>
+      <p><strong>Measure.</strong> The roster lives in <code>crew/members.json</code>. Dispatch,
+      observe and promotion never write session fields onto a member. That comes from
+      new-work-gets-a-new-worker §3, and this section depends on it. A roster file changes only on
+      <code>member add</code> or <code>member remove</code>.</p>
+      <p><strong>Falsifier.</strong> Across a dispatch, an observe and a promotion of one run,
+      <code>crew/members.json</code> is byte-identical before and after, while the run's own file
+      carries its session. The negative control restores session capture onto the member, and the
+      roster file must then change.</p>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tlofpr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Write, then read, then split; the roster follows the session fix</h4>
+    <div class="r-fu-body"><p>§1 and §2 land before §3, so the split finds a writer and every reader already speaking per-run files. §3 is its own commit per project, sequenced when no peer holds uncommitted work in <code>docs/state</code>. §4 waits on new-work-gets-a-new-worker §3. <code>reckon/ledger.py</code> is on every session's promotion path, so each node's gate includes a real promotion through the merged tree before it is merged.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-ledger-is-one-file-per-run</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
