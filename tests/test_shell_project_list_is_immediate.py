@@ -4,12 +4,14 @@ The picker's names come from ``/_projects/mounts.json``, a static file, so the
 menu is populated whether or not the computed rollup at
 ``/_projects/index.json`` ever answers. Other projects' inventories are fetched
 only when a project is navigated to while the fleet home or the command palette
-is shown, one project at a time.
+is shown, one request per mounted project and no more: the shell remembers what
+it has asked for, so a re-run of the fetching effect does not repeat a request.
 """
 
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 
 from tests.spa_browser_harness import file_spa, installed_browser_or_skip
@@ -102,7 +104,12 @@ def _picker_probe() -> str:
 
 
 def _palette_probe() -> str:
-    """Count other-project inventories before and after the command palette."""
+    """Record every other-project inventory request, with the palette cycled.
+
+    The palette is opened, closed and opened again so the fetching effect runs
+    more than once: a shell that asks for an inventory on every run would then
+    record each project twice instead of once.
+    """
 
     return (
         "(async () => {\n"
@@ -110,9 +117,16 @@ def _palette_probe() -> str:
         + f"""
       const expected = {len(MOUNTED_PROJECTS)};
       const before = [...window.__discoveryRequests];
-      document.querySelector(".r-topbar-search").click();
+      const search = document.querySelector(".r-topbar-search");
+      search.click();
       const opened = await waitFor(() => Boolean(document.querySelector(".r-cmdk")));
       await waitFor(() => new Set(window.__discoveryRequests).size >= expected);
+      document.querySelector(".r-cmdk-scrim")
+        .dispatchEvent(new MouseEvent("mousedown", {{ bubbles: true }}));
+      await waitFor(() => !document.querySelector(".r-cmdk"));
+      search.click();
+      await waitFor(() => Boolean(document.querySelector(".r-cmdk")));
+      await new Promise(resolve => setTimeout(resolve, 250));
       return {{ before, after: [...window.__discoveryRequests], opened }};
     }})()"""
     )
@@ -141,7 +155,7 @@ def test_project_list_is_immediate_without_the_rollup(tmp_path: Path) -> None:
 
 
 def test_other_project_inventories_load_only_for_the_palette(tmp_path: Path) -> None:
-    """A project's plan view fetches no other inventory until the palette opens."""
+    """A plan view fetches no other inventory until the palette opens, once each."""
 
     with file_spa(
         tmp_path,
@@ -160,4 +174,10 @@ def test_other_project_inventories_load_only_for_the_palette(tmp_path: Path) -> 
 
     assert result["before"] == []
     assert result["opened"] is True
-    assert sorted(set(result["after"])) == sorted(MOUNTED_PROJECTS)
+    counts = Counter(result["after"])
+    assert sorted(counts) == sorted(MOUNTED_PROJECTS), (
+        f"unexpected /_discover URLs: {sorted(counts)}"
+    )
+    assert sorted(counts.values()) == [1] * len(MOUNTED_PROJECTS), (
+        f"each mounted inventory must be requested exactly once: {dict(counts)}"
+    )

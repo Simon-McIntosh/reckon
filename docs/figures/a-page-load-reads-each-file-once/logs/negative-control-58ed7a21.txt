@@ -1,0 +1,50 @@
+remove the requested-set guard in docs/ui/shell.jsx so an inventory is re-requested when the effect re-runs; the count assertion must fail
+=== OLD assertion (set-based, from HEAD) under the mutation ===
+..                                                                       [100%]
+2 passed in 5.64s
+old_exit=0
+=== NEW assertion (count-based) under the mutation ===
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_other_project_inventories_load_only_for_the_palette ___________
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5513/test_other_project_inventories0')
+
+    def test_other_project_inventories_load_only_for_the_palette(tmp_path: Path) -> None:
+        """A plan view fetches no other inventory until the palette opens, once each."""
+    
+        with file_spa(
+            tmp_path,
+            installed_browser_or_skip(),
+            _composed_state(),
+            route="#plans",
+        ) as spa:
+            result = spa.run_probe(
+                _palette_probe(),
+                ready_expression=(
+                    'Boolean(document.querySelector(".r-app") '
+                    '&& document.querySelector(".r-topbar-search"))'
+                ),
+                preload_expression=_mocking_preload(),
+            )
+    
+        assert result["before"] == []
+        assert result["opened"] is True
+        counts = Counter(result["after"])
+        assert sorted(counts) == sorted(MOUNTED_PROJECTS), (
+            f"unexpected /_discover URLs: {sorted(counts)}"
+        )
+>       assert sorted(counts.values()) == [1] * len(MOUNTED_PROJECTS), (
+            f"each mounted inventory must be requested exactly once: {dict(counts)}"
+        )
+E       AssertionError: each mounted inventory must be requested exactly once: {'imas-codex': 2, 'imas-efit': 2, 'imas-ink': 2, 'nova': 2, 'reckon': 2}
+E       assert [2, 2, 2, 2, 2] == [1, 1, 1, 1, 1]
+E         
+E         At index 0 diff: 2 != 1
+E         Use -v to get more diff
+
+tests/test_shell_project_list_is_immediate.py:181: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shell_project_list_is_immediate.py::test_other_project_inventories_load_only_for_the_palette
+1 failed, 1 passed in 4.62s
+new_exit=1

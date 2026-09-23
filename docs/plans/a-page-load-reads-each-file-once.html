@@ -262,6 +262,33 @@
     The run is recorded on the login node, because no compute partition carries a browser binary.
     The write path is that test only.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="palette-counts-each-inventory-once" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the palette asks for each inventory exactly once.</strong> Commit
+    <code>58ed7a21</code> <em>test(ui): count each mounted project's palette inventory request once</em>
+    replaces the set comparison with a count: over the requests recorded after the palette opens,
+    each mounted project's <code>/_discover/&lt;project&gt;</code> URL must appear exactly once and no
+    other <code>/_discover</code> URL may appear. The probe now opens the palette, closes it and opens
+    it again, so the fetching effect runs more than once and the count has a duplicate to catch: a
+    shell with no memory of what it has asked for issues a second request per project. The write path
+    is that test alone; <code>docs/ui/shell.jsx</code> is unchanged.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Two cases pass</strong> in <code>tests/test_shell_project_list_is_immediate.py</code>
+      at <code>58ed7a21</code>: the picker lists every mounted project while the rollup never resolves,
+      and the palette records exactly one <code>/_discover</code> per mounted project with none for
+      anything else.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> with the
+      requested-set guard removed from the shell, the count assertion fails on
+      <code>{'imas-codex': 2, 'imas-efit': 2, 'imas-ink': 2, 'nova': 2, 'reckon': 2}</code> while the
+      coverage assertion that precedes it passes, and the base revision of the test passes under the
+      identical mutation.</li>
+      <li><strong>Environment.</strong> The gate is a headless-browser test; no supported browser
+      binary exists on any compute partition, so it ran on the login node, as &sect;4 records, in two
+      short probes against a <code>file://</code> document.</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s6">the landed record</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
