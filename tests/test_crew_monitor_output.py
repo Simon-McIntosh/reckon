@@ -169,8 +169,14 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     assert "per **stdout line**" in words
     assert "when the command **exits**" in words
     assert "belongs in a `Monitor`, and only there" in words
-    assert "persistent: true" in words
-    assert "--session <session>'," in words, "the armed command must be the bare one"
+    # The arming example names a bounded lifetime and carries no persistent key:
+    # the host no longer accepts the parameter, and a follower that outlives the
+    # monitor's cap is re-armed on its own final line instead of being kept alive.
+    assert "--lifetime 29m" in words
+    assert "persistent" not in words, "the removed persistent key is back"
+    assert "Arm the attach line verbatim" in words, (
+        "the command is the printed attach line, not a retyped bare one"
+    )
     # A default state filter is what produced an empty pane on this host, so the
     # reference has to say the follower reports everything and carries no state
     # filter at all.

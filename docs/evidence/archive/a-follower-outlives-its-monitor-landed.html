@@ -12,7 +12,7 @@
   <meta name="plan-recorded-at" content="2026-09-23T09:12:00Z">
   <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass">
   <meta name="plan-environment" content="login node, Python 3.14, matplotlib 3.11.2, real subprocesses under a temporary RECKON_HOME">
-  <meta name="plan-commits" content="b48fdc21 9ad95695">
+  <meta name="plan-commits" content="b48fdc21 9ad95695 8587710c">
   <title>A Follower Outlives Its Monitor &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -114,6 +114,29 @@
         <tr><td><code>tests/test_skill_contracts.py</code></td><td>3 failed, 51 passed</td><td>3 failed, 51 passed</td></tr>
       </table>
       <p>Added failures: 0. The three failures are pre-existing at the base revision and unchanged by this node.</p>
+    </section>
+    <section id="s6-monitor-output">
+      <h2>The monitor-output guard reads the corrected example</h2>
+      <p><code>tests/test_crew_monitor_output.py::test_harness_arms_a_monitor_and_attaches_followers</code> parsed the same
+      arming section but still required <code>persistent: true</code>. Against the corrected reference that assertion is
+      false, so the guard failed on the reference it was meant to hold. The check now names the bounded lifetime the
+      example carries (<code>--lifetime 29m</code>), requires the removed <code>persistent</code> key to be absent, and
+      replaces the fragment that pinned a bare command with the reference's instruction to arm the printed attach line
+      verbatim.</p>
+      <ul>
+        <li>Reproduced first: at a scratch <code>git merge --no-commit</code> of this node's head with <code>82411f0c</code>, the unmodified check failed on <code>assert "persistent: true" in words</code>.</li>
+        <li>Corrected: the same scratch merge runs the check green, and the file's other tests are unchanged in outcome.</li>
+      </ul>
+      <table>
+        <tr><th>Gate</th><th>Base (2a895ef3)</th><th>Head + 82411f0c</th></tr>
+        <tr><td><code>tests/test_crew_monitor_output.py</code></td><td>1 failed, 6 passed</td><td>1 failed, 6 passed</td></tr>
+      </table>
+      <p>Added failures: 0. The one failure is
+      <code>test_three_followers_receive_each_subsequent_transition_once</code>, a pre-existing threading failure that is
+      red at the base revision and unchanged by this node; it is reported as a follow-on rather than fixed here.</p>
+      <p><strong>Negative control.</strong> At the same scratch merge, restoring <code>persistent: true</code> into the
+      reference's arming example makes the check fail on <code>assert "persistent" not in words</code> &mdash; the guard
+      fails on the defect it names, not on an unrelated fixture.</p>
     </section>
     <section>
       <h2>Scope and follow-ons</h2>
