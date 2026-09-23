@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="22">
+  <meta name="plan-version" content="24">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-impl" content="0.43">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -291,6 +291,55 @@
     executed and logged: with the deadline not carried across the reload, the follower is still
     running eight seconds after the original arm. The write paths are <code>reckon/cli.py</code> and
     that test.</p>
+
+    <h2 id="s9">&sect;9 &mdash; A watcher does not re-read every stream on every poll</h2>
+    <p>Measured on 2026-09-23 at about 11:45 UTC, after imas-ambix-b6 reported that watchers were
+    most of the login node's CPU. Five project watchers were running, for nova, imas-efit, reckon,
+    imas-codex and imas-ambix. Averaged over their lifetimes they used 48, 48, 42, 26 and 15 percent
+    of a core, about 60 percent of the node's four-core quota, while agent processes used about 12
+    percent. <code>py-spy dump</code> of the nova watcher placed its main thread in
+    <code>watch_ticker</code>, then <code>list_live</code>, then <code>_watch_stream_snapshots</code>,
+    then <code>_watch_snapshot</code>, then <code>classify_pointer</code>, then
+    <code>_background_wait_signal</code> in <code>reckon/crew/recovery.py</code>, which calls
+    <code>observe_log</code>, <code>observe_stream</code> and <code>parse_events</code> in
+    <code>reckon/_backends.py</code>. There it read a run's stream whole with <code>read_text</code>
+    and decoded every event with <code>json.loads</code>. It does that for every live pointer on
+    every poll, so a watcher's cost is roughly the live pointers multiplied by their stream sizes
+    (several megabytes each), once a second, whether or not anything changed.</p>
+    <p>The stream-derived facts a watcher needs are recomputed only when a stream has changed. A
+    stream's parsed result is kept against its path, size and mtime, and reused while all three
+    match. When the file has only grown, only the appended bytes are parsed. The classification
+    result must be identical to a full re-parse.</p>
+    <p><strong>Done when</strong> <code>tests/test_watch_stream_parse_is_cached.py</code> builds a
+    live pointer whose stream holds 20,000 events in a temporary <code>RECKON_HOME</code>. It runs
+    ten watcher snapshots with the stream unchanged, counting stream parses through a counter the
+    test installs, and asserts at most one full parse. It then appends one event and asserts the next
+    snapshot parses only the appended bytes. After every snapshot it asserts the classification
+    equals a full re-parse's. A second measure is stated as numbers: CPU time for those ten
+    snapshots at the base revision and at the head. The negative control is executed and logged:
+    with the cache disabled, the parse count is ten and the test fails. The write paths are
+    <code>reckon/_backends.py</code>, <code>reckon/crew/recovery.py</code> and that test. The fix
+    runs in <code>recovery.py</code>'s serial chain.</p>
+
+    <h2 id="s10">&sect;10 &mdash; A watcher a test starts does not outlive the test</h2>
+    <p>Measured the same day: watcher processes started by tests were still running long after
+    their tests ended, each with a temporary <code>RECKON_HOME</code>. pid 473221,
+    <code>crew watch --project proj</code>, was 2 days 20 hours old; its environment names
+    <code>PYTEST_CURRENT_TEST=tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher</code>. Two
+    more, <code>crew watch --project sample</code>, were 6 and 5 hours old: one from a probe worker's
+    scratch directory, and one from a worktree test in another session. Dispatch arms a watcher
+    detached, with <code>start_new_session</code>, so a test that reaches that path starts a
+    process pytest never collects. Such a process is also a plausible reason that
+    <code>tests/test_crew.py</code> stops completing, a stall reported independently by two S20
+    nodes.</p>
+    <p><strong>Done when</strong> a conftest-level fixture in <code>tests/conftest.py</code> records
+    every watcher process started under the test session's temporary <code>RECKON_HOME</code> and
+    terminates it at teardown. <code>tests/test_test_watchers_are_reaped.py</code> runs
+    <code>test_cli_dispatch_arms_a_missing_watcher</code>'s arming path in a subprocess pytest and
+    asserts that no <code>crew watch</code> process whose environment names that temporary home
+    remains one second after the subprocess exits. The negative control is executed and logged: with
+    the teardown removed, the process remains and the test fails. The write paths are
+    <code>tests/conftest.py</code> and that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
