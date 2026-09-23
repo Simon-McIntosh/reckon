@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T09:58:51",
+  "updated": "2026-09-23T10:03:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -3393,10 +3393,15 @@
         "id": "s19-compact-finish",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "db1f6f2e-2a4a-43bb-9f88-dde17b7d19a7",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "db1f6f2e-2a4a-43bb-9f88-dde17b7d19a7"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s19-20260922"
+        }
       },
       {
         "id": "s19-death-cause",
@@ -288426,6 +288431,323 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T052850820000-compaction-record-finished",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a79",
+        "node": "compaction-record-finished",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1835,
+                "cached_input_tokens": 160934,
+                "input_tokens": 162771,
+                "output_tokens": 1001,
+                "reasoning_output_tokens": 229,
+                "total_tokens": 163772,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "docs/research/data/compaction-demonstration.json parses and its compaction_events lists exactly the records in /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/stream.jsonl and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/resume-1.jsonl whose JSON type is system and subtype is compact_boundary (2 expected), each with file, line number, trigger and pre_tokens; results_written_after_compaction is the count of file entries appended after the first record; ended_with_complete_manifest is false with the first-turn Prompt is too long refusal from /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/resume-3.jsonl quoted with its terminal_reason and cumulative inputTokens; early_turn_end records the resume-1 final result text; and docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html gains an anchor id s9 stating those figures",
+          "estimated_hours": null,
+          "goal": "complete the compaction demonstration record from the dead run's own streams",
+          "id": "compaction-record-finished",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T05:28:51Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T052850820000-compaction-record-finished/manifest.md",
+          "negative_control": "none: the node writes a data record and an evidence anchor, no check",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/data/compaction-demonstration.json",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19-compact-finish",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T05:29:00Z",
+        "completed_at": "2026-09-23T06:46:51.214Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4659,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4671,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "2855d7175c5fc0b54bce62593c0c5d220f366989",
+        "commits": [
+          "3263f5a1a93e3cbc3c3ae57f36bc87ae7eefad39"
+        ],
+        "changed_lines": {
+          "added": 98,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T052850820000-compaction-record-finished/manifest.md",
+        "scope_changed": false,
+        "session_id": "db1f6f2e-2a4a-43bb-9f88-dde17b7d19a7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9159004,
+            "input_tokens_cumulative": 9159004,
+            "output_tokens": 52885,
+            "output_tokens_cumulative": 52885,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T06:46:51.214Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 1325,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1054,
+              "log_fresh": false,
+              "manifest_commits": [
+                "fb88efce"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "4c3826705c6775f746cf0c9e485ecd8ff89f90e7fa2e0bfa94d52c504408235c",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan worker-death-is-recorded --section '\u00a75' --role review --spec-level exact --node review-of-ledger-tests-read-interrupted --goal 'attach an independent review to run r-20260923T040159080943-ledger-tests-read-interrupted' --done-when 'the review for r-20260923T040159080943-ledger-tests-read-interrupted stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T040159080943-ledger-tests-read-interrupted.json --time-budget 30m --session ship-s19-20260922 --allow-unreconciled-runs --local",
+              "node": "ledger-tests-read-interrupted",
+              "phase": "working",
+              "plan": "worker-death-is-recorded",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T040159080943-ledger-tests-read-interrupted",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 1074,
+              "terminal_at": "2026-09-23T05:11:00Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/ledger-tests-read-interrupted"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 9,
+            "evidence": 15,
+            "fit": 17,
+            "goal_fidelity": 19,
+            "scope_discipline": 17
+          },
+          "absent": [],
+          "total": 77
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9159004,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4667.972,
+          "generated_tokens": 52885,
+          "generation_seconds": 4624.594,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.9,
+          "machine_seconds": 43.378,
+          "peak_input_tokens": 162499,
+          "tokens_per_second": 11.44,
+          "wall_tokens_per_second": 11.33
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/compaction-record-finished",
+          "session_id": "db1f6f2e-2a4a-43bb-9f88-dde17b7d19a7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T06:46:51.214Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "3263f5a1a93e3cbc3c3ae57f36bc87ae7eefad39",
+        "plan_impl_at_dispatch": 0.31,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": 0.31,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T05:58:51.435259+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T05:28:51Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 79.0,
+        "orientation_input_tokens": 2193603.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -288724,6 +289046,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2245
+    "_version": 2247
   }
 }
