@@ -19,12 +19,14 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S16">
   <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan&#x27;s evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="56e13e11,98d99673,f9d08b55">
+<meta name="plan-impl" content="0.25">
 </head>
 <body>
   <main class="plan-doc">
@@ -231,14 +233,20 @@
     <code>docs/ui/shell.jsx</code>.</p>
 
     <h2 id="s5">&sect;5 &mdash; The served process runs the repair, and the load is measured</h2>
-    <p>The coordinator restarts <code>reckon.service</code> once &sect;2 to &sect;4 are merged.
+    <p>The operator restarts <code>reckon.service</code> once &sect;2 to &sect;4 are merged.
     The table in &sect;1 is then measured again against the restarted process.</p>
     <p><strong>Done when</strong> a timing report records wall time, status and bytes for the six
-    requests of &sect;1, taken twice in a row: cold, the first request after the restart, and
-    warm. It also records a figure fetched with its <code>ETag</code> answering 304, and the
-    gzipped size of <code>/_discover/nova</code>. The warm figures are under 2 s for each request,
-    or the report names the request that is not and its <code>py-spy dump</code> frame. The write
-    path is the report under the session's reports directory.</p>
+    requests of &sect;1 in two passes against the restarted process. The cold pass is the first
+    request to each URL after the restart, issued one at a time. The warm pass repeats the six at
+    least 10 s after the cold pass ends, so it outlives the 5 s walk-reuse window and measures a
+    cache hit that still validates against the tree. The report records the host, its load
+    average at the start of each pass, and the UTC window of each pass, because the &sect;1
+    baseline was taken at load average 49. It also records a figure fetched with its
+    <code>ETag</code> answering 304, and the gzipped size of <code>/_discover/nova</code>.</p>
+    <p>The gate is hard: every warm request answers 200 in under 2 s. A slower warm request fails
+    &sect;5, and the report names it with a <code>py-spy dump</code> frame taken while it runs.
+    Naming a slow request records the failure; it does not pass the gate. The write path is the
+    report under the session's reports directory.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -251,6 +259,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T130830562908-discovery-reads-each-file-once" data-who="reckon-ship" data-when="2026-09-23T14:00:42.245Z">
     <div class="r-comment-body"><p>cold discovery parses each of 40 files once, warm none, a rewrite reparses one; memo disabled costs 42 per file; regression gate 127 passed 2 failed at base and head; review 98</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260923T1525-s2-promoted" data-who="reckon-ship" data-when="2026-09-23T15:25:00Z">
+    <div class="r-comment-body"><p>Gate <code>tests/test_discovery_reads_each_file_once.py</code> passed, 6 of 6; independent review 98. Promoted at <code>6edbae91</code>. Section closed: a cold discovery parses each of 40 files once, a warm one none, and a rewrite reparses one file; with the memo disabled the same tree costs 42 parses per file.</p></div>
 </div>
 </section>
 </main>
