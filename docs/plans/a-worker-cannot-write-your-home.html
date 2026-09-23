@@ -141,8 +141,15 @@
       by naming it under an explicit <code>unprotected_paths</code>, which is recorded on every run
       it affects. If <code>bwrap</code> is absent or a user namespace cannot be created, dispatch is
       refused before a worktree exists, and the refusal names the missing capability. The only way
-      through is <code>--no-fence REASON</code>, recorded on the run and its ledger row.</p>
-      <p><strong>Falsifier.</strong> A dispatch with <code>bwrap</code> removed from PATH is refused
+      through is <code>--no-fence REASON</code>, recorded on the run and its ledger row. The shipped
+      default also gains the worktree root, <code>~/Code/.reckon-worktrees</code>. Every other run's
+      worktree is then read-only to a fenced worker, while the run's own worktree stays writable as
+      one of its granted roots. So a fenced worker can write nothing outside its own worktree, its
+      run directory and its granted stores. That is what lets
+      <code>the-boundary-check-reads-two-trees</code> stop scanning every registered tree.</p>
+      <p><strong>Falsifier.</strong> A fenced stub's write into a sibling run's worktree is refused
+      as a read-only file system, while its write into its own worktree lands. A dispatch with
+      <code>bwrap</code> removed from PATH is refused
       with the capability named, and the same dispatch with <code>--no-fence</code> launches and
       records the reason. A fence that disappears silently is worse than none, because it reports a
       protection that is not there.</p>

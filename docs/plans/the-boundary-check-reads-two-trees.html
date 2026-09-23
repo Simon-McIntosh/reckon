@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-title" content="The Boundary Check Reads Two Trees">
+  <meta name="plan-summary" content="Dispatch and promotion each run git status in every registered worktree, 312 of them; a fenced run needs only its own worktree and the main checkout.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="the-ledger-is-one-file-per-run,a-worker-cannot-write-your-home,a-dispatch-returns-without-its-worker">
+  <title>The Boundary Check Reads Two Trees | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S19">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The Boundary Check Reads Two Trees</h1>
+
+    <p><strong>Measured 2026-09-23.</strong> Every dispatch records a snapshot of every git worktree
+    registered in the repository (<code>dispatch.py</code> <code>_repository_tree_snapshot(repo_root)</code>),
+    and every promotion takes it again over the same roots (<code>promotion.py</code>). Each tree costs
+    one <code>git status --porcelain=v1 -z --untracked-files=all</code> (<code>routing._tree_state</code>).
+    The snapshot exists to refuse a promotion when a run changed a tree other than its own. The review
+    run <code>r-20260923T172710072463-third-read-back-of-the-ledger</code> recorded 312 trees at
+    dispatch. Its <code>crew complete</code> was still running after three hours, starting a new
+    <code>git status</code> in a different retained worktree about every 30 seconds while peer commits
+    were nearly idle. That 30 seconds per tree reflects a degraded shared filesystem. The same morning
+    one tree cost about 3.3 seconds, which is still about 17 minutes per snapshot at 312 trees, paid once
+    at dispatch and again at promotion. The cost grows with how many worktrees exist in every session,
+    not with anything the run did. Per-run ledger files do not remove it.</p>
+
+    <p><strong>The design.</strong> A fenced worker cannot write outside its own worktree and run
+    directory once the fence also protects the other runs' worktrees. For such a run, a boundary check
+    over the other 310 trees looks for a write the operating system already refused. So the check
+    for a fenced run reads two trees: the run's own worktree and the main checkout. The main checkout
+    is kept as a second line behind the fence, because a write there goes live for every session. An
+    unfenced run, launched with <code>--no-fence</code>, keeps the full registry scan, because nothing
+    stopped it from writing elsewhere. Reducing how many worktrees are registered helps too, but it
+    is cleanup rather than a fix, and each session does it for its own promoted runs.</p>
+
+    <p><strong>Order.</strong> §1 waits on two changes to other plans, recorded as gates.
+    <code>a-dispatch-returns-without-its-worker</code> §3 moves the dispatch snapshot into the per-run
+    supervisor, writes it to <code>&lt;run_dir&gt;/tree-snapshot.json</code>, and makes promotion read
+    its baseline from there. <code>a-worker-cannot-write-your-home</code> §3 adds the worktree root to
+    the fence's protected set, keeping the run's own worktree writable. §1 then lands on top of both,
+    in <code>dispatch.py</code>, <code>promotion.py</code> and <code>routing.py</code>, which the S20
+    session owns until its §3 has merged.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — A fenced run's boundary check reads its own worktree and the main checkout</h2>
+      <p><strong>Measure.</strong> When a run's launch plan composed the fence, the supervisor's
+      snapshot and promotion's re-snapshot each record and compare exactly two trees: the run's own
+      worktree and the repository's main checkout. The run record carries whether the fence was
+      composed, and the promotion reads that record, not the current default. A run launched with
+      <code>--no-fence</code>, or recorded before this change, keeps the full scan of every registered
+      worktree. The refusal a promotion gives when the main checkout changed unexpectedly is
+      unchanged.</p>
+      <p><strong>Falsifier.</strong> In a temporary repository with 50 registered worktrees, driven
+      through the <code>crew complete</code> entry point with a <code>git</code> shim on
+      <code>PATH</code> that counts <code>status</code> calls: a fenced run's snapshot holds 2 trees and
+      its promotion makes 2 status calls, while an unfenced run's snapshot holds 51 trees and its
+      promotion makes 51. A fenced run whose worker wrote into the main checkout is still refused at
+      promotion, naming the tree. The negative control sends the fenced branch through the full scan,
+      and the fenced run's count must then read 51.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — The saving is measured on real runs</h2>
+      <p><strong>Measure.</strong> For fenced runs promoted at the merged head, the evidence record
+      gives the registered tree count, the number of trees each snapshot read, and wall time from
+      dispatch to worker start and from <code>crew complete</code> start to its commit. These are
+      compared with the same figures for runs promoted before the change. Tree count is the primary
+      figure, since per-tree cost depends on filesystem load on the day.</p>
+      <p><strong>Falsifier.</strong> At least three fenced runs at the merged head each record 2 trees
+      read, against a registered count above 100. An unfenced run in the same window records the full
+      count. A run whose record reads 2 trees while its launch plan composed no fence is a defect in
+      §1, and the evidence names it.</p>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tbcrtt-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-boundary-check-reads-two-trees" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Wait for the supervisor snapshot and the worktree fence, then scope the check</h4>
+    <div class="r-fu-body"><p>§1 waits for <code>a-dispatch-returns-without-its-worker</code> §3 (the S20 session) and <code>a-worker-cannot-write-your-home</code> §3 to merge. Its base is the later of those two merges, and the S20 session is told before it dispatches, because it writes <code>dispatch.py</code> and <code>promotion.py</code>. §2 is recorded from the first fenced promotions at the merged head.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-boundary-check-reads-two-trees</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
