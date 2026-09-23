@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-worker-cannot-write-your-home">
   <meta name="plan-title" content="A Worker Cannot Write Your Home">
-  <meta name="plan-summary" content="A worker deleted the coordinator's project state with one wildcard rm; workers now run inside an OS fence that makes the operator's dot directories read-only.">
+  <meta name="plan-summary" content="A worker deleted the coordinator&#x27;s project state with one wildcard rm; workers now run inside an OS fence that makes the operator&#x27;s dot directories read-only.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -166,6 +166,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-20260923T1211-mcp-edit-plan-escapes" data-who="reckon-ship" data-when="2026-09-23T12:11:00Z">
+    <div class="r-comment-body"><p><strong>A second route to the main checkout: a worker's MCP <code>edit_plan</code>.</strong> Reported by imas-ambix-af through the S20 coordinator. A worker that calls reckon's MCP <code>edit_plan</code> from its worktree without <code>checkout_path</code> writes to the main checkout's plan, not its own copy. One such write was swept into an unrelated promote commit (93fdafe7, in af's repository), bypassing the merge, the audit, the structural-delta check and review. The content happened to be right. S20 scanned its own worker streams and found no such calls.</p><p><strong>The fence should stop this</strong>, because main checkouts are on the protected list. It holds only if the MCP server a worker launches runs inside the worker's fence: it is a child process, so it inherits the bind mounts. <strong>Measure added to this section:</strong> a fenced stub worker that launches reckon's MCP server and calls <code>edit_plan</code> without <code>checkout_path</code> is refused, and the main checkout's plan file is byte-identical afterwards. The same call with <code>checkout_path</code> set to the worktree still succeeds.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
