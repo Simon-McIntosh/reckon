@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T10:19:16",
+  "updated": "2026-09-23T10:28:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -4027,10 +4027,15 @@
         "id": "stall-readback",
         "harness": "clive",
         "role": "review",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "9355fc00-b6d6-40f0-8af5-9ce81ca9a084",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "9355fc00-b6d6-40f0-8af5-9ce81ca9a084"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "stall-row",
@@ -290031,6 +290036,293 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T051637086142-every-dispatched-run-carries-a-session-id",
+        "plan": "worker-death-is-recorded",
+        "section": "\u00a75",
+        "node": "every-dispatched-run-carries-a-session-id",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2652,
+                "cached_input_tokens": 909779,
+                "input_tokens": 912433,
+                "output_tokens": 497,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 912930,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "a report at docs/research/data/session-id-capture.json counts, across every run directory under /home/ITER/mcintos/.config/reckon/crew/runs dispatched in the last 7 days, the runs whose pointer carries no session_id, grouped by backend and by the point in dispatch where capture was skipped, naming the cause for each group; the capture path in reckon/crew/dispatch.py and reckon/crew/routing.py records either the session id or a session_id_absent reason on every run; tests in tests/test_every_run_carries_a_session_id.py assert that a stub run whose stream carries a session id records it, and that a stub run whose stream never emits one records a named reason rather than a silent null; the negative control of removing the reason fallback is applied, the no-session test is observed to fail with a bare null, and that log is recorded in the manifest",
+          "estimated_hours": null,
+          "goal": "every newly dispatched run either records a session id or records why it could not",
+          "id": "every-dispatched-run-carries-a-session-id",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T05:16:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/manifest.md",
+          "negative_control": "remove the session_id_absent reason fallback so a run with no captured session records a bare null",
+          "plan": "worker-death-is-recorded",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/routing.py",
+            "tests/test_every_run_carries_a_session_id.py",
+            "docs/research/data/session-id-capture.json",
+            "docs/evidence/archive/worker-death-is-recorded-landed.html",
+            "docs/figures/worker-death-is-recorded",
+            "docs/plans/worker-death-is-recorded.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19-wdr-session",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T05:16:53Z",
+        "completed_at": "2026-09-23T06:43:20.745Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5170,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5187,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "75b39d4d663649eeac7596b50667bafb0f8cfb8a",
+        "commits": [
+          "1aff17a07ee240c2a4f2fe6da135e709830bb391"
+        ],
+        "changed_lines": {
+          "added": 53,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_run_carries_a_session_id.py tests/test_reckon_crew.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/gate.log",
+          "log_digest": "7057ab16094ef2a0366f0e3d30cd32e83f1c49cbdd975cd2824fb8100c4264a5"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/manifest.md",
+        "scope_changed": false,
+        "session_id": "e257617c-bcfa-47e1-b10b-cc7ebe589cb2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16245696,
+            "input_tokens_cumulative": 16245696,
+            "output_tokens": 55486,
+            "output_tokens_cumulative": 55486,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T06:43:20.745Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 18,
+            "fit": 17,
+            "goal_fidelity": 19,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16413762,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5183.502,
+          "generated_tokens": 62326,
+          "generation_seconds": 4708.407,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 475.095,
+          "peak_input_tokens": 166766,
+          "tokens_per_second": 13.24,
+          "wall_tokens_per_second": 12.02
+        },
+        "follow_on_paths": [
+          "routing.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/every-dispatched-run-carries-a-session-id",
+          "session_id": "e257617c-bcfa-47e1-b10b-cc7ebe589cb2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T06:43:20.745Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "1aff17a07ee240c2a4f2fe6da135e709830bb391",
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "worker-death-is-recorded",
+          "at_dispatch": 0.5,
+          "at_complete": 0.79,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_every_run_carries_a_session_id.py"
+          ],
+          "declaration": "remove the session_id_absent reason fallback so a run with no captured session records a bare null",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/logs/negative-control-session-id.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/logs/negative-control-session-id.log"
+        },
+        "commit_list_shortfall": {
+          "kind": "presented_commits_subset_of_manifest",
+          "presented": 1,
+          "declared": 2,
+          "missing": [
+            "320ece2d2aee83eaf5c1d5c02678cbb0d8e2eb9b"
+          ],
+          "message": "run 'r-20260923T051637086142-every-dispatched-run-carries-a-session-id' has a passing gate presenting 1 commit(s) of the 2 its manifest declares; missing: 320ece2d2aee83eaf5c1d5c02678cbb0d8e2eb9b. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal \u2014 present the full list, or the boundary check may not cover the node's work"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T06:11:38.346225+00:00",
+          "horizon_seconds": 3300,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T05:16:38Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 131.0,
+        "orientation_input_tokens": 3126446.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -290343,6 +290635,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2254
+    "_version": 2256
   }
 }
