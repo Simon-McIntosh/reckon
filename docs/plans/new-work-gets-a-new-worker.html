@@ -82,8 +82,9 @@
       five has not searched.</p>
     </section>
 
-    <section id="s2" data-reckon="section">
-      <h2>§2 — A dispatch resumes a session only on the same task</h2>
+    <section id="s2" data-reckon="section" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-23</span>
+        <h2>§2 — A dispatch resumes a session only on the same task</h2></header>
       <p><strong>Measure.</strong> The dispatch-time session decision compares task identity, not
       member identity. For implement, test and investigate runs, task identity is
       <code>(project, plan, node id)</code>. For a review, it is the reviewed run id. A prior session is
@@ -103,6 +104,21 @@
         <li><code>crew resume</code> still composes its own run's session.</li>
       </ol>
       <p>The negative control restores member-keyed selection, and case 1 must turn red.</p>
+      <p class="landed-summary"><strong>Landed.</strong> The dispatch-time decision now
+      keys on the task: <code>(project, plan, node id)</code>, or the reviewed run id for a
+      review node whose id names the run it reviews, so a re-review of one run continues
+      the earlier review's session. The prior session is read from the committed ledger
+      rows and live pointers of the same task, never from the member's <code>sessions</code>
+      map, and the member-keyed resolution helpers are removed with the session_reuse key
+      reduced to whether the lane can resume at all. A prior run that ended
+      <code>Prompt is too long</code>, <code>blocking_limit</code>, or a compaction that
+      never completed a boundary is withheld with the run and reason named, not composed.
+      24 passed across the gate and the three updated files, and the declared control turns
+      case 1 red with the same selection the base revision made. Record at
+      <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed">the landed
+      evidence</a>, with the decision sketched in
+      <a href="/reckon/figures/new-work-gets-a-new-worker/session-selection.png">the
+      selection figure</a>.</p>
     </section>
 
     <section id="s3" data-reckon="section">

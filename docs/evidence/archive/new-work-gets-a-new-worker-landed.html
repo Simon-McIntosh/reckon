@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="new-work-gets-a-new-worker-landed">
+  <meta name="plan-title" content="New Work Gets A New Worker &mdash; landed evidence">
+  <meta name="plan-summary" content="The dispatch-time session decision now compares task identity rather than member identity, and a new node on a member no longer resumes that member's last session">
+  <meta name="plan-evidence-for" content="reckon:new-work-gets-a-new-worker">
+  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s2">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
+  <meta name="plan-commits" content="4cfc76a4">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_session_resumes_only_its_own_task.py,tests/test_crew_session_keying.py,tests/test_worker_session_is_session_scoped.py,tests/test_run_record_reports_actual_resume.py,docs/figures/new-work-gets-a-new-worker/session-selection.png">
+  <title>New Work Gets A New Worker &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>New Work Gets A New Worker &mdash; landed evidence</h1>
+    <p class="plan-summary">The dispatch-time session decision is keyed to the task
+    <code>(project, plan, node id)</code>, or to the reviewed run id for a review. A new
+    node sent to a member that last ran a different node composes no resume.</p>
+  </header>
+
+  <section id="session-selection">
+    <h2>&sect;2 &mdash; The dispatch-time decision compares task identity</h2>
+    <p><strong>Node:</strong> <code>session-resumes-only-its-own-task</code>. The decision
+    that composes <code>resume &lt;session&gt;</code> into a launched argv read the
+    resolving member's session map, so a member that had last run one node offered that
+    node's conversation to the next node dispatched to it.</p>
+
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/session-selection.png"
+           alt="Left: member-keyed selection hands task-alpha's session to task-beta. Right: task-keyed selection continues task-alpha's session for task-alpha and starts task-beta fresh.">
+      <figcaption>The removed decision on the left and the landed one on the right. The
+      session belongs to the task, and the member is only where it happens to be
+      recorded.</figcaption>
+    </figure>
+
+    <h3>The five cases asserted on the composed argv</h3>
+    <p>Every case drives the real <code>reckon.crew.dispatch.dispatch</code> path with
+    <code>session_reuse: true</code> on the backend and reads the argv back, never a
+    helper's return value.</p>
+    <table>
+      <thead><tr><th>Case</th><th>What it asserts</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>A new node sent to a member whose recorded session belongs to a different
+          node composes no resume.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>A second dispatch of the same project, plan and node id composes the prior
+          run's recorded session.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>A re-review — a review node whose id names the same reviewed run — composes
+          the prior review run's session; a review of a different run starts fresh.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>A prior run whose stream ended in <code>Prompt is too long</code>,
+          <code>blocking_limit</code>, or a compaction with no
+          <code>compact_boundary</code> is not composed; a completed boundary still
+          is.</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><code>crew resume</code> of a run still composes that run's own session.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Where the prior session is read from</h3>
+    <p>Committed ledger rows under <code>docs/state/&lt;project&gt;/crew.json</code> — which
+    store <code>node</code> as an id string and carry no stream path — and the live
+    pointers under <code>&lt;RECKON_HOME&gt;/crew/live/&lt;run_id&gt;.json</code>, which
+    store the node block and the stream path. The roster's <code>sessions</code> map is
+    used by neither: it is where a captured session is written back, not an authority for
+    which task may continue.</p>
+
+    <h3>The negative control, quoted</h3>
+    <p>The declared control restores the member-keyed decision. Case 1 then resumes
+    across tasks and fails:</p>
+    <pre>restore member-keyed session selection in the dispatch-time decision, so a new node on a member resumes that member's last session
+
+F                                                                        [100%]
+E       AssertionError: assert '066f04b2-75c1-43f0-aa27-0d72a67b340f' is None
+tests/test_session_resumes_only_its_own_task.py:191: AssertionError
+1 failed in 2.97s</pre>
+
+    <p>The same dispatch at the base revision <code>e3e51cd1</code> selects the same
+    member-keyed session, which is the defect this change removes:</p>
+    <pre>E       AssertionError: assert '066f04b2-75c1-43f0-aa27-0d72a67b340f' is None
+tests/test_session_resumes_only_its_own_task.py:191: AssertionError
+1 failed in 2.60s</pre>
+
+    <h3>The gate, with the change in place</h3>
+    <pre>tests/test_session_resumes_only_its_own_task.py
+tests/test_crew_session_keying.py
+tests/test_worker_session_is_session_scoped.py
+tests/test_run_record_reports_actual_resume.py
+........................                                                 [100%]
+24 passed in 12.58s</pre>
+
+    <h3>Nothing added elsewhere</h3>
+    <p>The foreground gate beside the change — <code>tests/test_crew_ephemeral_members.py</code>,
+    <code>tests/test_crew_dispatch_arming.py</code>,
+    <code>tests/test_crew_recover.py</code> — carries the same two failures at the base
+    revision as with the change: a dispatch against a synthetic ledger store that reports
+    the run store as the authority. Neither is reached by this change, and neither is
+    triaged here.</p>
+  </section>
+</main>
+</body>
+</html>
