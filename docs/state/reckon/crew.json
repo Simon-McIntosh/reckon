@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T17:21:17",
+  "updated": "2026-09-23T17:21:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -312674,6 +312674,286 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T130830562908-discovery-reads-each-file-once",
+        "plan": "a-page-load-reads-each-file-once",
+        "section": "\u00a72",
+        "node": "discovery-reads-each-file-once",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 296,
+                "cached_input_tokens": 294299,
+                "input_tokens": 294597,
+                "output_tokens": 1833,
+                "reasoning_output_tokens": 263,
+                "total_tokens": 296430,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "7d3382d5-6772-46fc-8699-0b25bce47c6f",
+            "session_id": "page-load-20260923"
+          },
+          "done_when": "tests/test_discovery_reads_each_file_once.py passes with every assertion \u00a72 names; the declared negative control is applied, observed to fail with more than 5 parses per file, and its log recorded; the \u00a72 regression gate run on all_debug at base 00106ce2 and at head shows zero added failures, one log each",
+          "estimated_hours": null,
+          "goal": "Prove by test that discovery parses each plan file at most once cold and none warm",
+          "id": "discovery-reads-each-file-once",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T13:08:33Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 3,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 6,
+            "mean_context": 124000,
+            "observed_at": "2026-09-23T13:08:30Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T130830562908-discovery-reads-each-file-once/manifest.md",
+          "negative_control": "patch reckon.file_memo.memoized to call compute() directly and make resource_scan_scope a no-op; the cold-parse assertion must fail",
+          "plan": "a-page-load-reads-each-file-once",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_discovery_reads_each_file_once.py",
+            "reckon/file_memo.py",
+            "reckon/serve.py",
+            "reckon/resources.py",
+            "reckon/roadmap.py",
+            "reckon/fleet_index.py",
+            "reckon/_plan_html.py",
+            "docs/evidence/archive/a-page-load-reads-each-file-once-landed.html",
+            "docs/figures/a-page-load-reads-each-file-once",
+            "docs/plans/a-page-load-reads-each-file-once.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "page-load-discovery",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T13:09:40Z",
+        "completed_at": "2026-09-23T14:00:42.245Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3052,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3062,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d51b2cf03a1550a14b134c280b5028a4512f3c54",
+        "commits": [
+          "98d996738a23eca39dcec7144085ebe191975a1a",
+          "f9d08b55c1144f3c9b6ce1d0d98d9016ef45e6bc"
+        ],
+        "changed_lines": {
+          "added": 388,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_discovery_reads_each_file_once.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T130830562908-discovery-reads-each-file-once/logs/final-test.log",
+          "log_digest": "sha256:5a989528b6d98e8efc8944dda62e68226f396d443df67e66e70778ef94e79c73"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T130830562908-discovery-reads-each-file-once/manifest.md",
+        "scope_changed": false,
+        "session_id": "a0b2c0a1-197f-43be-a9cb-e88de08ef42e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10748494,
+            "input_tokens_cumulative": 10748494,
+            "output_tokens": 52435,
+            "output_tokens_cumulative": 52435,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T14:00:42.245Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 18,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10915472,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3056.981,
+          "generated_tokens": 59767,
+          "generation_seconds": 2922.187,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 134.794,
+          "peak_input_tokens": 165678,
+          "tokens_per_second": 20.45,
+          "wall_tokens_per_second": 19.55
+        },
+        "follow_on_paths": [
+          "tests/test_crew_routes.py",
+          "tests/large_context.py",
+          "reckon.service"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/page-load-20260923/discovery-reads-each-file-once",
+          "session_id": "a0b2c0a1-197f-43be-a9cb-e88de08ef42e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T14:00:42.245Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "f9d08b55c1144f3c9b6ce1d0d98d9016ef45e6bc",
+        "impl_move": {
+          "plan": "a-page-load-reads-each-file-once",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_discovery_reads_each_file_once.py"
+          ],
+          "declaration": "patch reckon.file_memo.memoized to call compute() directly and make resource_scan_scope a no-op; the cold-parse assertion must fail",
+          "log": "/tmp/dr-node/negative-control.log",
+          "resolved_log": "/tmp/dr-node/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T13:53:33.145065+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T13:08:33Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 3,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 6,
+          "mean_context": 124000,
+          "observed_at": "2026-09-23T13:08:30Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 105.0,
+        "orientation_input_tokens": 3425631.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -312986,6 +313266,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2344
+    "_version": 2345
   }
 }

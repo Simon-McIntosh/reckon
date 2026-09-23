@@ -18,11 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S16">
-  <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan's evidence.">
+  <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan&#x27;s evidence.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -239,13 +241,18 @@
     path is the report under the session's reports directory.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Verify the discovery repair and stop the served loader reading the aggregate</h4>
-        <div class="r-fu-body"><p>&sect;2, &sect;3 and &sect;4 write disjoint files and run together. &sect;5 follows their merge and the service restart.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Verify the discovery repair and stop the served loader reading the aggregate</h4>
+    <div class="r-fu-body"><p>§2, §3 and §4 write disjoint files and run together. §5 follows their merge and the service restart.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T130830562908-discovery-reads-each-file-once" data-who="reckon-ship" data-when="2026-09-23T14:00:42.245Z">
+    <div class="r-comment-body"><p>cold discovery parses each of 40 files once, warm none, a rewrite reparses one; memo disabled costs 42 per file; regression gate 127 passed 2 failed at base and head; review 98</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
