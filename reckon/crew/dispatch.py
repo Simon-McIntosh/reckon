@@ -2285,10 +2285,8 @@ def _lane_reading_carry(
             detail="lane document carries no numeric 'mean_context'"
         )
     binding = document.get("binding_observed")
-    if binding is None or (isinstance(binding, str) and not binding.strip()):
-        return _lane_reading_unknown(
-            detail="lane document carries no 'binding_observed'"
-        )
+    if isinstance(binding, str) and not binding.strip():
+        binding = None
     shelf = _metric_number(document.get("suggested_shelf_life_seconds"))
     if shelf is not None and shelf > 0 and age.total_seconds() > shelf:
         carry = _lane_reading_unknown(
@@ -2303,7 +2301,12 @@ def _lane_reading_carry(
     return {
         "state": "fresh",
         "headroom": headroom,
-        "binding_observed": binding,
+        # The field names WHICH constraint binds, and a lane with no such
+        # constraint has nothing to name rather than nothing to report. Carrying
+        # it unknown on its own keeps the headroom and mean context beside it,
+        # both already parsed and validated above; invalidating the whole
+        # reading over it discarded measurements the lane had made.
+        "binding_observed": "unknown" if binding is None else binding,
         "mean_context": mean_context,
         "observed_at": stamp,
         "age_seconds": int(age.total_seconds()),

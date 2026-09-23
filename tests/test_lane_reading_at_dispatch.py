@@ -202,6 +202,38 @@ def test_binding_observed_is_consumed_as_the_documents_own_field() -> None:
     assert five_hour["binding_observed"] == "five hour"
 
 
+def test_a_lane_naming_no_binding_constraint_still_reports_its_figures() -> None:
+    """A null binding constraint withholds one field, not the whole reading.
+
+    The field names WHICH constraint binds. A locally served lane has no window
+    to name and publishes null permanently, so treating that as an unreadable
+    document discards a headroom and a mean context the lane did measure. Read
+    live on 2026-09-23: every dispatch carried 'unknown' while the document
+    beside it reported a headroom of 0 against 32 running.
+    """
+    base = {
+        "headroom": 0.0,
+        "mean_context": 98750.0,
+        "observed_at": OBSERVED_STAMP,
+        "suggested_shelf_life_seconds": 60.0,
+    }
+
+    for absent in (None, "", "   "):
+        carry = dispatch_module._lane_reading_carry(
+            {**base, "binding_observed": absent}, now=NOW
+        )
+        assert carry["state"] == "fresh", absent
+        assert carry["headroom"] == 0.0, absent
+        assert carry["mean_context"] == 98750.0, absent
+        assert carry["binding_observed"] == "unknown", absent
+        assert carry["detail"] == "", absent
+
+    missing = dispatch_module._lane_reading_carry(base, now=NOW)
+    assert missing["state"] == "fresh"
+    assert missing["headroom"] == 0.0
+    assert missing["binding_observed"] == "unknown"
+
+
 def test_no_dispatch_is_refused_held_or_rerouted_by_any_value_in_the_document(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
