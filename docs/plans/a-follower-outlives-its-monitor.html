@@ -318,6 +318,39 @@
     running eight seconds after the original arm. The write paths are <code>reckon/cli.py</code> and
     that test.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="lifetime-survives-reload" data-when="2026-09-23">
+    <p><strong>Outcome — a reload no longer restarts the lifetime.</strong> Commit
+    <code>bc229de1</code> <em>feat(crew): carry a follower's lifetime deadline across its
+    reload</em> fixes the deadline at the first arming and hands it to the replacement image in
+    the environment, which survives <code>os.execv</code>. The replacement reads how much of the
+    original arming is left and spends it; it never writes a new deadline, so a reload cannot
+    extend an arming, and a reload that arrives after the deadline ends the follower at once.</p>
+    <p>Carrying the instant in the environment rather than an argument keeps the arming's
+    identity separate from any one image: a fresh arming by the host inherits nothing and arms
+    from its own start, while a replacement of an armed follower continues that arming.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li>The node's gate, <code>tests/test_follow_lifetime_survives_reload.py</code> at
+      <code>bc229de1</code>: <strong>1 passed in 10.71 s</strong>. It arms the real follower with
+      <code>--lifetime 6s</code> over a temporary <code>RECKON_HOME</code>, forces one reload about
+      three seconds in through the follower's own source-stamp trigger, confirms the image was
+      replaced from the replacement's command line, and requires the <code>follower end:</code>
+      line and exit status 0 within eight seconds of the original arm. Measured on this node: the
+      replacement happens about 1.0 s after the arm and the carried deadline ends the arming at
+      5.1 s.</li>
+      <li><code>tests/test_follow_lifetime.py</code> still passes, <strong>2 passed</strong>.</li>
+      <li><strong>Added failures in the adjacent follower/watcher set: 0.</strong> Five failures
+      reproduce identically with this change's call site absent: three in
+      <code>tests/test_crew_watch_lifetime.py</code> reading a renamed state, and two in
+      <code>tests/test_a_reexec_keeps_its_children.py</code> whose launched-worker carrier is now a
+      mapping where the test expects a bare pid list. Neither touches the lifetime path.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> with the carried
+      deadline made absent so the replacement anchors at its own start, the gate fails on exactly
+      that mechanism — the follower was still running 8.0 s after its original arm.</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s8-reload-deadline">the landed record</a>.</p>
+    </div>
+
     <h2 id="s9">&sect;9 &mdash; A watcher does not re-read every stream on every poll</h2>
     <p>Measured on 2026-09-23 at about 11:45 UTC, after imas-ambix-b6 reported that watchers were
     most of the login node's CPU. Five project watchers were running, for nova, imas-efit, reckon,
