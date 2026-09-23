@@ -7,11 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-page-load-reads-each-file-once-landed">
   <meta name="plan-title" content="A Page Load Reads Each File Once — landed evidence">
-  <meta name="plan-summary" content="One section per landed node: discovery parses each file once (§2), the served loader reads discovery alone (§3), and the project picker never waits on the rollup (§4).">
+  <meta name="plan-summary" content="One section per landed node: discovery parses each file once (§2), the served loader reads discovery alone (§3), the project picker never waits on the rollup (§4), and the fleet rollup reuses walks until a tree's own change drops one (§7).">
   <meta name="plan-evidence-for" content="a-page-load-reads-each-file-once">
-  <meta name="plan-verifies" content="a-page-load-reads-each-file-once#s2,a-page-load-reads-each-file-once#s3,a-page-load-reads-each-file-once#s4,a-page-load-reads-each-file-once#s6">
-  <meta name="plan-commits" content="98d99673,f6529a51,26d03b02,58ed7a21">
-  <meta name="plan-artifacts" content="tests/test_discovery_reads_each_file_once.py,docs/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png,docs/ui/state-loader.js,tests/test_served_loader_reads_discovery_only.py,docs/figures/a-page-load-reads-each-file-once/source-priority.svg,tests/test_shell_project_list_is_immediate.py,docs/figures/a-page-load-reads-each-file-once/picker-request-order.svg">
+  <meta name="plan-verifies" content="a-page-load-reads-each-file-once#s2,a-page-load-reads-each-file-once#s3,a-page-load-reads-each-file-once#s4,a-page-load-reads-each-file-once#s6,a-page-load-reads-each-file-once#s7">
+  <meta name="plan-commits" content="98d99673,f6529a51,26d03b02,58ed7a21,c06b0764">
+  <meta name="plan-artifacts" content="tests/test_rollup_reuses_watched_walks.py,docs/figures/a-page-load-reads-each-file-once/rollup-walks-per-request.png,tests/test_discovery_reads_each_file_once.py,docs/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png,docs/ui/state-loader.js,tests/test_served_loader_reads_discovery_only.py,docs/figures/a-page-load-reads-each-file-once/source-priority.svg,tests/test_shell_project_list_is_immediate.py,docs/figures/a-page-load-reads-each-file-once/picker-request-order.svg">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment; node 22 for the loader; headless Chrome on the login node for the picker">
@@ -350,6 +350,81 @@ FAILED tests/test_shell_project_list_is_immediate.py::test_other_project_invento
       login-node local path), so the run was taken on the login node, as &sect;4 and the &sect;6 count
       record. It is two short probes against a <code>file://</code> document with no served process
       and no network.</p>
+    </section>
+
+    <section id="s7">
+      <h2>&sect;7 &mdash; The fleet rollup reuses walks until a watched tree changes</h2>
+      <p>At load average 16 to 23, <code>/_projects/index.json</code> took 13.6 s warm and 25.2 s
+      cold while every <code>/_discover</code> and <code>/crew</code> request stayed under 1.5 s. A
+      <code>py-spy dump</code> taken during that request put every busy executor worker inside
+      <code>_walk_discovery_signature</code>, reached from <code>compute_project_row</code> through
+      <code>discover_plans</code> and <code>_fresh_discovery</code>: once the 5 s reuse window
+      lapsed, the rollup walked all thirteen mounted docs trees to validate caches nothing had
+      invalidated. This node makes the write path the invalidator.</p>
+      <h3>What changed</h3>
+      <p>Commit <code>c06b0764</code> edits <code>reckon/serve.py</code>, plus the new
+      <code>tests/test_rollup_reuses_watched_walks.py</code>. The per-connection
+      <code>_ProjectChangeWatch</code> yields its event read to a <code>consume()</code> method, over
+      which a new process-lifetime <code>_FleetChangeWatch</code> selects across every mounted tree's
+      inotify descriptor. On a notification it consumes the events, waits out the write settle, and
+      drops that tree's memoised discovery and walk signature &mdash; no other tree's. The served
+      reuse window rises to 60 s, read from <code>RECKON_DISCOVERY_REUSE_S</code>, while the
+      module-level default stays at 0 so the library default walks every call. The kernel is the
+      invalidation; the window only backstops writes no local kernel reports, such as a write from
+      another login node on the shared filesystem. A POST still clears every memoised walk.</p>
+      <figure>
+        <img src="/reckon/figures/a-page-load-reads-each-file-once/rollup-walks-per-request.png"
+             alt="Docs trees walked per consecutive rollup call over three mounted projects: three on the cold pass, none over twenty unchanged calls, one for the rewritten tree">
+        <figcaption>Docs trees walked per <code>collect_projects</code> call. Three temporary mounted
+        projects; the cold pass walks each tree once, twenty unchanged calls walk none, and a rewrite
+        of one plan file drops exactly that tree's memo, so the next call walks one tree inside a
+        second.</figcaption>
+      </figure>
+      <p>The inotify path is the whole mechanism: the kernel reports the write to the one tree that
+      changed, the memo for that tree is dropped, and the next rollup re-walks it alone. Nothing
+      else in the fleet is touched, which is why twenty unchanged rollups walk nothing at all.</p>
+      <h3>The gate</h3>
+      <pre><code>$ pytest -q tests/test_rollup_reuses_watched_walks.py
+....                                                                     [100%]
+4 passed in 1.06s</code></pre>
+      <p>Four cases: twenty unchanged rollups walk no tree after the cold pass, whose three walks are
+      asserted first so the zero is distinguishable from an instrument that never fired; a rewrite is
+      seen on the next rollup within 1 s with exactly the changed tree walked and the rewritten title
+      returned, read through the rollup's own state root so it costs no walk; the served reuse window
+      is 60 s and follows <code>RECKON_DISCOVERY_REUSE_S</code>; and a POST against a real
+      <code>ThreadingHTTPServer</code> empties the memo so the next rollup walks all three trees,
+      which is what proves the write path &mdash; not the watch &mdash; still clears everything. The
+      tree is the worktree at <code>c06b0764</code>, run on <code>all_debug</code>
+      (<code>logs/gate-rollup-walks.txt</code>).</p>
+      <h3>The negative control</h3>
+      <p>The declared control starts the mounted projects and the rollup but not the served watch, so
+      nothing drops the memo and the rewrite stays invisible until the reuse window lapses. It reddens
+      exactly the within-1-s assertion:</p>
+      <pre><code>do not start the served watch over the mounted trees; the rewrite is not seen within 1 s and the within-1-s assertion must fail
+F                                                                        [100%]
+&gt;       assert seen, "the rewrite was not seen within 1 s"
+E       AssertionError: the rewrite was not seen within 1 s
+E       assert False
+1 failed in 6.16s</code></pre>
+      <p>Assertion-level, not merely test-level: the failing line is the declared one, and the
+      <code>_await</code> above it runs its poll for the whole second before giving up, so the failure
+      is a real lapse rather than a fixture error. The same file's other three cases pass in that run,
+      and the identical case is green with the watch started, so the control isolates the watch rather
+      than the rollup. The red log's first line repeats the declared string verbatim; it is
+      <code>logs/negative-control-within-1s.txt</code>.</p>
+      <h3>Regression, base against head</h3>
+      <p><code>tests/test_discovery_reads_each_file_once.py</code> and
+      <code>tests/test_discovery_cache.py</code> report the same eleven passes at the base revision
+      <code>e7f60e14</code> (with <code>reckon/serve.py</code> swapped to its base content and the
+      worktree restored byte-exact afterwards) and at <code>c06b0764</code> &mdash; zero added
+      failures. Both runs are on <code>all_debug</code>
+      (<code>logs/regression-discovery-base.txt</code>, <code>logs/regression-discovery-head.txt</code>).</p>
+      <p><strong>Environment note.</strong> The gate mounts three temporary projects behind a
+      temporary mounts file and a temporary state root, so no real workspace is read or written; it
+      runs in about a second and was taken on a compute node, not the login node.</p>
+      <p><strong>The served figure is not this section's.</strong> Once &sect;7 is merged and the
+      operator restarts the service, &sect;5 is measured again over the live thirteen-tree rollup
+      request, and its gate &mdash; the rollup latency &mdash; is what closes the plan.</p>
     </section>
   </main>
 </body>

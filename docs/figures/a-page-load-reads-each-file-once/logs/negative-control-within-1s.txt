@@ -1,0 +1,45 @@
+do not start the served watch over the mounted trees; the rewrite is not seen within 1 s and the within-1-s assertion must fail
+# revision e7f60e1440d707869ddcc28f01f915cbe94cf009 + node change; tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/page-load-20260923/rollup-reuses-watched-walks
+# command: RECKON_TEST_SKIP_WATCH=1 .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_rollup_reuses_watched_walks.py::test_a_watched_tree_change_is_seen_within_a_second
+# ---
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_a_watched_tree_change_is_seen_within_a_second ______________
+
+mounted = ({'alpha': PosixPath('/tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/alpha/docs'), 'beta': PosixPat..._is_0/beta/docs'), 'gamma': PosixPath('/tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/gamma/docs')})
+walk_counter = [], fleet_watch = None
+
+    def test_a_watched_tree_change_is_seen_within_a_second(mounted, walk_counter, fleet_watch):
+        mounts, trees = mounted
+        serve.collect_projects(mounts)
+        walk_counter.clear()
+    
+        alpha = trees["alpha"].resolve()
+        _rewrite(alpha / "plans" / f"{_SLUG}.html", "alpha", "alpha work rewritten")
+    
+        def _poll_rollup() -> bool:
+            serve.collect_projects(mounts)
+            return bool(walk_counter)
+    
+        seen = _await(_poll_rollup, _VISIBLE_WITHIN_S)
+>       assert seen, "the rewrite was not seen within 1 s"
+E       AssertionError: the rewrite was not seen within 1 s
+E       assert False
+
+tests/test_rollup_reuses_watched_walks.py:192: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/gamma: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/alpha: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/beta: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/alpha: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/beta: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+WARNING  reckon.serve:serve.py:932 Git HEAD lookup failed with exit code 128 in /tmp/pytest-of-mcintos/pytest-503/test_a_watched_tree_change_is_0/gamma: fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+=========================== short test summary info ============================
+FAILED tests/test_rollup_reuses_watched_walks.py::test_a_watched_tree_change_is_seen_within_a_second
+1 failed in 6.16s

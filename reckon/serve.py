@@ -52,6 +52,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
 from http import HTTPStatus
@@ -136,17 +137,8 @@ class _ProjectChangeWatch:
             raise OSError(error, os.strerror(error), str(directory))
         self._directories[descriptor] = directory
 
-    def wait(self, connection: socket.socket) -> bool:
-        """Return false when the browser disconnects, true on a tree change."""
-        readable, _, _ = select.select([self.fd, connection], [], [])
-        if connection in readable:
-            try:
-                if not connection.recv(1, socket.MSG_PEEK):
-                    return False
-            except (ConnectionError, OSError):
-                return False
-        if self.fd not in readable:
-            return False
+    def consume(self) -> bool:
+        """Read pending notifications, arming a watch on any new directory."""
         events = os.read(self.fd, 64 * 1024)
         offset = 0
         while offset + _INOTIFY_EVENT.size <= len(events):
@@ -164,6 +156,20 @@ class _ProjectChangeWatch:
                     self._watch_tree(candidate)
         return True
 
+    def wait(self, connection: socket.socket) -> bool:
+        """Return false when the browser disconnects, true on a tree change."""
+        readable, _, _ = select.select([self.fd, connection], [], [])
+        if connection in readable:
+            try:
+                if not connection.recv(1, socket.MSG_PEEK):
+                    return False
+            except (ConnectionError, OSError):
+                return False
+        if self.fd not in readable:
+            return False
+        self.consume()
+        return True
+
     def drain(self, settle_s: float) -> None:
         """Consume further events until none arrive for ``settle_s`` seconds."""
 
@@ -178,6 +184,73 @@ class _ProjectChangeWatch:
 
     def close(self) -> None:
         os.close(self.fd)
+
+
+class _FleetChangeWatch:
+    """Watch every mounted docs tree for the life of the served process.
+
+    A kernel notification on one tree drops that tree's memoised walk at once,
+    so the reuse window never has to hide a change the kernel reported; it only
+    backstops writes the kernel does not report, such as a write from another
+    login node on the shared filesystem. One thread selects across every tree's
+    notification descriptor, so a change to any mounted tree is seen without
+    walking anything.
+    """
+
+    def __init__(self, trees: Iterable[Path]) -> None:
+        self._watches: dict[int, _ProjectChangeWatch] = {}
+        for tree in sorted({Path(candidate).resolve() for candidate in trees}):
+            try:
+                watch = _ProjectChangeWatch(tree)
+            except OSError as exc:
+                LOGGER.warning("Not watching %s for changes: %s", tree, exc)
+                continue
+            self._watches[watch.fd] = watch
+        self._stop_reader, self._stop_writer = os.pipe()
+        self._thread: threading.Thread | None = None
+        self.running = False
+
+    def start(self) -> _FleetChangeWatch:
+        """Begin watching every mounted tree; return self for chaining."""
+        if self.running:
+            return self
+        self._thread = threading.Thread(
+            target=self._run, name="reckon-tree-watch", daemon=True
+        )
+        self._thread.start()
+        self.running = True
+        return self
+
+    def _run(self) -> None:
+        while self._watches:
+            readable, _, _ = select.select([*self._watches, self._stop_reader], [], [])
+            if self._stop_reader in readable:
+                return
+            for descriptor in readable:
+                watch = self._watches.get(descriptor)
+                if watch is None:
+                    continue
+                watch.consume()
+                # A save or a merge is a burst of events; let it settle so the
+                # burst costs one invalidation rather than one per event.
+                watch.drain(_CHANGE_SETTLE_S)
+                _invalidate_discovery_signatures(watch.root)
+                _invalidate_discovery_tree(watch.root)
+
+    def close(self) -> None:
+        """Signal the watch thread to stop and release its descriptors."""
+        with contextlib.suppress(OSError):
+            os.write(self._stop_writer, b"x")
+        if self._thread is not None:
+            self._thread.join(timeout=2.0)
+        self._thread = None
+        self.running = False
+        for watch in self._watches.values():
+            watch.close()
+        self._watches.clear()
+        for descriptor in (self._stop_reader, self._stop_writer):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
 
 
 def _resolve_paths(mounts_file: Path | None = None) -> None:
@@ -259,18 +332,14 @@ def _client_asset(name: str) -> Path:
 def client_runtime_assets() -> dict[str, bytes]:
     """Return the production browser runtimes that entry points serve locally."""
     return {
-        name: _client_asset(name).read_bytes()
-        for name in ("react.js", "react-dom.js")
+        name: _client_asset(name).read_bytes() for name in ("react.js", "react-dom.js")
     }
 
 
 def compile_jsx(source: str, *, filename: str) -> bytes:
     """Compile JSX through the pinned server-side compiler and cache by content."""
     digest = hashlib.sha256(
-        b"scope-isolated-script\0"
-        + filename.encode()
-        + b"\0"
-        + source.encode()
+        b"scope-isolated-script\0" + filename.encode() + b"\0" + source.encode()
     ).hexdigest()
     destination = _client_cache_root() / "compiled" / f"{digest}.js"
     if destination.is_file():
@@ -329,6 +398,7 @@ def _ui_root() -> Path:
     if configured:
         return Path(configured).expanduser().resolve()
     return Path(__file__).parent.parent / "docs" / "ui"
+
 
 # Fields that are updated on every write and therefore excluded from the
 # content-equality check in _content_equal.
@@ -468,9 +538,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         if str(pointer.get("project") or "") in selected
         and str(pointer.get("project") or "") in mounts
     ]
-    referenced_projects = {
-        str(pointer.get("project") or "") for pointer in pointers
-    }
+    referenced_projects = {str(pointer.get("project") or "") for pointer in pointers}
     roster_by_project: dict[str, dict[str, dict]] = {}
     for name in referenced_projects:
         docs = mounts[name]
@@ -702,12 +770,18 @@ _DISC_LOCKS: dict[tuple[str, str], threading.Lock] = {}
 _DISC_LOCKS_GUARD = threading.Lock()
 # Validating a cached discovery walks the whole docs tree, which costs seconds
 # on a shared filesystem and is repeated by every request of one page load. The
-# served process reuses a walk for this many seconds; writes through the
-# server and filesystem change events drop the reuse immediately. Zero, the
+# served process reuses a walk for this many seconds; a write through the
+# server and a kernel notification for a watched tree both drop the reuse
+# immediately, so the window only backstops writes the kernel does not report —
+# notably a write from another login node on the shared filesystem. Zero, the
 # library default, walks on every call.
 _SIGNATURE_TTL_S = 0.0
 _SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
 _SIGNATURE_MEMO_LOCK = threading.Lock()
+# The served process opts into the longer window; the library default stays 0
+# so a caller that never starts the fleet watch never reads a stale walk.
+_SERVED_SIGNATURE_TTL_S = 60.0
+_FLEET_WATCH: _FleetChangeWatch | None = None
 _GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
 _GIT_CREATION_SCHEMA = "reckon.git-creation-map"
 _GIT_CREATION_SCHEMA_VERSION = 1
@@ -721,9 +795,7 @@ def _git_creation_cache_path(cache_key: tuple[str, str]) -> Path:
     return _config_home() / "cache" / "git-creation" / f"{digest}.json"
 
 
-def _git_creation_payload(
-    cache_key: tuple[str, str], entry: _GitCreationEntry
-) -> dict:
+def _git_creation_payload(cache_key: tuple[str, str], entry: _GitCreationEntry) -> dict:
     repo, rel_docs = cache_key
     core = {
         "schema": _GIT_CREATION_SCHEMA,
@@ -1295,6 +1367,19 @@ def _invalidate_discovery(cache_key: tuple[str, str], changed_at: float) -> None
     cached = _DISC_CACHE.get(cache_key)
     if cached is not None and cached.computed_at < changed_at:
         _DISC_CACHE.pop(cache_key, None)
+
+
+def _invalidate_discovery_tree(docs_dir: Path) -> None:
+    """Forget cached discoveries for one docs tree, whatever the project.
+
+    A tree's change notification names the tree, not the project whose page a
+    reader happened to be looking at, so every project mounted on that tree is
+    dropped together.
+    """
+
+    root = str(Path(docs_dir).resolve())
+    for key in [key for key in _DISC_CACHE if key[1] == root]:
+        _DISC_CACHE.pop(key, None)
 
 
 def _discovery_lock(cache_key: tuple[str, str]) -> threading.Lock:
@@ -2949,12 +3034,34 @@ class Handler(BaseHTTPRequestHandler):
         )
 
 
+def _served_signature_ttl() -> float:
+    """Return the walk-reuse window the served process reads its walks under."""
+
+    return float(
+        os.environ.get("RECKON_DISCOVERY_REUSE_S", str(_SERVED_SIGNATURE_TTL_S))
+    )
+
+
+def start_fleet_change_watch(mounts: dict[str, Path]) -> _FleetChangeWatch:
+    """Watch every mounted docs tree, dropping that tree's walk on a change.
+
+    The watch lives for the life of the served process. Starting it is what
+    makes the longer reuse window safe: a change the kernel reports drops the
+    memoised walk at once rather than waiting for the window to lapse.
+    """
+
+    global _FLEET_WATCH  # noqa: PLW0603 — one watch per served process
+    if _FLEET_WATCH is None or not _FLEET_WATCH.running:
+        _FLEET_WATCH = _FleetChangeWatch(mounts.values()).start()
+    return _FLEET_WATCH
+
+
 def main(
     port: int = 8765, host: str | None = None, mounts_file: Path | None = None
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     _resolve_paths(mounts_file)
-    _SIGNATURE_TTL_S = float(os.environ.get("RECKON_DISCOVERY_REUSE_S", "5"))
+    _SIGNATURE_TTL_S = _served_signature_ttl()
     _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
     _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
 
@@ -2966,6 +3073,8 @@ def main(
         _STATE_ROOT.mkdir(parents=True, exist_ok=True)
     if _MOUNTS_FILE and not _MOUNTS_FILE.exists():
         _MOUNTS_FILE.write_text("{}\n")
+
+    start_fleet_change_watch(load_mounts())
 
     fqdn = socket.getfqdn()
     print(f"reckon server listening on http://{_host}:{_port}/", flush=True)
