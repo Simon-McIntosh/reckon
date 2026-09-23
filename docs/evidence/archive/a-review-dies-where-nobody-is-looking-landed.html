@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking-landed">
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
-  <meta name="plan-summary" content="Four sections of the plan, each recorded by its own node: the death census separates role from effort (§2), the audit reads the state a document carries (§6 guard half), classification reads a run's deliverable before its process (§3), and the context fit is taken against the lane's recorded refusal boundary (§7).">
+  <meta name="plan-summary" content="Sections of the plan each recorded by its own node: the death census separates role from effort (§2), classification reads a run's deliverable before its process (§3), the audit reads the state a document carries (§6 guard half), the carryover census (§8), and the compaction demonstration (§9)">
   <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
-  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7,reckon:a-review-dies-where-nobody-is-looking#s9">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7,reckon:a-review-dies-where-nobody-is-looking#s9,reckon:a-review-dies-where-nobody-is-looking#s8">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
-  <meta name="plan-commits" content="910657ad,c8cc423a,2b14b314,e8991877,ed2bc107,4ed8ff18,50b523fa,673daa07">
-  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py,reckon/crew/context_budget.py,reckon/crew/routing.py,tests/test_routing_surface.py,docs/research/data/clive-effective-window.json,docs/research/data/compaction-demonstration.json">
+  <meta name="plan-commits" content="910657ad,c8cc423a,2b14b314,e8991877,ed2bc107,4ed8ff18,50b523fa,673daa07,e66ba74e">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py,reckon/crew/context_budget.py,reckon/crew/routing.py,tests/test_routing_surface.py,docs/research/data/clive-effective-window.json,docs/research/data/compaction-demonstration.json,reckon/crew/carryover_census.py,tests/test_session_carryover_census.py,docs/research/data/session-carryover.json,docs/figures/a-review-dies-where-nobody-is-looking/session-carryover.png">
   <title>A Review Dies Where Nobody Is Looking &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -439,11 +439,73 @@ EXIT=1</pre>
     this node's own change only; verifying the merged result is a separately dispatched node's job.</p>
   </section>
 
+  <section id="session-carryover">
+    <h2>&sect;8 &mdash; A reused session carries one worker's context into the next</h2>
+    <p><strong>Node:</strong> <code>a-resumed-session-carries-context-census</code> &mdash; the
+    measurement half of the section. The refusing that a fresh node inherit a session it did not
+    choose is not implemented here and remains open.</p>
+    <p><strong>Method.</strong> Every run directory under
+    <code>~/.config/reckon/crew/runs</code> is read from its own <code>stream.jsonl</code>: the
+    opening record gives the dialect (<code>system</code> / <code>thread.started</code>) and the
+    session id (<code>session_id</code> / <code>thread_id</code>). Runs sharing a session id are
+    ordered by dispatch timestamp, so the earliest opened the session and every later one resumed
+    it. A run's <em>inherited</em> tokens are its first assistant turn's own charged input, less
+    that run's prompt file priced at four characters per token, less the dialect's harness preamble
+    &mdash; the preamble being the median residual over the runs that opened their session, which
+    carried nothing in. A run that opened a session is therefore reported as having inherited
+    exactly zero, by construction. The figure is an estimate and is recorded as one.</p>
+    <p><strong>The result record is not the instrument.</strong> On the claude dialect the terminal
+    <code>result.modelUsage.inputTokens</code> is the run's total <em>un-cached</em> input, the share
+    of every request's prompt served from outside the cache, with the cached shares reported
+    separately as <code>cacheReadInputTokens</code> and <code>cacheCreationInputTokens</code>. It is
+    a run-length aggregate, the un-cached part of every round-trip summed over the run, so it is
+    never a first-turn size and its magnitude tracks cache behaviour rather than turn count: example
+    run <code>r-20260905T162101540255-cank-bounding-box-shape-rows</code> reports
+    <code>90,775,155</code> against <code>contextWindow 1,016,576</code> while its first turn carried
+    <code>53,458</code>, and run <code>r-20260905T172708183399-cank-wall-null-flux-tangent</code> —
+    a long opus run — reports <code>118</code> against <code>6,510,365</code> cache-read tokens,
+    because almost all of its input was cached. Either reading is the sum over the run's requests,
+    which is why the census reads <code>assistant.message.usage</code> of the first turn instead. On
+    the codex dialect there
+    is no <code>result</code> record at all and no per-assistant usage: the single
+    <code>turn.completed</code> sums every request the turn made, one per tool round-trip, each
+    re-sending the whole context, so that number is a function of run length. Codex inheritance is
+    reported as unmeasured rather than as that contaminated sum.</p>
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/session-carryover.png"
+           alt="Left panel: median and maximum inherited tokens per lane that publishes a first-turn figure, largest on the local lane at about 82k median and 494k maximum. Right panel: scatter of a run's first assistant turn input against the result record's cumulative input, most points far above the diagonal.">
+      <figcaption>Left, context carried in per resumed run by lane; right, the first turn's own
+      charge against the claude result record's cumulative figure.</figcaption>
+    </figure>
+    <p><strong>Result</strong> (snapshot of 5,473 run directories, 2026-09-23). Local lane: of 2,120 runs
+    318 resumed an earlier session, and <strong>284 of them carried in more history than their own
+    prompt</strong> &mdash; roughly nine in ten &mdash; with a median of about 82,000 tokens and a
+    maximum of about 494,000. Opus-class lane: 12 resumed, all 12 above their own prompt, a median of
+    about 205,000 and a maximum of about 457,000. Codex lane: 1,358 of 3,268 resumed, unmeasurable.
+    The census regenerates from the live run directory, so its exact counts move as the fleet runs;
+    <code>docs/research/data/session-carryover.json</code> holds the figures this record reports.</p>
+    <p><strong>Controls.</strong> Positive: a session-opening run reports zero inherited by
+    construction &mdash; more than 1,800 claude-dialect runs report zero, e.g.
+    <code>r-20260812T084415142910-flight-check-b</code> (first turn 70,899, inherited 0). Negative:
+    replacing the first-turn reading with the result's cumulative total misreports a fresh fixture
+    as having inherited 118,500 tokens; the log is <code>negative-control.log</code> in the node run
+    directory.</p>
+    <p><strong>Fixture test.</strong> <code>tests/test_session_carryover_census.py</code> builds one
+    fresh and one resumed run in a temporary directory and asserts each is classified correctly,
+    that the fresh run's inheritance is zero, and that the codex run's first-turn figure is absent
+    while its cumulative sum is recorded.</p>
+    <p><strong>What this does not claim.</strong> The measure ranges over this node's own change only.
+    The refuse-to-inherit half of &sect;8 &mdash; a fresh node starting a new session unless a
+    rationale-limited repair deliberately resumes &mdash; is unimplemented and carried open. A
+    refused run reads as zero inherited because its turn was never charged, and the codex dialect
+    admits no first-turn figure.</p>
+  </section>
+
   <section id="record-scope">
     <h2>Record scope</h2>
-    <p>This record currently covers §7 only. The plan's other sections are separate nodes and their
-    outcomes are not claimed here. Sections land here as their nodes report; a peer landing into this
-    file should append its own section rather than replace the file.</p>
+    <p>This record currently covers §2, §3, §6, §7, §8 and §9. The plan's other sections are separate nodes
+    and their outcomes are not claimed here. Sections land here as their nodes report; a peer landing
+    into this file should append its own section rather than replace the file.</p>
     <p>&sect;2 landed after that note was written, by <code>review-deaths-by-effort-and-role</code>. Its
     section is <a href="#s2">&sect;2 &mdash; the experiment neither session could run</a>; the note
     above is left as written so the record shows what the earlier landings were told.</p>
