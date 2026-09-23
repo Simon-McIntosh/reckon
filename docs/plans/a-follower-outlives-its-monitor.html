@@ -82,6 +82,45 @@
     restoring the bare word makes the run exit 127 and the test fail. The write paths are
     <code>reckon/crew/runs.py</code> and <code>tests/test_attach_line_resolves.py</code>.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="attach-line-resolves" data-when="2026-09-23">
+    <p><strong>Outcome — the attach line resolves.</strong> Commit <code>f8f36b76</code>
+    <em>fix(crew): the follower attach line names the running reckon executable</em> changes
+    <code>_watch_attach_line</code> in <code>reckon/crew/runs.py</code> so its first token is the
+    absolute path of the running console script, composed through one
+    <code>_reckon_console_script()</code> resolver that prefers
+    <code>Path(sys.executable).parent / "reckon"</code> and falls back to
+    <code>shutil.which</code>, raising <code>CrewError</code> rather than composing a line whose
+    executable is absent. Every surface that prints the line inherits the change because they all
+    call the composer — asserted by the two existing dispatch-fixture tests, which now derive the
+    line from the composer instead of restating it, so a surface that stopped calling it is
+    caught.</p>
+    <p>The resolver takes the interpreter's directory <em>without</em> resolving
+    <code>sys.executable</code>: a virtualenv's interpreter is a symlink into the base
+    distribution, so <code>.resolve()</code> leaves the virtualenv and its console script behind.
+    The watcher unit's own resolver carried that defect and now shares the corrected helper.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li>The node's gate, <code>tests/test_attach_line_resolves.py</code> at revision
+      <code>f8f6617</code>: <strong>2 passed</strong>. It composes the line, asserts the first
+      token is an absolute path to an executable file, and runs that token as
+      <code>&lt;token&gt; crew follow --help</code> with <code>PATH=/usr/bin:/bin</code>, requiring
+      exit 0.</li>
+      <li>The declared negative control — restoring the bare word <code>reckon</code> as the first
+      token — is executed and logged: the gate reports <strong>2 failed</strong> and the bare token
+      under the arming shell's PATH exits <strong>127</strong>
+      (<code>logs/negative_control.log</code> in the run directory).</li>
+      <li>Existing tests still pass against the change: the two granted fixture files carry the same
+      five failures before and after, so <strong>added failures 0</strong>
+      (<code>logs/gate_existing_before.log</code>, <code>logs/gate_existing_after.log</code>).</li>
+    </ul>
+    <p><strong>Owed outside this node's fence.</strong> Two further existing tests assert the attach
+    line's text and are outside the granted write scope, so this node did not touch them: line 223 of
+    <code>tests/test_crew_session_delivery.py</code> (<code>startswith("reckon crew follow ")</code>)
+    and line 1887 of <code>tests/test_crew.py</code> (a hardcoded waiver literal). Both pass at the
+    base revision and fail against this change; each needs its literal replaced with the composer's
+    output.</p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; The follower announces its own end before the host does</h2>
     <p>Add a <code>--lifetime</code> option to <code>reckon crew follow</code>, taking a duration.
     When the lifetime is about to elapse, the follower prints one final line and exits cleanly,
