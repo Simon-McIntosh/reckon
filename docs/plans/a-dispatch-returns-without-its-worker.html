@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="10">
+  <meta name="plan-version" content="11">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -201,8 +201,11 @@
     working</code>. It asserts the committed ledger row's <code>worker_exit</code> equals that object,
     and that the row's gate <code>exit_status</code> is the value passed to
     <code>--gate-exit-status</code>. A second case promotes a run with no <code>exit.json</code> and
-    asserts the row has no <code>worker_exit</code> key. The negative control is executed and
-    logged: with the copy removed, the first case fails. The write paths are
+    asserts the row has no <code>worker_exit</code> key. Two negative controls are executed and
+    logged. With the copy removed, the first case fails. With the copy changed to write an empty
+    <code>worker_exit</code> when no <code>exit.json</code> exists, the second case fails. The
+    second control is required because the absent-record case is what the launch-failure census
+    turned on. The write paths are
     <code>reckon/crew/promotion.py</code> and that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
