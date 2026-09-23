@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T19:36:27",
+  "updated": "2026-09-23T19:57:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -325301,6 +325301,283 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T143539802664-a-delivered-review-ends-its-turn",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a74",
+        "node": "a-delivered-review-ends-its-turn",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1317,
+                "cached_input_tokens": 928344,
+                "input_tokens": 929663,
+                "output_tokens": 153,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 929816,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "the review goal and done-when that recovery.dispatch_review_for_run composes state that the turn ends once the review record is stored and the manifest reads complete; the watcher tick in recovery._watch_registration stops a review run whose stored review record parses and whose manifest status is complete once its stream has kept growing for 5 minutes past the later of those two writes, sending SIGTERM to that run's recorded pid only, and records ended_after_delivery with the grace and the stop time on the run record; a public function named review_delivered(run) answers the delivered test so other readers call it; tests/test_a_delivered_review_ends_its_turn.py asserts through _watch_registration with a stub process that (1) a delivered review still streaming after the grace is stopped and recorded, (2) one still inside the grace is left running, (3) a review with no stored record is never stopped however long it streams, (4) the composed review brief carries the end-of-turn rule; the declared negative control is applied, case 1 is observed not stopped, and the log is recorded; the same selection plus tests/test_review_reflex_sweep.py is recorded at the base revision and adds no failures",
+          "estimated_hours": null,
+          "goal": "stop a review that keeps working after it has delivered",
+          "id": "a-delivered-review-ends-its-turn",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T14:35:40Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 22,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 98333,
+            "observed_at": "2026-09-23T14:35:18Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/manifest.md",
+          "negative_control": "make review_delivered always return False so the watcher never stops a delivered review",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_a_delivered_review_ends_its_turn.py",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19-review-stop",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T14:36:02Z",
+        "completed_at": "2026-09-23T16:00:21.445Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5043,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5059,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "ef9ddbac94090787a7bcf8a81b9a38e7286a0e59",
+        "commits": [
+          "9cda35333d3e18e7f6aad376310c4bf7cc60d8b1",
+          "e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f"
+        ],
+        "changed_lines": {
+          "added": 705,
+          "removed": 2,
+          "files": 6
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_delivered_review_ends_its_turn.py tests/test_review_reflex_sweep.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/selection-head.log",
+          "log_digest": "3d95feebc9c93f05ec38f12010d8199bae2de26165d6b774a30585a863ff2fe4"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/manifest.md",
+        "scope_changed": false,
+        "session_id": "024c9f5a-fda6-4a6d-89af-f406c97417db",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 19198750,
+            "input_tokens_cumulative": 19198750,
+            "output_tokens": 88352,
+            "output_tokens_cumulative": 88352,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T16:00:21.445Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 16,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 90
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 19365206,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5054.999,
+          "generated_tokens": 95635,
+          "generation_seconds": 4654.109,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 400.89,
+          "peak_input_tokens": 165156,
+          "tokens_per_second": 20.55,
+          "wall_tokens_per_second": 18.92
+        },
+        "follow_on_paths": [
+          "tests/test_crew_scoring_state.py:102"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-delivered-review-ends-its-turn",
+          "session_id": "024c9f5a-fda6-4a6d-89af-f406c97417db",
+          "session_source": "stream",
+          "retained_at": "2026-09-23T16:00:21.445Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f",
+        "plan_impl_at_dispatch": 0.45,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": 0.45,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_a_delivered_review_ends_its_turn.py"
+          ],
+          "declaration": "make review_delivered always return False so the watcher never stops a delivered review",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T15:35:40.975152+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T14:35:40Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 22,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 0,
+          "mean_context": 98333,
+          "observed_at": "2026-09-23T14:35:18Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 163.0,
+        "orientation_input_tokens": 6715778.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -325613,6 +325890,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2388
+    "_version": 2389
   }
 }
