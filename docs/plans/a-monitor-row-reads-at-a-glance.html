@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="10">
+  <meta name="plan-version" content="11">
   <meta name="plan-informs" content="the-monitor-under-measurement">
   <title>A Monitor Row Reads At A Glance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -187,6 +187,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T1310-s7-landed" data-who="reckon-ship" data-when="2026-09-23T13:10:00Z">
     <div class="r-comment-body"><p>§7 landed: merged at <code>a2bf7df9</code>, review 98. A baseline row reads <code>now working</code>. The cell grew one column, <code>STATE_REGION</code> from 14 to 15. The new test fails when the separator is removed, and the ticker files show added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1435-s3-landed" data-who="reckon-ship" data-when="2026-09-23T14:35:00Z">
+    <div class="r-comment-body"><p>§3 landed, merged at <code>e2904fbe</code>. The model cell is sized from the longest alias the resolved flight config declares, and an unconfigured id is cut with an ellipsis. With the fixed ten-column cell restored, the effort cells fall on two columns and the new layout test fails. The ticker files show 1 failed and 92 passed, against 1 failed and 91 passed at base. The one failure predates this plan: in <code>test_the_action_set_is_one_set_with_three_readers</code>, <code>launch-failed</code> is in <code>NEEDS_ACTION</code> but has no light-theme hue. It is folded into the next ticker node. The review is pending.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T044813655234-row-shows-destination-only" data-who="reckon-ship" data-when="2026-09-23T08:58:32.999Z">
     <div class="r-comment-body"><p>transition rows show only the destination state and a baseline row is marked now; reason cell +13 columns at width 180; negative control fails 9 tests; merged at 9660d3b0; review 89 (missing separator between now and the state, carried as s7; figure labels disagree with the caption). Gate recorded not-run because the worker's per-file logs were node-local /tmp scratch, not durable</p></div>
