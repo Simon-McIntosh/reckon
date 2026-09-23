@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="40">
+  <meta name="plan-version" content="49">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -121,8 +121,12 @@
     reckon. The snapshot is a boundary baseline, so its placement is constrained both ways. It must
     follow dispatch's own writes, as its comment says, and it must predate any write the worker
     makes in another tree. <strong>The supervisor takes it.</strong> The supervisor takes the
-    snapshot after dispatch's writes and before it spawns the worker. <strong>Dispatch waits for
-    neither.</strong> It returns as soon as the supervisor process is running and the pointer naming
+    snapshot after dispatch's writes and before it spawns the worker. <strong>The ordering needs no
+    handshake, because starting the supervisor is dispatch's last repository-facing step.</strong>
+    Every write dispatch makes inside a repository, including the worktree's creation and the
+    session-member registration commit, completes before dispatch starts the supervisor. After that
+    dispatch writes only the pointer, which lives under the configuration home outside every
+    repository. <strong>Dispatch waits for neither the snapshot nor the spawn.</strong> It returns as soon as the supervisor process is running and the pointer naming
     it is written, so the scan delays the worker's start and never dispatch's return. Dispatch never
     runs, and never waits on, a scan that grows with the worktree count. The supervisor writes the
     snapshot to the run directory's <code>tree-snapshot.json</code>, and promotion's out-of-fence
@@ -175,8 +179,9 @@
     <code>worker.json</code>, waits on the worker, and records its exit status and, when a signal
     ended it, the signal name. It writes that record to the run directory, then exits. It never
     writes the pointer, because a discarded pointer was rewritten back into existence by a late
-    writer on 2026-09-23. The run-directory record is what survives a discard, and a reader finds it
-    through the run directory the pointer or ledger row names.</p>
+    writer on 2026-09-23. The run-directory record survives a discard that removes only the pointer,
+    and a reader finds it through the run directory the pointer or ledger row names. When a discard
+    also removes the run directory, the record's write is dropped and nothing is recreated.</p>
     <p><strong>One exit record serves a death and a launch failure.</strong> The supervisor writes
     <code>exit.json</code> in the run directory. It is the only copy. Its fields:</p>
     <table>
@@ -200,7 +205,10 @@
     recovery. A launch failure is this record with <code>ended_during: launch</code>, not a second
     format. crew-runtime-positive-controls' launch-failure record and
     a-stalled-row-says-whether-the-worker-lives' death row read these fields rather than deriving
-    their own.</p>
+    their own. <strong>Where this record and an inferred death disagree, this record wins.</strong>
+    worker-death-is-recorded names a death it infers <code>interrupted</code>. That label applies
+    only to a run with no <code>exit.json</code>. When <code>exit.json</code> exists, its
+    <code>ended_during</code> and exit fields are the collected fact, and a reader reports them.</p>
     <p><strong>The record is named <code>worker_exit</code> wherever it outlives the run
     directory.</strong> <code>exit_status</code> is already taken: in all 2,721 ledger rows that
     carry it, it holds the gate command's status supplied at promotion (reckon-84's census,
@@ -210,19 +218,24 @@
     ledger rows. Carrying <code>exit.json</code> into the ledger row is &sect;7.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_returns_without_worker.py</code> covers
     four cases with the stub backend of &sect;2, in a temporary repository and a temporary
-    <code>RECKON_HOME</code>. First, the dispatch process exits within five seconds with the run id
-    in its JSON output, nothing is killed, and the stub's marker file appears. Second, SIGKILL sent
+    <code>RECKON_HOME</code>. First, the dispatch process exits within five seconds of its start
+    with the run id in its JSON output, and nothing is killed. The stub's marker file then appears
+    within 90 seconds of dispatch's start, which is after the slowed scan described below has
+    finished. The five-second bound covers dispatch's exit alone. Second, SIGKILL sent
     to the dispatch process before it returns still leaves the marker file appearing. Third, the
     measure from worker-death-is-recorded &sect;5, verbatim: a real dispatch, the dispatching process
     gone, SIGKILL, and the exit status still recorded. Here the dispatch has returned, the worker
     receives SIGKILL, and within ten seconds the run directory's <code>exit.json</code> carries the
     exit status with signal name <code>SIGKILL</code>. Fourth, the pointer is discarded and the run
-    directory removed before the worker exits, and after the exit neither a pointer nor a run
-    directory exists for the run. <strong>The first case makes a scan slow on purpose.</strong> The
-    temporary repository holds at least 30 registered worktrees, and the test puts a
-    <code>git</code> shim first on <code>PATH</code> that sleeps one second before delegating any
-    <code>status</code> call to the real <code>git</code>, so a scan over the worktrees costs at
-    least 30 seconds and cannot hide under the five-second bound. The same case asserts that
+    directory removed before the worker exits. After the exit, neither a pointer nor a run directory
+    exists for the run, so the supervisor's final write was dropped rather than recreating either.
+    <strong>The first case makes a scan slow on purpose.</strong> The temporary repository holds at
+    least 30 registered worktrees, and the test puts a <code>git</code> shim first on
+    <code>PATH</code> that sleeps one second before delegating any <code>status</code> call to the
+    real <code>git</code>, so a scan over the worktrees costs at least 30 seconds and cannot hide
+    under the five-second bound. The shim charges every <code>git status</code> made before dispatch
+    returns, not only the scan's. So the case also bounds dispatch's own pre-return path to at most
+    four such calls, and the manifest names each one it makes. The same case asserts that
     <code>tree-snapshot.json</code> appears in the run directory after the scan and that the
     promotion check reads it. The negative control is executed and logged: putting the tree
     snapshot back between the launch and dispatch's return makes the first case fail on the
@@ -239,8 +252,9 @@
     <em>watches</em>. &sect;3's per-run supervisors are detached and belong to their runs, so a
     session neither watches nor waits on them.</p>
     <p><strong>Done when</strong> the launch-kind table in <code>skills/reckon-ship/SKILL.md</code>
-    says a CLI dispatch returns once its supervisor is running, before the worker is spawned, and
-    is run in the foreground.
+    says a CLI dispatch returns once its supervisor is running, without waiting for the worker to be
+    spawned, and is run in the foreground. The row claims no order between dispatch's exit and the
+    spawn.
     <code>skills/reckon-ship/references/orchestrator-harness/claude-code.md</code> names the
     follower as the session's only monitor. No sentence in <code>skills/</code> instructs
     backgrounding a <code>reckon crew dispatch</code>, checked by
@@ -331,7 +345,9 @@
     removing a worktree that looks orphaned out from under a live process. Find the path on which a
     refusal is returned after the pointer is written or the worker is spawned, and make the result
     agree with what happened. Either the dispatch reports success naming the run it launched, or it
-    launches nothing. Separately, the auto-derived member has one question left, answered from
+    launches nothing. Launching nothing means leaving no pointer, no worktree and no live worker. A
+    refusal returned beside any one of those three is the defect this section removes, not a third
+    permitted outcome. Separately, the auto-derived member has one question left, answered from
     records rather than from code. A named <code>--member</code> has been refused rather than
     substituted since 2026-08-24, so read which dispatch launched the live run: the pointer's
     <code>member</code>, and the argv and prompt in its run directory. If that launch passed no
@@ -360,10 +376,16 @@
     non-empty strings, so an absent key fails as a null one does. The read-back review found that a named
     <code>--member</code> has been refused rather than substituted since 2026-08-24. So the
     member test verifies existing behaviour and changes no source for it, and the reproduction of
-    imas-efit-e3's refusal beside a live pointer comes first. The candidate cause is the exception
-    handler around the post-launch tree snapshot, which signals the launched worker's process group
-    and returns a refusal. &sect;3 moves that snapshot into the supervisor, so the node reproduces
-    against the base revision and states whether &sect;3's change already removes the path. The
+    imas-efit-e3's refusal beside a live pointer comes first. <strong>Two mechanisms are
+    recorded, in different code.</strong> The first is the exception handler around the post-launch
+    tree snapshot, which signals the launched worker's process group and returns a refusal. The
+    second is imas-ambix-61's reproduction (comment <code>c-20260923T1335-s6-reproduced</code>): a
+    post-launch failure whose cleanup refused to remove the run's worktree because the run's own new
+    claim held it. &sect;5 changed that cleanup at <code>4248cbaf</code>. The node reproduces at its
+    own dispatch base, which is later than both records, and drives both mechanisms there. For each,
+    the manifest states whether it still returns a refusal beside a pointer, a worktree or a live
+    worker, and names the commit that removed it if it no longer does. A mechanism already removed is
+    still driven by test 1, so the test stands as a regression guard for both. The
     negative control is executed and logged at the base revision wherever a refusal is returned
     beside a live pointer. A missing <code>error</code> or <code>detail</code> on any refusal is
     fixed either way. The dry-run and live validation refusals are composed in
@@ -433,13 +455,17 @@
     collection runs. The coordinator then mints a second id, and the ledger reads two nodes where
     there was one.</p>
     <p>Discard removes the run's worktree when, and only when, it holds no work: its
-    <code>status --porcelain</code> is empty apart from the provisioned <code>.venv</code> and
-    <code>.env</code> links, and its <code>HEAD</code> equals the pointer's <code>base_sha</code>.
+    <code>status --porcelain --ignored</code> is empty apart from the provisioned <code>.venv</code>
+    and <code>.env</code> links, and its <code>HEAD</code> equals the pointer's <code>base_sha</code>.
+    A file under an ignored path, such as a figure, a log or a scratch output, counts as work.
     Otherwise it keeps the worktree and says why in its result, under
-    <code>worktree_kept</code>. A worktree with a commit or an uncommitted change is never removed by
-    a discard, and no removal is ever forced.</p>
+    <code>worktree_kept</code>. A worktree with a commit, an uncommitted change or an ignored file is
+    never removed by a discard. The existing remover, <code>_remove_worktree</code> in
+    <code>reckon/crew/routing.py</code>, passes <code>--force</code> to git, so the emptiness check
+    runs before it is called. That check is the guard, and it is never bypassed.</p>
     <p><strong>Done when</strong> <code>tests/test_discard_removes_an_empty_worktree.py</code>, in a
-    temporary repository and <code>RECKON_HOME</code>, discards three stopped runs. The first
+    temporary repository and <code>RECKON_HOME</code>, discards three runs whose recorded process is
+    not alive, which is the only state <code>discard</code> accepts. The first
     worktree is clean at its base, and it is removed, and a dispatch of the same node id then
     succeeds. The second holds a commit and the third an uncommitted file; both are kept, and the
     result names each reason. The negative control is executed and logged: removing the clean-and-at-
