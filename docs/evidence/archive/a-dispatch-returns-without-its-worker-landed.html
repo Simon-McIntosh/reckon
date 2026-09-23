@@ -227,11 +227,10 @@
       registration, the final pointer write &mdash; met the remover with its own
       pointer on disk, the remover raised, and the unlink and the run-directory
       removal that follow it never ran. The live pointer that survived is the
-      measured artefact: the reproduction recorded
-      <code>r-20260923T133703863731-node-refused</code> still live after a refused
-      dispatch. A reader takes that pointer for a run whose process died without a
-      manifest and reports it <code>abandoned</code>, which is the misreading that
-      motivated the section.
+      measured artefact, recorded in the negative-control run below, whose failing
+      assertion reads <code>assert ['r-20260923T&hellip;-node-refused'] == []</code>
+      &mdash; a run still live after a refused dispatch, which a reader takes for a
+      process gone without a manifest and reports <code>abandoned</code>.
     </p>
     <p>
       The repair is ordering: unlink the pointer first, so the claim is gone before
@@ -261,13 +260,15 @@
       registered producer, which is the path the durable watcher uses.
     </p>
     <p>
-      <strong>Runs.</strong> Green: six cases, 12.9&nbsp;s, pass &mdash;
+      <strong>Runs.</strong> Green: six cases, 12.5&nbsp;s, pass &mdash;
       <code>~/.config/reckon/crew/runs/r-20260923T131048752851-refusal-leaves-no-trace/logs/gate.log</code>.
-      Negative control: <code>reckon/crew/dispatch.py</code> restored to
-      <code>12155ff8</code>, so the worktree removal again precedes the unlink; the
-      two post-pointer cases fail, reporting
-      <code>AssertionError: assert ['r-20260923T&hellip;-node-refused'] == []</code>
-      &mdash; <code>logs/negative-control.log</code> in the same run directory.
+      Negative control: <code>reckon/crew/dispatch.py</code> restored to the base
+      revision <code>12155ff8</code>, so the worktree removal again precedes the
+      unlink; the run reports <code>2 failed, 4 passed</code>, the two post-pointer
+      cases failing on <code>AssertionError: assert ['r-20260923T&hellip;-node-refused']
+      == []</code>, and the four pre-pointer cases still passing, which shows the red
+      is aimed at the repaired path rather than at the file &mdash;
+      <code>logs/negative-control.log</code> in the same run directory.
     </p>
     <p>
       <strong>Follow-ons.</strong> The occupied-worktree refusal is correct, but the

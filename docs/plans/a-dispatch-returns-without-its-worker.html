@@ -265,9 +265,10 @@
     <p><strong>The defect.</strong> The unwind removed the worktree before unlinking the pointer.
     The worktree remover refuses a worktree that a live pointer still claims, and until this run's
     own pointer is unlinked it is that claim, so the remover raised and the unlink and the
-    run-directory removal after it never ran. The reproduction recorded the live pointer
-    <code>r-20260923T133703863731-node-refused</code> surviving a refused dispatch &mdash; pointer,
-    run directory and worktree, the residue that reads as a death.</p>
+    run-directory removal after it never ran. The reproduction's failing assertion, recorded in the
+    node's negative-control log, reads
+    <code>assert ['r-20260923T&hellip;-node-refused'] == []</code>: a live pointer, its run directory
+    and its worktree surviving a refused dispatch, the residue that reads as a death.</p>
     <p><strong>The test's design.</strong> For each refusal path the gate asserts that no live
     pointer, no run directory, no worktree and no watcher transition row naming the node remain. It
     also asserts that a refusal over a pre-existing worktree leaves that earlier run's tree
