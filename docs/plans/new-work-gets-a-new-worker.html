@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
@@ -272,6 +272,9 @@ a durable field on the run record so the argv clause becomes checkable.</p>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260923T1015-row-count-correction" data-who="reckon-ship" data-when="2026-09-23T10:15:00Z">
     <div class="r-comment-body"><p><strong>Correction to the promotion outcome above.</strong> It says the reuse map has 47 rows. It has <strong>34</strong> site rows: A1–A8 argv composition, B1–B6 roster writes, C1–C9 member selection and serialisation, D1–D6 guidance, and E1–E5 session lookups. The coordinator wrote 47 into the outcome without counting. The ledger row keeps the figure it was given, and this note records the true one.</p><p>§1 is closed. The map, at <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md</code>, contains all five falsifier sites, and its review scored 85. The review found that rows A5–A7, B5 and E5 carry descriptive labels (mechanism, store, read surface) instead of one of the three classes, and that one test path in row C6 has a stray arrow. Neither changes a class the fix depends on.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260923T075910162571-review-of-session-carry-sites-mapped" data-who="reckon-ship" data-when="2026-09-23T09:04:55.747Z">
+    <div class="r-comment-body"><p>review of the reuse map stored at 85; read before promotion</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T1045-task-keyed-landed" data-who="reckon-ship" data-when="2026-09-23T10:45:00Z">
     <div class="r-comment-body"><p><strong>§2 landed and is live</strong> (merged adbb6067, commits 4cfc76a4, 798e549d). The dispatch-time session decision is now <code>_task_session_resolution</code>, and the member-keyed <code>_member_session_resolution</code> is gone from the running module. A prior session is composed only when its run carried the same project, plan and node id. It is found from committed run records and live pointers, not the member's map, and a session whose run ended too large to continue is never composed.</p><p>Gate: 24 passed across the new file and the three updated session tests. Two adjacent test files fail, the same 2 as at base e3e51cd1. The declared mutation, restoring member-keyed selection, reddens the cross-task case (1 failed). Review: 90. Its two findings are: a latent contradiction in a test file that still asserts <code>member add --session</code> reuse, which belongs to §3; and two missing trailing newlines.</p><p>The worker delivered a manifest with empty <code>commits</code>, <code>tests</code> and <code>test_logs</code>. The coordinator filled them from the run's own <code>gate.log</code>, adjacent logs and commit list, and kept <code>manifest.md.asdelivered</code>. The stopgap config (<code>session_reuse: false</code>) stays in place until §3 lands and §7 restores same-task reuse.</p></div>
