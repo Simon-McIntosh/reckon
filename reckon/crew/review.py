@@ -37,18 +37,16 @@ left absent so a missing measurement cannot be mistaken for a measured zero.
 A label with no usable value is also left absent, but carries a machine-readable
 emission state so a partial answer is not confused with an omitted question.
 
-It records the revision the review read under one canonical key,
-``reviewed_revision``. A review is evidence about a revision: once a repair
-lands, a stored verdict describes code that no longer exists, so a guard that
-reads the presence of a review as evidence about the code being promoted is
-reading a true statement that stopped being the one required. Staleness is
-detectable today and nothing looks, because the store spells that one fact
-five ways — ``reviewed_head_sha``, ``reviewed_commit``, ``commits_read``,
-``reviewed_base_sha`` and ``reviewed_base`` — and no reader knows any of them.
-The canonical key is populated from whichever spelling a record carries, by
-key presence rather than truthiness, so a record holding the field with an
-empty value is a *recorded absence* and a record holding none of them is an
-*unread field*; those are different claims and stay distinguishable.
+It records the revisions the review read under the canonical pair
+``reviewed_base_sha`` and ``reviewed_head_sha``. A review is evidence about a
+diff between two revisions: once a repair lands, a stored verdict describes
+code that no longer exists, so a guard that reads the presence of a review as
+evidence about the code being promoted is reading a true statement that
+stopped being the one required. The store spells the pair five ways —
+``reviewed_head_sha``, ``reviewed_commit``, ``commits_read``,
+``reviewed_base_sha`` and ``reviewed_base`` — and the parser normalises them
+without collapsing base into head. A record lacking either half is marked
+incomplete: one revision cannot say what diff was reviewed.
 
 The parser is on the live path, not a library awaiting a caller: dispatch and
 runs resolve the review store through :func:`review_store_root`,
@@ -99,32 +97,26 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "call_sites",
 )
 
-# ── The revision a review read, under one canonical key ─────────────────────
-# The fact is recorded in the store under five different names. Reading any one
-# of them makes the comparison a guess about which field a given reviewer set,
-# so the record is normalised onto REVIEW_REVISION_KEY from whichever spelling
-# it carries. Preserving the legacy spellings is deliberate: they are what the
-# stored records already hold, and rewriting them would churn the store.
-REVIEW_REVISION_KEY = "reviewed_revision"
-
-# Precedence, and why. The staleness comparison is against the reviewed run's
-# landed head, so head spellings outrank base spellings: a record naming both
-# is compared on the revision the review looked at rather than the one it
-# diffed against. Within a class the explicit sha field outranks the commit
-# list, whose last entry is the head it read.
-REVISION_FIELDS: tuple[str, ...] = (
-    "reviewed_head_sha",
+# ── The revision pair a review read ─────────────────────────────────────────
+# The store already carries these five spellings. Base spellings describe the
+# tree before the reviewed work; head spellings describe the landed work. A
+# commit list contributes its last entry as head but cannot invent a base.
+REVIEWED_BASE_KEY = "reviewed_base_sha"
+REVIEWED_HEAD_KEY = "reviewed_head_sha"
+BASE_REVISION_FIELDS: tuple[str, ...] = (REVIEWED_BASE_KEY, "reviewed_base")
+HEAD_REVISION_FIELDS: tuple[str, ...] = (
+    REVIEWED_HEAD_KEY,
     "reviewed_commit",
     "commits_read",
-    "reviewed_base_sha",
-    "reviewed_base",
 )
-
-# The emitted form gains a slot for the revision, so a review written from now
-# on states it rather than having it inferred from a call site's metadata. The
-# legacy spellings are accepted as labels too, because the store's own records
-# were emitted by prompts that asked for them by name.
-_REVISION_LABELS = frozenset({"revision", REVIEW_REVISION_KEY, *REVISION_FIELDS})
+REVISION_FIELDS: tuple[str, ...] = (
+    "reviewed_commit",
+    "reviewed_base",
+    REVIEWED_HEAD_KEY,
+    REVIEWED_BASE_KEY,
+    "commits_read",
+)
+_REVISION_LABELS = frozenset({"revision", *REVISION_FIELDS})
 
 # The prompt is a versioned, diffable file rather than a string inside this
 # module, so editing it is a text change rather than a code change. It is read
@@ -150,20 +142,29 @@ def _sha_from(value: Any) -> str | None:
     return None
 
 
-def carried_revision(record: Mapping[str, Any]) -> tuple[bool, str | None]:
-    """Resolve the revision a review read from whichever spelling ``record`` carries.
-
-    Returns ``(carried, revision)``. ``carried`` is **key presence, never
-    truthiness**: a record holding ``reviewed_commit: null`` carries the field,
-    and its ``None`` is a recorded absence — a different claim from a record
-    carrying none of the spellings, whose age is unknown rather than absent.
-    Falling through to a later spelling on an empty value would collapse those
-    two claims back together, which is the defect this key exists to remove.
-    """
-    for field in REVISION_FIELDS:
+def _first_carried_revision(
+    record: Mapping[str, Any], fields: tuple[str, ...]
+) -> tuple[bool, str | None]:
+    """Return the first carried revision without treating emptiness as absence."""
+    for field in fields:
         if field in record:
             return True, _sha_from(record[field])
     return False, None
+
+
+def carried_revision_pair(
+    record: Mapping[str, Any],
+) -> tuple[bool, str | None, bool, str | None]:
+    """Resolve the base/head pair from the five spellings the store carries.
+
+    Each boolean is key presence rather than truthiness. A carried empty value
+    is therefore preserved as a recorded absence and never falls through to a
+    lower-precedence spelling. ``commits_read`` contributes only the head: a
+    list of landed commits does not identify the tree they were based on.
+    """
+    base_carried, base_sha = _first_carried_revision(record, BASE_REVISION_FIELDS)
+    head_carried, head_sha = _first_carried_revision(record, HEAD_REVISION_FIELDS)
+    return base_carried, base_sha, head_carried, head_sha
 
 
 class ReviewScoreError(ValueError):
@@ -256,21 +257,17 @@ def parse_review(
       is present, otherwise ``None``. The total is never computed over a
       subset: a total taken over fewer dimensions is a lower score
       indistinguishable from a worse one.
-    - ``reviewed_revision`` — the revision the review read, under the one
-      canonical key. It is taken from an emitted revision line when the text
-      carries one, otherwise from ``record`` if a spelling of it was supplied,
-      otherwise the key is left **absent** rather than empty. ``None`` as the
-      value is a recorded absence: a spelling was carried and held no sha,
-      which is a different claim from a key that is not there at all.
+    - ``reviewed_base_sha`` and ``reviewed_head_sha`` — the revision pair the
+      review read. Base and head legacy spellings are normalised independently;
+      a commit list supplies only its last entry as head. When ``record`` was
+      supplied and either usable half is absent, ``status`` is ``"incomplete"``
+      even when every score parsed: one revision cannot identify the diff.
     - ``raw_text`` — the verbatim emitted text, so a later reader can
       re-derive the parse from the record alone.
 
     ``record`` is the merged record a call site already holds — the stored
-    metadata carrying one of the legacy spellings of the revision. Supplying
-    it lets an existing stored record be parsed *and* canonicalised in one
-    call, which is the retrofit path: the emitted slot (``REVISION:`` and the
-    legacy labels) serves reviews written from now on, and ``record`` serves
-    the ones already in the store.
+    metadata carrying legacy spellings of the pair. Supplying it lets an
+    existing stored record be parsed and canonicalised in one call.
 
     A score outside ``0..REVIEW_MAX_SCORE`` raises :class:`ReviewScoreError`
     naming the dimension and the value; it is never clamped into range.
@@ -283,8 +280,10 @@ def parse_review(
     call_sites: list[str] = []
     call_sites_seen = False
     call_sites_emission: str | None = None
-    revision_carried = False
-    revision: str | None = None
+    base_carried = False
+    base_sha: str | None = None
+    head_carried = False
+    head_sha: str | None = None
     for raw in text.splitlines():
         line = raw.strip()
         match = _SCORE_RE.match(line)
@@ -331,12 +330,17 @@ def parse_review(
             continue
         match = _REVISION_RE.match(line)
         if match and match.group(1).lower() in _REVISION_LABELS:
-            # The revision line is the one line whose label is not a fixed
-            # prefix: a review may state it canonically or under any of the
-            # five spellings the store already uses, so the label is matched
-            # against the accepted set rather than the shape of the line.
-            revision_carried = True
-            revision = _sha_from(match.group(2).split(","))
+            label = match.group(1).lower()
+            value = match.group(2).split(",")
+            if label in BASE_REVISION_FIELDS:
+                base_carried = True
+                base_sha = _sha_from(value)
+            else:
+                # REVISION is retained as a head-only compatibility label.
+                # It cannot make a record complete without an independently
+                # carried base revision.
+                head_carried = True
+                head_sha = _sha_from(value)
             continue
         match = _FIND_RE.match(line)
         if match:
@@ -373,22 +377,28 @@ def parse_review(
         record["call_site_count"] = len(call_sites)
     if call_sites_emission == "empty":
         record["call_sites_emission"] = call_sites_emission
-    if not revision_carried and source_record is not None:
-        # The emitted text states the revision when it can; otherwise a record
-        # the caller already holds is canonicalised, so an existing stored
-        # entry carrying a legacy spelling gains the canonical key too.
-        revision_carried, revision = carried_revision(source_record)
-    if revision_carried:
-        record["reviewed_revision"] = revision
+    if source_record is not None:
+        carried_base, stored_base, carried_head, stored_head = carried_revision_pair(
+            source_record
+        )
+        if not base_carried and carried_base:
+            base_carried, base_sha = True, stored_base
+        if not head_carried and carried_head:
+            head_carried, head_sha = True, stored_head
+    if base_carried:
+        record[REVIEWED_BASE_KEY] = base_sha
+    if head_carried:
+        record[REVIEWED_HEAD_KEY] = head_sha
+    if source_record is not None and (not base_sha or not head_sha):
+        record["status"] = "incomplete"
     return record
 
 
 # ── The durable store ───────────────────────────────────────────────────────
-# One record per reviewed run, keyed by project and reviewed run id, under the
-# crew configuration directory but outside any run directory and any worktree.
-# The cleaner may delete the run directory and the worktree; a measure that
-# reads a file the cleaner removes decays to nothing, so the review lives in
-# the configuration home instead.
+# Records are keyed by project, reviewed run id and reviewed head revision,
+# under the crew configuration directory but outside any run directory and
+# any worktree. A recheck therefore accumulates beside its predecessor instead
+# of replacing the evidence that motivated it.
 
 
 def review_store_root(base_dir: str | Path | None = None) -> Path:
@@ -408,9 +418,56 @@ def review_path(
     project: str,
     reviewed_run_id: str,
     base_dir: str | Path | None = None,
+    *,
+    reviewed_head_sha: str | None = None,
 ) -> Path:
-    """Return the record path for a reviewed run of a project."""
-    return review_store_root(base_dir) / project / f"{reviewed_run_id}.json"
+    """Return the legacy path or a path keyed by the reviewed head revision."""
+    suffix = ""
+    if reviewed_head_sha is not None:
+        head_sha = reviewed_head_sha.strip()
+        if not re.fullmatch(r"[0-9A-Fa-f]{7,64}", head_sha):
+            raise ValueError(f"invalid reviewed_head_sha {reviewed_head_sha!r}")
+        suffix = f".at-{head_sha.lower()}"
+    return review_store_root(base_dir) / project / f"{reviewed_run_id}{suffix}.json"
+
+
+def _complete_review_exists(
+    project: str,
+    reviewed_run_id: str,
+    base_dir: str | Path | None,
+) -> bool:
+    """Return whether any stored record for the run carries a usable pair."""
+    directory = review_store_root(base_dir) / project
+    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    if directory.is_dir():
+        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        _, base_sha, _, head_sha = carried_revision_pair(stored)
+        if base_sha and head_sha:
+            return True
+    return False
+
+
+def _incomplete_review_path(
+    project: str,
+    reviewed_run_id: str,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None,
+) -> Path:
+    """Return a durable path excluded from current-review selection."""
+    identity = str(record.get("review_run_id") or record.get("timestamp") or "unknown")
+    identity = re.sub(r"[^A-Za-z0-9._-]+", "-", identity).strip("-.") or "unknown"
+    return (
+        review_store_root(base_dir)
+        / project
+        / f"{reviewed_run_id}.incomplete-{identity}.json"
+    )
 
 
 def store_review(
@@ -422,13 +479,13 @@ def store_review(
 
     The record must name ``project`` and ``reviewed_run_id``, which key the
     file. A missing ``timestamp`` is stamped with the current UTC moment so
-    every stored record carries one; an existing timestamp is preserved. A
-    record carrying one of the legacy spellings of the revision it read gains
-    the canonical key before it is written, so every review this machinery
-    stores answers the staleness question under one name whatever the call
-    site supplied; a record already stating the canonical key is left as it
-    states it. The write is atomic: the record lands in a temporary sibling
-    and is renamed into place.
+    every stored record carries one; an existing timestamp is preserved. The
+    five legacy revision spellings are normalised onto the canonical base/head
+    pair before writing. A complete pair selects a revision-keyed path. An
+    incomplete record keeps the legacy path when no complete review exists, so
+    older callers retain their storage contract; once a complete record exists,
+    the incomplete record is preserved under its reviewing-run identity without
+    entering current-review selection. The write is atomic.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -436,14 +493,27 @@ def store_review(
         raise ValueError("review record is missing project")
     if not reviewed_run_id:
         raise ValueError("review record is missing reviewed_run_id")
-    carried, revision = carried_revision(record)
-    if carried and REVIEW_REVISION_KEY not in record:
+    base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
+    if base_carried or head_carried:
         record = dict(record)
-        record[REVIEW_REVISION_KEY] = revision
+        if base_carried:
+            record[REVIEWED_BASE_KEY] = base_sha
+        if head_carried:
+            record[REVIEWED_HEAD_KEY] = head_sha
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
-    path = review_path(project, reviewed_run_id, base_dir)
+    if base_sha and head_sha:
+        path = review_path(
+            project,
+            reviewed_run_id,
+            base_dir,
+            reviewed_head_sha=head_sha,
+        )
+    elif _complete_review_exists(project, reviewed_run_id, base_dir):
+        path = _incomplete_review_path(project, reviewed_run_id, record, base_dir)
+    else:
+        path = review_path(project, reviewed_run_id, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(
@@ -458,17 +528,39 @@ def read_review(
     reviewed_run_id: str,
     *,
     base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
 ) -> dict[str, Any] | None:
-    """Return the stored review record for a reviewed run, or ``None``.
+    """Return a stored review, optionally selecting the head it reviewed.
 
-    The record is what was written and carries the verbatim emitted text, so a
-    later reader can re-derive the parse and see what the reviewer actually
-    said.
+    A named head is matched against the record's normalised
+    ``reviewed_head_sha`` rather than trusted from its filename, which keeps
+    older short-sha preservation copies readable. Without a named head, the
+    newest record is returned for compatibility with callers that have not yet
+    learned to state the revision they need.
     """
-    path = review_path(project, reviewed_run_id, base_dir)
-    if not path.is_file():
+    directory = review_store_root(base_dir) / project
+    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    if directory.is_dir():
+        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+    existing = {path.resolve(): path for path in candidates if path.is_file()}
+    if not existing:
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+
+    records = [
+        (path, json.loads(path.read_text(encoding="utf-8")))
+        for path in existing.values()
+    ]
+    if reviewed_head_sha is not None:
+        named = reviewed_head_sha.strip().lower()
+        for _, record in records:
+            _, _, carried_head, stored_head = carried_revision_pair(record)
+            if not carried_head or not stored_head:
+                continue
+            actual = stored_head.lower()
+            if actual.startswith(named) or named.startswith(actual):
+                return record
+        return None
+    return max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
 
 
 def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:

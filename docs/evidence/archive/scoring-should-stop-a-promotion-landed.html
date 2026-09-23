@@ -1248,6 +1248,73 @@
     <code>ruff-ledger-combined.log</code>. This node has not closed the section, resolved its
     followup, or run the merged-head verification; integration remains coordinator-owned.</p>
   </section>
+
+  <section id="s5c-revision-keyed-reviews">
+    <h2>A review names the base and head it read, and rechecks accumulate</h2>
+    <p><strong>Defect reproduced at base <code>91e4095a</code>.</strong> A review carrying all
+    five scores and no revision identity parsed as <code>status=parsed</code>. Two reviews of
+    one run, first at head <code>bbbb…</code> and then at <code>cccc…</code>, both resolved to
+    the same per-run path; reading it after the second write returned only <code>cccc…</code>.
+    The store therefore destroyed the earlier review in the act of recording its recheck.</p>
+    <p><strong>What landed.</strong> Commit <code>315081c6</code> normalises the five observed
+    spellings without confusing the two sides of the diff:
+    <code>reviewed_base</code> and <code>reviewed_base_sha</code> supply
+    <code>reviewed_base_sha</code>; <code>reviewed_commit</code>,
+    <code>reviewed_head_sha</code>, and the last entry in <code>commits_read</code> supply
+    <code>reviewed_head_sha</code>. A record missing either usable half is
+    <code>incomplete</code>. A complete review is written as
+    <code>&lt;run&gt;.at-&lt;reviewed-head-sha&gt;.json</code>, so a later head creates a second
+    record, and <code>read_review(..., reviewed_head_sha=...)</code> returns the record whose
+    carried head matches the named revision. Short and full sha forms match each other so the
+    preservation copies already in the store stay readable.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Base</th><th>Candidate</th></tr></thead>
+      <tbody>
+        <tr><td>missing revision pair</td><td><code>parsed</code></td><td><code>incomplete</code></td></tr>
+        <tr><td>two heads for one run</td><td>one path; first overwritten</td><td>two paths; both readable by head</td></tr>
+        <tr><td>focused revision tests</td><td>prior single-key contract</td><td><strong>12 passed</strong></td></tr>
+        <tr><td>required adjacent suites</td><td>46 passed, 5 failed</td><td>46 passed, 5 failed</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Evidence that could have failed.</strong> The declared mutation —
+    <em>make store_review write every review to the single review_path(project, run_id)
+    path</em> — was applied to an isolated copy of the candidate. It makes
+    <code>test_rechecks_at_different_heads_accumulate_and_are_read_by_head</code> fail on the
+    two equal paths while the other <strong>11 tests pass</strong>. The candidate itself
+    reports <strong>12 passed</strong>. Ruff reports no findings on either changed code path.</p>
+    <p><strong>Gate delta.</strong> The three required neighbouring suites have the identical
+    five failures at the base and candidate: all are the pre-existing
+    <code>call_sites</code> prompt/verdict mismatch in <code>tests/test_review_scoring.py</code>.
+    The candidate adds zero failures; adding this node's twelve passing cases moves the
+    combined count to <strong>58 passed, 5 failed</strong>. That mismatch is outside this
+    node's exclusive paths and is carried as a follow-on rather than altered here.</p>
+    <p><strong>Independent review correction.</strong> A scored review found two defects in
+    the first landing. The spelling parameter had a self-fulfilling assertion — membership
+    in the same record literal the test had just constructed — so no parser or store change
+    could make that line fail. More seriously, an incomplete record still selected the
+    legacy per-run path. Storing a complete record and then an incomplete one reproduced the
+    unsafe result: the unnamed read returned <code>status=incomplete</code> with no head,
+    although the complete head-keyed record remained on disk.</p>
+    <p><strong>Corrective implementation.</strong> Commit <code>c3ae4b4b</code> replaces the
+    fixture-membership assertion with a round trip through <code>store_review</code> and
+    <code>read_review</code>, requiring each legacy spelling and both canonical values to
+    survive in the returned record. Storage now checks whether either the legacy path or a
+    revision-keyed path already carries a usable base/head pair. If so, an incomplete review
+    is preserved as <code>&lt;run&gt;.incomplete-&lt;review-run&gt;.json</code>, outside the
+    unchanged unnamed current-review selection. The assertion covers both a modern
+    revision-keyed complete record and a pre-existing complete record at the legacy path.</p>
+    <p><strong>Corrective evidence.</strong> The focused file reports <strong>14
+    passed</strong>. Reapplying the declared single-path mutation reports <strong>3 failed,
+    11 passed</strong>: the two-head accumulation case and both complete-then-incomplete
+    layouts fail. The required combined gate reports <strong>60 passed, 5 failed</strong>;
+    the five inherited <code>call_sites</code> failure ids remain identical to base, so the
+    correction adds zero failures. The unnamed reader used by promotion was not changed.</p>
+    <p><strong>Boundary.</strong> This node makes the pair representable, durable and
+    selectable. It does not close the remaining writer and promotion-boundary work: the live
+    review brief still has to emit the pair, and the promotion caller still has to request the
+    record matching the head it is about to promote. Section closure and merged-head
+    verification remain coordinator-owned.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -1,14 +1,4 @@
-"""A stored review records the revision it read, under one key
-(``reviewed_revision``).
-
-The store spells that one fact five ways and no reader knows any of them, so a
-promotion compared a review against the code being promoted while the review
-actually described a revision a repair had already replaced. These are the
-falsifiers for the normalisation: every spelling resolves, none of them is
-mistaken for a value when the record merely carries the key empty, and a record
-carrying none of them leaves the canonical key **absent** — a recorded absence
-and an unread field are different claims and must stay distinguishable.
-"""
+"""A review names the base and head revisions it actually read."""
 
 from __future__ import annotations
 
@@ -18,151 +8,203 @@ import pytest
 
 from reckon.crew import review as review_module
 
-REVISION_KEY = "reviewed_revision"
-
-SHA = "9d208d1e1a5181ceabbcab6eebd2d029ec08e7fa"
-OTHER = "aa2675650000000000000000000000000000aaaa"
-
-# Every spelling the store already uses for this one fact.
-SPELLINGS = (
-    "reviewed_commit",
-    "reviewed_base",
-    "reviewed_head_sha",
-    "reviewed_base_sha",
-    "commits_read",
-)
+BASE = "9d208d1e1a5181ceabbcab6eebd2d029ec08e7fa"
+FIRST_HEAD = "aa2675650000000000000000000000000000aaaa"
+SECOND_HEAD = "bb2675650000000000000000000000000000bbbb"
+INTERMEDIATE = "cc2675650000000000000000000000000000cccc"
 
 
-def _record(**overrides: object) -> dict:
+def _scores() -> str:
+    return "\n".join(
+        f"SCORE {dimension}: 10" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+
+
+def _record(head: str) -> dict[str, object]:
     return {
         "project": "reckon",
         "reviewed_run_id": "r-reviewed-run",
-        "review_run_id": "r-review-run",
-        "timestamp": "2026-09-22T10:00:00+00:00",
-        **overrides,
+        "review_run_id": f"r-review-{head[:8]}",
+        "status": "parsed",
+        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 10),
+        "absent": [],
+        "total": 50,
+        "raw_text": _scores(),
+        "reviewed_base_sha": BASE,
+        "reviewed_head_sha": head,
     }
 
 
-# ── Every spelling resolves ────────────────────────────────────────────────
-
-
-@pytest.mark.parametrize("spelling", SPELLINGS)
-def test_each_store_spelling_resolves_to_the_canonical_key(spelling: str) -> None:
-    parsed = review_module.parse_review("", record={spelling: SHA})
-    assert parsed[REVISION_KEY] == SHA
-
-
-@pytest.mark.parametrize("spelling", SPELLINGS)
-def test_each_store_spelling_resolves_through_the_store(
-    spelling: str, tmp_path: Path
+@pytest.mark.parametrize(
+    ("spelling", "record"),
+    [
+        (
+            "reviewed_commit",
+            {"reviewed_base_sha": BASE, "reviewed_commit": FIRST_HEAD},
+        ),
+        (
+            "reviewed_base",
+            {"reviewed_base": BASE, "reviewed_head_sha": FIRST_HEAD},
+        ),
+        (
+            "reviewed_head_sha",
+            {"reviewed_base_sha": BASE, "reviewed_head_sha": FIRST_HEAD},
+        ),
+        (
+            "reviewed_base_sha",
+            {"reviewed_base_sha": BASE, "reviewed_commit": FIRST_HEAD},
+        ),
+        (
+            "commits_read",
+            {
+                "reviewed_base_sha": BASE,
+                "commits_read": [INTERMEDIATE, FIRST_HEAD],
+            },
+        ),
+    ],
+)
+def test_existing_revision_spelling_normalises_to_the_pair(
+    spelling: str, record: dict[str, object], tmp_path: Path
 ) -> None:
-    stored = review_module.store_review(_record(**{spelling: SHA}), base_dir=tmp_path)
-    written = review_module.read_review("reckon", "r-reviewed-run", base_dir=tmp_path)
-    assert written is not None
-    assert written[REVISION_KEY] == SHA
-    # The legacy spelling survives beside the canonical key; the store is not
-    # rewritten, it is annotated from it.
-    assert written[spelling] == SHA
-    assert Path(stored) == review_module.review_path(
-        "reckon", "r-reviewed-run", tmp_path
+    parsed = review_module.parse_review(_scores(), record=record)
+    reviewed_run_id = f"r-{spelling.replace('_', '-')}"
+    review_module.store_review(
+        {
+            "project": "reckon",
+            "reviewed_run_id": reviewed_run_id,
+            "review_run_id": f"r-review-{spelling.replace('_', '-')}",
+            **record,
+            **parsed,
+        },
+        base_dir=tmp_path,
+    )
+    stored = review_module.read_review(
+        "reckon",
+        reviewed_run_id,
+        base_dir=tmp_path,
+        reviewed_head_sha=FIRST_HEAD,
     )
 
-
-def test_a_commit_list_resolves_to_the_head_it_read() -> None:
-    written = review_module.parse_review("", record={"commits_read": [OTHER, SHA]})
-    assert written[REVISION_KEY] == SHA
-
-
-def test_a_head_spelling_outranks_a_base_spelling() -> None:
-    written = review_module.parse_review(
-        "", record={"reviewed_base_sha": OTHER, "reviewed_head_sha": SHA}
-    )
-    assert written[REVISION_KEY] == SHA
+    assert parsed["status"] == "parsed"
+    assert parsed["reviewed_base_sha"] == BASE
+    assert parsed["reviewed_head_sha"] == FIRST_HEAD
+    assert stored is not None
+    assert stored[spelling] == record[spelling]
+    assert stored["reviewed_base_sha"] == BASE
+    assert stored["reviewed_head_sha"] == FIRST_HEAD
 
 
-# ── The absent case, and why presence is not truthiness ────────────────────
+def test_a_record_without_the_revision_pair_is_incomplete() -> None:
+    parsed = review_module.parse_review(_scores(), record={})
+
+    assert parsed["status"] == "incomplete"
+    assert "reviewed_base_sha" not in parsed
+    assert "reviewed_head_sha" not in parsed
 
 
-def test_a_record_carrying_no_spelling_leaves_the_key_absent() -> None:
-    parsed = review_module.parse_review("", record=_record())
-    assert REVISION_KEY not in parsed
+@pytest.mark.parametrize(
+    "record",
+    [
+        {"reviewed_base_sha": BASE},
+        {"reviewed_head_sha": FIRST_HEAD},
+        {"reviewed_base": "", "reviewed_commit": FIRST_HEAD},
+        {"reviewed_base_sha": BASE, "commits_read": []},
+    ],
+)
+def test_a_record_with_only_one_usable_revision_is_incomplete(
+    record: dict[str, object],
+) -> None:
+    parsed = review_module.parse_review(_scores(), record=record)
+
+    assert parsed["status"] == "incomplete"
 
 
-def test_no_record_leaves_the_key_absent() -> None:
-    parsed = review_module.parse_review("SCORE fit: 12")
-    assert REVISION_KEY not in parsed
-
-
-def test_the_store_invents_no_key_when_no_spelling_is_carried(
+def test_rechecks_at_different_heads_accumulate_and_are_read_by_head(
     tmp_path: Path,
 ) -> None:
-    review_module.store_review(_record(), base_dir=tmp_path)
-    written = review_module.read_review("reckon", "r-reviewed-run", base_dir=tmp_path)
-    assert written is not None
-    assert REVISION_KEY not in written
+    first_record = _record(FIRST_HEAD)
+    second_record = _record(SECOND_HEAD)
 
+    first_path = review_module.store_review(first_record, base_dir=tmp_path)
+    second_path = review_module.store_review(second_record, base_dir=tmp_path)
 
-@pytest.mark.parametrize("empty", [None, "", [], ["", "  "]])
-def test_a_spelling_carried_empty_is_a_recorded_absence(empty: object) -> None:
-    parsed = review_module.parse_review("", record={"reviewed_commit": empty})
-    assert REVISION_KEY in parsed
-    assert parsed[REVISION_KEY] is None
-
-
-def test_presence_is_the_authority_and_does_not_fall_through() -> None:
-    """A carried-but-empty spelling is a recorded absence, not a reason to
-    read a lower-precedence spelling: collapsing the two is the defect."""
-    parsed = review_module.parse_review(
-        "", record={"reviewed_commit": None, "reviewed_base": SHA}
+    assert first_path != second_path
+    assert first_path.is_file()
+    assert second_path.is_file()
+    assert first_path.name.endswith(f".at-{FIRST_HEAD}.json")
+    assert second_path.name.endswith(f".at-{SECOND_HEAD}.json")
+    first_read = review_module.read_review(
+        "reckon",
+        "r-reviewed-run",
+        base_dir=tmp_path,
+        reviewed_head_sha=FIRST_HEAD,
     )
-    assert REVISION_KEY in parsed
-    assert parsed[REVISION_KEY] is None
-
-
-def test_the_store_writes_a_recorded_absence_as_a_present_key(tmp_path: Path) -> None:
-    review_module.store_review(_record(reviewed_commit=None), base_dir=tmp_path)
-    written = review_module.read_review("reckon", "r-reviewed-run", base_dir=tmp_path)
-    assert written is not None
-    assert REVISION_KEY in written
-    assert written[REVISION_KEY] is None
-
-
-def test_an_existing_canonical_key_is_left_as_stated(tmp_path: Path) -> None:
-    review_module.store_review(
-        _record(**{REVISION_KEY: SHA, "reviewed_base": OTHER}), base_dir=tmp_path
+    second_read = review_module.read_review(
+        "reckon",
+        "r-reviewed-run",
+        base_dir=tmp_path,
+        reviewed_head_sha=SECOND_HEAD,
     )
-    written = review_module.read_review("reckon", "r-reviewed-run", base_dir=tmp_path)
-    assert written is not None
-    assert written[REVISION_KEY] == SHA
+    assert first_read is not None
+    assert second_read is not None
+    assert first_read["reviewed_head_sha"] == FIRST_HEAD
+    assert first_read["review_run_id"] == first_record["review_run_id"]
+    assert second_read["reviewed_head_sha"] == SECOND_HEAD
+    assert second_read["review_run_id"] == second_record["review_run_id"]
 
 
-# ── The emitted slot ───────────────────────────────────────────────────────
+@pytest.mark.parametrize("legacy_complete", [False, True])
+def test_an_incomplete_recheck_never_supersedes_a_complete_review(
+    tmp_path: Path,
+    legacy_complete: bool,
+) -> None:
+    complete_record = _record(FIRST_HEAD)
+    complete_path = review_module.store_review(complete_record, base_dir=tmp_path)
+    if legacy_complete:
+        legacy_path = review_module.review_path(
+            "reckon", "r-reviewed-run", base_dir=tmp_path
+        )
+        complete_path.replace(legacy_path)
+        complete_path = legacy_path
+    incomplete_record = {
+        **complete_record,
+        "review_run_id": "r-incomplete-review",
+        "status": "incomplete",
+    }
+    incomplete_record.pop("reviewed_head_sha")
 
-
-def test_an_emitted_revision_line_is_recorded() -> None:
-    parsed = review_module.parse_review(f"SCORE fit: 12\nREVISION: {SHA}")
-    assert parsed[REVISION_KEY] == SHA
-
-
-@pytest.mark.parametrize("label", [*SPELLINGS, REVISION_KEY])
-def test_an_emitted_line_under_a_legacy_label_is_recorded(label: str) -> None:
-    parsed = review_module.parse_review(f"SCORE fit: 12\n{label}: {SHA}")
-    assert parsed[REVISION_KEY] == SHA
-
-
-def test_an_emitted_revision_line_outranks_the_supplied_record() -> None:
-    parsed = review_module.parse_review(
-        f"REVISION: {SHA}", record={"reviewed_head_sha": OTHER}
+    incomplete_path = review_module.store_review(
+        incomplete_record,
+        base_dir=tmp_path,
     )
-    assert parsed[REVISION_KEY] == SHA
+    current = review_module.read_review(
+        "reckon",
+        "r-reviewed-run",
+        base_dir=tmp_path,
+    )
+
+    assert complete_path.is_file()
+    assert incomplete_path.is_file()
+    assert incomplete_path != complete_path
+    assert ".incomplete-r-incomplete-review.json" in incomplete_path.name
+    assert current is not None
+    assert current["status"] == "parsed"
+    assert current["reviewed_base_sha"] == BASE
+    assert current["reviewed_head_sha"] == FIRST_HEAD
+    assert current["review_run_id"] == complete_record["review_run_id"]
 
 
-def test_an_emitted_label_with_no_value_is_a_recorded_absence() -> None:
-    parsed = review_module.parse_review("SCORE fit: 12\nREVISION:")
-    assert REVISION_KEY in parsed
-    assert parsed[REVISION_KEY] is None
+def test_read_review_returns_none_when_the_named_head_was_not_reviewed(
+    tmp_path: Path,
+) -> None:
+    review_module.store_review(_record(FIRST_HEAD), base_dir=tmp_path)
 
-
-def test_a_complete_review_without_a_revision_line_omits_the_key() -> None:
-    parsed = review_module.parse_review("VERDICT goal: read; found.\nSCORE fit: 12")
-    assert REVISION_KEY not in parsed
+    assert (
+        review_module.read_review(
+            "reckon",
+            "r-reviewed-run",
+            base_dir=tmp_path,
+            reviewed_head_sha=SECOND_HEAD,
+        )
+        is None
+    )
