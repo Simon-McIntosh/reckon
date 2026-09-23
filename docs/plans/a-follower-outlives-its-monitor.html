@@ -163,6 +163,23 @@
     arming example uses <code>--lifetime</code> and an absolute path, and the file states the cap as
     1,800,000 milliseconds. The write path is that file alone.</p>
 
+    <h3>Landing record &mdash; the monitor-output guard</h3>
+    <p>Commit <code>8587710c</code> corrects
+    <code>tests/test_crew_monitor_output.py::test_harness_arms_a_monitor_and_attaches_followers</code>, which parsed
+    this same arming section but still required <code>persistent: true</code>. That assertion is false against the
+    corrected reference, so the guard failed on the reference it was meant to hold. The check now names
+    <code>--lifetime 29m</code>, requires the removed <code>persistent</code> key to be absent, and replaces the
+    fragment pinning a bare command with the reference's instruction to arm the printed attach line verbatim.</p>
+    <p>The defect was reproduced before repair: at a scratch <code>git merge --no-commit</code> of this node's head
+    with <code>82411f0c</code>, the unmodified check failed on <code>assert "persistent: true" in words</code>. At the
+    same scratch merge the corrected check passes, and the file's other tests show added failures 0 against base
+    <code>2a895ef3</code> (1 failed, 6 passed at both revisions; the single failure,
+    <code>test_three_followers_receive_each_subsequent_transition_once</code>, is a pre-existing threading failure red
+    at the base revision and reported as a follow-on). Negative control: restoring <code>persistent: true</code> into
+    the reference's arming example makes the check fail on <code>assert "persistent" not in words</code>. Full record:
+    <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s6-monitor-output">&sect;6 landed
+    evidence</a>.</p>
+
     <h2 id="s7">&sect;7 &mdash; A follower whose consumer is gone releases its registration</h2>
     <p>The S19 coordinator measured this from 05:20 to 05:40 CEST on 2026-09-23, in session
     <code>ship-s19-20260922</code>. A follower that had re-executed itself to reload changed source
