@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;implementable&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
-<meta name="plan-impl" content="0.82">
+<meta name="plan-impl" content="0.85">
 <meta name="plan-sprint" content="S19">
 </head>
 <body>
@@ -2621,8 +2621,8 @@
       <strong>5 failed / 27 passed</strong>, reddening exactly the recorded-absence and
       presence-not-truthiness assertions.</p>
 <figure>
-<img alt="Five store spellings resolving in precedence order into one canonical key, and the two outcomes that must stay distinct: a spelling carried empty yields the key present with a null value, and no spelling carried leaves the key absent." src="/reckon/figures/scoring-should-stop-a-promotion/revision_normalisation.png"/>
-</figure>
+<img alt="Five store spellings resolving in precedence order into one canonical key, and the two outcomes that must stay distinct: a spelling carried empty yields the key present with a null value, and no spelling carried leaves the key absent." src="/reckon/figures/scoring-should-stop-a-promotion/revision_normalisation.png">
+</img></figure>
 <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing
       contract requires its own append-only plan and cumulative-evidence records; shared
       lifecycle state, followup resolution and terminal status remain coordinator-owned.</p></div>
@@ -2702,8 +2702,8 @@
 <p><strong>Negative control.</strong> Declared mutation: in a scratch copy of the fixed tree, replace the recorded previous lane with an empty string in <code>dispatch_review_for_run</code> so a lane that already dropped this review is reselected. Result <strong>3 failed / 1 passed, exit 1</strong>; the one that passes is the first-composition case, which has no prior attempt to demote. Ruff delta on <code>reckon/crew/recovery.py</code> is zero added findings (the same set at base and after; only line numbers shift).</p>
 <p><strong>What this does not close.</strong> <code>_review_dispatch_argv</code> still ends in <code>--local</code> for the retypeable command: it takes no config, so it cannot name a selection, and it is display-only — the reflex executes through <code>dispatch()</code>, not through the argv. Its divergence from the executed command is recorded as a follow-on rather than papered over. The plan's other half of the done-when — reading the destination lane's own headroom from the lane document's pair of counts — is not implemented: this node selects among configured backends and refuses rather than retrying a dropped one, and declares no headroom-driven fallback.</p>
 <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing contract requires its own append-only plan and cumulative-evidence records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned.</p>
-<figure><img alt="Left: the selection decision — a run with no prior attempt prefers the local lane, one with a recorded attempt drops that lane and takes the next configured candidate, refusing with awaiting-lane when none is left. Right: two sweeps over one run — the first composes on alpha, the review ends leaving no pointer, and the second composes on beta because the recorded attempt carries the lane." src="/reckon/figures/scoring-should-stop-a-promotion/lane-selection.png" style="max-width:100%"/>
-<figcaption>The selection, and the two-sweep case it exists for. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4b-review-lane-selection">s4b-review-lane-selection</a>.</figcaption></figure></div>
+<figure><img alt="Left: the selection decision — a run with no prior attempt prefers the local lane, one with a recorded attempt drops that lane and takes the next configured candidate, refusing with awaiting-lane when none is left. Right: two sweeps over one run — the first composes on alpha, the review ends leaving no pointer, and the second composes on beta because the recorded attempt carries the lane." src="/reckon/figures/scoring-should-stop-a-promotion/lane-selection.png" style="max-width:100%">
+<figcaption>The selection, and the two-sweep case it exists for. Evidence: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s4b-review-lane-selection">s4b-review-lane-selection</a>.</figcaption></img></figure></div>
 </div>
 <div class="r-comment" data-section="s2d" data-id="c-run-r-20260922T102427303119-the-probe-answers-unknown-for-a-history-it-cannot-read" data-who="crew-worker" data-when="2026-09-22">
     <div class="r-comment-body"><p><strong>The probe now answers unknown rather than never-tracked wherever the checkout cannot answer.</strong> Commits <code>529f9d9f</code> and <code>e4f67a21</code> add <code>ledger._history_is_truncated</code>, which reports a shallow (<code>rev-parse --is-shallow-repository</code>), grafted (<code>refs/replace</code> ref or <code>info/grafts</code> file) or partial-clone (promisor remote) history, and returns <code>None</code> from <code>_ledger_ever_tracked</code> where it holds — which the call site already refuses on through <code>is not False</code>. The call site's nested <code>if</code> collapsed to one condition, removing the SIM102 that sibling finding named.</p><p><strong>Pre-repair receipt.</strong> Origin history <code>index v0</code> → ledger committed → ledger removed → index v1. A <code>--depth=1</code> clone reports <code>is-shallow-repository=true</code> and <code>git log --all -- &lt;ledger&gt;</code> exits 0 with empty output, so the probe answered <code>False</code> and <code>append_run</code> <strong>returned version 1 and created the ledger</strong> — the incident outcome in the circumstance the guard exists for. The same origin cloned full returns two commits for the path, answers <code>True</code>, and refuses. The unfixed module was read from a scratch copy of <code>HEAD</code> (sha256 <code>83fc08d3</code>…) whose path the run printed. After the change the shallow clone answers <code>None</code> and refuses naming the path and the run store.</p><p><strong>Evidence.</strong> The focused gate over <code>tests/test_a_promotion_never_creates_a_ledger.py</code> and <code>tests/test_rollback_asks_head.py</code>, with the shared root interpreter, reports <strong>22 passed, exit 0</strong> (10 + 12) against base <code>45ecc873</code>'s <strong>17 passed, exit 0</strong> (5 + 12) — five new tests, zero failures either side. Running the new tests against the unfixed module reddens <strong>exactly the four truncation tests</strong> and leaves the other six green. The declared negative control — <em>make the truncation question always answer that the repository is complete</em> — reports <strong>4 failed, 6 passed</strong> with <code>DID NOT RAISE LedgerError</code>, its log's first line repeating the declaration verbatim. The outside-a-checkout case pins <code>GIT_CEILING_DIRECTORIES</code> to the temporary root. Ruff over <code>reckon/ledger.py</code> is <strong>13 findings at head with zero SIM102</strong> against <strong>13 at base <code>c16659ff</code> excluding I001</strong> (15 raw).</p><p><strong>Coverage, stated because code without a test is not covered.</strong> All four branches are exercised with real mechanisms: a real <code>--depth=1</code> clone; <code>git replace --graft</code> for <code>refs/replace</code>; a written <code>info/grafts</code> file; and a genuine blobless partial clone built via <code>uploadpack.allowFilter</code> and <code>--filter=blob:none</code>, asserting <code>remote.origin.promisor=true</code>. Nothing patches or mocks the probe. Figure at <code>docs/figures/scoring-should-stop-a-promotion/shallow-history-probe.png</code>; full record at the <code>s2d-shallow-history-refusal</code> anchor.</p><p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced delivery requires its own append-only plan and cumulative-evidence landing records; shared lifecycle state, followup resolution, and terminal status remain coordinator-owned. <strong>Placed inside <code>section[data-reckon="comments"]</code> deliberately</strong>, unlike the two earlier §2d landing records, because this plan already records that a comment in the page body is invisible to <code>parse_plan()['comments']</code> — a record nobody can read is not a record. This node has not closed the section or resolved its followup.</p></div>
@@ -2718,8 +2718,7 @@
     <div class="r-comment-body"><p>scored the reflex backend selection at 88 and named three remainders, including that any recorded backend on a refusal is read as a lane that dropped the review</p></div>
 </div>
 <div class="r-comment" data-section="s5c" data-id="c-run-r-20260922T204226780149-a-review-names-the-revision-it-read" data-who="crew-worker" data-when="2026-09-22">
-    <div class="r-comment-body">
-      <p><strong>The review store now names both revisions and accumulates rechecks.</strong>
+    <div class="r-comment-body"><p><strong>The review store now names both revisions and accumulates rechecks.</strong>
       Commit <code>315081c6</code> replaces the single <code>reviewed_revision</code> retrofit
       with the pair this section specifies. The five stored spellings normalise without
       collapsing base into head: <code>reviewed_base</code> and
@@ -2727,19 +2726,19 @@
       <code>reviewed_commit</code>, <code>reviewed_head_sha</code>, and the last entry in
       <code>commits_read</code> supply the canonical head. Supplying a record without both
       usable values now returns <code>status=incomplete</code>.</p>
-      <p><strong>The overwrite was reproduced before repair.</strong> Two reviews of one run
+<p><strong>The overwrite was reproduced before repair.</strong> Two reviews of one run
       at different heads returned the same path, and only the second head remained readable.
       Complete records now land at <code>&lt;run&gt;.at-&lt;reviewed-head-sha&gt;.json</code>;
       two heads create two files, and a reader naming either head gets that record. The
       focused gate reports <strong>12 passed</strong>. The declared single-path mutation
       makes the accumulation test fail with <strong>1 failed, 11 passed</strong>.</p>
-      <p><strong>Adjacent-gate delta.</strong> The three required neighbouring suites report
+<p><strong>Adjacent-gate delta.</strong> The three required neighbouring suites report
       the same five <code>call_sites</code> failures at base and candidate, with
       <strong>zero newly failing</strong>; the candidate's combined gate is
       <strong>58 passed, 5 failed</strong>. That prompt/test mismatch is outside this node's
       scope and is reported as a follow-on. Full receipts:
       <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5c-revision-keyed-reviews">revision-keyed review evidence</a>.</p>
-      <p><strong>The independent review scored 86 and its two findings are closed in
+<p><strong>The independent review scored 86 and its two findings are closed in
       <code>c3ae4b4b</code>.</strong> The five-spelling test no longer asserts membership in
       its own fixture: it stores each legacy shape, reads the record by head, and requires
       both the original spelling and the canonical pair from that returned record. The
@@ -2748,20 +2747,22 @@
       preserves such a partial result under its reviewing-run identity, outside current-review
       selection, whenever a complete record already exists. Both the revision-keyed and
       pre-existing legacy complete layouts are asserted.</p>
-      <p><strong>Corrective gate.</strong> The focused file reports <strong>14
+<p><strong>Corrective gate.</strong> The focused file reports <strong>14
       passed</strong>; the declared single-path mutation reports <strong>3 failed, 11
       passed</strong>; and the required combined gate reports <strong>60 passed, 5
       failed</strong> with the same five inherited <code>call_sites</code> failures and zero
       added. <code>read_review</code>'s unnamed-head fallback is unchanged.</p>
-      <p><strong>Boundary.</strong> This node has not made the live review brief emit the pair
+<p><strong>Boundary.</strong> This node has not made the live review brief emit the pair
       and has not made promotion request the record matching its named head. It has not closed
       this section or resolved its followup; those remaining callers and merged-head
       verification are coordinator-owned.</p>
-      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+<p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
       landing contract requires its own append-only plan and cumulative-evidence records;
       shared lifecycle state, followup resolution, and terminal status remain
-      coordinator-owned.</p>
-    </div>
+      coordinator-owned.</p></div>
+</div>
+<div class="r-comment" data-section="s5c" data-id="c-20260923T0420-revision-store-landed" data-who="reckon-ship" data-when="2026-09-23T04:20:00+02:00">
+    <div class="r-comment-body">§5c store half landed at ef230808. The review store normalises the five legacy spellings onto reviewed_base_sha and reviewed_head_sha, writes a complete review at &lt;run&gt;.at-&lt;head&gt;.json beside its predecessors instead of over them, and parses a record lacking the pair as incomplete. 14 focused tests pass, the single-path mutation fails 3, and no adjacent failures were added (5 at both base and head). The first review scored 86 and the re-review 89. Still open in this section: promotion must name the head it is promoting when it reads the review (promotion.py calls read_review without one, so the newest record by mtime is taken), and two partial records sharing a review_run_id still resolve to one path. The section stays implementable.</div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
