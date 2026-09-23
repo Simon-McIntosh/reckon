@@ -30,13 +30,29 @@
     <h2 id="s1">&sect;1 &mdash; The claim the cutover has to earn</h2>
     <p>Agents run on the login node today and share one user slice capped at four cores.
     The cutover moves them into a held allocation so they stop contending with editors, git
-    and every interactive session on the machine. That is the claim, and it is measurable:
-    the throttled share of the user slice, read from the cgroup's own counters, against the
-    baseline recorded before the move.</p>
-    <p>The baseline is already recorded. It is not a figure to be re-derived at the end, and
-    it is not the number to compare against a quiet afternoon: the measurement is taken over
-    a working day, because the contention it reports is caused by the fleet's own bursts and
-    an idle sample cannot see them.</p>
+    and every interactive session on the machine. That is the claim, and it is measurable &mdash; but only by an instrument aimed at the
+    fleet's own work. <strong>The quantity is the throttled fraction of the CPU time the
+    agents themselves consume, read from whichever cgroup is running them at the time.</strong>
+    Before the move that is the login node's user slice; after it, the allocation's own
+    cgroup. Reading the login slice on both sides would measure the relief felt by what
+    stayed behind &mdash; editors, git, interactive sessions &mdash; and would report a
+    success no matter how badly the fleet fared inside the allocation. The two instruments
+    can return opposite verdicts on the same cutover, so the report names the counter file
+    it read on each side.</p>
+    <p>Throughout, <em>throttled fraction</em> means that measured quantity and nothing
+    else. Where this plan discusses cores per worker it says so explicitly; that is a
+    different number, and a regression in it would not show up in the throttled fraction at
+    all.</p>
+    <p>The baseline is already recorded, and it is <strong>not in this repository</strong>:
+    it is <code>0.3366</code>, carried by <code>imas-ambix</code>'s
+    <em>slurm-hosted-agent-fleet</em> plan under followup <code>f-shaf-003</code>. A reader
+    searching this tree for it will find nothing, which is why the figure and its home are
+    written here. The report prints the baseline beside the new measurement rather than
+    referring to it, so the direction of the change can be checked against something on the
+    page. It is not a figure to be re-derived at the end, and it is not the number to
+    compare against a quiet afternoon: the measurement is taken over a working day, because
+    the contention it reports is caused by the fleet's own bursts and an idle sample cannot
+    see them.</p>
 
     <h2 id="s2">&sect;2 &mdash; What is untested and must be measured, not assumed</h2>
     <p>Two properties of the allocation have never run under load. The allocation carries
@@ -53,13 +69,24 @@
     stated recovery before the rollout, not after the first occurrence.</p>
 
     <h2 id="s3">&sect;3 &mdash; Done when</h2>
-    <p>Workers across at least two projects are running as steps inside the one reservation,
-    proved by resolving a live worker's host rather than by the configuration saying so. The
+    <p>Workers across at least two projects are running as steps inside the one reservation.
+    <strong>The proof is that a live worker's job id is the job id of the published
+    reservation</strong>, not merely that the worker is on the allocation's node: a
+    per-worker allocation landing on the same node satisfies the weaker check while being
+    exactly the minting this sprint exists to remove, so resolving the host alone would
+    accept the wrong end state as evidence. Configuration saying so is not evidence
+    either. The
     throttled share is measured over a working day and reported beside the stated baseline,
-    with the direction of the change named plainly whichever way it went. The allocation-death
-    path has been exercised deliberately once, on a worker nobody needs, and what a coordinator
-    should do about it is written down. A rollback is stated: which declaration to remove, and
-    what the fleet does while no reservation is held.</p>
+    with the direction of the change named plainly whichever way it went. The allocation-death path has been exercised deliberately once, at a moment chosen so
+    that the workers lost are ones nobody needs &mdash; the death is fleet-wide by nature,
+    as §2 describes, so this is a timed sacrifice and not a single-worker injection. The
+    exercise must <strong>show</strong> that the next dispatch re-holds the shared
+    allocation and that later workers join it rather than each taking one; a written note
+    that they should is not the deliverable. A rollback is stated: which declaration to remove, and what the fleet does while no
+    reservation is held. Removing the host-layer declaration is sufficient to stop the
+    re-holding, because the ensure is reached through placement resolution and an undeclared
+    backend never resolves a placement &mdash; so the rollback does not have to defeat the
+    automatic re-hold, only to remove what triggers it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
