@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker">
   <meta name="plan-title" content="A placement with no reservation mints one per worker">
-  <meta name="plan-summary" content="A declared placement with no published reservation prefixes a bare srun, taking an allocation per worker instead of joining one.">
+  <meta name="plan-summary" content="A declared placement with no published reservation prefixes a bare srun, taking an allocation per worker instead of holding one shared one and joining it.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -58,38 +58,60 @@
     deliberately does not inherit the host-global record &mdash; which is correct, and which
     means the fallback is exactly the path an unprepared project takes.</p>
 
-    <h2 id="s3">&sect;3 &mdash; The refusal</h2>
-    <p>A declared placement with no readable reservation must refuse the dispatch rather
-    than mint. The refusal names the reservation path it looked for, the project it looked
-    for it under, and the ensure line that would hold one, so the reader's next command is
-    in the message. Minting is never the safe default: a wrapping that silently changes
-    from &ldquo;join the fleet's allocation&rdquo; to &ldquo;take an allocation of your own&rdquo;
-    is a different operation wearing the same configuration.</p>
-    <p><strong>Done when.</strong> A backend declaring placement with no readable
-    reservation refuses, and the refusal names the path, the project and the ensure line.
-    No allocation is requested on that path &mdash; asserted against a fake scheduler that
-    records what it was asked for, so the assertion is that the request set is empty rather
-    than that some flag is absent. The replaced test states the refusal in its name. A
-    backend declaring no placement is untouched.</p>
+    <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2>
+    <p>The remedy is not to refuse and it is not to mint. A dispatch that finds no
+    readable reservation <strong>holds the shared one</strong> &mdash; the same allocation
+    every other worker on the workstation uses &mdash; publishes it where every session
+    reads it, and places itself inside it as a step. Every follow-on worker then finds
+    that record and joins the allocation rather than asking for one. One allocation is
+    created, once, by whoever happens to dispatch first.</p>
+    <p>The distinction this plan turns on is between <em>minting</em> and
+    <em>ensuring</em>. Minting is per worker and is the defect: twenty workers ask for
+    twenty allocations and most of them queue. Ensuring is per workstation and is the
+    design: the first dispatch creates what is missing and the nineteenth finds it already
+    held. The current fallback looks like the second and behaves like the first, because a
+    bare <code>srun</code> carries no job id and publishes nothing for the next worker to
+    find.</p>
+    <p><code>ensure_reservation</code> already has the shape this needs. It probes whether
+    a recorded allocation is alive, returns <code>already-held</code> and starts nothing
+    when it is, and replaces the record only once the job has left. What is missing is the
+    call: placement resolution never reaches it.</p>
+    <p><strong>The guard that makes this safe is idempotence under a race, and it is the
+    part to get right.</strong> Several dispatches starting at once must produce one
+    allocation rather than one each, so the ensure is serialised and the liveness probe is
+    what decides &mdash; never the absence of a record, which is equally true while another
+    dispatch is mid-hold. An allocation that is merely unreachable must not read as gone,
+    because a second allocation held beside a live one is the per-worker minting this plan
+    exists to remove, arriving by a slower route.</p>
+    <p><strong>Done when.</strong> A dispatch declaring placement with no readable
+    reservation holds the shared allocation, publishes it, and runs its worker as a step
+    inside it with <code>--overlap</code> and the job id it just published. A second
+    dispatch under a different project finds that record and starts nothing, asserted
+    against a recording scheduler as exactly one allocation request across both.
+    Concurrent dispatches racing from no record still produce one allocation. A live
+    allocation is never replaced, and a backend declaring no placement is untouched. The
+    test that currently pins the bare-<code>srun</code> wrapping is replaced by one whose
+    name states the ensure.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="unheld-reservation-behaviour" data-choice="refuse" data-by="Simon McIntosh" data-when="2026-09-23T14:07:43+00:00">
+<div class="r-dec" data-key="unheld-reservation-behaviour" data-choice="ensure-and-place" data-by="Simon McIntosh" data-when="2026-09-23T14:11:40+00:00">
     <p class="r-dec-q">What should a declared placement do when no reservation is readable?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="refuse">Refuse the dispatch, naming the ensure line</button>
+      <button class="r-opt chosen" data-value="ensure-and-place">Hold the shared reservation, publish it, and place into it</button>
+      <button class="r-opt" data-value="refuse">Refuse the dispatch, naming the ensure line</button>
       <button class="r-opt" data-value="unplaced">Launch unplaced, with the wrapping dropped and a warning</button>
       <button class="r-opt" data-value="mint">Keep minting an allocation per worker</button>
       </p>
-    <p class="r-dec-rat">Minting silently changes the operation the configuration names: a wrapping that reads as join the fleet&#x27;s allocation becomes take an allocation of your own. The refusal names the reservation path, the project and the ensure line, so the reader&#x27;s next command is in the message.</p>
+    <p class="r-dec-rat">Minting and ensuring are different operations and only minting is the defect. A dispatch finding no reservation holds the shared allocation once, publishes it, and places itself inside it; every follow-on worker finds that record and joins rather than asking for one of its own. Refusing would make the fleet wait on a human for something the machine can do correctly, and ensure_reservation already probes liveness and starts nothing when an allocation is held. The guard that makes it safe is idempotence under a race: serialise the ensure and decide on the liveness probe, never on the absence of a record, because a second allocation held beside a live one is the same per-worker minting arriving by a slower route.</p>
     </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-pnr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Refuse a declared placement that has no readable reservation</h4>
-    <div class="r-fu-body"><p>Replace the fallback that prefixes a bare <code>srun</code> with a refusal naming the reservation path, the project and the ensure line. The test that currently pins the minting behaviour, <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>, is the one to replace; assert an empty request set against a recording scheduler rather than the absence of a flag.</p></div>
+    <h4 class="r-fu-title">Hold the shared reservation when none is readable, then place into it</h4>
+    <div class="r-fu-body"><p>Replace the fallback that prefixes a bare <code>srun</code> with a call that holds the shared reservation, publishes it, and places the worker into it as a step. <code>ensure_reservation</code> already probes liveness and returns <code>already-held</code>; what is missing is the call from placement resolution. Serialise it so concurrent dispatches from no record produce one allocation, and decide on the liveness probe rather than on the absence of a record. The test that currently pins the bare-<code>srun</code> wrapping, <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>, is the one to replace; assert exactly one allocation request across two dispatches against a recording scheduler.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-placement-with-no-reservation-mints-one-per-worker</pre>
     </article>
 </section>

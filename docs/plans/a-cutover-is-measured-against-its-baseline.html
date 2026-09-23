@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -63,14 +63,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="allocation-death-recovery" data-choice="refuse-and-report" data-by="Simon McIntosh" data-when="2026-09-23T14:08:26+00:00">
+<div class="r-dec" data-key="allocation-death-recovery" data-choice="auto-rehold" data-by="Simon McIntosh" data-when="2026-09-23T14:11:46+00:00">
     <p class="r-dec-q">What happens to placed workers when the allocation ends?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
-      <button class="r-opt" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
+      <button class="r-opt" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
+      <button class="r-opt chosen" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
       <button class="r-opt" data-value="fall-back-unplaced">Workers fall back to running unplaced on the login node</button>
       </p>
-    <p class="r-dec-rat">Losing the reservation kills every placed worker on the machine at once, so the state after it must be loud and deliberate rather than self-healing. An automatic re-hold can mint a second allocation when the first is merely unreachable, and an unplaced fallback lets the fleet drift back to the ceiling the cutover exists to escape, in silence.</p>
+    <p class="r-dec-rat">Follows from the ensure policy rather than being a separate call: an allocation that has ended is a state with no readable reservation, and the rule for that state is to hold the shared one and place into it. The next dispatch therefore re-holds and publishes, and later workers join it. The hazard is unchanged and is carried by the same guard: an allocation that is merely unreachable must not read as gone, or the re-hold takes a second allocation beside a live one. The monitor still reports the loss, because a fleet-wide worker death is worth a line whether or not the recovery is automatic.</p>
     </div>
 </section>
 
