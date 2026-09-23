@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T02:52:34",
+  "updated": "2026-09-23T02:59:47",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -270273,6 +270273,264 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T194952603598-monitor-stall-census",
+        "plan": "the-monitor-under-measurement",
+        "section": "\u00a75",
+        "node": "monitor-stall-census",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3638,
+                "cached_input_tokens": 232298,
+                "input_tokens": 235938,
+                "output_tokens": 912,
+                "reasoning_output_tokens": 682,
+                "total_tokens": 236850,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "23f1594f-67e1-40be-bd45-ccec71172f69",
+            "session_id": "monitor-rox-20260922"
+          },
+          "done_when": "docs/research/data/monitor-stall-census.json holds, with denominators, stalled transitions over seven days across four projects split by process alive or gone, completed without resume or resumed, role and backend, plus the stall window source and value, plus manifests with status outside complete blocked failed grouped by word with whether each ever emitted a terminal transition; run r-20260922T140247463532-rail-env-remaining-eighteen appears as a stall that later completed without resume; at least one nova manifest from 2026-09-22 carries an unrecognised status word",
+          "estimated_hours": null,
+          "goal": "Count stalled transitions by process liveness and outcome and unrecognised manifest statuses in a stall census data file",
+          "id": "monitor-stall-census",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T19:49:56Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194952603598-monitor-stall-census/manifest.md",
+          "negative_control": "",
+          "plan": "the-monitor-under-measurement",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/data/monitor-stall-census.json",
+            "docs/evidence/archive/the-monitor-under-measurement-landed.html",
+            "docs/figures/the-monitor-under-measurement",
+            "docs/plans/the-monitor-under-measurement.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-window",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T19:50:33Z",
+        "completed_at": "2026-09-22T20:45:49.457Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3301,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3316,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "9d8ccbd5677dfdd1ec7a172c4f57597a010059ee",
+        "commits": [
+          "e12ad5082872177e73d11f113b559c6312417857"
+        ],
+        "changed_lines": {
+          "added": 4500,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194952603598-monitor-stall-census/manifest.md",
+        "scope_changed": false,
+        "session_id": "40fb3951-66fd-4885-adee-6cdb3e46ba78",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11072339,
+            "input_tokens_cumulative": 11072339,
+            "output_tokens": 71786,
+            "output_tokens_cumulative": 71786,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T20:45:49.457Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11240086,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3309.003,
+          "generated_tokens": 78016,
+          "generation_seconds": 2950.5,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 358.503,
+          "peak_input_tokens": 166447,
+          "tokens_per_second": 26.44,
+          "wall_tokens_per_second": 23.58
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/monitor-rox-20260922/monitor-stall-census",
+          "session_id": "40fb3951-66fd-4885-adee-6cdb3e46ba78",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T20:45:49.457Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "the-monitor-under-measurement",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T20:29:56.148673+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T19:49:56Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 105.0,
+        "orientation_input_tokens": 9188299.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -270571,6 +270829,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2140
+    "_version": 2141
   }
 }
