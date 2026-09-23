@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="4">
+  <meta name="plan-version" content="5">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -143,6 +143,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260923T0405-s4-write-path" data-who="reckon-ship" data-when="2026-09-23T04:05:00Z">
     <div class="r-comment-body"><p><strong>A correction from the currency audit: §4's write path is <code>reckon/crew/recovery.py</code>, not <code>reckon/crew/resumption.py</code>.</strong> The text <code>ready to resume</code> is composed by the classifier at <code>recovery.py:2585</code>, as the <code>detail</code> of a <code>waiting</code> run whose wait condition is met, and <code>resumption.py</code> does not contain it. So §4 joins §2, §3, §5 and §6 in the serial chain on <code>recovery.py</code>. Its test path is unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0445-backend-gone-is-a-cause" data-who="reckon-ship" data-when="2026-09-23T04:45:00Z">
+    <div class="r-comment-body"><p><strong>A candidate follow-on for after §2 lands: a death row names its backend when the backend is gone.</strong> At 04:12:04Z on 2026-09-23, <code>scancel -u</code> from an imas-efit worker cancelled the locally served lane's serving job. <code>lane.json</code> read <code>unavailable</code> with zero endpoints from 04:12:05Z. Several sessions then saw their workers die with no stated cause and began diagnosing their own nodes. imas-ambix-b6 reported it. §2 reports a death within one poll, but its reason names only the process. If the run's backend declares a lane document that reads unavailable at that snapshot, saying so in the same reason would make it read as one cause across every session. Not added as a section yet: §2 should land first, so the reason text has a place to go.</p></div>
 </div>
 </section>
 </main>
