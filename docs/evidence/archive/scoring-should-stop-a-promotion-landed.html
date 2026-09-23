@@ -1288,6 +1288,27 @@
     The candidate adds zero failures; adding this node's twelve passing cases moves the
     combined count to <strong>58 passed, 5 failed</strong>. That mismatch is outside this
     node's exclusive paths and is carried as a follow-on rather than altered here.</p>
+    <p><strong>Independent review correction.</strong> A scored review found two defects in
+    the first landing. The spelling parameter had a self-fulfilling assertion — membership
+    in the same record literal the test had just constructed — so no parser or store change
+    could make that line fail. More seriously, an incomplete record still selected the
+    legacy per-run path. Storing a complete record and then an incomplete one reproduced the
+    unsafe result: the unnamed read returned <code>status=incomplete</code> with no head,
+    although the complete head-keyed record remained on disk.</p>
+    <p><strong>Corrective implementation.</strong> Commit <code>c3ae4b4b</code> replaces the
+    fixture-membership assertion with a round trip through <code>store_review</code> and
+    <code>read_review</code>, requiring each legacy spelling and both canonical values to
+    survive in the returned record. Storage now checks whether either the legacy path or a
+    revision-keyed path already carries a usable base/head pair. If so, an incomplete review
+    is preserved as <code>&lt;run&gt;.incomplete-&lt;review-run&gt;.json</code>, outside the
+    unchanged unnamed current-review selection. The assertion covers both a modern
+    revision-keyed complete record and a pre-existing complete record at the legacy path.</p>
+    <p><strong>Corrective evidence.</strong> The focused file reports <strong>14
+    passed</strong>. Reapplying the declared single-path mutation reports <strong>3 failed,
+    11 passed</strong>: the two-head accumulation case and both complete-then-incomplete
+    layouts fail. The required combined gate reports <strong>60 passed, 5 failed</strong>;
+    the five inherited <code>call_sites</code> failure ids remain identical to base, so the
+    correction adds zero failures. The unnamed reader used by promotion was not changed.</p>
     <p><strong>Boundary.</strong> This node makes the pair representable, durable and
     selectable. It does not close the remaining writer and promotion-boundary work: the live
     review brief still has to emit the pair, and the promotion caller still has to request the

@@ -2736,6 +2736,20 @@
       <strong>58 passed, 5 failed</strong>. That prompt/test mismatch is outside this node's
       scope and is reported as a follow-on. Full receipts:
       <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5c-revision-keyed-reviews">revision-keyed review evidence</a>.</p>
+      <p><strong>The independent review scored 86 and its two findings are closed in
+      <code>c3ae4b4b</code>.</strong> The five-spelling test no longer asserts membership in
+      its own fixture: it stores each legacy shape, reads the record by head, and requires
+      both the original spelling and the canonical pair from that returned record. The
+      incomplete-write gap was reproduced by storing a complete review followed by an
+      incomplete one; the unnamed reader returned the incomplete record. Storage now
+      preserves such a partial result under its reviewing-run identity, outside current-review
+      selection, whenever a complete record already exists. Both the revision-keyed and
+      pre-existing legacy complete layouts are asserted.</p>
+      <p><strong>Corrective gate.</strong> The focused file reports <strong>14
+      passed</strong>; the declared single-path mutation reports <strong>3 failed, 11
+      passed</strong>; and the required combined gate reports <strong>60 passed, 5
+      failed</strong> with the same five inherited <code>call_sites</code> failures and zero
+      added. <code>read_review</code>'s unnamed-head fallback is unchanged.</p>
       <p><strong>Boundary.</strong> This node has not made the live review brief emit the pair
       and has not made promotion request the record matching its named head. It has not closed
       this section or resolved its followup; those remaining callers and merged-head
