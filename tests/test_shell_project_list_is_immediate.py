@@ -104,11 +104,14 @@ def _picker_probe() -> str:
 
 
 def _palette_probe() -> str:
-    """Record every other-project inventory request, with the palette cycled.
+    """Cycle the palette and count the open cycles that completed.
 
     The palette is opened, closed and opened again so the fetching effect runs
     more than once: a shell that asks for an inventory on every run would then
-    record each project twice instead of once.
+    record each project twice instead of once. Each open and close is confirmed
+    by the palette's own presence rather than a fixed sleep, and the completed
+    open cycles are counted, so a cycle whose close or reopen never lands is
+    reported instead of being read past.
     """
 
     return (
@@ -116,18 +119,33 @@ def _palette_probe() -> str:
         + _WAIT_FOR
         + f"""
       const expected = {len(MOUNTED_PROJECTS)};
+      const paletteOpen = () => Boolean(document.querySelector(".r-cmdk"));
+      const openPalette = async () => {{
+        document.querySelector(".r-topbar-search").click();
+        return await waitFor(paletteOpen);
+      }};
+
       const before = [...window.__discoveryRequests];
-      const search = document.querySelector(".r-topbar-search");
-      search.click();
-      const opened = await waitFor(() => Boolean(document.querySelector(".r-cmdk")));
+      let cycles = 0;
+
+      const firstOpened = await openPalette();
+      if (firstOpened) cycles += 1;
       await waitFor(() => new Set(window.__discoveryRequests).size >= expected);
       document.querySelector(".r-cmdk-scrim")
         .dispatchEvent(new MouseEvent("mousedown", {{ bubbles: true }}));
-      await waitFor(() => !document.querySelector(".r-cmdk"));
-      search.click();
-      await waitFor(() => Boolean(document.querySelector(".r-cmdk")));
+      const firstClosed = await waitFor(() => !paletteOpen());
+      const reopened = await openPalette();
+      if (firstClosed && reopened) cycles += 1;
+
       await new Promise(resolve => setTimeout(resolve, 250));
-      return {{ before, after: [...window.__discoveryRequests], opened }};
+      return {{
+        before,
+        after: [...window.__discoveryRequests],
+        opened: firstOpened,
+        closed: firstClosed,
+        reopened,
+        cycles,
+      }};
     }})()"""
     )
 
@@ -173,7 +191,12 @@ def test_other_project_inventories_load_only_for_the_palette(tmp_path: Path) -> 
         )
 
     assert result["before"] == []
-    assert result["opened"] is True
+    assert result["cycles"] == 2, (
+        f"the palette completed {result['cycles']} of 2 open cycles "
+        f"(opened={result['opened']} closed={result['closed']} "
+        f"reopened={result['reopened']}); a cycle whose close or reopen never "
+        "landed cannot be read past"
+    )
     counts = Counter(result["after"])
     assert sorted(counts) == sorted(MOUNTED_PROJECTS), (
         f"unexpected /_discover URLs: {sorted(counts)}"
