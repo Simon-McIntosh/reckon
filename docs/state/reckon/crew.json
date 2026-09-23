@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T03:07:37",
+  "updated": "2026-09-23T03:14:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -270794,6 +270794,274 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T194949960913-monitor-staleness-census",
+        "plan": "the-monitor-under-measurement",
+        "section": "\u00a72",
+        "node": "monitor-staleness-census",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3638,
+                "cached_input_tokens": 232298,
+                "input_tokens": 235938,
+                "output_tokens": 912,
+                "reasoning_output_tokens": 682,
+                "total_tokens": 236850,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "23f1594f-67e1-40be-bd45-ccec71172f69",
+            "session_id": "monitor-rox-20260922"
+          },
+          "done_when": "docs/research/data/monitor-staleness-census.json exists with one row per cause carrying count, pattern, population and up to three quoted examples with transcript paths; the imas-efit transcripts for 2026-09-22 yield at least nine expiry notices as the positive control; the file states Monitor calls passing persistent, expiries among them, median re-arm interval per session, and a yes-or-no on sweep-launched workers being follower children with the deciding file and line",
+          "estimated_hours": null,
+          "goal": "Attribute every follower stop over seven days to one cause in a staleness census data file",
+          "id": "monitor-staleness-census",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T19:49:54Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194949960913-monitor-staleness-census/manifest.md",
+          "negative_control": "",
+          "plan": "the-monitor-under-measurement",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/data/monitor-staleness-census.json",
+            "docs/evidence/archive/the-monitor-under-measurement-landed.html",
+            "docs/figures/the-monitor-under-measurement",
+            "docs/plans/the-monitor-under-measurement.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "pace-clampfix",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T19:50:28Z",
+        "completed_at": "2026-09-22T22:06:25.499Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 8137,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 8157,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "9d8ccbd5677dfdd1ec7a172c4f57597a010059ee",
+        "commits": [
+          "00bda9b98b663e2c9a3931bb19472f3cbb09930f",
+          "6737d0a80caab13bb25698017e64d476847cf47d",
+          "6d5a52b4ceb6474978c32ebc78f67d36b35a9639",
+          "59f877822561f81f0e650bd9603c279b637b4f64"
+        ],
+        "changed_lines": {
+          "added": 860,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python3 verify_census.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194949960913-monitor-staleness-census/gate-census.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194949960913-monitor-staleness-census/manifest.md",
+        "scope_changed": false,
+        "session_id": "e90ea3b9-7754-4e17-b8b0-9e2c5b47db74",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13976557,
+            "input_tokens_cumulative": 13976557,
+            "output_tokens": 65461,
+            "output_tokens_cumulative": 65461,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T22:06:25.499Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 17,
+            "fit": 18,
+            "goal_fidelity": 16,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 85
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 26442911,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4088.029,
+          "generated_tokens": 158726,
+          "generation_seconds": 3765.896,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 322.133,
+          "peak_input_tokens": 165846,
+          "tokens_per_second": 42.15,
+          "wall_tokens_per_second": 38.83
+        },
+        "follow_on_paths": [
+          "census.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/monitor-rox-20260922/monitor-staleness-census",
+          "session_id": "e90ea3b9-7754-4e17-b8b0-9e2c5b47db74",
+          "session_source": "stream",
+          "retained_at": "2026-09-22T22:06:25.499Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "the-monitor-under-measurement",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T20:29:54.072416+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T19:49:54Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 119.0,
+        "orientation_input_tokens": 7150253.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -271092,6 +271360,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2143
+    "_version": 2144
   }
 }
