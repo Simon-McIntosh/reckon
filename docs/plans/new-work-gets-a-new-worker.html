@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="new-work-gets-a-new-worker">
+  <meta name="plan-title" content="New Work Gets A New Worker">
+  <meta name="plan-summary" content="A dispatch resumed whatever its member did last, so new tasks paid for old transcripts; a session now continues only the task it began.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking,worker-death-is-recorded">
+  <title>New Work Gets A New Worker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S19">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>New Work Gets A New Worker</h1>
+
+    <p><strong>A dispatch to a roster member resumed that member's last session, whatever that session
+    had been doing.</strong> A member's session was keyed by agent configuration (lane, effort and
+    sandbox), not by task. So a new node sent to a member inherited the previous node's whole
+    conversation and paid for it on every turn. The decision was made at
+    <code>reckon/crew/dispatch.py:3622-3634</code> and carried into argv by
+    <code>launch_plan(resume_session=…)</code>. It fired whenever a backend set
+    <code>session_reuse: true</code>, and every backend did.</p>
+
+    <p><strong>Measured 2026-09-23, 5,440 runs.</strong> 312 of 2,089 local runs resumed another task's
+    session and inherited a median 81,957 tokens on their first turn (max 494,189). A fresh local run
+    carries about 60,000 tokens of setup, so a resumed one started at roughly 2.4 times that. 1,315 of
+    3,105 codex runs (42%) resumed one. The codex stream does not expose the first-turn figure, and
+    codex bills all input, cached or not, so every turn of those runs paid for another task's
+    transcript. The review reflex dispatches every review under one session-derived member, so each
+    review inherited the last. One then resumed a session whose previous run had died looping in
+    compaction, and opened in compaction again. The benefit the pattern was meant to buy, a worker that
+    remembers the node, was never measured.</p>
+
+    <p><strong>The rule.</strong> A session continues the task it began and nothing else. Three reuses
+    are valid and are kept deliberately:</p>
+    <ul>
+      <li><code>crew resume</code> of the same run, to answer a NEEDS-HELP brief, ride out an outage or
+      recover a turn that ended early;</li>
+      <li><code>crew redispatch</code> of the same run, which keeps the run and changes the lane;</li>
+      <li>a new run on the same task: a repair of the same node, or a re-review of the same reviewed
+      run.</li>
+    </ul>
+    <p>Every other dispatch starts a fresh session. <strong>Stopgap in force:</strong>
+    <code>session_reuse: false</code> on every backend, in the project layer (daabeca2) and the host
+    layer, which also blocks the third valid case until §2 lands. §7 restores it.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — Every site that carries a session between runs is named</h2>
+      <p><strong>Measure.</strong> A reuse map lists every code and guidance site that does any of the
+      following, each with its file and line:</p>
+      <ul>
+        <li>composes a resume into a worker's argv (<code>--resume</code> or the codex equivalent);</li>
+        <li>writes session fields onto a roster member (<code>session_id</code>,
+        <code>session_model</code>, <code>sessions</code>, <code>session_owners</code>);</li>
+        <li>selects or serialises dispatch by member;</li>
+        <li>tells a coordinator to route work to a member because its session remembers.</li>
+      </ul>
+      <p>Each row is classed as same-run, same-task or cross-task. Each row also names the test files
+      that assert on it, so later nodes fence those tests with the source.</p>
+      <p><strong>Falsifier.</strong> The map must contain <code>dispatch.py:3622-3634</code>, the
+      redispatch <code>continued</code> branch, <code>crew resume</code>, the reflex's
+      <code>dispatch_review_for_run</code> and the reckon-ship Continuity rule. A map missing any of the
+      five has not searched.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — A dispatch resumes a session only on the same task</h2>
+      <p><strong>Measure.</strong> The dispatch-time session decision compares task identity, not
+      member identity. For implement, test and investigate runs, task identity is
+      <code>(project, plan, node id)</code>. For a review, it is the reviewed run id. A prior session is
+      resumed only when its run carried the same task identity. It is never resumed when that run ended
+      with the session too large to continue: <code>Prompt is too long</code> /
+      <code>blocking_limit</code>, or compaction that never completed. The decision does not depend on
+      the <code>session_reuse</code> key, which becomes a statement of whether the harness can resume at
+      all.</p>
+      <p><strong>Falsifier.</strong> Tests assert on the argv the launcher would run, never on a
+      helper's return value. With <code>session_reuse: true</code>:</p>
+      <ol>
+        <li>A new node sent to a member whose recorded session belongs to a different node composes no
+        resume.</li>
+        <li>A second dispatch of the same node composes the prior session.</li>
+        <li>A re-review of the same reviewed run composes the prior review session.</li>
+        <li>A session whose run ended <code>blocking_limit</code> is not composed.</li>
+        <li><code>crew resume</code> still composes its own run's session.</li>
+      </ol>
+      <p>The negative control restores member-keyed selection, and case 1 must turn red.</p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — A session belongs to its run, not to the roster</h2>
+      <p><strong>Measure.</strong> Dispatch and observe stop writing <code>session_id</code>,
+      <code>session_model</code>, <code>sessions</code> and <code>session_owners</code> onto roster
+      members. The captured session lives on the run record and its ledger row, and §2's lookup reads it
+      from there by task identity.</p>
+      <p><strong>Falsifier.</strong> A test snapshots <code>docs/state/&lt;project&gt;/crew.json</code>
+      members, runs a dispatch and an observe, and requires member fields byte-identical afterwards
+      while the run record carries the session. That uncommitted roster write is what dirtied
+      <code>crew.json</code> under a peer session tonight.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — No shared member serialises unrelated work</h2>
+      <p><strong>Measure.</strong> A dispatch that names no member no longer binds to one
+      session-derived member. That includes every reflex review. Each such dispatch gets its own
+      member identity, or none, so one run in flight never refuses an unrelated task with
+      <code>member-in-flight</code>.</p>
+      <p><strong>Falsifier.</strong> Two reflex reviews for two different runs dispatch back to back and
+      both launch, with distinct members and no resume. A dispatch naming an explicit member still
+      serialises on it, because that remains a deliberate choice.</p>
+    </section>
+
+    <section id="s5" data-reckon="section">
+      <h2>§5 — The guidance teaches the same rule</h2>
+      <p><strong>Measure.</strong> The reckon-ship skill's Continuity rule and
+      <code>references/sprint-orchestration.md</code> §Continuity stop routing same-plan follow-up work
+      to <q>the roster member whose long-lived session remembers the node</q>. They state the same-task
+      rule from §2 and its three valid cases, with the measured cost as the reason.</p>
+      <p><strong>Falsifier.</strong> A grep over <code>skills/</code> for <q>long-lived session</q> and
+      <q>remembers the node</q> returns nothing, and each rewritten passage names all three valid
+      reuses. A rule without its reason is routed around the first time the alternative looks
+      slower.</p>
+    </section>
+
+    <section id="s6" data-reckon="section">
+      <h2>§6 — The burn is stated in tokens, before and after</h2>
+      <p><strong>Measure.</strong> Codex's own session files (rollout files) give cumulative input per
+      run where its stream does not. For the codex runs that resumed another task's session, the census
+      states the input attributable to the inherited transcript. After §2 lands, a census over at least
+      the next 50 dispatches reports zero cross-task resumes and states how many same-task resumes
+      remain.</p>
+      <p><strong>Falsifier.</strong> A positive control: a run known from its argv to have resumed a
+      session must show a non-zero inherited figure through the same parser. Otherwise the zero is the
+      instrument, not the fleet.</p>
+    </section>
+
+    <section id="s7" data-reckon="section">
+      <h2>§7 — The stopgap is lifted once the rule holds</h2>
+      <p><strong>Measure.</strong> After §2 and §3 land and their tests pass at the merged head,
+      <code>session_reuse</code> returns to <code>true</code> in the host and project layers on the
+      backends whose harness can resume. The first re-review of an already-reviewed run composes its
+      prior review session, and the first new node composes none. Both are read from the launched argv
+      and recorded here.</p>
+      <p><strong>Falsifier.</strong> If any dispatch after the flip composes a session from a different
+      task, the flag goes back to <code>false</code> the same hour and §2 reopens.</p>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-nwgnw-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship new-work-gets-a-new-worker" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Map the sites, then make the dispatch decision task-keyed</h4>
+    <div class="r-fu-body"><p>§1's reuse map comes first and names the tests that assert on each site. §2 is the fix that matters and it touches <code>reckon/crew/dispatch.py</code>, so it follows worker-death step 4, which holds that file until it promotes. §3 and §4 follow §2. §5 is guidance text and can run beside §2. §6 can start at once for its before figure. §7 is a config beat for the coordinator after §2 and §3 pass at the merged head.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship new-work-gets-a-new-worker</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
