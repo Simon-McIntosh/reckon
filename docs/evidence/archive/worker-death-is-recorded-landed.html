@@ -240,6 +240,50 @@
       <code>interrupted-gate.log</code>, and
       <code>negative-control-interrupted.log</code>.</p>
     </section>
+
+    <section id="s5-3-ledger-tests">
+      <h2>&sect;5.3 &mdash; the ledger expectations follow the phase</h2>
+      <p>Two tests in <code>tests/test_ledger.py</code> still encoded the pre-repair
+      reading. A killed worker with nothing delivered asserted
+      <code>abandoned</code>, and the three-class recovery fixture asserted an
+      <code>abandoned</code> tally. Both were updated to assert
+      <code>interrupted</code> and renamed to say what they now assert:
+      <code>test_a_dead_run_that_delivered_nothing_is_interrupted</code> and
+      <code>test_recovery_counts_running_scoring_and_interrupted</code>. No production
+      source changed &mdash; the <code>interrupted</code> arm already classifies this
+      shape, so the tests were stale expectations failing at the base revision.</p>
+
+      <h3>Measured controls</h3>
+      <ul>
+        <li>The whole of <code>tests/test_ledger.py</code> ran on <code>all_debug</code>
+        at the base revision <code>729dea35</code> with the original expectations:
+        <strong>8 failed, 87 passed</strong>. The two updated tests were among the
+        failures, each reading <code>interrupted</code> where it asserted
+        <code>abandoned</code>.</li>
+        <li>The same file ran at the same revision with the updated expectations:
+        <strong>6 failed, 89 passed</strong>. The two updated tests pass, and every one
+        of the six remaining failures is present in the base run &mdash; <strong>zero
+        failures added</strong> against the base. Logs:
+        <code>docs/figures/worker-death-is-recorded/ledger-gate-baseline.log</code> and
+        <code>ledger-gate-after.log</code>.</li>
+        <li>The declared negative control removed only the interrupted arm from
+        <code>classify_pointer</code> in a scratch copy. Both updated tests then failed
+        &mdash; the dead run read <code>abandoned</code> and the tally read
+        <code>interrupted 0</code> / <code>abandoned 1</code> &mdash;
+        <strong>2 failed</strong>. The scratch tree's own module was confirmed on the
+        import path before the run. Log:
+        <code>docs/figures/worker-death-is-recorded/negative-control-ledger.log</code>,
+        whose first line repeats the mutation verbatim.</li>
+      </ul>
+
+      <h3>Boundary</h3>
+      <p>This measure covers only these two expectations; the six remaining failures in
+      the file are pre-existing at <code>729dea35</code> and outside this node's declared
+      scope, so they are reported rather than triaged here. Renaming the second test
+      leaves two stale citations outside this node's fence:
+      <code>docs/plans/suite-failures-have-an-owner.html</code> and the historical
+      <code>docs/state/reckon/crew.json</code> ledger.</p>
+    </section>
 </main>
 </body>
 </html>

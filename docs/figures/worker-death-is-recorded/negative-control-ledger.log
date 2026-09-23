@@ -1,0 +1,79 @@
+remove the interrupted arm from classify_pointer so a dead orphaned run keeps its prior classification
+# rev=729dea3561bdfd77c014c7be4d21e2bee4801f4d (base) scratch-tree=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch mutated-path=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch/reckon/crew/recovery.py
+# cmd=srun --partition=all_debug... -- cwd=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch PYTHONPATH=/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch python -m pytest -q tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted
+slurmstepd: error: Unable to create TMPDIR [/run/user/39486]: Permission denied
+slurmstepd: error: Setting TMPDIR to /tmp
+/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch
+recovery: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/nc-scratch/reckon/crew/recovery.py
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+____________ test_a_dead_run_that_delivered_nothing_is_interrupted _____________
+
+home = PosixPath('/tmp/pytest-of-mcintos/pytest-319/test_a_dead_run_that_delivered0/config')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-319/test_a_dead_run_that_delivered0/repo')
+
+    def test_a_dead_run_that_delivered_nothing_is_interrupted(home, repo) -> None:
+        record = _dispatch(repo)
+        _kill(record)
+    
+        row = crew.recover()["runs"][0]
+    
+        # A process that is positively gone with no recorded exit is an interruption
+        # with nothing delivered, not an abandonment: the pointer already says no
+        # terminal event arrived, so the surviving work is a session to resolve
+        # rather than a vanish to redispatch blind.
+>       assert row["classification"] == "interrupted"
+E       AssertionError: assert 'abandoned' == 'interrupted'
+E         
+E         - interrupted
+E         + abandoned
+
+tests/test_ledger.py:1311: AssertionError
+_____________ test_recovery_counts_running_scoring_and_interrupted _____________
+
+home = PosixPath('/tmp/pytest-of-mcintos/pytest-319/test_recovery_counts_running_s0/config')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-319/test_recovery_counts_running_s0/repo')
+
+    def test_recovery_counts_running_scoring_and_interrupted(home, repo) -> None:
+        running = _dispatch(
+            repo,
+            node_kwargs={"id": "node-live", "write_paths": ["reckon/live.py"]},
+        )
+        delivered = _dispatch(
+            repo,
+            fixture="codex-turn.jsonl",
+            node_kwargs={"id": "node-done", "write_paths": ["reckon/delivered.py"]},
+        )
+        _deliver(delivered)
+        _kill(delivered)
+        dead = _dispatch(
+            repo,
+            node_kwargs={"id": "node-dead", "write_paths": ["reckon/dead.py"]},
+        )
+        _kill(dead)
+    
+        report = crew.recover()
+    
+>       assert report["counts"] == {
+            "running": 1,
+            "scoring": 1,
+            "promotable": 0,
+            "completed_unpromoted": 0,
+            "interrupted": 1,
+            "abandoned": 0,
+        }
+E       AssertionError: assert {'running': 1...oted': 0, ...} == {'running': 1...oted': 0, ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'interrupted': 0} != {'interrupted': 1}
+E         {'abandoned': 1} != {'abandoned': 0}
+E         Use -v to get more diff
+
+tests/test_ledger.py:1346: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted
+FAILED tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted
+2 failed in 2.45s
+srun: error: 98dci4-clu-3142: task 0: Exited with exit code 1
+EXIT=1
