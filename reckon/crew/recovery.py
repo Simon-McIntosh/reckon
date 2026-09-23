@@ -175,18 +175,212 @@ def _is_review_node(record: Mapping[str, Any]) -> bool:
     return str(node.get("id") or "").startswith(REVIEW_NODE_PREFIX)
 
 
-def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
+def _review_tree(record: Mapping[str, Any]) -> Path | None:
+    """The tree whose head a review of this run must describe, when readable."""
+    worktree = Path(str(record.get("worktree") or ""))
+    if worktree.is_dir():
+        return worktree
+    repo = Path(str(record.get("repo") or ""))
+    return repo if repo.is_dir() else None
+
+
+def _revision_at(tree: Path, timestamp: str) -> str:
+    """The revision ``tree`` carried as its head at ``timestamp``."""
+    if not timestamp:
+        return ""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-list", "-1", f"--before={timestamp}", "HEAD"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    head = completed.stdout.strip()
+    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", head):
+        return ""
+    return head
+
+
+def review_described_head(
+    review: Mapping[str, Any] | None, *, tree: Path | None
+) -> str:
+    """The revision a stored review describes, or empty when it names none.
+
+    A record carrying any of the revision spellings answers directly. A record
+    predating the field carries none, so the revision it read is reconstructed
+    from the reviewed run's own history — the head that tree carried at the
+    moment the record was written. The comparison built on this is between two
+    revisions, never between two timestamps: a timestamp says which was written
+    first, not which revision was read.
+    """
+    if not review:
+        return ""
+    _, _, carried, head = review_module.carried_revision_pair(review)
+    if carried and head:
+        return head
+    if tree is None:
+        return ""
+    return _revision_at(tree, str(review.get("timestamp") or "").strip())
+
+
+def same_revision(left: str, right: str) -> bool:
+    """Whether two spellings name the same commit, abbreviated or full."""
+    left = str(left or "").strip().lower()
+    right = str(right or "").strip().lower()
+    if not left or not right:
+        return False
+    return left == right or left.startswith(right) or right.startswith(left)
+
+
+def select_review_for_head(
+    project: str,
+    run_id: str,
+    head: str,
+    *,
+    tree: Path | None = None,
+) -> tuple[dict[str, Any] | None, str]:
+    """Return the stored review describing ``head`` and any other head seen.
+
+    Selection is shared by the classifier and the promotion gate so both agree
+    on which stored record is evidence about a revision: a classifier reading a
+    different record than promotion does is how a run reads promotable and is
+    then refused, or reads scoring while a matching record sits on disk.
+
+    The first element is the record describing ``head`` — or, for a legacy
+    record that names no revision, the record reconstructed to ``head`` — and
+    the second is a head a non-matching record did name, empty when none, so a
+    refusal can name the two revisions that disagree rather than report an
+    absence. A record naming a different revision is not this run's review
+    however recently it was written.
+    """
+    stored = review_module.read_review(project, run_id, reviewed_head_sha=head or None)
+    if stored is not None:
+        return stored, ""
+    newest = review_module.read_review(project, run_id)
+    if newest is None:
+        return None, ""
+    if not head:
+        return newest, ""
+    described = review_described_head(newest, tree=tree)
+    if not described:
+        # A record naming no revision predates the field; refusing every review
+        # stored before it existed would refuse older records that are correct.
+        return newest, ""
+    if same_revision(described, head):
+        return newest, ""
+    return None, described
+
+
+def _reviewed_run_head(record: Mapping[str, Any]) -> str:
+    """The revision a review of this run is evidence about: its tree's head."""
+    tree = _review_tree(record)
+    if tree is None:
+        return ""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    head = completed.stdout.strip()
+    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", head):
+        return ""
+    return head
+
+
+def _resolve_commit(tree: Path, candidate: str) -> str:
+    """The canonical object id ``candidate`` names in ``tree``, or empty."""
+    if not candidate:
+        return ""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", f"{candidate}^{{commit}}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    sha = completed.stdout.strip()
+    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", sha):
+        return ""
+    return sha
+
+
+def _commit_candidates(entry: Any) -> list[str]:
+    """The revision spellings to try for one manifest ``commits:`` entry.
+
+    The whole entry is tried first, so a branch name or a full sha resolves as
+    written. A sha embedded in a sentence is tried next, because a manifest
+    that names its revision inside prose names it just as truly as one that
+    does not.
+    """
+    text = str(entry or "").strip()
+    if not text:
+        return []
+    return [text, *re.findall(r"\b[0-9A-Fa-f]{7,64}\b", text)]
+
+
+def _canonical_commits(tree: Path | None, entries: Iterable[Any]) -> list[str]:
+    """Resolve each manifest revision to the object id the run's tree names.
+
+    A manifest's ``commits:`` field is free text: a worker cites a full sha, an
+    abbreviation, a branch name, or prose naming no object at all. The remedy a
+    refusal prints must carry revisions the promotion accepts, so each entry is
+    resolved in the run's own tree and an entry naming no commit is dropped
+    rather than printed — an unresolvable citation in the remedy reproduces the
+    refusal it was composed to clear. Duplicates collapse so a remedy never
+    cites one commit twice.
+    """
+    if tree is None:
+        return []
+    resolved: list[str] = []
+    seen: set[str] = set()
+    for entry in entries:
+        for candidate in _commit_candidates(entry):
+            sha = _resolve_commit(tree, candidate)
+            if sha:
+                if sha not in seen:
+                    seen.add(sha)
+                    resolved.append(sha)
+                break
+    return resolved
+
+
+def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
 
     Composed from the run's own record so the command a reader may still retype
     and the command the reflex runs come from one source: two compositions of
     the same dispatch is how a displayed command and an executed one drift
     apart while each stays correct when read on its own.
+
+    The dispatch grants the head-keyed record path beside the legacy path, so
+    the reviewer it composes for may write the record where the head it read is
+    named. Granting only the legacy path is what made the store's head key
+    unusable from the reflex: the compose step chose the path, so a reviewer
+    told to write there was refused the very path the store would read back.
+    The head is read from the run's own tree; when it cannot be resolved the
+    legacy path is granted alone rather than a guessed key.
     """
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
     source_node = str(node.get("id") or run_id)
+    head = _reviewed_run_head(record)
+    write_paths = [str(review_module.review_path(project, run_id))]
+    if head:
+        write_paths.append(
+            str(review_module.review_path(project, run_id, reviewed_head_sha=head))
+        )
     return {
         "run_id": run_id,
         "project": project,
@@ -201,7 +395,8 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
             f"the review for {run_id} stores a parsed record scoring all 5 "
             "dimensions in the range 0..20"
         ),
-        "write_path": str(review_module.review_path(project, run_id)),
+        "write_path": write_paths[0],
+        "write_paths": write_paths,
     }
 
 
@@ -226,6 +421,9 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
     lane = ["--local"]
     if owning_backend:
         lane = ["--backend", owning_backend]
+    write_paths: list[str] = []
+    for path in fields["write_paths"]:
+        write_paths += ["--write-path", path]
     return [
         "reckon",
         "crew",
@@ -246,8 +444,7 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
         fields["goal"],
         "--done-when",
         fields["done_when"],
-        "--write-path",
-        fields["write_path"],
+        *write_paths,
         "--time-budget",
         fields["time_budget"],
         "--session",
@@ -263,13 +460,23 @@ def _review_dispatch_action(record: Mapping[str, Any]) -> str:
 
 
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
-    """Read one run's review without collapsing unreadable data into absence."""
+    """Read the review of the head being classified, not just any record.
+
+    The classifier reads the review of the head being classified, not whatever
+    the store holds newest, so a run whose only review describes an earlier
+    revision is not called promotable on evidence about code that no longer
+    exists. The selection it uses is the one promotion uses, so the two agree
+    on which stored record is evidence about a revision.
+    """
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
     if not run_id or not project:
         return None, ""
+    head = _reviewed_run_head(record)
     try:
-        review = review_module.read_review(project, run_id)
+        review, _stale = select_review_for_head(
+            project, run_id, head, tree=_review_tree(record)
+        )
     except (OSError, ValueError) as exc:
         return {}, str(exc)
     if review is not None and not isinstance(review, dict):
@@ -594,7 +801,7 @@ def dispatch_review_for_run(
         role="review",
         spec_level="exact",
         done_when=fields["done_when"],
-        write_paths=[fields["write_path"]],
+        write_paths=list(fields["write_paths"]),
         time_budget=fields["time_budget"],
     )
     try:
@@ -2777,7 +2984,8 @@ def classify_pointer(
                 "parsed review is attached; the run is ready for promotion"
             )
             action = f"reckon crew complete --run {run_id} --gate <verdict>"
-            action += "".join(f" --commit {commit}" for commit in manifest_commits)
+            for commit in _canonical_commits(_review_tree(record), manifest_commits):
+                action += f" --commit {commit}"
         else:
             classification = "scoring"
             if review_error:
