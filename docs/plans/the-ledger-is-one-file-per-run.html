@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
-<meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="7">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -205,6 +205,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-tlofpr-rollback-drops-a-peer-row" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>A failed promotion's rollback staged a ledger that dropped a peer's row.</strong> Measured 2026-09-23 at 19:18 local. A promotion (<code>crew complete</code>) ran concurrently with a plan commit in the same checkout and failed on git's index lock. In that window a peer session's promotion committed its row (2e9361ab, <code>_version</code> 2385). The failed promotion's rollback then wrote the file back as it stood before its own attempt, <code>_version</code> 2384, and left it staged. The staged diff against HEAD removed exactly the peer's row, 515 lines, and added nothing. The next promotion from any session would have loaded that file and committed it, removing the peer's row from the record with no refusal. It was caught by reading <code>git diff --cached</code> and repaired by restoring HEAD's content, which the diff proved was a strict superset. The retried promotion also found its own row already in the SQLite shadow, written during the failed attempt, and recorded <code>store_write</code> as failed (<code>UNIQUE constraint failed: runs.run_id</code>). Per-run files remove both faults: a promotion never rewrites a file holding another run, so there is nothing to roll back over, and the index write comes after the file, so a failed attempt leaves no index row ahead of its record.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-tlofpr-snapshot-is-the-other-cost" data-who="reckon-e5" data-when="">
+    <div class="r-comment-body"><p><strong>The ledger is not the only reason promotions are slow.</strong> The third read-back's promotion ran from 20:03 on 2026-09-23 to about 00:00 the next day, roughly 4 hours, while peer commits were nearly idle. Its time went on the repository tree snapshot: a <code>git status --untracked-files=all</code> in each of the 312 worktrees recorded at dispatch. The same walk runs at dispatch and under <code>crew follow</code>. Per-run files remove the rewrite and the queue on one file, but not this walk. <code>the-boundary-check-reads-two-trees</code> carries that fix. When this plan's §1 gate records promotion wall time, it should also record the snapshot's tree count, so the two costs are not credited to each other.</p></div>
 </div>
 </section>
 </main>
