@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">Interrupted-run classification and recovery</title>
+  <desc id="desc">A run read first preserves completed, promoted, and deliberately stopped outcomes. A recorded signal, an orphaned dead process, or a dead process with retained commits becomes interrupted. A surviving session routes to resume; otherwise the unfinished work routes to redispatch. A live process with a matching start time remains working.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#52606d"/>
+    </marker>
+    <style>
+      .box { fill: #ffffff; stroke: #52606d; stroke-width: 2; rx: 12; }
+      .guard { fill: #edf2f7; }
+      .interrupted { fill: #fff3cd; stroke: #a66500; }
+      .resume { fill: #e6ffed; stroke: #237a3b; }
+      .redispatch { fill: #fff0f0; stroke: #a33a3a; }
+      .line { fill: none; stroke: #52606d; stroke-width: 2; marker-end: url(#arrow); }
+      .label { font: 600 18px system-ui, sans-serif; fill: #17212b; text-anchor: middle; }
+      .small { font: 15px system-ui, sans-serif; fill: #334e68; text-anchor: middle; }
+      .edge { font: 14px system-ui, sans-serif; fill: #52606d; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="box guard" x="35" y="155" width="190" height="100"/>
+  <text class="label" x="130" y="195">Read run evidence</text>
+  <text class="small" x="130" y="222">phase · wait status</text>
+  <text class="small" x="130" y="244">pid + start time · git</text>
+
+  <path class="line" d="M225 205 H315"/>
+  <rect class="box guard" x="315" y="60" width="245" height="90"/>
+  <text class="label" x="438" y="96">Settled or deliberate?</text>
+  <text class="small" x="438" y="123">complete · promoted · stopped</text>
+
+  <path class="line" d="M560 105 H665"/>
+  <text class="edge" x="612" y="94">yes</text>
+  <rect class="box resume" x="665" y="60" width="225" height="90"/>
+  <text class="label" x="778" y="96">Keep recorded state</text>
+  <text class="small" x="778" y="123">never relabel interrupted</text>
+
+  <path class="line" d="M438 150 V205 H665"/>
+  <text class="edge" x="470" y="194">no</text>
+  <rect class="box interrupted" x="665" y="170" width="260" height="115"/>
+  <text class="label" x="795" y="204">Interrupted</text>
+  <text class="small" x="795" y="230">signal recorded, or dead orphan,</text>
+  <text class="small" x="795" y="253">or dead pid + retained commits</text>
+  <text class="small" x="795" y="275">signal name retained when known</text>
+
+  <path class="line" d="M225 235 H315 V340 H665"/>
+  <rect class="box guard" x="315" y="300" width="245" height="80"/>
+  <text class="label" x="438" y="333">Process still alive?</text>
+  <text class="small" x="438" y="358">pid and start time match</text>
+  <text class="edge" x="613" y="330">yes → working</text>
+
+  <path class="line" d="M925 210 H1010 V135"/>
+  <text class="edge" x="1018" y="175">session id</text>
+  <rect class="box resume" x="955" y="55" width="210" height="80"/>
+  <text class="label" x="1060" y="89">Resume</text>
+  <text class="small" x="1060" y="114">continue surviving session</text>
+
+  <path class="line" d="M925 250 H1010 V330"/>
+  <text class="edge" x="1025" y="292">no session</text>
+  <rect class="box redispatch" x="955" y="330" width="210" height="80"/>
+  <text class="label" x="1060" y="364">Redispatch</text>
+  <text class="small" x="1060" y="389">after inspecting retained work</text>
+</svg>

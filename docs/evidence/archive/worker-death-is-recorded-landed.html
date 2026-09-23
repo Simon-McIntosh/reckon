@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="worker-death-is-recorded-landed">
   <meta name="plan-title" content="A worker's death is recorded — landed evidence">
-  <meta name="plan-summary" content="Two steps of §5, each recorded by its own node: the reaper keeps each worker\'s wait status on its run (step 1), and liveness is re-derived on every read so a dead or reused pid stops reporting as running (step 2).">
+  <meta name="plan-summary" content="Three worker-death mechanisms are now recorded: launcher wait status, liveness re-derived on read, and interrupted classification with resume-or-redispatch recovery.">
   <meta name="plan-evidence-for" content="reckon:worker-death-is-recorded">
   <meta name="plan-verifies" content="reckon:worker-death-is-recorded#s5">
-  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90">
+  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,45eabfb6,f84945eb">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python in the repository's own root environment; detached git worktree">
-  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log,reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg">
+  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log,reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg,reckon/crew/node.py,reckon/crew/recovery.py,tests/test_crew_interrupted_phase.py,docs/figures/worker-death-is-recorded/interrupted-classification.svg,docs/figures/worker-death-is-recorded/interrupted-gate.log,docs/figures/worker-death-is-recorded/negative-control-interrupted.log">
   <title>A worker's death is recorded — landed evidence | reckon">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -23,9 +23,9 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>A worker's death is recorded — landed evidence</h1>
-    <p class="plan-summary">§5.2 only. Liveness is re-derived from the record on every
-    read, and the reuse check that was written at one call site is now the accessor's
-    own work, so no read path has to remember it.</p>
+    <p class="plan-summary">The launcher preserves how the process ended, every read
+    re-derives whether that process is still the same live process, and the classifier
+    now turns those facts into an interrupted run with an explicit recovery route.</p>
   </header>
 
   <section id="overview">
@@ -178,6 +178,61 @@
       relabels a finished run is unchanged, so a straggler reap arriving after a promotion
       adds nothing. Classifying an interrupted run, and the phase that names it, are
       &sect;5.3 — a different node.</p>
+    </section>
+
+    <section id="s5-3">
+      <h2>&sect;5.3 &mdash; An involuntary end is classified as interrupted</h2>
+      <p>The pre-repair reproduction was direct: a pointer carried a dead pid and a
+      launcher wait status naming <code>SIGTERM</code>, yet
+      <code>classify_pointer</code> returned <code>abandoned</code>. The same reader
+      called a working pointer with one committed change beyond its dispatch base
+      <code>running</code>, even though its process was positively dead. Both readings
+      hid the recovery decision.</p>
+
+      <figure>
+        <img src="/reckon/figures/worker-death-is-recorded/interrupted-classification.svg"
+             alt="Classification flow. Completed, promoted, and deliberately stopped runs keep their state. A recorded signal, an orphaned dead process, or a dead process with retained commits becomes interrupted. A surviving session routes to resume; otherwise unfinished work routes to redispatch. A live matching process remains working.">
+        <figcaption>The precedence is conservative: delivered and deliberate outcomes
+        win first; positive interruption evidence wins next; a live pid with its matching
+        start time remains working.</figcaption>
+      </figure>
+
+      <p><code>interrupted</code> is now a terminal run phase, so it releases a roster
+      member rather than occupying a live seat. The classifier returns a structured
+      <code>interruption</code> block containing the signal number and name where the
+      launcher recorded one. Without an exit record, only an already orphaned pointer or
+      a dead pointer whose worktree has commits beyond its base qualifies; a bare dead
+      process with nothing retained keeps the existing abandoned reading.</p>
+
+      <p>Recovery is derived from durable session evidence. A pointer, stream, or ledger
+      session id yields <code>recovery: resume</code> and the executable
+      <code>reckon crew resume</code> action. If all three sources have no session id,
+      the classifier yields <code>recovery: redispatch</code> and first names inspection
+      of the retained worktree.</p>
+
+      <h3>Measured controls</h3>
+      <ul>
+        <li>The exact node gate ran on <code>all_debug</code> at
+        <code>f84945eb</code>: <strong>51 passed, exit 0</strong>. It includes one fixture
+        for each inventory shape — working with retained commits, orphaned, and stopped —
+        plus the recorded-SIGTERM case, completed/promoted controls, and a genuinely live
+        pid whose start time matches.</li>
+        <li>The declared negative control removed only the interrupted arm from
+        <code>classify_pointer</code>. The SIGTERM test then failed because the run read
+        <code>abandoned</code> instead of <code>interrupted</code>
+        (<strong>1 failed, 7 deselected</strong>).</li>
+        <li>The mandatory recovery contact set was red at the orientation revision
+        (<strong>132 passed, 6 failed</strong>) and after the implementation
+        (<strong>138 passed, 8 failed</strong>). The two additional failures are legacy
+        assertions in <code>tests/test_ledger.py</code> that deliberately killed runs
+        remain abandoned. Updating that out-of-scope test contract is retained as a
+        follow-on rather than weakening the new phase.</li>
+      </ul>
+      <p>Implementation: <code>45eabfb6</code> (fixture census) and
+      <code>f84945eb</code> (classification and recovery). Logs:
+      <code>docs/figures/worker-death-is-recorded/interrupted-reproduction.log</code>,
+      <code>interrupted-gate.log</code>, and
+      <code>negative-control-interrupted.log</code>.</p>
     </section>
 </main>
 </body>

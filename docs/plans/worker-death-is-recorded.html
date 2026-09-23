@@ -191,6 +191,27 @@
     <code>interrupted</code> phase that consumes this fact (&sect;5.3), the wait-status
     record (&sect;5.1) and the session-id gap (&sect;5.4) remain open.</p>
 
+    <h3 id="s5-landing-interrupted-classification">&sect;5.3 landing &mdash; interrupted classification</h3>
+    <p>Landed: a recorded signal, an orphaned pointer whose process is positively dead,
+    or a dead working pointer with commits beyond its dispatch base now classifies
+    <code>interrupted</code>. A known signal remains named in the returned interruption
+    evidence. Completed, promoted and deliberately stopped runs retain their state, and
+    a live pid whose start time matches remains working.</p>
+    <p>Recovery now follows the surviving evidence: a session id resolved from the
+    pointer, stream or ledger yields <code>resume</code>; a genuine absence across all
+    three yields <code>redispatch</code> after worktree inspection. The sequence and
+    precedence are shown in
+    <a href="/reckon/figures/worker-death-is-recorded/interrupted-classification.svg">the
+    classification figure</a>, with the full result at
+    <a href="/reckon/evidence/archive/worker-death-is-recorded-landed#s5-3">&sect;5.3
+    landed evidence</a>.</p>
+    <p>Evidence: commits <code>45eabfb6</code> and <code>f84945eb</code>; the exact gate
+    passed <strong>51 tests</strong> on <code>all_debug</code>. Removing only the
+    interrupted arm made the SIGTERM case fail as abandoned
+    (<strong>1 failed, 7 deselected</strong>). Two mandatory cross-boundary ledger tests
+    still assert the superseded abandoned reading and are recorded as an out-of-scope
+    follow-on; the section stays open for the session-id, roadmap and end-to-end work.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a
