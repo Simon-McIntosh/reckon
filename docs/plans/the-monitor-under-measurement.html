@@ -18,12 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="6">
+  <meta name="plan-version" content="7">
   <meta name="plan-informs" content="a-scoped-follower-counts-its-own-session">
   <title>The Monitor Under Measurement | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
+<meta name="plan-impl" content="0.8">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -378,7 +380,10 @@ record</a>. The followup below is left open for the coordinator.</p>
     <div class="r-comment-body"><p>Path map of four follower questions from source: every follower sweeps the whole project and run r-20260922T161442206389 was dispatched onto a nova-37 run from another session's runtime; the attach line names a bare reckon that exits 127 without the virtual environment on PATH; the needs-you line cannot use on_poll, whose return value is discarded, and belongs in the generator's wait pass. No check suite applies; review 88/100.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260922T194949960913-monitor-staleness-census" data-who="reckon-ship" data-when="2026-09-22T22:06:25.499Z">
-    <div class="r-comment-body"><p>Staleness census over 719 armed followers in seven days: 620 ended at the host&#x27;s thirty-minute monitor expiry, 86 when the seat was released, 12 on an exit-127 arming failure and 1 on another script failure; the persistent parameter was last passed on 2026-09-15 and no persistent monitor ever expired; sweep-launched workers start in their own session and survive the follower. Arming control was added on resume after the first pass missed it. Review 85/100.</p></div>
+    <div class="r-comment-body"><p>Staleness census over 719 armed followers in seven days: 620 ended at the host's thirty-minute monitor expiry, 86 when the seat was released, 12 on an exit-127 arming failure and 1 on another script failure; the persistent parameter was last passed on 2026-09-15 and no persistent monitor ever expired; sweep-launched workers start in their own session and survive the follower. Arming control was added on resume after the first pass missed it. Review 85/100.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260923T0115-s6-recorded" data-who="reckon-ship" data-when="2026-09-23T01:15:00+00:00">
+    <div class="r-comment-body"><p>The findings are recorded in two places rather than in a third document. The cumulative record <a href="/reckon/evidence/archive/the-monitor-under-measurement-landed">the-monitor-under-measurement-landed</a> carries every census with its figures, and each repair plan in S20 now states the counts it is sized from. A separate research page would have been a second copy of the same numbers. Four of the five measurement runs are promoted: the staleness census passed its gate, the row census passed its gate, and the path map and stall census were promoted as not-run because no check suite applies to a measurement node. The sweep-ownership run waits on its review.</p></div>
 </div>
 </section>
 </main>
