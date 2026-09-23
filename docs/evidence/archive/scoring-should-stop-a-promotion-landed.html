@@ -1383,6 +1383,93 @@
     record matching the head it is about to promote. Section closure and merged-head
     verification remain coordinator-owned.</p>
   </section>
+
+  <section id="s5c-promotion-reads-the-matching-head">
+    <h2>A promotion reads the review of the revision it promotes</h2>
+    <p><strong>What landed.</strong> Commit <code>d7ea6177</code> makes a promotion
+    select the stored review by the revision it recorded reading, rather than by which
+    file in the store was written newest. The revision a promotion asserts is resolved
+    from the run's own tree by <code>_run_promoted_revision</code>, canonicalising a
+    cited tip exactly as the promoted row canonicalises it, so the gate and the row
+    compare one revision by construction. <code>_review_for_promotion</code> queries the
+    store naming that head.</p>
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/review-head-selection.svg" alt="Four outcomes of querying the review store with the revision a promotion asserts: a record at that head is accepted; a record naming no head is accepted because it predates the field; a record at another head is refused naming both revisions; no record at any head is refused as unreviewed.">
+      <figcaption>Selection by the revision a record recorded reading. Two accepted arms keep an honest commitless review and every review stored before the field existed from being refused; two refused arms separate a stale verdict from an absent one, and only the stale one can name both revisions.</figcaption>
+    </figure>
+    <p><strong>The refusal names both revisions, not an absence.</strong> A record found
+    at a different head is returned as the stale head rather than collapsed into
+    <code>None</code>, and <code>_unreviewed_refusal</code> then reads
+    <code>the stored review read revision &lt;stale&gt; and this promotion asserts
+    &lt;asserted&gt;</code>. An operator told only that no review is stored goes looking
+    for a record that is already on disk.</p>
+    <p><strong>The classification cannot carry the decision.</strong>
+    <code>recovery.classify_pointer</code> reads the store through
+    <code>read_review(project, run_id)</code> with no head, so a parsed review at an
+    earlier head counts as a complete review of the run and the run classifies
+    <code>promotable</code>. The gate therefore treats a promotable run that carries a
+    non-empty stale head as review-required: with head-aware selection in place the two
+    classifications are <em>promotable</em> and <em>unreviewed at once</em>, and the head
+    comparison — which only the promotion gate makes — is what separates them. This
+    widening is load-bearing; without it the stale-head refusal is unreachable end to
+    end, because the gate's original <code>classification == "scoring"</code> condition
+    is never satisfied for a run that holds any complete review.</p>
+    <p><strong>Two partial records no longer share one path.</strong> The defect was
+    reproduced before repair: two records of one run carrying no usable revision pair and
+    sharing a <code>review_run_id</code> both resolved to
+    <code>&lt;run&gt;.json</code>, and the second destroyed the first.
+    <code>store_review</code> now keys a pair-less record by the head it did carry and the
+    reviewing run that wrote it, so the second record lands beside the first. The first
+    partial keeps the legacy path, so a reader that names no revision still finds one,
+    and re-storing the same partial rewrites the path it already occupies. When a complete
+    record exists for the run, every partial is stored outside current-review
+    selection.</p>
+    <p><strong>Focused gate.</strong> <code>tests/test_promotion_reads_the_matching_review.py</code>
+    asserts the matching-head read end to end through <code>crew complete</code>'s real
+    promotion path — a run tree with a real commit, two complete reviews of that run at
+    different heads, the review of the earlier head stamped strictly newer than the
+    matching one, and the promoted row carrying the matching review's total — the
+    stale-head refusal naming both revisions, the reasoned waiver over a stale head, and
+    the two-partial-record separation at the store.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Command</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>base, <code>22c69ee1</code>, detached worktree</td><td>the three neighbouring suites</td><td><code>25 passed</code>, EXIT=0</td></tr>
+        <tr><td>change applied</td><td>the three neighbouring suites</td><td><code>25 passed</code>, EXIT=0</td></tr>
+        <tr><td>change applied</td><td>the three suites plus the focused file</td><td><code>29 passed</code>, EXIT=0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Zero added failures.</strong> The base figure was measured in a detached
+    worktree at <code>22c69ee1</code> rather than inferred, because a green suite at the
+    change is not evidence about the change unless the base is green too. The three
+    neighbouring suites report the identical <code>25 passed</code> either side, and
+    <code>tests/test_promotion_reads_the_matching_review.py</code> contributes the other
+    four.</p>
+    <p><strong>Declared negative control.</strong> The control
+    <em>make promotion call read_review without naming the head it promotes</em> was
+    applied to <code>_review_for_promotion</code>. The focused file reports
+    <strong>3 failed, 1 passed</strong>: the matching-head test reads the stale record and
+    its total assertion fails, and both stale-head tests stop refusing, because the
+    unnamed read returns the newest record and the head-sensitive branch never runs. The
+    store-level partial-record test passes throughout, correctly — it does not read
+    through <code>read_review</code>'s head selection. The mutation names itself on the
+    log's first line; it was reverted before the commit, the gate re-run green at
+    <code>29 passed</code>, and the named-head call read back to confirm the revert
+    landed.</p>
+    <p><strong>Boundary and one follow-on.</strong> This node changes no other reader of
+    the review store. <code>reckon/crew/recovery.py</code> still reads the store without
+    naming a head, so its <code>scoring</code>/<code>promotable</code> verdict keeps the
+    unnamed behaviour and any other consumer of that classification inherits it; that file
+    is fenced to a concurrent node in this wave, so the recovery-side head comparison is
+    reported rather than modified. <code>read_review</code> occurs once in
+    <code>reckon/crew/promotion.py</code> on the accepted path and a second time on the
+    refusal path, where the second call exists solely to name the stale head in the
+    refusal — it runs only for a promotion that is about to be refused.</p>
+    <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+    landing contract requires its own append-only plan and cumulative-evidence records;
+    shared lifecycle state, followup resolution, and terminal status remain
+    coordinator-owned.</p>
+  </section>
 </main>
 </body>
 </html>

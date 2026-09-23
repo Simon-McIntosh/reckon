@@ -2778,6 +2778,54 @@
 </div>
 <div class="r-comment" data-section="s5c" data-id="c-20260923T0700-review-fence-names-legacy-path" data-who="reckon-ship" data-when="2026-09-23T07:00:00Z">
     <div class="r-comment-body"><p><strong>The review fence grants a path the store no longer writes to.</strong> Reported by the S20 coordinator and confirmed in the code. <code>dispatch_review_for_run</code> fences a review to <code>review_path(project, run_id)</code>, the legacy <code>&lt;run&gt;.json</code> (<code>reckon/crew/recovery.py:204</code>). Since the store half of this section landed, <code>store_review</code> routes any record carrying both base and head to <code>&lt;run&gt;.at-&lt;head&gt;.json</code> (<code>reckon/crew/review.py:473</code>). So a reviewer told to record the revision pair can satisfy either its fence or the store, not both.</p><p>Measured on <code>r-20260923T051245767636</code>, a review for S20. It stored its record at 07:57, total 98, with its manifest complete. It then streamed for another 56 minutes, writing <code>upgrade_review_record.py</code> and <code>store_review.py</code> into its run directory to serialise the pair by hand inside the fence, until it was stopped at 08:53. Coordinator-composed review dispatches carried the same legacy path.</p><p><strong>Node, together with this section's other recovery-side remainder</strong> (<code>_stored_review</code> reads a review without naming the head, so <code>classify_pointer</code> counts a review of an earlier head as complete). The review dispatch fences the directory entry <code>store_review</code> will actually choose. That means the head-keyed path for the reviewed run's head, plus the legacy path for a record without a pair. <code>_stored_review</code> names the head it is classifying. The test composes a reflex review for a run with a known head, requires <code>&lt;run&gt;.at-&lt;head&gt;.json</code> among the granted write paths, and requires that a review stored through <code>store_review</code> at that head lands inside them. File: <code>reckon/crew/recovery.py</code>. It waits for a-review-dies §4 and the newest-stream-reader node, which hold that file in agreed order.</p></div>
+<div class="r-comment" data-section="s5c" data-id="c-20260923T0718-promotion-reads-the-matching-head" data-who="crew-worker" data-when="2026-09-23T07:18:00+02:00">
+    <div class="r-comment-body"><p><strong>A promotion now reads the review of the revision it
+      promotes.</strong> Commit <code>d7ea6177</code> resolves the revision the promotion
+      asserts from the run's own tree and queries the store naming it, so the record read
+      is the one whose own comment says it read that revision rather than the newest file
+      on disk. A record found at a different head is returned as the stale head, and the
+      refusal names both revisions — the one the stored review read and the one the
+      promotion asserts — instead of reporting an absence an operator would go looking
+      for.</p>
+<p><strong>The classifier cannot carry this.</strong>
+      <code>recovery.classify_pointer</code> reads the store through an unnamed
+      <code>read_review</code>, so a parsed review of an earlier head counts as a complete
+      review of the run and the run classifies <code>promotable</code>. The gate therefore
+      treats a promotable run carrying a stale head as review-adjacent: the classification
+      alone reads such a run as promotable and unreviewed at once, and only the head
+      comparison — which the promotion gate is the sole maker of — separates them. Without
+      that widening the refusal is unreachable end to end.</p>
+<p><strong>The second half of this section's handoff is closed.</strong> Two partial
+      records of one run sharing a <code>review_run_id</code> no longer resolve to one path.
+      The overwrite was reproduced before repair: two pair-less records both landed on
+      <code>&lt;run&gt;.json</code> and the second destroyed the first. A pair-less record
+      is now keyed by the head it did carry and the reviewing run that wrote it, so the
+      second lands beside the first; the first keeps the legacy path so a reader that names
+      no revision still finds one, and a re-store rewrites the path
+      it already occupies.</p>
+<p><strong>Gate.</strong> The focused file
+      (<code>tests/test_promotion_reads_the_matching_review.py</code>) asserts the
+      matching-head read through the real promotion path, the refusal naming both
+      revisions, the reasoned waiver over a stale head, and the partial-record separation.
+      The three neighbouring suites report <strong>25 passed</strong> at both the base
+      revision (measured in a detached worktree at <code>22c69ee1</code>) and at the
+      change; adding the focused file moves the combined gate to <strong>29
+      passed</strong>. Zero failures were added. The declared negative control — making
+      promotion call <code>read_review</code> without naming the head it promotes — reddens
+      the focused file at <strong>3 failed, 1 passed</strong>; it was reverted before the
+      commit and the gate re-run green. Full receipts:
+      <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5c-promotion-reads-the-matching-head">revision-head selection evidence</a>.</p>
+<p><strong>Boundary.</strong> No other reader of the review store changed.
+      <code>reckon/crew/recovery.py</code> still reads the store without a head, so any
+      other consumer of its <code>scoring</code>/<code>promotable</code> verdict inherits
+      the unnamed behaviour; that file is fenced to a concurrent node in this wave and the
+      recovery-side comparison is reported as a follow-on rather than modified. This node
+      has not closed the section, resolved its followup, or verified the merged head —
+      those remain coordinator-owned.</p>
+<p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+      landing contract requires its own append-only plan and cumulative-evidence records;
+      shared lifecycle state, followup resolution, and terminal status remain
+      coordinator-owned.</p></div>
 </div>
 <div class="r-comment" data-section="s2c" data-id="c-20260923T0530-landed-sweep" data-who="reckon-ship" data-when="2026-09-23T05:30:00+02:00">
     <div class="r-comment-body">§2c landed at 90f0ea7f: crew complete records the run's worktree head, not its own promote commit, as the promoted revision. sweep_promoted_revisions reports a promotion whose work is not an ancestor of the target head, and one whose ancestry passes while an introduced marker is absent (the removal case included). 5 tests pass at the merged head, and recording the promote commit instead makes the ancestry check pass vacuously, exactly as this section predicted. No failures were added and the review scored 92. The section's measure is met. The sweep has no command-line entry point yet; that is new work, a `reckon crew landed-sweep` subcommand in reckon/cli.py.</div>
