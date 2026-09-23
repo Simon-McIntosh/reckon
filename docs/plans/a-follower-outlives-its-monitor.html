@@ -341,6 +341,28 @@
     the teardown removed, the process remains and the test fails. The write paths are
     <code>tests/conftest.py</code> and that test.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="test-watchers-are-reaped" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the session teardown reaps by record, not by pattern.</strong> Commit
+    <code>7c5f69b9</code> rewrites the session fixture in <code>tests/conftest.py</code>. A producer writes a
+    seat record into its own configuration home
+    (<code>&lt;RECKON_HOME&gt;/crew/watch/&lt;project&gt;-&lt;digest&gt;.lock</code>) carrying the pid it
+    registered; the teardown now enumerates those records under the run's temporary root and reads the pid
+    from each, instead of scanning <code>/proc</code> for command lines carrying <code>watch</code> and
+    <code>--project</code>, which matched any process carrying those words &mdash; a peer's watcher and the
+    shell that ran the scan among them. A record is acted on only while the process it names still reports
+    <em>that same home</em> in its own environment; a reused pid, a drifted record, or an unreadable
+    environment is refused rather than signalled.</p>
+    <p>The measure, <code>tests/test_test_watchers_are_reaped.py</code>, runs the arming half of
+    <code>tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher</code> in a child pytest and requires
+    that no watcher naming that child's home survives the child session by one second. It stops before that
+    test's own <code>unwatch</code> deliberately: running the whole test unwinds the producer under measure
+    and the gate then passes whether the fixture worked or not. The teardown's refusal is asserted as well &mdash;
+    <code>test_a_record_naming_another_home_is_refused</code> requires a record whose process names a
+    different home to be refused, and one whose process names its own home to be returned.</p>
+    <p>Figure: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s10-figure">the reap,
+    end to end</a>. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s10-test-watchers-are-reaped">the
+    landed record</a>.</p>
+    </div>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
