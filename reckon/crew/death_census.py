@@ -21,9 +21,11 @@ process gone):
 * result absent, alive      -> ``running`` (in flight; never a death)
 * result absent, gone       -> ``dead``
 
-``process_alive`` comes from the run's live pointer when one exists and reads
-``False`` for a run with no pointer, because a pointer is removed when a run is
-promoted and its absence therefore means the process is gone.
+``process_alive`` is derived from the run's live pointer when one exists — its
+pid and recorded start tick, through the same reader every other liveness
+decision uses, because a pointer's stored ``process_alive`` field is usually
+absent and trusting it would read a live run as gone. A run with no pointer
+reads gone, because a pointer is removed when a run is promoted.
 
 The recorded role, effort and sandbox are read from the run ledger's embedded
 store, one row per run id; a run directory with no recorded row cannot be
@@ -39,6 +41,8 @@ from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
 from typing import Any
+
+from reckon.crew.runs import record_process_alive
 
 CLIVE_BACKEND = "clive"
 _RESULT_TYPE = "result"
@@ -139,7 +143,14 @@ def classify(facts: Mapping[str, Any], *, process_alive: bool | None) -> str:
 
 
 def pointer_process_alive(run_id: str, live_dir: str | PathLike[str]) -> bool | None:
-    """Whether the run's live pointer reports its process as alive, else None."""
+    """Whether the run's live pointer names a process that is still running.
+
+    Liveness is derived from the pointer's own pid and recorded start tick
+    rather than read from a stored ``process_alive`` field: most live pointers
+    carry no such field, so a reader that trusted it would call a live run gone
+    and count it a death. None means no pointer exists, which is a run whose
+    process is no longer running rather than a live one.
+    """
     path = Path(live_dir) / f"{run_id}.json"
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
@@ -147,8 +158,7 @@ def pointer_process_alive(run_id: str, live_dir: str | PathLike[str]) -> bool | 
         return None
     if not isinstance(record, Mapping):
         return None
-    alive = record.get("process_alive")
-    return alive if isinstance(alive, bool) else None
+    return record_process_alive(record)
 
 
 def recorded_runs(db_path: str | PathLike[str]) -> dict[str, dict[str, Any]]:

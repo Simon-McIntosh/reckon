@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from reckon.crew import death_census
@@ -104,19 +105,47 @@ def test_cell_rates_carry_their_cell_size(tmp_path: Path) -> None:
     assert cells[("review", "xhigh")]["death_rate"] == 1.0
 
 
+def _own_start_tick(pid: int) -> str:
+    """The kernel start tick of a running process, as the live pointer stores it."""
+    stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    return stat[stat.rfind(")") + 2 :].split()[19]
+
+
 def test_running_run_is_not_counted_dead(tmp_path: Path) -> None:
     runs = tmp_path / "runs"
     live = tmp_path / "live"
     _write_stream(runs / "r-dead", "stream.jsonl", _mid_thinking_records())
     live.mkdir()
+    # A pointer naming this live process, as the writer records one: a pid and
+    # its start tick, with no stored process_alive field — the field the writer
+    # does not populate. The census must derive liveness from the pid.
+    own_pid = os.getpid()
     (live / "r-dead.json").write_text(
-        json.dumps({"process_alive": True}), encoding="utf-8"
+        json.dumps({"pid": own_pid, "pid_start_time": _own_start_tick(own_pid)}),
+        encoding="utf-8",
     )
 
     census = death_census.census_runs(runs, _records(), live_dir=live)
 
     assert census["runs"][0]["classification"] == death_census.CLASS_RUNNING
     assert census["totals"] == {"running": 1}
+
+
+def test_stored_process_alive_field_does_not_decide_liveness(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    live = tmp_path / "live"
+    _write_stream(runs / "r-dead", "stream.jsonl", _mid_thinking_records())
+    live.mkdir()
+    # The stored field says alive but the named pid is not running, so a reader
+    # that trusted the field would call this running; derived liveness calls it
+    # dead. The inverse of the test above, so neither field read can pass both.
+    (live / "r-dead.json").write_text(
+        json.dumps({"process_alive": True, "pid": 2147483647}), encoding="utf-8"
+    )
+
+    census = death_census.census_runs(runs, _records(), live_dir=live)
+
+    assert census["runs"][0]["classification"] == death_census.CLASS_DEAD
 
 
 def test_terminal_stream_prefers_highest_resume_attempt(tmp_path: Path) -> None:
