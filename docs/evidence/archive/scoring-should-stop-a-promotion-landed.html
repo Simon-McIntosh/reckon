@@ -1470,6 +1470,87 @@
     shared lifecycle state, followup resolution, and terminal status remain
     coordinator-owned.</p>
   </section>
+
+  <section id="s5c-head-key-three-surfaces">
+    <h2>One head key, three surfaces that must agree on it</h2>
+    <p><strong>What the head key was worth before.</strong> The store already keyed a
+    review by the head revision it read — <code>&lt;run&gt;.at-&lt;sha&gt;.json</code>
+    beside the legacy <code>&lt;run&gt;.json</code> — but the three surfaces that decide
+    what that key means disagreed, each correct on its own. The reflex composed the
+    reviewer's write path from <code>review_path(project, run_id)</code> alone, so a
+    reviewer told to write the head-keyed path was refused it: the compose step chose
+    the path, so the reflex could only ever produce the legacy record.
+    <code>recovery._stored_review</code> read the newest record on disk rather than the
+    review of the head being classified, so a review of an earlier revision could read
+    as the run's. Promotion could refuse a record the other two accepted.</p>
+
+    <figure>
+      <img src="/reckon/figures/scoring-should-stop-a-promotion/head-key-three-surfaces.svg"
+           alt="The run's head at the left, resolved from its tree, feeding three surfaces: the dispatch that grants the head-keyed write path beside the legacy one, the classifier that reads the review of the head it classifies, and the promotion that fences by the asserted head and refuses with two revisions named as a disagreement.">
+      <figcaption>The three surfaces share one resolved head: the dispatch grants the
+      path the store reads back, the classifier reads the review of the head it is
+      classifying, and the promotion accepts or refuses by the same head.</figcaption>
+    </figure>
+
+    <p><strong>What landed.</strong> <code>_review_dispatch_fields</code> resolves the
+    head from the run's own tree and grants the head-keyed path beside the legacy one,
+    with <code>_review_dispatch_argv</code> emitting both as <code>--write-path</code>;
+    when the head cannot be resolved the legacy path is granted alone rather than a
+    guessed key. <code>recovery._stored_review</code> reads through one selector
+    (<code>select_review_for_head</code>) that names the head, and
+    <code>promotion._review_for_promotion</code> delegates to that same selector, so the
+    gate and the classifier cannot drift. A legacy record carrying no revision pair is
+    accepted when the head it describes equals the head the promotion asserts, with no
+    waiver; the described head is reconstructed by
+    <code>git rev-list -1 --before=&lt;timestamp&gt; HEAD</code> rather than by comparing
+    timestamps, because a timestamp comparison answers which record was written first,
+    not which revision was read. A refusal names the stored and asserted heads as a
+    disagreement, never one revision twice, and the remedy it prints cites resolved
+    commit shas — prose in a manifest's <code>commits</code> field yields either a value
+    that resolves under <code>git rev-parse</code> or no value at all.</p>
+
+    <p><strong>Marker.</strong> <code>grep -c 'select_review_for_head'</code> is non-zero
+    in both <code>reckon/crew/recovery.py</code> and <code>reckon/crew/promotion.py</code>,
+    and the rule <em>Granting only the legacy path is what made the store's head key
+    unusable from the reflex</em> is present in <code>_review_dispatch_fields</code>'s
+    docstring.</p>
+
+    <p><strong>Base and after, one instrument.</strong> The selection pairs
+    <code>tests/test_review_store_reads_and_fences_by_head.py</code> with
+    <code>tests/test_promotion_reads_the_matching_review.py</code>, plus the promotion,
+    review-record, scoring-dispatch, reflex-sweep, role-exemption and review-composition
+    files. At the base <code>35aef068</code>, in a detached worktree of the base tree,
+    the pre-existing files ran <strong>46 passed, 0 failed</strong>; the same selection
+    plus the new file ran <strong>52 passed, 0 failed</strong> at this node's head tree.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Passed</th><th>Failed</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>Base <code>35aef068</code>, pre-existing selection</td><td>46</td><td>0</td><td>the stated base</td></tr>
+        <tr><td>After, selection + new file</td><td>52</td><td>0</td><td>six new passing cases, <strong>0 added failures</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Declared negative control.</strong> Composing the dispatch's write path
+    from <code>review_path(project, run_id)</code> alone — so the head-keyed path is not
+    granted — applied to <code>_review_dispatch_fields</code> and reverted before the
+    commit:</p>
+    <table>
+      <thead><tr><th>State</th><th>Focused test result</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Fixed tree, no mutation</td><td>6 passed; exit 0</td><td>The keyed path is granted and lands where the store reads.</td></tr>
+        <tr><td>Legacy path granted alone</td><td>1 failed, 5 passed; exit 1</td><td>The keyed path is absent from the granted set; the grant is what test (1) measures.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The red failure is specific.</strong>
+    <code>test_the_review_dispatch_grants_the_head_keyed_record_path</code> fails under
+    the mutation and none fails without it. The receipt's first line is the declared
+    mutation verbatim: <code>negative-control.log</code> in the run directory.</p>
+
+    <p><strong>Isolation.</strong> The control was reverted before the commit and the
+    focused gate re-run green. Neither the classifier nor the promotion is left reading
+    an unnamed head. This node records the focused evidence only; merged-head
+    verification belongs to its separately scoped gate.</p>
+  </section>
 </main>
 </body>
 </html>

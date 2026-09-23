@@ -2523,10 +2523,14 @@ def complete(
         # the store, so a review of an earlier revision is refused rather than
         # accepted as evidence about code the repair has already moved past.
         promoted_revision = _run_promoted_revision(record, commit_list)
+        review_tree = Path(str(record.get("worktree") or ""))
+        if not review_tree.is_dir():
+            review_tree = Path(str(record.get("repo") or ""))
         reviewed, stale_review_head = _review_for_promotion(
             landing_project,
             run_id,
             promoted_revision=promoted_revision,
+            tree=review_tree if review_tree.is_dir() else None,
         )
         review_waived = _require_review_waiver(
             run_id,
@@ -3181,6 +3185,7 @@ def _review_for_promotion(
     run_id: str,
     *,
     promoted_revision: str = "",
+    tree: Path | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     """Return this run's review of the promoted revision, and any other head.
 
@@ -3189,38 +3194,35 @@ def _review_for_promotion(
     reader that takes the presence of a review as evidence about the code being
     promoted is reading a true statement that stopped being the one required.
     The record is therefore selected by the revision it recorded reading, not by
-    which file the store happens to hold newest.
+    which file the store happens to hold newest — and by the same selection the
+    classifier uses, so a run does not read promotable and then refuse, or read
+    scoring while a matching record sits on disk.
 
     The first element is the ledger-row block for that record — the shape that
     lands on the committed row, so the dimensions survive the loss of the crew
-    configuration home. The second is the head a non-matching record did not
-    match, empty when none exists, so a refusal can name both revisions rather
-    than report an absence. A record that records no head at all cannot be
-    compared and predates the field, so it is accepted as the run's review
-    rather than refusing every review stored before the field existed. A store
-    that cannot be read yields an
+    configuration home. The second is the head a non-matching record did name,
+    empty when none exists, so a refusal can name both revisions rather than
+    report an absence. A legacy record naming no revision is reconstructed to
+    the head its tree carried when it was written, and accepted only when that
+    reconstructs to the promoted revision. A store that cannot be read yields an
     ``unreadable`` block — a distinct third state — so a later reader can tell
     an anomaly from a run that was simply promoted unreviewed, and from a parsed
     review whose dimensions measure zero.
     """
+    from reckon.crew.recovery import same_revision, select_review_for_head
+
     try:
-        stored = review_module.read_review(
-            project, run_id, reviewed_head_sha=promoted_revision or None
+        stored, stale = select_review_for_head(
+            project, run_id, promoted_revision, tree=tree
         )
-        if stored is None and promoted_revision:
-            newest = review_module.read_review(project, run_id)
-            if newest is not None and not _reviewed_head(newest):
-                stored = newest
-            else:
-                return None, _reviewed_head(newest) if newest else ""
     except (OSError, ValueError):
         return review_module.ledger_block({"status": "unreadable"}), ""
-    return review_module.ledger_block(stored), ""
-
-
-def _reviewed_head(record: Mapping[str, Any]) -> str:
-    """Return the head revision a stored review recorded reading."""
-    return review_module.carried_revision_pair(record)[3] or ""
+    # A refusal that names one revision for both the stored head and the
+    # asserted head reads as no disagreement at all, so a head equal to the
+    # promoted revision is never carried as the stale one.
+    if stale and same_revision(stale, promoted_revision):
+        stale = ""
+    return review_module.ledger_block(stored), stale
 
 
 def _run_promoted_revision(

@@ -2019,6 +2019,49 @@
     §5b run on our own guard: <em>what would make this field wrong while it still printed the same
     value?</em> — a review that is complete, parsed, stored, and about different code.</p>
 
+    <div class="r-comment" data-section="s5c" data-id="c-run-r-20260923T114013855846-review-store-reads-and-fences-by-head" data-who="crew-worker" data-when="2026-09-23">
+      <p><strong>The head key is now granted, read and fenced by one head.</strong>
+      Three surfaces decide what a review's head key means and each was correct on its
+      own while they disagreed: the reflex composed the reviewer's write path from
+      <code>review_path(project, run_id)</code> alone, so a reviewer told to write the
+      head-keyed path was refused it; the classifier read the newest record on disk
+      rather than the review of the head it was classifying; and promotion could refuse
+      a record the other two accepted. Each now resolves the head from the run's own
+      tree and passes it through: <code>_review_dispatch_fields</code> grants the
+      head-keyed path beside the legacy one and <code>_review_dispatch_argv</code>
+      emits both as <code>--write-path</code>; <code>_stored_review</code> reads through
+      one selector that names the head; and <code>_review_for_promotion</code> delegates
+      to the same selector, so the gate and the classifier cannot drift. A legacy record
+      carrying no revision pair is accepted when the head it describes — reconstructed
+      by <code>git rev-list -1 --before=&lt;timestamp&gt;</code>, not by comparing
+      timestamps — equals the head the promotion asserts, with no waiver; and a refusal
+      names two revisions as a disagreement rather than one revision twice. The remedy a
+      refusal prints now cites resolved commit shas, and prose in a manifest's
+      <code>commits</code> field yields either a value that resolves or no value at all,
+      never one that fails.</p>
+      <p><strong>Marker.</strong> The mechanism is the shared selector both the
+      classifier and the gate call: <code>grep -c 'select_review_for_head'
+      reckon/crew/recovery.py reckon/crew/promotion.py</code> is non-zero in both files,
+      and the docstring's own rule — <em>Granting only the legacy path is what made the
+      store's head key unusable from the reflex</em> — is present in
+      <code>_review_dispatch_fields</code>.</p>
+      <p><strong>Base and after, one instrument.</strong> At the base revision
+      <code>35aef068</code> the selection
+      (<code>test_promotion_reads_the_matching_review.py</code> with the promotion,
+      review-record, scoring-dispatch, reflex-sweep, role-exemption and
+      review-composition files) ran <strong>46 passed, 0 failed</strong>; the same
+      selection plus the new <code>tests/test_review_store_reads_and_fences_by_head.py</code>
+      ran <strong>52 passed, 0 failed</strong>. <strong>Zero added failures.</strong></p>
+      <p><strong>Declared negative control.</strong> Composing the dispatch's write path
+      from <code>review_path(project, run_id)</code> alone reddens
+      <code>test_the_review_dispatch_grants_the_head_keyed_record_path</code> (1 failed,
+      5 passed) with the keyed path absent from the granted set, and nothing else. The
+      receipt's first line is the declared mutation verbatim:
+      <code>negative-control.log</code> in the run directory. Anchor: <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed#s5c-head-key-three-surfaces">head-key-three-surfaces</a>.</p>
+      <p><strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced
+      landing contract requires its own append-only plan and cumulative-evidence records;
+      section closure, followup resolution and terminal status remain coordinator-owned.</p>
+    </div>
     <h2 id="s5d">§5d — A repair can introduce the defect it was repairing</h2>
 
     <p>§5c says a promotion must refuse a review that predates the head. That fence is necessary
