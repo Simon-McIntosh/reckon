@@ -18,13 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="7">
+  <meta name="plan-version" content="10">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,10 +96,21 @@
         <tr><td><code>recorded_by</code></td><td>string</td><td><code>supervisor</code>, so a reader can tell a collected exit from an inferred one</td></tr>
       </tbody>
     </table>
-    <p>A reader composes nothing at read time that this record carries. A launch failure is
-    <code>stream_records_seen == 0</code>, not a second format. crew-runtime-positive-controls'
-    launch-failure record and a-stalled-row-says-whether-the-worker-lives' death row read these
-    fields rather than deriving their own.</p>
+    <p>A reader composes nothing at read time that this record carries. The record also carries
+    <code>ended_during</code>, one of <code>launch</code> or <code>working</code>. It reads
+    <code>launch</code> exactly when <code>stream_records_seen</code> is 0, and is stated
+    explicitly because a worker that never started and one that died while working need different
+    recovery. A launch failure is this record with <code>ended_during: launch</code>, not a second
+    format. crew-runtime-positive-controls' launch-failure record and
+    a-stalled-row-says-whether-the-worker-lives' death row read these fields rather than deriving
+    their own.</p>
+    <p><strong>The record is named <code>worker_exit</code> wherever it outlives the run
+    directory.</strong> <code>exit_status</code> is already taken: in all 2,721 ledger rows that
+    carry it, it holds the gate command's status supplied at promotion (reckon-84's census,
+    2026-09-23). A worker's exit under the same key would be two quantities in one field. The
+    pointer is deleted at promotion, so a record kept only on the pointer is destroyed by the act of
+    recording the run. That is why no launch failure can be counted today in any project: 0 of 4,579
+    ledger rows. Carrying <code>exit.json</code> into the ledger row is &sect;7.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_returns_without_worker.py</code> covers
     four cases with the stub backend of &sect;2, in a temporary repository and a temporary
     <code>RECKON_HOME</code>. First, the dispatch process exits within five seconds with the run id
@@ -174,6 +185,25 @@
     <code>error</code> and a <code>detail</code>. The negative control is executed and logged at the base revision,
     where a refusal is returned beside a live pointer. The write paths are
     <code>reckon/crew/dispatch.py</code> and that test.</p>
+
+    <h2 id="s7">&sect;7 &mdash; A promoted run keeps its worker's exit</h2>
+    <p>&sect;3's <code>exit.json</code> survives in the run directory, but the ledger row is the
+    record every census reads, and the live pointer is deleted at promotion. So <code>complete</code>
+    in <code>reckon/crew/promotion.py</code> reads the run directory's <code>exit.json</code> when it
+    exists and copies it verbatim under the row's <code>worker_exit</code> key. It never writes
+    <code>exit_status</code>, which remains the gate command's status. A run with no
+    <code>exit.json</code> carries no <code>worker_exit</code> key at all, rather than an empty one,
+    because a present empty key would read as the supervisor having run. This section waits on
+    &sect;3.</p>
+    <p><strong>Done when</strong> <code>tests/test_promotion_keeps_the_worker_exit.py</code> promotes
+    a run in a temporary repository and <code>RECKON_HOME</code> whose run directory holds an
+    <code>exit.json</code> carrying <code>signal_name: SIGKILL</code> and <code>ended_during:
+    working</code>. It asserts the committed ledger row's <code>worker_exit</code> equals that object,
+    and that the row's gate <code>exit_status</code> is the value passed to
+    <code>--gate-exit-status</code>. A second case promotes a run with no <code>exit.json</code> and
+    asserts the row has no <code>worker_exit</code> key. The negative control is executed and
+    logged: with the copy removed, the first case fails. The write paths are
+    <code>reckon/crew/promotion.py</code> and that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
