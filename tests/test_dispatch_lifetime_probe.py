@@ -11,6 +11,9 @@ Everything runs against a throwaway repository and a throwaway configuration
 home, and the real live-pointer directory is checked afterwards for any pointer
 naming a run this probe created.
 
+The probe is opted into with ``RECKON_RUN_DISPATCH_PROBE=1``: it starts real
+processes and rewrites its artifact, so it must not run in a default suite run.
+
 Running this module regenerates ``docs/research/data/dispatch-lifetime.json``
 and the figure under ``docs/figures/a-dispatch-returns-without-its-worker/``.
 """
@@ -29,10 +32,23 @@ from pathlib import Path
 
 import pytest
 
+from reckon._store import _config_home
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# The variable that opts this probe in; absent, or set to anything but "1", the
+# test is skipped with a reason naming it.
+RECKON_RUN_DISPATCH_PROBE_ENV = "RECKON_RUN_DISPATCH_PROBE"
 DATA_PATH = REPO_ROOT / "docs" / "research" / "data" / "dispatch-lifetime.json"
 FIGURES = REPO_ROOT / "docs" / "figures" / "a-dispatch-returns-without-its-worker"
 DRIVER_FILENAME = "dispatch_driver.py"
+
+# Resolved once, at import, before the suite's autouse ``RECKON_HOME`` fixture
+# redirects the configuration home. The guard below must name the fleet
+# directory a dispatch outside this suite writes to; resolving it at call time
+# would name the fixture's throwaway home instead, and the assertion would hold
+# because the probe writes nowhere near it rather than because the real fleet
+# was left alone.
+REAL_LIVE_DIR = _config_home() / "crew" / "live"
 
 # The stub backend's command sleeps this long before writing its marker, so a
 # worker that is killed before it finishes never writes one.
@@ -512,10 +528,13 @@ def _source_revision() -> str:
 
 
 def _real_live_dir() -> Path:
-    """Return the live pointer directory of the user's real configuration."""
-    from reckon._store import _config_home
+    """Return the real live pointer directory, captured when this module loaded.
 
-    return _config_home() / "crew" / "live"
+    It is resolved at import rather than at call time so the guard reads the
+    directory a dispatch outside this suite writes to, even though the suite
+    points ``RECKON_HOME`` at a throwaway home for the duration of the test.
+    """
+    return REAL_LIVE_DIR
 
 
 def _snapshot(path: Path) -> dict:
@@ -534,14 +553,15 @@ def _candidate_holders() -> list[dict]:
     a reader can check against the source tree."""
     return [
         {
-            "mechanism": "worktree creation the dispatch waits on before a worker exists",
+            "mechanism": "the git helper every routing step shells out through",
             "citation": _cite(
-                "reckon/crew/routing.py", "result = subprocess.run(", "_create_worktree"
+                "reckon/crew/routing.py", "result = subprocess.run(", "_git"
             ),
             "disposition": (
-                "keeps the dispatch process alive until the worktree exists, so "
-                "a lifetime in seconds-to-minutes is spent before any worker "
-                "has been launched"
+                "each routing step that runs git lands here, and worktree "
+                "creation is the slow one, so this is where a lifetime in "
+                "seconds-to-minutes is spent before any worker has been "
+                "launched"
             ),
         },
         {
@@ -648,6 +668,14 @@ def probe_env(tmp_path: Path) -> dict:
     return {"tmp_path": tmp_path, "marker_dir": marker_dir}
 
 
+@pytest.mark.skipif(
+    os.environ.get(RECKON_RUN_DISPATCH_PROBE_ENV) != "1",
+    reason=(
+        f"{RECKON_RUN_DISPATCH_PROBE_ENV}=1 is required: this probe starts real "
+        "processes and rewrites docs/research/data/dispatch-lifetime.json, so it "
+        "is opted into rather than run with the default suite"
+    ),
+)
 def test_dispatch_lifetime_probe(probe_env: dict) -> None:
     """Observe the dispatch process, then end it three ways.
 
