@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T08:26:55",
+  "updated": "2026-09-23T08:58:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1204,10 +1204,15 @@
         "id": "follower-scout",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "029eb131-ebec-4793-bfb1-e9d348ddbab6",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "029eb131-ebec-4793-bfb1-e9d348ddbab6"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "gate-log-names-its-tree",
@@ -3451,10 +3456,15 @@
         "id": "s20-reviewer-a",
         "harness": "clive",
         "role": "review",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "60584e50-b7cb-43f1-b9d9-d4afd9a72fc0",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "60584e50-b7cb-43f1-b9d9-d4afd9a72fc0"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "s20-reviewer-b",
@@ -286008,6 +286018,228 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T051245767636-review-of-scoped-follow-counts-at-the-command",
+        "plan": "a-scoped-follower-counts-its-own-session",
+        "section": "\u00a72",
+        "node": "review-of-scoped-follow-counts-at-the-command",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1023,
+                "cached_input_tokens": 325654,
+                "input_tokens": 326679,
+                "output_tokens": 476,
+                "reasoning_output_tokens": 125,
+                "total_tokens": 327155,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "the review for r-20260923T044804790780-scoped-follow-counts-at-the-command stores a parsed record scoring all 5 dimensions in the range 0..20",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260923T044804790780-scoped-follow-counts-at-the-command",
+          "id": "review-of-scoped-follow-counts-at-the-command",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T05:12:46Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051245767636-review-of-scoped-follow-counts-at-the-command/manifest.md",
+          "negative_control": "",
+          "plan": "a-scoped-follower-counts-its-own-session",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T044804790780-scoped-follow-counts-at-the-command.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "s20-reviewer-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T05:12:55Z",
+        "completed_at": "2026-09-23T06:53:48.661Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6042,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6053,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "ecd124b3a8037f845c0bb751741b1c24ae2815d4",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051245767636-review-of-scoped-follow-counts-at-the-command/manifest.md",
+        "scope_changed": false,
+        "session_id": "60584e50-b7cb-43f1-b9d9-d4afd9a72fc0",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T06:53:48.661Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "follow_on_paths": [
+          "tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers",
+          "tests/test_crew_session_delivery.py::test_the_refusal_names_where_the_arming_primitive_is_documented",
+          "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter);"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/review-of-scoped-follow-counts-at-the-command",
+          "session_id": "60584e50-b7cb-43f1-b9d9-d4afd9a72fc0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T06:53:48.661Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "ecd124b3a8037f845c0bb751741b1c24ae2815d4",
+        "impl_move": {
+          "plan": "a-scoped-follower-counts-its-own-session",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T05:52:46.576661+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T05:12:46Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 90.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -286306,6 +286538,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2225
+    "_version": 2228
   }
 }

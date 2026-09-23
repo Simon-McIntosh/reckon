@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-informs" content="crew-observability-truth">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
 <meta name="plan-commits" content="9853fb354702e2760de59263c34fbf5e6c10dccd">
@@ -147,6 +147,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T0605-call-site-landed" data-who="reckon-ship" data-when="2026-09-23T06:05:00Z">
     <div class="r-comment-body"><p>Gate passed. Commit <code>9853fb35</code> merged at <code>9ff3b21c</code> and was promoted at <code>b342e537</code>, with review 98/100. The command-level test reads 1 working, 0 blocked, 0 unpromoted scoped against 2 working, 1 blocked, 0 unpromoted unscoped over one two-session fixture. With the argument removed it fails 2 of 4. The follower on this workstation reloaded onto the merged code and has counted only this session's runs since 07:13. §2 is closed and the plan ships. The three tests the node found failing at base belong to other plans and are carried in the S20 drain ledger.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T051245767636-review-of-scoped-follow-counts-at-the-command" data-who="reckon-ship" data-when="2026-09-23T06:53:48.661Z">
+    <div class="r-comment-body"><p>independent review of scoped-follow-counts-at-the-command: total 98, one minor finding on the gate log&#x27;s revision field; stopped at 08:53 after 50 minutes spent re-storing its record around a fence that grants the legacy path while store_review writes the head-keyed one</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T0405-call-site-still-open" data-who="reckon-ship" data-when="2026-09-23T04:05:00Z">
     <div class="r-comment-body"><p>Currency audit at <code>22c69ee1</code>: the defect is still present. <code>reckon/cli.py:2133</code> calls <code>format_watch_transition</code> with <code>with_session</code> and <code>ticker</code> only, so a scoped follower's figures are still fleet-wide. The claim on <code>reckon/cli.py</code> that blocked f-asfcios-002 has released. §2 stays implementable until the command-level measure named in f-asfcios-002 lands.</p></div>
