@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -261,6 +261,15 @@
     again whenever the effect re-runs, the count assertion fails where the set assertion passed.
     The run is recorded on the login node, because no compute partition carries a browser binary.
     The write path is that test only.</p>
+    <p>The count landed at <code>58ed7a21</code> (review 96), and the review found one more
+    blindness. The probe discards the results of its close and reopen waits and reads after a
+    fixed 250 ms sleep. A palette cycle that silently fails therefore leaves one request per
+    project, and both assertions pass without the fetching effect ever running twice.
+    <strong>Done when</strong> the probe fails, rather than continues, when the palette does not
+    close or does not reopen within its wait. It records the number of completed open cycles,
+    and the test asserts that number is 2 before the count assertion is read. The negative
+    control is executed and logged: with the probe's close step removed, the cycle assertion
+    fails where the count assertion alone passed. The write path is that test only.</p>
 
     <h2 id="s7">&sect;7 &mdash; The fleet rollup answers without walking every tree</h2>
     <p>The &sect;5 re-measure at 16:23Z on 2026-09-23, at load average 8 to 12, put every
@@ -368,7 +377,7 @@
     <div class="r-comment-body"><p>warm /_discover 0.5-1.3 s and /crew 0.76 s, but /_projects/index.json 13.6 s warm fails the 2 s gate; py-spy puts the rollup in per-project signature walks, now section 7</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T160312477604-palette-counts-each-inventory-once" data-who="reckon-ship" data-when="2026-09-23T16:39:34.734Z">
-    <div class="r-comment-body"><p>palette assertion counts each mounted inventory exactly once with the palette cycled; guard removal doubles every request and fails it; review 96, which found the cycle&#x27;s close and reopen unasserted, carried to a corrective node</p></div>
+    <div class="r-comment-body"><p>palette assertion counts each mounted inventory exactly once with the palette cycled; guard removal doubles every request and fails it; review 96, which found the cycle's close and reopen unasserted, carried to a corrective node</p></div>
 </div>
 </section>
 </main>
