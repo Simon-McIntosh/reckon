@@ -1298,15 +1298,21 @@ def test_a_killed_run_that_delivered_is_scoring_pending_review(home, repo) -> No
     assert promoted["record"]["run_id"] == record["run_id"]
 
 
-def test_a_dead_run_that_delivered_nothing_is_abandoned(home, repo) -> None:
+def test_a_dead_run_that_delivered_nothing_is_interrupted(home, repo) -> None:
     record = _dispatch(repo)
     _kill(record)
 
     row = crew.recover()["runs"][0]
 
-    assert row["classification"] == "abandoned"
-    assert "nothing" in row["detail"]
-    assert record["stderr_path"] in row["next_action"]
+    # A process that is positively gone with no recorded exit is an interruption
+    # with nothing delivered, not an abandonment: the pointer already says no
+    # terminal event arrived, so the surviving work is a session to resolve
+    # rather than a vanish to redispatch blind.
+    assert row["classification"] == "interrupted"
+    assert row["interruption"]["reason"] == "dead-pid-no-exit"
+    assert "no recorded exit" in row["detail"]
+    assert "redispatch" in row["next_action"]
+    assert record["worktree"] in row["next_action"]
 
 
 def test_a_live_process_is_running(home, repo) -> None:
@@ -1317,7 +1323,7 @@ def test_a_live_process_is_running(home, repo) -> None:
     assert row["next_action"] == f"reckon crew observe --run {record['run_id']}"
 
 
-def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
+def test_recovery_counts_running_scoring_and_interrupted(home, repo) -> None:
     running = _dispatch(
         repo,
         node_kwargs={"id": "node-live", "write_paths": ["reckon/live.py"]},
@@ -1342,7 +1348,8 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
         "scoring": 1,
         "promotable": 0,
         "completed_unpromoted": 0,
-        "abandoned": 1,
+        "interrupted": 1,
+        "abandoned": 0,
     }
     assert {row["run_id"] for row in report["runs"]} == {
         running["run_id"],

@@ -27,7 +27,11 @@ NODE_PROPERTIES = (
 # semantic authority; a copied brief becomes a second source of truth.
 FENCES = ("scope", "time", "evidence", "delivery")
 
-_TERMINAL_RUN_PHASES = frozenset({"complete", "failed", "stopped"})
+INTERRUPTED_RUN_PHASE = "interrupted"
+
+_TERMINAL_RUN_PHASES = frozenset(
+    {"complete", "failed", "stopped", INTERRUPTED_RUN_PHASE}
+)
 
 # A live pointer may remain at session closure only when another session owns
 # its reconciliation, or while its worker is verifiably still running. Keeping
