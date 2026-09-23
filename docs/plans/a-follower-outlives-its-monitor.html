@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="28">
+  <meta name="plan-version" content="29">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -465,7 +465,10 @@
     <div class="r-comment-body"><p>the attach line names the absolute path of the running reckon console script; restoring the bare word exits 127; review 93. Not yet merged: two tests outside its fence assert the bare word and two it edited compare the line against the composer under test, so it lands together with its corrective node</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T114507149538-attach-line-tests-assert-its-shape" data-who="reckon-ship" data-when="2026-09-23T12:37:06.569Z">
-    <div class="r-comment-body"><p>every attach-line assertion checks the line&#x27;s shape (absolute executable named reckon plus the fixed follow command); clears the two assertions left red at 35aef068; restoring the bare word fails all six; 3 pre-existing failures unchanged, added 0; merged at e5e8f9b4; review 95</p></div>
+    <div class="r-comment-body"><p>every attach-line assertion checks the line's shape (absolute executable named reckon plus the fixed follow command); clears the two assertions left red at 35aef068; restoring the bare word fails all six; 3 pre-existing failures unchanged, added 0; merged at e5e8f9b4; review 95</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T125327658952-review-of-attach-line-tests-assert-its-shape" data-who="reckon-ship" data-when="2026-09-23T14:10:57.245Z">
+    <div class="r-comment-body"><p>independent review of attach-line-tests-assert-its-shape: total 95</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260923T0912-s3-lifetime-lands" data-who="reckon-ship" data-when="2026-09-23T09:12:19Z">
     <div class="r-comment-body"><p>Landed. <code>reckon crew follow</code> takes <code>--lifetime DURATION</code>; when its own deadline passes the follower emits a final line and exits 0 with its registration released. The line is tagged <code>follower-end</code>, so it does not read as a fleet transition, and it carries the attach line to re-arm with plus the owning session's runs that need the coordinator, read from the live pointers of that session only. Gate: <code>tests/test_follow_lifetime.py</code>, 2 passed. One deviation from this section's done-when: the five-second bound is measured from the arm — the registration being held — not from process spawn, because reaching an arm costs 2.5 to 3.4 s of interpreter and import latency and <code>--lifetime 3s</code> then takes 5.53 to 6.42 s of wall clock (n=5); a spawn-anchored bound would fail on an unloaded machine. The follower's own fidelity is 3.104 s against a 3.000 s grant, one poll pass. The declared negative control was applied and logged. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s3">the landed record</a>.</p></div>
