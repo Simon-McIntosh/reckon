@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-monitor-under-measurement">
   <meta name="plan-title" content="The Monitor Under Measurement">
   <meta name="plan-summary" content="Four measurements of the crew follower from recorded streams and transcripts, so the repair plans are sized from counts rather than impressions.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="10">
+  <meta name="plan-version" content="11">
   <meta name="plan-informs" content="a-scoped-follower-counts-its-own-session">
   <title>The Monitor Under Measurement | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-impl" content="0.8">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -359,10 +359,11 @@ record</a>. The followup below is left open for the coordinator.</p>
 </div>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tmum-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship the-monitor-under-measurement" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmum-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship the-monitor-under-measurement" data-resolved-at="2026-09-23T01:40:57+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Take the four measurements</h4>
     <div class="r-fu-body"><p>Four independent nodes on the locally served lane, one data file each, no source change.</p></div>
     <pre class="r-fu-prompt">/reckon-ship the-monitor-under-measurement</pre>
+    <p class="r-fu-outcome">All five measurements landed and promoted on the locally served lane: the staleness census and sweep ownership with passing gates, the row census with a passing gate, and the path map and stall census as not-run because no check suite applies. Every figure is in the-monitor-under-measurement-landed and in the S20 repair plans that are sized from it. The work these measurements size is carried by the other S20 plans, so this chain ends here: done — no followup.</p>
     </article>
 </section>
 
@@ -386,13 +387,16 @@ record</a>. The followup below is left open for the coordinator.</p>
     <div class="r-comment-body"><p>Path map of four follower questions from source: every follower sweeps the whole project and run r-20260922T161442206389 was dispatched onto a nova-37 run from another session's runtime; the attach line names a bare reckon that exits 127 without the virtual environment on PATH; the needs-you line cannot use on_poll, whose return value is discarded, and belongs in the generator's wait pass. No check suite applies; review 88/100.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260922T212416282387-review-of-monitor-scope-path-map" data-who="reckon-ship" data-when="2026-09-23T00:52:12.430Z">
-    <div class="r-comment-body"><p>Independent review of a follower measurement run; the parsed record is stored under the crew reviews directory and was read before its target&#x27;s promotion. A review changes no repository path.</p></div>
+    <div class="r-comment-body"><p>Independent review of a follower measurement run; the parsed record is stored under the crew reviews directory and was read before its target's promotion. A review changes no repository path.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260922T194949960913-monitor-staleness-census" data-who="reckon-ship" data-when="2026-09-22T22:06:25.499Z">
     <div class="r-comment-body"><p>Staleness census over 719 armed followers in seven days: 620 ended at the host's thirty-minute monitor expiry, 86 when the seat was released, 12 on an exit-127 arming failure and 1 on another script failure; the persistent parameter was last passed on 2026-09-15 and no persistent monitor ever expired; sweep-launched workers start in their own session and survive the follower. Arming control was added on resume after the first pass missed it. Review 85/100.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260923T0115-s6-recorded" data-who="reckon-ship" data-when="2026-09-23T01:15:00+00:00">
     <div class="r-comment-body"><p>The findings are recorded in two places rather than in a third document. The cumulative record <a href="/reckon/evidence/archive/the-monitor-under-measurement-landed">the-monitor-under-measurement-landed</a> carries every census with its figures, and each repair plan in S20 now states the counts it is sized from. A separate research page would have been a second copy of the same numbers. Four of the five measurement runs are promoted: the staleness census passed its gate, the row census passed its gate, and the path map and stall census were promoted as not-run because no check suite applies to a measurement node. The sweep-ownership run waits on its review.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260923T0145-s7-landed" data-who="reckon-ship" data-when="2026-09-23T01:45:00+00:00">
+    <div class="r-comment-body"><p>Landed and promoted. The re-arm gap has a median of 12 seconds and a 90th percentile of 9.7 minutes; its 99th percentile of 5.2 hours is absent coordinators, so the sweep decision on <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a> was locked with a ten-minute grace from the 90th percentile. The measure named the 99th; the amendment is stated on the gate and the decision. Drain ledger for this plan: rows 1, the take-the-measurements followup, folded into the five promoted runs; foldable-remaining 0; unreconciled-runs 0 for this plan's runs after the two consumed review pointers were discarded.</p></div>
 </div>
 </section>
 </main>
