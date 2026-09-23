@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" font-family="system-ui, sans-serif" font-size="13">
+<rect width="900" height="470" fill="#ffffff"/>
+<text x="24" y="30" font-size="16" font-weight="600" fill="#111">What fills the project picker, and what never does</text>
+<rect x="90" y="58" width="150" height="30" rx="6" fill="#eef2ff" stroke="#8ea2ff"/>
+<text x="165" y="78" text-anchor="middle" fill="#1b2b6b" font-weight="600">Browser</text>
+<rect x="600" y="58" width="170" height="30" rx="6" fill="#eef7ee" stroke="#8cc48c"/>
+<text x="685" y="78" text-anchor="middle" fill="#1d4a1d" font-weight="600">Served process</text>
+<line x1="165" y1="88" x2="165" y2="440" stroke="#c7c7c7" stroke-dasharray="4 4"/>
+<line x1="685" y1="88" x2="685" y2="440" stroke="#c7c7c7" stroke-dasharray="4 4"/>
+<line x1="165" y1="120" x2="685" y2="120" stroke="#2f6fdb" stroke-width="2" marker-end="url(#mk-2f6fdb)"/>
+<text x="180" y="112" fill="#2f6fdb">GET /_projects/mounts.json</text>
+<line x1="685" y1="140" x2="165" y2="140" stroke="#8cc48c" stroke-width="2" marker-end="url(#mk-8cc48c)"/>
+<text x="200" y="156" fill="#1d4a1d">~3 ms, static file</text>
+<rect x="110" y="172" width="620" height="34" rx="6" fill="#dbe8ff" stroke="#2f6fdb"/>
+<text x="130" y="194" fill="#12336b" font-weight="600">Project picker populated: every mounted name is listed here</text>
+<line x1="165" y1="248" x2="685" y2="248" stroke="#b23b3b" stroke-width="2" marker-end="url(#mk-b23b3b)"/>
+<rect x="110" y="248" width="620" height="34" rx="6" fill="#fdecec" stroke="#b23b3b" fill-opacity="0"/>
+<text x="180" y="240" fill="#b23b3b">GET /_projects/index.json</text>
+<text x="180" y="266" fill="#b23b3b">no reply, and the picker is already filled: its rows merge in when they arrive</text>
+<line x1="165" y1="322" x2="685" y2="322" stroke="#a06f00" stroke-width="2" marker-end="url(#mk-a06f00)"/>
+<text x="180" y="314" fill="#555">GET /_discover/&lt;p&gt;, one per project</text>
+<text x="180" y="340" fill="#7a5500">deferred: asked only while the fleet home or the command palette is shown</text>
+<rect x="110" y="372" width="620" height="52" rx="6" fill="#fff6e0" stroke="#d0a94a"/>
+<text x="130" y="394" fill="#6b4d00" font-weight="600">A project's plan view requests none of the inventories above.</text>
+<text x="130" y="413" fill="#6b4d00">The picker is filled before any of them is asked for, and stays filled.</text>
+<defs>
+<marker id="mk-2f6fdb" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#2f6fdb"/></marker>
+<marker id="mk-8cc48c" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#8cc48c"/></marker>
+<marker id="mk-b23b3b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b23b3b"/></marker>
+<marker id="mk-a06f00" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#a06f00"/></marker>
+</defs>
+</svg>

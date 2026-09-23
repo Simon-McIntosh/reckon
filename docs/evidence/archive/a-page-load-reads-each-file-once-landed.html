@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-page-load-reads-each-file-once-landed">
+  <meta name="plan-title" content="A Page Load Reads Each File Once — landed evidence">
+  <meta name="plan-summary" content="The project picker is filled from the static mount list, so it lists every project while the computed rollup never answers.">
+  <meta name="plan-evidence-for" content="a-page-load-reads-each-file-once">
+  <meta name="plan-verifies" content="a-page-load-reads-each-file-once#s4">
+  <meta name="plan-commits" content="26d03b02">
+  <meta name="plan-artifacts" content="tests/test_shell_project_list_is_immediate.py,docs/figures/a-page-load-reads-each-file-once/picker-request-order.svg">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment, headless Chrome">
+  <meta name="plan-tags" content="spa,project-picker,page-load">
+  <title>A Page Load Reads Each File Once — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Page Load Reads Each File Once</h1>
+      <p class="lead">The project picker is filled from <code>/_projects/mounts.json</code>, a
+      static file, so the menu lists every mounted project even while the computed rollup at
+      <code>/_projects/index.json</code> never answers. Other projects' inventories are asked
+      for only while the fleet home or the command palette is shown.</p>
+    </header>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; The project picker never waits on the rollup</h2>
+
+      <figure>
+        <img src="/reckon/figures/a-page-load-reads-each-file-once/picker-request-order.svg"
+             alt="A request-order diagram. The browser asks for _projects/mounts.json and gets a static reply in about 3 ms, which populates the project picker. It then asks for _projects/index.json, which never answers, and the picker is already filled. The _discover requests come next and are deferred to the fleet home or the command palette; a project's plan view requests none of them.">
+        <figcaption>What fills the picker, and what never does. The picker depends only on the
+        top arrow: the mount list is static, so a rollup that hangs or an inventory that is slow
+        leaves the menu populated rather than empty.</figcaption>
+      </figure>
+
+      <h3>The three assertions and what they observed</h3>
+      <p><code>tests/test_shell_project_list_is_immediate.py</code> loads the shell through
+      <code>tests/spa_browser_harness.py</code> with the fetch layer replaced by a mock. The mock
+      answers <code>/_projects/mounts.json</code> with five mounted names,
+      <code>/crew</code> with an empty run list, and <code>/_discover/&lt;p&gt;</code> with an
+      empty inventory; <code>/_projects/index.json</code> returns a promise that is never
+      settled, which is the reported failure reproduced deterministically rather than waited
+      on.</p>
+      <table>
+        <thead><tr><th>&sect;4 assertion</th><th>Observed</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>With <code>/_projects/index.json</code> never resolving, the picker menu lists
+            every name in the mocked mounts file</td>
+            <td><code>["imas-codex","imas-efit","imas-ink","nova","reckon"]</code>, and the
+            rollup request was observed as made (<code>indexRequested</code> true)</td>
+          </tr>
+          <tr>
+            <td>On a project's plan view, no <code>/_discover/&lt;other project&gt;</code>
+            request is made</td>
+            <td>zero discovery requests before the palette opened</td>
+          </tr>
+          <tr>
+            <td>Opening the command palette makes one such request per mounted project</td>
+            <td>the set of discovery requests equals the five mounted names</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The rollup's rows are still merged into the picker when they arrive; the merge is
+      additive and is not a gate. The first assertion is the one that carries the reported
+      defect, and it is the one the negative control falsifies.</p>
+
+      <h3>The negative control</h3>
+      <p>The declared control restores the base revision of the shell
+      (<code>git show 00106ce2:docs/ui/shell.jsx</code>), where the project list came from
+      <code>/_projects/index.json</code> alone, and reddens exactly the picker assertion:</p>
+      <pre><code>gate the shell's project list on /_projects/index.json as at 00106ce2; the picker assertion must fail
+F                                                                        [100%]
+&gt;       assert result["rows"] == sorted(MOUNTED_PROJECTS)
+E       AssertionError: assert [] == ['imas-codex'...va', 'reckon']
+E         Right contains 5 more items, first extra item: 'imas-codex'
+1 failed in 9.53s</code></pre>
+      <p>The assertion that precedes it, <code>result["indexRequested"] is True</code>, passed
+      in the same run: the shell mounted, the picker element rendered, and the rollup was
+      requested. So the failure is the empty menu and not a page that failed to load. The
+      mutated shell was restored immediately after the run and the worktree returned to the
+      committed tree.</p>
+
+      <h3>No repair to the shell was needed</h3>
+      <p>The test passes against the shell exactly as it stands at <code>26d03b02</code>, and
+      <code>docs/ui/shell.jsx</code> is unchanged by this node: the mount-list fetch, the
+      additive rollup merge and the <code>wantsFleetInventories</code> guard for the discovery
+      fetches were already in place. This node adds the check that holds them, and would have
+      been the place to repair them had it failed.</p>
+
+      <h3>Verification</h3>
+      <p><code>pytest -q tests/test_shell_project_list_is_immediate.py</code> passed at revision
+      <code>26d03b02</code>: 2 passed, exit 0, in 6.10 s
+      (<code>logs/green-26d03b02.log</code>). The red log is
+      <code>logs/negative-control-00106ce2.log</code>. Both logs' test-base path is this
+      worktree at that revision.</p>
+      <p><strong>Environment note.</strong> The gate is a headless-browser test and no supported
+      browser binary exists on any SLURM compute partition — <code>/opt/google/chrome</code> is
+      absent from <code>all_debug</code> and is a login-node local path — so the run was taken on
+      the login node, where the binary is. The harness's
+      <code>installed_browser_or_skip</code> reports the capability as skipped on the compute
+      nodes rather than failing, which is why the skip is logged here rather than treated as a
+      pass. The run is two short probes against a <code>file://</code> document with no served
+      process and no network, six seconds end to end.</p>
+    </section>
+  </main>
+</body>
+</html>
