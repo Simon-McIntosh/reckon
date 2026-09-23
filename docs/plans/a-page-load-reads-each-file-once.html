@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-page-load-reads-each-file-once">
+  <meta name="plan-title" content="A Page Load Reads Each File Once">
+  <meta name="plan-summary" content="Every SPA load rediscovered the whole fleet from disk, reparsing each plan about nineteen times; a refresh must cost what changed, not the fleet.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="spa,reckon-tooling">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan's evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Page Load Reads Each File Once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; Every page load rediscovered the fleet</h2>
+    <p>Reported on 2026-09-23 as the SPA being unusable: slow to load on nova, reckon, imas-codex
+    and imas-efit, and after switching to imas-efit the project picker listed no other project,
+    so there was no path back. The requests the SPA makes on load were timed with
+    <code>curl</code> against the served process at <code>127.0.0.1:8765</code>, which had been
+    running for 2 days 22 hours on a login node at load average 49.</p>
+    <table>
+      <thead><tr><th>Request</th><th>Status</th><th>Bytes</th><th>Seconds</th></tr></thead>
+      <tbody>
+        <tr><td><code>/_projects/index.json</code></td><td>no reply</td><td>0</td><td>142.7</td></tr>
+        <tr><td><code>/crew</code></td><td>200</td><td>88,273</td><td>2.4</td></tr>
+        <tr><td><code>/_discover/nova</code></td><td>200</td><td>5,463,923</td><td>215.3</td></tr>
+        <tr><td><code>/_discover/reckon</code></td><td>200</td><td>2,675,127</td><td>117.9</td></tr>
+        <tr><td><code>/_discover/imas-codex</code></td><td>200</td><td>2,749,655</td><td>2.6</td></tr>
+        <tr><td><code>/_discover/imas-efit</code></td><td>200</td><td>3,591,587</td><td>838.8</td></tr>
+      </tbody>
+    </table>
+    <p><code>py-spy dump</code> of the server put every request thread in
+    <code>discover_plans</code>. A cProfile of one cold discovery of reckon took 119.6 s and made
+    7,776 calls to <code>parse_meta</code> for 410 inventory rows. Opening a file on the loaded
+    shared filesystem cost 2.3 ms on average. Six causes compound:</p>
+    <ul>
+      <li><strong>The wiring scan is quadratic.</strong> <code>build_roadmap</code> calls
+      <code>_unwired_plan_findings</code>, which calls <code>_standalone_reason</code> for each
+      unwired plan, and each call goes through <code>resolve_resource</code> to
+      <code>iter_resources</code>. That walks the whole docs tree and parses every file's meta, so
+      the tree is walked and parsed once per plan. <code>read_plan_record</code> and
+      <code>_authorisation_age</code> resolve slugs the same way.</li>
+      <li><strong>A cache hit still walked the tree.</strong> The discovery cache is validated by a
+      signature that ran four recursive globs over the docs tree, plus the same for every project
+      the plans depend on. That took 8 to 11 s for nova, and a warm rediscovery of reckon took
+      19.8 s.</li>
+      <li><strong>The rollup ran a full-history <code>git log</code> per project.</strong>
+      <code>fleet_index._activity30</code> took 6 to 10 s per repository, serially over 13 mounts,
+      under a 10 s timeout. Its <code>TimeoutExpired</code> was not caught, so one slow repository
+      aborted the whole <code>/_projects/index.json</code> response. That is the empty reply above
+      and the empty project picker: the shell set its project list only after that response and all
+      thirteen <code>/_discover</code> calls had finished.</li>
+      <li><strong>Every page load fetched every project's inventory.</strong> The shell fetched
+      <code>/_discover/&lt;p&gt;</code> for all thirteen mounts, although only the fleet home and
+      the command palette read other projects' inventories.</li>
+      <li><strong>The served loader still reads the superseded aggregate.</strong>
+      <code>state-loader.js</code> requests <code>state/&lt;project&gt;/index.json</code> with
+      <code>required: true</code> before <code>/_discover</code>. The server intercepts that URL
+      and runs a full discovery to overlay the inventory on the frozen envelope, so each project
+      page transfers its inventory twice. It also puts the persisted <code>projects[]</code> block
+      of a file that
+      <a href="/reckon/plans/project-state-fleet-migration">the fleet migration</a> superseded into
+      <code>window.STATE</code>. All five projects measured carry the distributed marker.</li>
+      <li><strong>Every response was sent <code>no-store</code>.</strong> Figures, stylesheets and
+      compiled scripts were downloaded again on every refresh.</li>
+    </ul>
+
+    <h2 id="s2">&sect;2 &mdash; Discovery reads each file once, and a refresh reads none</h2>
+    <p>The server-side repair is on <code>main</code> at <code>56e13e11</code> and has had only a
+    compile check. <code>reckon/file_memo.py</code> memoises <code>parse_meta</code>, the
+    head-meta reader, the readiness-state reader and the standalone declaration against each
+    file's stat identity: device, inode, size, mtime and ctime.
+    <code>resource_scan_scope</code> in <code>reckon/resources.py</code> shares one tree scan for
+    every lookup inside a read-only pass; <code>discover_plans</code> and
+    <code>build_roadmap</code> open it. The cache signature is one <code>os.scandir</code> walk.
+    The served process reuses a walk for <code>RECKON_DISCOVERY_REUSE_S</code> seconds (default
+    5), dropped on every POST and every change event. The library default is 0, so a direct
+    caller always walks. One discovery per project runs at a time. A change stream settles a burst
+    of events for 0.25 s into one rediscovery, and drops only a cache entry computed before the
+    event. The fleet rollup computes projects concurrently. The activity history is memoised
+    against HEAD, and a git timeout yields an empty series instead of aborting the rollup.
+    Static files revalidate by ETag with <code>Cache-Control: no-cache</code>, and JSON over 64
+    KiB is gzipped when the client accepts it.</p>
+    <p><strong>Done when</strong> <code>tests/test_discovery_reads_each_file_once.py</code>
+    builds a temporary docs tree of 40 unwired plans in the <code>discovery_cache</code> test
+    fixture's style, with a temporary mounts file and no real mount read. It counts calls to
+    <code>reckon._plan_html._parse_meta_uncached</code> through a counter the test installs, and
+    asserts:</p>
+    <ul>
+      <li>a cold <code>discover_plans</code> parses each HTML file at most once;</li>
+      <li>a second call with nothing changed parses none;</li>
+      <li>after one file is rewritten, the next call parses only that file;</li>
+      <li>with <code>serve._SIGNATURE_TTL_S</code> set to 60, a rewritten file is not seen until
+      <code>serve._invalidate_discovery_signatures()</code> runs, and is seen immediately after;</li>
+      <li>a second <code>fleet_index._activity30</code> call at an unchanged HEAD runs no
+      <code>git log</code>, counted through a patched <code>subprocess.run</code>;</li>
+      <li>a <code>git log</code> that raises <code>subprocess.TimeoutExpired</code> yields
+      <code>[]</code> rather than an exception.</li>
+    </ul>
+    <p>The negative control is executed and logged: with
+    <code>reckon.file_memo.memoized</code> patched to call <code>compute()</code> directly and
+    <code>resource_scan_scope</code> made a no-op, the cold-parse assertion fails with more than 5
+    parses per file. The regression gate is <code>tests/test_discovery_cache.py</code>,
+    <code>tests/test_fleet_index.py</code>, <code>tests/test_mcp_roadmap.py</code>,
+    <code>tests/test_cross_project_refs.py</code>, <code>tests/test_crew_routes.py</code> and
+    <code>tests/test_project_state.py</code>. It is run at the base <code>00106ce2</code> and at
+    the head, one log each, on the <code>all_debug</code> partition, and it passes with zero added
+    failures. The write paths are that test file and, only for repairs the gate shows are needed,
+    <code>reckon/file_memo.py</code>, <code>reckon/serve.py</code>,
+    <code>reckon/resources.py</code>, <code>reckon/roadmap.py</code>,
+    <code>reckon/fleet_index.py</code> and <code>reckon/_plan_html.py</code>.</p>
+
+    <h2 id="s3">&sect;3 &mdash; The served loader reads discovery, not the superseded aggregate</h2>
+    <p><code>docs/ui/state-loader.js</code> assembles <code>window.STATE</code> from
+    <code>/_discover/&lt;project&gt;</code> alone whenever that endpoint answers. Discovery
+    already carries the inventory, sprints, milestones, blockers, timeline, active sprint, north
+    stars, source format and resource versions for both the distributed and the legacy formats.
+    <code>state/&lt;project&gt;/projection.json</code> is read only when discovery is unreachable,
+    which is the static-build case, and <code>state/&lt;project&gt;/index.json</code> only when
+    both are unavailable. The single project row in <code>window.STATE.projects</code> is
+    synthesised from live counts. It is never taken from a persisted <code>projects[]</code>
+    block while discovery answered.</p>
+    <p><strong>Done when</strong> <code>tests/test_served_loader_reads_discovery_only.py</code>
+    runs the real loader under <code>node</code> with a recording <code>fetch</code>, in the style
+    of <code>tests/test_spa_state_boundary.py</code>. It asserts three cases.</p>
+    <ol>
+      <li>With discovery answering, no URL ending in <code>index.json</code> or
+      <code>projection.json</code> is requested. <code>window.STATE.sprints</code>,
+      <code>active_sprint_id</code> and <code>timeline</code> equal discovery's, and
+      <code>window.STATE.projects[0]</code> carries no field present only in a persisted
+      <code>projects[]</code> block the mock would have served.</li>
+      <li>With discovery refused at the network level, <code>projection.json</code> is requested
+      and its sprints are used.</li>
+      <li>With discovery refused and no projection, <code>index.json</code> is requested.</li>
+    </ol>
+    <p>The negative control is executed and logged: restoring the aggregate-first order at the
+    base <code>56e13e11</code> makes the first assertion fail. <code>tests/test_spa_state_boundary.py</code>,
+    <code>tests/test_spa_live_arrival.py</code> and <code>tests/test_served_schedule_payload.py</code>
+    pass with zero added failures against the same base. The write paths are
+    <code>docs/ui/state-loader.js</code> and that test.</p>
+
+    <h2 id="s4">&sect;4 &mdash; The project picker never waits on the rollup</h2>
+    <p>Also on <code>main</code> at <code>56e13e11</code>, unverified. <code>docs/ui/shell.jsx</code>
+    fills the project list from <code>/_projects/mounts.json</code>, a static file that answers in
+    about 3 ms. It merges <code>/_projects/index.json</code> rows when they arrive. It fetches
+    other projects' <code>/_discover</code> only while the fleet home or the command palette is
+    shown, one project at a time. Figure thumbnails in <code>docs/ui/shell-plans.jsx</code> load
+    lazily.</p>
+    <p><strong>Done when</strong> <code>tests/test_shell_project_list_is_immediate.py</code> loads
+    the shell through <code>tests/spa_browser_harness.py</code> with the fetch layer mocked. It
+    asserts three things.</p>
+    <ol>
+      <li>With <code>/_projects/index.json</code> never resolving, the picker menu lists every
+      name in the mocked mounts file.</li>
+      <li>On a project's plan view, no <code>/_discover/&lt;other project&gt;</code> request is
+      made.</li>
+      <li>Opening the command palette makes one such request per mounted project.</li>
+    </ol>
+    <p>It skips cleanly through <code>installed_browser_or_skip</code> where no browser exists,
+    and runs on the <code>all_debug</code> partition. The negative control is executed and logged:
+    with the list gated on the rollup as it was at <code>00106ce2</code>, the first assertion
+    fails. The write paths are that test and, only for repairs it shows are needed,
+    <code>docs/ui/shell.jsx</code>.</p>
+
+    <h2 id="s5">&sect;5 &mdash; The served process runs the repair, and the load is measured</h2>
+    <p>The coordinator restarts <code>reckon.service</code> once &sect;2 to &sect;4 are merged.
+    The table in &sect;1 is then measured again against the restarted process.</p>
+    <p><strong>Done when</strong> a timing report records wall time, status and bytes for the six
+    requests of &sect;1, taken twice in a row: cold, the first request after the restart, and
+    warm. It also records a figure fetched with its <code>ETag</code> answering 304, and the
+    gzipped size of <code>/_discover/nova</code>. The warm figures are under 2 s for each request,
+    or the report names the request that is not and its <code>py-spy dump</code> frame. The write
+    path is the report under the session's reports directory.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Verify the discovery repair and stop the served loader reading the aggregate</h4>
+        <div class="r-fu-body"><p>&sect;2, &sect;3 and &sect;4 write disjoint files and run together. &sect;5 follows their merge and the service restart.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
