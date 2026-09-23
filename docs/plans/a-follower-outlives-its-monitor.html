@@ -163,6 +163,17 @@
     arming example uses <code>--lifetime</code> and an absolute path, and the file states the cap as
     1,800,000 milliseconds. The write path is that file alone.</p>
 
+    <h3>Landing record</h3>
+    <p>Commit <code>9ad95695</code> arms both examples in the harness reference with the absolute attach
+    line and <code>--lifetime 29m</code>, states the cap as <strong>1,800,000 milliseconds</strong>, names
+    the follower's own final line as the re-arm trigger, and says an agent reader receives escape
+    sequences so the state word must carry the state alone. <code>grep -n persistent</code> over the file
+    returns nothing. Five tests parse the arming examples and pin each clause; reinstating the base
+    content under them fails exactly those five. <code>tests/test_monitor_invocation_docs.py</code>
+    4 passed at base, 9 at head; <code>tests/test_skill_contracts.py</code> 3 failed and 51 passed at both
+    revisions, added failures 0. Full record:
+    <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s6">&sect;6 landed evidence</a>.</p>
+
     <h2 id="s7">&sect;7 &mdash; A follower whose consumer is gone releases its registration</h2>
     <p>The S19 coordinator measured this from 05:20 to 05:40 CEST on 2026-09-23, in session
     <code>ship-s19-20260922</code>. A follower that had re-executed itself to reload changed source
