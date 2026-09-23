@@ -113,6 +113,22 @@
     present is a pre-existing line in <code>test_crew_ticker_layout.py</code> unchanged by this work.
     The declared negative control &mdash; restore the fixed ten-column model cell &mdash; was applied
     and the effort columns were observed to differ, failing the new test as required.</p>
+    <p class="r-landing"><strong>Corrective landing 2026-09-23</strong> at <code>a45e4387</code>, base
+    <code>961b288e</code>. The review of the first landing (scored 81) named two defects, both
+    repaired here. First, the tests derived each expected column from the fixed <code>MODEL</code>
+    constant rather than the width the rendered grid uses, so ten layout assertions failed under a
+    config declaring an alias; every expected column now comes from the grid under test
+    (<code>grid.model_width</code>), including the <code>_spend_columns</code> prefix that sizes the
+    spend cells. Second, the ticker resolved the model aliases without the row's project, so a
+    project-layer alias was invisible and the cell fell back to the shipped width; the resolver now
+    receives the row's project and reads the project layer alongside the shipped, host and override
+    layers. <code>launch-failed</code> also gains a light-theme hue, closing the one pre-existing
+    failure <code>test_the_action_set_is_one_set_with_three_readers</code>. Over the fenced ticker
+    test files both configs are green: 94 passed with no alias declared and 94 passed declaring
+    <code>dsv4.1-flash</code>, against 2 failed under no alias and 11 failed under the alias config at base (see
+    <code>docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html</code>). The declared
+    negative control &mdash; restore <code>ticker_module.MODEL</code> as the column source in the
+    <code>_spend_columns</code> prefix &mdash; was applied and five tests fail as required.</p>
 
     <h2 id="s4">&sect;4 &mdash; The row drops the cells nobody reads</h2>
     <p>Remove the generation-rate cell and the age cells from the row. Keep the elapsed time, and
@@ -208,6 +224,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260923T155820968215-review-of-model-cell-fits-every-alias" data-who="reckon-ship" data-when="2026-09-23T17:23:23.192Z">
     <div class="r-comment-body"><p>review of model-cell-fits-every-alias scored 81; its config-dependent test findings and the missing project layer are routed to ticker-tests-read-the-grid-width</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260923T172753966510-ticker-tests-read-the-grid-width" data-who="reckon-ship" data-when="2026-09-23T17:27:53.966Z">
+    <div class="r-comment-body"><p>corrective node: the ticker tests now read the grid's own model width rather than the fixed MODEL constant, including the _spend_columns prefix, and the alias resolver takes the row's project so the project layer is read; launch-failed gains a light-theme hue and its pre-existing test passes. Both fenced ticker files run logged with the venv interpreter under a no-alias config (94 passed) and an alias-declaring config (94 passed), against 11 failed at base under the alias config. Negative control: restoring ticker_module.MODEL as the column source in the _spend_columns prefix fails 5 tests. Commits: a45e4387 (source) on the ticker-tests-read-the-grid-width worktree, base 961b288e.</p></div>
 </div>
 </section>
 </main>

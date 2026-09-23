@@ -9,6 +9,7 @@ and halves a pane that only shows about eight lines at a time.
 from __future__ import annotations
 
 import fcntl
+import json
 import os
 import pty
 import re
@@ -90,14 +91,18 @@ def test_every_line_is_exactly_the_requested_width(grid):
 def test_columns_start_on_the_same_screen_column(grid):
     """Node, state, agent and every stat letter share a column across rows."""
     rows = [
-        (plain(grid.render(_event(from_state=None, to_state="dispatched"))), "dispatched"),
-        (plain(grid.render(_event(from_state="complete", to_state="promoted"))), "promoted"),
+        (
+            plain(grid.render(_event(from_state=None, to_state="dispatched"))),
+            "dispatched",
+        ),
+        (
+            plain(grid.render(_event(from_state="complete", to_state="promoted"))),
+            "promoted",
+        ),
         (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "blocked"),
     ]
     # The state cell begins on one column whether the row had a source or not.
-    assert (
-        len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
-    )
+    assert len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
     # And no row carries a state it did not move into.
     assert not any("complete" in row for row, _ in rows)
     assert not any("→" in row for row, _ in rows)
@@ -707,13 +712,13 @@ def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
         grid.render(_event(model="deepseek-v4-flash", alias="", effort="xhigh"))
     )
     assert "deepseek-v4-flash" not in line
-    cell = ticker_module.elide("deepseek-v4-flash", ticker_module.MODEL)
+    cell = ticker_module.elide("deepseek-v4-flash", grid.model_width)
     assert cell.endswith("\N{HORIZONTAL ELLIPSIS}")
     assert cell in line
     # The cut cell is exactly the model column, so the effort keeps its offset.
     assert len(line) == 180
     assert line.index("xhigh") - ticker_module.PAIR_GAP == (
-        line.index(cell) + ticker_module.MODEL
+        line.index(cell) + grid.model_width
     )
 
 
@@ -794,14 +799,14 @@ def test_a_pointer_written_before_this_change_still_renders_two_cells(grid):
     the cell with an ellipsis, exactly like any other value outside the
     configured aliases the cell is sized from.
     """
-    line = plain(grid.render(_event(agent="gpt-5.6-sol/medium")))
+    line = plain(grid.render(_event(agent="legacy-model-id-longer-than-cell/medium")))
     assert "medium" in line
-    assert "gpt-5.6-sol" not in line
-    cut = ticker_module.elide("gpt-5.6-sol", ticker_module.MODEL)
+    assert "legacy-model-id-longer-than-cell" not in line
+    cut = ticker_module.elide("legacy-model-id-longer-than-cell", grid.model_width)
     assert cut.endswith("\N{HORIZONTAL ELLIPSIS}")
     assert cut in line
-    assert line.index(cut) + ticker_module.MODEL == (
-        line.index("medium") - ticker_module.PAIR_GAP
+    assert line.index(cut) + grid.model_width + ticker_module.PAIR_GAP == line.index(
+        "medium"
     )
     assert len(line) == 180
 
@@ -870,11 +875,13 @@ def test_the_effort_column_keeps_one_offset_whatever_the_alias_length(grid):
 
 
 def test_no_row_pads_the_widest_alias_before_its_effort(grid):
-    """One space separates the widest alias from its effort word, never more.
+    """A row pads its alias to the model cell, then the single tight gap.
 
-    The model cell is sized to dsv4-flash, so the widest alias fills its cell
-    exactly and the effort cell follows after the single tight gap; anything
-    wider between the two would read as a hole the column design disallows.
+    The model cell is sized from the widest alias the config declares, so an
+    alias narrower than that cell is padded to it exactly and the effort cell
+    follows after the one-space PAIR_GAP. Anything wider between the two would
+    read as the row's columns having drifted, which is what a reader scanning a
+    column cannot have.
     """
     line = plain(
         grid.render(
@@ -886,7 +893,9 @@ def test_no_row_pads_the_widest_alias_before_its_effort(grid):
         )
     )
     between = line[line.index("dsv4-flash") + len("dsv4-flash") : line.index("minimal")]
-    assert between == " "
+    assert between == " " * (
+        grid.model_width - len("dsv4-flash") + ticker_module.PAIR_GAP
+    )
 
 
 def test_the_model_cell_is_sized_from_the_longest_declared_alias(tmp_path, monkeypatch):
@@ -951,6 +960,53 @@ def test_the_model_cell_is_sized_from_the_longest_declared_alias(tmp_path, monke
     assert unconfigured not in line
     assert line.index(cut) + grid.model_width + ticker_module.PAIR_GAP == (
         line.index("medium")
+    )
+
+
+def test_the_model_cell_reads_the_rows_own_project_layer(tmp_path, monkeypatch):
+    """A row's project selects the project layer the model cell is sized from.
+
+    A dispatch resolves its configuration through the project layer as well as
+    shipped, host and override, so an alias a project declares is what a run on
+    that project carries — and the pane must size its column to that same
+    vocabulary. The row names its project, so a resolution that ignored it
+    would size the cell from the project-less layers and clip the project's own
+    alias. The host layer here declares no alias, so an alias in the cell can
+    only have come from the project layer.
+    """
+    docs = tmp_path / "docs"
+    (docs / "state" / "proj").mkdir(parents=True)
+    (docs / "state" / "proj" / "flight.yaml").write_text(
+        "version: 1\n"
+        "default_backend: local\n"
+        "backends:\n"
+        "  local:\n"
+        "    launch: in-harness\n"
+        "    sandbox: worktree-full\n"
+        "    alias: project-only-alias\n"
+        "roles:\n"
+        "  implement: {}\n",
+        encoding="utf-8",
+    )
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "mounts.json").write_text(
+        json.dumps({"mounts": {"proj": str(docs)}}), encoding="utf-8"
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    alias = "project-only-alias"
+    grid = ticker_module.Ticker(width=180, color=False)
+    # The project-less cell is narrower than the project's alias, so a row that
+    # does not read the project layer cannot hold the alias whole.
+    assert grid.model_width < len(alias)
+
+    line = plain(
+        grid.render(_event(project="proj", alias=alias, effort="high", model=""))
+    )
+    assert alias in line
+    assert line.index("high") - ticker_module.PAIR_GAP == (
+        line.index(alias) + len(alias)
     )
 
 
@@ -1131,8 +1187,13 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
 # entering dispatched), the cell blanks instead of marking absence.
 
 
-def _spend_columns() -> list[tuple[int, int]]:
-    """The (start, width) of the two measure cells on a plain rendered line."""
+def _spend_columns(model_width: int) -> list[tuple[int, int]]:
+    """The (start, width) of the two measure cells on a plain rendered line.
+
+    ``model_width`` is the grid's own model cell width — read from the grid
+    under test — rather than the fixed default, so a config declaring a wider
+    alias moves these columns with the row it renders.
+    """
     prefix = (
         ticker_module.CLOCK
         + ticker_module.GAP
@@ -1140,7 +1201,7 @@ def _spend_columns() -> list[tuple[int, int]]:
         + ticker_module.GAP
         + ticker_module.NODE
         + ticker_module.STATE_REGION
-        + ticker_module.MODEL
+        + model_width
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
     )
@@ -1157,7 +1218,10 @@ def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes()
     """The spend block holds the fixed grid at its floor and beyond.
 
     A rendered line is exactly the requested visible width with no wrapping, so
-    the floor is asserted too (the narrowest width the grid can honour).
+    the floor is asserted too (the narrowest width the grid can honour). The
+    floor is read from the grid at its floor request, because a config
+    declaring an alias wider than the default raises that floor by the model
+    cell's growth.
     """
     event = _event(
         spend_wall_seconds=6_422.0,
@@ -1166,7 +1230,8 @@ def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes()
         spend_generation_rate=38.2,
         spend_notional_cost_usd=3.41,
     )
-    for width in (ticker_module.MIN_WIDTH, 180, 208):
+    floor = ticker_module.Ticker(width=ticker_module.MIN_WIDTH).width
+    for width in (floor, 180, 208):
         for with_session in (False, True):
             line = plain(
                 ticker_module.Ticker(width=width).render(
@@ -1185,8 +1250,9 @@ def test_the_two_measure_cells_render_measured_figures_in_their_own_cells():
         spend_generation_rate=44.0,
         spend_notional_cost_usd=0.12,
     )
-    line = plain(ticker_module.Ticker(width=180).render(event))
-    wall, rate = _spend_columns()
+    grid = ticker_module.Ticker(width=180)
+    line = plain(grid.render(event))
+    wall, rate = _spend_columns(grid.model_width)
     assert line[wall[0] : wall[0] + wall[1]] == "1:47:02"
     assert line[rate[0] : rate[0] + rate[1]] == "  44"
     # The cut figures stay in the record, not on the row.
@@ -1228,9 +1294,10 @@ def test_the_two_measure_cells_occupy_the_same_columns_on_every_row():
         ["1:00:00", "  44"],
         ["      \N{EN DASH}", "   \N{EN DASH}"],
     ]
-    columns = list(zip(("wall", "rate"), _spend_columns(), strict=True))
+    grid = ticker_module.Ticker(width=180)
+    columns = list(zip(("wall", "rate"), _spend_columns(grid.model_width), strict=True))
     for event, cells in zip(rows, expected, strict=True):
-        line = plain(ticker_module.Ticker(width=180).render(event))
+        line = plain(grid.render(event))
         for (name, (start, width)), expected_cell in zip(columns, cells, strict=True):
             assert line[start : start + width] == expected_cell, (name, line)
 
@@ -1252,7 +1319,7 @@ def test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings():
     )
     zero_line = plain(ticker_module.Ticker(width=180).render(zero))
     marker_line = plain(ticker_module.Ticker(width=180).render(unmeasured))
-    for start, width in _spend_columns():
+    for start, width in _spend_columns(ticker_module.Ticker(width=180).model_width):
         zero_cell = zero_line[start : start + width]
         marker_cell = marker_line[start : start + width]
         assert zero_cell != marker_cell
@@ -1271,12 +1338,13 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
     it would have been meaningful, and a measured figure keeps its cell against
     both.
     """
-    wall, rate = _spend_columns()
+    grid = ticker_module.Ticker(width=180)
+    wall, rate = _spend_columns(grid.model_width)
     wall_span = slice(wall[0], wall[0] + wall[1])
     rate_span = slice(rate[0], rate[0] + rate[1])
 
     dispatched = plain(
-        ticker_module.Ticker(width=180).render(
+        grid.render(
             _event(
                 from_state=None,
                 to_state="dispatched",
@@ -1289,7 +1357,7 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
     assert dispatched[rate_span] == "  44"
 
     working = plain(
-        ticker_module.Ticker(width=180).render(
+        grid.render(
             _event(
                 from_state="dispatched",
                 to_state="working",
@@ -1304,7 +1372,7 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
     assert working[wall_span] != dispatched[wall_span]
 
     measured = plain(
-        ticker_module.Ticker(width=180).render(
+        grid.render(
             _event(
                 from_state="dispatched",
                 to_state="working",
@@ -1368,12 +1436,11 @@ def test_the_fleet_counters_precede_the_measures():
     behind the counters, both ahead of the free text a clipping pane is
     allowed to cut.
     """
+    grid = ticker_module.Ticker(width=180)
     line = plain(
-        ticker_module.Ticker(width=180).render(
-            _event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0)
-        )
+        grid.render(_event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0))
     )
-    wall, _ = _spend_columns()
+    wall, _ = _spend_columns(grid.model_width)
     assert counters(line).end() <= wall[0]
     assert "1:47:02" in line[wall[0] :]
 

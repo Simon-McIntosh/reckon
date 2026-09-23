@@ -476,17 +476,21 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     # Model and effort are two facts a reader scans in two columns, so the
     # line places them apart rather than fusing them with a separator: the
     # model cell holds the model (or its alias) and the effort cell the whole
-    # word, and nothing bridges the two cells but the gap between columns.
-    assert "gpt-5.6-sol" in line
+    # word, and nothing bridges the two cells but the gap between columns. The
+    # cell is sized from the configuration the grid resolves, so the expected
+    # cell is derived from the grid rather than assumed to hold the id whole.
+    grid = ticker_module.Ticker(color=False)
+    model_cell = ticker_module.elide(snapshot["model"], grid.model_width)
+    assert model_cell in line
     assert "high" in line
-    between = line[line.index("gpt-5.6-sol") : line.index("high")]
+    between = line[line.index(model_cell) : line.index("high")]
     assert "\u00b7" not in between
     assert "gpt-5.6-sol/high" not in line
     # After the state, not before the node. On a uniform wave this column
     # repeats the same value on every row, so it must not occupy the position
     # the eye reaches first; the node and its state vary and go there instead.
-    assert line.index("ticker-node") < line.index("gpt-5.6-sol")
-    assert line.index("gpt-5.6-sol") > line.index(
+    assert line.index("ticker-node") < line.index(model_cell)
+    assert line.index(model_cell) > line.index(
         ticker_module.local_clock(_event()["observed_at"])
     )
 
@@ -761,7 +765,7 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_two_cells(
             _fact_event(),
             _fact_event(
                 node="legacy-node",
-                agent="dsv4-flash·xh",
+                agent="deepseek-v4-flash·xhigh",
                 model="",
                 alias="",
                 effort="",
@@ -778,12 +782,18 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_two_cells(
     assert "·" not in between
     assert "sonnet5/medium" not in facts
 
-    # The composed legacy value is cut to the model cell with an ellipsis,
-    # which starts on the same screen column as the new-shape model cell above.
-    assert "dsv4-flash·xh" not in legacy
-    assert "dsv4-flas…" in legacy
-    legacy_cell_start = legacy.index("…") - ticker_module.MODEL + 1
-    assert legacy_cell_start == facts.index("sonnet5")
+    # The model cell's width, read off the facts row it is rendered on: the
+    # alias begins the cell and the effort follows the single tight gap.
+    model_width = (
+        facts.index("medium") - ticker_module.PAIR_GAP - facts.index("sonnet5")
+    )
+    # The composed legacy value is wider than the cell, so it is cut with an
+    # ellipsis and starts on the same screen column as the new-shape model cell.
+    assert "deepseek-v4-flash·xhigh" not in legacy
+    cell = ticker_module.elide("deepseek-v4-flash·xhigh", model_width)
+    assert cell.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert cell in legacy
+    assert legacy.index(cell) == facts.index("sonnet5")
 
 
 def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
