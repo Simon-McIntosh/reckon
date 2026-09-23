@@ -1043,6 +1043,28 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
     return commits
 
 
+def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
+    """Resolve the revision a promotion asserts landed, or the empty string.
+
+    The revision is the tip of the run's own work, so a later sweep can ask two
+    questions of the branch it was promoted into: whether this commit is an
+    ancestor of it, and whether a marker the change introduced survives there.
+    A promotion also commits its own ledger row and plan comment into that
+    branch, so recording the commit the promotion makes instead would make the
+    ancestry question true by construction and unable to fail for any reason.
+
+    The worker's cited tip is preferred over the worktree's ``HEAD`` because a
+    shared checkout can advance under other runs between the commit and the
+    promotion, and the cited tip is the revision whose diff promotion already
+    measured. A run that cited no commit asserts no code, so it records no
+    revision rather than the base it was dispatched at.
+    """
+    if commit_list:
+        return str(commit_list[-1])
+    head = _commit_canonical_id(run_tree, "HEAD")
+    return head or ""
+
+
 def _repository_scope_paths(
     declared_paths: Iterable[str], *, worktree: Path, repository: Path
 ) -> tuple[Path, ...]:
@@ -3764,6 +3786,9 @@ def _complete_locked(
     # resolve on this machine, and a copy that cannot be read or written all
     # leave the check as given, because preservation must never decide the verdict.
     gate_check = _preserve_cited_gate_log(run_id, gate_check)
+    # The revision this promotion asserts landed, resolved while the run's tree
+    # is still present. A shadow asserts no code, so it records none.
+    promoted_revision = "" if shadow else _promoted_revision(tree, commit_list)
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -3813,6 +3838,13 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # The revision the promotion asserts landed rides the row so a later sweep
+    # can ask about it without the worktree, which promotion is about to
+    # release. A run that asserted no code leaves the key absent rather than
+    # recording a base it never touched, so an absent key never reads as a
+    # promotion whose work was verified as landed.
+    if promoted_revision:
+        run["promoted_revision"] = promoted_revision
     # The job a placed launch was charged to rides the committed row beside the
     # run it belongs to, because the ledger row is the durable record a later
     # attribution reads; the live pointer it was first written on is removed by
@@ -4023,3 +4055,179 @@ def discard(run_id: str) -> dict[str, Any]:
             "pointer_removed": not path.exists(),
             "removed": record,
         }
+
+
+def sweep_promoted_revisions(
+    project: str,
+    *,
+    target_head: str = "HEAD",
+    markers: Iterable[Mapping[str, Any]] = (),
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Report every promoted run whose asserted work is not in the target head.
+
+    A promotion records the revision it asserts landed; nothing at promotion
+    time can know whether the merge carrying it into the integration branch
+    happens later, or happens and then drops the content. This sweep answers
+    both questions per promoted run:
+
+    * is the recorded revision an ancestor of ``target_head``; and
+    * does a marker the change introduced survive in ``target_head`` — or, for a
+      change whose purpose was a removal, is the removed marker still gone?
+
+    ``markers`` carries what only a caller can know about a change: the literal
+    that proves the content landed and whether its passing answer is presence or
+    absence. Each entry is a mapping with ``run_id``, ``marker``, an optional
+    ``path`` to search, and ``expect`` of ``"present"`` (the default) or
+    ``"absent"``.
+
+    Neither half subsumes the other. A run that was never merged fails ancestry
+    and, in the ordinary case, the marker too. A run whose work was merged and
+    then reverted — a merge conclusion committing an index that dropped it —
+    passes ancestry and fails only the marker. A run that removed something
+    passes both unless the marker's absence is required, which is why a removal
+    assertion exists at all: presence and absence are not one measurement.
+    Nothing is reported for a run whose work landed intact, because a check that
+    fires on the healthy case is one nobody keeps.
+
+    The sweep reads the ledger and the branch and writes neither: a promotion
+    does not merge, and this is a later read, not a read side of landing.
+    """
+    checkout = (
+        resolve_project_repository(project, root, flag="root")
+        if root is not None
+        else project_mount_repository(project)
+    )
+    if checkout is None:
+        raise CrewError(
+            f"the promoted-revision sweep for {project!r} has no repository to "
+            "read: pass root=<checkout> or register the project's mount"
+        )
+    target = _commit_canonical_id(checkout, target_head)
+    if target is None:
+        raise CrewError(
+            f"target head {target_head!r} does not resolve to a commit in "
+            f"{checkout}, so no promotion can be compared against it"
+        )
+    wanted: dict[str, list[dict[str, str]]] = {}
+    for entry in markers:
+        run_id = str(entry.get("run_id") or "").strip()
+        marker = str(entry.get("marker") or "")
+        if not run_id or not marker:
+            raise CrewError(
+                "a sweep marker needs both a run_id and a marker; one without "
+                "either names nothing to search for or nothing to search"
+            )
+        expect = str(entry.get("expect") or "present").strip().lower()
+        if expect not in ("present", "absent"):
+            raise CrewError(
+                f"sweep marker for {run_id!r} has expect={expect!r}; it must be "
+                "'present' or 'absent'"
+            )
+        wanted.setdefault(run_id, []).append(
+            {"marker": marker, "path": str(entry.get("path") or ""), "expect": expect}
+        )
+    records = ledger.runs(project, root=root)
+    findings: list[dict[str, Any]] = []
+    matched: set[str] = set()
+    checked = 0
+    for record in records:
+        revision = str(record.get("promoted_revision") or "").strip()
+        if not revision:
+            # Rows promoted before the revision was recorded, and runs that
+            # asserted no code, carry no claim to test. An absent key is not a
+            # passing revision; it is a row this sweep cannot speak for.
+            continue
+        checked += 1
+        run_id = str(record.get("run_id") or "")
+        finding: dict[str, Any] = {
+            "run_id": run_id,
+            "node": str(record.get("node") or ""),
+            "promoted_revision": revision,
+            "reasons": [],
+            "markers": [],
+        }
+        if not _commit_resolves_in(checkout, revision):
+            finding["reasons"].append("unresolvable-revision")
+        elif not _revision_is_ancestor(checkout, revision, target):
+            finding["reasons"].append("not-an-ancestor")
+        for spec in wanted.get(run_id, ()):
+            matched.add(run_id)
+            present = _marker_present_in(
+                checkout,
+                target,
+                marker=spec["marker"],
+                path=spec["path"],
+            )
+            finding["markers"].append(
+                {
+                    "marker": spec["marker"],
+                    "path": spec["path"],
+                    "expect": spec["expect"],
+                    "present": present,
+                }
+            )
+            if spec["expect"] == "present" and not present:
+                finding["reasons"].append("marker-absent")
+            elif spec["expect"] == "absent" and present:
+                finding["reasons"].append("removed-marker-still-present")
+        if finding["reasons"]:
+            findings.append(finding)
+    unresolved = sorted(run_id for run_id in wanted if run_id not in matched)
+    return {
+        "project": project,
+        "checkout": str(checkout),
+        "target_head": target,
+        "checked": checked,
+        "findings": findings,
+        "unresolved_markers": unresolved,
+    }
+
+
+def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
+    """Report whether ``revision`` is an ancestor of ``target`` in ``checkout``.
+
+    A git failure here is an instrument fault, not a verdict: reporting it as
+    "not an ancestor" would turn a broken probe into a finding about a run.
+    """
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", revision, target],
+        cwd=checkout,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise CrewError(
+        f"git could not compare {revision} against {target} in {checkout}: "
+        f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
+    )
+
+
+def _marker_present_in(
+    checkout: Path, target: str, *, marker: str, path: str = ""
+) -> bool:
+    """Report whether ``marker`` occurs in ``target``'s tree, optionally at ``path``.
+
+    The search is fixed-string and anchored to the target revision, so a marker
+    that survives only in a worktree file or in another branch is not counted. A
+    git failure raises rather than answering absent: an unreadable tree and a
+    genuinely absent marker otherwise return the same empty result.
+    """
+    argv = ["git", "grep", "-q", "-F", "-e", marker, target]
+    if path:
+        argv += ["--", path]
+    result = subprocess.run(
+        argv, cwd=checkout, capture_output=True, text=True, check=False
+    )
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise CrewError(
+        f"git could not search {target} in {checkout} for the marker: "
+        f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
+    )
