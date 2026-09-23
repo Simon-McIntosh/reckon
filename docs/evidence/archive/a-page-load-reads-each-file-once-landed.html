@@ -7,11 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-page-load-reads-each-file-once-landed">
   <meta name="plan-title" content="A Page Load Reads Each File Once — landed evidence">
-  <meta name="plan-summary" content="One section per landed node: the served loader reads discovery alone (§3), and the project picker never waits on the rollup (§4).">
+  <meta name="plan-summary" content="One section per landed node: discovery parses each file once (§2), the served loader reads discovery alone (§3), and the project picker never waits on the rollup (§4).">
   <meta name="plan-evidence-for" content="a-page-load-reads-each-file-once">
-  <meta name="plan-verifies" content="a-page-load-reads-each-file-once#s3,a-page-load-reads-each-file-once#s4">
-  <meta name="plan-commits" content="f6529a51,26d03b02">
-  <meta name="plan-artifacts" content="docs/ui/state-loader.js,tests/test_served_loader_reads_discovery_only.py,docs/figures/a-page-load-reads-each-file-once/source-priority.svg,tests/test_shell_project_list_is_immediate.py,docs/figures/a-page-load-reads-each-file-once/picker-request-order.svg">
+  <meta name="plan-verifies" content="a-page-load-reads-each-file-once#s2,a-page-load-reads-each-file-once#s3,a-page-load-reads-each-file-once#s4">
+  <meta name="plan-commits" content="98d99673,f6529a51,26d03b02">
+  <meta name="plan-artifacts" content="tests/test_discovery_reads_each_file_once.py,docs/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png,docs/ui/state-loader.js,tests/test_served_loader_reads_discovery_only.py,docs/figures/a-page-load-reads-each-file-once/source-priority.svg,tests/test_shell_project_list_is_immediate.py,docs/figures/a-page-load-reads-each-file-once/picker-request-order.svg">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment; node 22 for the loader; headless Chrome on the login node for the picker">
@@ -25,8 +25,85 @@
     <header>
       <p class="eyebrow">Execution evidence</p>
       <h1>A Page Load Reads Each File Once</h1>
-      <p class="lead">One section per landed node of the page-load repair. The served loader reads <code>/_discover</code> alone whenever it answers (&sect;3), and the project picker is filled from the static mount list so it never waits on the computed rollup (&sect;4).</p>
+      <p class="lead">One section per landed node of the page-load repair. A cold discovery parses each plan file once and a warm one none (&sect;2). The served loader reads <code>/_discover</code> alone whenever it answers (&sect;3), and the project picker is filled from the static mount list so it never waits on the computed rollup (&sect;4).</p>
     </header>
+
+  <section id="s2-measure">
+    <h2>&sect;2 &mdash; One parse per file, none warm</h2>
+    <p>Gate <code>python3 -m pytest -p no:cacheprovider -q
+    tests/test_discovery_reads_each_file_once.py</code> &mdash; <strong>6 passed, exit 0</strong>.
+    The test builds a temporary docs tree of 40 unwired plans, reached through a temporary
+    mounts file, installs a counter on <code>reckon._plan_html._parse_meta_uncached</code>
+    and asserts six ways:</p>
+    <ul>
+      <li>a cold <code>discover_plans</code> parses each of the 40 HTML files at most once;</li>
+      <li>a second call with nothing changed parses none;</li>
+      <li>after one file is rewritten, the next call parses only that file;</li>
+      <li>with <code>serve._SIGNATURE_TTL_S</code> at 60, a rewrite is not seen until
+      <code>serve._invalidate_discovery_signatures()</code> runs, and is seen immediately
+      after;</li>
+      <li>a second <code>fleet_index._activity30</code> at an unchanged <code>HEAD</code> runs
+      no <code>git log</code>, counted through a patched <code>subprocess.run</code>;</li>
+      <li>a <code>git log</code> raising <code>subprocess.TimeoutExpired</code> yields
+      <code>[]</code> rather than an exception.</li>
+    </ul>
+    <p><strong>The counter was shown to see something.</strong> The cold pass asserts that
+    every one of the 40 plan files appears in the counter, so the warm-state zero is a
+    reading about the code, not an instrument that never fired. A zero with no such control
+    is exactly the empty-column reading that has been mistaken for good news before.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-page-load-reads-each-file-once/parse-counts-per-file.png"
+           alt="Left: uncached parses per plan file cold, where the shipped path is one parse per file and the mutated path is 42 per file. Right, on a symlog axis: peak parses of one file cold, warm and after one rewrite — mutated 42, 0 and 42 against shipped 1, 0 and 1.">
+      <figcaption>Measured from the same temporary 40-plan tree. Cold, shipped: 40 parses
+      over 40 files. Cold, mutated: 1,680 parses, 42 per file &mdash; the per-plan wiring
+      check re-walking the tree once for each plan. Warm, both: zero, because the discovery
+      cache answers before a parse is reached.</figcaption>
+    </figure>
+  </section>
+
+  <section id="s2-negative-control">
+    <h2>&sect;2 &mdash; The guard was shown to fire</h2>
+    <p>Declared mutation: patch <code>reckon.file_memo.memoized</code> to call
+    <code>compute()</code> directly and make <code>resource_scan_scope</code> a no-op, so the
+    cold-parse assertion must fail. Armed through
+    <code>RECKON_TEST_DISABLE_FILE_MEMO=1</code>, the cold test fails with
+    <code>AssertionError: assert 42 &lt;= 1</code> &mdash; 42 parses of each of the 40 files,
+    against the bound of one. The red log at
+    <code>/tmp/dr-node/negative-control.log</code> repeats the mutation verbatim on its first
+    line. A passing suite does not show this.</p>
+    <p><strong>Why the mutation removes the right thing.</strong> With the memo bypassed the
+    scan is not the only re-read source: <code>build_roadmap</code> resolves every unwired
+    plan's slug through <code>resolve_resource</code>, and an unscoped pass re-walks the tree
+    for each one. The 42 is 40 files seen by the per-plan resolution plus the inventory's own
+    pass, which is the compounding &sect;1 names &mdash; the reason a page load cost minutes
+    per project rather than milliseconds.</p>
+  </section>
+
+  <section id="s2-gate">
+    <h2>&sect;2 &mdash; Regression gate, base against head</h2>
+    <p>Gate on <code>all_debug</code>, one log each, over
+    <code>tests/test_discovery_cache.py</code>, <code>tests/test_fleet_index.py</code>,
+    <code>tests/test_mcp_roadmap.py</code>, <code>tests/test_cross_project_refs.py</code>,
+    <code>tests/test_crew_routes.py</code> and <code>tests/test_project_state.py</code>:</p>
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>00106ce2</code></td><td>127 passed, 2 failed</td>
+        <td><code>/tmp/dr-node/gate-base.log</code></td></tr>
+        <tr><td>head</td><td>127 passed, 2 failed</td>
+        <td><code>/tmp/dr-node/gate-head.log</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Zero added failures.</strong> The two failures are identical at base and at
+    head and lie outside this node's scope:
+    <code>tests/test_crew_routes.py::test_context_refusal_is_exit_five_before_worktree_creation</code>
+    and
+    <code>tests/test_crew_routes.py::test_fitting_and_unbounded_backends_dispatch_without_context_refusal</code>.
+    Both raise <code>reckon.crew.CrewError</code> because a node whose write paths include
+    <code>tests/large_context.py</code> declares no negative control. They are carried under
+    <code>follow_ons</code> rather than triaged or repaired here, per the section's fence.</p>
+  </section>
 
   <section id="s3-served-loader-reads-discovery-only">
     <h2>&sect;3 &mdash; The served loader reads discovery, not the superseded aggregate</h2>

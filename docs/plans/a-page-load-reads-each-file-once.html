@@ -124,6 +124,20 @@
     <code>reckon/resources.py</code>, <code>reckon/roadmap.py</code>,
     <code>reckon/fleet_index.py</code> and <code>reckon/_plan_html.py</code>.</p>
 
+    <p class="r-landing"><strong>Landed 2026-09-23</strong> at <code>98d99673</code>,
+    base <code>00106ce2</code>. <code>tests/test_discovery_reads_each_file_once.py</code> passes
+    all six assertions against a temporary 40-plan tree: one parse per file cold, none warm,
+    only the rewritten file after an edit, the signature TTL deferring a rewrite until
+    invalidation, one <code>git log</code> per unchanged <code>HEAD</code>, and an empty series
+    rather than an exception on a git timeout. The gate over the six named suites is 127 passed
+    and 2 failed at both base and head &mdash; zero added failures; the two refusals are
+    <code>tests/test_crew_routes.py</code> node-contract failures carried as follow-ons,
+    independent of this section. The declared negative control is executed and logged:
+    <code>RECKON_TEST_DISABLE_FILE_MEMO=1</code> fails the cold assertion at 42 parses per file,
+    against the bound of one. No module among the write paths needed a change. Evidence anchor:
+    <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s2-measure">a page load
+    reads each file once &mdash; landed evidence</a>.</p>
+
     <h2 id="s3">&sect;3 &mdash; The served loader reads discovery, not the superseded aggregate</h2>
     <p><code>docs/ui/state-loader.js</code> assembles <code>window.STATE</code> from
     <code>/_discover/&lt;project&gt;</code> alone whenever that endpoint answers. Discovery
