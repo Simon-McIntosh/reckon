@@ -698,15 +698,23 @@ def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
     """An unaliased model must not read as missing data.
 
     Without an alias the model cell shows the model id itself rather than the
-    empty identity it used to render. The id renders whole even though it is
-    longer than the model cell, because a clipped model-family prefix would
-    collapse its variants; the cells that follow simply shift on that row.
+    empty identity it used to render. The cell is sized from the configured
+    aliases, so an id outside that set — this one is longer than the cell — is
+    cut to it with an ellipsis rather than allowed to shift the effort column
+    on its row, which is what keeps every row on one grid.
     """
     line = plain(
         grid.render(_event(model="deepseek-v4-flash", alias="", effort="xhigh"))
     )
-    assert "deepseek-v4-flash" in line
+    assert "deepseek-v4-flash" not in line
+    cell = ticker_module.elide("deepseek-v4-flash", ticker_module.MODEL)
+    assert cell.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert cell in line
+    # The cut cell is exactly the model column, so the effort keeps its offset.
     assert len(line) == 180
+    assert line.index("xhigh") - ticker_module.PAIR_GAP == (
+        line.index(cell) + ticker_module.MODEL
+    )
 
 
 def test_effort_renders_in_full_in_its_own_cell(grid):
@@ -782,12 +790,19 @@ def test_a_pointer_written_before_this_change_still_renders_two_cells(grid):
 
     This is the backward-compatibility negative: a log line written before the
     facts switch carries a composed agent string and no facts underneath, and
-    it still lands in the two columns a reader scans.
+    it still lands in the two columns a reader scans. Its model half is cut to
+    the cell with an ellipsis, exactly like any other value outside the
+    configured aliases the cell is sized from.
     """
     line = plain(grid.render(_event(agent="gpt-5.6-sol/medium")))
-    assert "gpt-5.6-sol" in line
     assert "medium" in line
-    assert line.index("gpt-5.6-sol") < line.index("medium")
+    assert "gpt-5.6-sol" not in line
+    cut = ticker_module.elide("gpt-5.6-sol", ticker_module.MODEL)
+    assert cut.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert cut in line
+    assert line.index(cut) + ticker_module.MODEL == (
+        line.index("medium") - ticker_module.PAIR_GAP
+    )
     assert len(line) == 180
 
 
@@ -872,6 +887,71 @@ def test_no_row_pads_the_widest_alias_before_its_effort(grid):
     )
     between = line[line.index("dsv4-flash") + len("dsv4-flash") : line.index("minimal")]
     assert between == " "
+
+
+def test_the_model_cell_is_sized_from_the_longest_declared_alias(tmp_path, monkeypatch):
+    """The column is sized from the aliases the resolved flight config declares.
+
+    Every configured alias then lands its effort on one screen column, so a
+    reader scans effort down the pane however the alias lengths differ — the
+    reason a fixed ten-column cell failed, because dsv4.1-flash is twelve and
+    shifted the cells after it on its rows, and a value outside the configured
+    set is cut to the cell with an ellipsis rather than allowed to overflow.
+    """
+    config = tmp_path / "flight.yaml"
+    config.write_text(
+        "version: 1\n"
+        "default_backend: local\n"
+        "backends:\n"
+        "  local:\n"
+        "    launch: in-harness\n"
+        "    sandbox: worktree-full\n"
+        "    alias: dsv4.1-flash\n"
+        "  fork:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    sandbox: worktree-full\n"
+        "    alias: astra6\n"
+        "  hosted:\n"
+        "    launch: cli\n"
+        "    command: claude\n"
+        "    sandbox: worktree-full\n"
+        "    alias: sonnet 5\n"
+        "roles:\n"
+        "  implement: {}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(config))
+    grid = ticker_module.Ticker(width=180, color=False)
+
+    aliases = ("dsv4.1-flash", "astra6", "sonnet 5")
+    rows = [
+        plain(grid.render(_fact_event(alias=alias, effort="medium")))
+        for alias in aliases
+    ]
+    # The measure: every configured alias lands its effort on one screen column.
+    assert len({row.index("medium") for row in rows}) == 1
+    assert (
+        len({row.index(alias) for row, alias in zip(rows, aliases, strict=True)}) == 1
+    )
+    for row, alias in zip(rows, aliases, strict=True):
+        assert alias in row
+        assert row.index(alias) + grid.model_width + ticker_module.PAIR_GAP == (
+            row.index("medium")
+        )
+    # That column is the longest declared alias, so a shorter one is padded.
+    assert grid.model_width == len("dsv4.1-flash")
+
+    unconfigured = "model-id-nineteen-xy"  # twenty characters, no alias declared
+    assert len(unconfigured) == 20
+    line = plain(grid.render(_fact_event(alias=unconfigured, model=unconfigured)))
+    cut = ticker_module.elide(unconfigured, grid.model_width)
+    assert cut.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert cut in line
+    assert unconfigured not in line
+    assert line.index(cut) + grid.model_width + ticker_module.PAIR_GAP == (
+        line.index("medium")
+    )
 
 
 def test_dispatch_facts_flow_to_the_log_and_a_later_config_edit_cannot_restate_them(

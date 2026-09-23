@@ -178,6 +178,80 @@
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T114508971008-baseline-marker-is-its-own-word/negative_control.log</code>.
     </p>
 
+  <h2 id="every-model-name-fits-one-aligned-cell">&sect;3 — Every model name fits one aligned cell</h2>
+    <p>
+      Commit <code>5fe605cf</code> (implementation and test) on <code>main</code> in the
+      <code>model-cell-fits-every-alias</code> worktree, base revision <code>12155ff8</code>.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/a-monitor-row-reads-at-a-glance/model_cell_alias_width.png"
+           alt="The model cell, gap and effort cell as a character grid, once per model id, at base
+                and at head. At base the twelve-character alias dsv4.1-flash overflows the fixed
+                ten-column cell and its effort cell begins on column 13 while the others begin on
+                column 11; a twenty-character unconfigured id overflows to column 21. At head
+                the effort cell begins on column 13 for every id, and the unconfigured id is cut
+                with an ellipsis inside the twelve-column cell.">
+      <figcaption>
+        The model cell is sized from the longest alias the resolved flight config declares &mdash;
+        twelve columns here, for <code>dsv4.1-flash</code> &mdash; so every row's effort cell begins
+        on one column, and a model id wider than the cell is cut with an ellipsis rather than allowed
+        to push the cells after it. At base the cell is a fixed ten columns and the effort columns
+        differ: 13 for the overflowing alias against 11 for the other two.
+      </figcaption>
+    </figure>
+
+    <h3>The gate measure, as executed</h3>
+    <ul>
+      <li><strong>One effort column.</strong> A flight config declaring <code>dsv4.1-flash</code>,
+        <code>astra6</code> and <code>sonnet 5</code> renders the three model cells at the width of
+        the longest alias (twelve), so all three effort cells start on the same column at a pinned
+        pane width.</li>
+      <li><strong>An unconfigured id is cut.</strong> A twenty-character model id declared by no
+        backend renders inside that cell cut with a horizontal ellipsis, and the cells after it keep
+        their columns.</li>
+      <li><strong>Cost, stated as a delta.</strong> The model cell widens from 10 to 12 columns, so
+        <code>MIN_WIDTH</code> rises by the same two columns. When the resolved config declares no
+        alias the cell falls back to the ten-column default, so a fleet with no aliases renders as
+        before.</li>
+    </ul>
+
+    <h3>Tests</h3>
+    <table>
+      <thead>
+        <tr><th>file</th><th>base <code>12155ff8</code></th><th>head</th><th>added failures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_crew_ticker.py</code></td><td>25 passed</td><td>25 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew_ticker_layout.py</code></td><td>1 failed, 66 passed</td><td>1 failed, 67 passed</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The gate over both fenced files is <code>1 failed, 91 passed</code> at base and
+      <code>1 failed, 92 passed</code> at head — the added test is the one new pass, and the single
+      failure is <code>tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers</code>,
+      present at base and untouched by this change.
+    </p>
+
+    <p>
+      Three tests that asserted the removed behaviour — a model id rendered whole even where it
+      overflows the cell — were updated to assert the cut-with-ellipsis behaviour this section
+      requires; they are the intended reversals, recorded in the same commit.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared and repeated verbatim as the log's first line:
+      <em>restore the fixed ten-column model cell in <code>reckon/crew/ticker.py</code>.</em>
+      Applied by pinning <code>self.model_width</code> to <code>MODEL</code> and padding the model
+      cell to <code>MODEL</code> without the ellipsis cut, then running the gate. The effort columns
+      were observed to differ — the twelve-character alias landed on column 13 while
+      <code>astra6</code> and <code>sonnet 5</code> both landed on column 11 — and the new test failed
+      <code>assert 2 == 1</code> on the set of effort start columns. The control was then reverted
+      from a saved copy of the module and the tree returned to the committed revision. Log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T131053762821-model-cell-fits-every-alias/logs/negative-control.log</code>.
+    </p>
+
   </main>
 </body>
 </html>

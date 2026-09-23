@@ -22,7 +22,7 @@ import os
 import re
 import struct
 import termios
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from numbers import Real
 from typing import Any
@@ -37,17 +37,17 @@ NODE = 36
 OWNER = 1
 STATE = 10
 # Model and effort are two cells so a reader scans the effort down a column
-# instead of parsing it out of a composed label. Their widths come from the
-# shipped set: the widest model alias dsv4-flash is ten characters and the
-# widest effort word minimal is seven, so the shipped vocabulary lands whole
-# with no elision. The cells sit one space apart — PAIR_GAP, not GAP — so
-# effort begins at the same screen column on every row while no row carries
-# padding wider than the alias it pads. The two cells plus their single gap
-# occupy exactly the eighteen columns the fused cell did, so the split does
-# not widen the row. A value wider than its cell (an unaliased model id, say)
-# renders whole rather than being cut: clipping a model-family prefix would
-# collapse its variants into one indistinguishable cell, and the rare overlong
-# row simply shifts the cells that follow it.
+# instead of parsing it out of a composed label. The cells sit one space apart
+# — PAIR_GAP, not GAP — so effort begins at the same screen column on every
+# row while no row carries padding wider than the alias it pads. The model
+# cell is sized from the longest alias the resolved flight config declares, so
+# a pane whose rows all carry a configured alias lands its effort column on one
+# screen column. MODEL is the width used only when the config declares no alias
+# at all: with nothing to size from, a wider cell would spend columns on
+# nothing. A model id outside the configured set is cut to the cell with an
+# ellipsis rather than allowed to overflow, so the grid never shifts — the cost
+# is that a long unaliased id shows a prefix, which is the same trade every
+# fixed-width column in this row makes.
 MODEL = 10
 PAIR_GAP = 1
 EFFORT = 7
@@ -297,7 +297,9 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 # Everything before the reason consumes exactly this many columns with the role
-# word at its widest (documentation, thirteen), the model cell at ten, the
+# word at its widest (documentation, thirteen), the model cell at its default
+# width of ten (a grid sized from a longer configured alias raises this floor by
+# the same amount it widens the cell), the
 # effort cell at seven, the four fleet counters and the measure cells (wall and
 # rate) in full — the measures sit behind the counters now, and the row no
 # longer carries model seconds, tokens or the dollar figure, which frees exactly
@@ -633,6 +635,47 @@ def _derive_effort(effort: Any) -> str:
     return word.lower()
 
 
+def declared_model_aliases() -> tuple[str, ...]:
+    """The aliases the resolved flight config declares, deduped and sorted.
+
+    Every backend may declare an alias — the display label rendered in the pane
+    in place of its model identifier — so the pane can size one column to the
+    whole configured vocabulary. Resolution reads the same layers a dispatch
+    does (shipped, host, project, override), so the column the reader's pane
+    uses is the one a run sent through this configuration would carry.
+
+    A config that cannot be read yields no aliases rather than raising: this is
+    a display surface, and a pane that will not render because a config file is
+    malformed is worse than one whose column falls back to the default. The
+    refusal an operator needs is already spelled on the dispatch and flight
+    paths, which read the same config.
+    """
+    try:
+        from reckon import flight as flight_module
+    except ImportError:
+        return ()
+    try:
+        config = flight_module.resolve().config
+    except (OSError, ValueError, flight_module.FlightConfigError):
+        return ()
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return ()
+    aliases: set[str] = set()
+    for settings in backends.values():
+        if isinstance(settings, Mapping):
+            alias = str(settings.get("alias") or "").strip()
+            if alias:
+                aliases.add(alias)
+    return tuple(sorted(aliases))
+
+
+def model_cell_width(aliases: Iterable[str]) -> int:
+    """The model cell's width: the longest declared alias, else the default."""
+    longest = max((len(alias) for alias in aliases), default=0)
+    return longest or MODEL
+
+
 def _model_and_effort(event: Mapping[str, Any]) -> tuple[str, str]:
     """The two agent cells for a transition: model and effort, laid apart.
 
@@ -641,8 +684,10 @@ def _model_and_effort(event: Mapping[str, Any]) -> tuple[str, str]:
     effort cell is the whole effort word, each in its own column so a reader
     scans effort down the pane rather than parsing it out of a composed label.
     A legacy line carries a precomposed ``model/effort`` string instead and
-    splits at the slash so it still lands in the two cells; the fragments
-    render whole, never re-parsed beyond that split.
+    splits at the slash so it still lands in the two cells; the fragments are
+    never re-parsed beyond that split. The model value is elided to the cell by
+    the caller, so a value wider than the column is cut rather than allowed to
+    shift the cells after it.
     """
     model = str(event.get("model") or "").strip()
     effort = str(event.get("effort") or "").strip()
@@ -775,9 +820,18 @@ class Ticker:
         width: int = DEFAULT_WIDTH,
         theme: str = DEFAULT_THEME,
         color: bool = False,
+        model_aliases: Iterable[str] | None = None,
     ) -> None:
         self.theme = theme if theme in PALETTE else DEFAULT_THEME
-        self.width = max(int(width), MIN_WIDTH)
+        # The model cell is sized once, from the aliases the configuration
+        # declares, so effort lands on one screen column and an id outside that
+        # vocabulary is cut rather than allowed to shift the cells after it. An
+        # explicit set overrides the resolved config, which lets a caller size
+        # the column for a vocabulary it already holds.
+        self.model_width = model_cell_width(
+            declared_model_aliases() if model_aliases is None else model_aliases
+        )
+        self.width = max(int(width), MIN_WIDTH - MODEL + self.model_width)
         # NO_COLOR is the caller's environment overriding the caller's flag, per
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
@@ -890,7 +944,7 @@ class Ticker:
             (f"{BASELINE_MARKER if baseline else '':<{MARKER}}", "dim"),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" ", None),
-            (f"{model_cell:<{MODEL}}", "dim"),
+            (f"{elide(model_cell, self.model_width):<{self.model_width}}", "dim"),
             (" " * PAIR_GAP, None),
             (f"{effort_cell:<{EFFORT}}", "dim"),
         ]

@@ -98,6 +98,21 @@
     twenty-character model id renders cut with an ellipsis at that width. The negative control is
     executed and logged: with the fixed ten-column cell the effort columns differ and the test
     fails.</p>
+    <p class="r-landing"><strong>Landed 2026-09-23</strong> at <code>5fe605cf</code>, base
+    <code>12155ff8</code>. The model cell is now sized from the longest alias the resolved flight
+    config declares &mdash; twelve columns for <code>dsv4.1-flash</code> &mdash; instead of a fixed
+    ten, so <code>dsv4.1-flash</code>, <code>astra6</code> and <code>sonnet 5</code> all start their
+    effort cell on one column; the ten-column default remains the fallback when the config declares
+    no alias. Any model id wider than the cell is cut with an ellipsis rather than allowed to push
+    the cells after it. <code>MIN_WIDTH</code> rises by the same amount the cell widens. A test writes
+    a flight config declaring the three aliases and asserts their effort cells share a test-pinned
+    column, the cell width equals the longest alias, and a twenty-character unconfigured id renders
+    cut with an ellipsis at that width. Over the fenced ticker test files the delta against base is
+    zero added failures (see
+    <code>docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html</code>); the one failure
+    present is a pre-existing line in <code>test_crew_ticker_layout.py</code> unchanged by this work.
+    The declared negative control &mdash; restore the fixed ten-column model cell &mdash; was applied
+    and the effort columns were observed to differ, failing the new test as required.</p>
 
     <h2 id="s4">&sect;4 &mdash; The row drops the cells nobody reads</h2>
     <p>Remove the generation-rate cell and the age cells from the row. Keep the elapsed time, and
