@@ -1645,6 +1645,33 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
 
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
 
+# The arming's lifetime ends at a wall-clock instant fixed when the follower
+# first arms, not when its current image starts. A follower that re-executes
+# itself on a source change re-enters through this command with the same
+# arguments, so a deadline computed from the replacement's own start would
+# restart the clock on every reload and could fall after the host's cap.
+# Carrying the instant in the environment lets the value survive ``os.execv``:
+# the replacement reads how much of the original arming is left instead of
+# granting a fresh lifetime.
+_FOLLOWER_LIFETIME_ENV = "RECKON_FOLLOWER_LIFETIME_DEADLINE"
+
+
+def _carried_lifetime_deadline() -> float | None:
+    """Return the UTC epoch an arming ends at, when a reload handed one over.
+
+    Absent for a fresh arming, which is the command's normal path: the host
+    starts it in its own environment and no deadline is inherited. Present only
+    in an image the follower re-executed into, so a reload continues the
+    original arming rather than beginning a new one.
+    """
+    raw = os.environ.get(_FOLLOWER_LIFETIME_ENV, "")
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
 
 def _take_follower_checkpoint(project: str) -> dict[str, Any]:
     """Consume the stream position handed across an in-place process reload."""
@@ -2274,6 +2301,15 @@ def crew_follow(
             lifetime_seconds = float(parse_duration(lifetime))
         except runs_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
+    carried_deadline = _carried_lifetime_deadline()
+    if carried_deadline is not None:
+        # This image replaced one already armed with a lifetime, so it spends
+        # what is left of that arming rather than arming its own. A reload that
+        # arrived past the deadline yields a lifetime already elapsed, which
+        # ends the follower at once — a reload never extends an arming.
+        lifetime_seconds = max(0.0, carried_deadline - time.time())
+    elif lifetime_seconds is not None:
+        os.environ[_FOLLOWER_LIFETIME_ENV] = repr(time.time() + lifetime_seconds)
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)

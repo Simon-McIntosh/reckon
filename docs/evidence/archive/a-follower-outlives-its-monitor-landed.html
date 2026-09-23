@@ -8,11 +8,11 @@
   <meta name="plan-slug" content="a-follower-outlives-its-monitor">
   <meta name="plan-title" content="A Follower Outlives Its Monitor">
   <meta name="plan-evidence-for" content="a-follower-outlives-its-monitor">
-  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s2 a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6 a-follower-outlives-its-monitor#s7 a-follower-outlives-its-monitor#s10">
+  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s2 a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6 a-follower-outlives-its-monitor#s7 a-follower-outlives-its-monitor#s10 a-follower-outlives-its-monitor#s8">
   <meta name="plan-recorded-at" content="2026-09-23T09:12:00Z">
   <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass; section 2's attach-line corrective landed, added failures 0; section 10 landed, pass">
   <meta name="plan-environment" content="login node, Python 3.14, matplotlib 3.11.2, real subprocesses under a temporary RECKON_HOME">
-  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c 0be48943 5194657a 7c5f69b9">
+  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c 0be48943 5194657a 7c5f69b9 bc229de1">
   <title>A Follower Outlives Its Monitor &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -365,6 +365,93 @@
       <h3>Scope</h3>
       <p>The promotion and the merge are the coordinator's. Nothing outside
       <code>tests/conftest.py</code> and the new test module changed.</p>
+    </section>
+
+    <section id="s8-reload-deadline">
+      <h2>&sect;8 &mdash; A reloaded follower keeps its lifetime deadline</h2>
+      <p>Commit <code>bc229de1</code> at 2026-09-23 &mdash; <em>feat(crew): carry a
+      follower's lifetime deadline across its reload</em>. The follower replaces its own image
+      when reckon's source stamp changes, re-entering through <code>crew follow</code> with the
+      arguments it was armed with, <code>--lifetime</code> among them. The replacement anchored
+      its deadline at its own start, so every reload restarted the lifetime clock; during an
+      active sprint the deadline slid past the host's thirty-minute Monitor cap and the arming
+      ended in the host's words instead of printing its own final line.</p>
+      <p>The deadline is now an absolute instant fixed at the first arming and handed to the
+      replacement image in the environment, which survives <code>os.execv</code>. The replacement
+      reads how much of the original arming is left and spends it, so a reload never extends a
+      lifetime; a reload that arrives after the deadline ends the follower at once.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-follower-outlives-its-monitor/reload_deadline.png"
+             alt="Two panels on one axis of seconds measured from the original arm, each with an image row and a deadline row. The dotted line at 1.0 s is the reload; the dashed line at 8 s is the gate bound. Upper: the deadline runs from the arm to 5.1 s, inside the bound. Lower: the deadline starts at the reload and runs to 10.5 s, past the bound, with a marker reading still alive here at the bound.">
+        <figcaption>The deadline on a mechanism time axis, carried and re-anchored. The dashed
+        line is the gate's eight-second bound measured from the original arm; the dotted line is
+        the image replacement. Upper: an instant fixed at the arm and carried in the environment
+        ends the arming inside the bound, however many images have run. Lower: anchoring at the
+        replacement's own start begins a fresh six seconds at the reload, so the arming is still
+        alive at the bound. Measured on this login node: reload at 1.03 s, carried end at 5.08 s,
+        replacement arm cost about 3.5 s.</figcaption>
+      </figure>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>The gate, at <code>bc229de1</code>: 1 passed in 10.71 s</strong>
+        (<code>tests/test_follow_lifetime_survives_reload.py</code>). It sets <code>RECKON_HOME</code>
+        to a temporary directory, arms the real follower with <code>--lifetime 6s</code> through
+        <code>sys.executable -c "from reckon.cli import main; main()" crew follow &hellip;</code>
+        (never the bare word <code>reckon</code>), waits for the registration to be held, and bumps
+        the follower's source-stamp trigger, and confirms the reload from the replacement image's own
+        command line &mdash; the launcher it inserts its import root with is absent from the armed
+        argv, so finding it on the process is the image replacement itself rather than a proxy. It
+        then requires the <code>follower end:</code> line, exit status 0, and the end within eight
+        seconds of the original arm.</li>
+        <li><strong>The deadline travels in the environment, not the argument vector.</strong> The
+        value is the UTC epoch the arming ends at, written once at the first arm and left in the
+        environment so <code>os.execv</code> carries it to the replacement. A fresh arming by the
+        host inherits nothing and arms from its own start; a replacement reads what is left and
+        never writes a new deadline, which is what stops a reload from extending an arming.</li>
+        <li><strong>The rendered checks still hold across the reload:</strong> the end line, the
+        attach line to re-arm from, and exit status 0 are all produced by the replacement image,
+        and the line names the session's run that needs the coordinator, <code>r-1</code>
+        (<code>n1</code>).</li>
+        <li><strong>Sibling gate: <code>tests/test_follow_lifetime.py</code> still passes, 2 passed
+        in 30.83 s</strong> (in the same invocation as the gate above).</li>
+        <li><strong>Adjacent follower/watcher set: 5 failed, 23 passed</strong>
+        (<code>tests/test_follow_lifetime.py</code>, <code>tests/test_crew_watch_lifetime.py</code>,
+        <code>tests/test_follower_freshness.py</code>,
+        <code>tests/test_a_reexec_keeps_its_children.py</code>,
+        <code>tests/test_orphaned_follower_releases.py</code>).
+        All five fail identically with this change's call site absent &mdash; three
+        <code>test_crew_watch_lifetime.py</code> failures reading a renamed state, and two in
+        <code>tests/test_a_reexec_keeps_its_children.py</code> from the launched-worker carrier
+        now being a mapping where the test still expects a bare pid list &mdash; so <strong>added
+        failures are 0</strong> and none touches the lifetime path.</li>
+        <li><strong>No new lint findings.</strong> <code>ruff check</code> over the two changed
+        paths found no finding this change adds; the two pre-existing <code>cli.py</code> findings
+        (<code>SIM103</code>, <code>SIM105</code> elsewhere in the file) are unchanged.</li>
+      </ul>
+
+      <h3>Negative control</h3>
+      <p>Declared as: have the replacement image anchor its deadline at its own start instead of
+      the carried absolute deadline. With the carried value forced absent, the gate fails red on
+      exactly that mechanism: the follower was still running 8.0 s after its original arm, so the
+      reload restarted the deadline. The mutation was reverted, the gate ran green again
+      (<code>3 passed</code> with the sibling), and the red log is cited under the node's manifest.</p>
+
+      <h3>What was owed and left</h3>
+      <p>The five adjacent failures predate this node and sit outside its diff, as the base
+      comparison above shows. Verifying the merged result belongs to a separately dispatched test
+      node. This node leaves the archive's <code>plan-verifies</code> and <code>plan-owes</code>
+      head scalars untouched, so the coordinator can fold this section's commit into them.</p>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>reckon/cli.py</code> &mdash; the carried-deadline reader, and the command body
+        that spends what is left of an arming instead of granting a fresh lifetime.</li>
+        <li><code>tests/test_follow_lifetime_survives_reload.py</code> &mdash; the gate.</li>
+        <li><code>docs/figures/a-follower-outlives-its-monitor/reload_deadline.py</code> &mdash; the
+        figure source.</li>
+      </ul>
     </section>
   </main>
 </body>
