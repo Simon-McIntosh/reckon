@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T04:10:48",
+  "updated": "2026-09-23T04:12:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -277462,6 +277462,334 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T211337247253-a-deliverable-outranks-a-dead-process",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a73",
+        "node": "a-deliverable-outranks-a-dead-process",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 288,
+                "cached_input_tokens": 301684,
+                "input_tokens": 301974,
+                "output_tokens": 683,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 302657,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests in tests/test_live_process_outranks_classification.py assert that classify_pointer on a pointer with a dead process, a complete manifest and a parsed stored review never returns abandoned, and that a pointer with a dead process and no manifest and no review still returns abandoned; the negative control of reordering classify_pointer to test the process before the deliverable is applied, the first test is observed to fail, and that log is recorded in the manifest; tests/test_crew_scoring_state.py and tests/test_review_role_is_not_reviewed.py still pass with no added failures against base",
+          "estimated_hours": null,
+          "goal": "classification reads a run's deliverable before its process, so a run whose manifest is complete and whose review record parses is terminal-with-deliverable rather than abandoned whatever its exit looked like",
+          "id": "a-deliverable-outranks-a-dead-process",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T21:13:39Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337247253-a-deliverable-outranks-a-dead-process/manifest.md",
+          "negative_control": "make classify_pointer check process liveness before reading the manifest and review record",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_live_process_outranks_classification.py",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-s2-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T21:14:20Z",
+        "completed_at": "2026-09-22T22:12:45.978Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3487,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3505,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "fa98d32a5ea59e1bec2793823b7e16104bff56e9",
+        "commits": [
+          "c8cc423ac34de73e00c044a615b1ea5f92a4d052",
+          "9f39346e813b1872a735a532fb7c3a7563852449"
+        ],
+        "changed_lines": {
+          "added": 405,
+          "removed": 1,
+          "files": 7
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_live_process_outranks_classification.py tests/test_crew_scoring_state.py tests/test_review_role_is_not_reviewed.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337247253-a-deliverable-outranks-a-dead-process/gate.txt",
+          "log_digest": "sha256:82dc305d23e3f140c2f3ac67594a2775d37e5dc7a8619530a5a3c8e8bfed4bc5"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337247253-a-deliverable-outranks-a-dead-process/manifest.md",
+        "scope_changed": false,
+        "session_id": "9bb96db2-6bc5-493d-adad-04b4355b8efc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14182505,
+            "input_tokens_cumulative": 14182505,
+            "output_tokens": 67590,
+            "output_tokens_cumulative": 67590,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T22:12:45.978Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 908,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2708,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 969,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 this node's gate is \"no tracked repository file is changed\"",
+                "so no commit was made and the worktree is clean at base sha 2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65 (git status --porcelain empty). Precedent: run r-20260914T130210419244-burn-visible-reuse-map reported commits: none for the same reason."
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ccf445983de09a28d58121eb885decda3e7cb9a94c33e7e5432479773abbedc6",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan worker-death-is-recorded --section '\u00a75' --role review --spec-level exact --node review-of-s19-reuse-map --goal 'attach an independent review to run r-20260922T201221096806-s19-reuse-map' --done-when 'the review for r-20260922T201221096806-s19-reuse-map stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260922T201221096806-s19-reuse-map.json --time-budget 30m --session ship-s19-20260922 --allow-unreconciled-runs --local",
+              "node": "s19-reuse-map",
+              "phase": "working",
+              "plan": "worker-death-is-recorded",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260922T201221096806-s19-reuse-map",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 1076,
+              "terminal_at": "2026-09-22T20:56:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 17,
+            "fit": 16,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14350090,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3500.448,
+          "generated_tokens": 75527,
+          "generation_seconds": 3410.874,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 89.574,
+          "peak_input_tokens": 166285,
+          "tokens_per_second": 22.14,
+          "wall_tokens_per_second": 21.58
+        },
+        "follow_on_paths": [
+          "reckon/crew/runs.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-deliverable-outranks-a-dead-process",
+          "session_id": "9bb96db2-6bc5-493d-adad-04b4355b8efc",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T22:12:45.978Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_live_process_outranks_classification.py"
+          ],
+          "declaration": "make classify_pointer check process liveness before reading the manifest and review record",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337247253-a-deliverable-outranks-a-dead-process/negative-control.txt",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337247253-a-deliverable-outranks-a-dead-process/negative-control.txt"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:53:39.874072+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T21:13:39Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 123.0,
+        "orientation_input_tokens": 3879393.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -277760,6 +278088,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2176
+    "_version": 2177
   }
 }
