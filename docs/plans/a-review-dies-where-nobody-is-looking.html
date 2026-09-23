@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192">
 <meta name="plan-impl" content="0.31">
@@ -450,6 +450,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260923T0535-declared-window-overstates" data-who="reckon-ship" data-when="2026-09-23T05:35:00Z">
     <div class="r-comment-body"><p><strong>The declared window is 2.4 times the window the worker actually has.</strong> Host flight config sets <code>backends.clive.usable_input_window: 480000</code>, and that is the figure dispatch's context-fit refusal compares a node against. The clive harness on the same run reports <code>modelUsage.deepseek-v4.1-flash.contextWindow: 200000</code> and compacted automatically at 176,242 and 171,919 tokens. So a node estimated anywhere between about 170k and 480k is admitted and then compacts or dies, which is the population §9 is about. Prevention needs one window, read from the harness that enforces it (or declared equal to it), not a server-side figure the harness never uses. The host layer is operator-owned configuration shared by every session, so this is recorded rather than changed.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260923T0625-compaction-never-completes" data-who="reckon-ship" data-when="2026-09-23T06:25:00Z">
+    <div class="r-comment-body"><p><strong>A fifth death shape: compaction starts and never completes.</strong> Measured 2026-09-23 on the reflex review <code>r-20260923T052905648501</code> (review role, read-only sandbox, effort xhigh, clive). Its first stream holds 15 assistant turns and 8 tool results. It then ends at 07:51:00 in 16 consecutive <code>system/status: compacting</code> records, with no <code>compact_boundary</code>, no <code>result</code> and an empty stderr. The manifest was left at its orientation checkpoint. A resume at 08:09 wrote one <code>init</code> and then 25 more <code>compacting</code> records over 12 minutes, again with no boundary and not one turn. The coordinator stopped it at 08:21. So a session in this state is dead on resume as well, not just on its first run.</p><p>The shapes are now: (1) killed mid-thinking; (2) <q>Prompt is too long</q> on the first turn of a resume; (3) connection refused during a lane outage; (4) a turn that announces an action and ends with no tool call; (5) compaction that starts and never completes. Shapes 2 and 5 are both a session too large to continue, and they differ only in whether the harness refuses or tries. <strong>Prevention measure:</strong> dispatch detects shape 5 from the stream as <em>N compacting records with no boundary within T seconds</em> and ends the run as its own classification. Recovery then starts a fresh session rather than a resume, because both measured resumes of shapes 2 and 5 failed on arrival.</p><p>The replacement review runs at effort high on a fresh member, following the census (review/xhigh 45 of 369 deaths).</p></div>
 </div>
 </section>
 </main>
