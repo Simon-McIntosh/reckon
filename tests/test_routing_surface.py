@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import subprocess
 import threading
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,16 @@ def _project(root: Path, name: str, mounts: dict[str, str]) -> Path:
     repository = root / name
     (repository / "docs" / "plans").mkdir(parents=True)
     (repository / "docs" / "state" / name).mkdir(parents=True)
+    # A checkout whose git history can answer for a path is what distinguishes a
+    # project with no ledger yet from a committed ledger deleted from the tree;
+    # without it the initialisation guard cannot tell the two apart and refuses
+    # to create the ledger.
+    subprocess.run(
+        ["git", "init", "-q", str(repository)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     mounts[name] = str(repository / "docs")
     return repository
 
