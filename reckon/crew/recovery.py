@@ -2347,9 +2347,9 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    # Populated only on the abandoned tail, where a dead process would
-    # otherwise read as a vanished worker: asking git costs a subprocess, so
-    # the question is asked only for the runs that need it.
+    # Populated only while a dead unfinished run is being distinguished as an
+    # interruption with retained work or as an abandonment with nothing left:
+    # asking git costs a subprocess, so live and settled delivery paths never pay.
     commits_beyond_base = 0
     # Liveness is read at the moment it is used, not carried from the fleet
     # read that loaded the pointer. The process table answers only when the
@@ -4427,6 +4427,7 @@ def recover(
             "scoring",
             "promotable",
             "completed_unpromoted",
+            INTERRUPTED_RUN_PHASE,
             "abandoned",
         )
     }
