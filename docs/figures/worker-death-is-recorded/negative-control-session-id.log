@@ -1,0 +1,79 @@
+remove the session_id_absent reason fallback so a run with no captured session records a bare null
+mutation: in observe.fold, 'record["session_id_absent"] = absence' replaced with '= None'
+rev: 75b39d4d663649eeac7596b50667bafb0f8cfb8a tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/every-dispatched-run-carries-a-session-id
+cmd: pytest tests/test_every_run_carries_a_session_id.py
+.FFF                                                                     [100%]
+=================================== FAILURES ===================================
+_______ test_a_stream_that_never_emits_a_session_records_a_named_reason ________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5092/test_a_stream_that_never_emits0/config')
+
+    def test_a_stream_that_never_emits_a_session_records_a_named_reason(
+        crew_home: Path,
+    ) -> None:
+        """A run the backend never announced a session for names where capture stopped."""
+        stream = _write_stream(
+            crew_home,
+            "r-silent",
+            [
+                {"type": "turn.started"},
+                {"type": "turn.completed", "usage": {}},
+            ],
+        )
+        _stub_run(crew_home, "r-silent", stream)
+    
+        record = observe("r-silent")
+    
+        assert not record.get("session_id")
+        absence = record["session_id_absent"]
+>       assert absence["point"] == "stream-without-id"
+               ^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_every_run_carries_a_session_id.py:105: TypeError
+________ test_an_unreadable_stream_names_the_point_that_blocked_capture ________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5092/test_an_unreadable_stream_name0/config')
+
+    def test_an_unreadable_stream_names_the_point_that_blocked_capture(
+        crew_home: Path,
+    ) -> None:
+        """A stream path with nothing behind it is a different absence from a silent one."""
+        missing = crew_home / "crew" / "runs" / "r-missing" / "absent.jsonl"
+        _stub_run(crew_home, "r-missing", missing)
+    
+        record = observe("r-missing")
+    
+        assert not record.get("session_id")
+>       assert record["session_id_absent"]["point"] == "stream-unreadable"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_every_run_carries_a_session_id.py:119: TypeError
+_________________ test_a_harness_launch_names_its_own_absence __________________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5092/test_a_harness_launch_names_it0/config')
+
+    def test_a_harness_launch_names_its_own_absence(crew_home: Path) -> None:
+        """An in-harness task writes no stream, so nothing will ever capture one."""
+        stream = crew_home / "crew" / "runs" / "r-task" / "stream.jsonl"
+        _stub_run(crew_home, "r-task", stream)
+        pointer = crew_home / "crew" / "live" / "r-task.json"
+        record = json.loads(pointer.read_text())
+    
+        record["launch"] = "in-harness"
+        pointer.write_text(json.dumps(record))
+    
+        observed = observe("r-task")
+    
+        assert not observed.get("session_id")
+>       assert observed["session_id_absent"]["point"] == "harness-launch"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_every_run_carries_a_session_id.py:135: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_every_run_carries_a_session_id.py::test_a_stream_that_never_emits_a_session_records_a_named_reason
+FAILED tests/test_every_run_carries_a_session_id.py::test_an_unreadable_stream_names_the_point_that_blocked_capture
+FAILED tests/test_every_run_carries_a_session_id.py::test_a_harness_launch_names_its_own_absence
+3 failed, 1 passed in 1.32s

@@ -284,6 +284,38 @@
       <code>docs/plans/suite-failures-have-an-owner.html</code> and the historical
       <code>docs/state/reckon/crew.json</code> ledger.</p>
     </section>
+
+    <section id="s5-4">
+      <h2>&sect;5.4 landed &mdash; a run records its session id or names its absence</h2>
+      <p>The capture path now writes either the run's session id or a
+      <code>session_id_absent</code> entry naming the point the capture reached.
+      Observation records one of three points &mdash; a stream read and found without an
+      id (<code>stream-without-id</code>), a recorded stream path that is not a readable
+      file (<code>stream-unreadable</code>), or an in-harness launch that writes no stream
+      (<code>harness-launch</code>). Dispatch records its own pending absence with the
+      reuse point that produced it, so a newly created run is never a silent null either.
+      A run that resolves a session records the id and drops any earlier absence.</p>
+      <p>The gap is measured against real crew state by
+      <code>docs/research/data/session-id-capture.json</code>
+      (generator <code>session_id_capture_census.py</code>): of 50 live pointers in the
+      seven-day window, <strong>44 carried no recorded session id</strong> and
+      <strong>43 of those had one already present in the run's own stream</strong> &mdash;
+      the pointer simply predated any observation. One was a cli run whose stream was
+      read and carried none. The capture path is shown at
+      <a href="/reckon/figures/worker-death-is-recorded/session-id-capture.svg">the
+      capture-path figure</a>.</p>
+      <p>Gate: <code>docs/figures/worker-death-is-recorded/session-id-capture.json</code>
+      aside, the focused gate
+      <code>docs/figures/worker-death-is-recorded/session-id-gate.log</code> reports
+      <strong>6 failed, 13 passed</strong>; base comparator
+      <code>session-id-base-gate.log</code> reports the <em>same</em> six failures at
+      <code>75b39d4d</code>, so this node adds no failure. The negative control
+      <code>docs/figures/worker-death-is-recorded/negative-control-session-id.log</code>
+      repeats the declared mutation verbatim on its first line and reports
+      <strong>3 failed, 1 passed</strong>: removing the reason fallback turns the three
+      no-session tests red with a bare null. The merged-head gate belongs to a separately
+      dispatched test node.</p>
+    </section>
 </main>
 </body>
 </html>

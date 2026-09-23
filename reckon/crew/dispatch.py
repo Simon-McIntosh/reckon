@@ -3847,6 +3847,17 @@ def dispatch(
             "attempt_started_at": _utc_now(),
             "phase": "starting",
             "session_id": reuse_session,
+            # A run that carries no session id names why it does not, from the
+            # moment it is created rather than only once something folds its
+            # stream in. A dispatch-time absence is the pending kind — the run's
+            # own stream or harness task may still supply one — and observation
+            # replaces this with the id or with the point the capture reached.
+            "session_id_absent": _dispatch_session_absence(
+                backend,
+                roster_member,
+                reused=reuse_session,
+                withheld=session_resolution["withheld"],
+            ),
             # A stored session belonging to another coordinator session is not
             # resumed, and that is written down rather than left silent: a peer
             # whose worker starts a fresh conversation reads the session, its
@@ -4770,6 +4781,15 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["resumable"] = resumable
         record["resumable_reason"] = reason
         record["resume_session_id"] = session["session_id"] if resumable else None
+        # The pointer records the session id the run carried, or names why it
+        # carried none. A bare null left a reader unable to tell a run whose
+        # stream had not been read from one whose stream had no id to give, and
+        # that ambiguity is what promoted five resumable runs.
+        absence = _capture_session_absence(record, session)
+        if absence is None:
+            record.pop("session_id_absent", None)
+        else:
+            record["session_id_absent"] = absence
 
         capture = _capture_member_session(record)
         if capture is not None:
@@ -4907,6 +4927,97 @@ def _owned_session(
             "owner": recorded_owner or None,
             "reason": reason,
         },
+    }
+
+
+def _dispatch_session_absence(
+    backend: Mapping[str, Any],
+    roster_member: Mapping[str, Any] | None,
+    *,
+    reused: str | None,
+    withheld: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Name why a freshly dispatched run carries no session id, or None.
+
+    Dispatch is the first of the two points a session id can be attached, and
+    until now a run that reached it without one recorded a bare null — which
+    reads as a verdict on a run that has simply not got one yet. The four
+    situations want different operator responses, so each is named: nothing
+    owns a reusable session, a stored one exists but is not reusable for this
+    configuration, one exists but belongs to another coordinator session, or
+    the backend has no session reuse at all. Observation replaces this with the
+    id the run's own stream supplies, or with the point the capture reached.
+    """
+    if reused:
+        return None
+    if withheld:
+        return {
+            "point": "dispatch-reuse-withheld",
+            "reason": str(withheld.get("reason") or ""),
+        }
+    if not roster_member:
+        return {
+            "point": "dispatch-no-roster-member",
+            "reason": (
+                "the dispatch registered no roster member, so no stored session "
+                "exists to reuse and the run starts a fresh conversation"
+            ),
+        }
+    if not backend.get("session_reuse"):
+        return {
+            "point": "dispatch-session-not-reuseable",
+            "reason": (
+                "the resolved backend records no session reuse, so no stored "
+                "session is offered to this run"
+            ),
+        }
+    return {
+        "point": "dispatch-no-stored-session",
+        "reason": (
+            "the roster member holds no session for this run's agent "
+            "configuration, so the run starts a fresh conversation"
+        ),
+    }
+
+
+def _capture_session_absence(
+    record: Mapping[str, Any], session: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Name the point a run's session-id capture reached, or None when it did.
+
+    Called on every observation, so a run that resolves a session records the
+    id and drops any earlier absence, and a run that resolves none names which
+    of the distinct situations produced it: a launch with no stream to carry
+    one, a stream not yet readable, or a stream read and found without one. The
+    last is the case that made resume structurally unavailable, and it is a
+    measurement rather than an outage — the backend simply has not announced an
+    id for this run.
+    """
+    if session.get("session_id"):
+        return None
+    if str(record.get("launch") or "") != "cli":
+        return {
+            "point": "harness-launch",
+            "reason": (
+                "a session id is read from a backend stream and this launch "
+                "writes none, so nothing will ever capture one for it"
+            ),
+        }
+    log = Path(str(record.get("log_path") or ""))
+    if not log.is_file():
+        return {
+            "point": "stream-unreadable",
+            "reason": (
+                f"the recorded stream {str(log)!r} is not a readable file, so "
+                "there was nothing to read a session id from"
+            ),
+        }
+    return {
+        "point": "stream-without-id",
+        "reason": (
+            "the run's own stream was read and carries no session id, so the "
+            "backend has not announced one for this run"
+        ),
     }
 
 
