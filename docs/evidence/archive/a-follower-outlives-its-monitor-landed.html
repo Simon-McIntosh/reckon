@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-outlives-its-monitor-landed">
+  <meta name="plan-title" content="A follower outlives its monitor &mdash; harness reference landed">
+  <meta name="plan-summary" content="The Claude Code harness reference now arms the fleet watch with the absolute attach line and --lifetime 29m, states the host's thirty-minute cap as 1,800,000 milliseconds, re-arms on the follower's own final line, and says an agent reader receives escape sequences rather than hue. Every arming example is pinned by tests that parse the examples out of the reference and re-run them.">
+  <meta name="plan-evidence-for" content="reckon:a-follower-outlives-its-monitor">
+  <meta name="plan-verifies" content="reckon:a-follower-outlives-its-monitor#s6">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; pytest">
+  <meta name="plan-commits" content="9ad95695">
+  <meta name="plan-artifacts" content="skills/reckon-ship/references/orchestrator-harness/claude-code.md,tests/test_monitor_invocation_docs.py,docs/figures/a-follower-outlives-its-monitor/arming-window.svg">
+  <title>A follower outlives its monitor &mdash; harness reference landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A follower outlives its monitor &mdash; harness reference landed</h1>
+    <p class="plan-summary">The harness reference arms the watch with the absolute attach line and a bounded lifetime, states the host cap, and says what an agent reader actually receives.</p>
+  </header>
+  <figure>
+    <img src="/reckon/figures/a-follower-outlives-its-monitor/arming-window.svg" alt="One arming window: t=0 arm with the absolute attach line and --lifetime 29m, 29m the follower's final line, 30m the host expiry.">
+    <figcaption>One arming window on this host.</figcaption>
+  </figure>
+  <section id="s6">
+    <h2>What changed in the reference</h2>
+    <ul>
+      <li>Both arming examples now build an absolute entry point and pass <code>--lifetime 29m</code>.</li>
+      <li>The basis is stated: the monitor's shell inherits no usable <code>PATH</code>, and the attach line reckon prints already names the entry point absolutely.</li>
+      <li>The cap is stated as 1,800,000 milliseconds, and the re-arm trigger is the follower's own final line.</li>
+      <li>A new paragraph says an agent reader gets escape sequences, not hue, so the state word must carry the state alone.</li>
+      <li>No example, and no prose, states <code>persistent</code> any more &mdash; the parameter the tool dropped.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>The armed example</h2>
+    <pre><code>Monitor({
+  command: '/abs/path/to/reckon crew follow --project &lt;project&gt;'
+         + ' --session &lt;session&gt; --lifetime 29m',
+  description: '&lt;project&gt; &lt;sprint-or-plan&gt;',
+  timeout_ms: 1800000,
+})</code></pre>
+    <p>Both examples in the reference parse to this shape: first token absolute and ending in <code>reckon</code>, <code>crew follow</code> present, and <code>--lifetime 29m</code> present.</p>
+  </section>
+  <section>
+    <h2>Guard, and its firing</h2>
+    <p>Five tests in <code>tests/test_monitor_invocation_docs.py</code> parse the reference and pin each clause. Firing demonstrated by reinstating the base content under the new tests: exactly the five new tests fail, the four pre-existing tests still pass, so the guards fail on the defect they name rather than on a fixture.</p>
+  </section>
+  <section>
+    <h2>Counts, base and head</h2>
+    <table>
+      <tr><th>Gate</th><th>Base</th><th>Head</th></tr>
+      <tr><td><code>tests/test_monitor_invocation_docs.py</code></td><td>4 passed</td><td>9 passed</td></tr>
+      <tr><td><code>tests/test_skill_contracts.py</code></td><td>3 failed, 51 passed</td><td>3 failed, 51 passed</td></tr>
+    </table>
+    <p>Added failures: 0. The three failures are pre-existing at the base revision and unchanged by this node.</p>
+  </section>
+  <section>
+    <h2>Scope and follow-ons</h2>
+    <p>This node writes documentation and its guards only. Two dependencies are noted rather than fixed: the CLI side of <code>--lifetime</code> and the absolute <code>attach_line</code> are owned by peer nodes on this plan, so the reference is forward-looking on them; and <code>tests/test_crew_monitor_output.py::test_harness_arms_a_monitor_and_attaches_followers</code> asserts the base reference content and is now broken by this correction.</p>
+  </section>
+</main>
+</body>
+</html>
