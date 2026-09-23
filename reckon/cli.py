@@ -1856,6 +1856,7 @@ def _follow_watch_lines(
     clock=time.monotonic,
     resume: Mapping[str, Any] | None = None,
     lifetime: float | None = None,
+    registration=None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1900,6 +1901,37 @@ def _follow_watch_lines(
         None if lifetime is None else started_at + max(0.0, float(lifetime))
     )
     lifetime_elapsed = False
+    consumer_gone = False
+
+    def _check_consumer() -> None:
+        """End this arming when the process it reports to has gone.
+
+        The follower delivers to the session that armed it, recorded at
+        registration as the recorded parent. Once that process is gone the
+        lines reach nobody, so holding the registration only denies the
+        session its next follower: the orphan keeps the advisory lock, and
+        every dispatch from the session is refused ``watcher-required`` until
+        someone kills it by hand. A re-parent to init, or to a subreaper,
+        shows up as ``os.getppid()`` no longer naming the recorded parent; the
+        recorded start time tells that parent apart from an unrelated process
+        that has since reused its pid. Nothing is printed on this path: it is
+        the one path whose whole point is that no reader is left.
+        """
+        nonlocal consumer_gone
+        if consumer_gone or registration is None or not registration.held:
+            return
+        record = registration.record or {}
+        try:
+            parent_pid = int(record.get("parent_pid") or 0)
+        except (TypeError, ValueError):
+            return
+        if parent_pid <= 1:
+            return
+        if os.getppid() != parent_pid:
+            consumer_gone = True
+            return
+        if runs._process_start_time(parent_pid) != record.get("parent_start_time"):
+            consumer_gone = True
 
     def _check_lifetime() -> None:
         """Mark this arming ended when its own deadline has passed.
@@ -1927,6 +1959,7 @@ def _follow_watch_lines(
                 }
             )
         _check_lifetime()
+        _check_consumer()
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
@@ -1967,7 +2000,7 @@ def _follow_watch_lines(
         except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
             return
 
-    while not _stopped() and not lifetime_elapsed:
+    while not _stopped() and not lifetime_elapsed and not consumer_gone:
         _sweep_on_cadence()
         if not runs.producer_live(project):
             _tick()
@@ -1992,13 +2025,13 @@ def _follow_watch_lines(
                     yield selected
         resume_state = {}
 
-        while not stream_path.exists():
+        while not stream_path.exists() and not consumer_gone:
             if not runs.producer_live(project):
                 break
             if _stopped():
                 return
             _tick()
-            if lifetime_elapsed:
+            if lifetime_elapsed or consumer_gone:
                 break
             sleeper(poll_interval)
         if not stream_path.exists():
@@ -2014,7 +2047,7 @@ def _follow_watch_lines(
                     if selected is not None:
                         yield selected
                     _tick(stream_path=stream_path, offset=stream.tell())
-                    if lifetime_elapsed:
+                    if lifetime_elapsed or consumer_gone:
                         break
                     _sweep_on_cadence()
                     continue
@@ -2026,7 +2059,7 @@ def _follow_watch_lines(
                 if not runs.producer_live(project):
                     break
                 _tick(stream_path=stream_path, offset=stream.tell())
-                if lifetime_elapsed:
+                if lifetime_elapsed or consumer_gone:
                     break
                 # The gate is time-based, so calling it from the wait pass as
                 # well as the line pass runs the recovery on elapsed time while
@@ -2276,6 +2309,7 @@ def crew_follow(
             on_poll=poll,
             resume=resume,
             lifetime=lifetime_seconds,
+            registration=registration,
         ):
             if event.get("event") == FOLLOWER_END_EVENT:
                 # This one line is about the follower, not the fleet, so it is
