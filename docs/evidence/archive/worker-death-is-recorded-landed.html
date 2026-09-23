@@ -374,6 +374,67 @@
       an interrupted run into this project's rows. Failures outside the declared scope
       are reported under <code>follow_ons</code>, not triaged here.</p>
     </section>
+
+    <section id="s5-newest-stream">
+      <h2>&sect;5 &mdash; one newest-stream reader</h2>
+      <p>A run that resumes or changes lane writes its output to a new file beside the
+      <code>stream.jsonl</code> the pointer first named: <code>resume-N.jsonl</code> for
+      each resumed turn, <code>lane-change-N.jsonl</code> for each lane change. Two
+      readers asked the same question of the run's output and each answered it from the
+      first file it knew by name: the stall classifier aged the run against
+      <code>stream.jsonl</code>, so a healthy resumed run looked quiet since it started,
+      and the session lookup read <code>record["log_path"]</code>, so a session id written
+      to a later file was not found. The question is now answered in one place.
+      <code>recovery.newest_stream(run_dir)</code> returns
+      the newest non-empty stream across <code>stream.jsonl</code>,
+      <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>, and its ordered
+      sibling <code>recovery.stream_paths_newest_first</code> returns the same files
+      newest-first. An empty file is not activity, so the reader skips it and falls back
+      to the next-newest stream &mdash; the case a resumed turn produces in the interval
+      before its first event lands. The pointer's own log path joins the candidates, so a
+      record whose stream sits outside its run directory is still read. The relationship
+      is drawn at
+      <a href="/reckon/figures/worker-death-is-recorded/newest-stream-reader.svg">the
+      newest-stream-reader figure</a>.</p>
+      <p>The stall classifier (<code>_watch_snapshot</code>, and the compatibility
+      follower's stall check) measures quiet time through
+      <code>_run_stream_quiet_seconds</code>, and the <code>log_age_seconds</code> on the
+      classified row is taken from the same stream. The session lookup
+      (<code>resumption._stream_session</code>) reads the ordered streams newest-first
+      and returns the first that carries an id, falling back to an earlier stream rather
+      than answering an absence a newer, empty stream cannot support.</p>
+
+      <h3>Measured controls</h3>
+      <ul>
+        <li>Gate <code>docs/figures/worker-death-is-recorded/newest-stream-gate-after.log</code>:
+        <code>tests/test_newest_stream_is_read_everywhere.py</code> and eight focused
+        recovery/resumption files &mdash; <strong>6 failed, 107 passed</strong>. The eight
+        new tests pass; the six failures are present at the base revision.</li>
+        <li>Base comparator
+        <code>docs/figures/worker-death-is-recorded/newest-stream-gate-base.log</code> at
+        <code>2721bdba</code>: the same nine files &mdash; <strong>6 failed,
+        99 passed</strong>. The six failure ids are identical, so this node adds no
+        failure; the 8-test difference is the new file.</li>
+        <li>Declared negative control
+        <code>docs/figures/worker-death-is-recorded/negative-control-newest-stream.log</code>,
+        whose first line repeats the mutation verbatim: restricting the reader to
+        <code>stream.jsonl</code> turns <strong>6 failed, 2 passed</strong> &mdash; the six
+        tests that exercise the reader, including the stale-first-stream case.</li>
+        <li>Reader inventory
+        <code>docs/figures/worker-death-is-recorded/newest-stream-grep.log</code>:
+        <code>stream.jsonl</code> appears in neither module except the reader's own
+        candidate list, so no second stall-age or session-lookup reader opens it.</li>
+      </ul>
+
+      <h3>Boundary</h3>
+      <p>This gate measures only this node's change. The remaining
+      <code>log_path</code> reads in the two modules answer from a stream's
+      <em>content</em> &mdash; a provider refusal, a spend block, a retry loop, a
+      background-wait message &mdash; not from its age, and read the stream the event
+      was written to; they are out of this node's declared scope. The six pre-existing
+      failures are environmental (a pytest temporary repository is not a git worktree,
+      so promotion refuses) and are reported under <code>follow_ons</code>.</p>
+    </section>
 </main>
 
 </body>

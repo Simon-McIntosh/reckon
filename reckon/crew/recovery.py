@@ -2045,21 +2045,108 @@ def _wait_declaration_signature(
     return "wait:" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
 
 
-def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
-    """The newest write to the run's stream, or None when there is none.
+# The shapes a run's own output takes inside one run directory: the initial
+# stream, one per resume turn, and one per lane change. A run that resumes or
+# changes lane keeps writing to a new file, so the newest of these is its
+# current activity; the file the pointer first named goes stale the moment that
+# happens.
+RUN_STREAM_GLOBS = ("stream.jsonl", "resume-*.jsonl", "lane-change-*.jsonl")
 
-    The stream is where an engine's own output lands, so its mtime is the one
-    fact about a run that says it is producing something right now. Absent or
-    unreadable is None rather than a zero: a run with no stream has taken no
-    measurement, and a missing file must not read as infinitely stale.
+
+def stream_paths_newest_first(
+    run_dir: str | Path, *, include: Iterable[str | Path] = ()
+) -> list[Path]:
+    """Every non-empty stream in a run directory, newest write first.
+
+    Empty files are skipped rather than counted: a stream a process has opened
+    but written nothing to is not activity, and reading its mtime would report
+    a resumed run as producing output the instant its file was created. The
+    pointer's own log path joins the candidates when a caller supplies it, so a
+    record whose current stream sits outside the run directory is still read.
     """
-    stream = Path(str(record.get("log_path") or ""))
+    directory = Path(run_dir)
+    candidates: list[Path] = []
+    for pattern in RUN_STREAM_GLOBS:
+        candidates.extend(directory.glob(pattern))
+    for extra in include:
+        if str(extra or ""):
+            candidates.append(Path(str(extra)))
+    written: dict[Path, float] = {}
+    for path in candidates:
+        try:
+            if path.stat().st_size > 0:
+                written[path] = path.stat().st_mtime
+        except OSError:
+            # A directory entry can vanish between the glob and the stat; that
+            # is no stream rather than an error.
+            continue
+    return sorted(written, key=lambda path: (written[path], str(path)), reverse=True)
+
+
+def newest_stream(
+    run_dir: str | Path, *, include: Iterable[str | Path] = ()
+) -> tuple[Path, float] | None:
+    """The newest non-empty stream a run has, and when it was written.
+
+    None means the run holds no readable, non-empty stream, so a caller can
+    tell "no measurement taken" from "an infinitely old one". This is the one
+    reader for both questions a stream answers — how long the run has been
+    quiet, and which session it is continuing — so the stall classifier and the
+    session lookup cannot disagree about which stream is current.
+    """
+    paths = stream_paths_newest_first(run_dir, include=include)
+    if not paths:
+        return None
+    newest = paths[0]
     try:
-        if stream.is_file():
-            return stream.stat().st_mtime
+        return newest, newest.stat().st_mtime
     except OSError:
         return None
-    return None
+
+
+def _run_directory(record: Mapping[str, Any] | dict[str, Any]) -> Path:
+    """The directory holding a run's streams, from its id or its log path."""
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        return Path(runs.run_dir(run_id))
+    return Path(str(record.get("log_path") or ".")).parent
+
+
+def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
+    """A record's newest stream, through the shared reader."""
+    return newest_stream(
+        _run_directory(record), include=(record.get("log_path"),)
+    )
+
+
+def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
+    """The newest write to any of the run's streams, or None when there is none.
+
+    The stream is where an engine's own output lands, so its mtime is the one
+    fact about a run that says it is producing something right now. Every
+    stream a run has is considered, so a resumed or lane-changed run ages
+    against the file it is writing now rather than the one it started with.
+    Absent or unreadable is None rather than a zero: a run with no stream has
+    taken no measurement, and a missing file must not read as infinitely stale.
+    """
+    found = _record_newest_stream(record)
+    return found[1] if found is not None else None
+
+
+def _run_stream_quiet_seconds(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> int:
+    """Quiet time for a run, measured from its newest non-empty stream.
+
+    Falling back to the pointer-and-creation clock only when the run holds no
+    stream at all keeps the reading authoritative when one exists, without
+    turning a run that has never written anything into an instantly stalled
+    run.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return _stream_quiet_seconds(record, now_seconds=now_seconds)
+    return max(0, int(now_seconds - found[1]))
 
 
 def _declared_wait_age_seconds(
@@ -2471,7 +2558,15 @@ def classify_pointer(
     else:
         alive = stored_alive
         liveness_proven = False
+    # The liveliest stream the run has, taken through the shared reader, so a
+    # resumed or lane-changed run is aged against what it is writing now rather
+    # than the first file the pointer named. Absent a non-empty stream the
+    # pointer's own log path is still used, so an empty stream file keeps
+    # reporting its own age rather than none at all.
+    stream_reading = _record_newest_stream(record)
     log = Path(str(record.get("log_path") or ""))
+    if stream_reading is not None:
+        log = stream_reading[0]
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
@@ -3744,7 +3839,7 @@ def _watch_snapshot(
         # so the stall check has to reach every non-terminal state a pointer
         # can sit in — gating it on "working" alone left a run killed before
         # its phase ever advanced past "starting" permanently exempt.
-        quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
+        quiet = _run_stream_quiet_seconds(pointer, now_seconds=moment)
         if quiet > stall_seconds:
             # A quiet stream is a hang only when nothing is waiting. An alive
             # worker sitting in a bounded wait — a sleep, a peer read, a task
@@ -4444,7 +4539,7 @@ def watch_follow(
                     if run_id not in reported_runs and row.get(
                         "manifest_status"
                     ) not in {"complete", "blocked", "failed"}:
-                        quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
+                        quiet = _run_stream_quiet_seconds(pointer, now_seconds=moment)
                         # A quiet stream sleeping in a bounded wait is paused,
                         # not stalled, so it must not wake the follower the way
                         # a hang does — the same correction the ticker applies.

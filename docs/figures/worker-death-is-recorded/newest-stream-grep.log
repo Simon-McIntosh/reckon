@@ -1,0 +1,28 @@
+# revision 2721bdba40e73fbc66760bf857527962dcbcb1a7 tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/newest-stream-is-read-everywhere
+# grep -n 'stream.jsonl' reckon/crew/recovery.py reckon/crew/resumption.py
+reckon/crew/recovery.py:2053:RUN_STREAM_GLOBS = ("stream.jsonl", "resume-*.jsonl", "lane-change-*.jsonl")
+# grep -n 'log_path' reckon/crew/recovery.py reckon/crew/resumption.py
+reckon/crew/resumption.py:239:    log_path = directory / f"{safe_backend}-{stamp}.jsonl"
+reckon/crew/resumption.py:260:        log_path.write_text(completed.stdout, encoding="utf-8")
+reckon/crew/resumption.py:265:            log_path=log_path,
+reckon/crew/resumption.py:322:def recovery_log_path(project: str) -> Path:
+reckon/crew/resumption.py:338:    log = Path(str(record.get("log_path") or ""))
+reckon/crew/resumption.py:422:        else Path(str(record.get("log_path") or ".")).parent
+reckon/crew/resumption.py:425:        directory, include=(record.get("log_path"),)
+reckon/crew/resumption.py:432:                log_path=log,
+reckon/crew/resumption.py:688:    log_path = directory / f"resume-{turn}.jsonl"
+reckon/crew/resumption.py:693:        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+reckon/crew/resumption.py:699:        log_path=log_path,
+reckon/crew/resumption.py:704:    return {"pid": pid, "turn": turn, "log_path": str(log_path)}
+reckon/crew/resumption.py:792:    return recovery_log_path(project).with_suffix(".status.json")
+reckon/crew/resumption.py:1223:        path = recovery_log_path(project)
+reckon/crew/recovery.py:1038:    log = Path(str(record.get("log_path") or ""))
+reckon/crew/recovery.py:1051:            log_path=log,
+reckon/crew/recovery.py:1231:    log = Path(str(record.get("log_path") or ""))
+reckon/crew/recovery.py:1383:        log = Path(str(record.get("log_path") or ""))
+reckon/crew/recovery.py:1394:                        log_path=log,
+reckon/crew/recovery.py:1432:    log = Path(str(record.get("log_path") or ""))
+reckon/crew/recovery.py:2112:    return Path(str(record.get("log_path") or ".")).parent
+reckon/crew/recovery.py:2118:        _run_directory(record), include=(record.get("log_path"),)
+reckon/crew/recovery.py:2567:    log = Path(str(record.get("log_path") or ""))
+reckon/crew/recovery.py:3112:            f"read the refusing stream {record.get('log_path')} and launch log "

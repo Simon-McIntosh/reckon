@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 470" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15">
+  <rect width="940" height="470" fill="#ffffff"/>
+  <text x="24" y="34" font-size="19" font-weight="bold">One newest-stream reader for a run</text>
+  <text x="24" y="58" fill="#444">A resumed or lane-changed run writes to a new file; both readers take the newest non-empty one.</text>
+
+  <!-- run directory -->
+  <rect x="24" y="86" width="330" height="330" rx="10" fill="#f6f8fb" stroke="#7f92a8"/>
+  <text x="44" y="114" font-weight="bold" fill="#2b3a4a">run directory  runs/&lt;run-id&gt;/</text>
+
+  <rect x="44" y="132" width="290" height="58" rx="8" fill="#fdecec" stroke="#c9706f"/>
+  <text x="58" y="156" font-weight="bold" fill="#8a2f2e">stream.jsonl</text>
+  <text x="58" y="178" fill="#8a2f2e">stale — the file the pointer first named</text>
+
+  <rect x="44" y="204" width="290" height="58" rx="8" fill="#eaf5ea" stroke="#5f9d63"/>
+  <text x="58" y="228" font-weight="bold" fill="#2e6b31">resume-1.jsonl</text>
+  <text x="58" y="250" fill="#2e6b31">fresh — the resumed turn is writing here</text>
+
+  <rect x="44" y="276" width="290" height="58" rx="8" fill="#f2f2f2" stroke="#a7a7a7"/>
+  <text x="58" y="300" font-weight="bold" fill="#5a5a5a">lane-change-1.jsonl</text>
+  <text x="58" y="322" fill="#5a5a5a">empty until its first event — not activity</text>
+
+  <text x="44" y="366" fill="#2b3a4a">candidates: stream.jsonl · resume-*.jsonl · lane-change-*.jsonl</text>
+  <text x="44" y="390" fill="#2b3a4a">+ the pointer's own log path</text>
+
+  <!-- reader -->
+  <rect x="400" y="196" width="184" height="112" rx="10" fill="#e8f0fb" stroke="#3f6ea5" stroke-width="2"/>
+  <text x="418" y="230" font-weight="bold" fill="#27476b">newest_stream()</text>
+  <text x="418" y="256" fill="#27476b">newest non-empty</text>
+  <text x="418" y="276" fill="#27476b">path + mtime</text>
+  <text x="418" y="298" fill="#27476b">or None</text>
+
+  <!-- consumers -->
+  <rect x="650" y="118" width="266" height="92" rx="10" fill="#f3eefb" stroke="#7558a8"/>
+  <text x="668" y="148" font-weight="bold" fill="#4a3670">stall classifier</text>
+  <text x="668" y="170" fill="#4a3670">recovery._watch_snapshot</text>
+  <text x="668" y="192" fill="#4a3670">quiet = now − newest write</text>
+
+  <rect x="650" y="292" width="266" height="92" rx="10" fill="#f7ecf4" stroke="#b0619a"/>
+  <text x="668" y="322" font-weight="bold" fill="#7c3f68">session lookup</text>
+  <text x="668" y="344" fill="#7c3f68">resumption._stream_session</text>
+  <text x="668" y="366" fill="#7c3f68">newest first, fall back to earlier</text>
+
+  <!-- arrows -->
+  <line x1="354" y1="250" x2="398" y2="250" stroke="#3f6ea5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="584" y1="232" x2="648" y2="176" stroke="#7558a8" stroke-width="2" marker-end="url(#b)"/>
+  <line x1="584" y1="272" x2="648" y2="330" stroke="#b0619a" stroke-width="2" marker-end="url(#c)"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#3f6ea5"/></marker>
+    <marker id="b" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#7558a8"/></marker>
+    <marker id="c" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#b0619a"/></marker>
+  </defs>
+</svg>
