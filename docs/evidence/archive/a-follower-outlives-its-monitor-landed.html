@@ -8,11 +8,11 @@
   <meta name="plan-slug" content="a-follower-outlives-its-monitor">
   <meta name="plan-title" content="A Follower Outlives Its Monitor">
   <meta name="plan-evidence-for" content="a-follower-outlives-its-monitor">
-  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6">
+  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s2 a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6">
   <meta name="plan-recorded-at" content="2026-09-23T09:12:00Z">
-  <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass">
+  <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass; section 2's attach-line corrective landed, added failures 0">
   <meta name="plan-environment" content="login node, Python 3.14, matplotlib 3.11.2, real subprocesses under a temporary RECKON_HOME">
-  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c">
+  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c 0be48943">
   <title>A Follower Outlives Its Monitor &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -187,6 +187,72 @@
     <section>
       <h2>Scope and follow-ons</h2>
       <p>This node writes documentation and its guards only. Two dependencies are noted rather than fixed: the CLI side of <code>--lifetime</code> and the absolute <code>attach_line</code> are owned by peer nodes on this plan, so the reference is forward-looking on them; and <code>tests/test_crew_monitor_output.py::test_harness_arms_a_monitor_and_attaches_followers</code> asserts the base reference content and is now broken by this correction.</p>
+    </section>
+    <section id="s2-attach-line-tests-assert-its-shape">
+      <h2>&sect;2 &mdash; The attach-line tests assert the line's shape</h2>
+      <p>Commit <code>0be48943</code> at 2026-09-23 &mdash; <em>test(crew): assert the attach line's
+      shape, not a literal</em>. This is the corrective carried from the review of the §2 landing: the
+      two tests that restated the bare word, and the assertions that compared a surface's stored
+      value against a fresh call to <code>_watch_attach_line</code>, now check the line's shape &mdash;
+      its first token an absolute path to an executable named <code>reckon</code>, the remaining
+      tokens exactly the fixed command with the caller's project and session.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-follower-outlives-its-monitor/attach-line-shape.svg"
+             alt="The attach line's tokens, the two clauses of the shape assertion that cover them, and the two assertion styles the change replaces">
+        <figcaption>The line's token strip, the two clauses of the shape assertion, and the
+        assertion styles it replaces.</figcaption>
+      </figure>
+
+      <h3>What changed</h3>
+      <ul>
+        <li><code>tests/test_crew_session_delivery.py</code> &mdash; the bare-word literal in the test
+        holding line 223 and the two <code>--session</code> substring assertions in the live-read test
+        become one shape assertion per line.</li>
+        <li><code>tests/test_crew.py</code> &mdash; the hardcoded waiver literal in the test holding
+        line 1887 becomes per-field assertions plus a shape assertion on <code>attach_line</code>.</li>
+        <li><code>tests/test_watch_arming_isolation.py</code> &mdash; the fixture that composed the
+        line through <code>_watch_attach_line</code> and compared a surface against it becomes a shape
+        assertion on each of the two returned and two stored waivers.</li>
+        <li><code>tests/test_crew_dispatch_guard.py</code> &mdash; the same composer call and whole-dict
+        comparison become per-field assertions plus a shape assertion on the stored and returned
+        waiver.</li>
+        <li><code>tests/test_follow_lifetime.py</code> &mdash; the assertion that the composer's output
+        is a substring of the follower's final line becomes a locator that finds the composed command
+        in that line by its first token and asserts the argument shape that follows.</li>
+      </ul>
+      <p>The watch-arming dispatch fixture also gained the specification level the node contract
+      requires, so its three dispatch tests reach their assertions; all three failed before that for
+      the unrelated refusal.</p>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>Added failures 0, per file, against base revision <code>b52bf914</code></strong>
+        (base run from a detached worktree at that revision):
+        <code>tests/test_crew_session_delivery.py</code> 2 failed &rarr; 1;
+        <code>tests/test_watch_arming_isolation.py</code> 3 failed &rarr; 0;
+        <code>tests/test_crew_dispatch_guard.py</code> 2 failed &rarr; 2;
+        <code>tests/test_follow_lifetime.py</code> 2 passed &rarr; 2 passed;
+        <code>tests/test_crew.py</code> run by node id only, because the file does not complete &mdash;
+        the test holding line 1887 failed at base and passes at head. The three remaining failures are
+        the same three at base (a refusal-documentation test and two mount/claim lookups), none of them
+        an attach-line assertion.</li>
+        <li><strong>The declared negative control is executed and logged.</strong> Restoring the bare
+        word <code>reckon</code> as the first token in <code>_watch_attach_line</code> makes all six
+        edited attach-line assertions fail, each on the absolute-path clause, with the composed line
+        printed in the failure message. The log's first line repeats the declared mutation verbatim.</li>
+        <li><strong>No new lint findings.</strong> Scoped to the five edited files, the ruff finding set
+        is unchanged against the base revision.</li>
+      </ul>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>logs/gate_after.log</code> &mdash; the head gate over the named node id and the four
+        whole files.</li>
+        <li><code>logs/base_file_*.log</code> &mdash; the same four files at the base revision, run
+        from the detached worktree.</li>
+        <li><code>logs/negative_control.log</code> &mdash; the declared mutation, six failures.</li>
+      </ul>
     </section>
   </main>
 </body>

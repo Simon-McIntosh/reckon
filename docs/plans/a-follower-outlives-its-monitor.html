@@ -121,6 +121,32 @@
     output.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="attach-line-tests-assert-its-shape" data-when="2026-09-23">
+    <p><strong>Outcome — the attach-line tests assert the line's shape.</strong> Commit
+    <code>0be48943</code> <em>test(crew): assert the attach line's shape, not a literal</em> replaces
+    the two assertions that restated the bare word, and the assertions that compared a surface's
+    stored value against a fresh call to <code>_watch_attach_line</code>. Each now asserts the line's
+    first token is an absolute path to an executable named <code>reckon</code>, and that the remaining
+    tokens are exactly <code>crew follow --project &lt;project&gt; [--session &lt;session&gt;]</code>.
+    The watch-arming dispatch fixture also gained the specification level the node contract requires,
+    so its three dispatch tests reach their assertions.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Added failures 0, per file</strong>, against base revision <code>b52bf914</code>, run
+      from a detached worktree at that revision: <code>test_crew_session_delivery.py</code> 2 failed
+      &rarr; 1, <code>test_watch_arming_isolation.py</code> 3 &rarr; 0,
+      <code>test_crew_dispatch_guard.py</code> 2 &rarr; 2, <code>test_follow_lifetime.py</code> 2
+      passed &rarr; 2 passed, and <code>tests/test_crew.py</code> by node id because the file does not
+      complete, where the test holding line 1887 failed at base and passes at head. The surviving
+      failures are the same three at base, none of them an attach-line assertion.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> restoring the bare
+      word <code>reckon</code> as the first token makes all six edited attach-line assertions fail, on
+      the absolute-path clause.</li>
+      <li><strong>No new lint findings</strong> in the five edited files against the same base.</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s2-attach-line-tests-assert-its-shape">the landed record</a>.</p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; The follower announces its own end before the host does</h2>
     <p>Add a <code>--lifetime</code> option to <code>reckon crew follow</code>, taking a duration.
     When the lifetime is about to elapse, the follower prints one final line and exits cleanly,
