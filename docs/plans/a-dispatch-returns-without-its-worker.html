@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="11">
+  <meta name="plan-version" content="13">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -67,6 +67,18 @@
     <p>Make a CLI dispatch print its JSON result and exit as soon as the worker process is running
     and its live pointer is written. The worker must survive the dispatch process ending by any of
     the three signals in &sect;2, including a signal that arrives during what is today the hold.</p>
+    <p><strong>The hold is the post-launch tree snapshot, measured on 2026-09-23.</strong> After the
+    worker launches, <code>dispatch</code> calls <code>_repository_tree_snapshot(repo_root)</code>
+    (<code>reckon/crew/dispatch.py:4002</code>). That runs <code>git status
+    --untracked-files=all</code> once in every registered worktree, one after another, so the hold is
+    the repository's worktree count multiplied by one tree's status time: 244 &times; 3.3 s on
+    reckon. The snapshot is a boundary baseline, so its placement is constrained both ways. It must
+    follow dispatch's own writes, as its comment says, and it must predate any write the worker
+    makes in another tree. So the fix takes the baseline before the worker is spawned, or has the
+    supervisor take it before it starts the worker, and never puts a scan that grows with the
+    worktree count between the launch and dispatch's return. A snapshot that raises must not kill a
+    launched worker: after launch, a failed snapshot is recorded on the pointer and dispatch still
+    reports the run it launched.</p>
     <p><strong>Collection of the worker's exit moves to a detached per-run supervisor, never to
     init.</strong> A worker reparented to init has its exit status collected by init, and reckon
     never sees it. Measured on 2026-09-23 on worker-death-is-recorded &sect;5: 0 exit records across
@@ -219,6 +231,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260923T0710-reparent-loses-the-exit" data-who="reckon-ship" data-when="2026-09-23T07:10:00Z">
     <div class="r-comment-body"><p><strong>§3 as written would lose every worker's exit record. It is held until it is revised.</strong> The S19 session measured this on 2026-09-23 (worker-death-is-recorded §5, commit <code>2e5e8f53</code>). <code>launch_failures</code> holds 0 exit records across every live pointer, and the ledger carries no <code>signal_name</code>, after a night of at least eight worker deaths. The reason: <code>crew dispatch</code> exits after launching, its reaper thread dies with it, and the worker is reparented to init (a live review worker read PPID 1), so init collects the status and reckon never sees it. §3 currently makes that path the design: <em>a worker whose parent has exited is reparented and collected by the system</em>. The serve logged 20,507 HTTP 200 responses and no non-200 over the same period, so the mid-thinking deaths are client-side, and this missing record is what would name them.</p><p>The revision proposed to S19 keeps one mechanism with one owner. Dispatch returns, and a detached per-run supervisor stays. The supervisor runs in its own session, spawns the worker, waits on it, records the exit status and signal into the pointer, and then exits. Dispatch returns once the supervisor reports the launch. The done-when would gain S19's measure: a real dispatch, the dispatching process gone, the worker SIGKILLed, and the exit status still recorded. Which session builds the supervisor is being agreed with S19. §3 is not dispatched until that is settled and the section text is revised.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0955-the-hold-is-the-tree-snapshot" data-who="reckon-ship" data-when="2026-09-23T09:55:00Z">
+    <div class="r-comment-body"><p><strong>The hold is found, on live dispatches, where the probe's stub path could not reach it.</strong> The §2 probe (<code>r-20260923T044807192716-dispatch-lifetime-probe</code>) established that the worker survives SIGTERM, SIGKILL and SIGHUP to its dispatch process, and that the reaper thread is a daemon. It found no reckon frame holding its stub dispatch open. Its repository was temporary, held one worktree and had no remote. On 2026-09-23 at 09:50 UTC, <code>py-spy dump --nonblocking</code> was run against two live dispatches whose workers had already launched: nova, 24 minutes old, and imas-efit, 10 minutes old. Both main threads were in the same frame: <code>dispatch</code> at <code>reckon/crew/dispatch.py:4002</code>, <code>record["repository_tree_snapshot"] = _repository_tree_snapshot(repo_root)</code>, then <code>_repository_tree_snapshot</code> at <code>reckon/crew/routing.py:403</code>, then <code>_tree_state</code> at <code>routing.py:349</code>, waiting on <code>git status --porcelain=v1 -z --untracked-files=all --no-renames</code>. The snapshot runs that command once in every registered worktree of the repository, one after another. Registered worktrees at the time: reckon 244, nova 308, imas-efit 191, imas-ambix 161. One reckon worktree's status took 3.3 s, so the hold is about 13 minutes on reckon. That matches this session's own dispatch, which launched its worker at 09:32:41 UTC and returned at 09:48:38 UTC. The hold grows with every worktree left behind, which is why §1 measured six minutes on 2026-09-22 and it is sixteen now.</p><p>Two consequences for §3. First, the snapshot is a boundary baseline, and its comment requires it to be taken after dispatch's own writes. It must also predate any write the worker makes in another tree, so it cannot simply move after dispatch returns without a race. Second, the exception handler around it at <code>dispatch.py:4005</code> onward signals the worker's process group, so a snapshot that raises after launch kills a launched worker and returns a refusal. That is a candidate cause of §6's refusal beside a live pointer.</p></div>
 </div>
 </section>
 </main>
