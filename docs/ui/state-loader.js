@@ -1,10 +1,16 @@
 // state-loader.js — runtime state fetcher for reckon plan pages.
 //
-// Builds window.STATE from three sources, in priority order:
-//   1. state/<project>/projection.json — derived static distributed view
-//      or state/<project>/index.json   — legacy central index
-//   2. state/<project>/<slug>.json — per-plan state files (per-doc layout)
-//   3. /_discover/<project>        — auto-discovery from HTML meta tags
+// Builds window.STATE from one authoritative source, chosen in this order:
+//   1. /_discover/<project>            — auto-discovery from HTML meta tags
+//   2. state/<project>/projection.json — distributed static view (static build)
+//   3. state/<project>/index.json      — legacy central index
+//
+// Discovery answers on the served path and already carries the inventory,
+// sprints, milestones, blockers, timeline, active sprint, north stars, source
+// format and resource versions for both layouts, so the served loader never
+// transfers the superseded aggregate beside it. Each inventory entry carries
+// the plan's own state; the plan HTML is its only store, so there is no
+// per-plan JSON to fetch.
 //
 // window.STATE_READY is a Promise. Templates wait on it before rendering.
 // The same assembly remains callable so an open page can revalidate its state.
@@ -91,11 +97,52 @@ window.revalidateProjectState = async function () {
     };
   };
 
-  // ── 1. Central index ───────────────────────────────────────────────────
-  const projectionBlob = await getJson(`${stateBase}/projection.json`);
-  const idxBlob = projectionBlob ||
-                  (await getJson(`${stateBase}/index.json`, { required: true }));
-  const idx = (idxBlob && idxBlob.data) || {};
+  // ── 1. Sources, in priority order: discovery, then the static views ──────
+  // Discovery is asked first and, when it answers, nothing else is fetched.
+  // It is the served authority; the aggregate is only the static build's
+  // stand-in and is never requested for a live page.
+  let disc = null;
+  let discoveryError = null;
+  let discoveryStatus = null;
+  let discoveryRefused = false;
+  let discoveryResponse;
+  try {
+    discoveryResponse = await fetch(discoveryEndpoint, { cache: "no-store" });
+  } catch (cause) {
+    discoveryRefused = true;
+    discoveryError = new Error(
+      `${discoveryEndpoint} failed: ${cause?.message || "network error"}`
+    );
+    discoveryError.endpoint = discoveryEndpoint;
+    discoveryError.cause = cause;
+  }
+  if (!discoveryRefused) {
+    if (discoveryResponse.ok) {
+      disc = await discoveryResponse.json();
+    } else {
+      discoveryError = new Error(
+        `${discoveryEndpoint} returned HTTP ${discoveryResponse.status}`
+      );
+      discoveryError.endpoint = discoveryEndpoint;
+      discoveryError.status = discoveryResponse.status;
+      discoveryStatus = discoveryResponse.status;
+    }
+  }
+
+  let projectionBlob = null;
+  let idxBlob = null;
+  let idx = {};
+  if (!disc) {
+    // Only an unreachable discovery — a network failure or an explicit 404 —
+    // is the static-build case. Any other HTTP failure is a live server
+    // refusing its own inventory and is raised below when discovery is
+    // unreachable and no projection stands in for it.
+    if (!(discoveryRefused || discoveryStatus === 404)) throw discoveryError;
+    projectionBlob = await getJson(`${stateBase}/projection.json`);
+    idxBlob = projectionBlob ||
+              (await getJson(`${stateBase}/index.json`, { required: true }));
+    idx = (idxBlob && idxBlob.data) || {};
+  }
 
   let sprints    = Array.isArray(idx.sprints)
     ? idx.sprints.map(sprint => ({
@@ -158,45 +205,18 @@ window.revalidateProjectState = async function () {
     });
   }
 
-  // ── 3. Discovery: always the authoritative inventory source ───────────────
-  // Plans are the single source of truth. /_discover/ parses HTML meta tags
-  // directly, includes server-computed fields (created, dec_open) that
-  // index.json never stores, and is always up-to-date.
-  // index.json is only used for project config (sprints, milestones, timeline).
-  let disc = null;
-  let discoveryResponse;
-  try {
-    discoveryResponse = await fetch(discoveryEndpoint, { cache: "no-store" });
-  } catch (cause) {
-    const error = new Error(
-      `${discoveryEndpoint} failed: ${cause?.message || "network error"}`
-    );
-    error.endpoint = discoveryEndpoint;
-    error.cause = cause;
-    throw error;
+  // ── 3. Discovery, when it answered, is the authority ─────────────────────
+  // Its inventory, sprints, milestones and north stars are taken for both the
+  // distributed and the legacy layout. No persisted aggregate was read to
+  // compete with them, so the legacy "index wins" branch of the old ordering
+  // has nothing to win with.
+  if (disc) {
+    if (Array.isArray(disc.inventory))   inventory  = disc.inventory;
+    if (Array.isArray(disc.sprints))     sprints    = disc.sprints;
+    if (Array.isArray(disc.milestones))  milestones = disc.milestones;
+    if (Array.isArray(disc.north_stars)) northStars = disc.north_stars;
   }
-  if (discoveryResponse.ok) {
-    disc = await discoveryResponse.json();
-  } else if (!(projectionBlob && discoveryResponse.status === 404)) {
-    const error = new Error(
-      `${discoveryEndpoint} returned HTTP ${discoveryResponse.status}`
-    );
-    error.endpoint = discoveryEndpoint;
-    error.status = discoveryResponse.status;
-    throw error;
-  }
-  if (Array.isArray(disc?.north_stars)) northStars = disc.north_stars;
-  if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
-    inventory = disc.inventory;
-    if (disc.source_format === "distributed") {
-      if (Array.isArray(disc.sprints)) sprints = disc.sprints;
-      if (Array.isArray(disc.milestones)) milestones = disc.milestones;
-    } else {
-      if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
-      if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
-    }
-  }
-  // disc unavailable (server down) → fall through with inventory from index.json / idx.plans
+  // disc unavailable (static build) → fall through with idx / idx.plans in hand
 
   // ── 4. Per-plan state travels inside the inventory ─────────────────────
   // Each inventory entry was parsed from its plan page's embedded
@@ -296,15 +316,17 @@ window.revalidateProjectState = async function () {
   // Ensure projects[0] is populated. Some central-index repos (e.g. imas-efit)
   // have data.plans[] + data.counts + data.milestones at the top level and no
   // data.projects[]. Synthesise one so the SPA components can read uniformly.
+  // idx.projects is non-empty only on the fallback path, where the aggregate
+  // was actually read; a page whose discovery answered takes the synthesised
+  // row, so no field of the superseded block reaches window.STATE.
   let projects = Array.isArray(idx.projects) ? idx.projects.slice() : [];
 
-  // Live counts derived from the discovered inventory. /_discover is the
+  // Live counts derived from the recovered inventory. /_discover is the
   // authoritative plan list; the persisted projects[] counts in index.json go
   // stale (the audit recomputes rollups in its response but never writes them).
-  // So whenever a live inventory is present, the counts shown MUST come from it
-  // — never from the persisted block. When inventory is empty (GitHub Pages /
-  // server down), liveCounts is null and we keep whatever the persisted block
-  // holds as the only available fallback.
+  // So whenever a page has an inventory, the counts shown come from it — never
+  // from the persisted block. When nothing answered, liveCounts is null and the
+  // synthesised row falls back to the persisted counts as a last resort.
   const liveCounts = mergedInventory.length > 0 ? (() => {
     const actionable = mergedInventory.filter(p => p.type === "plan");
     const count = (s) => actionable.filter(p => p.effective_status === s).length;

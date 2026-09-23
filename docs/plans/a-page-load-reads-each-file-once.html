@@ -153,6 +153,35 @@
     pass with zero added failures against the same base. The write paths are
     <code>docs/ui/state-loader.js</code> and that test.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="served-loader-reads-discovery-only" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the served loader reads discovery alone.</strong> Commit
+    <code>f6529a51</code> <em>perf(ui): the served loader assembles state from discovery alone</em>
+    asks <code>/_discover/&lt;project&gt;</code> first and, when it answers, reaches no aggregate fetch
+    at all: its inventory, sprints, milestones and north stars are adopted for both layouts, and the
+    single <code>projects[0]</code> row is synthesised from the live counts, so no field of a persisted
+    <code>projects[]</code> block reaches <code>window.STATE</code>.
+    <code>projection.json</code> is read only on a network-level refusal or an explicit 404, and
+    <code>index.json</code> only when projection is also missing. A discovery HTTP failure other than
+    404 is still raised even when a projection exists, so a live server refusing its own inventory is
+    not disguised by a stale aggregate.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Four cases pass</strong> in
+      <code>tests/test_served_loader_reads_discovery_only.py</code>, running the real loader under
+      <code>node</code> with a recording <code>fetch</code>: discovery answers &mdash; no aggregate
+      requested and <code>projects[0]</code> carries no persisted-only field; discovery refused &mdash;
+      projection requested, index not; discovery refused and no projection &mdash; index requested; and
+      a 500 discovery is not hidden by a projection.</li>
+      <li><strong>Zero added failures</strong> against base <code>56e13e11</code>, one log per file:
+      <code>tests/test_spa_state_boundary.py</code> 3 &rarr; 3, <code>tests/test_spa_live_arrival.py</code>
+      5 &rarr; 5, <code>tests/test_served_schedule_payload.py</code> 4 &rarr; 4.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> restoring the
+      aggregate-first order at <code>56e13e11</code> makes case 1 fail with
+      <code>index.json</code> in the recorded request list.</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s3-served-loader-reads-discovery-only">the landed record</a>.</p>
+    </div>
+
     <h2 id="s4">&sect;4 &mdash; The project picker never waits on the rollup</h2>
     <p>Also on <code>main</code> at <code>56e13e11</code>, unverified. <code>docs/ui/shell.jsx</code>
     fills the project list from <code>/_projects/mounts.json</code>, a static file that answers in
@@ -168,7 +197,7 @@
     request is observed as made. The gate is a headless-browser test and no browser binary exists
     on any compute partition, so it ran on the login node in two short probes against a local
     file; the compute-node run skips through <code>installed_browser_or_skip</code>. See
-    <a href="/reckon/evidence/a-page-load-reads-each-file-once-landed">the landed evidence</a>.</p>
+    <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s4">the landed evidence</a>.</p>
     <p><strong>Done when</strong> <code>tests/test_shell_project_list_is_immediate.py</code> loads
     the shell through <code>tests/spa_browser_harness.py</code> with the fetch layer mocked. It
     asserts three things.</p>
