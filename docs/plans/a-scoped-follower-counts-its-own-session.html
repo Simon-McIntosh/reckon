@@ -79,6 +79,23 @@
       population figures</a>.</p>
     </section>
 
+    <section class="section-landed">
+      <header><span class="badge badge-shipped">landed 2026-09-23</span></header>
+      <p class="landed-summary">The command now passes the session through. The one keyword
+      argument this section&rsquo;s earlier record named as unreachable &mdash;
+      <code>session=session</code> at <code>crew_follow</code>&rsquo;s call to
+      <code>format_watch_transition</code> in <code>reckon/cli.py</code> &mdash; is landed, so
+      <code>reckon crew follow --session S</code> prints trailing figures counted over session
+      S&rsquo;s runs rather than the whole project&rsquo;s fleet. The measure drives the command
+      itself over a fixture holding two sessions whose populations differ: the scoped line reads
+      <code> 1w&middot; 0b&middot; 0u</code>, the unscoped line over the same fixture reads
+      <code> 2w&middot; 1b&middot; 0u</code> unchanged, and the two are asserted unequal. The
+      declared mutation makes the scoped assertion fail, and that red log is on disk.</p>
+      <p class="landed-summary">Full record:
+      <a href="/reckon/evidence/a-scoped-follower-counts-its-own-session-landed#call-site">the
+      call-site wiring and its command-level measure</a>.</p>
+    </section>
+
     <h2 id="s3">&sect;3 &mdash; Out of scope</h2>
     <p>The grid, the column widths and the row text are not touched; this changes which runs
     are counted, not how a line is drawn. The renderer is held by another session's node at the
