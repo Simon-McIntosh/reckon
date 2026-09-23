@@ -40,9 +40,7 @@ DENIED = "#c0392b"
 
 def _lane(axis, y: float, start: float, end: float, color: str, label: str) -> None:
     axis.add_patch(
-        Rectangle(
-            (start, y), end - start, 0.6, facecolor=color, edgecolor="white"
-        )
+        Rectangle((start, y), end - start, 0.6, facecolor=color, edgecolor="white")
     )
     axis.text(
         (start + end) / 2,
@@ -62,7 +60,9 @@ def _panel(axis, title: str) -> None:
     axis.set_title(title, fontsize=11, loc="left")
     axis.set_xlim(-0.4, CONTROL_END + 0.6)
     axis.axvline(KILL_AT, color="black", linestyle="--", linewidth=1.5)
-    axis.text(KILL_AT, len(LANES) - 0.05, " SIGKILL to the consumer", fontsize=9, va="top")
+    axis.text(
+        KILL_AT, len(LANES) - 0.05, " SIGKILL to the consumer", fontsize=9, va="top"
+    )
 
 
 def main() -> None:
@@ -86,7 +86,7 @@ def main() -> None:
         "",
         xy=(RELEASE_AT, 0.9),
         xytext=(RELEASE_AT, 0.3),
-        arrowprops=dict(arrowstyle="->", color="black"),
+        arrowprops={"arrowstyle": "->", "color": "black"},
     )
     release.text(
         RELEASE_AT + 0.08,
