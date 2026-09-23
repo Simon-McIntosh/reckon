@@ -25,6 +25,7 @@ the reload never happened cannot pass by measuring only the carried deadline.
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
@@ -44,12 +45,20 @@ SESSION = "s1"
 RUN_ID = "r-1"
 NODE = "n1"
 
-# The granted lifetime, the bound on reaching an arm, the bound on ending once
-# the reload has been forced, and the bound on observing the reload itself.
+# The grant an arming carries, the deadline's own name in the environment, the
+# bound on ending once the reload has been forced, the bound on observing the
+# reload itself, the bound on seeing a child the follower started, and — for a
+# case whose sweep runs a probe child on every cadence — a looser bound on
+# ending. The graced end carries the replacement image's own setup and its first
+# sweep, so a case that probes continuously reaches its end later than the reload
+# case does; the reload case is the one that holds the tighter bound.
 LIFETIME = "6s"
+DEADLINE_ENV = "RECKON_FOLLOWER_LIFETIME_DEADLINE"
 ARM_WITHIN_SECONDS = 30.0
 END_WITHIN_SECONDS = 8.0
+SWEPT_END_WITHIN_SECONDS = 15.0
 RELOAD_WITHIN_SECONDS = 6.0
+CHILD_WITHIN_SECONDS = 6.0
 POLL_SECONDS = 0.05
 
 # The replacement image is launched by the follower with a launcher that
@@ -90,6 +99,94 @@ def _write_unpromoted_run(home: Path) -> None:
             "manifest_path": str(manifest),
             "log_path": str(log),
         },
+    )
+
+
+def _probe_code(dump: Path) -> str:
+    """The probe's program: record the environment the child was handed.
+
+    It appends one comma-joined line of variable names per run, so a follower
+    that sweeps more than once — before and after an image replacement — leaves
+    a line from each image rather than overwriting the first.
+    """
+    return (
+        "import os\n"
+        f"open({str(dump)!r}, 'a', encoding='utf-8').write("
+        "','.join(sorted(os.environ)) + '\\n')\n"
+        "print('recorded')\n"
+    )
+
+
+def _write_parked_run(home: Path, dump: Path) -> None:
+    """One live run parked on a wait whose probe records its own environment.
+
+    The sweep runs a parked run's declared probe through ``subprocess.run``
+    inheriting the follower's environment, so this is the follower's own
+    subprocess path: whatever the probe's child inherits is what every child the
+    follower starts would inherit. The terminal state is never printed, so the
+    run stays parked and the probe runs again on the replacement image's first
+    sweep.
+    """
+    log = home / "logs" / f"{RUN_ID}.jsonl"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text('{"type":"turn.started"}\n')
+    worktree = home / "worktree"
+    worktree.mkdir(parents=True, exist_ok=True)
+    manifest = home / "manifests" / f"{RUN_ID}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    probe = [sys.executable, "-c", _probe_code(dump)]
+    manifest.write_text(
+        "status: waiting\n"
+        "wait_condition: a child's environment has been recorded\n"
+        f"wait_probe: {json.dumps(probe)}\n"
+        'wait_terminal: ["absent"]\n'
+        "resume_brief: read the recorded environment and finish\n",
+        encoding="utf-8",
+    )
+    crew._write_json(
+        crew.pointer_path(RUN_ID),
+        {
+            "run_id": RUN_ID,
+            "project": PROJECT,
+            "session": SESSION,
+            "node": {"id": NODE, "plan": "plan-a", "time_budget": "20m"},
+            "phase": "working",
+            "created_at": runs._utc_now(),
+            "worktree": str(worktree),
+            "manifest_path": str(manifest),
+            "log_path": str(log),
+            "manifest_baseline_mtime_ns": manifest.stat().st_mtime_ns - 1_000_000_000,
+        },
+    )
+
+
+def _recorded_environments(dump: Path) -> list[str]:
+    if not dump.exists():
+        return []
+    return [
+        line for line in dump.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+
+
+def _wait_for_child(dump: Path, process: subprocess.Popen) -> list[str]:
+    """Wait for the follower's sweep to run the probe, or fail saying which.
+
+    A missing dump is not evidence about the environment: it is a probe that
+    never ran, so the wait has to be satisfied before any absence is reported.
+    """
+    deadline = time.monotonic() + CHILD_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        lines = _recorded_environments(dump)
+        if lines:
+            return lines
+        if process.poll() is not None:
+            break
+        time.sleep(POLL_SECONDS)
+    stdout, stderr = _kill(process)
+    pytest.fail(
+        "the follower ran no probe child within "
+        f"{CHILD_WITHIN_SECONDS!r}s of its arm, so the environment it hands a "
+        f"child was never observed; stdout={stdout!r} stderr={stderr!r}"
     )
 
 
@@ -175,21 +272,23 @@ def _wait_until_reloaded(process: subprocess.Popen) -> float:
     )
 
 
-def _wait_until_ended(process: subprocess.Popen, *, arm_at: float) -> float:
+def _wait_until_ended(
+    process: subprocess.Popen, *, arm_at: float, within: float = END_WITHIN_SECONDS
+) -> float:
     """Wait for the follower to end by itself; report when, from the arm.
 
     Never killed to make it so: the property under measure is that the carried
     deadline ends the arming, and a killed process would answer a different
     question.
     """
-    deadline = arm_at + END_WITHIN_SECONDS
+    deadline = arm_at + within
     while time.monotonic() < deadline:
         if process.poll() is not None:
             return time.monotonic()
         time.sleep(POLL_SECONDS)
     stdout, stderr = _kill(process)
     pytest.fail(
-        f"the follower was still running {END_WITHIN_SECONDS!r}s after its "
+        f"the follower was still running {within!r}s after its "
         f"original arm, so the reload restarted its deadline; "
         f"stdout={stdout!r} stderr={stderr!r}"
     )
@@ -262,3 +361,66 @@ def test_a_reload_does_not_restart_the_lifetime(home) -> None:
     assert any(
         os.path.isabs(token) and os.path.basename(token) == "reckon" for token in tokens
     ), f"the final line names no re-arm executable: {final!r}"
+
+
+def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
+    """The carried deadline bounds the follower, never a child it starts.
+
+    The deadline is handed to the replacement image through the environment the
+    re-exec passes, and read and removed in the same step, so it never sits in
+    the follower's ``os.environ``. Every child the follower starts — the sweep's
+    probe among them — inherits ``os.environ`` and would otherwise carry a
+    deadline that governs no process but the follower itself. The probe records
+    the environment it was handed, so the property is observed in the one place
+    a leaked variable would show, and the reload case still ends the arming
+    within the eight-second bound.
+    """
+    dump = home / "child-environment.txt"
+    _write_parked_run(home, dump)
+    restore = None
+    process = _arm(home, "--lifetime", LIFETIME)
+    try:
+        _wait_until_armed(process)
+        arm_at = time.monotonic()
+        lines = _wait_for_child(dump, process)
+        # The instrument must be shown to see a known-present variable before an
+        # absence means anything: the follower was armed with RECKON_HOME, so a
+        # child inheriting its environment carries it.
+        assert any("RECKON_HOME" in line for line in lines), (
+            f"the probe did not observe the environment it was handed, so it "
+            f"cannot report what is absent from it; lines={lines!r}"
+        )
+        assert not any(DEADLINE_ENV in line for line in lines), (
+            f"a child the follower started inherited {DEADLINE_ENV}, so the "
+            f"deadline was placed in the follower's own os.environ; lines={lines!r}"
+        )
+
+        restore = _force_source_change()
+        _wait_until_reloaded(process)
+        # The arm must still end by itself: a follower that hangs here would
+        # leave the leak unobserved. The tight timing property — the end landing
+        # within eight seconds of the original arm — belongs to the reload case,
+        # whose sweep load is lighter; this one runs a probe child every cadence
+        # and reaches its end later, so it asserts only that it ends.
+        _wait_until_ended(process, arm_at=arm_at, within=SWEPT_END_WITHIN_SECONDS)
+        _stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
+    finally:
+        if process.poll() is None:
+            _kill(process)
+        if restore is not None:
+            _restore_source_times(restore)
+
+    assert process.returncode == 0, (
+        f"a lifetime exit is the follower ending by itself, so it exits zero; "
+        f"got {process.returncode}; stderr={stderr!r}"
+    )
+    # The replacement image swept too, so its own child is covered: read the
+    # dump again after the reload, and require no image to have leaked it.
+    lines = _recorded_environments(dump)
+    assert any("RECKON_HOME" in line for line in lines), (
+        f"the replacement's probe did not observe its environment; lines={lines!r}"
+    )
+    assert not any(DEADLINE_ENV in line for line in lines), (
+        f"a child started by the replacement image inherited {DEADLINE_ENV}; "
+        f"lines={lines!r}"
+    )
