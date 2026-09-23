@@ -114,6 +114,70 @@
       the committed revision.
     </p>
 
+    <h2 id="baseline-marker-is-its-own-word">&sect;7 — The baseline marker is its own word</h2>
+    <p>
+      Commit <code>bed0cdeb</code> (implementation and test) on <code>main</code> in the
+      <code>baseline-marker-is-its-own-word</code> worktree, base revision <code>b52bf914</code>.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/a-monitor-row-reads-at-a-glance/baseline_marker_separator.png"
+           alt="The state region as a character grid. At base the marker cell is three wide and the
+                baseline row reads `nowworking` as one token; at head the marker cell is four wide and
+                the baseline row reads `now working` while the transition row's state begins on the
+                same column.">
+      <figcaption>
+        The marker cell is one column wider than the word at head, so the baseline row carries
+        <code>now working</code> and the state word starts on the same screen column as
+        <code>working</code> on a transition row. At base the two ran together as
+        <code>nowworking</code>.
+      </figcaption>
+    </figure>
+
+    <h3>The gate measure, as executed</h3>
+    <ul>
+      <li><strong>Two words, one space.</strong> A baseline row rendered at a pinned 180 columns
+        contains <code>now working</code> and not <code>nowworking</code>; the marker word ends one
+        space before the state word begins.</li>
+      <li><strong>One state column.</strong> The state cell's start column is identical for a
+        baseline row and a transition row at the same width — the marker cell holds one width whether
+        it carries the marker or is blank.</li>
+      <li><strong>Cost, stated as a delta.</strong> The marker cell grows from 3 to 4 columns, so the
+        state region is <code>MARKER (4) + STATE (10) + separator (1) = 15</code> against 14 at
+        &sect;2's landing, and <code>MIN_WIDTH</code> moves from 126 to 127. The row spends one column
+        on the separator; every cell right of the marker shifts one column and the reason clause's
+        room at a fixed pane falls by one.</li>
+    </ul>
+
+    <h3>Tests</h3>
+    <table>
+      <thead>
+        <tr><th>file</th><th>base <code>b52bf914</code></th><th>head</th><th>added failures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_crew_ticker.py</code></td><td>24 passed</td><td>25 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew_ticker_layout.py</code></td><td>1 failed, 66 passed</td><td>1 failed, 66 passed</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The gate over both fenced files is <code>1 failed, 90 passed</code> at base and
+      <code>1 failed, 91 passed</code> at head — the added test is the one new pass, and the single
+      failure is <code>tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers</code>,
+      present at base and untouched by this change.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>remove the separator between the baseline marker and the state in
+      <code>reckon/crew/ticker.py</code>.</em> Applied by returning <code>MARKER</code> to
+      <code>len(BASELINE_MARKER)</code> and running
+      <code>test_the_baseline_marker_stands_as_its_own_word_before_the_state</code>: it fails with
+      <code>AssertionError: assert 'now working' in '...~nowworking    sonnet5...'</code>, the bare
+      <code>nowworking</code> token reproducing the defect this change repairs. The control was then
+      reverted and the tree returned to the committed revision. Log:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T114508971008-baseline-marker-is-its-own-word/negative_control.log</code>.
+    </p>
+
   </main>
 </body>
 </html>
