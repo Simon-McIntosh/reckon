@@ -19,14 +19,14 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S16">
   <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan&#x27;s evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="15">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -262,6 +262,34 @@
     The run is recorded on the login node, because no compute partition carries a browser binary.
     The write path is that test only.</p>
 
+    <h2 id="s7">&sect;7 &mdash; The fleet rollup answers without walking every tree</h2>
+    <p>The &sect;5 re-measure at 16:23Z on 2026-09-23, at load average 8 to 12, put every
+    <code>/_discover</code> and <code>/crew</code> request under 1.5 s warm. The exception was
+    <code>/_projects/index.json</code>, at 13.6 s warm and 25.2 s cold. A <code>py-spy dump</code>
+    taken during it shows the request thread waiting on the rollup's futures in
+    <code>collect_projects</code>, and every busy executor worker inside
+    <code>_walk_discovery_signature</code>, reached from <code>compute_project_row</code> through
+    <code>discover_plans</code> and <code>_fresh_discovery</code>. Once the 5 s walk-reuse window
+    lapses, the rollup walks all thirteen mounted docs trees to validate caches that nothing has
+    invalidated.</p>
+    <p>The served process already knows when a tree changes: <code>_ProjectChangeWatch</code>
+    receives kernel notifications for every mounted docs tree that a browser is watching. Every
+    mounted tree is watched for the life of the served process, and a notification drops that
+    tree's memoised walk at once. The reuse window then only backstops writes that the kernel
+    does not report, such as writes from another login node on the shared filesystem, and it
+    lengthens to 60 s. A POST still drops every memoised walk.</p>
+    <p><strong>Done when</strong> <code>tests/test_rollup_reuses_watched_walks.py</code> builds
+    three temporary mounted projects with a temporary mounts file and starts the served
+    process's watch over them. It asserts that twenty consecutive <code>collect_projects</code>
+    calls with nothing changed run no tree walk after the first, counted through a counter the
+    test installs on <code>_walk_discovery_signature</code>. After one plan file in one project
+    is rewritten, the next call within 1 s walks that project's tree once and no other, and
+    returns the rewritten title. The negative control is executed and logged: with the watch
+    not started, a rewrite is not seen until the reuse window lapses, and the within-1-s
+    assertion fails. The write paths are <code>reckon/serve.py</code> and that test. The
+    served figure is not this section's: once &sect;7 is merged and the operator restarts the
+    service, &sect;5 is measured again, and its gate is the one that closes the plan.</p>
+
     <div class="r-note" data-reckon="landed" data-node="palette-counts-each-inventory-once" data-when="2026-09-23">
     <p><strong>Outcome &mdash; the palette asks for each inventory exactly once.</strong> Commit
     <code>58ed7a21</code> <em>test(ui): count each mounted project's palette inventory request once</em>
@@ -332,6 +360,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T131338866798-review-of-a-page-load-reads-each-file-once" data-who="reckon-ship" data-when="2026-09-23T15:40:09.745Z">
     <div class="r-comment-body"><p>read-back of a-page-load-reads-each-file-once: 28 multi-reading sentences, 11 material; the section-5 items (warm pass, host load, hard gate) resolved in the plan text; section 2 to 4 items settled by their landings</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T1655-s5-first-measure" data-who="reckon-ship" data-when="2026-09-23T16:55:00Z">
+    <div class="r-comment-body"><p>First re-measure, run <code>page-load-remeasured</code>, 16:22 to 16:23Z at load 8 to 12, against pid 1356099: the gate fails on one request. Warm figures: <code>/_discover</code> for reckon 0.60 s, imas-efit 0.59 s, nova 1.33 s and imas-codex 0.51 s; <code>/crew</code> 0.76 s; <code>/_projects/index.json</code> 13.6 s. A figure revalidates at 304, and <code>/_discover/nova</code> gzips to 1,327,615 of 5,507,121 bytes. The cold pass was not a first touch, because browser traffic had already warmed the process. The rollup's residual cost is &sect;7; &sect;5 is measured again once &sect;7 is merged and the service restarted. Report: <code>~/.config/reckon/crew/reports/reckon/page-load-20260923/page-load-remeasured/report.md</code>.</p></div>
 </div>
 </section>
 </main>
