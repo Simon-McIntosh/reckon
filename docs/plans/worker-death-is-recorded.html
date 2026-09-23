@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -345,6 +345,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T051258355337-review-of-ledger-tests-read-interrupted" data-who="reckon-ship" data-when="2026-09-23T05:13:30.255Z">
     <div class="r-comment-body"><p>review stored and parsed at 93; its finding (after-log pins the base revision) recorded on worker-death §5; read before the reviewed run was promoted</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T0632-discarded-pointer-returns" data-who="reckon-ship" data-when="2026-09-23T06:32:00Z">
+    <div class="r-comment-body"><p><strong>A fourth recovery-path defect: a discarded pointer comes back after its worker ends.</strong> Measured 2026-09-23 on <code>r-20260923T062324997623</code>, a reflex review. The coordinator ran <code>crew stop</code> (exit 0) and then <code>crew discard</code> (<code>pointer_removed: true</code>) at about 08:25. The pointer file reappeared with mtime 08:27:16, phase <code>starting</code>, <code>attempt_kind: dispatch</code>, and the worker's pid already dead. The follower then reported the run as <code>dispatched</code> at 08:27:22 and <code>working</code> at 08:27:34. The most likely writer is the dispatching process's own reaper recording the end of its child after the pointer had gone. The file itself does not identify its writer, so that is inferred, not measured. The resurrected pointer names the same worktree path as the live replacement review <code>r-20260923T062535582142</code>, so a cleanup acting on the ghost could remove a live run's worktree. A copy is kept at <code>runs/r-20260923T062324997623-…/pointer.resurrected.json</code>, and a second discard held.</p><p><strong>Measure:</strong> any writer that updates a pointer after launch updates it only if it still exists, and never recreates it. A test discards a stub run's pointer, lets its reaper record the exit, and requires the pointer to stay absent. The reaper's exit record must still be written, to the run directory.</p></div>
 </div>
 </section>
 </main>
