@@ -1,0 +1,30 @@
+{
+  "node": "a-local-worker-compacts-and-continues",
+  "plan": "reckon:a-review-dies-where-nobody-is-looking §9",
+  "purpose": "Demonstrate whether a local-lane worker compacts its conversation at the lane's effective context boundary and continues to a complete manifest, rather than dying at the boundary.",
+  "lane": {
+    "model": "deepseek-v4.1-flash",
+    "effective_context_boundary_tokens": 200000,
+    "boundary_source": "docs/research/data/clive-effective-window.json and the corpus census of compact_boundary records"
+  },
+  "design": {
+    "task": "Read, one at a time in increasing stream.jsonl size order, the 40 largest run stream files under the configured runs directory; after each, append one entry with its run id, record count and last record type.",
+    "corpus_root": "/home/ITER/mcintos/.config/reckon/crew/runs",
+    "file_count": 40,
+    "size_band_bytes": [12357556, 36878301],
+    "order": "increasing stream.jsonl byte size; the 40 largest run directories by stream size"
+  },
+  "compaction_marker": {
+    "record_type": "system",
+    "record_subtype": "compact_boundary",
+    "source": "this node's own stream",
+    "own_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/stream.jsonl",
+    "metadata_keys": ["trigger", "pre_tokens", "post_tokens", "cumulative_dropped_tokens", "duration_ms", "preserved_segment", "preserved_messages"],
+    "turn_definition": "the count of assistant records emitted before the compact_boundary record in this node's own stream"
+  },
+  "compaction_events": [],
+  "results_written_before_compaction": null,
+  "results_written_after_compaction": null,
+  "ended_with_complete_manifest": null,
+  "files": []
+}
