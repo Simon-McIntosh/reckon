@@ -35,7 +35,7 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
-from reckon.mcp_views import compose_review, in_flight_by_plan, load_composed_review
+from reckon.mcp_views import compose_review, load_composed_review, partition_live_runs
 from reckon.resources import read_plan_record, read_sprint_record, resolve_resource
 from reckon.schedule import derive_schedule
 
@@ -1248,7 +1248,7 @@ def build_roadmap(
     schedule_boundary = schedule_ready_sprints[-1] if schedule_ready_sprints else None
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
-    live_runs = in_flight_by_plan(project)
+    live_runs, interrupted_runs = partition_live_runs(project)
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
@@ -1815,6 +1815,8 @@ def build_roadmap(
             ]
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
+        if slug in interrupted_runs:
+            row["interrupted"] = interrupted_runs[slug]
         pending.append(row)
         if not authorised and status not in TERMINAL_STATUSES:
             age_days, age_source = _authorisation_age(project, plan)
@@ -1969,6 +1971,24 @@ def build_roadmap(
             for member in members
             if member.get("found")
         )
+        member_slugs = [
+            str(member["slug"])
+            for member in members
+            if member.get("found") and member.get("slug")
+        ]
+        # A sprint's runs are its members' runs. The two lists are kept apart on
+        # the row so a reader counting work in progress does not absorb a run
+        # that has stopped and is waiting for a decision.
+        sprint_in_flight = [
+            run
+            for member_slug in member_slugs
+            for run in live_runs.get(member_slug, [])
+        ]
+        sprint_interrupted = [
+            run
+            for member_slug in member_slugs
+            for run in interrupted_runs.get(member_slug, [])
+        ]
         sprint_rows.append(
             {
                 "order": position,
@@ -1981,6 +2001,8 @@ def build_roadmap(
                 "derived_state": derived_state,
                 "items": len(members),
                 "members": members,
+                "in_flight": sprint_in_flight,
+                "interrupted": sprint_interrupted,
                 "resolved_items": sum(bool(member.get("found")) for member in members),
                 "completed": completed,
                 "lifecycle_completion_pct": round(100 * completed / len(members), 1)

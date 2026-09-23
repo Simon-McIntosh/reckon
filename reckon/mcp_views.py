@@ -865,11 +865,19 @@ def sprint_state_view(roadmap: dict[str, Any]) -> list[dict[str, Any]]:
         "implementation_pct",
         "blocked",
     )
-    return [
-        {key: sprint[key] for key in fields if key in sprint}
-        for sprint in roadmap.get("sprints", [])
-        if isinstance(sprint, dict) and sprint.get("id")
-    ]
+    view = []
+    for sprint in roadmap.get("sprints", []):
+        if not isinstance(sprint, dict) or not sprint.get("id"):
+            continue
+        row = {key: sprint[key] for key in fields if key in sprint}
+        # Runs in flight are counted; interrupted runs are listed apart because
+        # they need a decision rather than patience. Both keys are always
+        # present, so a sprint with neither reports an empty list instead of
+        # leaving a reader unable to tell an empty list from an omitted key.
+        row["in_flight"] = list(sprint.get("in_flight") or [])
+        row["interrupted"] = list(sprint.get("interrupted") or [])
+        view.append(row)
+    return view
 
 
 def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
@@ -1066,41 +1074,92 @@ def load_composed_review(
     )
 
 
-def in_flight_by_plan(
+def _run_row(pointer: Mapping[str, Any]) -> dict[str, str]:
+    """Project one live pointer's identity and target onto a compact row."""
+
+    node = pointer.get("node")
+    node = node if isinstance(node, dict) else {}
+    return {
+        "run_id": str(pointer.get("run_id") or ""),
+        "member": str(pointer.get("member") or ""),
+        "section": str(node.get("section") or ""),
+        "started_at": str(pointer.get("created_at") or ""),
+    }
+
+
+def _run_target_plan(pointer: Mapping[str, Any]) -> str:
+    """Return the plan a live pointer targets, or "" when it names none."""
+
+    node = pointer.get("node")
+    node = node if isinstance(node, dict) else {}
+    return str(node.get("plan") or "").strip()
+
+
+def partition_live_runs(
     project: str,
     pointers: list[dict[str, Any]] | None = None,
-) -> dict[str, list[dict[str, str]]]:
-    """Group the live runs for one project by their target plan."""
+) -> tuple[dict[str, list[dict[str, str]]], dict[str, list[dict[str, str]]]]:
+    """Split one project's live runs into those in flight and those interrupted.
+
+    The two want opposite actions, so they are never folded into one count. A
+    run still in flight is waited on; an interrupted run needs a decision —
+    resume where a session survived, redispatch otherwise. Interruption is
+    judged by the shared classifier, so the roadmap, the sprint view and
+    ``recover`` cannot disagree about which runs stopped involuntarily. Every
+    other reading stays in flight, so a run whose liveness cannot be proven is
+    still counted as running rather than mistaken for a death.
+    """
+
+    from reckon import crew
+    from reckon.crew.node import INTERRUPTED_RUN_PHASE
+    from reckon.crew.recovery import classify_pointer
 
     if pointers is None:
-        from reckon import crew
-
         try:
             pointers = crew.list_live()
         except OSError:
             pointers = []
 
-    grouped: dict[str, list[dict[str, str]]] = {}
+    in_flight: dict[str, list[dict[str, str]]] = {}
+    interrupted: dict[str, list[dict[str, str]]] = {}
     for pointer in pointers:
         if not isinstance(pointer, dict) or pointer.get("project") != project:
             continue
-        node = pointer.get("node")
-        if not isinstance(node, dict):
-            continue
-        plan = str(node.get("plan") or "").strip()
+        plan = _run_target_plan(pointer)
         if not plan:
             continue
-        grouped.setdefault(plan, []).append(
-            {
-                "run_id": str(pointer.get("run_id") or ""),
-                "member": str(pointer.get("member") or ""),
-                "section": str(node.get("section") or ""),
-                "started_at": str(pointer.get("created_at") or ""),
-            }
-        )
-    for runs in grouped.values():
-        runs.sort(key=lambda run: run["run_id"])
-    return grouped
+        classified = classify_pointer(pointer)
+        if str(classified.get("classification") or "") == INTERRUPTED_RUN_PHASE:
+            row = _run_row(pointer)
+            row["reason"] = str(classified.get("detail") or "")
+            row["next_action"] = str(classified.get("next_action") or "")
+            interrupted.setdefault(plan, []).append(row)
+        else:
+            in_flight.setdefault(plan, []).append(_run_row(pointer))
+    for grouped in (in_flight, interrupted):
+        for runs in grouped.values():
+            runs.sort(key=lambda run: run["run_id"])
+    return in_flight, interrupted
+
+
+def in_flight_by_plan(
+    project: str,
+    pointers: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, str]]]:
+    """Group the runs still in flight for one project by their target plan."""
+
+    in_flight, _interrupted = partition_live_runs(project, pointers)
+    return in_flight
+
+
+def interrupted_by_plan(
+    project: str,
+    pointers: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, str]]]:
+    """Group the interrupted runs by plan, each with its reason and next action."""
+
+    _in_flight, interrupted = partition_live_runs(project, pointers)
+    return interrupted
 
 
 class ViewRequestError(ValueError):
