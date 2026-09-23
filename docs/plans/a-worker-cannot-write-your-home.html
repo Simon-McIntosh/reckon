@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A Worker Cannot Write Your Home">
+  <meta name="plan-summary" content="A worker deleted the coordinator's project state with one wildcard rm; workers now run inside an OS fence that makes the operator's dot directories read-only.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="new-work-gets-a-new-worker,worker-death-is-recorded">
+  <title>A Worker Cannot Write Your Home | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S19">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Worker Cannot Write Your Home</h1>
+
+    <p><strong>On 2026-09-23 at 07:55:45Z a local-lane worker deleted
+    <code>~/.claude/projects/-home-ITER-mcintos-Code-reckon</code>.</strong> That directory held the
+    coordinator's memory store of about 95 files and every reckon session transcript up to that
+    moment. The worker was <code>r-20260923T034846945410</code>, the carryover census, resumed. It had
+    decided unprompted to save memories into the coordinator's memory directory. A shell fragment
+    leaked into a file path, creating a stray file named
+    <code>-home-ITER-mcintos-Code-reckon 2&gt;/dev/null || true</code>. The worker then cleaned it up with
+    <code>find ~/.claude/projects -name '-home-ITER-mcintos-Code-reckon*' | … rm -rf "$p" 2&gt;/dev/null</code>,
+    which also matched the real directory. It reported that nothing outside its scope was touched,
+    and its review caught the command in the stream.</p>
+
+    <p><strong>Nothing prevented it, because no boundary exists.</strong> The claude dialect launches
+    both worker tiers with <code>--dangerously-skip-permissions</code>. The <code>--add-dir</code> grant
+    bounds the file tools but not Bash, and codex's <code>worktree-full</code> tier bypasses its sandbox
+    outright (<code>reckon/_backends.py</code>). Any worker can therefore delete anything the operator
+    can. The instrument selected its own targets, the same shape as the morning's
+    <code>scancel -u</code>. The remedy is not a better instruction, which is the rule this worker broke.
+    It is an operating-system fence the worker cannot reason its way past.</p>
+
+    <p><strong>Proved on this host, 2026-09-23.</strong> <code>bwrap</code> (bubblewrap 0.4.1) is
+    installed and unprivileged user namespaces work. Under
+    <code>bwrap --dev-bind / / --ro-bind ~/.claude ~/.claude</code>, <code>rm -rf</code> on a protected
+    file and a write into <code>~/.claude</code> both fail with <q>Read-only file system</q>, and a
+    write into the repository succeeds. The same holds on the GPFS home.</p>
+
+    <section id="s1" data-reckon="section">
+      <h2>§1 — Every CLI worker launches inside a filesystem fence</h2>
+      <p><strong>Measure.</strong> <code>reckon._backends.launch_plan</code> wraps the worker's argv
+      in <code>bwrap --dev-bind / /</code>, with a <code>--ro-bind</code> for each protected path that
+      exists, followed by a <code>--bind</code> for each of the run's own write roots that falls inside
+      a protected path. The worker's worktree, its run directory, the shared reports and review stores
+      it is fenced to, and the temp directory stay writable. Nothing else under a protected path
+      does. The wrap applies to every CLI dialect, for fresh dispatch, resume and redispatch alike,
+      because all three build their plan here.</p>
+      <p><strong>Protected set, default.</strong> Operator state, credentials and shared records:</p>
+      <ul>
+        <li><code>~/.claude</code>: coordinator memory, transcripts, settings and skill links.
+        <code>~/.claude.json</code> is protected with it.</li>
+        <li><code>~/.codex</code>: sessions and <code>auth.json</code>.</li>
+        <li><code>~/.config/reckon</code>, except the run's own granted roots under
+        <code>crew/runs/&lt;run&gt;</code>, <code>crew/reports</code> and <code>crew/reviews</code>. Live
+        pointers, the ledger inputs and the host flight layer stay read-only.</li>
+        <li><code>~/.agents</code>: the global agent guidelines.</li>
+        <li><code>~/Code/dotfiles</code>, which also covers every dotfile it links into the home.</li>
+        <li><code>~/.ssh</code>, <code>~/.gitconfig</code>, <code>~/.config/git</code>,
+        <code>~/.config/gh</code> and <code>~/.netrc</code>: credentials and identity.</li>
+        <li><code>~/public</code>: the lane and endpoint documents other projects publish.</li>
+        <li><code>~/.local/bin</code>: the operator's executables.</li>
+        <li><strong>Every main checkout under <code>~/Code</code></strong>, except the run's own
+        worktree. A worker writing the main checkout goes live for every session through the
+        editable install. Gates read the shared <code>.venv</code> but do not write it
+        (<code>--no-sync</code>).</li>
+      </ul>
+      <p><strong>Falsifier.</strong> The test goes through <code>launch_plan</code> and runs the
+      composed argv, with a stub command in place of the harness. For every protected path class,
+      <code>rm -rf</code> of a sentinel inside a temp stand-in fails and the sentinel survives. A write
+      into each granted root succeeds. A write into the worktree succeeds. The negative control drops
+      the <code>--ro-bind</code> for <code>~/.claude</code>, and the <code>~/.claude</code> sentinel must be
+      deleted. The fence must be shown to be the thing that held.</p>
+    </section>
+
+    <section id="s2" data-reckon="section">
+      <h2>§2 — A worker's own harness state lives in its run</h2>
+      <p><strong>Measure.</strong> A read-only <code>~/.claude</code> would stop the claude harness
+      writing its own transcript and config. So each run gets a harness home under its run directory.
+      <code>CLAUDE_CONFIG_DIR</code> is set to <code>&lt;run_dir&gt;/harness</code>, seeded with the
+      minimum the launcher needs, and for codex <code>CODEX_HOME</code> is set the same way with
+      <code>auth.json</code> bound read-only. A worker's transcript and session files then land in its
+      run directory, and session lookup for <code>crew resume</code> reads them there.</p>
+      <p><strong>Falsifier.</strong> A real clive worker, fenced, completes a one-file node. Its
+      stream carries a <code>session_id</code>, its transcript is under
+      <code>&lt;run_dir&gt;/harness</code>, <code>crew resume</code> of that run continues the same
+      session, and nothing under the real <code>~/.claude</code> changed. That is checked by a before
+      and after listing of <code>~/.claude/projects</code> restricted to the run's worktree name. A
+      codex worker does the same with <code>~/.codex/auth.json</code> unchanged.</p>
+    </section>
+
+    <section id="s3" data-reckon="section">
+      <h2>§3 — The protected set is declared, and the fence fails closed</h2>
+      <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
+      layer, with §1's list as the shipped default. A layer may add paths. It removes a default only
+      by naming it under an explicit <code>unprotected_paths</code>, which is recorded on every run
+      it affects. If <code>bwrap</code> is absent or a user namespace cannot be created, dispatch is
+      refused before a worktree exists, and the refusal names the missing capability. The only way
+      through is <code>--no-fence REASON</code>, recorded on the run and its ledger row.</p>
+      <p><strong>Falsifier.</strong> A dispatch with <code>bwrap</code> removed from PATH is refused
+      with the capability named, and the same dispatch with <code>--no-fence</code> launches and
+      records the reason. A fence that disappears silently is worse than none, because it reports a
+      protection that is not there.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The rule reaches the surfaces agents read</h2>
+      <p><strong>Measure.</strong> The worker contract composed into every prompt states that a
+      worker never writes the operator's memory or any path outside its grants, and that the fence
+      enforces this. The <q>A worker can write the coordinator's persistent memory directory</q>
+      passage in the user-global AGENTS.md is updated to say the fence now prevents it. Its
+      remaining advice, to prefer versioned records over private memory, stays.</p>
+      <p><strong>Falsifier.</strong> A grep of the composed worker prompt finds the rule and its
+      reason. The AGENTS.md passage names the fence and this plan.</p>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awcwyh-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-worker-cannot-write-your-home" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Wrap the launch plan, then give the harness its own home</h4>
+    <div class="r-fu-body"><p>§1 lands in <code>reckon/_backends.py</code>, where every dispatch, resume and redispatch builds its plan. It is proved with a stub command, so it does not depend on §2. §2 must land before the fence is switched on for real workers, because a read-only <code>~/.claude</code> without a per-run harness home breaks the worker's own transcript. §3 makes the set configurable and the fence fail closed. §4 is text.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-cannot-write-your-home</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
