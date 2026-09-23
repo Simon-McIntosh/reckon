@@ -10,11 +10,11 @@
   <meta name="plan-summary" content="Three worker-death mechanisms are now recorded: launcher wait status, liveness re-derived on read, and interrupted classification with resume-or-redispatch recovery.">
   <meta name="plan-evidence-for" content="reckon:worker-death-is-recorded">
   <meta name="plan-verifies" content="reckon:worker-death-is-recorded#s5">
-  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,45eabfb6,f84945eb,badc8f46,b16fa8e1">
+  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,45eabfb6,f84945eb,badc8f46,b16fa8e1,d4085104,13f789cb,22aaffd6">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python in the repository's own root environment; detached git worktree">
-  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log,reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg,reckon/crew/node.py,reckon/crew/recovery.py,tests/test_crew_interrupted_phase.py,docs/figures/worker-death-is-recorded/interrupted-classification.svg,docs/figures/worker-death-is-recorded/interrupted-gate.log,docs/figures/worker-death-is-recorded/negative-control-interrupted.log">
+  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log,reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg,reckon/crew/node.py,reckon/crew/recovery.py,tests/test_crew_interrupted_phase.py,docs/figures/worker-death-is-recorded/interrupted-classification.svg,docs/figures/worker-death-is-recorded/interrupted-gate.log,docs/figures/worker-death-is-recorded/negative-control-interrupted.log,reckon/mcp_views.py,reckon/roadmap.py,tests/test_roadmap_names_interrupted_runs.py,docs/figures/worker-death-is-recorded/interrupted-run-readers.svg,docs/figures/worker-death-is-recorded/roadmap-gate.log,docs/figures/worker-death-is-recorded/negative-control-roadmap.log">
   <title>A worker's death is recorded — landed evidence | reckon">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -316,6 +316,65 @@
       no-session tests red with a bare null. The merged-head gate belongs to a separately
       dispatched test node.</p>
     </section>
+
+    <section id="s5-5-roadmap">
+      <h2>&sect;5.5 &mdash; the roadmap names interrupted runs</h2>
+      <p>Until this step every live pointer counted as work in progress, so a worker
+      ended by a signal still read as in flight and the <code>interrupted</code> phase
+      the classifier produces had no reader on the planning surfaces. The repair splits
+      one fleet read into two lists: <code>in_flight_by_plan</code> groups the runs
+      still in flight, and <code>interrupted_by_plan</code> groups the runs that
+      stopped, each with its reason and its next action. Both lists come from a single
+      partition, so the plan read, the roadmap and the sprint view cannot disagree
+      about which runs have stopped.</p>
+
+      <h3>Mechanism</h3>
+      <p>Symbols below are named by what they do; commit
+      <code>d4085104</code> carries them.</p>
+      <ul>
+        <li>A pointer is judged by <code>classify_pointer</code> &mdash; the same
+        judgement <code>recover</code> acts on &mdash; so the views reuse one reading of
+        what stopped rather than inventing a second. The pointer, the classifier and the
+        two lists are shown in
+        <a href="/reckon/figures/worker-death-is-recorded/interrupted-run-readers.svg">the
+        reader-side figure</a>.</li>
+        <li><code>partition_live_runs</code> reads the fleet once and returns the two
+        lists keyed by plan; <code>in_flight_by_plan</code> and
+        <code>interrupted_by_plan</code> are thin wrappers. A run whose liveness cannot
+        be proven stays in flight, so an unproved death is never reported as an
+        interrupted run.</li>
+        <li><code>build_roadmap</code> calls the partition once and puts both lists on
+        the pending row and on the sprint row, aggregating a sprint's runs from its
+        member slugs.</li>
+        <li><code>sprint_state_view</code> carries <code>in_flight</code> and
+        <code>interrupted</code> on every sprint row, so a sprint with no interrupted
+        runs reports an empty list rather than omitting the key.</li>
+      </ul>
+
+      <h3>Measured controls</h3>
+      <ul>
+        <li>Gate <code>docs/figures/worker-death-is-recorded/roadmap-gate.log</code>:
+        <code>tests/test_roadmap_names_interrupted_runs.py</code> at commit
+        <code>d4085104</code> &mdash; <strong>8 passed</strong>, exit 0. The gate builds
+        a sprint whose plan has one running pointer and one pointer the classifier reads
+        interrupted, and asserts both views count only the <em>running</em> pointer as
+        in flight and list the interrupted one separately with its reason and next
+        action.</li>
+        <li>Declared negative control
+        <code>docs/figures/worker-death-is-recorded/negative-control-roadmap.log</code>:
+        counting interrupted pointers as in flight in <code>in_flight_by_plan</code>
+        &mdash; <strong>4 failed, 4 passed</strong>. The four failures are exactly the
+        four tests that assert the separation; the log's first line repeats the mutation
+        verbatim.</li>
+      </ul>
+
+      <h3>Boundary</h3>
+      <p>This gate measures only this node's change. A sprint with no live pointers
+      reports both keys as empty lists, and a pointer from another project never carries
+      an interrupted run into this project's rows. Failures outside the declared scope
+      are reported under <code>follow_ons</code>, not triaged here.</p>
+    </section>
 </main>
+
 </body>
 </html>

@@ -254,6 +254,30 @@
     The merged-head gate belongs to a separately dispatched test node; the road map and
     end-to-end steps remain open.</p>
 
+    <h3 id="s5-landing-roadmap-names-interrupted-runs">&sect;5.5 landing &mdash; the roadmap names interrupted runs</h3>
+    <p>Landed: a live pointer is judged once and the two readings are kept apart.
+    <code>in_flight_by_plan</code> now groups only the runs still in flight, and the new
+    <code>interrupted_by_plan</code> groups the runs the classifier reads
+    <code>interrupted</code>, each carrying its reason and its next action. Both come
+    from one partition, so a plan read, the roadmap and the sprint view cannot disagree
+    about which runs have stopped. <code>build_roadmap</code> puts the two lists on the
+    pending row and on the sprint row, and <code>sprint_state_view</code> carries both
+    keys on every sprint &mdash; an empty list where there are no interrupted runs, never
+    an omitted key.</p>
+    <p>Evidence: commits <code>d4085104</code>, <code>13f789cb</code> and
+    <code>22aaffd6</code>; gate
+    <code>docs/figures/worker-death-is-recorded/roadmap-gate.log</code> &mdash;
+    <code>8 passed</code>, exit 0. The declared negative control disables the interrupted
+    arm of the partition so every live pointer counts as in flight: <strong>4 failed,
+    4 passed</strong>, and the four failures are exactly the separation tests. Log
+    <code>docs/figures/worker-death-is-recorded/negative-control-roadmap.log</code>,
+    whose first line repeats the declared mutation verbatim. The mechanism is shown in
+    <a href="/reckon/figures/worker-death-is-recorded/interrupted-run-readers.svg">the
+    reader-side figure</a>. The seat release the same step names already holds from the
+    liveness work only if the seat is keyed on a process: the seat guard reads the
+    process table, so a dead process holds no seat. That is a reading of the guard, not a
+    counterexample run, and it is reported as such rather than offered as proof.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a

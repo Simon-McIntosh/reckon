@@ -1,0 +1,81 @@
+count interrupted pointers as in flight in in_flight_by_plan
+mutation: the interrupted arm of partition_live_runs is disabled, so every live pointer groups as in flight; the declared string is repeated verbatim on the line above.
+revision: d40851046d4f5fc9c02f6697ca304d5a385fc80a ; file: reckon/mcp_views.py
+command: UV_PROJECT_ENVIRONMENT=<main-checkout>/.venv PYTHONPATH=$PWD uv run --no-sync python -m pytest -p no:cacheprovider -q tests/test_roadmap_names_interrupted_runs.py
+--- output ---
+.FFFF...                                                                 [100%]
+=================================== FAILURES ===================================
+____________ test_in_flight_by_plan_counts_only_the_running_pointer ____________
+
+    def test_in_flight_by_plan_counts_only_the_running_pointer():
+        grouped = in_flight_by_plan(PROJECT, [_running_pointer(), _interrupted_pointer()])
+    
+>       assert [run["run_id"] for run in grouped["alpha"]] == ["run-live"]
+E       AssertionError: assert ['run-killed', 'run-live'] == ['run-live']
+E         
+E         At index 0 diff: 'run-killed' != 'run-live'
+E         Left contains one more item: 'run-live'
+E         Use -v to get more diff
+
+tests/test_roadmap_names_interrupted_runs.py:97: AssertionError
+____ test_interrupted_by_plan_lists_the_run_with_its_reason_and_next_action ____
+
+    def test_interrupted_by_plan_lists_the_run_with_its_reason_and_next_action():
+        interrupted = interrupted_by_plan(
+            PROJECT, [_running_pointer(), _interrupted_pointer()]
+        )
+    
+>       assert [run["run_id"] for run in interrupted["alpha"]] == ["run-killed"]
+                                         ^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'alpha'
+
+tests/test_roadmap_names_interrupted_runs.py:105: KeyError
+_______ test_roadmap_reports_interrupted_runs_apart_from_runs_in_flight ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f19e939b020>
+
+    def test_roadmap_reports_interrupted_runs_apart_from_runs_in_flight(monkeypatch):
+        monkeypatch.setattr(
+            "reckon.crew.list_live", lambda: [_running_pointer(), _interrupted_pointer()]
+        )
+    
+        report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+        sprint_row = report["sprints"][0]
+    
+>       assert [run["run_id"] for run in sprint_row["in_flight"]] == ["run-live"]
+E       AssertionError: assert ['run-killed', 'run-live'] == ['run-live']
+E         
+E         At index 0 diff: 'run-killed' != 'run-live'
+E         Left contains one more item: 'run-live'
+E         Use -v to get more diff
+
+tests/test_roadmap_names_interrupted_runs.py:119: AssertionError
+__ test_sprint_state_view_carries_the_interrupted_run_with_reason_and_action ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f19e939b240>
+
+    def test_sprint_state_view_carries_the_interrupted_run_with_reason_and_action(
+        monkeypatch,
+    ):
+        monkeypatch.setattr(
+            "reckon.crew.list_live", lambda: [_running_pointer(), _interrupted_pointer()]
+        )
+    
+        report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+        view = {row["id"]: row for row in sprint_state_view(report)}
+    
+>       assert [run["run_id"] for run in view["S1"]["in_flight"]] == ["run-live"]
+E       AssertionError: assert ['run-killed', 'run-live'] == ['run-live']
+E         
+E         At index 0 diff: 'run-killed' != 'run-live'
+E         Left contains one more item: 'run-live'
+E         Use -v to get more diff
+
+tests/test_roadmap_names_interrupted_runs.py:137: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_roadmap_names_interrupted_runs.py::test_in_flight_by_plan_counts_only_the_running_pointer
+FAILED tests/test_roadmap_names_interrupted_runs.py::test_interrupted_by_plan_lists_the_run_with_its_reason_and_next_action
+FAILED tests/test_roadmap_names_interrupted_runs.py::test_roadmap_reports_interrupted_runs_apart_from_runs_in_flight
+FAILED tests/test_roadmap_names_interrupted_runs.py::test_sprint_state_view_carries_the_interrupted_run_with_reason_and_action
+4 failed, 4 passed in 0.55s
+EXIT=1
