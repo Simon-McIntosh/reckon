@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -459,6 +459,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T1135-newest-stream-landed" data-who="reckon-ship" data-when="2026-09-23T11:35:00Z">
     <div class="r-comment-body"><p><strong>The shared newest-stream reader landed and is live</strong> (merged f60b15a7, commit c23c83ab). <code>reckon.crew.recovery.newest_stream</code> returns a run's newest non-empty stream across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>, and the stall classifier reads stream age through it. <code>resolve_session</code> walks the sibling <code>stream_paths_newest_first</code>, so an empty newest resume falls back to an earlier stream. This fixes both the false stall rows and the failed-resume session loss, which is 12 of 14 units.</p><p>Gate: 107 passed after against 99 at base 2721bdba, with the same 6 failures on both sides. The declared mutation, reading <code>stream.jsonl</code> only, turns 6 of the 8 new tests red. Review: 87. Its findings are the gate-log revision convention (the first line names the base while the log measured the changed tree) and three lint findings. The worker's manifest named a relative negative-control path and left the suite fields empty. The coordinator filled them from the committed logs and kept <code>manifest.md.asdelivered</code>. S20 has the function names for its stalled-row sections. Remaining here: step 6 end-to-end, which reads S20's per-run exit record, and the redispatch pointer refresh.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260923T084257968937-newest-stream-is-read-everywhere" data-who="reckon-ship" data-when="2026-09-23T09:54:40.845Z">
+    <div class="r-comment-body"><p>one newest-stream reader for stall age and session lookup; 107 passed vs 99 at base, same 6 failures; mutation reddens 6 of 8; review 87</p></div>
 </div>
 </section>
 </main>
