@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T04:16:14",
+  "updated": "2026-09-23T04:19:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -278779,6 +278779,277 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T204226780149-a-review-names-the-revision-it-read",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a75c",
+        "node": "a-review-names-the-revision-it-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 449,
+                "cached_input_tokens": 225312,
+                "input_tokens": 225763,
+                "output_tokens": 35,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 225798,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests in tests/test_review_records_its_revision.py assert that parse_review normalises the five existing spellings reviewed_commit reviewed_base reviewed_head_sha reviewed_base_sha commits_read onto reviewed_base_sha and reviewed_head_sha; that a record with none of them parses as incomplete; that storing a second review of the same run at a different head leaves the first record readable; and that read_review returns the record whose reviewed_head_sha matches a named head; the negative control of making store_review write to the single per-run path is applied, the overwrite test is observed to fail, and that log is recorded in the manifest; tests/test_review_scoring.py tests/test_review_gate_coverage.py tests/test_crew_promotion_requires_review.py still pass",
+          "estimated_hours": null,
+          "goal": "the review store records the base and head revision each review read under reviewed_base_sha and reviewed_head_sha, keys records by the revision so a recheck never overwrites an earlier review, and parse_review treats a record lacking the revision pair as incomplete",
+          "id": "a-review-names-the-revision-it-read",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-22T20:42:30Z",
+            "read_at": "2026-09-22T20:42:34Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 65.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204226780149-a-review-names-the-revision-it-read/manifest.md",
+          "negative_control": "make store_review write every review to the single review_path(project, run_id) path",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75c",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/review.py",
+            "tests/test_review_records_its_revision.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-q",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-22T20:43:07Z",
+        "completed_at": "2026-09-23T01:50:11Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 18424,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+        "commits": [
+          "315081c6a133048a2ec1c16e81647e8c37a0a90e",
+          "79e8c571cb23a7ee80b5f172a125093fa897b175",
+          "c3ae4b4bcf789ee363ad1f5f94479d453e625b0f",
+          "468517ea30526b81bc1f9a1057419f2673ed5699"
+        ],
+        "changed_lines": {
+          "added": 470,
+          "removed": 223,
+          "files": 4
+        },
+        "tests_added": 14,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_records_its_revision.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204226780149-a-review-names-the-revision-it-read/corrective-focused.log",
+          "log_digest": "sha256:bf5bbc68a6eeecd33fe3a5c0e8a27f58d176d3d090f6da448314ba1dbe16f493"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "reviews normalise five legacy spellings onto reviewed_base_sha and reviewed_head_sha, accumulate by head instead of overwriting, and parse as incomplete without the pair; 14 focused tests pass; the single-path mutation fails 3; zero added adjacent failures (5 at base and head); re-review 89; the promotion-side head match stays open",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204226780149-a-review-names-the-revision-it-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0cadb-ae9f-74e1-a32c-d73930db1281",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 28981888,
+            "cached_input_tokens_cumulative": 28981888,
+            "input_tokens": 29733877,
+            "input_tokens_cumulative": 29733877,
+            "output_tokens": 65473,
+            "output_tokens_cumulative": 65473,
+            "reasoning_output_tokens": 19515,
+            "reasoning_output_tokens_cumulative": 19515
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-23T01:50:11Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 70.0,
+              "resets_at": 1790575133,
+              "observed_at": "2026-09-23T01:50:11Z"
+            }
+          ],
+          "notional_cost_usd": 172.0568,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 17,
+            "goal_fidelity": 18,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 28981888,
+          "cumulative_input_tokens": 29733877,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 84988,
+          "generation_seconds": 18104.293,
+          "machine_seconds": 315.031,
+          "tokens_per_second": 4.69
+        },
+        "follow_on_paths": [
+          "prompts/review.md",
+          "tests/test_review_scoring.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-review-names-the-revision-it-read",
+          "session_id": "01a0cadb-ae9f-74e1-a32c-d73930db1281",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T01:50:11Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.82,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.82,
+          "at_complete": 0.85,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_review_records_its_revision.py"
+          ],
+          "declaration": "make store_review write every review to the single review_path(project, run_id) path",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204226780149-a-review-names-the-revision-it-read/corrective-negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204226780149-a-review-names-the-revision-it-read/corrective-negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 2.819742212212284,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex' is projected to exhaust at 2026-09-24T18:33:14Z, which is after this node's 2700s horizon ending 2026-09-22T21:27:34.048858+00:00",
+          "horizon_ends_at": "2026-09-22T21:27:34.048858+00:00",
+          "horizon_seconds": 2700,
+          "metered": true,
+          "observed_at": "2026-09-22T20:42:30Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-24T18:33:14Z",
+          "resets_at": "2026-09-28T05:58:54Z",
+          "seconds_until_reset": 465383,
+          "state": "quiet",
+          "utilisation_pct": 65.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-22T20:42:30Z",
+          "read_at": "2026-09-22T20:42:34Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 65.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 121.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -279077,6 +279348,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2179
+    "_version": 2180
   }
 }
