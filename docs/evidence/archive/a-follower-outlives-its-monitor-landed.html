@@ -188,6 +188,68 @@
       <h2>Scope and follow-ons</h2>
       <p>This node writes documentation and its guards only. Two dependencies are noted rather than fixed: the CLI side of <code>--lifetime</code> and the absolute <code>attach_line</code> are owned by peer nodes on this plan, so the reference is forward-looking on them; and <code>tests/test_crew_monitor_output.py::test_harness_arms_a_monitor_and_attaches_followers</code> asserts the base reference content and is now broken by this correction.</p>
     </section>
+    <section id="s7-orphaned-follower-releases">
+      <h2>&sect;7 &mdash; A follower whose consumer is gone releases its registration</h2>
+      <p>Commit <code>5194657a</code> at 2026-09-23 &mdash; <em>feat(crew): release a follower whose consumer has gone</em>.
+      The follower checks its recorded consumer on each wait pass in <code>_follow_watch_lines</code>
+      (<code>reckon/cli.py</code>). The consumer is the parent recorded at registration, so a re-parent to
+      init or to a subreaper reads as <code>os.getppid()</code> no longer naming that pid, and the recorded
+      start time is the pid-reuse guard. When the consumer is gone the arming ends: the registration is
+      released by leaving, and nothing is printed, because nobody is left to read a numeric line.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-follower-outlives-its-monitor/orphan_release_timeline.png"
+             alt="Two panels on one time axis measured from the arm, each with three lanes: the consumer, the registration lock, and the follower process. The upper panel shows the lock and the follower ending one wait pass after the consumer is killed. The lower panel shows both still held past ten seconds when the consumer check is deleted.">
+        <figcaption>The release on a mechanism time axis, beside the defect it removes. The dashed line is
+        the SIGKILL to the consumer. Upper: the follower sees the parent it did not record on its next wait
+        pass, releases the lock and exits silently inside the gate's ten-second window. Lower: with the
+        check deleted the orphan keeps the lock, so no successor can take the registration and every
+        dispatch is refused <code>watcher-required</code>.</figcaption>
+      </figure>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>The gate, at <code>5194657a</code>: 1 passed in 3.37 s.</strong>
+        <code>tests/test_orphaned_follower_releases.py</code> points <code>RECKON_HOME</code> at a temporary
+        directory, starts an intermediate parent that in turn starts the follower through
+        <code>sys.executable -c "from reckon.cli import main; main()" crew follow &hellip;</code> (never the bare
+        word <code>reckon</code>), waits for the registration to be held, then SIGKILLs the parent. Within ten
+        seconds of the kill it observes all three: the follower process has left; its stdout, captured to a
+        file, carries nothing; and after a non-blocking acquire proves the registration free, a second
+        follower becomes the holder named by <code>follower_state</code>.</li>
+        <li><strong>Why <code>-m reckon</code> is not used.</strong> The package carries no
+        <code>__main__</code>, so <code>python -m reckon</code> cannot run; the done-when allows the absolute
+        path of the running console script or <code>-m reckon</code>, and this node uses the interpreter with
+        the explicit module entry instead, which resolves the worktree's own <code>reckon</code> and never the
+        bare word.</li>
+        <li><strong>Added failures in the adjacent follower/watcher set: 0.</strong> The set of nine
+        follower- and watcher-facing files reports 5 failed, 64 passed. All five are outside this node's diff.</li>
+      </ul>
+
+      <h3>Negative control</h3>
+      <p>Declared as: delete the new consumer check from the follower's wait pass. With <code>_tick</code> no
+      longer calling <code>_check_consumer</code>, the gate fails on exactly that mechanism &mdash; the orphan is
+      still running ten seconds after its consumer was killed, so the release the test measures is not reached.
+      The mutation was reverted, the gate ran green again, and the red log is cited under the node's
+      manifest.</p>
+
+      <h3>What was owed and left</h3>
+      <p>Five adjacent failures predate this node and sit outside its diff: two in
+      <code>tests/test_crew_session_delivery.py</code> (the attach-line assertions another node carries a
+      corrective for, and a pre-existing <code>KeyError: 'ensure_line'</code> from
+      <code>reckon/crew/node.py</code>), and three in <code>tests/test_crew_watch_lifetime.py</code> that read a
+      renamed state (<code>completed_unpromoted</code> against <code>complete</code>). None touches
+      <code>_follow_watch_lines</code>. Verifying the merged result belongs to a separately dispatched test
+      node. This node leaves the archive's <code>plan-owes</code> head scalars untouched, so the coordinator can
+      fold this section's commit into them.</p>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>reckon/cli.py</code> &mdash; the consumer check, its call on the wait pass, and the loop exits.</li>
+        <li><code>tests/test_orphaned_follower_releases.py</code> &mdash; the gate.</li>
+        <li><code>docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py</code> &mdash; the figure source.</li>
+      </ul>
+    </section>
   </main>
 </body>
 </html>
