@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 410" width="100%" role="img">
+<title>Three terminal attempts of one run, and where compaction fired</title>
+<style>
+text{font-family:system-ui,sans-serif}
+.lab{font-weight:600;font-size:13px;fill:#243447}
+.sub{font-size:11px;fill:#6b7f96}
+.note{font-size:11px;fill:#3a3d44}
+.tok{font-size:11px;fill:#4b5563}
+.g{font-weight:600;font-size:11px;fill:#2f6f4f}
+.r{font-weight:600;font-size:11px;fill:#a33}
+.bar{fill:#dfe9f5;stroke:#6b7f96}
+.fire{fill:#cfe6d8;stroke:#2f6f4f;stroke-width:2}
+.refuse{fill:#f3d6d0;stroke:#a33;stroke-width:2}
+.axis{stroke:#9aa7b4;stroke-width:2}
+.dot{fill:#fff;stroke:#243447;stroke-width:2}
+</style>
+<text x="20" y="24" class="sub">One run, three terminal attempts of one session. Each axis runs that attempt's own line numbers, 0 to its last line.</text>
+<rect x="20" y="40" width="14" height="12" class="bar"/>
+<rect x="40" y="40" width="14" height="12" class="fire"/>
+<text x="60" y="50" class="sub">compaction (automatic)</text>
+<rect x="270" y="40" width="14" height="12" class="refuse"/>
+<text x="290" y="50" class="sub">refused, first turn</text>
+<text x="20" y="88" class="lab">stream.jsonl</text>
+<text x="20" y="104" class="sub">attempt 1 · 5624 lines</text>
+<line x1="160" y1="104" x2="760" y2="104" class="axis"/>
+<rect x="160" y="90" width="600" height="28" class="bar"/>
+<rect x="572" y="86" width="10" height="36" class="fire"/>
+<text x="577" y="76" class="g" text-anchor="middle">compaction #1 &#183; line 3904</text>
+<text x="577" y="142" class="tok" text-anchor="middle">176,242 &#8594; 27,863 pre/post tokens, trigger auto</text>
+<text x="360" y="134" class="tok" text-anchor="middle">3 file entries before</text>
+<text x="668" y="134" class="tok" text-anchor="middle">37 after</text>
+<text x="20" y="206" class="lab">resume-1.jsonl</text>
+<text x="20" y="222" class="sub">attempt 2 &#183; 3074 lines</text>
+<line x1="160" y1="212" x2="760" y2="212" class="axis"/>
+<rect x="160" y="198" width="600" height="28" class="bar"/>
+<rect x="246" y="194" width="10" height="36" class="fire"/>
+<text x="251" y="184" class="g" text-anchor="middle">compaction #2 &#183; line 459</text>
+<text x="360" y="252" class="tok" text-anchor="middle">171,919 &#8594; 20,158 pre/post tokens, trigger auto</text>
+<circle cx="748" cy="212" r="6" class="dot"/>
+<text x="740" y="278" class="note" text-anchor="end">turn ends on a sentence, no tool call</text>
+<text x="20" y="320" class="lab">resume-3.jsonl</text>
+<text x="20" y="336" class="sub">attempt 3 &#183; 3 lines</text>
+<rect x="160" y="306" width="6" height="28" class="refuse"/>
+<text x="180" y="322" class="r">refused on its first turn &#8212; &#8220;Prompt is too long&#8221;, terminal_reason blocking_limit</text>
+<text x="180" y="340" class="tok">0 input tokens on the turn; 7,485,800 cumulative across the session; the session never reopened.</text>
+<text x="20" y="392" class="sub">Compaction fires and the worker continues within a run; the resume path does not survive it.</text>
+</svg>

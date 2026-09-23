@@ -20,7 +20,7 @@
   "compaction_marker": {
     "record_type": "system",
     "record_subtype": "compact_boundary",
-    "source": "this node's own stream",
+    "source": "the node's own stream and its first resume stream",
     "own_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/stream.jsonl",
     "metadata_keys": [
       "trigger",
@@ -31,28 +31,41 @@
       "preserved_segment",
       "preserved_messages"
     ],
-    "turn_definition": "the count of assistant records emitted before the compact_boundary record in this node's own stream"
+    "turn_definition": "the count of assistant records emitted before the compact_boundary record in this node's own stream",
+    "line_number_convention": "1-based physical line number in the named file, as `sed -n '<line>p'` selects"
   },
   "compaction_events": [
     {
-      "trigger": "auto",
+      "file": "stream.jsonl",
+      "line": 3904,
       "record_type": "system",
       "record_subtype": "compact_boundary",
-      "stream_line_index": 3903,
-      "stream_total_lines": 4016,
-      "assistant_records_before": 91,
-      "turn_at_which_it_fired": 91,
-      "context_tokens_before": 176242,
-      "context_tokens_after": 27863,
+      "trigger": "auto",
+      "pre_tokens": 176242,
+      "post_tokens": 27863,
       "cumulative_dropped_tokens": 148379,
       "duration_ms": 125503,
-      "last_corpus_file_read_before": "r-20260915T043415918538-r-mobile-wall-recuration",
+      "stream_total_lines": 5624,
+      "assistant_records_before": 86,
       "files_completed_before": 3
+    },
+    {
+      "file": "resume-1.jsonl",
+      "line": 459,
+      "record_type": "system",
+      "record_subtype": "compact_boundary",
+      "trigger": "auto",
+      "pre_tokens": 171919,
+      "post_tokens": 20158,
+      "cumulative_dropped_tokens": 300140,
+      "duration_ms": 185579,
+      "stream_total_lines": 3074,
+      "assistant_records_before": 5
     }
   ],
-  "results_written_before_compaction": true,
-  "results_written_after_compaction": null,
-  "ended_with_complete_manifest": null,
+  "results_written_before_compaction": 3,
+  "results_written_after_compaction": 37,
+  "ended_with_complete_manifest": false,
   "files": [
     {
       "run_id": "r-20260916T210946867358-west-curate-topology-cleanup",
@@ -375,5 +388,19 @@
       "written_during_stage": "after-compaction"
     }
   ],
-  "compaction_occurred": true
+  "compaction_occurred": true,
+  "file_entries_total": 40,
+  "manifest_refusal": {
+    "file": "resume-3.jsonl",
+    "first_turn": true,
+    "num_turns": 1,
+    "text": "Prompt is too long",
+    "error": "invalid_request",
+    "turn_input_tokens": 0,
+    "terminal_reason": "blocking_limit",
+    "cumulative_input_tokens": 7485800,
+    "context_window": 200000
+  },
+  "early_turn_end": "Confirmed 86 (the earlier recorded 91 was mis-derived). Let me read the data file to correct it.",
+  "early_turn_end_provenance": "resume-1.jsonl final result record (line 3074, subtype success, num_turns 52, stop_reason end_turn); the closing assistant record (line 3073) is a text block announcing an action with no tool call, so the turn ended on a sentence rather than a deliverable"
 }
