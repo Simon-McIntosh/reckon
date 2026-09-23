@@ -431,6 +431,45 @@ def review_path(
     return review_store_root(base_dir) / project / f"{reviewed_run_id}{suffix}.json"
 
 
+def _complete_review_exists(
+    project: str,
+    reviewed_run_id: str,
+    base_dir: str | Path | None,
+) -> bool:
+    """Return whether any stored record for the run carries a usable pair."""
+    directory = review_store_root(base_dir) / project
+    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    if directory.is_dir():
+        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        _, base_sha, _, head_sha = carried_revision_pair(stored)
+        if base_sha and head_sha:
+            return True
+    return False
+
+
+def _incomplete_review_path(
+    project: str,
+    reviewed_run_id: str,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None,
+) -> Path:
+    """Return a durable path excluded from current-review selection."""
+    identity = str(record.get("review_run_id") or record.get("timestamp") or "unknown")
+    identity = re.sub(r"[^A-Za-z0-9._-]+", "-", identity).strip("-.") or "unknown"
+    return (
+        review_store_root(base_dir)
+        / project
+        / f"{reviewed_run_id}.incomplete-{identity}.json"
+    )
+
+
 def store_review(
     record: dict[str, Any],
     *,
@@ -442,9 +481,11 @@ def store_review(
     file. A missing ``timestamp`` is stamped with the current UTC moment so
     every stored record carries one; an existing timestamp is preserved. The
     five legacy revision spellings are normalised onto the canonical base/head
-    pair before writing. A complete pair selects a revision-keyed path; an
-    incomplete legacy record remains at the legacy path for compatibility but
-    cannot masquerade as a review of a named head. The write is atomic.
+    pair before writing. A complete pair selects a revision-keyed path. An
+    incomplete record keeps the legacy path when no complete review exists, so
+    older callers retain their storage contract; once a complete record exists,
+    the incomplete record is preserved under its reviewing-run identity without
+    entering current-review selection. The write is atomic.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -462,12 +503,17 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
-    path = review_path(
-        project,
-        reviewed_run_id,
-        base_dir,
-        reviewed_head_sha=head_sha if base_sha and head_sha else None,
-    )
+    if base_sha and head_sha:
+        path = review_path(
+            project,
+            reviewed_run_id,
+            base_dir,
+            reviewed_head_sha=head_sha,
+        )
+    elif _complete_review_exists(project, reviewed_run_id, base_dir):
+        path = _incomplete_review_path(project, reviewed_run_id, record, base_dir)
+    else:
+        path = review_path(project, reviewed_run_id, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(
