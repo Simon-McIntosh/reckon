@@ -126,6 +126,7 @@ def _next_node(home: Path) -> crew.TaskNode:
         goal="Hold the project watch while an unreconciled pointer remains",
         plan="delivery",
         section="dispatch",
+        spec_level="exact",
         done_when="tests/test_crew_watch_lifetime.py reports 3 passed and 0 failed",
         write_paths=["reckon/next.py"],
         time_budget="20m",
@@ -159,6 +160,7 @@ def _finish_after_reconciliation(ticker, pool: ThreadPoolExecutor) -> None:
 
 
 def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
+    """The classifier reports completed_unpromoted for an unreviewed complete run."""
     record = _write_stale_terminal_pointer(home)
     source_root = Path(__file__).parents[1]
     producer = subprocess.Popen(
@@ -178,7 +180,10 @@ def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
     try:
         assert producer.stdout is not None
         baseline = json.loads(producer.stdout.readline())
-        assert (baseline["to_state"], baseline["unpromoted"]) == ("complete", 1)
+        assert (baseline["to_state"], baseline["unpromoted"]) == (
+            "completed_unpromoted",
+            1,
+        )
         time.sleep(0.25)
 
         visibility = project_watch_visibility("sample")
@@ -189,7 +194,7 @@ def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
         assert producer.stdout is not None
         promoted = json.loads(producer.stdout.readline())
         assert (promoted["from_state"], promoted["to_state"]) == (
-            "complete",
+            "completed_unpromoted",
             "promoted",
         )
         assert producer.wait(timeout=5) == 0
@@ -204,13 +209,14 @@ def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
 def test_dispatch_is_admitted_during_the_stale_terminal_window(
     home: Path, repo: Path
 ) -> None:
+    """A run the classifier reads as completed_unpromoted still admits a dispatch."""
     record = _write_stale_terminal_pointer(home, repo=repo)
     poll = _ControlledPoll()
     ticker = watch_ticker("sample", stall_window="1h", poll_interval=0, sleeper=poll)
 
     with ThreadPoolExecutor(max_workers=1) as pool:
         baseline = pool.submit(next, ticker).result(timeout=5)
-        assert baseline["to_state"] == "complete"
+        assert baseline["to_state"] == "completed_unpromoted"
         waiting = pool.submit(next, ticker)
         _assert_seat_held_after_poll(poll, waiting)
 
@@ -238,6 +244,7 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
 
 
 def test_empty_fleet_still_waits_for_its_first_pointer(home: Path) -> None:
+    """The first pointer the seat sees is reported as completed_unpromoted."""
     poll = _ControlledPoll()
     ticker = watch_ticker("sample", stall_window="1h", poll_interval=0, sleeper=poll)
 
@@ -252,7 +259,7 @@ def test_empty_fleet_still_waits_for_its_first_pointer(home: Path) -> None:
         record = _write_stale_terminal_pointer(home)
         poll.release.set()
         baseline = waiting.result(timeout=5)
-        assert baseline["to_state"] == "complete"
+        assert baseline["to_state"] == "completed_unpromoted"
         crew.pointer_path(record["run_id"]).unlink()
         promoted = pool.submit(next, ticker).result(timeout=5)
         assert promoted["to_state"] == "promoted"
