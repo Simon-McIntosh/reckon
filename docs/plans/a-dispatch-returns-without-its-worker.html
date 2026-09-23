@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="28">
+  <meta name="plan-version" content="29">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.14">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.29">
 </head>
 <body>
   <main class="plan-doc">
@@ -406,6 +406,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T1425-s8-leaves-a-gap" data-who="reckon-ship" data-when="2026-09-23T14:25:00Z">
     <div class="r-comment-body"><p><strong>Retiring the cap removes the only check dispatch makes against load, and that gap needs an owner.</strong> Three instances were measured on 2026-09-23. imas-ambix-61 at 13:17 UTC: refused at 65 of 64 with 23 live of 69 pointers. imas-ambix-b6 at 16:14 CEST: refused at 64 of 64 with 31 live of 74. This session, dispatching <code>watch-lifetime-tests-read-the-canonical-state</code> with a per-call <code>--set backends.clive.max_concurrent_runs=1000</code> override at 14:19 UTC, sent the node into a lane reading <code>running 29</code>, <code>headroom 0</code>, <code>concurrent_requests 23</code>, with its router gate at 30 of 30 in flight. In b6's case the dead-pointer count refused for the wrong reason at a moment when the lane really was full. So once the cap is gone, nothing in <code>crew dispatch</code> consults the lane's own headroom, although dispatch already captures a lane reading and carries it on the run record (widened per field at <code>1a64dede</code>). That advisory is <a href="/reckon/plans/advise-the-lane-never-force-it#s2">advise-the-lane-never-force-it §2</a>, <em>The advisory arrives where the choice is made</em>. It advises and never refuses, which fits the contract that no numeric worker cap exists. §8 does not wait on it: the router gate now answers overload with an explicit 529 and <code>Retry-After</code>, so an over-full lane shows as backpressure rather than silent degradation. Until §2 lands, this session's coordinator reads <code>lane.json</code> headroom before each dispatch and holds new work at zero.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1445-s5-landed" data-who="reckon-ship" data-when="2026-09-23T14:45:00Z">
+    <div class="r-comment-body"><p>§5 landed, merged at <code>4248cbaf</code>. The reproduction found the defect real. Of six refusal paths, two are reached after the pointer write, and both left a live pointer, its run directory and its worktree at base. The unwind removed the worktree first, and the remover refused because the run's own pointer still claimed it, so the rest of the unwind never ran. That is the mechanism of imas-ambix-61's <em>refusing to remove worktree … claimed by live runs &lt;its own run&gt;</em>. The pointer and run directory now go first. With the base <code>dispatch.py</code> restored, exactly those two cases fail and the four pre-pointer cases still pass. One observation is carried, not repaired: <code>crew discard</code> leaves a launch-failed run's worktree on disk, so a re-dispatch of the same node id is correctly refused; the tree is the discarding command's to remove. §6, a post-launch failure that kills the worker, is not addressed by this.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
