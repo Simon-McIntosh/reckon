@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T08:02:28",
+  "updated": "2026-09-23T08:04:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -285171,6 +285171,286 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T040159080943-ledger-tests-read-interrupted",
+        "plan": "worker-death-is-recorded",
+        "section": "\u00a75",
+        "node": "ledger-tests-read-interrupted",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 921,
+                "cached_input_tokens": 777687,
+                "input_tokens": 778610,
+                "output_tokens": 97,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 778707,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_abandoned and tests/test_ledger.py::test_recovery_reports_all_three_classes_and_counts_them pass at a head built on 729dea35, each asserting interrupted where it asserted abandoned and the recover counts carrying an interrupted key; each test is renamed to say what it now asserts; no production source changes; the whole of tests/test_ledger.py reports no added failures against 729dea35, with both logs recorded; the negative control of removing the interrupted arm from classify_pointer in a scratch copy is applied, both updated tests are observed to fail, and that log is recorded in the manifest",
+          "estimated_hours": null,
+          "goal": "the two tests in tests/test_ledger.py that expect a dead run with nothing delivered to read abandoned expect interrupted instead, matching the locked phase design",
+          "id": "ledger-tests-read-interrupted",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T04:02:06Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/manifest.md",
+          "negative_control": "remove the interrupted arm from classify_pointer so a dead orphaned run keeps its prior classification",
+          "plan": "worker-death-is-recorded",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_ledger.py",
+            "docs/evidence/archive/worker-death-is-recorded-landed.html",
+            "docs/figures/worker-death-is-recorded",
+            "docs/plans/worker-death-is-recorded.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-crpc-ensure-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T04:03:39Z",
+        "completed_at": "2026-09-23T05:11:20.545Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4045,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4061,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "729dea3561bdfd77c014c7be4d21e2bee4801f4d",
+        "commits": [
+          "fb88efce4cb59b85b0c74d1a098c48673ccaec14"
+        ],
+        "changed_lines": {
+          "added": 2485,
+          "removed": 6,
+          "files": 6
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/logs/after-test-ledger.log",
+          "log_digest": "4182a10b3ee1a8ab942799e9a3c94b488bc3ac39402a41fb220b94371bde5c3c"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/manifest.md",
+        "scope_changed": false,
+        "session_id": "aae7d181-a20a-40a0-825f-822fa1924ad4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5110124,
+            "input_tokens_cumulative": 5110124,
+            "output_tokens": 28108,
+            "output_tokens_cumulative": 28108,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T05:11:20.545Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6831495,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1317.2,
+          "generated_tokens": 40485,
+          "generation_seconds": 1044.669,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.0,
+          "machine_seconds": 272.531,
+          "peak_input_tokens": 158480,
+          "tokens_per_second": 38.75,
+          "wall_tokens_per_second": 30.74
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py",
+          "/",
+          "worktree-claim/session",
+          "docs/plans/suite-failures-have-an-owner.html",
+          "docs/state/reckon/crew.json"
+        ],
+        "predecessor_run": "r-20260923T021304703755-a-killed-run-reads-interrupted",
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/ledger-tests-read-interrupted",
+          "session_id": "aae7d181-a20a-40a0-825f-822fa1924ad4",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T05:11:20.545Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "fb88efce4cb59b85b0c74d1a098c48673ccaec14",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "worker-death-is-recorded",
+          "at_dispatch": 0.33,
+          "at_complete": 0.64,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_ledger.py"
+          ],
+          "declaration": "remove the interrupted arm from classify_pointer so a dead orphaned run keeps its prior classification",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/logs/negative-control-remove-interrupted-arm.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T040159080943-ledger-tests-read-interrupted/logs/negative-control-remove-interrupted-arm.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T04:32:06.663398+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T04:02:06Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 30.0,
+        "orientation_input_tokens": 1526115.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -285469,6 +285749,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2217
+    "_version": 2218
   }
 }

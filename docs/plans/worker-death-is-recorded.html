@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -339,6 +339,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T0600-ledger-tests-landed" data-who="reckon-ship" data-when="2026-09-23T06:00:00Z">
     <div class="r-comment-body"><p>Ledger expectations landed at fb88efce. The two ledger tests that expected <code>abandoned</code> now expect <code>interrupted</code>. <code>tests/test_ledger.py</code> went from 8 failed / 87 passed at 729dea35 to 6 failed / 89 passed: 2 fixed, 0 added. Removing the interrupted arm in a scratch tree turns both repaired tests red (2 failed). Review: 93. Its finding is that the committed after-log pins the base revision rather than the measured tree, the same convention defect already found on scoring §2c. The six remaining failures predate this node: review-waiver refusals, worktree-claim evidence and session evidence. They belong to suite-failures-have-an-owner, not this plan.</p><p><strong>Denominator restated:</strong> 14 executable units. That is the five done sections plus nine §5 nodes: steps 1–6, the ledger expectations, the redispatch pointer refresh, and the shared newest-stream reader. Nine are complete, so impl is 0.64.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260923T040159080943-ledger-tests-read-interrupted" data-who="reckon-ship" data-when="2026-09-23T05:11:20.545Z">
+    <div class="r-comment-body"><p>two ledger expectations read interrupted; test_ledger 8 failed/87 passed to 6/89, 2 fixed 0 added; review 93</p></div>
 </div>
 </section>
 </main>
