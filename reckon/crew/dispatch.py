@@ -417,7 +417,9 @@ def _live_runs_on_backend(backend_name: str) -> list[dict[str, Any]]:
 
 
 def _refuse_over_reservation_roster(
-    backend: Mapping[str, Any], occupying: list[dict[str, Any]]
+    backend: Mapping[str, Any],
+    occupying: list[dict[str, Any]],
+    project: str | None = None,
 ) -> None:
     """Refuse a dispatch past the placement reservation's roster cap.
 
@@ -427,15 +429,22 @@ def _refuse_over_reservation_roster(
     backend whose workers are placed into the reservation and only while a
     reservation is actually held — an unplaced backend has no roster of ours,
     and a host with no reservation has nothing to oversubscribe.
+
+    Both the record and the count are the PROJECT's. The reservation a project
+    holds admits that project's workers, so only those occupy its roster, and
+    a project holding none is unaffected by one another project holds. The lane
+    bound above this counts across projects and should, because a served lane
+    is genuinely shared; an allocation is not.
     """
     from reckon import flight
     from reckon.crew import placement as placement_module
 
     if flight.placement_for(backend) is None:
         return
-    if not placement_module.read_reservation():
+    if not placement_module.read_reservation(project):
         return
-    refusal = placement_module.reservation_roster_refusal(len(occupying))
+    occupants = placement_module.occupying_the_reservation(occupying, project)
+    refusal = placement_module.reservation_roster_refusal(len(occupants))
     if refusal is None:
         return
     occupying_ids = [
@@ -445,7 +454,7 @@ def _refuse_over_reservation_roster(
 
 
 def _refuse_over_concurrency_ceiling(
-    backend_name: str, backend: Mapping[str, Any]
+    backend_name: str, backend: Mapping[str, Any], project: str | None = None
 ) -> None:
     """Refuse a dispatch that would exceed whichever bound is actually binding.
 
@@ -489,7 +498,7 @@ def _refuse_over_concurrency_ceiling(
     # cap is a second ceiling and the only one nothing enforces on our behalf:
     # under --overlap the scheduler admits whatever is asked, which makes the
     # cap a real limit rather than a formality.
-    _refuse_over_reservation_roster(backend, occupying)
+    _refuse_over_reservation_roster(backend, occupying, project)
 
 
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
@@ -3561,7 +3570,7 @@ def dispatch(
     # before anything is created or spawned. A fallback backend resolved above
     # gets the same ceiling as a directly chosen one, so a held lane never
     # reroutes onto an already-saturated lane.
-    _refuse_over_concurrency_ceiling(backend_name, backend)
+    _refuse_over_concurrency_ceiling(backend_name, backend, project)
     explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
     peers = {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
     peers = _peer_scopes_without_shared_landing_paths(
@@ -3916,7 +3925,7 @@ def dispatch(
                 # Read before the placement wraps the plan: the harness is
                 # argv[0] here, and after the wrap argv[0] is the scheduler.
                 harness_command = str(plan.argv[0]) if plan.argv else None
-                plan = apply_backend_placement(plan, backend)
+                plan = apply_backend_placement(plan, backend, project)
                 spawn = launcher or _spawn
                 spawned_pid = spawn(
                     plan,
@@ -4473,7 +4482,9 @@ def resolve_launch_executable(
 
 
 def apply_backend_placement(
-    plan: _backends.LaunchPlan, backend: Mapping[str, Any]
+    plan: _backends.LaunchPlan,
+    backend: Mapping[str, Any],
+    project: str | None = None,
 ) -> _backends.LaunchPlan:
     """Prefix an already-resolved launch with its backend's declared placement.
 
@@ -4507,7 +4518,10 @@ def apply_backend_placement(
     from reckon.crew import placement as placement_module
 
     options = [str(item) for item in placement.get("options") or ()]
-    reservation = placement_module.read_reservation()
+    # The project's own reservation, never another's: a worker placed into an
+    # allocation its project does not hold would run somewhere nobody sized for
+    # it and be counted against a roster nobody armed on its behalf.
+    reservation = placement_module.read_reservation(project)
     if reservation and placement_module.reservation_alive(reservation):
         # The reservation is held and its job id is published, so this worker
         # runs inside it as an overlapping step rather than as an allocation of

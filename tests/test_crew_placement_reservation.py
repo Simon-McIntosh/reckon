@@ -247,6 +247,69 @@ def test_the_dispatch_admission_refuses_past_the_roster_cap(
     assert "resident memory per worker" in str(refused.value)
 
 
+def test_a_reservation_counts_only_the_workers_of_the_project_that_armed_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The roster bounds one project's workers, never every project's.
+
+    Measured 2026-09-23: one project declared a placement, the record it
+    published was host-global, and forty five runs across four repositories
+    were counted against a ceiling of twenty five while exactly one step ran
+    inside the allocation. Dispatch was refused workstation wide for four
+    minutes. The cap was right and its population was not.
+    """
+    _isolate(monkeypatch, tmp_path)
+    placement.publish_reservation({"job_id": "1274051"}, "alpha")
+
+    # Twenty four of alpha's own, and a crowd belonging to other projects.
+    occupying = [
+        {"run_id": f"r-alpha-{index}", "project": "alpha"} for index in range(24)
+    ] + [{"run_id": f"r-beta-{index}", "project": "beta"} for index in range(40)]
+
+    # Alpha is one below its cap, so the foreign forty do not refuse it.
+    dispatch_module._refuse_over_reservation_roster(
+        _placed_backend(), occupying, "alpha"
+    )
+
+    # Its own twenty fifth does.
+    with pytest.raises(runs.CrewError) as refused:
+        dispatch_module._refuse_over_reservation_roster(
+            _placed_backend(),
+            occupying + [{"run_id": "r-alpha-24", "project": "alpha"}],
+            "alpha",
+        )
+    assert "25" in str(refused.value)
+
+    # And beta, holding no reservation of its own, is unbounded by alpha's.
+    dispatch_module._refuse_over_reservation_roster(
+        _placed_backend(), occupying, "beta"
+    )
+
+
+def test_a_host_global_record_belongs_to_no_project(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A pre-project record is read, and bounds nobody by inheritance.
+
+    An existing host-global record must not silently become every project's
+    reservation on upgrade, which is the fleet-wide ceiling this keying exists
+    to remove. It stays readable so it is not orphaned, and a named project
+    does not fall back to it.
+    """
+    _isolate(monkeypatch, tmp_path)
+    placement.publish_reservation({"job_id": "1274051"})
+
+    assert placement.read_reservation() is not None
+    assert placement.read_reservation("alpha") is None
+
+    occupying = [
+        {"run_id": f"r-alpha-{index}", "project": "alpha"} for index in range(40)
+    ]
+    dispatch_module._refuse_over_reservation_roster(
+        _placed_backend(), occupying, "alpha"
+    )
+
+
 def test_an_unplaced_backend_has_no_roster_of_ours(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

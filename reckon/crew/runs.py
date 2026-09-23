@@ -2383,6 +2383,7 @@ LINGER_IF_REQUIRED = True
 def ensure_placement_reservation(
     *,
     session: str | None = None,
+    project: str | None = None,
     runner: Any | None = None,
     alive_probe: Any | None = None,
 ) -> dict[str, Any]:
@@ -2399,7 +2400,7 @@ def ensure_placement_reservation(
     from reckon.crew import placement as placement_module
 
     result = placement_module.ensure_reservation(
-        session=session, runner=runner, alive_probe=alive_probe
+        session=session, project=project, runner=runner, alive_probe=alive_probe
     )
     result["ensure_line"] = placement_ensure_line()
     return result

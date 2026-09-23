@@ -2486,31 +2486,45 @@ def crew_unwatch(project, pretty):
     default=None,
     help="Session asking for the reservation; recorded with it when first held.",
 )
+@click.option(
+    "--project",
+    default=None,
+    help="Project whose reservation to report or hold; omitted reads the "
+    "pre-project host-global record, which belongs to no project.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_placement(ensure, session, pretty):
-    """Report or hold the one reservation every session places workers into.
+def crew_placement(ensure, session, project, pretty):
+    """Report or hold the one reservation a project places its workers into.
 
-    One reservation held once, published into the shared crew state, is what
-    keeps concurrency a matter of sizing an allocation rather than of
-    submitting more of them. Workers then run inside it as steps, so the
-    cluster queue sees one entry for the reservation and never sees a step.
+    One reservation held once per project, published into the crew state that
+    project's sessions read, is what keeps concurrency a matter of sizing an
+    allocation rather than of submitting more of them. Workers then run inside
+    it as steps, so the cluster queue sees one entry and never sees a step.
+
+    It is keyed by project because a reservation admits one project's workers
+    and its roster bounds them. Keying it by host made a per-project decision
+    carry a fleet-wide ceiling, counting every project's workers against one
+    allocation that only one of them held.
     """
     from reckon.crew import runs as runs_module
     from reckon.crew.node import CrewError
 
     if ensure:
         try:
-            result = runs_module.ensure_placement_reservation(session=session)
+            result = runs_module.ensure_placement_reservation(
+                session=session, project=project
+            )
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit({"ok": True, **result}, pretty)
         return
     from reckon.crew import placement as placement_module
 
-    record = placement_module.read_reservation()
+    record = placement_module.read_reservation(project)
     _emit(
         {
             "ok": True,
+            "project": project,
             "job_id": (record or {}).get("job_id"),
             "held": bool(record),
             "record": record,

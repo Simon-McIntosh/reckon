@@ -23,7 +23,7 @@ import json
 import os
 import subprocess
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -71,21 +71,43 @@ RESERVATION_REASON_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%R")
 _ALLOCATION_TIMEOUT_SECONDS = 60.0
 
 
-def reservation_path() -> Path:
-    """Path of the published reservation record in the shared crew state."""
+def reservation_path(project: str | None = None) -> Path:
+    """Path of the published reservation record, per project.
+
+    A reservation is held by one project and its roster bounds that project's
+    workers, so the record is keyed by project rather than by host. Keying it
+    by host made a per-project decision carry a fleet-wide ceiling: a project
+    declaring a placement published one record, and every other project's
+    in-flight workers were then counted against it. Measured 2026-09-23, forty
+    five runs across four repositories against a ceiling of twenty five, while
+    one step ran inside the allocation the ceiling exists to protect.
+
+    ``project`` of None is the pre-project host-global path. It is read so an
+    existing record is not orphaned, and it belongs to NO project rather than
+    to all of them — see ``read_reservation``.
+    """
     from reckon.crew.runs import crew_home
 
-    return crew_home() / "placement" / "reservation.json"
+    base = crew_home() / "placement"
+    if project is None:
+        return base / "reservation.json"
+    return base / project / "reservation.json"
 
 
-def read_reservation() -> dict[str, Any] | None:
-    """Read the published reservation, or None when none is held.
+def read_reservation(project: str | None = None) -> dict[str, Any] | None:
+    """Read a project's published reservation, or None when none is held.
 
     A record that cannot be read answers None rather than raising: an absent
     reservation and an unreadable one both mean no reservation is available to
     place into, and the caller reports that rather than inventing an id.
+
+    A named project reads ONLY its own record. It deliberately does not fall
+    back to the host-global one, because inheriting a reservation another
+    project holds is the defect this keying exists to remove: the fallback
+    would place this project's workers into an allocation it does not own and
+    count them against a roster it did not arm.
     """
-    path = reservation_path()
+    path = reservation_path(project)
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -93,15 +115,16 @@ def read_reservation() -> dict[str, Any] | None:
     return record if isinstance(record, dict) else None
 
 
-def publish_reservation(record: Mapping[str, Any]) -> Path:
-    """Write the reservation to the shared crew state every session reads.
+def publish_reservation(record: Mapping[str, Any], project: str | None = None) -> Path:
+    """Write a project's reservation to the crew state its sessions read.
 
     The published file is the whole point of the design: a job id held in one
     session's memory is invisible to every other session, so a second session
     would hold its own reservation and the fleet would be back to one
-    allocation per worker without anyone noticing.
+    allocation per worker without anyone noticing. Keying it by project is what
+    keeps that sharing inside the project that holds the allocation.
     """
-    path = reservation_path()
+    path = reservation_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
     tmp.write_text(
@@ -111,10 +134,10 @@ def publish_reservation(record: Mapping[str, Any]) -> Path:
     return path
 
 
-def clear_reservation() -> None:
-    """Remove the published reservation record, if one is there."""
+def clear_reservation(project: str | None = None) -> None:
+    """Remove a project's published reservation record, if one is there."""
     try:
-        reservation_path().unlink()
+        reservation_path(project).unlink()
     except FileNotFoundError:
         return
 
@@ -196,6 +219,7 @@ def _parse_job_id(completed: subprocess.CompletedProcess[str]) -> str | None:
 
 def ensure_reservation(
     *,
+    project: str | None = None,
     session: str | None = None,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     alive_probe: Callable[[Mapping[str, Any] | None], bool] | None = None,
@@ -204,7 +228,7 @@ def ensure_reservation(
     memory_gb: int = RESERVATION_MEMORY_GB,
     now: float | None = None,
 ) -> dict[str, Any]:
-    """Hold the reservation if it is absent, and report it if it is present.
+    """Hold the project's reservation if absent, and report it if present.
 
     Idempotent in the sense that decides whether a second call disturbs a live
     reservation: a reservation already held and still in the system is
@@ -212,8 +236,11 @@ def ensure_reservation(
     run does not mint a second allocation. A record whose job has left the
     system is replaced, because reporting a finished allocation as held would
     send workers into nothing.
+
+    Idempotence is per project, which is what lets two projects each hold one
+    allocation rather than the first to ask holding the only one.
     """
-    existing = read_reservation()
+    existing = read_reservation(project)
     probe = alive_probe or reservation_alive
     if existing and probe(existing):
         return {
@@ -263,11 +290,14 @@ def ensure_reservation(
         "partition": partition,
         "roster_limit": RESERVATION_ROSTER_LIMIT,
         "roster_basis": RESERVATION_ROSTER_BASIS,
+        # Carried in the record as well as in the path, so a reader holding the
+        # record alone can still say whose allocation it is.
+        "held_for_project": project,
         "held_by_session": session,
         "held_at": time.time() if now is None else now,
         "replaced": existing.get("job_id") if existing else None,
     }
-    publish_reservation(record)
+    publish_reservation(record, project)
     return {
         "job_id": job_id,
         "held": True,
@@ -279,6 +309,29 @@ def ensure_reservation(
         ),
         "reason": "held",
     }
+
+
+def occupying_the_reservation(
+    pointers: Iterable[Mapping[str, Any]], project: str | None
+) -> list[Mapping[str, Any]]:
+    """The subset of live pointers a project's reservation roster counts.
+
+    A reservation belongs to one project and admits that project's workers, so
+    only those occupy its roster. Counting every project's workers against it
+    is what turned one project's placement decision into a ceiling over the
+    whole host: measured 2026-09-23, forty five runs across four repositories
+    counted against a limit of twenty five while one step ran inside the
+    allocation.
+
+    This is deliberately NOT the same population as the lane's own concurrency
+    bound. A served lane is shared, so its ceiling is rightly counted across
+    every project; an allocation is not shared, so its roster is not. The two
+    bounds read the same pointers and want different scopes, and conflating
+    them is the defect rather than an optimisation.
+    """
+    if project is None:
+        return list(pointers)
+    return [p for p in pointers if str(p.get("project") or "") == project]
 
 
 def reservation_roster_refusal(
