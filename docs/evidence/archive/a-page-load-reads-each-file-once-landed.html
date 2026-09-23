@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-page-load-reads-each-file-once-landed">
+  <meta name="plan-title" content="A Page Load Reads Each File Once &mdash; landed evidence">
+  <meta name="plan-summary" content="One section per node: the served loader reads discovery alone and the aggregate only stands in for the static build (&sect;3).">
+  <meta name="plan-evidence-for" content="reckon:a-page-load-reads-each-file-once">
+  <meta name="plan-verifies" content="reckon:a-page-load-reads-each-file-once#s3">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; node 22; Python project venv; detached git worktree">
+  <meta name="plan-commits" content="f6529a51">
+  <meta name="plan-artifacts" content="docs/ui/state-loader.js,tests/test_served_loader_reads_discovery_only.py,docs/figures/a-page-load-reads-each-file-once/source-priority.svg">
+  <title>A Page Load Reads Each File Once &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A Page Load Reads Each File Once &mdash; landed evidence</h1>
+    <p class="plan-summary">The served loader asks <code>/_discover/&lt;project&gt;</code> first and,
+    when it answers, reads no aggregate file at all; projection and index are the
+    static build's stand-ins, proved by the requests the loader actually makes.</p>
+  </header>
+
+  <section id="s3-served-loader-reads-discovery-only">
+    <h2>&sect;3 &mdash; The served loader reads discovery, not the superseded aggregate</h2>
+    <p><strong>Node:</strong> <code>served-loader-reads-discovery-only</code>.</p>
+
+    <p><strong>What landed.</strong> Commit <code>f6529a51</code>
+    <em>perf(ui): the served loader assembles state from discovery alone</em> inverts the
+    source order in <code>docs/ui/state-loader.js</code>. The loader now fetches
+    <code>/_discover/&lt;project&gt;</code> first; when that response is <code>ok</code> it assigns
+    <code>disc</code> and reads <em>nothing else</em> &mdash; the aggregate fetch is unreachable on that
+    branch, not merely deprioritised. Discovery's <code>inventory</code>, <code>sprints</code>,
+    <code>milestones</code> and <code>north_stars</code> are adopted whenever present, for both the
+    distributed and the legacy layout, and <code>active_sprint_id</code>, <code>timeline</code>,
+    <code>blockers</code>, <code>source_format</code> and <code>resource_versions</code> already
+    preferred <code>disc</code>. The single row in <code>window.STATE.projects</code> is synthesised
+    from the live counts, so no field of a persisted <code>projects[]</code> block reaches the surface
+    while discovery answered.</p>
+
+    <p><strong>The fallback is now lazy and ordered.</strong> Only an unreachable discovery &mdash; a
+    network-level refusal or an explicit 404 &mdash; reaches the static views:
+    <code>state/&lt;project&gt;/projection.json</code> first, and
+    <code>state/&lt;project&gt;/index.json</code> only when projection is also unavailable. Any other
+    HTTP discovery failure is raised even when a projection exists, so a live server refusing its own
+    inventory is never disguised by a stale aggregate. That last rule is not new: it is what
+    <code>tests/test_project_state.py</code> already pinned, and it is now reachable without the
+    aggregate being read on the answering path.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-page-load-reads-each-file-once/source-priority.svg"
+           alt="The loader's source priority: discovery, then projection, then index, with the server-failure branch beside them.">
+      <figcaption>One fetch is made. The aggregate is read only when the source before it cannot
+      answer, and an HTTP failure other than 404 raises rather than falling through.</figcaption>
+    </figure>
+
+    <h3>Method</h3>
+    <p><code>tests/test_served_loader_reads_discovery_only.py</code> runs the real
+    <code>state-loader.js</code> under <code>node</code> with a recording <code>fetch</code>, in the
+    style of <code>tests/test_spa_state_boundary.py</code>. A branch per URL records each request and
+    answers it, so the assertions read the requests the loader <em>made</em> and the state it
+    <em>assembled</em>, not the source text. Case 1 makes discovery answer while serving a marker field
+    (<code>persisted_projects_count</code>) only a persisted <code>projects[]</code> block would carry;
+    cases 2 and 3 refuse discovery at the network level and supply projection, then index.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>restore the aggregate-first fetch order of
+    <code>docs/ui/state-loader.js</code> at <code>56e13e11</code>; case 1 must fail because
+    <code>index.json</code> is requested</em>. Applied &mdash; the base revision of the file written
+    back in &mdash; case 1 fails on the aggregate clause and the recorded request list is
+    <code>['state/sample/projection.json', 'state/sample/index.json', '/_discover/sample']</code>,
+    quoted in the log. So the passing case is attributable to the ordering and not to the mock, and the
+    failure names <code>index.json</code> exactly. Log:
+    <code>docs/figures/a-page-load-reads-each-file-once/logs/negative-control.txt</code>, whose first
+    line is the declared mutation verbatim.</p>
+
+    <h3>Gate</h3>
+    <p>Runner <code>tests/test_served_loader_reads_discovery_only.py</code>: <code>4 passed</code> at
+    this commit. Regression files, one log each, base revision <code>56e13e11</code> beside this
+    commit's tree: <code>tests/test_spa_state_boundary.py</code> <code>3 passed</code> &rarr;
+    <code>3 passed</code>; <code>tests/test_spa_live_arrival.py</code> <code>5 passed</code> &rarr;
+    <code>5 passed</code>; <code>tests/test_served_schedule_payload.py</code> <code>4 passed</code>
+    &rarr; <code>4 passed</code>. Zero failures either side, so zero added. Logs live under
+    <code>docs/figures/a-page-load-reads-each-file-once/logs/</code>, each first line naming the
+    revision, the tree and the command. The base comparison restores only
+    <code>docs/ui/state-loader.js</code> to <code>56e13e11</code> and runs the same unchanged test
+    files, then restores this commit's loader; the three files are not touched by this node, so the
+    delta isolates the loader change.</p>
+    <p>Lint: <code>ruff check</code> and <code>ruff format --check</code> are clean on the new test
+    file.</p>
+  </section>
+</main>
+</body>
+</html>
