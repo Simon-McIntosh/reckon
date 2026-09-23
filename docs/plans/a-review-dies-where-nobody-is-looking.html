@@ -133,6 +133,45 @@
       whatever its exit looked like. Falsify by presenting a run with a complete record and a killed
       process and requiring it not to be classified abandoned; and by presenting one with a killed
       process and no record and requiring that it still is.</p>
+
+      <article class="r-outcome" data-id="o-s3-deliverable-outranks-process">
+        <h3>The deliverable is read before the process, and that is now locked</h3>
+        <p>Landed 2026-09-23, commit <code>c8cc423a</code>. The invariant held at base &mdash;
+        <code>classify_pointer</code> already returned <code>promotable</code> for a dead pointer
+        carrying a complete manifest and a parsed review, and a sweep over manifest case &times;
+        phase &times; role &times; review presence flagged no delivered run as abandoned. So the
+        defect was a silence rather than a misfire: the ordering that produces the reading was
+        unstated and untested, and nothing stopped the next edit from reordering the arms and
+        losing the deaths to abandonment again. This change locks the property and records the
+        falsifier that catches a reversion.</p>
+        <p><strong>The falsifier, applied.</strong> The negative control reorders
+        <code>classify_pointer</code> to consult the process liveness verdict before reading the
+        manifest and its review record. Under that mutation the delivered-run lock fails on all
+        three phases a death can freeze on, <code>assert 'abandoned' == 'promotable'</code>, which
+        is the condition this section names. The lock asserts that a killed process behind a
+        complete manifest and a parsed review is <code>promotable</code> and never
+        <code>abandoned</code>; that the same run without a review waits in <code>scoring</code>;
+        that a stored review which does not parse still keeps the run in <code>scoring</code>; and
+        the dead control &mdash; a killed process with no manifest and no review is still
+        <code>abandoned</code>, so the reading is reserved for a run that delivered rather than
+        disabled.</p>
+        <p><strong>Gate.</strong>
+        <code>pytest tests/test_live_process_outranks_classification.py tests/test_crew_scoring_state.py tests/test_review_role_is_not_reviewed.py</code>
+        &mdash; 34 passed, 0 failed; the mutation run is 3 passed, 3 failed; lint adds no findings.
+        Both transcripts and the figure showing what a killed process is classified as at each
+        manifest state are recorded in
+        <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed">the landed
+        evidence record</a>.</p>
+        <p><strong>Read before repair.</strong> The already-correct behaviour was verified and the
+        missing lock added rather than the working guard reimplemented; the one comment added in
+        <code>reckon/crew/recovery.py</code> states the ordering at the abandon arm and changes no
+        byte of behaviour.</p>
+        <p><strong>Not closed here.</strong> This node does not resolve its driving followup or set
+        a terminal status. A manifest carrying <code>derived: true</code> beside
+        <code>status: complete</code> still classified <code>promotable</code> in the sweep,
+        because the derived reset clears the presence flag but not the recorded status; that is
+        outside this node's write scope and is recorded as a follow-on.</p>
+      </article>
     </section>
 
     <section id="s4" data-reckon="section">

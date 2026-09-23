@@ -1,0 +1,103 @@
+make classify_pointer check process liveness before reading the manifest and review record
+tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-deliverable-outranks-a-dead-process base=fa98d32a5ea59e1bec2793823b7e16104bff56e9
+mutation: an early 'if process_gone: classification = "abandoned"' arm inserted at the head of the classification chain in reckon/crew/recovery.py, so the manifest and its review record are read only after the process verdict
+command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-deliverable-outranks-a-dead-process /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_live_process_outranks_classification.py -k does_not_abandon_the_delivered_run
+
+FFF...                                                                   [100%]
+=================================== FAILURES ===================================
+______ test_a_killed_process_does_not_abandon_the_delivered_run[working] _______
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not0')
+review_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not0/config')
+phase = 'working'
+
+    @pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+    def test_a_killed_process_does_not_abandon_the_delivered_run(
+        tmp_path: Path, review_home: Path, phase: str
+    ) -> None:
+        # The falsifier of this precedence: a complete manifest and a parsed review
+        # behind a process the table has killed. Every exit shape yields the same
+        # delivered reading, because the delivery is what the classifier reads and
+        # the phase is only the last writer's label.
+        run_id = f"r-killed-delivered-{phase}"
+        pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+        pointer["phase"] = phase
+        review.store_review(_parsed_review(pointer["project"], run_id))
+    
+        row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    
+        assert row["process_alive"] is False
+        assert row["liveness_proven"] is True
+>       assert row["classification"] == "promotable"
+E       AssertionError: assert 'abandoned' == 'promotable'
+E         
+E         - promotable
+E         + abandoned
+
+tests/test_live_process_outranks_classification.py:279: AssertionError
+______ test_a_killed_process_does_not_abandon_the_delivered_run[complete] ______
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not1')
+review_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not1/config')
+phase = 'complete'
+
+    @pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+    def test_a_killed_process_does_not_abandon_the_delivered_run(
+        tmp_path: Path, review_home: Path, phase: str
+    ) -> None:
+        # The falsifier of this precedence: a complete manifest and a parsed review
+        # behind a process the table has killed. Every exit shape yields the same
+        # delivered reading, because the delivery is what the classifier reads and
+        # the phase is only the last writer's label.
+        run_id = f"r-killed-delivered-{phase}"
+        pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+        pointer["phase"] = phase
+        review.store_review(_parsed_review(pointer["project"], run_id))
+    
+        row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    
+        assert row["process_alive"] is False
+        assert row["liveness_proven"] is True
+>       assert row["classification"] == "promotable"
+E       AssertionError: assert 'abandoned' == 'promotable'
+E         
+E         - promotable
+E         + abandoned
+
+tests/test_live_process_outranks_classification.py:279: AssertionError
+_______ test_a_killed_process_does_not_abandon_the_delivered_run[failed] _______
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not2')
+review_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-4971/test_a_killed_process_does_not2/config')
+phase = 'failed'
+
+    @pytest.mark.parametrize("phase", _KILLED_EXIT_SHAPES)
+    def test_a_killed_process_does_not_abandon_the_delivered_run(
+        tmp_path: Path, review_home: Path, phase: str
+    ) -> None:
+        # The falsifier of this precedence: a complete manifest and a parsed review
+        # behind a process the table has killed. Every exit shape yields the same
+        # delivered reading, because the delivery is what the classifier reads and
+        # the phase is only the last writer's label.
+        run_id = f"r-killed-delivered-{phase}"
+        pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+        pointer["phase"] = phase
+        review.store_review(_parsed_review(pointer["project"], run_id))
+    
+        row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    
+        assert row["process_alive"] is False
+        assert row["liveness_proven"] is True
+>       assert row["classification"] == "promotable"
+E       AssertionError: assert 'abandoned' == 'promotable'
+E         
+E         - promotable
+E         + abandoned
+
+tests/test_live_process_outranks_classification.py:279: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_live_process_outranks_classification.py::test_a_killed_process_does_not_abandon_the_delivered_run[working]
+FAILED tests/test_live_process_outranks_classification.py::test_a_killed_process_does_not_abandon_the_delivered_run[complete]
+FAILED tests/test_live_process_outranks_classification.py::test_a_killed_process_does_not_abandon_the_delivered_run[failed]
+3 failed, 3 passed, 14 deselected in 1.03s
+EXIT=1

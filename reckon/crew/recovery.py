@@ -2915,6 +2915,13 @@ def classify_pointer(
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
     elif alive is False:
+        # The deliverable is read before the process, so this arm reaches only
+        # a run with nothing to show. Every manifest reading that a killed
+        # worker can leave behind — a complete status behind a parsed review, a
+        # non-terminal status, an unreadable file, committed work past base,
+        # a refusal or a lane stop in the stream — is arbitrated above this
+        # point and never falls here, because a dead process says nothing about
+        # what the run delivered before it died.
         classification = "abandoned"
         detail = (
             "the process is gone without a complete manifest; nothing is eligible "

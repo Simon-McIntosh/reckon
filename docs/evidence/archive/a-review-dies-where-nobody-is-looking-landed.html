@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking-landed">
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
-  <meta name="plan-summary" content="The audit reads the state a document carries, not only the prose around it: a duplicated plan-* scalar, a typed resource with no state island, and an unclosed table row each report a named error where three fixtures passed clean today, with the corpus population measured.">
+  <meta name="plan-summary" content="Two sections of the plan, each recorded by its own node: the audit reads the state a document carries (§6 guard half), and classification reads a run\'s deliverable before its process (§3).">
   <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
-  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s6">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
-  <meta name="plan-commits" content="910657ad">
-  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py">
+  <meta name="plan-commits" content="910657ad,c8cc423a">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py">
   <title>A Review Dies Where Nobody Is Looking &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -136,6 +136,77 @@ EXIT=1</pre>
     only just learned to see is the work of the nodes that follow it. They are recorded so
     the repair has a named population rather than a fresh search.</p>
   </section>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; A deliverable that exists is not an abandoned run</h2>
+      <p><strong>The invariant held at base; the ordering that guarantees it was unstated and
+      untested.</strong> Before any change, <code>classify_pointer</code> returned
+      <code>promotable</code> for a dead pointer carrying a complete manifest and a parsed stored
+      review, and a sweep over manifest case &times; phase &times; role &times; review presence
+      flagged no <code>abandoned</code> row that had delivered. So the plan's defect is a
+      <em>silence</em>, not a live misfire: nothing named the ordering, so nothing stopped the next
+      edit from reordering the arms and losing a third of the deaths to abandonment again. The
+      change locks the property and records the falsifier that would catch a reversion.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/classification-precedence.png"
+             alt="Left: what a killed process is classified as at each manifest state, from unreadable through promotable and the scoring states to running, with a divider above nothing delivered, which alone is abandoned. Right: the gate at head passes 34 tests with 0 failures, while the mutation that checks the process first passes 3 and fails 3.">
+        <figcaption>What a killed process is classified as, and what the reordering falsifier
+        costs: the three delivered-run exit shapes turn <code>abandoned</code> when the process is
+        consulted first.</figcaption>
+      </figure>
+
+      <p><strong>The falsifier, applied.</strong> The negative control reorders
+      <code>classify_pointer</code> so the process liveness verdict is consulted before the manifest
+      and its review record are read. Under that mutation the delivered-run lock fails on all three
+      phases a death can freeze on &mdash;
+      <code>assert 'abandoned' == 'promotable'</code> &mdash; which is the condition the plan names.
+      The control's own log leads with the declared string and records
+      <code>3 failed, 3 passed, 14 deselected</code>; the verbatim transcript is in
+      <a href="/reckon/figures/a-review-dies-where-nobody-is-looking/negative-control.txt"><code>docs/figures/a-review-dies-where-nobody-is-looking/negative-control.txt</code></a>.</p>
+
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Gate file at the recorded head</td><td>34 passed, 0 failed</td></tr>
+          <tr><td>Gate file under the process-first mutation</td><td>3 passed, 3 failed</td></tr>
+          <tr><td>Lint findings added</td><td>0 (recovery.py 8 base / 8 mine; test file 0 / 0)</td></tr>
+          <tr><td>Duplicated suites in the gate</td><td>tests/test_crew_scoring_state.py and tests/test_review_role_is_not_reviewed.py, no added failures</td></tr>
+        </tbody>
+      </table>
+      <p>The gate transcript, with its base revision and tree named on the first line, is in
+      <a href="/reckon/figures/a-review-dies-where-nobody-is-looking/gate.txt"><code>docs/figures/a-review-dies-where-nobody-is-looking/gate.txt</code></a>.</p>
+
+      <h3>What the tests assert</h3>
+      <ul>
+        <li>A dead process behind a complete manifest and a parsed review classifies
+        <code>promotable</code> &mdash; never <code>abandoned</code> &mdash; across the exit phases
+        a death can freeze on, because the stored phase is the last writer's label and not evidence
+        of what the run left behind.</li>
+        <li>A review-role run's delivery is its own complete manifest, so it is promotable with no
+        stored review of itself.</li>
+        <li>A dead run with a complete manifest and no stored review waits in
+        <code>scoring</code>: the row names the missing review, not the death.</li>
+        <li>A stored review that does not parse is still evidence the run delivered, so the run is
+        <code>scoring</code> rather than <code>abandoned</code>.</li>
+        <li><strong>The dead control:</strong> a dead process with no manifest and no review is
+        still <code>abandoned</code>, so the reading the ordering reserves is not disabled.</li>
+      </ul>
+
+      <h3>Read before repair</h3>
+      <p>Per the dispatch contract, the already-correct behaviour was verified and the missing lock
+      added rather than a working guard reimplemented. The one comment added in
+      <code>reckon/crew/recovery.py</code> states the ordering at the abandon arm &mdash; why an
+      arm that only ever sees a run with nothing to show can safely carry the abandoned verdict
+      &mdash; and changes no byte of behaviour.</p>
+
+      <h3>Not closed here</h3>
+      <p>This node does not resolve its driving followup or set a terminal plan status; a worker
+      does not close its own node. The observation that a manifest carrying <code>derived: true</code>
+      beside <code>status: complete</code> still classified <code>promotable</code> in the sweep
+      &mdash; the derived reset clears the presence flag but not the recorded status &mdash; is
+      outside this node's write scope and is recorded in the manifest's <code>follow_ons</code>.</p>
+    </section>
 </main>
 </body>
 </html>
