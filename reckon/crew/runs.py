@@ -1989,22 +1989,27 @@ WantedBy=default.target
 """
 
 
-def _watcher_executable() -> str:
-    """Resolve the reckon console script the unit execs, as an absolute path.
+def _reckon_console_script() -> str:
+    """Return the absolute path of the reckon console script to run.
 
-    The unit runs without a shell, so ExecStart cannot depend on PATH. The
-    interpreter's own bin directory is preferred because it pins the unit to
-    the environment the command was invoked from.
+    Both callers need the absolute path: the watcher unit runs without a shell,
+    so its ExecStart cannot depend on PATH, and the follower attach line is
+    armed by a shell that does not carry the interpreter's bin directory on
+    PATH. The interpreter's own bin directory is preferred because it pins the
+    caller to the environment the command was invoked from, and it is taken
+    without resolving ``sys.executable`` because a virtualenv's interpreter is
+    a symlink into the base distribution -- resolving it would leave the
+    virtualenv, and the console script with it, behind.
     """
-    sibling = Path(sys.executable).resolve().parent / "reckon"
+    sibling = Path(sys.executable).parent / "reckon"
     if sibling.is_file():
         return str(sibling)
     discovered = shutil.which("reckon")
     if discovered:
         return os.path.abspath(discovered)
     raise CrewError(
-        "cannot start the project watcher service: the 'reckon' console script "
-        "is not beside the running interpreter and is not on PATH"
+        "the 'reckon' console script is not beside the running interpreter "
+        "and is not on PATH"
     )
 
 
@@ -2046,7 +2051,7 @@ def render_watch_unit(
     executable: str | None = None,
 ) -> str:
     """Render the systemd user unit that runs one project's watcher."""
-    command = executable or _watcher_executable()
+    command = executable or _reckon_console_script()
     argv = [command, "crew", "watch", "--project", project]
     log_file = _config_home() / "logs" / f"watch-{watch_unit_name(project)}.log"
     override = "".join(
@@ -2424,6 +2429,10 @@ def _watch_attach_line(project: str, *, session: str | None = None) -> str:
     dispatching against another session's seat is told a watcher is live while
     nothing reaches it. This is the command that closes that gap.
 
+    The command's first token is the absolute path of the running reckon
+    console script, because the shell that arms it need not carry the
+    interpreter's bin directory on PATH.
+
     It is one bare command on purpose: filtering and buffering belong inside
     the follower, because a shell pipeline around it has three ways to swallow
     the ticker silently. An unbuffered stage withholds every line until the
@@ -2439,7 +2448,13 @@ def _watch_attach_line(project: str, *, session: str | None = None) -> str:
     no filter even when it matches: it reports how a run stopped and hides how
     it recovered, which is the half of the story the reader is waiting for.
     """
-    parts = ["reckon", "crew", "follow", "--project", shlex.quote(project)]
+    parts = [
+        shlex.quote(_reckon_console_script()),
+        "crew",
+        "follow",
+        "--project",
+        shlex.quote(project),
+    ]
     if session:
         parts += ["--session", shlex.quote(session)]
     return " ".join(parts)

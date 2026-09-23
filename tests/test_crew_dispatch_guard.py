@@ -250,9 +250,9 @@ def test_no_watch_override_is_recorded_for_an_occupied_project(
     assert waived["watch_override"] == {
         "requested": True,
         "arming_line": "reckon crew watch --project sample",
-        "attach_line": (
-            "reckon crew follow --project sample --session session-waived"
-        ),
+        # The attach line is the shared composer's output, so a dispatch that
+        # stopped calling it is caught here rather than by a restated literal.
+        "attach_line": runs._watch_attach_line("sample", session="session-waived"),
         "watcher_live": True,
         "session_attached": True,
     }
