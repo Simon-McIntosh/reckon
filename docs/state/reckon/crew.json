@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T13:00:21",
+  "updated": "2026-09-23T13:01:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -294629,6 +294629,338 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T061021380241-follower-announces-its-end",
+        "plan": "a-follower-outlives-its-monitor",
+        "section": "\u00a73",
+        "node": "follower-announces-its-end",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 685,
+                "cached_input_tokens": 392818,
+                "input_tokens": 393505,
+                "output_tokens": 173,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 393678,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "tests/test_follow_lifetime.py runs reckon crew follow --lifetime 3s over a temporary crew config home holding one unpromoted run of the owning session, observes exit status 0 within five seconds, and asserts the last line is marked as the follower's end, contains the string returned by reckon.crew.runs._watch_attach_line for that project and session, and contains that run's node; a second test runs the follower without --lifetime and asserts it is still running after five seconds; the registration is released after the lifetime exit, read through follower_state; the declared negative control is applied, the lifetime test is observed to fail, and that log is recorded in the manifest; the real config home is asserted untouched. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s20-20260923/follower-repair-reuse-map.md names the symbols to extend: crew_follow, _follow_watch_lines, _tick in reckon/cli.py",
+          "estimated_hours": null,
+          "goal": "reckon crew follow --lifetime D ends its stream with one final line naming how to re-arm and the owning session's runs that need the coordinator",
+          "id": "follower-announces-its-end",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T06:10:21Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T061021380241-follower-announces-its-end/manifest.md",
+          "negative_control": "make the lifetime deadline check in the follower's wait pass never fire",
+          "plan": "a-follower-outlives-its-monitor",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_follow_lifetime.py",
+            "docs/evidence/archive/a-follower-outlives-its-monitor-landed.html",
+            "docs/figures/a-follower-outlives-its-monitor",
+            "docs/plans/a-follower-outlives-its-monitor.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "follower-life-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T06:10:35Z",
+        "completed_at": "2026-09-23T09:21:43.002Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 11456,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 11468,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "3794cd2aede466483fd7f276f28e7f9a3791bad7",
+        "commits": [
+          "b48fdc21c4131e14aedf2886214231564427f151",
+          "181e26715d6f083197c37b7cba9197a143d977ba"
+        ],
+        "changed_lines": {
+          "added": 575,
+          "removed": 1,
+          "files": 6
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follow_lifetime.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T061021380241-follower-announces-its-end/gate-follow-lifetime.log",
+          "log_digest": "sha256:340d72ff66aee4a9ac301c871cb7229490eb1752c16a2ad4b572ca9d4011054b"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T061021380241-follower-announces-its-end/manifest.md",
+        "scope_changed": false,
+        "session_id": "ba8173c8-fe9b-4c22-963f-4b24ee05bc67",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 28724379,
+            "input_tokens_cumulative": 28724379,
+            "output_tokens": 126151,
+            "output_tokens_cumulative": 126151,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T09:21:43.002Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 97,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2497,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2414,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f8f36b76",
+                "f2a036e3"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "d09d247586ee25e5e0615e0407fbc8b71ecdeeb66f434c473ab08cf50659854d",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044810271993-attach-line-resolves/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-follower-outlives-its-monitor --section '\u00a72' --role review --spec-level exact --node review-of-attach-line-resolves --goal 'attach an independent review to run r-20260923T044810271993-attach-line-resolves' --done-when 'the review for r-20260923T044810271993-attach-line-resolves stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T044810271993-attach-line-resolves.json --time-budget 40m --session ship-s20-20260923 --allow-unreconciled-runs --local",
+              "node": "attach-line-resolves",
+              "phase": "starting",
+              "plan": "a-follower-outlives-its-monitor",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T044810271993-attach-line-resolves",
+              "session": "ship-s20-20260923",
+              "terminal_age_seconds": 2516,
+              "terminal_at": "2026-09-23T05:28:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/attach-line-resolves"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 15,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 84
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 29059579,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 11464.093,
+          "generated_tokens": 144775,
+          "generation_seconds": 11022.648,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 441.445,
+          "peak_input_tokens": 166586,
+          "tokens_per_second": 13.13,
+          "wall_tokens_per_second": 12.63
+        },
+        "follow_on_paths": [
+          "tests/test_crew_session_delivery.py::test_the_refusal_names_where_the_arming_primitive_is_documented",
+          "reckon/crew/node.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/follower-announces-its-end",
+          "session_id": "ba8173c8-fe9b-4c22-963f-4b24ee05bc67",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T09:21:43.002Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "181e26715d6f083197c37b7cba9197a143d977ba",
+        "plan_impl_at_dispatch": 0.2,
+        "impl_move": {
+          "plan": "a-follower-outlives-its-monitor",
+          "at_dispatch": 0.2,
+          "at_complete": 0.43,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_follow_lifetime.py"
+          ],
+          "declaration": "make the lifetime deadline check in the follower's wait pass never fire",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T061021380241-follower-announces-its-end/negative-control-lifetime-check.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T061021380241-follower-announces-its-end/negative-control-lifetime-check.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T07:10:21.991288+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T06:10:21Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 242.0,
+        "orientation_input_tokens": 4136627.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -294941,6 +295273,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2276
+    "_version": 2277
   }
 }
