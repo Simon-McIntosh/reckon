@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="36">
+  <meta name="plan-version" content="37">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -550,6 +550,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260923T150322975181-review-of-lifetime-survives-reload" data-who="reckon-ship" data-when="2026-09-23T15:44:59.445Z">
     <div class="r-comment-body"><p>review of lifetime-survives-reload scored 89; env-leak finding routed to the lifetime-deadline-reaches-only-the-reload node, uncited 10.71 s figure corrected in the landed record</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260923T115049769604-test-watchers-are-reaped" data-who="reckon-ship" data-when="2026-09-23T13:49:26.558Z">
+    <div class="r-comment-body"><p>a test session reaps its watch producers by pid from their records (7c5f69b9, merged f891f2ed); review 80 found it removed watch_producers_under while tests/test_watch_arming_isolation.py still imports it, so one test fails on main with ImportError — corrective node arming-isolation-reads-the-watcher-records dispatched on §10</p></div>
 </div>
 </section>
 </main>

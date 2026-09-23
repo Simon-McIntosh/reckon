@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T17:54:23",
+  "updated": "2026-09-23T17:57:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -4000,10 +4000,15 @@
         "id": "session-f70e22614bc503a5bee7",
         "harness": "clive",
         "role": "review",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "45f1fdd4-5eea-4e33-98da-86c77f8c1760",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "45f1fdd4-5eea-4e33-98da-86c77f8c1760"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "page-load-20260923"
+        }
       },
       {
         "id": "ship0908-a",
@@ -315589,6 +315594,387 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T115049769604-test-watchers-are-reaped",
+        "plan": "a-follower-outlives-its-monitor",
+        "section": "\u00a710",
+        "node": "test-watchers-are-reaped",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 194,
+                "cached_input_tokens": 749276,
+                "input_tokens": 749472,
+                "output_tokens": 124,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 749596,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "tests/conftest.py gains a session-level fixture that records every crew watch process started under the test session's temporary RECKON_HOME and terminates it at teardown, by pid resolved from that home's watcher records rather than by a pattern match; tests/test_test_watchers_are_reaped.py runs the arming path of tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher in a subprocess pytest and asserts that no crew watch process whose environment names that temporary home remains one second after the subprocess exits; the declared negative control is applied, the test is observed to fail, and that log is recorded in the manifest; no process outside the test's temporary home is signalled, asserted by the fixture refusing any pid whose environment names another RECKON_HOME",
+          "estimated_hours": null,
+          "goal": "a watcher process started under a test session's temporary RECKON_HOME is terminated at teardown",
+          "id": "test-watchers-are-reaped",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T11:50:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 13,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 4,
+            "mean_context": 96471,
+            "observed_at": "2026-09-23T11:50:42Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/manifest.md",
+          "negative_control": "remove the teardown termination from the conftest fixture",
+          "plan": "a-follower-outlives-its-monitor",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/conftest.py",
+            "tests/test_test_watchers_are_reaped.py",
+            "docs/evidence/archive/a-follower-outlives-its-monitor-landed.html",
+            "docs/figures/a-follower-outlives-its-monitor",
+            "docs/plans/a-follower-outlives-its-monitor.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "test-hygiene",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T11:52:12Z",
+        "completed_at": "2026-09-23T13:49:26.558Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7017,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7034,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "f7f9e13fada12697a45f392bca6fe7184f4052cb",
+        "commits": [
+          "7c5f69b92c8b34f7c0d28cacc48e7919b82bea9a",
+          "86dd5d5785d5c751a8c79d74d7f36444401ffed9"
+        ],
+        "changed_lines": {
+          "added": 443,
+          "removed": 28,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m pytest -p no:cacheprovider -q tests/test_test_watchers_are_reaped.py tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/gate-test-watchers.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/manifest.md",
+        "scope_changed": false,
+        "session_id": "6d9677a5-4fba-4cdc-b5fe-b610c722f438",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7804679,
+            "input_tokens_cumulative": 7804679,
+            "output_tokens": 45656,
+            "output_tokens_cumulative": 45656,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T13:49:26.558Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 124,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 5075,
+              "log_fresh": false,
+              "manifest_commits": [
+                "b6790921"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "3bc175bf8fe98dab14f9e8b7a3ec5dc92a706f32849af48c8b5733c834895fbe",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T093112405934-removed-flag-migration-red-triaged/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-follower-keeps-your-work-in-view --section '\u00a72' --role review --spec-level exact --node review-of-removed-flag-migration-red-triaged --goal 'attach an independent review to run r-20260923T093112405934-removed-flag-migration-red-triaged' --done-when 'the review for r-20260923T093112405934-removed-flag-migration-red-triaged stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T093112405934-removed-flag-migration-red-triaged.json --time-budget 40m --session ship-s20-20260923 --allow-unreconciled-runs --backend clive",
+              "node": "removed-flag-migration-red-triaged",
+              "phase": "working",
+              "plan": "a-follower-keeps-your-work-in-view",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T093112405934-removed-flag-migration-red-triaged",
+              "session": "ship-s20-20260923",
+              "terminal_age_seconds": 5110,
+              "terminal_at": "2026-09-23T10:26:37Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/removed-flag-migration-red-triaged"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "effective_phase": "complete",
+              "elapsed_seconds": 320,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1661,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 the deliverable is the review record outside the repository; the worktree is clean at base sha"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ee7aba985249870360f4f88c5f170a6f076e33fb8c7f12ffdea98299d7e6e7c7",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T104315648273-review-of-monitor-output-test-reads-the-new-arming/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-monitor-output-test-reads-the-new-arming",
+              "phase": "complete",
+              "plan": "a-follower-outlives-its-monitor",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T104315648273-review-of-monitor-output-test-reads-the-new-arming",
+              "session": "ship-s20-20260923",
+              "terminal_age_seconds": 1696,
+              "terminal_at": "2026-09-23T11:23:31Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/review-of-monitor-output-test-reads-the-new-arming"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 15,
+            "evidence": 17,
+            "fit": 17,
+            "goal_fidelity": 18,
+            "scope_discipline": 13
+          },
+          "absent": [],
+          "total": 80
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10516206,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2807.786,
+          "generated_tokens": 76160,
+          "generation_seconds": 2335.657,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 472.129,
+          "peak_input_tokens": 164898,
+          "tokens_per_second": 32.61,
+          "wall_tokens_per_second": 27.12
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest and",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/test-watchers-are-reaped",
+          "session_id": "6d9677a5-4fba-4cdc-b5fe-b610c722f438",
+          "session_source": "stream",
+          "retained_at": "2026-09-23T13:49:26.558Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "86dd5d5785d5c751a8c79d74d7f36444401ffed9",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "a-follower-outlives-its-monitor",
+          "at_dispatch": 0.33,
+          "at_complete": 0.67,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/conftest.py",
+            "tests/test_test_watchers_are_reaped.py"
+          ],
+          "declaration": "remove the teardown termination from the conftest fixture",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T115049769604-test-watchers-are-reaped/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T12:50:55.054560+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T11:50:55Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 13,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 4,
+          "mean_context": 96471,
+          "observed_at": "2026-09-23T11:50:42Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 40.0,
+        "orientation_input_tokens": 1648007.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -315901,6 +316287,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2356
+    "_version": 2358
   }
 }
