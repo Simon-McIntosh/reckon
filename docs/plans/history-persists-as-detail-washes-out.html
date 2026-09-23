@@ -16,15 +16,15 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint" content="S17">
+  <meta name="plan-sprint" content="S19">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,crew-run-ledger">
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="15">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="17">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -321,6 +321,37 @@
     </tbody>
     </table>
 
+    <section id="s7" data-reckon="section">
+      <h2>§7 — One committed file per promoted run, and the database becomes an index</h2>
+      <p><strong>Decided 2026-09-23.</strong> <code>committed-export-scope</code> is locked to durable
+      rows, written as one file per run. The committed per-run files are the record, and the SQLite
+      store is an index built from them. This reverses §2 and §3's direction, in which the database
+      became the store and the file its export. The reason is the day's measurement: the single file
+      had grown to 14.5 MB and 300,870 lines, every promotion rewrote all of it, and promotions from
+      several sessions queued for minutes behind one another.</p>
+      <p><strong>Nodes, in order.</strong></p>
+      <ol>
+        <li><strong>Write.</strong> <code>ledger.append_run</code> writes
+        <code>docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json</code> and commits only that path. It
+        never reads or rewrites another run's file, and refuses when a file for the run already
+        exists, so a double promotion is still refused. Measure: two promotions in parallel
+        processes both land, neither retries, and their commits touch one file each.</li>
+        <li><strong>Read.</strong> <code>ledger.load</code> and every reader of <code>runs</code> read
+        the per-run files, with the index answering keyed questions. Measure: every existing reader
+        test passes against a project holding only per-run files. The index can be deleted and
+        rebuilt from the files, with an equal answer set.</li>
+        <li><strong>Split.</strong> A one-time migration writes each row of the current
+        <code>crew.json</code> <code>runs</code> list to its own file, byte-equal as JSON. It moves
+        <code>members</code> and <code>holds</code> to <code>crew/members.json</code> and
+        <code>crew/holds.json</code> and removes <code>runs</code> from the old file. Measure: the row
+        count and the canonical JSON of every row match before and after, for every mounted project.</li>
+        <li><strong>Roster writes stop churning.</strong> This depends on new-work-gets-a-new-worker
+        §3, which stops session capture from writing onto members.</li>
+      </ol>
+      <p>Rotation (§5) and the detail horizon keep their own gate. Washing detail out of a per-run
+      file rewrites only that run's file.</p>
+    </section>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="detail-horizon" data-choice="" data-by="" data-when="">
@@ -336,18 +367,14 @@
       regardless of elapsed time, which is the option that behaves the same in a
       quiet week and a busy one.</p>
     </div>
-<div class="r-dec" data-key="committed-export-scope" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="committed-export-scope" data-choice="durable-rows" data-by="Simon McIntosh" data-when="2026-09-23T13:16:47+00:00">
     <p class="r-dec-q">What does the committed file carry after cutover (§4)?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="durable-rows">durable-rows</button>
+      <button class="r-opt chosen" data-value="durable-rows">durable-rows</button>
       <button class="r-opt" data-value="everything">everything</button>
       <button class="r-opt" data-value="retire">retire</button>
       </p>
-    <p class="r-dec-rat">Open. durable-rows is the narrow permanent half, which
-      is what makes the export small enough to merge line-by-line. everything keeps
-      today&#x27;s content and today&#x27;s merge cost. retire makes cross-checkout history
-      unavailable to any reader without the config home and is listed to be
-      rejected explicitly rather than by omission.</p>
+    <p class="r-dec-rat">Locked to durable rows, committed as one file per promoted run (&lt;code&gt;docs/state/&amp;lt;project&amp;gt;/runs/&amp;lt;run_id&amp;gt;.json&lt;/code&gt;). These committed files become the record, and the SQLite store becomes an index derived from them and rebuilt on demand. The single-file ledger was measured on 2026-09-23 at 14.5 MB and 300,870 lines, holding 1,429 runs. Every promotion rewrote all of it, 184 commits touched it in one day, and concurrent promotions from several sessions queued for minutes on it. A per-run file makes a promotion one new file that never rewrites another, so writes stop contending and the cost no longer grows with history. Git stays the durable, distributed transport this plan&#x27;s §4 already requires. A database that is only an index can be lost without losing history, which matters after a worker deleted a coordinator&#x27;s state directory in &lt;code&gt;~/.config&lt;/code&gt;&#x27;s sibling tree the same day. The roster moves out of the ledger into its own small file. Rejected: SQLite as the record, because the history would leave git and live in one unversioned file on one host. Also rejected: an append-only single file, which is still one hot file under a lock, and locks on GPFS across login nodes are unreliable.</p>
     </div>
 </section>
 
