@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="5">
+  <meta name="plan-version" content="8">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -113,6 +113,13 @@
     <p>Remove <code>completed_unpromoted</code>, <code>failed</code> and <code>abandoned</code> from
     the set the human path suppresses, because those rows are what the reader must see. A run
     already promoted stays suppressed.</p>
+    <p>Three terms in this section are pinned to one reading. <em>Suppressed set</em> means the
+    human path's own filter, <code>_row_is_stale_inventory</code> in <code>reckon/cli.py</code>.
+    The <code>SETTLED_STATES</code> constant in <code>reckon/crew/ticker.py</code> stays unchanged,
+    because the ticker uses it to answer a different question. <em>Delivers a row</em> means a row
+    actually written to the pane, never a row generated and then suppressed. <em>Live run</em> means
+    every live pointer the owning session holds, including unpromoted, failed and abandoned ones, so
+    the header counts the same population the replay reports.</p>
     <p><strong>Done when</strong> <code>tests/test_follow_replays_the_gap.py</code> runs a follower
     for a session, stops it, moves one owned run from working to unpromoted and leaves a second owned
     run unchanged, then attaches a new follower. The new follower's first line is the header, the
@@ -162,21 +169,31 @@
     minutes. Re-arming did not help. A SIGTERM to the orphan repaired it within about twenty
     seconds.</p>
     <p>A follower whose consumer has gone delivers to nobody, so holding the registration serves no
-    reader. The follower checks its own consumer on each wait pass. When its parent process has
-    changed from the one it recorded at registration, or its parent's start time no longer matches,
-    it releases the registration and exits with status 0. It prints nothing, because nobody reads
-    its output any more.</p>
-    <p><strong>Done when</strong> <code>tests/test_orphaned_follower_releases.py</code> starts an
-    intermediate parent process in a temporary crew config home, and that parent starts
-    <code>reckon crew follow --project P --session S</code>. The test kills the parent with SIGKILL
-    and observes three things within ten seconds: the follower process has exited, the session's
-    registration file is no longer locked, and a second follower started for the same session
-    holds the registration, read through <code>follower_state</code>. The negative control is
-    executed and logged. With the consumer check removed, the orphaned follower is still alive after
-    ten seconds and the second follower does not hold the registration. The test asserts that the
-    real follower directory under the user's config home is untouched. The write paths are
-    <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code> and
-    <code>tests/test_orphaned_follower_releases.py</code>.</p>
+    reader. The follower checks its own consumer on each existing wait pass in
+    <code>_follow_watch_lines</code>. The consumer is the parent process recorded at registration as
+    <code>parent_pid</code> and <code>parent_start_time</code>. The consumer is gone when
+    <code>os.getppid()</code> no longer equals the recorded <code>parent_pid</code>, or when the
+    recorded <code>parent_pid</code>'s current start time no longer equals the recorded
+    <code>parent_start_time</code>. That second clause is a pid-reuse guard, the same (pid, start
+    time) match the observer already applies to the recorded parent in
+    <code>reckon/crew/runs.py</code>. A re-parent to init or to a subreaper satisfies the first
+    clause. When the consumer is gone, the follower releases the registration and exits with status
+    0. It must print nothing on this path, and §3's end line is deliberately not reused, because
+    nobody reads its output any more.</p>
+    <p><strong>Done when</strong> <code>tests/test_orphaned_follower_releases.py</code> sets
+    <code>RECKON_HOME</code> to a temporary directory, inherited by every process it starts. It
+    starts an intermediate parent process, and that parent starts the follower as
+    <code>sys.executable -m reckon crew follow --project P --session S</code>, or through the
+    absolute path of the running console script, never the bare word <code>reckon</code>. The test
+    kills the parent with SIGKILL and, within ten seconds of that kill, observes all three of these:
+    the follower process has exited; the session's registration file is no longer locked, proved by
+    taking the lock non-blocking; and a second follower started for the same session is the
+    registered holder, with <code>follower_state</code> naming that second process's pid. The
+    negative control is executed and logged: with the new consumer check deleted, the orphaned
+    follower is still alive after ten seconds and <code>follower_state</code> does not name the
+    second follower. The test asserts that the real follower directory under the user's config home
+    is untouched. The write paths are <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code>
+    and <code>tests/test_orphaned_follower_releases.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -192,6 +209,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T0400-s7-added" data-who="reckon-ship" data-when="2026-09-23T04:00:00Z">
     <div class="r-comment-body"><p>Added from a finding the S19 coordinator reported to this session. §7 shares <code>reckon/crew/runs.py</code> with §2 and §4, and <code>reckon/cli.py</code> with §3 and §4, so it runs after them. The registration lock that session reported for this session's predecessor, <code>monitor-rox-20260922</code>, names a pid that no longer exists. An unheld lock is released by the flock, so that stale file is harmless and needs no repair.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0625-readback-applied" data-who="reckon-ship" data-when="2026-09-23T06:25:00Z">
+    <div class="r-comment-body"><p>The read-back review (<code>r-20260923T044801073919-review-of-a-follower-outlives-its-monitor</code>, report under the S20 session's reports directory) found 41 sentences with more than one reading, and 9 of them material. The revisions resolve them. <strong>§7:</strong> the start-time clause is a pid-reuse guard on the <em>recorded</em> parent (R32). The test launches the follower through <code>sys.executable -m reckon</code> or an absolute path, never the bare word (R36). The config home is redirected with <code>RECKON_HOME</code> (R39). Silence on the release path is a requirement (R34). The registration holder is asserted by pid through <code>follower_state</code>, and the lock by a non-blocking acquire (R38). <strong>§4:</strong> the suppressed set means the human path's filter, not the <code>SETTLED_STATES</code> constant (R19); a delivered row means an emitted row (R16); a live run means every live pointer the session holds (R2). <strong>§3</strong> was already dispatched before the read-back returned. Its review checks R10 (how the end line is marked), R11 (which states count as needing the coordinator) and R14 (no default lifetime) against the node's delivery, rather than editing text a running worker has already read. <strong>§5</strong> is closed outright by the census measurement, and its done-when test is not owed (R23).</p></div>
 </div>
 </section>
 </main>
