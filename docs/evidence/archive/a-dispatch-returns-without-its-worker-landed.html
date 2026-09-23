@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker-landed">
+  <meta name="plan-title" content="A Dispatch Returns Without Its Worker &mdash; landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the dispatch-lifetime measurement: what the dispatch process holds, and whether its worker survives the dispatch process being killed.">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-verifies" content="a-dispatch-returns-without-its-worker#s2">
+  <title>A Dispatch Returns Without Its Worker &mdash; landed record | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Dispatch Returns Without Its Worker &mdash; cumulative execution record</h1>
+    <p>
+      One anchor per landed node. The evergreen plan holds the design; this record
+      holds what was measured, and what was found on the way.
+    </p><h2 id="s2">&sect;2 &mdash; What holds the dispatch process, and what its death does to the worker</h2>
+    <p>
+      Node <code>dispatch-lifetime-probe</code>, measured at revision
+      <code>69ddff47</code> on 2026-09-23. The probe is
+      <code>tests/test_dispatch_lifetime_probe.py</code>, landed in
+      <code>69ddff47</code> (the probe), <code>31fbcfb7</code> (one repository per
+      trial) and <code>14b5b9e9</code> (the artifact and the figure). The measurement
+      is <code>docs/research/data/dispatch-lifetime.json</code>.
+    </p>
+    <p>
+      Five trials, each dispatching a stub backend whose command records its pid,
+      sleeps sixty seconds and then writes a marker file, into a throwaway
+      repository under a throwaway crew configuration home. A signal is sent only
+      after the worker's pid file appears, so it always lands on a dispatch process
+      whose worker already exists.
+    </p><table>
+      <thead>
+        <tr>
+          <th>trial</th><th>worker appeared (s)</th><th>dispatch exited (s)</th>
+          <th>dispatch outlived the worker by</th><th>signal to the dispatch</th>
+          <th>stub marker written</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>graceful</td><td>2.60</td><td>2.70</td><td>0.10 s</td><td>none</td><td>yes, at 62.6 s</td></tr>
+        <tr><td>sigterm</td><td>3.21</td><td>3.32</td><td>0.11 s</td><td>SIGTERM</td><td>yes, at 63.1 s</td></tr>
+        <tr><td>sigkill</td><td>3.00</td><td>3.08</td><td>0.09 s</td><td>SIGKILL</td><td>yes, at 63.0 s</td></tr>
+        <tr><td>sighup</td><td>3.62</td><td>3.74</td><td>0.12 s</td><td>SIGHUP</td><td>yes, at 63.7 s</td></tr>
+        <tr><td>watcher</td><td>4.60</td><td>4.81</td><td>0.21 s</td><td>none</td><td>yes, at 64.6 s</td></tr>
+      </tbody>
+    </table><p>
+      <strong>Finding one: no code path holds the dispatch process after the worker
+      launches.</strong> In every trial the process ended within a fifth of a second
+      of its worker appearing, so there is no file and line to name for a post-launch
+      hold. A <code>faulthandler</code> dump taken every two seconds while each
+      dispatch process lived shows no frame of the reckon package on the main
+      thread's stack, which is the same reading from the other side: the process was
+      never parked in reckon code.
+    </p>
+    <p>
+      <strong>Finding two: the time a dispatch spends is pre-launch, and it is
+      cited instead.</strong> The blocking call is
+      <code>reckon/crew/routing.py:880</code> in <code>_create_worktree</code>, whose
+      source reads <code>result = subprocess.run(</code> — the dispatch blocks there
+      on <code>worktree_fleet.py create</code> before any worker exists. The other
+      candidates are ruled out by inspection: the launched-worker reaper is
+      constructed <code>daemon=True</code> at <code>reckon/crew/dispatch.py:4311</code>,
+      so the interpreter does not wait for it; the watcher arming is bounded at
+      <code>WATCHER_LOAD_BOUND_SECONDS = 30.0</code> (<code>dispatch.py:119</code>)
+      and happens before the worktree is created; and the worker is detached with
+      <code>start_new_session=True</code> (<code>dispatch.py:4639</code>) into
+      redirected files, so nothing reads or waits on it.
+    </p>
+    <p>
+      <strong>Finding three: the worker survives its dispatcher dying.</strong> In
+      the SIGTERM, SIGKILL and SIGHUP trials the dispatch process died (exit codes
+      &minus;15, &minus;9 and &minus;1) and the stub still wrote its marker about
+      sixty seconds after launch, in all five trials including the untouched
+      graceful one. The marker is the positive control: an absent marker after a
+      killed dispatch would be a finding only because the same stub writes one when
+      nothing was killed.
+    </p>
+    <p>
+      <strong>Read against the plan's own observation.</strong> &sect;1 records four
+      dispatch processes that exited close to six minutes after they were dispatched.
+      This probe does not reproduce a six-minute hold, and it cannot: at this revision
+      a dispatch ends well before one could exist. What it cannot separate is whether
+      &sect;1's six minutes were spent before the worker appeared rather than after —
+      the observation there is of wall-clock dispatch-to-exit, which this probe's
+      table shows is dominated by the pre-launch path on a contended host. That
+      question belongs to &sect;3, which owns the change; nothing here repairs it.
+    </p><p>
+      <strong>Tests and the guard.</strong> One test, five trials, 320 s:
+      <code>tests/test_dispatch_lifetime_probe.py</code>. Log:
+      <code>~/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/probe-full.log</code>.
+      The declared negative control is <code>none</code>: the test records observed
+      behaviour rather than asserting a repair, and its one guard &mdash; the real
+      live-pointer directory under <code>~/.config/reckon/crew/live</code> holding no
+      pointer naming any run the probe created &mdash; can only be falsified by
+      writing into the real fleet. It passed, with the directory's mtime recorded
+      before and after, and the probe's own pointers read back from the throwaway
+      homes as the positive control that they were in fact being written.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/dispatch_lifetime.png"
+           alt="Left: for each of the five trials, two bars on a seconds axis from dispatch start, the worker's launch and the dispatch process's exit, which sit close enough together as to be almost the same bar. Right: for the same five trials a bar of one for whether the stub's marker was written; all five are filled, including the three whose dispatch process was killed by SIGTERM, SIGKILL or SIGHUP.">
+      <figcaption>
+        Left: each dispatch process ended within a fifth of a second of the worker it
+        had just launched. Right: the worker's marker appeared in every trial,
+        including the three where the dispatch process was signalled.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>Follow-ons.</strong> The trial after a killed one first failed for a
+      reason that is not this node's: a dispatch killed mid-flight leaves the crew
+      ledger &mdash; <code>docs/state/sample/crew.json</code>, a committed file inside
+      the dispatched repository &mdash; staged and uncommitted, and the next dispatch
+      in that repository then cannot commit its own session-member registration over
+      it, retries twelve times and rolls back before launching a worker, on a worktree
+      it cannot remove because the run it just registered still claims it. The probe
+      was repaired by isolating one repository per trial, which removes the coupling
+      for the measurement; the underlying refusal is unmeasured here and is a
+      candidate node for &sect;5, which owns a refusal that leaves a run behind.
+    </p>
+
+  </main>
+</body>
+</html>
