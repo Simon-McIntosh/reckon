@@ -1,7 +1,19 @@
-"""Roster session reuse follows the complete resolved agent configuration."""
+"""A dispatch continues a session keyed to the task, not to the roster entry.
+
+The reuse question is "has this task a session to continue?", answered from the
+run records of that task. Keying it to the roster's resolved agent
+configuration answered a different question — a member holding one session
+under one configuration offered it to every node dispatched at that
+configuration, so a new node resumed another node's conversation. The
+configuration still selects the lane; it no longer selects the session.
+
+Each case drives `crew.dispatch` and reads the composed argv back, because a
+helper-level assertion is how the resumed-conversation defect stayed invisible.
+"""
 
 from __future__ import annotations
 
+import itertools
 import json
 import subprocess
 from collections.abc import Mapping
@@ -10,7 +22,6 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.calibration import agent_configuration_key
 
 CONFIG = {
     "default_backend": "alpha",
@@ -20,7 +31,7 @@ CONFIG = {
             "command": "codex",
             "model": "some-model",
             "effort": "medium",
-            "sandbox": "worktree-full",
+            "sandbox": "full",
             "session_reuse": True,
             "time_budget": "25m",
         }
@@ -28,17 +39,13 @@ CONFIG = {
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
-MEDIUM_AGENT = {
-    "backend": "alpha",
-    "launch": "cli",
-    "model": "some-model",
-    "effort": "medium",
-    "sandbox": "worktree-full",
-}
-XHIGH_AGENT = {**MEDIUM_AGENT, "effort": "xhigh"}
 MEDIUM_SESSION = "066f04b2-75c1-43f0-aa27-0d72a67b340f"
 XHIGH_SESSION = "166f04b2-75c1-43f0-aa27-0d72a67b340f"
 FIXTURE = Path(__file__).parent / "fixtures" / "backends" / "codex-turn.jsonl"
+FIXTURE_SESSION = "019ff509-8a60-7723-94fd-65942a6d8faa"
+PLAN = "plan-a"
+
+_SESSIONS = itertools.count(1)
 
 
 @pytest.fixture()
@@ -83,11 +90,8 @@ def repo(tmp_path: Path, home: Path) -> Path:
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
     (home / "mounts.json").write_text(json.dumps({"proj": str(root / "docs")}))
+    ledger.register_member("proj", "worker-a", harness="alpha", root=root)
     return root
-
-
-def _configuration_key(agent: Mapping[str, object]) -> str:
-    return agent_configuration_key({"agent": agent})
 
 
 def _config(**backend_overrides: object) -> dict[str, object]:
@@ -96,149 +100,96 @@ def _config(**backend_overrides: object) -> dict[str, object]:
     return config
 
 
-def _node(home: Path, sequence: int) -> crew.TaskNode:
+def _node(node_id: str, home: Path) -> crew.TaskNode:
     return crew.TaskNode(
-        id=f"session-node-{sequence}",
-        goal="verify configuration-scoped session reuse",
-        plan="plan-a",
+        id=node_id,
+        goal="verify that a dispatch continues only its own task's session",
+        plan=PLAN,
         section="session-routing",
-        done_when=(
-            "pytest tests/test_crew_session_keying.py reports 6 passing cases and "
-            "each resolved argv carries at most 1 eligible session"
-        ),
-        write_paths=[f"reckon/session_{sequence}.py"],
+        done_when="pytest tests/test_crew_session_keying.py reports every case passing",
+        write_paths=[f"reckon/session-keying/{node_id}.py"],
         time_budget="20m",
         spec_level="guided",
-        manifest_path=str(home / f"session-node-{sequence}.md"),
+        manifest_path=str(home / f"session-keying-{node_id}.md"),
     )
 
 
 def _dispatch(
     home: Path,
     repo: Path,
-    sequence: int,
+    node_id: str,
     *,
     config: Mapping[str, object] = CONFIG,
 ) -> dict[str, object]:
     return crew.dispatch(
-        node=_node(home, sequence),
+        node=_node(node_id, home),
         project="proj",
         repo=repo,
         config=config,
-        session=f"coordinator-{sequence}",
+        session=f"coordinator-{next(_SESSIONS)}",
         member="worker-a",
-        launcher=lambda *args, **kwargs: 0,
+        launcher=lambda *args, **kwargs: 999911,
     )
 
 
-def _complete_stream(record: Mapping[str, object], session_id: str) -> None:
-    original = "019ff509-8a60-7723-94fd-65942a6d8faa"
+def _complete(record: Mapping[str, object], session_id: str) -> None:
     Path(str(record["log_path"])).write_text(
-        FIXTURE.read_text().replace(original, session_id)
+        FIXTURE.read_text().replace(FIXTURE_SESSION, session_id)
     )
     observed = crew.observe(str(record["run_id"]))
     assert observed["phase"] == "complete"
     assert observed["session_id"] == session_id
 
 
-def _register(repo: Path) -> None:
-    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
+def _resumed(argv: list[str]) -> str | None:
+    return argv[argv.index("resume") + 1] if "resume" in argv else None
 
 
-def test_two_dispatches_at_the_same_configuration_resume_one_session(
+def test_two_dispatches_of_one_node_resume_one_session(home: Path, repo: Path) -> None:
+    """The task, not the member, is what a session is continued for."""
+    _complete(_dispatch(home, repo, "session-node"), MEDIUM_SESSION)
+
+    again = _dispatch(home, repo, "session-node")
+
+    assert again["session_id"] == MEDIUM_SESSION
+    assert _resumed(list(again["argv"])) == MEDIUM_SESSION
+
+
+def test_another_node_at_the_same_configuration_starts_fresh(
     home: Path, repo: Path
 ) -> None:
-    _register(repo)
-    first = _dispatch(home, repo, 1)
-    _complete_stream(first, MEDIUM_SESSION)
+    """The configuration keyed the lane; it must not key the session."""
+    _complete(_dispatch(home, repo, "session-node"), MEDIUM_SESSION)
 
-    second = _dispatch(home, repo, 2)
+    other = _dispatch(home, repo, "other-node")
 
-    assert second["session_id"] == MEDIUM_SESSION
-    assert second["argv"][second["argv"].index("resume") + 1] == MEDIUM_SESSION
+    assert other["session_id"] is None
+    assert _resumed(list(other["argv"])) is None
 
 
-def test_changed_effort_starts_fresh_and_both_sessions_remain_reusable(
+def test_a_changed_configuration_still_continues_the_same_task(
     home: Path, repo: Path
 ) -> None:
-    _register(repo)
-    first = _dispatch(home, repo, 1)
-    _complete_stream(first, MEDIUM_SESSION)
+    """A moved lane is the same task: the session is offered again."""
+    _complete(_dispatch(home, repo, "session-node"), MEDIUM_SESSION)
 
-    changed = _dispatch(home, repo, 2, config=_config(effort="xhigh"))
-    assert changed["session_id"] is None
-    assert "resume" not in changed["argv"]
-    _complete_stream(changed, XHIGH_SESSION)
+    moved = _dispatch(home, repo, "session-node", config=_config(effort="xhigh"))
 
-    medium_again = _dispatch(home, repo, 3)
-    assert medium_again["session_id"] == MEDIUM_SESSION
-    _complete_stream(medium_again, MEDIUM_SESSION)
-
-    xhigh_again = _dispatch(home, repo, 4, config=_config(effort="xhigh"))
-    assert xhigh_again["session_id"] == XHIGH_SESSION
-    assert xhigh_again["argv"][xhigh_again["argv"].index("resume") + 1] == XHIGH_SESSION
-    member = ledger.member("proj", "worker-a", repo)
-    assert member and member["sessions"] == {
-        _configuration_key(MEDIUM_AGENT): MEDIUM_SESSION,
-        _configuration_key(XHIGH_AGENT): XHIGH_SESSION,
-    }
+    assert moved["session_id"] == MEDIUM_SESSION
+    assert _resumed(list(moved["argv"])) == MEDIUM_SESSION
 
 
-def test_changed_model_starts_fresh(home: Path, repo: Path) -> None:
-    _register(repo)
-    first = _dispatch(home, repo, 1)
-    _complete_stream(first, MEDIUM_SESSION)
-
-    changed = _dispatch(home, repo, 2, config=_config(model="other-model"))
-
-    assert changed["session_id"] is None
-    assert "resume" not in changed["argv"]
-
-
-def _write_legacy_member(
-    repo: Path, *, capturing_agent: Mapping[str, object] | None
+def test_a_roster_session_the_task_never_ran_is_not_offered(
+    home: Path, repo: Path
 ) -> None:
-    _register(repo)
+    """A session set on the roster by hand proves nothing about this task."""
     data, version = ledger.load("proj", repo)
     data["members"][0].update(
-        {
-            "session_id": MEDIUM_SESSION,
-            "session_model": "some-model",
-            "sessions": {"some-model": MEDIUM_SESSION},
-        }
+        {"session_id": MEDIUM_SESSION, "session_model": "some-model"}
     )
-    if capturing_agent is not None:
-        data["runs"].append(
-            {
-                "run_id": "legacy-capture",
-                "member": "worker-a",
-                "session_id": MEDIUM_SESSION,
-                "agent": dict(capturing_agent),
-            }
-        )
     ledger.write("proj", data, version, repo)
 
-
-def test_legacy_model_key_reuses_when_capture_configuration_matches(
-    home: Path, repo: Path
-) -> None:
-    _write_legacy_member(repo, capturing_agent=MEDIUM_AGENT)
-
-    dispatched = _dispatch(home, repo, 1)
-
-    assert dispatched["session_id"] == MEDIUM_SESSION
-    assert dispatched["argv"][dispatched["argv"].index("resume") + 1] == MEDIUM_SESSION
-
-
-@pytest.mark.parametrize("capturing_agent", [None, MEDIUM_AGENT])
-def test_legacy_model_key_starts_fresh_without_matching_capture_evidence(
-    home: Path,
-    repo: Path,
-    capturing_agent: Mapping[str, object] | None,
-) -> None:
-    _write_legacy_member(repo, capturing_agent=capturing_agent)
-
-    dispatched = _dispatch(home, repo, 1, config=_config(effort="xhigh"))
+    dispatched = _dispatch(home, repo, "session-node")
 
     assert dispatched["session_id"] is None
-    assert "resume" not in dispatched["argv"]
+    assert _resumed(list(dispatched["argv"])) is None

@@ -127,7 +127,7 @@ def _config(**backend_overrides: object) -> dict[str, object]:
 
 def _node(home: Path, sequence: int) -> crew.TaskNode:
     return crew.TaskNode(
-        id=f"resume-observation-{sequence}",
+        id="resume-observation",
         goal="record whether a run carried a prior session",
         plan="plan-a",
         section="session-routing",
@@ -135,7 +135,7 @@ def _node(home: Path, sequence: int) -> crew.TaskNode:
             "tests/test_run_record_reports_actual_resume.py passes: the run record "
             "reports what this run did rather than what its lane permits"
         ),
-        write_paths=[f"reckon/observation_{sequence}.py"],
+        write_paths=["reckon/observation.py"],
         time_budget="20m",
         spec_level="guided",
         manifest_path=str(home / f"resume-observation-{sequence}.md"),
@@ -156,7 +156,7 @@ def _dispatch(
         config=config,
         session=f"coordinator-{sequence}",
         member="worker-a",
-        launcher=lambda *args, **kwargs: 0,
+        launcher=lambda *args, **kwargs: 999931,
     )
 
 

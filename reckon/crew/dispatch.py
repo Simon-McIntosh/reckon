@@ -54,6 +54,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.refusals import format_refusal
+from reckon.crew.recovery import REVIEW_NODE_PREFIX
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
@@ -3589,8 +3590,9 @@ def dispatch(
                     "with `reckon crew member add` before dispatching to it",
                 )
             )
+    live_pointers = list_live(project=project)
     if roster_member is not None:
-        for pointer in list_live(project=project):
+        for pointer in live_pointers:
             if pointer.get("member") == effective_member:
                 refuse_member_in_flight(effective_member, pointer)
     disregarded_claims: list[str] = []
@@ -3624,16 +3626,13 @@ def dispatch(
         agent["local"] = True
     committed_runs = ledger.runs(project, root=ledger_root)
     session_resolution = (
-        _member_session_resolution(
-            roster_member,
-            agent,
-            committed_runs,
-            harness_default_model=_harness_default_model(
-                config, str(roster_member.get("harness") or "")
-            ),
-            dispatching_session=str(session),
+        _task_session_resolution(
+            node,
+            project,
+            committed_runs=committed_runs,
+            live_pointers=live_pointers,
         )
-        if roster_member and backend.get("session_reuse")
+        if backend.get("session_reuse")
         else {"session_id": None, "withheld": None}
     )
     reuse_session = session_resolution["session_id"]
@@ -3854,14 +3853,13 @@ def dispatch(
             # replaces this with the id or with the point the capture reached.
             "session_id_absent": _dispatch_session_absence(
                 backend,
-                roster_member,
                 reused=reuse_session,
                 withheld=session_resolution["withheld"],
             ),
-            # A stored session belonging to another coordinator session is not
-            # resumed, and that is written down rather than left silent: a peer
-            # whose worker starts a fresh conversation reads the session, its
-            # recorded owner and the reason here.
+            # A prior run of this task whose session ended too large to
+            # continue is not resumed, and that is written down rather than
+            # left silent: a peer whose worker starts a fresh conversation
+            # reads the session and the reason it was passed over here.
             "session_withheld": session_resolution["withheld"],
             "task": None,
             "pid": None,
@@ -4866,73 +4864,243 @@ def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> N
     record["detail"] = detail
 
 
-def _harness_default_model(config: Mapping[str, Any], harness: str) -> str:
-    """Return the model a member's declared harness resolves to by default.
+def _record_node_id(record: Mapping[str, Any]) -> str:
+    """The node id a run record names, whether it stores the block or the id.
 
-    `member add` has no `--model` flag, so a session it records carries no
-    configuration of its own — this is the value it would have recorded had
-    it accepted one, read from the same backend declaration `resolve_role`
-    would use absent any role overlay.
+    A live pointer carries the node definition under ``node`` while a promoted
+    row stores the id alone there and keeps the definition beside it, so a
+    reader of either shape takes the same id from either spelling.
     """
-    if not harness:
-        return ""
-    backends = config.get("backends")
-    backend = backends.get(harness) if isinstance(backends, Mapping) else None
-    if not isinstance(backend, Mapping):
-        return ""
-    return str(backend.get("model") or "").strip()
+    node = record.get("node")
+    if isinstance(node, Mapping):
+        return str(node.get("id") or "")
+    return str(node or "")
 
 
-def _recorded_session_owners(member: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Return the coordinator sessions recorded as owning stored sessions.
+def _record_plan(record: Mapping[str, Any]) -> str:
+    """The plan a run record serves, from the node block or the row's own key."""
+    node = record.get("node")
+    if isinstance(node, Mapping) and node.get("plan"):
+        return str(node["plan"])
+    return str(record.get("plan") or "")
 
-    A stored conversation is only resumable by the coordinator session that
-    opened it, so ownership travels beside the session under the same key — the
-    agent configuration for a configuration-keyed entry, the model for a legacy
-    model-keyed one. An entry carrying no owner was set outside any dispatch
-    that recorded one, and no dispatch can prove it belongs to it.
+
+def _is_review_run(record: Mapping[str, Any]) -> bool:
+    """Whether a record is a review, by its role or by its node id.
+
+    The role survives a renamed node id and the prefix survives a record
+    written before a role was carried, so either alone recognises a review —
+    and a review left unrecognised would take a fresh session where its own
+    task has one to continue.
     """
-    owners = member.get("session_owners")
-    return owners if isinstance(owners, Mapping) else {}
+    return str(record.get("role") or "") == "review" or _record_node_id(
+        record
+    ).startswith(REVIEW_NODE_PREFIX)
 
 
-def _owned_session(
-    session: str, owner: Any, dispatching_session: str
+def _reviewed_run_id(source: str, records: Iterable[Mapping[str, Any]]) -> str:
+    """Resolve what a review node's source names to the reviewed run's id.
+
+    The review reflex composes a review node's id from the record of the run it
+    reviews, so the remainder after the prefix is that run's node id where it
+    has one and its run id otherwise. Both spellings resolve here to the
+    reviewed run's id: a re-review of one run therefore continues the earlier
+    review's session, while a review of a different run starts fresh even when
+    the two share a node lineage.
+    """
+    if not source:
+        return ""
+    runs = list(records)
+    if any(str(item.get("run_id") or "") == source for item in runs):
+        return source
+    named = [item for item in runs if _record_node_id(item) == source]
+    if not named:
+        return source
+    named.sort(
+        key=lambda item: str(
+            item.get("completed_at") or item.get("created_at") or ""
+        )
+    )
+    return str(named[-1].get("run_id") or source)
+
+
+def _task_identity(
+    record: Mapping[str, Any],
+    project: str,
+    records: Iterable[Mapping[str, Any]],
+) -> tuple[str, ...]:
+    """The task a run belongs to, which is what a session may be continued for.
+
+    An implement, test or investigate run's task is its (project, plan, node
+    id); a review's is the run it reviews. Two dispatches may therefore share a
+    task without sharing a legacy roster member, and a member may hold sessions
+    of several tasks — which is exactly why the member is the wrong key.
+    """
+    if _is_review_run(record):
+        source = _record_node_id(record)[len(REVIEW_NODE_PREFIX) :]
+        return ("review", str(project), _reviewed_run_id(source, records))
+    return ("node", str(project), _record_plan(record), _record_node_id(record))
+
+
+def _run_stream_path(record: Mapping[str, Any]) -> Path | None:
+    """The stream this run wrote, from its recorded path or its run directory."""
+    log = str(record.get("log_path") or "").strip()
+    if log:
+        return Path(log)
+    run_id = str(record.get("run_id") or "").strip()
+    if run_id:
+        return run_dir(run_id) / "stream.jsonl"
+    return None
+
+
+def _session_too_large_to_continue(record: Mapping[str, Any]) -> str | None:
+    """Name why a prior run's session cannot be continued, or None.
+
+    Two endings leave a transcript the endpoint will refuse again: the prompt
+    was too long for the model's window, or a compaction announced itself and
+    never completed a boundary, so the session is still over the window. Both
+    are read from the run's own stream, because a run is promoted only on
+    success and the very endings that disqualify its session are the ones no
+    promoted row records.
+    """
+    stream = _run_stream_path(record)
+    if stream is None:
+        return None
+    compaction_announced = False
+    boundary_seen = False
+    refusal = ""
+    try:
+        handle = stream.open(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    with handle:
+        for line in handle:
+            try:
+                event = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(event, Mapping):
+                continue
+            kind = str(event.get("type") or "")
+            if kind == "system":
+                subtype = str(event.get("subtype") or "")
+                if (
+                    subtype == "status"
+                    and str(event.get("status") or "") == "compacting"
+                ):
+                    compaction_announced = True
+                elif subtype == "compact_boundary":
+                    boundary_seen = True
+            elif kind == "result":
+                if event.get("is_error") and "Prompt is too long" in str(
+                    event.get("result") or ""
+                ):
+                    refusal = "Prompt is too long"
+                elif str(event.get("terminal_reason") or "") == "blocking_limit":
+                    refusal = "blocking_limit"
+    if refusal:
+        return (
+            f"the run ended with {refusal!r}, so its session is too large to "
+            "continue"
+        )
+    if compaction_announced and not boundary_seen:
+        return (
+            "the run announced a compaction that never completed a boundary, "
+            "so its session is still too large to continue"
+        )
+    return None
+
+
+def _prior_same_task_run(
+    identity: tuple[str, ...],
+    records: Iterable[Mapping[str, Any]],
+    *,
+    project: str,
+) -> Mapping[str, Any] | None:
+    """The most recent prior run of one task that carried a session id.
+
+    Ordered by completion so a redispatch continues the attempt it succeeds
+    rather than an older branch of the same task. A shadow run is skipped: it
+    is a parallel lineage of the task rather than a prior attempt of it, and
+    continuing its conversation would carry the shadow's context into the work
+    it was only meant to inform.
+    """
+    runs = list(records)
+    candidates = []
+    for record in runs:
+        lineage = record.get("lineage")
+        if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
+            continue
+        if _task_identity(record, project, runs) != identity:
+            continue
+        if not str(record.get("session_id") or "").strip():
+            continue
+        candidates.append(record)
+    if not candidates:
+        return None
+    candidates.sort(
+        key=lambda item: str(
+            item.get("completed_at") or item.get("created_at") or ""
+        )
+    )
+    return candidates[-1]
+
+
+def _task_session_resolution(
+    node: Any,
+    project: str,
+    *,
+    committed_runs: Iterable[Mapping[str, Any]] = (),
+    live_pointers: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Return `session` as resumable only when `owner` is the dispatching session.
+    """Resolve this dispatch's prior same-task session, or name none.
 
-    The owning coordinator session is the whole eligibility test: a session
-    whose owner is another session, or which records no owner at all, is
-    withheld rather than returned. Withholding says which session was passed
-    over and why, so a peer whose worker starts a fresh conversation can read
-    the reason from the run rather than inferring it.
+    Selection is keyed to the installation, never to the roster: the session a
+    dispatch continues is the one an earlier run *of this task* left behind,
+    read from the committed run records and the live pointers. A member that
+    last ran another node therefore offers nothing to a new node — the defect
+    this removes — and continuing a conversation is decided by what the task
+    did, not by which member happened to carry it.
+
+    A prior run whose own stream ended too large to continue is withheld rather
+    than composed, and the withholding names it, so a reader sees the refusal
+    rather than a bare absence.
     """
-    recorded_owner = str(owner).strip() if owner is not None else ""
-    if recorded_owner and recorded_owner == str(dispatching_session or "").strip():
-        return {"session_id": session, "withheld": None}
-    if not recorded_owner:
-        reason = (
-            "the roster entry records no owning coordinator session for it, "
-            "so no dispatch can prove the conversation belongs to this one"
-        )
-    else:
-        reason = (
-            f"it belongs to coordinator session {recorded_owner!r}, not to the "
-            f"dispatching session {str(dispatching_session or '').strip()!r}"
-        )
-    return {
-        "session_id": None,
-        "withheld": {
-            "session_id": session,
-            "owner": recorded_owner or None,
-            "reason": reason,
+    records = [*committed_runs, *live_pointers]
+    identity = _task_identity(
+        {
+            "node": {
+                "id": str(getattr(node, "id", "") or ""),
+                "plan": str(getattr(node, "plan", "") or ""),
+            },
+            "role": str(getattr(node, "role", "") or ""),
+            "session_id": "",
         },
-    }
+        project,
+        records,
+    )
+    prior = _prior_same_task_run(identity, records, project=project)
+    if prior is None:
+        return {"session_id": None, "withheld": None}
+    session_id = str(prior.get("session_id") or "").strip()
+    disqualifier = _session_too_large_to_continue(prior)
+    if disqualifier is not None:
+        return {
+            "session_id": None,
+            "withheld": {
+                "session_id": session_id or None,
+                "owner": None,
+                "reason": (
+                    f"the prior run {prior.get('run_id')!r} of this task left a "
+                    f"session that cannot be continued: {disqualifier}"
+                ),
+            },
+        }
+    return {"session_id": session_id, "withheld": None}
 
 
 def _dispatch_session_absence(
     backend: Mapping[str, Any],
-    roster_member: Mapping[str, Any] | None,
     *,
     reused: str | None,
     withheld: Mapping[str, Any] | None,
@@ -4940,42 +5108,34 @@ def _dispatch_session_absence(
     """Name why a freshly dispatched run carries no session id, or None.
 
     Dispatch is the first of the two points a session id can be attached, and
-    until now a run that reached it without one recorded a bare null — which
-    reads as a verdict on a run that has simply not got one yet. The four
-    situations want different operator responses, so each is named: nothing
-    owns a reusable session, a stored one exists but is not reusable for this
-    configuration, one exists but belongs to another coordinator session, or
-    the backend has no session reuse at all. Observation replaces this with the
-    id the run's own stream supplies, or with the point the capture reached.
+    a run that reaches it without one must not record a bare null — which reads
+    as a verdict on a run that has simply not got one yet. The three situations
+    want different operator responses, so each is named: no earlier run of this
+    task left a session to continue, one did and its stream ended too large to
+    continue, or the resolved backend cannot resume at all. Observation
+    replaces this with the id the run's own stream supplies, or with the point
+    the capture reached.
     """
     if reused:
         return None
     if withheld:
         return {
-            "point": "dispatch-reuse-withheld",
+            "point": "dispatch-same-task-session-withheld",
             "reason": str(withheld.get("reason") or ""),
-        }
-    if not roster_member:
-        return {
-            "point": "dispatch-no-roster-member",
-            "reason": (
-                "the dispatch registered no roster member, so no stored session "
-                "exists to reuse and the run starts a fresh conversation"
-            ),
         }
     if not backend.get("session_reuse"):
         return {
             "point": "dispatch-session-not-reuseable",
             "reason": (
-                "the resolved backend records no session reuse, so no stored "
+                "the resolved backend records no session reuse, so no earlier "
                 "session is offered to this run"
             ),
         }
     return {
-        "point": "dispatch-no-stored-session",
+        "point": "dispatch-no-same-task-session",
         "reason": (
-            "the roster member holds no session for this run's agent "
-            "configuration, so the run starts a fresh conversation"
+            "no earlier run of this task left a session to continue, so the "
+            "run starts a fresh conversation"
         ),
     }
 
@@ -5019,120 +5179,6 @@ def _capture_session_absence(
             "backend has not announced one for this run"
         ),
     }
-
-
-def _member_session_resolution(
-    member: Mapping[str, Any] | None,
-    agent: Mapping[str, Any],
-    runs: Iterable[Mapping[str, Any]] = (),
-    *,
-    harness_default_model: str = "",
-    dispatching_session: str = "",
-) -> dict[str, Any]:
-    """Resolve this configuration's member session, or say which one was withheld.
-
-    Configuration-keyed roster entries are authoritative. Model-keyed entries
-    predate that representation, so they are eligible only when the committed
-    run that captured the session identifies one unambiguous matching agent
-    configuration.
-
-    A session set bare, through `member add --session` with no prior capture
-    at all, carries neither a `session_model` nor a `sessions` map — there is
-    no run history to disambiguate it against, because it was never dispatched
-    through here before. It is resolved once against the harness's own
-    configured default model instead, and only when that default matches the
-    model this dispatch actually resolved to; a role overlay that moves the
-    resolved model away from the harness default is exactly the mismatch that
-    must start a fresh session rather than risk resuming the wrong one. Once
-    resumed, the ordinary capture path records the configuration key, and the
-    coordinator session that owns it, onto the roster.
-
-    Both stored-session branches obey the same ownership rule, because closing
-    either one alone leaves the other resuming a conversation across sessions.
-    The answer carries `session_id` only when it resolved, and names the
-    session plus its recorded owner under `withheld` when it did not.
-    """
-    member = member or {}
-    configuration_key = agent_configuration_key({"agent": agent})
-    sessions = member.get("sessions")
-    owners = _recorded_session_owners(member)
-    unresolved: dict[str, Any] = {"session_id": None, "withheld": None}
-
-    if isinstance(sessions, Mapping) and sessions.get(configuration_key):
-        return _owned_session(
-            str(sessions[configuration_key]),
-            owners.get(configuration_key),
-            dispatching_session,
-        )
-
-    model = str(agent.get("model") or "").strip()
-    if not model:
-        return unresolved
-    session_id = member.get("session_id")
-    if not session_id:
-        return unresolved
-    recorded_model = str(member.get("session_model") or "").strip()
-    has_capture_history = isinstance(sessions, Mapping) and bool(sessions)
-
-    if not recorded_model and not has_capture_history:
-        if harness_default_model and harness_default_model == model:
-            return _owned_session(
-                str(session_id), owners.get(model), dispatching_session
-            )
-        return unresolved
-
-    legacy_session = None
-    if isinstance(sessions, Mapping) and sessions.get(model):
-        legacy_session = str(sessions[model])
-    elif recorded_model == model:
-        legacy_session = str(session_id)
-    if not legacy_session:
-        return unresolved
-
-    owned = _owned_session(legacy_session, owners.get(model), dispatching_session)
-    if owned["session_id"] is None:
-        return owned
-
-    member_id = str(member.get("id") or "")
-    captured_configurations = {
-        agent_configuration_key(run)
-        for run in runs
-        if str(run.get("member") or "") == member_id
-        and str(run.get("session_id") or "") == legacy_session
-        and isinstance(run.get("agent"), Mapping)
-        and run.get("agent")
-    }
-    if captured_configurations == {configuration_key}:
-        return owned
-    return {
-        "session_id": None,
-        "withheld": {
-            "session_id": legacy_session,
-            "owner": str(owners.get(model) or "").strip() or None,
-            "reason": (
-                "the committed run history does not identify it as this agent "
-                "configuration"
-            ),
-        },
-    }
-
-
-def _session_for_configuration(
-    member: Mapping[str, Any],
-    agent: Mapping[str, Any],
-    runs: Iterable[Mapping[str, Any]] = (),
-    *,
-    harness_default_model: str = "",
-    dispatching_session: str = "",
-) -> str | None:
-    """Return the member session owned by the dispatching coordinator session."""
-    return _member_session_resolution(
-        member,
-        agent,
-        runs,
-        harness_default_model=harness_default_model,
-        dispatching_session=dispatching_session,
-    )["session_id"]
 
 
 def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
