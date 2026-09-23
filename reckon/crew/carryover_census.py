@@ -577,16 +577,18 @@ def _dialect_notes(examples: Mapping[str, Any]) -> dict[str, str]:
     codex_run = codex.get("run_id", "<codex run>")
     return {
         "clive": (
-            "claude-code grammar: result.modelUsage.inputTokens is the run's "
-            "session-cumulative charged input — every turn's whole prompt, "
-            "including cached reads, summed across the run — and not the size of "
-            "any single request or of the first turn. The same run's per-turn "
-            "figure is assistant.message.usage.inputTokens, which is the charged "
-            "input of that one turn; the census reads the first such turn. "
-            f"Example run {clive_run} reports modelUsage.inputTokens="
+            "claude-code grammar: the terminal result record carries a "
+            "modelUsage.inputTokens for the run's model, and it is neither the "
+            "first turn's size nor any single request's. Example run "
+            f"{clive_run} reports modelUsage.inputTokens="
             f"{clive_usage.get('inputTokens')} against contextWindow="
-            f"{clive_usage.get('contextWindow')} while its first turn carried "
-            f"{clive.get('first_turn_input_tokens')}."
+            f"{clive_usage.get('contextWindow')} "
+            f"while its first turn carried {clive.get('first_turn_input_tokens')}: "
+            "the result figure sums the run's requests, so it grows with how long "
+            "the run lived, and the example reads far past its own contextWindow, "
+            "which no single request's input can. The census therefore reads the "
+            "first assistant turn's own assistant.message.usage rather than this "
+            "terminal aggregate."
         ),
         "codex": (
             "codex grammar: there is no result record and no modelUsage, and no "
