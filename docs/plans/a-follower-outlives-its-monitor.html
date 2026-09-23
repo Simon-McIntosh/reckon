@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="3">
+  <meta name="plan-version" content="5">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
 <meta name="plan-impl" content="0.2">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -148,6 +148,36 @@
     arming example uses <code>--lifetime</code> and an absolute path, and the file states the cap as
     1,800,000 milliseconds. The write path is that file alone.</p>
 
+    <h2 id="s7">&sect;7 &mdash; A follower whose consumer is gone releases its registration</h2>
+    <p>The S19 coordinator measured this from 05:20 to 05:40 CEST on 2026-09-23, in session
+    <code>ship-s19-20260922</code>. A follower that had re-executed itself to reload changed source
+    ran as <code>python3 -c "&hellip; from reckon.cli import main; main()" crew follow &hellip;</code>
+    (pid 475686). When the host expired its Monitor and killed the Monitor's shell, that process
+    survived, was reparented to init, and kept the flock on its session's registration file in the
+    directory named by <code>follower_dir</code> in <code>reckon/crew/runs.py</code>.
+    <code>_follower_liveness</code> correctly read the registration as not live, because its
+    recorded <code>parent_pid</code> had exited. A freshly armed follower for the same session could
+    not take the registration over, because the orphan still held the lock, so it streamed read-only.
+    Every dispatch from the session was refused <code>watcher-required</code> for about twenty
+    minutes. Re-arming did not help. A SIGTERM to the orphan repaired it within about twenty
+    seconds.</p>
+    <p>A follower whose consumer has gone delivers to nobody, so holding the registration serves no
+    reader. The follower checks its own consumer on each wait pass. When its parent process has
+    changed from the one it recorded at registration, or its parent's start time no longer matches,
+    it releases the registration and exits with status 0. It prints nothing, because nobody reads
+    its output any more.</p>
+    <p><strong>Done when</strong> <code>tests/test_orphaned_follower_releases.py</code> starts an
+    intermediate parent process in a temporary crew config home, and that parent starts
+    <code>reckon crew follow --project P --session S</code>. The test kills the parent with SIGKILL
+    and observes three things within ten seconds: the follower process has exited, the session's
+    registration file is no longer locked, and a second follower started for the same session
+    holds the registration, read through <code>follower_state</code>. The negative control is
+    executed and logged. With the consumer check removed, the orphaned follower is still alive after
+    ten seconds and the second follower does not hold the registration. The test asserts that the
+    real follower directory under the user's config home is untouched. The write paths are
+    <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code> and
+    <code>tests/test_orphaned_follower_releases.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
@@ -159,6 +189,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-20260923T0100-s5-measured" data-who="reckon-ship" data-when="2026-09-23T01:00:00+00:00">
     <div class="r-comment-body"><p>Closed as done with no change. The staleness census at <a href="/reckon/evidence/archive/the-monitor-under-measurement-landed#s2-cause-census">the cause census</a> traced the sweep to <code>_spawn</code> in <code>reckon/crew/dispatch.py</code>, which passes <code>start_new_session=True</code>, so a sweep-launched worker survives the follower's death.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0400-s7-added" data-who="reckon-ship" data-when="2026-09-23T04:00:00Z">
+    <div class="r-comment-body"><p>Added from a finding the S19 coordinator reported to this session. §7 shares <code>reckon/crew/runs.py</code> with §2 and §4, and <code>reckon/cli.py</code> with §3 and §4, so it runs after them. The registration lock that session reported for this session's predecessor, <code>monitor-rox-20260922</code>, names a pid that no longer exists. An unheld lock is released by the flock, so that stale file is harmless and needs no repair.</p></div>
 </div>
 </section>
 </main>

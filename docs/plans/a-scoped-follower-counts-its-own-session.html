@@ -21,9 +21,10 @@
   <title>A Scoped Follower Counts Its Own Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="6">
 <meta name="plan-informs" content="crew-observability-truth">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -119,6 +120,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-the-capability-landed-and-the-call-site-never-passed-it" data-who="reckon-ship" data-when="2026-09-18T10:18:00Z">
     <div class="r-comment-body"><p><strong>The defect this section fixed is still reaching readers, because the one line the node could not touch was never written.</strong> Reported independently by the imas-codex S14 coordinator on 2026-09-18, who told their user that sixteen workers were live in S14 when S14 had eight — the other seven were a peer coordinator's S10 fleet in the same project. The user caught it. Their evidence is one raw transition carrying <code>"session": "ship-s14-20260918"</code> and <code>"working": 14</code> in the same object: the row is stamped with the session that owns the run and the count beside it spans every session in the project.</p><p><strong>The cause is confirmed in the source and it is one keyword argument.</strong> The capability landed exactly as this section records — <code>_fleet_counts</code> at <code>reckon/crew/recovery.py:2611</code> takes <code>session</code>, and <code>format_watch_transition</code> at <code>recovery.py:2998</code> takes <code>session: str | None = None</code>. The call site does not supply it. <code>reckon/cli.py:2077-2083</code> passes <code>with_session</code> and <code>ticker</code> and stops, so the parameter falls to its default and the renderer re-derives the figures fleet-wide, for every scoped follower on this workstation.</p><p>This is the follow-on the landed record names in its own last sentence — <em>the one line this section cannot reach, <code>crew_follow</code> passing <code>session</code> through to the renderer, is outside this node's write fence</em>. It was recorded, and recording it is what a fenced worker can do; nothing then dispatched it, and the feature has been dead in the surface ever since while its tests pass against the helper.</p><p><strong>The general shape, which is why this is worth more than the line.</strong> A capability that lands in the module owning the mechanism while its call site sits outside the fence produces a green suite over a dead feature, and the greenness is honest: every assertion about <code>_fleet_counts</code> and <code>format_watch_transition</code> is true. Nothing in the suite asks whether anything calls them that way. A measure that names the surface a reader actually reaches — here, the output of <code>reckon crew follow --session S</code> rather than the helper's return value — would have failed on the day this landed.</p><p><strong>Two coordinators read the line the same wrong way</strong>, which is the argument against treating it as a documentation fix. <code>sprint-orchestration.md</code> §15 does say the figures describe the fleet, and the reporter found that text only after asserting the wrong thing and being pushed back on. <code>--session</code> scopes the rows; nothing on the line signals that it does not scope the counts. Even once the call site passes the session, the unscoped follower still renders an unlabelled number whose scope differs from its row's, so the rendering question outlives the repair.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0405-call-site-still-open" data-who="reckon-ship" data-when="2026-09-23T04:05:00Z">
+    <div class="r-comment-body"><p>Currency audit at <code>22c69ee1</code>: the defect is still present. <code>reckon/cli.py:2133</code> calls <code>format_watch_transition</code> with <code>with_session</code> and <code>ticker</code> only, so a scoped follower's figures are still fleet-wide. The claim on <code>reckon/cli.py</code> that blocked f-asfcios-002 has released. §2 stays implementable until the command-level measure named in f-asfcios-002 lands.</p></div>
 </div>
 </section>
 </main>
