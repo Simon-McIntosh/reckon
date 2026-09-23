@@ -928,7 +928,7 @@
     <code>reckon/crew/promotion.py</code>; that file is held by another session's run and the reading-side
     change is carried as a follow-on rather than attempted here.</p>
 
-    <h2 id="s18">&#167;18 &mdash; A promoted commit is one the repository has</h2>
+    <h2 id="s18">&#167;18 &mdash; A promoted commit is one the repository has <span class="badge badge-shipped">&#10003; landed 2026-09-22</span></h2>
     <p>Measured 2026-09-21 on this plan's own &#167;17 node. Its manifest recorded
     <code>7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1</code> as a landed commit. That object does not exist. The
     commit the node actually wrote is <code>7892cb69128523ac598e02f62babaf56b6b71c17</code> &mdash; the same
@@ -968,7 +968,68 @@
     <p><strong>Files.</strong> <code>reckon/crew/promotion.py</code> and a test file. The file is held by
     another session's run at the time this section was written, so the section is authored and left
     dispatchable rather than dispatched; whoever takes it should confirm the claim first by running
-    <code>git cat-file -t</code> on both values above, which is how it was established.</p>
+    <code>git cat-file -t</code> on both values above, and here is the claim run: the recorded
+    <code>7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1</code> answers <code>could not get object info</code>
+    with exit 1 while <code>7892cb69128523ac598e02f62babaf56b6b71c17</code> answers <code>commit</code>
+    with exit 0, in this repository.</p>
+
+    <p class="landed-summary"><strong>Landed 2026-09-22.</strong> The hole this closes is the manifest's
+    <em>declared</em> citation, not the one the CLI resolves. The <code>--commit</code> path has been guarded
+    since a drill in August, so a recorded citation reaches the record as text through
+    <code>commits:</code>, and two sites in <code>_require_gate_evidence</code> filtered an unresolvable
+    entry away &mdash; the presented list on its way into <code>_resolve_commits</code> and the declared
+    list on its way into the stated-commits check. A citation that resolves to nothing was therefore
+    dropped rather than refused, which is silent by construction: the run promoted and the row cited no
+    commit, and nothing said so. The refusal is placed in the commitless branch, which is where the
+    measured citation arrives, and it resolves every declared entry as cited with the helper the
+    presented branch already uses, <code>_commit_resolves_in</code>. Only the value the manifest carries
+    is compared; no length, prefix or character-class rule is added, because policing the form is what
+    manufactured the fabrication this section records, and the fabricated value passes every shape check
+    &mdash; forty hexadecimal characters, the right prefix, nothing behind it. An entry that declares
+    absence instead of citing an identifier (<code>commits: none (repository worktree remained
+    clean)</code>, what a report-only node writes) is read through the manifest vocabulary's own
+    <code>_NONE_VALUES</code> so that the carve-out has one statement rather than two.</p>
+    <p>Ten cases in <code>tests/test_cited_identifier_resolves.py</code> enter through
+    <code>crew complete</code>, the surface a run lands by. Six are the section's: the measured fabricated
+    value refused, a well-formed sha with no object behind it refused, a string that is not hexadecimal
+    refused, a forty-character sha admitted, an abbreviated sha admitted and recorded as its canonical
+    object id, and a citation naming an existing tag admitted. The refusal is asserted to name both the
+    citation and the run id, to leave no ledger row, and to leave the live pointer intact so the run is
+    resumable rather than stranded. The remaining cases pin the negative half: a manifest declaring no
+    commit and a manifest carrying no <code>commits:</code> line at all are unaffected, so the check has
+    not become a requirement that every run cite a commit. <strong>One case was written and removed, and
+    the boundary it found is reported rather than crossed.</strong> A presentation-shaped citation on the
+    <code>--commit</code> path returns from the commitless branch before this check can speak;
+    <code>tests/test_a_short_commit_list_is_reported.py</code> pins that silence as intended, it is outside
+    this node's write scope, and a change that reddens a peer suite is not a repair. That half is carried
+    by the evidence page beside a follow-on rather than attempted here.</p>
+    <p><strong>Evidence that could have failed.</strong> The declared mutation &mdash; delete the
+    resolution call in the citation check so every cited identifier is recorded without being looked up
+    &mdash; was applied to the fixed tree and observed to redden exactly the three refusal cases
+    (<strong>3 failed, 7 passed</strong>, exit 0 of the harness with pytest exiting 1), the seven
+    admission and negative-half cases staying green, and was reverted before the commit. A passing suite
+    never shows that a guard fires, so the negative control is the evidence and it is stored with the
+    mutation verbatim on the red log's first line. The plan-figure beside this section is
+    <a href="/reckon/figures/crew-runtime-positive-controls/citation-resolution.svg">the two citations and
+    the one instrument that separates them</a>.</p>
+    <p><strong>Gate delta, not absolute green.</strong> The focused shared gate over the promotion and
+    citation cases is <strong>1 failed, 136 passed</strong> at head against <strong>1 failed, 136
+    passed</strong> at the base revision <code>aecb4e5f</code>, the failure <em>id</em> identical on both
+    sides (<code>tests/test_crew_promotion.py::test_promotion_audits_only_its_own_worktree</code>), so this
+    change adds no failure; that one is pre-existing and outside this node's scope. The new test file runs 10
+    passed, exit 0, alone. The change adds no lint finding: <code>reckon/crew/promotion.py</code> reports
+    the same twelve pre-existing findings at base and at head, and the new test file reports none.</p>
+    <p><strong>Durable receipts.</strong> The run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store/</code>,
+    holding <code>manifest.md</code> and <code>negative_control.log</code>. Gate logs and the two-tree
+    comparison live under
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/a-cited-identifier-resolves-in-its-own-store/</code>.</p>
+    <p><strong>Follow-ons.</strong> The presented branch's silent drop &mdash; a <code>--commit</code>
+    citation that does not resolve being filtered rather than refused on the same path &mdash; is the
+    remaining half and belongs with the test file that pins its present behaviour; it is named rather than
+    attempted so this node changes one branch. The widened run-id instance in this section's own note (a
+    reconstructed run id resolving to no run) is a different store and is untouched here.</p>
+    <p><a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s18">&sect;18 landed</a>.</p>
 
     <h2 id="s19">&#167;19 &mdash; A gate population names files the repository has</h2>
     <p>Reported by the launch-resolution node and open since. The gate command in its brief listed

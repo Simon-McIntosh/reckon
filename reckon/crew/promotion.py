@@ -33,6 +33,9 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.reports import (
+    _NONE_VALUES as _MANIFEST_NOTHING,
+)
 from reckon.crew.reports import ManifestParseError, parse_manifest
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
@@ -222,6 +225,42 @@ def _commit_resolves_in(root: Path, revision: str) -> bool:
     return _commit_canonical_id(root, revision) is not None
 
 
+def _declares_absent_commits(entry: str) -> bool:
+    """Whether one ``commits:`` entry declares absence rather than citing an
+    id.
+
+    A report-only node writes ``commits: none (repository worktree remained
+    clean)``: the record stating it has no commit to cite, not a citation that
+    fails to resolve. Read as the declaration it is, so no store is asked about
+    it, and a manifest that names no commit is unaffected by the citation check.
+    The vocabulary itself is reports' — one statement of what an explicit
+    nothing looks like in a manifest field — so a word added there is honoured
+    here rather than shadowed by a second list.
+    """
+    head = entry.split("(", 1)[0].strip().lower()
+    return head in _MANIFEST_NOTHING
+
+
+def _unresolved_citations(root: Path, entries: Iterable[str]) -> list[str]:
+    """The cited identifiers that resolve to no object in the given store.
+
+    Every identifier a record cites is resolved against the store that owns it,
+    and the check asks the store about the value as cited rather than judging
+    its spelling. A width or character-class requirement is the trap here:
+    measured 2026-09-04 in this repository, a forty-character requirement on a
+    sha caused a confabulation and then concealed it, because the producer's
+    tooling does not hand it forty characters, so compliance meant guessing. A
+    fabricated value passes every shape check — forty hexadecimal characters,
+    the right prefix, nothing behind it — and only the store can tell the
+    difference.
+    """
+    return [
+        entry
+        for entry in entries
+        if not _declares_absent_commits(entry) and not _commit_resolves_in(root, entry)
+    ]
+
+
 def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
     """Name the registered repository a stray revision actually belongs to."""
     for root in _registered_repository_roots():
@@ -341,6 +380,27 @@ def _require_gate_evidence(
                 ),
             }
         return None
+
+    # An identifier a record cites must resolve in the store that owns it, and
+    # the manifest's commit citations are the ones nothing else here resolves:
+    # the presented list goes through `_resolve_commits`, while a declared one
+    # reaches the record as text. A row that reads as evidence and points at
+    # nothing is the defect this refusal exists for, so it is raised under the
+    # citation's own name before the commitless guard below can answer with the
+    # broader complaint that no commit was cited at all.
+    unresolved = _unresolved_citations(tree, declared)
+    if unresolved:
+        raise CrewError(
+            f"run {run_id!r} cites "
+            + ", ".join(repr(entry) for entry in unresolved)
+            + " as a commit, but that identifier does not resolve to an object "
+            f"in the run repository ({tree}). A value assembled rather than "
+            "copied passes every shape check and names nothing, so the store is "
+            "asked about the value as cited and never about its form. Cite the "
+            "commit the run actually wrote — `reckon crew recover` reports it as "
+            "the run's next action — or pass --no-commit '<why>' to record "
+            "deliberately that the commits are not being registered"
+        )
 
     # Only an entry that resolves to a real commit means Reckon is holding
     # something. The line is free text a worker wrote: a report-only node

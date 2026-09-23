@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470"
+     role="img" aria-label="A cited commit is resolved against the repository, and a citation that resolves to nothing is refused before the row is written.">
+  <style>
+    .t { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #1c2430; }
+    .h { font: 14px system-ui, sans-serif; fill: #1c2430; font-weight: 600; }
+    .l { font: 12px system-ui, sans-serif; fill: #5a6675; }
+    .box { fill: #ffffff; stroke: #b9c2cf; stroke-width: 1.2; rx: 6; }
+    .ok { fill: #f2fbf5; stroke: #52a06b; stroke-width: 1.4; rx: 6; }
+    .no { fill: #fdf3f2; stroke: #c0605a; stroke-width: 1.4; rx: 6; }
+    .arrow { stroke: #6b7787; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7787"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="20" y="26">Two citations of identical shape, and the one instrument that separates them</text>
+
+  <rect class="box" x="20" y="48" width="380" height="86"/>
+  <text class="l" x="34" y="68">cited in the manifest as a landed commit</text>
+  <text class="t" x="34" y="92">7892cb69 6b2fbb52ac9b3e2ded0f5a5a26a3b2d1</text>
+  <text class="l" x="34" y="114">40 hex characters &#183; right prefix &#183; no object behind it</text>
+
+  <rect class="box" x="20" y="148" width="380" height="86"/>
+  <text class="l" x="34" y="168">the commit the run actually wrote</text>
+  <text class="t" x="34" y="192">7892cb69 128523ac598e02f62babaf56b6b71c17</text>
+  <text class="l" x="34" y="214">same length, same eight-character prefix</text>
+
+  <rect class="box" x="440" y="48" width="440" height="186"/>
+  <text class="h" x="456" y="72">the citation check</text>
+  <text class="l" x="456" y="94">ask the store about the value as cited, never about its form</text>
+  <text class="t" x="456" y="122">git rev-parse --verify --quiet --end-of-options &lt;value&gt;^{commit}</text>
+  <text class="l" x="456" y="146">a shape check cannot answer this: both values pass it</text>
+  <text class="l" x="456" y="170">a length check is worse than useless — it manufactured a</text>
+  <text class="l" x="456" y="190">fabrication once, because compliance meant guessing</text>
+  <text class="l" x="456" y="216">so the check reads resolution, and nothing else</text>
+
+  <path class="arrow" d="M 400 100 L 436 100"/>
+  <path class="arrow" d="M 400 200 L 420 200 L 420 120 L 436 120"/>
+
+  <text class="h" x="20" y="286">what promotion does with the answer</text>
+
+  <rect class="ok" x="20" y="302" width="400" height="118"/>
+  <text class="h" x="36" y="326">resolves</text>
+  <text class="l" x="36" y="350">the row records the canonical object id, so an honest</text>
+  <text class="l" x="36" y="370">abbreviation or a tag stays useful</text>
+  <text class="t" x="36" y="398">commits: [canonical id]</text>
+  <path class="arrow" d="M 420 361 L 468 361"/>
+
+  <rect class="no" x="480" y="302" width="400" height="118"/>
+  <text class="h" x="496" y="326">resolves to nothing</text>
+  <text class="l" x="496" y="350">refused before the row is written, naming the citation</text>
+  <text class="l" x="496" y="370">the run id and the repository that was asked</text>
+  <text class="t" x="496" y="398">no row &#183; the run is left to fix</text>
+  <path class="arrow" d="M 440 178 L 640 178 L 640 296"/>
+
+  <text class="l" x="20" y="446">a manifest that declares no commit — commits: none (…) — cites no identifier, so no store is asked and nothing is refused</text>
+  <text class="l" x="20" y="464">the refusal carries the citation and the run id, so a fabricated sha is read as a defect rather than filed as evidence</text>
+</svg>
