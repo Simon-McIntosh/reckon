@@ -727,24 +727,33 @@ prerequisite, user-owned decision, excess spend, or consent for an outward effec
 
 ## 13. Continuity — who receives the next piece of work
 
-A node's worker holds context no fresh worker can rebuild cheaply. Route by what
-the next piece of work *is*, not by whichever worker is convenient:
+A node's worker holds context no fresh worker can rebuild cheaply. **A session
+continues the task it began and nothing else.** Route by what the next piece of
+work *is*, not by whichever worker is convenient:
 
 | Next work | Goes to | How |
 |---|---|---|
 | A `NEEDS-HELP:` brief from a CLI-launched live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
 | A `NEEDS-HELP:` brief from an in-harness run | that attached harness task/session | answer it through the host harness; CLI resume cannot launch it |
-| A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
-| New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
+| The same run on another lane — an outage, a lane fault, a redispatch | that same run, a new lane | `reckon crew redispatch --run <id> --backend …` |
+| A repair of the same node — a review comment, gate evidence, a fix inside the node's own scope | a **new run on that node** | `reckon crew dispatch …` with the same node id |
+| A re-review of an already-reviewed run | a **new review run of that reviewed run** | the review reflex for that run |
+| New scope, a different file set, or a new node | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
 
-**This works only if the original dispatch named `--member`** — the session
-survives in the member's committed `crew.json` entry after the live pointer
-goes. **So dispatch every node as a roster member by default** (`reckon crew
-member list` / `member add`; a member without a session captures its first
-run's). Scope decides continuity: work inside the landed node's paths returns
-to its member; wider scope is a new node recording `--scope-changed`. **A
-member is a serial worker** — dispatch refuses one with a non-terminal
-in-flight run, so independent concurrent work uses distinct members.
+**The reuse decision compares task identity, not member identity.** Task
+identity is `(project, plan, node id)` for implement, test and investigate runs,
+and the reviewed run id for a review; a prior session is resumed only when its
+run carried the same task identity. A session whose run ended too large to
+continue (`Prompt is too long` / `blocking_limit`, or compaction that never
+completed) is never resumed. **Why the rule:** a member's session used to be
+keyed by agent configuration, so a new node sent to that member inherited
+whatever the member did last and paid for it — measured 2026-09-23, 312 of 2,089
+local runs resumed another task's session and inherited a median 81,957 tokens
+on their first turn (max 494,189), and 1,315 of 3,105 codex runs (42%) resumed
+one. The benefit the pattern was meant to buy, a worker carrying its own node's
+context forward, was never measured. **A member is a serial worker** — dispatch refuses one with
+a non-terminal in-flight run, so independent concurrent work uses distinct
+members, and a member named explicitly still serialises on it.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:

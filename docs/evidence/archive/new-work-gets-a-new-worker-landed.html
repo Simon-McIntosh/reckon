@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="new-work-gets-a-new-worker-landed">
   <meta name="plan-title" content="New Work Gets A New Worker &mdash; landed evidence">
-  <meta name="plan-summary" content="The dispatch-time session decision now compares task identity rather than member identity, and a new node on a member no longer resumes that member's last session">
+  <meta name="plan-summary" content="Sections of the plan each recorded by its own node: dispatch resumes a session only for the same task (§2), and the continuity guidance teaches the same rule (§5)">
   <meta name="plan-evidence-for" content="reckon:new-work-gets-a-new-worker">
-  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s2">
+  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s2,reckon:new-work-gets-a-new-worker#s5">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
-  <meta name="plan-commits" content="4cfc76a4">
-  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_session_resumes_only_its_own_task.py,tests/test_crew_session_keying.py,tests/test_worker_session_is_session_scoped.py,tests/test_run_record_reports_actual_resume.py,docs/figures/new-work-gets-a-new-worker/session-selection.png">
+  <meta name="plan-commits" content="4cfc76a4,3a06801e">
+  <meta name="plan-artifacts" content="reckon/crew/dispatch.py,tests/test_session_resumes_only_its_own_task.py,tests/test_crew_session_keying.py,tests/test_worker_session_is_session_scoped.py,tests/test_run_record_reports_actual_resume.py,docs/figures/new-work-gets-a-new-worker/session-selection.png,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/sprint-orchestration.md,docs/figures/new-work-gets-a-new-worker/continuity_decision.py,docs/figures/new-work-gets-a-new-worker/continuity_decision.png">
   <title>New Work Gets A New Worker &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -119,6 +119,89 @@ tests/test_run_record_reports_actual_resume.py
     the run store as the authority. Neither is reached by this change, and neither is
     triaged here.</p>
   </section>
+
+
+  <section id="s5-guidance">
+    <h2>§5 — The guidance teaches the same rule, keyed by task identity</h2>
+
+    <p><strong>The defect.</strong> Both continuity passages routed a dispatch by
+    <em>member</em>, not by task. <code>skills/reckon-ship/SKILL.md</code> §Continuity sent
+    same-plan follow-up work to "the roster member whose long-lived session remembers the
+    node"; <code>skills/reckon-ship/references/sprint-orchestration.md</code> §13 routed a
+    followup on landed work to "the same worker, via its roster member's long-lived session"
+    and told the coordinator to dispatch every node as a roster member by default so the
+    session would survive on the member's committed <code>crew.json</code> entry. A member's
+    session was keyed by agent configuration, so a new node sent to that member inherited
+    another task's transcript and paid for it on every turn — the same defect §2 repairs in the
+    dispatch path, restated as guidance a coordinator would follow around the fix.</p>
+
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/continuity_decision.png"
+           alt="A decision path: a next piece of work asks whether a prior run of the same task exists, keyed by (project, plan, node id) or the reviewed run id. No routes to a fresh session for every other dispatch — a new node, new scope, a wider file set. Yes routes to resuming that run's session, and the reuse branch names the three kept forms: crew resume of the same run, crew redispatch of the same run, and a new run on the same task (a repair of the same node, or a re-review of the same reviewed run). Below it, the measured cost: 312 of 2,089 local runs inherited a median 81,957 first-turn tokens; 1,315 of 3,105 codex runs resumed one.">
+      <figcaption>The rule is a fork on task identity, and the three reuse forms are what
+      the same-task branch keeps deliberately — a resume of the same run, a redispatch of
+      the same run, and a new run on the same task. Everything outside the same task starts
+      fresh, which is where the inherited transcript and its cost lived.</figcaption>
+    </figure>
+
+    <p><strong>What landed.</strong> Both passages now state the same-task rule: a session
+    continues the task it began and nothing else, keyed by <code>(project, plan, node id)</code>
+    for implement, test and investigate runs and by the reviewed run id for a review. Both name
+    the three reuses kept deliberately. Both carry the measured cost as the reason — a rule
+    without its reason is routed around the first time the alternative looks slower. The
+    routing table in §13's reference is rewritten to route by task: the same run's session for a
+    <code>NEEDS-HELP:</code> brief, the same run on a new lane for a redispatch, a new run on
+    the same node for a repair, a new review run for a re-review, and a fresh dispatch for
+    anything else. Commit <code>3a06801e</code>.</p>
+
+    <table>
+      <caption>What the section asserts, and the check that carries it.</caption>
+      <thead><tr><th>Clause of the measure</th><th>Carried by</th></tr></thead>
+      <tbody>
+        <tr><td>Neither old phrase remains anywhere under <code>skills/</code></td><td>Gate grep for <code>long-lived session</code> and <code>remembers the node</code> over <code>skills/</code> returns no lines (exit 1)</td></tr>
+        <tr><td>Each passage names the same-task rule and all three valid reuses</td><td>SKILL.md §Continuity and §13's reference</td></tr>
+        <tr><td>Each passage carries the measured cost as the reason</td><td>312 of 2,089 local / median 81,957 tokens; 1,315 of 3,105 codex, in both passages</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Gate.</strong> <code>grep -rn -e 'long-lived session' -e 'remembers the
+    node' skills/</code> over the worktree at <code>3a06801e</code> — <strong>no lines,
+    exit 1</strong>. Log: <code>gate-grep.log</code> in the run directory.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation is the gate run at the base
+    revision, which must return at least one line. At base
+    <code>17462420091dc96f1b4273d2f9ce040ce90f1b07</code> the same grep returns
+    <strong>two lines</strong> — <code>SKILL.md:87</code> and
+    <code>sprint-orchestration.md:737</code> — so the check is shown to see the phrases known
+    present before the absence is reported. The log's first line repeats the declared string
+    verbatim: <code>negative-control-base-grep.log</code> in the run directory.</p>
+
+    <p><strong>Scope note.</strong> This node's write paths reach no test path, so promotion
+    reads no red pytest log for it; the negative control above is the shell grep, not a suite.
+    This gate measures this node's own change only — verifying the merged result belongs to a
+    separately dispatched test node.</p>
+  </section>
+
+  <section id="record-scope">
+    <h2>Record scope</h2>
+    <p>This record currently covers §5 only, the guidance rewrite. The plan's other sections
+    are separate nodes and their outcomes are not claimed here. The change is
+    <code>skills/reckon-ship/SKILL.md</code> and
+    <code>skills/reckon-ship/references/sprint-orchestration.md</code> — guidance text, no
+    code path — and its figure under
+    <code>docs/figures/new-work-gets-a-new-worker/continuity_decision.py</code>.</p>
+  </section>
+
+  <section id="what-this-does-not-claim">
+    <h2>What this record does not claim</h2>
+    <p>It claims guidance text, not a mechanism. Nothing here changes dispatch behaviour;
+    §2 owns the dispatch-time decision, and until <code>session_reuse</code> is lifted (§7) the
+    stopgap in force keeps new dispatches on fresh sessions. The guidance states the rule §2 is
+    to implement, so a coordinator following it now and a dispatch path landing §2 will agree —
+    but the agreement is not asserted by any test in this node's scope, only by the two passages
+    stating the same rule.</p>
+  </section>
+
 </main>
 </body>
 </html>

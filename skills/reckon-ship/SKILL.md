@@ -82,10 +82,17 @@ prefer pausing the node.
 ### Continuity — who receives the next piece of work
 
 Route the next piece of work by what it *is*, not by whichever worker is
-convenient: a `NEEDS-HELP:` brief returns to the session that holds its
-context, same-plan followup work returns to the roster member whose
-long-lived session remembers the node, and new scope is a fresh dispatch.
-The routing table and the member-serial rule are in
+convenient. **A session continues the task it began and nothing else** — a
+dispatch that inherits another task's transcript pays for it on every turn.
+Measured 2026-09-23: 312 of 2,089 local runs resumed another task's session and
+inherited a median 81,957 tokens on their first turn, and 1,315 of 3,105 codex
+runs (42%) resumed one. Three reuses are valid and kept deliberately —
+`crew resume` of the same run (answer a `NEEDS-HELP:` brief, ride out an
+outage, recover a turn that ended early), `crew redispatch` of the same run
+(same run, new lane), and a new run on the same task (a repair of the same
+node, or a re-review of the same reviewed run). Every other dispatch — a new
+node, new scope, a wider file set — starts a fresh session. The routing table,
+the task-identity rule and the member-serial rule are in
 `references/sprint-orchestration.md` §Continuity.
 
 ### These are not valid reasons to stop
