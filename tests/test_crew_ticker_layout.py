@@ -88,17 +88,23 @@ def test_every_line_is_exactly_the_requested_width(grid):
 
 
 def test_columns_start_on_the_same_screen_column(grid):
-    """Node, arrow, agent and every stat letter share a column across rows."""
+    """Node, state, agent and every stat letter share a column across rows."""
     rows = [
-        plain(grid.render(_event(from_state=None, to_state="dispatched"))),
-        plain(grid.render(_event(from_state="complete", to_state="promoted"))),
-        plain(grid.render(_event(working=12, blocked=0, unpromoted=3))),
+        (plain(grid.render(_event(from_state=None, to_state="dispatched"))), "dispatched"),
+        (plain(grid.render(_event(from_state="complete", to_state="promoted"))), "promoted"),
+        (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "blocked"),
     ]
-    assert len({row.index("→") for row in rows}) == 1
+    # The state cell begins on one column whether the row had a source or not.
+    assert (
+        len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
+    )
+    # And no row carries a state it did not move into.
+    assert not any("complete" in row for row, _ in rows)
+    assert not any("→" in row for row, _ in rows)
     # Located by the counter block's own shape: the reason is the trailing
     # column, so a `w` at the end of a row is free text rather than a suffix.
     for letter in ("w", "b", "u"):
-        assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
+        assert len({letter_columns(row)[letter] for row, _ in rows}) == 1, letter
 
 
 def test_stat_digits_align_across_one_and_two_digit_counts(grid):
@@ -236,23 +242,32 @@ def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it():
     assert ticker_module._DIM + " 0q" in line
 
 
-def test_the_baseline_glyph_is_not_a_glyph_the_row_already_uses(grid):
-    """The arrow column must say something no other column repeats.
+def test_the_baseline_marker_is_a_word_the_row_does_not_use_elsewhere(grid):
+    """The marker must say something no other cell repeats.
 
-    The counters separate their three numbers with middle dots, so a baseline
-    marked with one would put four indistinguishable dots on a row and say
-    nothing a reader could locate.
+    A bullet at small size was read as a fresh dispatch, and a glyph the
+    counters already separate their numbers with would put several
+    indistinguishable marks on one row. The word is what the record is.
     """
-    assert ticker_module.BASELINE_ARROW != ticker_module.TRANSITION_ARROW
     row = plain(grid.render(_event(event="baseline", to_state="working")))
-    assert row.count(ticker_module.BASELINE_ARROW) == 1
+    assert row.count(ticker_module.BASELINE_MARKER) == 1
+    assert row.index(ticker_module.BASELINE_MARKER) < row.index("working")
+    # No glyph marks the record: not the arrow the transition used to carry,
+    # and not the bullet the baseline used to.
+    assert "→" not in row
+    assert "\N{BULLET}" not in row
+    # And the marker is the baseline's alone.
+    transition = plain(grid.render(_event(to_state="working")))
+    assert ticker_module.BASELINE_MARKER not in transition
 
 
-def test_arrow_column_holds_when_there_is_no_previous_state(grid):
-    """A first sighting has no source, and its arrow still lines up."""
+def test_the_state_cell_holds_its_column_when_there_is_no_previous_state(grid):
+    """A first sighting has no source, and its state cell still lines up."""
     first = plain(grid.render(_event(from_state=None, to_state="dispatched")))
     later = plain(grid.render(_event(from_state="dispatched", to_state="complete")))
-    assert first.index("→") == later.index("→")
+    assert first.index("dispatched") - ticker_module.MARKER == (
+        later.index("complete") - ticker_module.MARKER
+    )
 
 
 def test_long_internal_state_names_render_within_the_column(grid):
@@ -463,24 +478,25 @@ def test_the_cli_theme_choices_match_the_palettes_they_select():
     assert set(cli.TICKER_THEMES) == set(ticker_module.STATE_HUE)
 
 
-def test_both_sides_of_a_transition_are_painted_by_the_state_map():
-    """A transition is a pair, and each half carries its own state's colour.
+def test_the_state_painted_on_the_row_is_the_one_it_moved_into():
+    """The destination alone is painted, in its own hue.
 
-    Painting only the destination makes a recovery indistinguishable from a
-    routine landing: `blocked → promoted` and `complete → promoted` would render
-    the same, and the first is the one worth noticing.
+    A state the row no longer carries must paint nothing: a row that still
+    reported the state it left would describe a problem that is already over,
+    which is the defect the reason clause was fixed for. Two rows into the same
+    destination therefore read identically whatever they came from.
     """
     painter = ticker_module.Ticker(theme="light", color=True)
     hues = ticker_module.STATE_HUE["light"]
 
     recovered = painter.render(_event(from_state="blocked", to_state="promoted"))
-    assert f"\x1b[38;5;{hues['blocked']}m" in recovered
     assert f"\x1b[38;5;{hues['promoted']}m" in recovered
+    assert f"\x1b[38;5;{hues['blocked']}m" not in recovered
 
     routine = painter.render(_event(from_state="complete", to_state="promoted"))
-    assert f"\x1b[38;5;{hues['blocked']}m" not in routine
-    # The two read differently, which is the whole point of painting the source.
-    assert plain(recovered) != plain(routine)
+    assert f"\x1b[38;5;{hues['complete']}m" not in routine
+    # Both rows are the destination and nothing else.
+    assert plain(recovered) == plain(routine)
 
 
 def test_the_action_set_is_one_set_with_three_readers():
@@ -628,19 +644,12 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
     """Adding the role column must not upset the column budget for the rest."""
     grid = ticker_module.Ticker(width=180, color=False)
     rows = [
-        plain(
-            grid.render(
-                _event(role="implement", from_state=None, to_state="dispatched")
-            )
-        ),
-        plain(
-            grid.render(
-                _event(role="review", from_state="complete", to_state="promoted")
-            )
-        ),
+        plain(grid.render(_event(role="implement", to_state="dispatched"))),
+        plain(grid.render(_event(role="review", to_state="promoted"))),
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
-    assert len({row.index("→") for row in rows}) == 1
+    assert len({len(row) for row in rows}) == 1
+    assert not any("→" in row for row in rows)
     for letter in ("w", "b", "u"):
         assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
     assert {len(row) for row in rows} == {180}
@@ -1050,9 +1059,7 @@ def _spend_columns() -> list[tuple[int, int]]:
         + ticker_module.ROLE
         + ticker_module.GAP
         + ticker_module.NODE
-        + ticker_module.GAP
-        + (ticker_module.STATE * 2 + 3)
-        + ticker_module.GAP
+        + ticker_module.STATE_REGION
         + ticker_module.MODEL
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
@@ -1325,5 +1332,6 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     for row in rows:
         assert len(row) == 208
         assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
-        assert "working" in row
+        # The destination is on the line and the state it moved from is not.
         assert "blocked" in row
+        assert "working" not in row

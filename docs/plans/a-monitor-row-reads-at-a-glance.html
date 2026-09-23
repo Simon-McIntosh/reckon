@@ -74,6 +74,19 @@
     thirteen columns narrower than the base revision's rendering of the same event at the same width,
     measured on the reason cell's room. Existing ticker tests that assert on the from-state are
     updated to assert its absence, and the delta against the base revision's test run is stated.</p>
+    <p class="r-landing"><strong>Landed 2026-09-23</strong> at <code>868ca4f5</code> and
+    <code>9b5458a1</code>, base <code>d6817708</code>. The state region is the marker cell, the
+    destination state and the separator — fourteen columns, down from the twenty-seven the two
+    states and their arrow spent. At a 180-column pane the reason clause's room moves from 42
+    columns to <strong>55</strong>, and <code>MIN_WIDTH</code> from 139 to 126. A transition row
+    renders <code>unpromoted</code> once with neither the source state nor an arrow; a baseline row
+    carries the word <code>now</code> in the marker cell immediately before its own state, held on
+    every row so the state cell keeps one screen column. Across the fenced ticker and stream test
+    files, no failure is added over base (see
+    <code>docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html</code>). The declared
+    negative control — restore the from-state cell and the transition arrow — was applied and the
+    absence assertions fail as required. <code>tests/test_crew.py</code> hangs on its dispatch
+    tests at the base revision as well and could not be finished here.</p>
 
     <h2 id="s3">&sect;3 &mdash; Every model name fits one aligned cell</h2>
     <p>Size the model cell from the aliases the resolved flight config declares, taking the longest,

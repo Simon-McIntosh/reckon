@@ -17,6 +17,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew import ticker as ticker_module
 
 
 @pytest.fixture()
@@ -100,7 +101,10 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
         assert transitions[0] == transitions[1]
         assert len(transitions[0]) == 1
         assert "first-node" in transitions[0][0]
-        assert "dispatched → working" in transitions[0][0]
+    # The row carries the state the run moved into, and only that.
+    assert "working" in transitions[0][0]
+    assert "dispatched" not in transitions[0][0]
+    assert "→" not in transitions[0][0]
 
 
 def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> None:
@@ -129,7 +133,14 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     wide = recovery.Ticker(width=208, color=False)
     lines = [recovery.format_watch_transition(event, ticker=wide) for event in events]
     assert len(lines) == 2
-    assert sum("working → blocked" in line for line in lines) == 1
+    # The transition row names the state the run moved into and neither the
+    # one it left nor any arrow; the baseline row before it names its own
+    # state behind the marker word.
+    assert sum("blocked" in line for line in lines) == 1
+    assert "working" not in lines[-1]
+    assert ticker_module.BASELINE_MARKER in lines[0]
+    assert lines[0].index(ticker_module.BASELINE_MARKER) < lines[0].index("working")
+    assert all("→" not in line for line in lines)
     # The clause explaining a blocked state sits on the line, after the counts
     # rather than before them — never on a row of its own, which would cost a
     # quarter of a pane that shows about eight. The counters go first because
@@ -163,7 +174,11 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
             subsequent = _read_new(late_reader)
 
     assert len(subsequent) == 1
-    assert "blocked → unpromoted" in subsequent[0]
-    assert "dispatched → working" not in subsequent[0]
-    assert "working → blocked" not in subsequent[0]
+    # The destination it moved into, and neither the state it left nor any
+    # earlier hop it made. An arrow joins nothing on the row.
+    assert "unpromoted" in subsequent[0]
+    assert "blocked" not in subsequent[0]
+    assert "dispatched" not in subsequent[0]
+    assert "working" not in subsequent[0]
+    assert "→" not in subsequent[0]
     assert " 0w· 0b· 1u" in subsequent[0]

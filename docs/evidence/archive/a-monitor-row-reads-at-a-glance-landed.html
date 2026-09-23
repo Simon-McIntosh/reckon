@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-monitor-row-reads-at-a-glance-landed">
+  <meta name="plan-title" content="A Monitor Row Reads At A Glance — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="a-monitor-row-reads-at-a-glance">
+  <meta name="plan-verifies" content="a-monitor-row-reads-at-a-glance#s2">
+  <title>A Monitor Row Reads At A Glance — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Monitor Row Reads At A Glance — cumulative execution record</h1>
+    <p>
+      One anchor per landed node: the commit, the gate measure as executed, the tests, and anything
+      negative found on the way. The evergreen plan holds the design; this record holds what
+      happened.
+    </p>
+
+    <h2 id="state-cell-shows-destination-only">&sect;2 — The state cell shows the destination only</h2>
+    <p>
+      Commits <code>868ca4f5</code> (implementation) and <code>9b5458a1</code> (stream test) on
+      <code>main</code> in the <code>row-shows-destination-only</code> worktree, base revision
+      <code>d6817708</code>.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/a-monitor-row-reads-at-a-glance/row_column_budget.png"
+           alt="Stacked column-budget bars at a 180-column pane for the base revision and this
+                change. The state region shrinks from 27 columns to 14, and the reason clause's
+                room grows from 42 to 55.">
+      <figcaption>
+        At a 180-column pane, the state region falls from 27 columns to 14 and the reason clause's
+        room rises from 42 to 55. The leading and trailing cells are unchanged; only their
+        boundary with the state region and the reason bed move.
+      </figcaption>
+    </figure>
+
+    <h3>The gate measures, as executed</h3>
+    <ul>
+      <li><strong>Destination only, no source, no arrow.</strong> A transition row for
+        <code>working → unpromoted</code> renders <code>unpromoted</code> once, with
+        <code>working</code> and <code>→</code> both absent.</li>
+      <li><strong>Baseline marker.</strong> A baseline row carries the word <code>now</code> in the
+        marker cell immediately ahead of its own state. The marker cell is held on every row, blank
+        on a transition, so the state cell lands on one screen column whichever kind of record the
+        row is.</li>
+      <li><strong>Reason room.</strong> At a 180-column pane the reason clause's room is
+        <strong>55</strong> columns at head against <strong>42</strong> at base — an increase of
+        <strong>13</strong>, the gate's floor met exactly. <code>MIN_WIDTH</code> falls from 139 to
+        126. The state region is <code>MARKER (3) + STATE (10) + separator (1) = 14</code>; keeping
+        the marker cell while removing the from-state cell and the arrow is what buys the
+        thirteen.</li>
+    </ul>
+
+    <h3>Tests</h3>
+    <p>
+      Five fenced files, head
+      <code>868ca4f5</code>+<code>9b5458a1</code> against base <code>d6817708</code>. Every test
+      that asserted the from-state or the arrow now asserts its absence.
+    </p>
+    <table>
+      <thead>
+        <tr><th>file</th><th>base</th><th>head</th><th>added failures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_crew_ticker.py</code></td><td>24 passed</td><td>24 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew_ticker_layout.py</code></td><td>1 failed, 66 passed</td><td>1 failed, 66 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew_watch_stream.py</code></td><td>3 passed</td><td>3 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew_session_delivery.py</code></td><td>1 failed, 25 passed</td><td>1 failed, 25 passed</td><td>0</td></tr>
+        <tr><td><code>tests/test_crew.py</code></td><td colspan="3">incomplete — hangs at both revisions (204 collected; see below)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Failures present at base that reproduce at head</h3>
+    <p>
+      Neither is touched by this change; both name paths held by other nodes, and each was run over
+      an extracted copy of the base revision to confirm the failure at base is identical:
+    </p>
+    <ul>
+      <li><code>tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers</code>
+        — <code>AssertionError: ('light', 'launch-failed')</code>, so
+        <code>launch-failed</code> sits in <code>NEEDS_ACTION</code> without a
+        <code>STATE_HUE</code> entry.</li>
+      <li><code>tests/test_crew_session_delivery.py::test_the_refusal_names_where_the_arming_primitive_is_documented</code>
+        — <code>KeyError: 'ensure_line'</code> raised in <code>reckon/crew/node.py</code>.</li>
+    </ul>
+
+    <h3>A hang not caused by this change</h3>
+    <p>
+      <code>tests/test_crew.py</code> does not complete in this environment: with verbose output it
+      stalls on <code>test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code>. The
+      same file stalls on the same dispatch test over the extracted base revision, so the hang is
+      not introduced here. Its counts are stated as prefix runs rather than a finished total; the
+      file is on this node's fence only because it renders rows through the same module.
+    </p>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>restore the from-state cell and the transition arrow in the ticker row.</em>
+      Applied to <code>reckon/crew/ticker.py</code> (the from-state cell and a
+      <code>RIGHTWARDS ARROW</code> cell reinstated ahead of the destination) and run over
+      <code>tests/test_crew_ticker.py</code> and <code>tests/test_crew_watch_stream.py</code>; nine
+      tests fail, among them the absence assertions, e.g. <code>AssertionError: assert 'working' not
+      in '10:30:49  ?...'</code> over a row reading <code>working → blocked</code>. The control was
+      then reverted with <code>git show HEAD:reckon/crew/ticker.py</code> and the tree returned to
+      the committed revision.
+    </p>
+
+  </main>
+</body>
+</html>

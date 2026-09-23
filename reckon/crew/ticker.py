@@ -9,10 +9,10 @@ text is truncated to the room the grid leaves rather than allowed to overrun.
 
 Colour carries two questions that must not share an axis. *Which worker is
 this?* is answered by the node's own hue, handed out in order of first
-appearance. *Does this need me?* is answered by the state, painted on both
-sides of the arrow so a recovery out of a block reads differently from a routine
-landing. Identity is kept perceptually clear of the four verdict hues, so a
-worker's colour is never mistaken for a verdict about that worker.
+appearance. *Does this need me?* is answered by the destination state, painted
+by the verdict that state names. Identity is kept perceptually clear of the four
+verdict hues, so a worker's colour is never mistaken for a verdict about that
+worker.
 """
 
 from __future__ import annotations
@@ -206,17 +206,27 @@ ROLE_UNKNOWN = "?"
 # than named.
 FOREIGN_OWNER = "~"
 
-# The arrow column, which says what kind of record this is. A transition is
-# something that happened; a baseline is inventory the follower emitted because
-# it attached, and a restart emits one per live run inside a second or two. Read
-# from the kind the log records, never from an absent from-state: a genuine
-# transition into a first sighting also has no source, and conflating the two
-# makes a restart read as a burst of news.
-TRANSITION_ARROW = "\N{RIGHTWARDS ARROW}"
-# A bullet rather than a middle dot: the counters already separate themselves
-# with middle dots, and a glyph that appears three more times on the same row
-# cannot be read — or searched for — as a statement about the record.
-BASELINE_ARROW = "\N{BULLET}"
+# The row shows the state a run moved into and not the one it left. A
+# from-state column cost ten columns and an arrow between them three more, and
+# both were read as decoration: the question a reader brings to a row is where
+# the run is now. Dropping the pair is what pays for the reason clause, which
+# is the row's payload.
+#
+# What a baseline row prints in the state's own cell, instead of a bullet
+# beside it. A baseline is inventory the follower emitted because it attached,
+# and a restart emits one per live run inside a second or two; a lone glyph at
+# small size was read as a fresh dispatch, so the record says what it is in a
+# word. Read from the kind the log records, never from an absent from-state: a
+# genuine transition into a first sighting also has no source, and conflating
+# the two makes a restart read as a burst of news.
+BASELINE_MARKER = "now"
+
+# The marker cell is held on every row, blank on a transition, so the state
+# word beside it lands on one screen column whether the row is news or
+# inventory. The trailing column is the gap that keeps the model cell off a
+# ten-column state word.
+MARKER = len(BASELINE_MARKER)
+STATE_REGION = MARKER + STATE + 1
 
 # States a run does not leave. A baseline row for one of these is inventory
 # about work that is already over — the alarming-looking rows a reattaching
@@ -305,9 +315,7 @@ MIN_WIDTH = (
     + NODE
     + GAP
     + OWNER
-    + GAP
-    + (STATE * 2 + 3)
-    + GAP
+    + STATE_REGION
     + MODEL
     + PAIR_GAP
     + EFFORT
@@ -854,10 +862,6 @@ class Ticker:
         )
         to_state = _display_state(entry_state)
         baseline = is_baseline(event)
-        # A baseline has no source state to show even when the record carries
-        # one, because nothing moved: showing a from-state would claim a
-        # transition the fleet never made.
-        from_state = "" if baseline else _display_state(event.get("from_state"))
         # Recorded before the row is built, so a run that arrives in an
         # actionable bucket on this very transition is a member of it when the
         # counter beside it is rendered, and its age starts at this reading.
@@ -875,20 +879,15 @@ class Ticker:
         if with_session:
             owner = FOREIGN_OWNER if str(event.get("session") or "") else " "
             cells += [(" " * GAP, None), (f"{owner:<{OWNER}}", "dim")]
-        # Both sides of the arrow are painted by the same map. A transition is
-        # read as a pair — where it came from and where it went — and colouring
-        # only the destination makes `blocked → promoted` and `complete →
-        # promoted` look identical, which is the difference between a recovery
-        # and a routine gate pass.
+        # The state cell carries the destination alone. The marker cell ahead
+        # of it is present on every row so the state column never moves; a
+        # branch inside the cell (rather than a cell that appears) is what
+        # keeps a baseline row on the grid the transitions sit on.
         hues = STATE_HUE[self.theme]
         cells += [
-            (" " * GAP, None),
-            (f"{from_state:>{STATE}}", hues.get(from_state, "dim")),
-            (" ", None),
-            (BASELINE_ARROW if baseline else TRANSITION_ARROW, "dim"),
-            (" ", None),
+            (f"{BASELINE_MARKER if baseline else '':<{MARKER}}", "dim"),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
-            (" " * GAP, None),
+            (" ", None),
             (f"{model_cell:<{MODEL}}", "dim"),
             (" " * PAIR_GAP, None),
             (f"{effort_cell:<{EFFORT}}", "dim"),
