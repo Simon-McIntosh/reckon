@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.25">
@@ -177,6 +177,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260923T1330-fence-landed" data-who="reckon-ship" data-when="2026-09-23T13:30:00Z">
     <div class="r-comment-body"><p><strong>§1 landed</strong> (merged ae7be0c5; commits 9125b986, 984c4f05, 78e179c5). <code>launch_plan</code> composes <code>bwrap --dev-bind / /</code> with one <code>--ro-bind</code> per existing protected path and a <code>--bind</code> for each grant inside one. It is off by default (<code>fence=False</code>) until §2 gives each run its own harness home. Proved by running the composed argv with a stub. <code>rm</code> is refused on every protected class: <code>.claude.json</code>, <code>.codex</code>, <code>.config/reckon</code> including the flight file, <code>.agents</code>, <code>dotfiles</code>, <code>.ssh</code>, <code>.gitconfig</code>, <code>.config/git</code>, <code>.config/gh</code>, <code>.netrc</code>, <code>public</code>, <code>.local/bin</code> and a main checkout. The run directory, reports and worktree stay writable. The negative control drops the <code>~/.claude</code> bind, and that sentinel is then deleted. Gate: 3 failed / 64 passed against the same 3 failures at base.</p><p>Review: 89. Its findings are all in the worker's own record, not the code. It understated the tests it added (six, not two) and the after-side counts (the five existing files measure 3 failed / 62 passed). The MCP <code>edit_plan</code> measure added to this section at 12:11Z is not yet covered; it goes with §2, when the fence is switched on for real workers.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260923T110029783311-launch-plan-wraps-a-filesystem-fence" data-who="reckon-ship" data-when="2026-09-23T11:39:41.149Z">
+    <div class="r-comment-body"><p>launch_plan can wrap workers in a bwrap fence: every protected class refuses rm, grants writable, dropping the ~/.claude bind lets its sentinel go; off by default; 3 failed/64 passed vs same 3 at base; review 89</p></div>
 </div>
 </section>
 </main>
