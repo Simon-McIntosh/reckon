@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import signal
 import socket
@@ -12,6 +13,7 @@ from typing import Any
 
 import pytest
 
+from reckon import _backends
 from reckon.crew import node as node_module
 from reckon.crew import recovery, runs
 
@@ -192,3 +194,68 @@ def test_a_live_pid_with_its_matching_start_time_stays_working(tmp_path: Path) -
     assert row["process_alive"] is True
     assert row["classification"] == "running"
     assert row["classification"] != "interrupted"
+
+
+def test_recover_counts_an_interrupted_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pointer = _pointer(
+        tmp_path,
+        "r-counted-interruption",
+        phase="orphaned",
+        session_id="session-survives",
+    )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(recovery, "list_live", lambda: [pointer])
+    monkeypatch.setattr(
+        dispatch_module,
+        "observe",
+        lambda run_id, config=None: pointer,
+    )
+
+    report = recovery.recover()
+
+    assert report["runs"][0]["classification"] == "interrupted"
+    assert report["counts"]["interrupted"] == 1
+    assert sum(report["counts"].values()) == 1
+
+
+def test_observe_folds_a_dead_cli_run_to_orphaned_then_interrupted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    run_id = "r-observed-interruption"
+    pointer = _pointer(
+        tmp_path,
+        run_id,
+        session_id="session-survives",
+    )
+    pointer.update(
+        {
+            "launch": "cli",
+            "backend": "fixture",
+            "command": sys.executable,
+            "argv": [sys.executable, "-c", "pass"],
+        }
+    )
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    observation = _backends.Observation(
+        backend="fixture",
+        phase="working",
+        events=1,
+    )
+    monkeypatch.setattr(
+        dispatch_module._backends,
+        "observe_log",
+        lambda **kwargs: observation,
+    )
+
+    observed = dispatch_module.observe(run_id)
+    row = recovery.classify_pointer(observed)
+
+    assert observed["process_alive"] is False
+    assert observed["phase"] == "orphaned"
+    assert row["classification"] == "interrupted"
