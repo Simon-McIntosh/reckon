@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T10:39:48",
+  "updated": "2026-09-23T10:41:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -291017,6 +291017,284 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T051637088349-the-review-lane-follows-the-owning-run",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a74",
+        "node": "the-review-lane-follows-the-owning-run",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2652,
+                "cached_input_tokens": 909779,
+                "input_tokens": 912433,
+                "output_tokens": 497,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 912930,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "the flight schema in reckon/schema/flight.yaml gains a key excluding named backends from review routing, regenerated into reckon/_flight_schema.py and docs/_shared/flight.schema.json with a test that the three agree; tests in tests/test_review_lane_follows_its_run.py assert that the lane composed for a review of a run recorded on clive is clive, that a failed local attempt falls back only to backends not excluded and never to an excluded one, that when every remaining candidate is excluded the review is refused naming the exclusion rather than dispatched, that the sweep bookends only runs whose pointer session matches its own session, and that the copyable next_action carries the owning run's lane rather than a hardcoded --local; the negative control of restoring the alphabetical fallback in _review_lane_candidates is applied, the exclusion test is observed to fail by selecting the excluded backend, and that log is recorded in the manifest; tests/test_review_reflex_sweep.py tests/test_review_reflex_selects_a_backend.py report no added failures against base",
+          "estimated_hours": null,
+          "goal": "the review sweep composes each review's lane from the owning run's recorded backend and never falls back onto a backend the flight configuration excludes from review routing",
+          "id": "the-review-lane-follows-the-owning-run",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T05:16:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637088349-the-review-lane-follows-the-owning-run/manifest.md",
+          "negative_control": "restore the alphabetical fallback in _review_lane_candidates that ignores the exclusion key",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "tests/test_review_lane_follows_its_run.py",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19-review-lane",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T05:16:53Z",
+        "completed_at": "2026-09-23T07:22:47.045Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7530,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7554,
+        "stalled": true,
+        "time_budget": "55m",
+        "base_sha": "75b39d4d663649eeac7596b50667bafb0f8cfb8a",
+        "commits": [
+          "5b98a1c2fc62aeb869232f3874f94561b81112f8"
+        ],
+        "changed_lines": {
+          "added": 621,
+          "removed": 17,
+          "files": 9
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_lane_follows_its_run.py tests/test_review_reflex_sweep.py tests/test_review_reflex_selects_a_backend.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637088349-the-review-lane-follows-the-owning-run/logs/gate-head.log",
+          "log_digest": "6cc4fabff3baa65a1f77b669cd852cd6eee4141e790501a1da50bdf8d0d7e80b"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637088349-the-review-lane-follows-the-owning-run/manifest.md",
+        "scope_changed": false,
+        "session_id": "66b3fdda-2f2e-4732-9059-3c0c702b82d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 19044615,
+            "input_tokens_cumulative": 19044615,
+            "output_tokens": 82650,
+            "output_tokens_cumulative": 82650,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T07:22:47.045Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 19277887,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 7492.281,
+          "generated_tokens": 90201,
+          "generation_seconds": 7203.142,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.8,
+          "machine_seconds": 289.139,
+          "peak_input_tokens": 166826,
+          "tokens_per_second": 12.52,
+          "wall_tokens_per_second": 12.04
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/the-review-lane-follows-the-owning-run",
+          "session_id": "66b3fdda-2f2e-4732-9059-3c0c702b82d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T07:22:47.045Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "5b98a1c2fc62aeb869232f3874f94561b81112f8",
+        "plan_impl_at_dispatch": 0.31,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": 0.31,
+          "at_complete": 0.45,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "waived",
+          "test_paths": [
+            "tests/test_review_lane_follows_its_run.py"
+          ],
+          "declaration": "restore the alphabetical fallback in _review_lane_candidates that ignores the exclusion key",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637088349-the-review-lane-follows-the-owning-run/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637088349-the-review-lane-follows-the-owning-run/logs/negative-control.log",
+          "reason": "the log's first line is the declared mutation verbatim except that it wraps the function name _review_lane_candidates in markdown backticks; same mutation, same file, and the log shows both exclusion tests failing under it"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T06:11:38.345179+00:00",
+          "horizon_seconds": 3300,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T05:16:38Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 0.0,
+        "orientation_input_tokens": 2825124.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -291329,6 +291607,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2260
+    "_version": 2261
   }
 }

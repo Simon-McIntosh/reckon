@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.45">
@@ -535,6 +535,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260923T072310177614-review-of-the-review-lane-follows-the-owning-run" data-who="reckon-ship" data-when="2026-09-23T07:24:14.658Z">
     <div class="r-comment-body"><p>review stored at 93 with the revision pair; started on the claude lane by the reflex and moved to clive; read before promotion</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260923T051637088349-the-review-lane-follows-the-owning-run" data-who="reckon-ship" data-when="2026-09-23T07:22:47.045Z">
+    <div class="r-comment-body"><p>review lane composed from the owning run, exclusions honoured, no alphabetical fallback; 19 passed vs 13 at base; mutation reddens 2; review 93</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260923T0530-compaction-then-unresumable" data-who="reckon-ship" data-when="2026-09-23T05:30:00Z">
     <div class="r-comment-body"><p><strong>Measured on the demonstration run itself (r-20260923T034826819549):</strong> the worker compacted twice, both automatic, at <code>pre_tokens</code> 176,242 (first stream) and 171,919 (resume-1, <code>trigger: auto</code>) against a 200,000-token window, and kept reading afterwards: 40 corpus streams are recorded in <code>docs/research/data/compaction-demonstration.json</code> (merged at a28bfc53). So <strong>compaction fires and the worker continues within a run</strong>.</p><p><strong>The resume path does not survive it.</strong> The third resume was refused on its first turn with <code>Prompt is too long</code>, <code>terminal_reason: blocking_limit</code>, zero input tokens on the turn, against 7,485,800 cumulative input tokens on the session. That is the nova K1 shape, reproduced on our own run: a session that has compacted can still be too large to reopen. A fourth shape is also recorded on this run: resume-1 ended its turn on a sentence announcing an action (<q>Let me read the data file to correct it</q>) with no tool call.</p><p>Of the 41 <code>compact_boundary</code> grep hits across the streams, only 2 are records; the rest are the string inside tool output, because the worker was grepping streams for it. Count the records by type and subtype, never by the substring.</p></div>
