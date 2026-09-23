@@ -470,10 +470,18 @@
 
       <h3>What was measured</h3>
       <ul>
-        <li><strong>The gate: 4 passed in 44.53 s</strong>
+        <li><strong>The gate, at this node's head: 4 passed in 44.53 s</strong>
         (<code>tests/test_follow_lifetime_survives_reload.py</code>,
-        <code>tests/test_follow_lifetime.py</code> in one invocation, exit 0), at base
-        <code>b52244a8</code> with the fix present.</li>
+        <code>tests/test_follow_lifetime.py</code> in one invocation, exit 0). The figure belongs
+        to the head: the base revision <code>b52244a8</code> holds three tests in that pair, the
+        reload case red among them.</li>
+      <li><strong>The four-file gate, base against head. Base <code>b52244a8</code>: 3 failed,
+        22 passed. Head: 2 failed, 24 passed. Added failures: 0</strong> &mdash; the two head
+        failures are the same two present at base
+        (<code>test_the_reloader_exports_launched_pids_beside_the_checkpoint</code> and
+        <code>test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]</code>,
+        both on the launched-worker carrier being a mapping where the test expects a bare pid
+        list). The base's third failure is the reload case, which passes at the head.</li>
         <li><strong>The instrument was proved to see the environment before any absence was
         read.</strong> The new case parks a live run on a declared external wait whose probe
         records the sorted variable names of the environment it was handed &mdash; the follower's
@@ -514,6 +522,13 @@
         (<code>RECKON_FOLLOWER_CHECKPOINT</code>, <code>RECKON_WATCH_ARMING</code>). They are
         intentional hand-offs, but they inherit into every child exactly as the deadline did, so
         they carry the same question this node answered for the deadline.</li>
+        <li><strong>The reload case is unstable in both revisions, and noisily so at the base
+        revision.</strong> At the base revision it was red in 3 of 3 runs, each time ending the
+        arming before the replacement was seen, so the follow
+        <code>follower end: arming lifetime elapsed</code> line arrives instead of a reload. At
+        this node's head it was green in 4 of 5 runs, one run red with the same signature. The
+        gate figures above are single samples of a timing-sensitive case, and the four-file gate's
+        head run is the sample this node relies on.</li>
       </ul>
       <p>Verifying the merged result belongs to a separately dispatched test node. This node
       leaves the archive's <code>plan-verifies</code> and <code>s8-reload-deadline</code>

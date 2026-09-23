@@ -364,8 +364,13 @@
     <h3>Measured</h3>
     <ul>
       <li>The gate, <code>tests/test_follow_lifetime_survives_reload.py</code> and
-      <code>tests/test_follow_lifetime.py</code> in one invocation at base
-      <code>b52244a8</code>: <strong>4 passed in 44.53 s</strong>, exit 0.</li>
+      <code>tests/test_follow_lifetime.py</code> in one invocation at this node's head:
+      <strong>4 passed in 44.53 s</strong>, exit 0. That is this node's head count: the base
+      revision <code>b52244a8</code> holds three tests in the pair — the reload case, patched up
+      with this node's child case only at the head — and the reload case is red there, so a base
+      figure of four would be unmeasured. The four-file gate puts base at 3 failed and 22 passed,
+      head at 2 failed and 24 passed, <strong>0 added failures</strong>: the two head failures
+      reproduce identically at base.</li>
       <li>The new case parks a live run on a declared external wait whose probe records the
       environment it was handed, so the follower's own sweep subprocess path is what runs it. The
       recorded line carries <code>RECKON_HOME</code> (the instrument sees the environment) and no
@@ -379,10 +384,17 @@
       <li><strong>No new lint findings:</strong> <code>ruff check</code> over the two changed
       paths adds none; the two pre-existing <code>cli.py</code> findings (<code>SIM103</code>,
       <code>SIM105</code>) are unchanged at the base.</li>
+      <li><strong>A follow-on fixed in this node:</strong> replacing <code>os.execv</code> with
+      <code>os.execve</code> left two tests intercepting a call the follower no longer makes, so
+      one let the real re-exec replace the pytest process and the other stopped collecting. Commit
+      <code>b32af75e</code> points both at <code>os.execve</code> and reads the handover from the
+      environment the call passes, without expecting a different result from either.</li>
     </ul>
     <p>Two findings outside this node's scope are reported rather than fixed: the arming overshoots
     and a second pair of hand-off variables still inherit into children — both written up under
-    <em>What was owed and left</em> in the landed record.</p>
+    <em>What was owed and left</em> in the landed record, together with a fourth: the reload case
+    is timing-sensitive, red in 3 of 3 runs at the base revision and 1 of 5 at this node's head,
+    so a single green run of it is not a stable measurement.</p>
     <p>Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s8-deadline-reaches-the-replacement">the landed record</a>.</p>
     </div>
 
