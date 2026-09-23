@@ -119,15 +119,22 @@
     agree with what happened. Either the dispatch reports success naming the run it launched, or it
     launches nothing. Separately, find why an explicit <code>--member</code> was replaced by an
     auto-derived member, and refuse rather than substitute when the named member cannot be bound.</p>
-    <p>imas-efit-e3 also reported that the command exited 0 on refusal. That is not established. A
-    refused dry run measured here exits 1 as documented, and the report's exit status may have come
-    from a wrapper around the command. The node records the exit status of the failing path it
-    finds, measured on the bare command.</p>
+    <p>The exit status is not a defect. imas-efit-e3 first reported that refusals exited 0, then
+    measured the bare command and corrected it: a <code>dispatch-refused</code> exits 1 and a
+    contract-validation refusal exits 2, and every 0 it had seen ended in a pipe, which reports the
+    last stage's status. A refused dry run measured here also exits 1. One part of that correction is
+    a defect. The contract-validation refusal returns <code>ok: false</code> with
+    <code>error: null</code>, carrying its reason only under <code>validation.findings</code>. The
+    skill documents that every refusal carries <code>error</code> and <code>detail</code>, so a
+    caller keying on <code>error</code> reads that refusal as success. imas-efit-e3 did exactly
+    that.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_result_matches_launch.py</code> drives a
     dispatch through the failing path with a stub backend in a temporary crew config home, and asserts
     that the result either names the launched run with <code>ok: true</code> or leaves no pointer and
     no process. A second test passes an unresolvable <code>--member</code> and asserts a refusal with
-    no auto-derived member bound. The negative control is executed and logged at the base revision,
+    no auto-derived member bound. A third asserts that every result with <code>ok: false</code>, including a
+    contract-validation refusal on a done-when holding a literal placeholder, carries a non-null
+    <code>error</code> and a <code>detail</code>. The negative control is executed and logged at the base revision,
     where a refusal is returned beside a live pointer. The write paths are
     <code>reckon/crew/dispatch.py</code> and that test.</p>
 
