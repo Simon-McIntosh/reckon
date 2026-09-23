@@ -55,14 +55,18 @@
     <code>~/.config/reckon/flight.yaml</code> applies to every project on the workstation,
     and a project that has published no reservation of its own reaches the fallback on its
     first dispatch. Reservations became per-project keyed on 2026-09-23, so a named project
-    deliberately does not inherit the host-global record &mdash; which is correct, and which
-    means the fallback is exactly the path an unprepared project takes.</p>
+    reads only its own record and does not fall back to the host-global one. That keying is
+    why the fallback is exactly the path an unprepared project takes, and it is also why
+    this plan cannot be implemented on its own: a shared reservation has to be readable by
+    a project that did not publish it. Retiring the keying belongs to <em>the fleet shares
+    one allocation</em>, which this plan blocks; the two land together or neither works.</p>
 
     <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2>
     <p>The remedy is not to refuse and it is not to mint. A dispatch that finds no
     readable reservation <strong>holds the shared one</strong> &mdash; the same allocation
-    every other worker on the workstation uses &mdash; publishes it where every session
-    reads it, and places itself inside it as a step. Every follow-on worker then finds
+    every other worker on the workstation uses &mdash; publishes it to the <em>host-global
+    record</em>, the single unkeyed reservation every project reads, and places itself
+    inside it as a step. Every follow-on worker then finds
     that record and joins the allocation rather than asking for one. One allocation is
     created, once, by whoever happens to dispatch first.</p>
     <p>The distinction this plan turns on is between <em>minting</em> and
@@ -78,16 +82,27 @@
     call: placement resolution never reaches it.</p>
     <p><strong>The guard that makes this safe is idempotence under a race, and it is the
     part to get right.</strong> Several dispatches starting at once must produce one
-    allocation rather than one each, so the ensure is serialised and the liveness probe is
-    what decides &mdash; never the absence of a record, which is equally true while another
-    dispatch is mid-hold. An allocation that is merely unreachable must not read as gone,
-    because a second allocation held beside a live one is the per-worker minting this plan
-    exists to remove, arriving by a slower route.</p>
+    allocation rather than one each, so the hold is serialised <em>across processes on the
+    workstation</em>. A lock inside one dispatching process is not enough, and a test that
+    races threads within one process would pass without providing it: the claim is made by
+    an operation that is atomic between separate processes, so exactly one of several
+    simultaneous dispatches proceeds to hold and the rest wait and then read.</p>
+    <p>The liveness probe is what decides, never the absence of a record, which is equally
+    true while another dispatch is mid-hold. <strong>A probe that could not be completed is
+    unknown, and unknown must not read as absent</strong>: where the scheduler cannot be
+    reached or the query fails, the dispatch waits and retries rather than concluding that
+    nothing is held. That is a different case from an allocation which is alive but cannot
+    be joined &mdash; a step creation failing against a live allocation is an error to
+    report, never a reason to hold a second one. Both end the same way, because a second
+    allocation held beside a live one is the per-worker minting this plan exists to remove,
+    arriving by a slower route.</p>
     <p><strong>Done when.</strong> A dispatch declaring placement with no readable
     reservation holds the shared allocation, publishes it, and runs its worker as a step
     inside it with <code>--overlap</code> and the job id it just published. A second
-    dispatch under a different project finds that record and starts nothing, asserted
-    against a recording scheduler as exactly one allocation request across both.
+    dispatch under a different project reads that same host-global record, starts no
+    allocation of its own, and runs its worker as a step in the allocation it found,
+    asserted against a recording scheduler as exactly one allocation request across both
+    dispatches together.
     Concurrent dispatches racing from no record still produce one allocation. A live
     allocation is never replaced, and a backend declaring no placement is untouched. The
     test that currently pins the bare-<code>srun</code> wrapping is replaced by one whose

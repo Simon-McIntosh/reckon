@@ -57,6 +57,16 @@
     actually placed</strong>, which is true under both arrangements and needs no reasoning
     about which layer declared what. A pointer already records its placement, so the count
     can be taken from the fact rather than inferred from the configuration.</p>
+    <p><strong>So the per-project reservation keying is retired, and this plan owns
+    retiring it.</strong> <code>read_reservation</code> currently states that a named
+    project reads only its own record and deliberately does not fall back to the
+    host-global one, because inheriting another project's reservation would place workers
+    into an allocation the project does not own. Under one shared allocation that is no
+    longer a defect &mdash; it is the arrangement. A shared reservation has to be readable
+    by a project that did not publish it, so the reservation returns to a single unkeyed
+    record and the guarantee the keying was protecting moves to where it belongs: the
+    roster counts placed runs, so a project is bounded by what it actually placed rather
+    than by who happened to publish the record.</p>
     <p>The lane concurrency bound is a separate quantity and deliberately stays cross-project:
     a served lane is shared by everything that calls it, whereas an allocation is not.</p>
 
