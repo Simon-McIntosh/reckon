@@ -2136,6 +2136,7 @@ def crew_follow(
                         ),
                         with_session=with_session,
                         ticker=grid,
+                        session=session,
                     )
                 )
 

@@ -117,6 +117,51 @@
     pre-existing promotion suite failure is likewise recorded, not repaired, as it sits outside
     this section&rsquo;s declared scope.</p>
   </section>
+
+  <section id="call-site">
+    <h2>The wiring, and the measure that names the surface</h2>
+    <p>The kernel above was landed while its one consumer stayed unwired. <code>crew_follow</code>
+    in <code>reckon/cli.py</code> called <code>format_watch_transition</code> with
+    <code>with_session</code> and <code>ticker</code> and stopped, so the new
+    <code>session</code> parameter fell to its default and every scoped follower on this
+    workstation kept reading the fleet&rsquo;s figures. The fix is the one keyword argument the
+    earlier record named as its follow-on: <code>session=session</code>.</p>
+    <p>The prior record&rsquo;s tests all passed while the surface stayed wrong, because they
+    assert on <code>_fleet_counts</code> and <code>format_watch_transition</code> and nothing
+    asked whether the command passes a session to them. So this node&rsquo;s measure drives the
+    command, not the helper: it feeds <code>crew follow</code> one project-wide transition over a
+    fixture holding two sessions whose populations differ and reads the line the command prints.</p>
+    <figure>
+      <img src="/reckon/figures/a-scoped-follower-counts-its-own-session/count-population.svg"
+           alt="The two-session fixture and the command's trailing figures before and after the call-site fix">
+      <figcaption>The fixture, and the trailing figures <code>crew follow</code> prints over it.
+      Before the fix the scoped follower read the fleet&rsquo;s <code> 2w&middot; 1b&middot; 0u</code>;
+      after it reads its own <code> 1w&middot; 0b&middot; 0u</code>. The unscoped reading is
+      unchanged at <code> 2w&middot; 1b&middot; 0u</code>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="call-site-measure">
+    <h2>The pair of digits at the command, and the guard that fires</h2>
+    <p>The fixture holds one working run of the reader&rsquo;s session (<code>mine</code>), one
+    working and one blocked run of a second session (<code>peers</code>). Over it
+    <code>reckon crew follow --project proj --session mine</code> reads
+    <code> 1w&middot; 0b&middot; 0u</code>, the same command with no session reads
+    <code> 2w&middot; 1b&middot; 0u</code>, and the two are asserted unequal so a renderer that
+    ignored <code>--session</code> could not pass by agreement. The blocked run is the foreign
+    session&rsquo;s precisely because the observed defect was a blocked figure the reader could
+    do nothing about.</p>
+    <p>The declared mutation &mdash; remove <code>session=session</code> from the
+    <code>format_watch_transition</code> call in <code>crew follow</code> &mdash; makes the
+    scoped assertion fail (<code>2w&middot; 1b&middot; 0u</code> where <code>1w&middot; 0b&middot; 0u</code>
+    is required) and collapses the scoped and unscoped readings together; the red log is on disk.
+    With the fix in place <code>tests/test_follow_counts_its_session.py</code> is 4 passed, and the
+    real live pointer directory under the user config home is asserted untouched afterwards.</p>
+    <p>Three failures in adjacent files (<code>test_crew_ticker_layout.py</code>,
+    <code>test_crew_session_delivery.py</code>, <code>test_removed_flag_migration.py</code>) were
+    reproduced identically with the fix removed, so the delta against base is zero added
+    failures; they concern unrelated surfaces and are recorded under follow-ons.</p>
+  </section>
 </main>
 </body>
 </html>
