@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="11">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="12">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192">
-<meta name="plan-impl" content="0.3">
+<meta name="plan-impl" content="0.23">
 </head>
 <body>
   <main class="plan-doc">
@@ -314,6 +314,62 @@
       <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#effective-window">§7 execution evidence</a>.</p>
     </section>
 
+    <section id="s8" data-reckon="section">
+      <h2>§8 — A reused session carries one worker's context into the next</h2>
+      <p>A third death shape, reported by the nova S19 coordinator on 2026-09-23, different from both
+      the mid-thinking kills and §7's oversized prompt. Run
+      <code>r-20260923T031542572571-cca-exact-bank-callback-capacity-from-the-mesh</code> on member
+      <code>s19n-imp-1</code> (clive, deepseek-v4.1-flash, effort high, session reuse) was
+      <strong>accepted at dispatch</strong> and then refused by the endpoint in 131 ms. Its stream holds
+      one assistant record, then <code>result</code> with <code>is_error: true</code>,
+      <code>Prompt is too long</code> and <code>terminal_reason: blocking_limit</code>. Its prompt file
+      was 16,105 bytes. The member had already run two earlier nodes in the same session, and the result
+      record's <code>modelUsage.inputTokens</code> read 8,839,975 against a <code>contextWindow</code>
+      of 200,000.</p>
+      <p><strong>This is a cost defect before it is a death.</strong> Session reuse means a new node
+      resumes the conversation a previous, unrelated node built, so every turn of the new node re-sends
+      the old node's gathered context. That slows the worker's turnaround, and on a metered lane it
+      spends the subscription on context no one asked for. The death is the point at which that history
+      finally exceeds the window. §7's context fit cannot see it, because it estimates the node's own
+      prompt and never counts the session it resumes.</p>
+      <p><strong>Measure the figure first.</strong> Establish what <code>inputTokens</code> is on each
+      dialect: a per-turn sum or a single prompt's size. Take the first turn of every node run on a
+      resumed session and record the history that turn carried in, attributed to the prior node that
+      built it. That establishes whether dispatch sends one worker's gathered context into another. The
+      answer is either a population of runs with nonzero inherited context and its cost in tokens and
+      wall time, or a demonstrated zero; a guess counts as neither. Take it on both the local and codex
+      lanes, since the codex subscription is where the waste is paid for.</p>
+      <p><strong>Then refuse to inherit.</strong> A node's first turn carries its own prompt and nothing
+      from an earlier node. Where roster continuity wants a remembered session (a repair returning to
+      the worker that wrote the code), the resume is deliberate and its carried size is checked against
+      the lane's effective boundary from §7. Any other dispatch starts a fresh session. <strong>Falsify
+      it</strong> with a fixture member whose recorded session carries more than the boundary: a fresh
+      node dispatched to it starts a new session and inherits nothing, and a named repair resume still
+      resumes. Then restore unconditional resume and require the fresh node to inherit again.</p>
+    </section>
+
+    <section id="s9" data-reckon="section">
+      <h2>§9 — A local worker compacts and continues instead of dying</h2>
+      <p>Every death shape in this plan ends the same way: the worker stops at a limit and the work is
+      recovered, if at all, by a coordinator resuming it by hand. The harness the local lane runs under
+      is expected to compact a conversation that approaches its window and carry on. Nothing in this
+      repository has shown that it does, on this lane, at this window.</p>
+      <p><strong>Measure.</strong> Dispatch a local worker whose task is designed to exceed the lane's
+      effective boundary partway through. Examples: reading a named corpus larger than the window in
+      stages, or a long sequence of file reads each followed by a small written result. Require that
+      the stream records a compaction, that the worker writes results both before and after it, and that
+      the run ends with a complete manifest rather than a death. Record the turn at which compaction
+      fired and the context size either side of it. A worker that dies at the boundary instead is the
+      negative result, recorded with its last stream record's type, and the RCA below proceeds from
+      it.</p>
+      <p><strong>Prevention follows the measurement.</strong> With a terminal record for every death
+      (worker-death-is-recorded), the census of §2 and this demonstration, each remaining death shape
+      gets a harness-level prevention. Candidates are a fresh session instead of an inherited one (§8),
+      a compaction threshold set below the effective boundary, and bounded turns so a review cannot run
+      thirty minutes on one prompt. Each prevention is measured by the death rate of its cell before and
+      after.</p>
+    </section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ardwnil-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1" data-resolved-at="" data-resolved-by="">
@@ -353,6 +409,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T024644047165-review-of-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T03:18:46.716Z">
     <div class="r-comment-body"><p>review stored and parsed at 79; its three findings went back to the census session as a repair</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260923T0550-scope-extension" data-who="reckon-ship" data-when="2026-09-23T05:50:00+02:00">
+    <div class="r-comment-body">Scope extended at the lead's direction on 2026-09-23. §8 measures whether a resumed member session sends one worker's gathered context into the next node, which slows turnaround and spends the codex subscription, and then stops fresh nodes from inheriting it. §9 demonstrates that a local worker compacts and continues at the window, and carries the harness-level prevention for each death shape this plan's RCA identifies. The executable denominator rises from 10 to 13 nodes: §8 measure, §8 refuse-to-inherit, §9 demonstration. impl moves to 0.23 on 3 of 13 landed.</div>
 </div>
 </section>
 </main>
