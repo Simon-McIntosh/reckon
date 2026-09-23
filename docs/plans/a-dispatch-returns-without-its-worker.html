@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="51">
+  <meta name="plan-version" content="54">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -219,9 +219,10 @@
     <p><strong>Done when</strong> <code>tests/test_dispatch_returns_without_worker.py</code> covers
     four cases with the stub backend of &sect;2, in a temporary repository and a temporary
     <code>RECKON_HOME</code>. First, the dispatch process exits within five seconds of its start
-    with the run id in its JSON output, and nothing is killed. The stub's marker file then appears
-    within 90 seconds of dispatch's start, which is after the slowed scan described below has
-    finished. The five-second bound covers dispatch's exit alone. Second, SIGKILL sent
+    with the run id in its JSON output, and nothing is killed. This case uses its own stub, which
+    writes its marker at once rather than sleeping as &sect;2's does. The marker then appears within
+    60 seconds of dispatch's start: at least 30 seconds of slowed scan, at most four charged seconds
+    before return, and the spawn. The five-second bound covers dispatch's exit alone. Second, SIGKILL sent
     to the dispatch process before it returns still leaves the marker file appearing. Third, the
     measure from worker-death-is-recorded &sect;5, verbatim: a real dispatch, the dispatching process
     gone, SIGKILL, and the exit status still recorded. Here the dispatch has returned, the worker
@@ -367,8 +368,9 @@
     dispatch with a stub backend in a temporary crew config home through the path the reproduction
     finds returning a refusal beside a live pointer. It drives the same inputs at the node's head
     whether or not &sect;3 has removed that path. It asserts that the result either names the
-    launched run with <code>ok: true</code>, or leaves no pointer and no worker that
-    <code>record_process_alive</code> reports alive. A second test passes an unresolvable
+    launched run with <code>ok: true</code>, or leaves no pointer, no worktree for the node, and no
+    worker that <code>record_process_alive</code> reports alive. A refusal that leaves any one of
+    the three fails the test. A second test passes an unresolvable
     <code>--member</code> and asserts a refusal with no auto-derived member bound. A third covers
     every <code>ok: false</code> result the <code>reckon crew dispatch</code> command emits, live
     and <code>--dry-run</code> alike, including a contract-validation refusal on a done-when holding
@@ -464,12 +466,17 @@
     <code>reckon/crew/routing.py</code>, passes <code>--force</code> to git, so the emptiness check
     runs before it is called. That check is the guard, and it is never bypassed.</p>
     <p><strong>Done when</strong> <code>tests/test_discard_removes_an_empty_worktree.py</code>, in a
-    temporary repository and <code>RECKON_HOME</code>, discards three runs whose recorded process is
+    temporary repository and <code>RECKON_HOME</code>, discards four runs whose recorded process is
     not alive, which is the only state <code>discard</code> accepts. The first
     worktree is clean at its base, and it is removed, and a dispatch of the same node id then
-    succeeds. The second holds a commit and the third an uncommitted file; both are kept, and the
-    result names each reason. The negative control is executed and logged: removing the clean-and-at-
-    base check makes the second and third worktrees disappear and the test fail. This section runs
+    succeeds. The second holds a commit, the third an untracked file, and the fourth only a file
+    under a path the repository's <code>.gitignore</code> ignores. All three are kept, and the
+    result names each reason. <strong>Order within a discard:</strong> it unlinks the run's
+    pointer first, under the pointer lock it already holds, and only then checks and removes the
+    worktree. Otherwise the remover would refuse on the run's own live claim, the refusal &sect;5
+    repaired in dispatch's unwind. The negative control is executed and logged: removing the
+    clean-and-at-base check makes the second, third and fourth worktrees disappear and the test
+    fail. This section runs
     after &sect;3, which also writes <code>reckon/crew/promotion.py</code>. The write paths are
     <code>reckon/crew/promotion.py</code> and that test.</p>
 
