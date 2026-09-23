@@ -1,0 +1,30 @@
+restore the aggregate-first fetch order of docs/ui/state-loader.js at 56e13e11; case 1 must fail because index.json is requested
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________________ test_discovery_answers_so_no_aggregate_is_read ________________
+
+    def test_discovery_answers_so_no_aggregate_is_read() -> None:
+        observed = _run(
+            {
+                f"state/{PROJECT}/projection.json": "missing()",
+                f"state/{PROJECT}/index.json": f"ok({json.dumps(PERSISTED_INDEX)})",
+                DISCOVERY_ENDPOINT: f"ok({json.dumps(DISCOVERY)})",
+            }
+        )
+    
+        assert observed["resolved"] is True, observed
+>       assert _aggregate_requests(observed["requested"]) == [], (
+            "the served loader requested an aggregate file: "
+            f"{observed['requested']} — index.json is requested only when discovery "
+            "is unreachable"
+        )
+E       AssertionError: the served loader requested an aggregate file: ['state/sample/projection.json', 'state/sample/index.json', '/_discover/sample'] — index.json is requested only when discovery is unreachable
+E       assert ['state/sampl...e/index.json'] == []
+E         
+E         Left contains 2 more items, first extra item: 'state/sample/projection.json'
+E         Use -v to get more diff
+
+tests/test_served_loader_reads_discovery_only.py:134: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_served_loader_reads_discovery_only.py::test_discovery_answers_so_no_aggregate_is_read
+1 failed in 0.98s
