@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-cutover-is-measured-against-its-baseline">
+  <meta name="plan-title" content="A cutover is measured against its baseline">
+  <meta name="plan-summary" content="Roll the fleet into the shared allocation and report the throttled share over a working day against the recorded baseline.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-depends-on" content="the-fleet-shares-one-allocation">
+  <title>A cutover is measured against its baseline | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; The claim the cutover has to earn</h2>
+    <p>Agents run on the login node today and share one user slice capped at four cores.
+    The cutover moves them into a held allocation so they stop contending with editors, git
+    and every interactive session on the machine. That is the claim, and it is measurable:
+    the throttled share of the user slice, read from the cgroup's own counters, against the
+    baseline recorded before the move.</p>
+    <p>The baseline is already recorded. It is not a figure to be re-derived at the end, and
+    it is not the number to compare against a quiet afternoon: the measurement is taken over
+    a working day, because the contention it reports is caused by the fleet's own bursts and
+    an idle sample cannot see them.</p>
+
+    <h2 id="s2">&sect;2 &mdash; What is untested and must be measured, not assumed</h2>
+    <p>Two properties of the allocation have never run under load. The allocation carries
+    twenty-eight cores and the workstation carries roughly thirty concurrent sessions, so the
+    per-worker share after the move is a projection, not an observation &mdash; and a worse
+    share than the login node would make the cutover a regression that every cheap signal
+    would miss, exactly as a throughput tail does.</p>
+    <p>The second is a failure mode rather than a number. A step created with
+    <code>srun --overlap --jobid</code> dies with its allocation. An ssh session does not,
+    because <code>pam_slurm_adopt</code> places it in the user slice rather than the job's
+    cgroup &mdash; so the login node's behaviour teaches the wrong lesson here. If the
+    allocation is lost or its walltime expires, every placed worker on the machine dies at
+    once, mid-turn, in every project. That is a fleet-wide blast radius and it needs a
+    stated recovery before the rollout, not after the first occurrence.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Done when</h2>
+    <p>Workers across at least two projects are running as steps inside the one reservation,
+    proved by resolving a live worker's host rather than by the configuration saying so. The
+    throttled share is measured over a working day and reported beside the stated baseline,
+    with the direction of the change named plainly whichever way it went. The allocation-death
+    path has been exercised deliberately once, on a worker nobody needs, and what a coordinator
+    should do about it is written down. A rollback is stated: which declaration to remove, and
+    what the fleet does while no reservation is held.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="allocation-death-recovery" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What happens to placed workers when the allocation ends?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
+          <button class="r-opt" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
+          <button class="r-opt" data-value="fall-back-unplaced">Workers fall back to running unplaced on the login node</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23">
+        <h4 class="r-fu-title">Roll the fleet in and measure the throttled share over a working day</h4>
+        <div class="r-fu-body"><p>Place workers from at least two projects, resolve a live worker's host to prove it rather than reading the configuration back, and report the throttled share of the user slice beside the recorded baseline. Exercise the allocation-death path once on a worker nobody needs and write down the recovery.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

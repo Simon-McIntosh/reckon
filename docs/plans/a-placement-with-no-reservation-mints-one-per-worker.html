@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-title" content="A placement with no reservation mints one per worker">
+  <meta name="plan-summary" content="A declared placement with no published reservation prefixes a bare srun, taking an allocation per worker instead of joining one.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-blocks" content="the-fleet-shares-one-allocation">
+  <title>A placement with no reservation mints one per worker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What the fallback does</h2>
+    <p><code>apply_backend_placement</code> wraps a launch in the declared scheduler.
+    When a reservation is published it emits
+    <code>srun --overlap --jobid=&lt;id&gt;</code>, so the worker becomes a <em>step</em>
+    inside an allocation somebody already holds. When no reservation is published it
+    falls through to <code>[scheduler, *options]</code> with no job id &mdash; a bare
+    <code>srun</code>, which does not join anything. It asks the scheduler for a new
+    allocation, and it does so once per worker.</p>
+    <p>That is the precise inversion of what placement exists for. The design holds one
+    reservation and runs many steps inside it; the fallback holds one allocation per
+    step. A fleet of twenty workers asks for twenty allocations, and on a cluster where
+    each carries a core and memory request, most of them queue. The dispatch reports
+    nothing unusual, because from its point of view the wrapping was applied.</p>
+    <p>The file's own test currently pins this behaviour rather than refusing it:
+    <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>
+    asserts that an unheld reservation yields <code>srun --partition=all &lt;argv&gt;</code>
+    with no <code>--overlap</code>. It is an accurate description of what the code does
+    and it is the thing to replace.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Why it has not bitten yet, and why that expires</h2>
+    <p>One project declares a placement today, and the session that declares it publishes
+    a reservation first, so the fallback is never reached. The protection is a habit, not
+    a mechanism: nothing in the code requires the reservation to exist before the
+    declaration takes effect.</p>
+    <p>Host-layer placement removes the habit. A declaration in
+    <code>~/.config/reckon/flight.yaml</code> applies to every project on the workstation,
+    and a project that has published no reservation of its own reaches the fallback on its
+    first dispatch. Reservations became per-project keyed on 2026-09-23, so a named project
+    deliberately does not inherit the host-global record &mdash; which is correct, and which
+    means the fallback is exactly the path an unprepared project takes.</p>
+
+    <h2 id="s3">&sect;3 &mdash; The refusal</h2>
+    <p>A declared placement with no readable reservation must refuse the dispatch rather
+    than mint. The refusal names the reservation path it looked for, the project it looked
+    for it under, and the ensure line that would hold one, so the reader's next command is
+    in the message. Minting is never the safe default: a wrapping that silently changes
+    from &ldquo;join the fleet's allocation&rdquo; to &ldquo;take an allocation of your own&rdquo;
+    is a different operation wearing the same configuration.</p>
+    <p><strong>Done when.</strong> A backend declaring placement with no readable
+    reservation refuses, and the refusal names the path, the project and the ensure line.
+    No allocation is requested on that path &mdash; asserted against a fake scheduler that
+    records what it was asked for, so the assertion is that the request set is empty rather
+    than that some flag is absent. The replaced test states the refusal in its name. A
+    backend declaring no placement is untouched.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="unheld-reservation-behaviour" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What should a declared placement do when no reservation is readable?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="refuse">Refuse the dispatch, naming the ensure line</button>
+          <button class="r-opt" data-value="unplaced">Launch unplaced, with the wrapping dropped and a warning</button>
+          <button class="r-opt" data-value="mint">Keep minting an allocation per worker</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-pnr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23">
+        <h4 class="r-fu-title">Refuse a declared placement that has no readable reservation</h4>
+        <div class="r-fu-body"><p>Replace the fallback that prefixes a bare <code>srun</code> with a refusal naming the reservation path, the project and the ensure line. The test that currently pins the minting behaviour, <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>, is the one to replace; assert an empty request set against a recording scheduler rather than the absence of a flag.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship a-placement-with-no-reservation-mints-one-per-worker</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
