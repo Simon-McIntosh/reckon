@@ -12,7 +12,7 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / "docs/research/data/review-death-by-effort.json"
@@ -28,7 +28,6 @@ def main() -> int:
     labels = [f"{c['role']}\n{c['effort'] or 'unset'}" for c in cells]
     rates = [100.0 * (c["death_rate"] or 0.0) for c in cells]
     sizes = [c["size"] for c in cells]
-    dead = [c["dead"] for c in cells]
 
     figure, (left, right) = plt.subplots(1, 2, figsize=(11, 4.6))
 
