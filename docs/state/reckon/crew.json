@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T04:00:41",
+  "updated": "2026-09-23T04:02:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -275576,6 +275576,277 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T204205769571-the-launcher-keeps-the-wait-status",
+        "plan": "worker-death-is-recorded",
+        "section": "\u00a75",
+        "node": "the-launcher-keeps-the-wait-status",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 878,
+                "cached_input_tokens": 223574,
+                "input_tokens": 224454,
+                "output_tokens": 30,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 224484,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests in tests/test_crew_launch_failure.py assert that a stub worker killed with SIGTERM records signal 15 and name SIGTERM on its run record, and a stub worker exiting 3 records exit code 3 with no signal, both read from the run record without inspecting a log, including for a run whose stream is non-empty; the negative control of restoring the discard of the wait status in _record_launch_failure for non-empty streams is applied, the SIGTERM test is observed to fail, and that log is recorded in the manifest; the focused tests pass",
+          "estimated_hours": null,
+          "goal": "the launcher records each worker's exit code, and where the process was signalled the signal number and name, on the run record",
+          "id": "the-launcher-keeps-the-wait-status",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T20:42:10Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204205769571-the-launcher-keeps-the-wait-status/manifest.md",
+          "negative_control": "restore the branch in _record_launch_failure that discards the wait status when the stream is non-empty",
+          "plan": "worker-death-is-recorded",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_launch_failure.py",
+            "docs/evidence/archive/worker-death-is-recorded-landed.html",
+            "docs/figures/worker-death-is-recorded",
+            "docs/plans/worker-death-is-recorded.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-argv-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T20:42:45Z",
+        "completed_at": "2026-09-22T21:57:27.178Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4449,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4482,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+        "commits": [
+          "ff1c26cf38f2228a7d74ac703621dbb375643b69",
+          "b0c8ff9064c0f2936fb867be69176525bb3fae8e",
+          "4bafc2503d68056f831e9dbe2214ccea11a75ce0"
+        ],
+        "changed_lines": {
+          "added": 2743,
+          "removed": 19,
+          "files": 7
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_launch_failure.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204205769571-the-launcher-keeps-the-wait-status/gate-wait-status-focused.log",
+          "log_digest": "sha256:47bdff9d76c0b6597df49074f1342b4540a6b2d30daa82efe31b38062e317d1d"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204205769571-the-launcher-keeps-the-wait-status/manifest.md",
+        "scope_changed": false,
+        "session_id": "90e9007b-e8a5-4e53-889c-ead9f7be792f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16322120,
+            "input_tokens_cumulative": 16322120,
+            "output_tokens": 68103,
+            "output_tokens_cumulative": 68103,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T21:57:27.178Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16490154,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4477.311,
+          "generated_tokens": 75790,
+          "generation_seconds": 4152.343,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 324.968,
+          "peak_input_tokens": 166734,
+          "tokens_per_second": 18.25,
+          "wall_tokens_per_second": 16.93
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/the-launcher-keeps-the-wait-status",
+          "session_id": "90e9007b-e8a5-4e53-889c-ead9f7be792f",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T21:57:27.178Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "worker-death-is-recorded",
+          "at_dispatch": null,
+          "at_complete": 0.17,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew_launch_failure.py"
+          ],
+          "declaration": "restore the branch in _record_launch_failure that discards the wait status when the stream is non-empty",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204205769571-the-launcher-keeps-the-wait-status/negative-control-discard-wait-status.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204205769571-the-launcher-keeps-the-wait-status/negative-control-discard-wait-status.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:22:10.357002+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T20:42:10Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 149.0,
+        "orientation_input_tokens": 882812.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -275874,6 +276145,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2172
+    "_version": 2173
   }
 }
