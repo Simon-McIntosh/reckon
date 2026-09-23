@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="13">
+  <meta name="plan-version" content="15">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
 <meta name="plan-impl" content="0.2">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -229,6 +229,29 @@
     second follower. The test asserts that the real follower directory under the user's config home
     is untouched. The write paths are <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code>
     and <code>tests/test_orphaned_follower_releases.py</code>.</p>
+
+    <h2 id="s8">&sect;8 &mdash; A reloaded follower keeps its lifetime deadline</h2>
+    <p>Measured in session <code>ship-s20-20260923</code> on 2026-09-23, the first time &sect;3 was
+    used. The follower was armed at 11:53 CEST with <code>--lifetime 29m</code>. Four commits to
+    reckon then landed on the main branch while it ran. The host expired its Monitor at 30 minutes
+    with no <code>follower-end</code> line delivered. The cause is in <code>reckon/cli.py</code>.
+    The follower re-executes itself when reckon's source changes, passing its original arguments
+    through <code>os.execv</code>, <code>--lifetime 29m</code> included. The new image anchors its
+    deadline at its own start (<code>started_at = clock()</code>). So every reload restarts the 29
+    minutes, and during an active sprint the deadline falls after the host's cap. That is exactly
+    when the final line matters, because code is landing.</p>
+    <p>The deadline is an absolute time fixed at the first arming. The follower passes it to its
+    replacement image, for example as an environment variable holding the UTC epoch the lifetime
+    ends at, and the replacement uses it in place of its own start. A reload never extends a
+    lifetime.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_lifetime_survives_reload.py</code> sets
+    <code>RECKON_HOME</code> to a temporary directory and arms a follower with
+    <code>--lifetime 6s</code>. It forces one reload about three seconds in, through the same trigger
+    the follower uses for a source change, and observes the <code>follower-end</code> line and exit
+    status 0 within eight seconds of the original arm, not the reload. The negative control is
+    executed and logged: with the deadline not carried across the reload, the follower is still
+    running eight seconds after the original arm. The write paths are <code>reckon/cli.py</code> and
+    that test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
