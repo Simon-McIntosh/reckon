@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="340" viewBox="0 0 780 340" font-family="system-ui, sans-serif" font-size="14">
+  <rect x="1" y="1" width="778" height="338" fill="#fbfbfd" stroke="#d8dbe3"/>
+
+  <text x="24" y="32" font-size="16" font-weight="600" fill="#1c1f26">A producer is bound to its run by the record's home, not its pid or name</text>
+
+  <!-- this run -->
+  <rect x="34" y="64" width="330" height="196" rx="10" fill="#eef4ff" stroke="#7fa8e8"/>
+  <text x="52" y="92" font-weight="600" fill="#1c3f7a">this run's temporary root</text>
+  <text x="52" y="112" font-size="12" fill="#3a4557">tmp_path</text>
+
+  <rect x="56" y="128" width="286" height="70" rx="8" fill="#ffffff" stroke="#c3d2ee"/>
+  <text x="70" y="152" font-size="12" fill="#3a4557">home: inside/</text>
+  <rect x="70" y="160" width="258" height="28" rx="5" fill="#f2f5fb" stroke="#d8dbe3"/>
+  <text x="80" y="179" font-size="12" fill="#1c1f26">inside/crew/watch/sample-00.lock</text>
+
+  <text x="70" y="222" font-size="12" fill="#3a4557">record says: pid 1593919</text>
+  <text x="70" y="242" font-size="12" font-weight="600" fill="#17692f">found from tmp_path</text>
+
+  <!-- other run -->
+  <rect x="416" y="64" width="330" height="196" rx="10" fill="#fdf1f1" stroke="#e0a5a5"/>
+  <text x="434" y="92" font-weight="600" fill="#7a2020">another run's home</text>
+  <text x="434" y="112" font-size="12" fill="#57403a">a separate mkdtemp, outside the root</text>
+
+  <rect x="438" y="128" width="286" height="70" rx="8" fill="#ffffff" stroke="#eec3c3"/>
+  <text x="452" y="152" font-size="12" fill="#57403a">home: elsewhere/</text>
+  <rect x="452" y="160" width="258" height="28" rx="5" fill="#fbf2f2" stroke="#e0a5a5"/>
+  <text x="462" y="179" font-size="12" fill="#1c1f26">elsewhere/crew/watch/sample-00.lock</text>
+
+  <text x="452" y="222" font-size="12" fill="#57403a">record says: pid 1593920</text>
+  <text x="452" y="242" font-size="12" font-weight="600" fill="#a32020">not found from tmp_path</text>
+
+  <!-- query -->
+  <rect x="34" y="286" width="712" height="34" rx="8" fill="#eef0f4" stroke="#c9cdd6"/>
+  <text x="52" y="308" font-size="13" fill="#1c1f26">
+    watcher_record_pids(root) — enumerates &lt;home&gt;/crew/watch/*.lock under root only; the record's own home is the binding
+  </text>
+</svg>

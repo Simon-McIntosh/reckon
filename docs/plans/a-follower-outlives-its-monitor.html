@@ -467,6 +467,29 @@
     end to end</a>. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s10-test-watchers-are-reaped">the
     landed record</a>.</p>
     </div>
+
+    <div class="r-note" data-reckon="landed" data-node="arming-isolation-reads-the-watcher-records" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the isolation test binds a producer by the home its record reports into.</strong>
+    Commit <code>046d454c</code> rewrites the producer-binding test in
+    <code>tests/test_watch_arming_isolation.py</code>. It imported
+    <code>watch_producers_under</code>, which the record-based rework above removed, so the test failed on
+    the import and measured nothing; the module is now free of that name. It calls
+    <code>watcher_record_pids</code> in <code>tests/conftest.py</code> instead: a producer whose seat
+    record lies under this run's temporary root is returned together with that home, and a producer whose
+    record lies under a separate home is not. The record's own home is the binding &mdash; not the pid,
+    which a command-line scan could reuse, and not the process name, which any process may carry.</p>
+    <p>Measured at revision <code>046d454c</code>: the two covering modules,
+    <code>tests/test_watch_arming_isolation.py</code> and <code>tests/test_test_watchers_are_reaped.py</code>,
+    report <strong>9 passed, 1 skipped</strong> against base revision <code>1388f197</code> of
+    <strong>1 failed, 8 passed, 1 skipped</strong> &mdash; zero added failures. The declared negative
+    control, a <code>watcher_record_pids</code> that ignores the record's home, makes the rewritten test
+    fail on the binding assertion; the log is cited in the node's manifest. Figure:
+    <a href="/reckon/figures/a-follower-outlives-its-monitor/watch-record-home-binding.svg">the record's
+    home is the binding</a>. Evidence:
+    <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s10-arming-isolation-reads-the-watcher-records">the
+    landed record</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">

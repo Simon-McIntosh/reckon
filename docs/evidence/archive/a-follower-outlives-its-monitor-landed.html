@@ -367,6 +367,56 @@
       <code>tests/conftest.py</code> and the new test module changed.</p>
     </section>
 
+    <section id="s10-arming-isolation-reads-the-watcher-records">
+      <h2>&sect;10 &mdash; The isolation test binds a producer by its record's home</h2>
+      <p><strong>Outcome &mdash; the test that named the removed helper now reads the record.</strong>
+      Commit <code>046d454c</code> rewrites the producer-binding test in
+      <code>tests/test_watch_arming_isolation.py</code>. The test imported
+      a helper removed by the record-based rework of the session teardown above;
+      the import failed, so the binding it was written to assert was never measured. At base revision
+      <code>1388f197</code> the module reported <strong>1 failed, 8 passed, 1 skipped</strong>,
+      the failure being that <code>ImportError</code>, and no module under <code>tests/</code> now
+      carries the removed name.</p>
+      <p>The test now calls the <code>watcher_record_pids</code> helper in <code>tests/conftest.py</code>. Each
+      producer writes a seat record &mdash; <code>&lt;home&gt;/crew/watch/&lt;project&gt;-&lt;digest&gt;.lock</code>
+      &mdash; into its own configuration home, so the directory's location names the run. The test
+      registers one producer under a home inside this run's temporary root and one under a home
+      elsewhere, then requires that a query scoped to the root returns the first pid with its home and
+      not the second. The binding is the record's home: a command-line pattern, which the replaced
+      helper used, matches any process carrying the words, while a record names exactly one home and the
+      process registered against it.</p>
+      <p>Figure: <a href="/reckon/figures/a-follower-outlives-its-monitor/watch-record-home-binding.svg">the
+      record's home is the binding</a>.</p>
+      <h3>What was measured</h3>
+      <ul>
+        <li>The reproduction, before the repair, quoted from the base gate: at revision
+        <code>1388f197</code>, <code>tests/test_watch_arming_isolation.py</code> reported
+        <strong>1 failed, 6 passed</strong> in 8.58&nbsp;s with
+        <code>ImportError: cannot import name from tests.conftest</code> at the test's function-local
+        import.</li>
+        <li>The two covering modules at revision <code>046d454c</code>
+        (<code>tests/test_watch_arming_isolation.py</code> and
+        <code>tests/test_test_watchers_are_reaped.py</code>): <strong>9 passed, 1 skipped</strong> against
+        the base revision's <strong>1 failed, 8 passed, 1 skipped</strong> &mdash; zero added failures,
+        one failure cleared.</li>
+        <li>No module under <code>tests/</code> imports the removed name: a repository search returns no
+        matches.</li>
+      </ul>
+      <h3>Negative control</h3>
+      <p>Declared as: <em>make <code>watcher_record_pids</code> return every registered producer
+      regardless of home, so the producer under the other home is also found</em>. Applied to
+      <code>watch_record_dirs</code> (its traversal widened from the queried root to the session temp
+      directory, so the reader ignores which home a record lies under), the rewritten test fails on the
+      binding assertion &mdash; <code>AssertionError ... Left contains one more item: (1593920,
+      ...reckon-ordinary-home-...)</code>, <strong>1 failed, 6 deselected</strong>. The control ran under
+      an isolated <code>TMPDIR</code> so the widened traversal could not enumerate any peer's producers,
+      and the mutation was reverted, leaving <code>tests/conftest.py</code>'s tree unchanged.</p>
+      <h3>Scope</h3>
+      <p>Only <code>tests/test_watch_arming_isolation.py</code> was changed;
+      <code>tests/conftest.py</code> is unmodified. Verifying the merged result belongs to a separately
+      dispatched test node.</p>
+    </section>
+
     <section id="s8-reload-deadline">
       <h2>&sect;8 &mdash; A reloaded follower keeps its lifetime deadline</h2>
       <p>Commit <code>bc229de1</code> at 2026-09-23 &mdash; <em>feat(crew): carry a
