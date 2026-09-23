@@ -233,6 +233,27 @@
     <a href="/reckon/evidence/archive/worker-death-is-recorded-landed#s5-3-ledger-tests">&sect;5.3
     ledger evidence</a>.</p>
 
+    <h3 id="s5-landing-session-id-capture">§5.4 landing — a session id or a named absence</h3>
+    <p>The capture path now records either the run's session id or a
+    <code>session_id_absent</code> entry naming the point the capture reached, so a
+    pointer is never a silent null. Observation names one of three points &mdash;
+    <code>stream-without-id</code>, <code>stream-unreadable</code> and
+    <code>harness-launch</code>.</p>
+
+    <p>The gap is measured against real crew state in
+    <code>docs/research/data/session-id-capture.json</code>: of 50 live pointers in the
+    seven-day window, 44 carried no recorded session id, and 43 of those had one already
+    present in the run's own stream &mdash; the pointer simply predated any observation.
+    The capture path is drawn at
+    <a href="/reckon/figures/worker-death-is-recorded/session-id-capture.svg">the
+    capture-path figure</a>.</p>
+    <p>Evidence: <a href="/reckon/evidence/archive/worker-death-is-recorded-landed#s5-4">§5.4
+    landed</a>. Focused gate 6 failed / 13 passed, the same six failing at base
+    (<code>75b39d4d</code>), so no failure is a new one. The negative control repeats the
+    declared mutation verbatim and turns the three no-session tests red on a bare null.
+    The merged-head gate belongs to a separately dispatched test node; the road map and
+    end-to-end steps remain open.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a
