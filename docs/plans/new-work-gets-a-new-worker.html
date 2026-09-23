@@ -150,6 +150,57 @@
       <p><strong>Falsifier.</strong> A positive control: a run known from its argv to have resumed a
       session must show a non-zero inherited figure through the same parser. Otherwise the zero is the
       instrument, not the fleet.</p>
+
+<div class="r-note" data-reckon="landed" data-node="codex-resume-burn-before" data-when="2026-09-23">
+<p><strong>Outcome — the inherited figure is stated for codex, before §2 lands.</strong> The census
+of every codex run under <code>~/.config/reckon/crew/runs</code> reads
+<strong>3,274 codex runs across 1,916 sessions</strong>. A fresh run opens a session rollout; a run
+that inherits an earlier task's transcript appends a task to one that already exists. By that
+boundary, <strong>1,916 runs are fresh</strong> (median opening-request input 40,997 tokens) and
+<strong>1,358 runs (41%) resumed a different task's session</strong> (median 166,421, four times the
+fresh figure). The input attributable to the inherited transcript, priced as each resumed run's
+opening request above the fresh median, totals <strong>172,082,502 tokens</strong>. Codex bills every
+input token, cached or not, so this is charged again on every request a resumed run makes.
+<code>same_run</code> is zero: every codex resume observed is a cross-task resume, which is the defect
+this plan targets. Data: <code>docs/research/data/codex-resume-burn.json</code>. Figure:
+<img src="/reckon/figures/new-work-gets-a-new-worker/first-request-input.png" alt="Distribution of codex runs by opening-request input; the fresh-run median sits near 41k tokens and the resumed-run population is shifted well right, with the named positive control at 378,921 tokens."></p>
+<p><strong>The instrument is the rollout's own task boundary, and it is corroborated.</strong> The
+codex stream publishes one <code>turn.completed</code> usage summed over the whole turn; the client
+rollout under <code>~/.codex/sessions</code> carries one <code>token_count</code> per model request,
+so a run's opening request is the first such figure after its own <code>task_started</code>. For the
+positive control the run's own stream reports
+<code>turn.completed.usage.input_tokens = 13,970,122</code> and the rollout's per-request sum over the
+same task is <code>13,970,122</code> — a ratio of exactly 1.0. The two instruments do not share a
+parser, so the agreement is a check, not a restatement.</p>
+<p><strong>Positive control, named.</strong>
+<code>r-20260909T124530581873-n-swcr-observe-the-missing-validation</code> (exact id in the JSON)
+resumed the session opened by
+<code>r-20260909T072310390297-n-pidp-restore-pedestal-density-family</code>; its opening request is
+378,921 tokens, 9.2× the fresh median, for an inherited figure of 337,924. The parser sees a
+non-zero inheritance through the same code path that reports the 172M total, so the figure is the
+fleet rather than the instrument.</p>
+<p><strong>A false-positive control, kept, because the obvious substitute instrument lies.</strong>
+The dialect appends <code>resume &lt;session id&gt;</code> to a codex <code>exec</code> argv, so the
+recorded argv looks like the natural way to find resumes — but no codex run's recorded argv carries
+the token, and a dispatch pointer's <code>session_resumed</code> flag is not a substitute:
+<code>r-20260923T034949217912-pcrf-production-route-ladder</code> carries <code>session_resumed:
+true</code> with no resume token in argv and a rollout that opened fresh. The flag alone would have
+reported an inheritance that did not happen, which is why the rollout task index is the instrument
+and the flag is recorded beside it.</p>
+<p><strong>Gate and environment.</strong> One <code>srun</code> on partition <code>all_debug</code>
+with <code>--time=00:59:00</code>, on compute node <code>98dci4-clu-3141</code>, 71 seconds, never on
+the login node. Log: <code>~/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/census-all_debug.log</code>.
+Anchor: <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed#codex-resume-burn">codex
+resume burn, before</a>.</p>
+<p><strong>Recorded as a gap, not repaired here.</strong> The falsifier was written for a run "known
+from its argv to have resumed a session". For codex that literal is unsatisfiable at this revision:
+argv is durably recorded only on the ephemeral live pointers, the resume token is appended only when
+<code>session_reuse</code> is on, and the stopgap has it off, so no historical codex argv carries it.
+The substance of the falsifier — a known-resumed run showing a non-zero inherited figure through the
+same parser — is met by the positive control above, and the archaeology that established the argv
+finding is in the data's <code>argv_note</code>. A follow-up may wish to make the resumed session id
+a durable field on the run record so the argv clause becomes checkable.</p>
+</div>
     </section>
 
     <section id="s7" data-reckon="section">
