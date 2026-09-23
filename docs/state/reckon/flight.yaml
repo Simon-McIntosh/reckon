@@ -62,13 +62,22 @@ backends:
     session_reuse: false
     time_budget: 15m
 
-# Reviews never route to the claude lanes, set 2026-09-23 by the lead. That
+# Reviews never route to a metered lane, set 2026-09-23 by the lead. That
 # lane runs this workstation's orchestrators; the review reflex fell back to it
 # alphabetically four times in one sprint when the local lane dropped a review.
 review_excluded_backends:
   - claude
   - claude-opus
   - claude-haiku
+  # Reviews are local-lane-shaped work, and the lead's directive of 2026-09-23
+  # (user-global AGENTS.md, Runtime Model Routing) keeps them on the local lane:
+  # never moved to a metered lane, above all while the lane has capacity. With
+  # every metered backend excluded a review holds rather than falling back.
+  - codex
+  - codex-astra
+  - codex-luna
+  - codex-spark
+  - codex-terra
 
 default_backend: clive
 
