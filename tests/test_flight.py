@@ -33,12 +33,16 @@ from reckon.crew.quota_weight import backend_rate_statuses
 from reckon.flight import (
     FlightConfigError,
     configured_backends_without_meteredness,
+    declared_input_modalities,
     deep_merge,
     flight_report,
+    input_modalities_required,
+    missing_input_modalities,
     mounted_project_docs,
     parse_overrides,
     probe_availability,
     resolve,
+    select_profile_backend,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1432,3 +1436,115 @@ def test_report_includes_availability_and_layer_inventory():
     ]
     assert "native" in report["availability"]
     assert report["undeclared_meteredness"] == ["native"]
+
+
+# ── Input modalities: a lane declares what its model receives ───────────────
+
+
+def _modality_config(layers, *, default: str = "codex-sol"):
+    """A host layer where one lane reads images and one does not."""
+    write(
+        layers["host"],
+        "default_backend: " + default + "\n"
+        "backends:\n"
+        "  codex-sol:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    model: gpt-5.6-sol\n"
+        "    input_modalities: [text, image]\n"
+        "  local-flash:\n"
+        "    launch: cli\n"
+        "    command: local-cli\n",
+    )
+    return resolve_files(layers).config
+
+
+def test_the_schema_declares_the_modality_slot_a_backend_carries():
+    """A modality is declared by a backend, so the slot has to exist in the
+    LinkML source, in the model generated from it, and in the served JSON
+    schema. A slot present in one and absent from another is a declaration the
+    resolver cannot read, and a config that offers it would be refused."""
+    source = (ROOT / "reckon" / "schema" / "flight.yaml").read_text()
+    assert "input_modalities:" in source
+    assert "InputModality:" in source
+
+    assert "input_modalities" in BackendConfig.model_fields
+    declaration = BackendConfig.model_validate(
+        {"name": "lane", "input_modalities": ["text", "image"]}
+    )
+    assert sorted(str(m) for m in declaration.input_modalities) == ["image", "text"]
+
+    schema = json.loads((ROOT / "docs" / "_shared" / "flight.schema.json").read_text())
+    backend_def = _find_backend_def(schema.get("$defs", schema))
+    assert backend_def is not None
+    slot = backend_def["properties"]["input_modalities"]
+    assert "array" in slot["type"]
+    assert "InputModality" in json.dumps(slot), (
+        "the served schema must reference the modality enum, or a config "
+        "declaring one is refused by the editor surface that reads this file"
+    )
+
+
+def test_a_lane_declaring_image_input_serves_a_figure_profile(layers):
+    config = _modality_config(layers)
+    assert declared_input_modalities(config, "codex-sol") == ("text", "image")
+
+    selected = select_profile_backend(config, "figure", backend="codex-sol")
+
+    assert selected["default_backend"] == "codex-sol"
+    assert declared_input_modalities(config, "local-flash") == ()
+
+
+def test_a_figure_profile_is_refused_by_name_on_a_lane_declaring_no_image(layers):
+    config = _modality_config(layers)
+
+    with pytest.raises(FlightConfigError) as refusal:
+        select_profile_backend(config, "figure", backend="local-flash")
+
+    message = str(refusal.value)
+    assert "local-flash" in message
+    assert "image" in message
+
+
+def test_a_refused_figure_profile_never_falls_through_to_the_default_lane(layers):
+    """The default lane here declares image input, so a resolver that ignored
+    the slot would return it and the refusal would never happen — the silent
+    wrong verdict this slot exists to prevent."""
+    config = _modality_config(layers, default="codex-sol")
+    assert "image" in declared_input_modalities(config, config["default_backend"])
+
+    with pytest.raises(FlightConfigError):
+        select_profile_backend(config, "figure", backend="local-flash")
+
+
+def test_the_default_lane_is_checked_when_the_profile_names_no_backend(layers):
+    config = _modality_config(layers, default="local-flash")
+
+    with pytest.raises(FlightConfigError) as refusal:
+        select_profile_backend(config, "figure")
+
+    assert "local-flash" in str(refusal.value)
+
+
+def test_an_undeclared_modality_is_absent_and_a_prompt_needs_no_declaration(layers):
+    """Absence is read as undeclared, never as every modality — and the text
+    profile requires nothing, so a lane whose layer predates the slot can still
+    serve the text review rather than being refused for a modality it always
+    had."""
+    config = _modality_config(layers)
+    assert missing_input_modalities(config, "local-flash", "figure") == ("image",)
+    assert missing_input_modalities(config, "codex-sol", "figure") == ()
+    assert input_modalities_required("text") == ()
+
+    text_route = select_profile_backend(config, "text", backend="local-flash")
+    assert text_route["default_backend"] == "local-flash"
+
+
+def test_a_lane_or_profile_no_layer_defines_is_refused(layers):
+    config = _modality_config(layers)
+
+    with pytest.raises(FlightConfigError):
+        select_profile_backend(config, "figure", backend="absent")
+
+    with pytest.raises(FlightConfigError):
+        input_modalities_required("panorama")

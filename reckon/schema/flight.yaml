@@ -101,6 +101,26 @@ enums:
           one, because a hold that looks like silence is indistinguishable from
           a crashed orchestrator.
 
+  InputModality:
+    description: >-
+      A kind of input a backend's model actually receives beside the prompt.
+      Closed structural vocabulary: a value names an input channel, never a
+      provider, a model or an effort level.
+    permissible_values:
+      text:
+        description: >-
+          The prompt and any text the running harness reads for itself. Every
+          backend accepts this, so a lane that declares nothing is still
+          usable for work that asks only for text.
+      image:
+        description: >-
+          A raster image attached to the prompt and received by the model
+          rather than only accepted by the command line. Declared only where
+          the attachment reaches the model: a lane whose launcher accepts an
+          image flag but whose dialect never forwards it must not declare
+          this, because a review composed there answers from the filename and
+          the diff and returns a well-formed verdict it could not have formed.
+
 # ── Slots ───────────────────────────────────────────────────────────────────
 
 slots:
@@ -310,6 +330,18 @@ slots:
     description: >-
       Model identifier passed to this backend. User data; free text so that no
       provider vocabulary is encoded here.
+
+  input_modalities:
+    description: >-
+      Input modalities this backend's model actually receives. Absent means
+      undeclared, never "every modality": a lane that does not say it reads
+      images is treated as not reading them, so a profile requiring an image
+      is refused by name rather than routed here and answered from the
+      filename. User data naming the lane's own measured path to the model;
+      the schema supplies no value, and a declaration is a claim about the
+      delivered input rather than about what the attachment flag accepts.
+    range: InputModality
+    multivalued: true
 
   input_rate_per_million:
     description: >-
@@ -633,6 +665,7 @@ classes:
       - lane_document
       - environment
       - model
+      - input_modalities
       - input_rate_per_million
       - output_rate_per_million
       - as_of

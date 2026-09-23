@@ -62,6 +62,42 @@
       <p><strong>Falsifier.</strong> Point a figure profile at a backend declaring no image modality and
       require a refusal that names the backend and the missing capability. A fallback to
       <code>default_backend</code> is the defect, not the behaviour.</p>
+
+      <article class="r-comment" data-section="s1" data-id="c-run-r-20260922T204207559107-a-lane-declares-its-input-modalities" data-who="crew-worker" data-when="2026-09-22">
+        <div class="r-comment-body">
+          <p><strong>Landed: the slot, and a refusal that names the lane.</strong> <code>BackendConfig</code>
+          gained <code>input_modalities</code> over a closed <code>InputModality</code> enum
+          (<code>text</code>, <code>image</code>), declared in the LinkML source at
+          <code>reckon/schema/flight.yaml</code> and regenerated into both derived artifacts — the
+          committed round-trip tests report <strong>2 passed, exit 0, not skipped</strong>. Resolution
+          runs through <code>flight.select_profile_backend</code>: the candidate lane — the one named,
+          or the resolved <code>default_backend</code> — is refused by name when it does not declare a
+          modality the profile requires, and <code>default_backend</code> is never substituted for a
+          named candidate.</p>
+          <p><strong>The falsifier, applied.</strong> A figure profile pointed at a lane declaring no
+          image input raises
+          <code>FlightConfigError: backend 'local-flash' cannot serve a 'figure' profile: it does not
+          declare image input</code>. The fixture's default lane <em>does</em> declare image input, so a
+          resolver that ignored the slot would return it — the assertion discriminates on exactly the
+          fall-through the measure names. The declared negative control (make the figure-profile
+          resolver ignore the input-modalities slot and fall through to default_backend) reddened
+          <strong>exactly the two refusal tests</strong> with <code>DID NOT RAISE FlightConfigError</code>;
+          the resolver was restored and the gate re-run green at <strong>93 passed, exit 0</strong>.</p>
+          <p><strong>Absence is undeclared, never universal.</strong> The text profile requires no
+          declaration, so a layer predating the slot still serves the text review; only a profile that
+          needs a modality beyond the prompt can be refused.</p>
+          <p><strong>Not landed here, by fence.</strong> The codex backends live in the operator's flight
+          configuration — <code>~/.config/reckon/flight.yaml</code> and
+          <code>docs/state/reckon/flight.yaml</code> — outside this node's write scope. The schema accepts
+          the declaration and the tests exercise a codex-declared lane; adding
+          <code>input_modalities: [text, image]</code> to those backends is what makes the existing codex
+          lanes eligible for a figure profile, and it is recorded as a follow-on rather than taken here.
+          <strong>Bypassing <code>/reckon-edit</code></strong> because this worker's fenced landing
+          contract requires its own append-only plan and cumulative-evidence records; shared lifecycle
+          state, followup resolution and terminal status remain coordinator-owned.</p>
+          <p>Evidence: <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed#s1-input-modalities">s1-input-modalities</a>.</p>
+        </div>
+      </article>
     </section>
 
     <section id="s2" data-reckon="section">
