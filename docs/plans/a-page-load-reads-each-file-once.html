@@ -19,14 +19,14 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S16">
   <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan&#x27;s evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="6">
-<meta name="plan-commits" content="56e13e11,98d99673,f9d08b55">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="8">
+<meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -248,12 +248,31 @@
     Naming a slow request records the failure; it does not pass the gate. The write path is the
     report under the session's reports directory.</p>
 
+    <h2 id="s6">&sect;6 &mdash; The palette asks for each project's inventory exactly once</h2>
+    <p>The independent review of &sect;4 (score 97) found that
+    <code>tests/test_shell_project_list_is_immediate.py</code> collapses the recorded
+    <code>/_discover/&lt;project&gt;</code> requests into a set before comparing them with the
+    mounted projects. It therefore measures coverage, not the one request per project that &sect;4
+    states, and a shell that asked for an inventory twice would still pass.</p>
+    <p><strong>Done when</strong> that test asserts, over the requests recorded after the palette
+    opens, that each mounted project's <code>/_discover</code> URL appears exactly once, and that no
+    other <code>/_discover</code> URL appears. The negative control is executed and logged: with
+    <code>docs/ui/shell.jsx</code>'s requested-set guard removed, so an inventory is requested
+    again whenever the effect re-runs, the count assertion fails where the set assertion passed.
+    The run is recorded on the login node, because no compute partition carries a browser binary.
+    The write path is that test only.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Verify the discovery repair and stop the served loader reading the aggregate</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 write disjoint files and run together. §5 follows their merge and the service restart.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once</pre>
+    </article>
+<article class="r-fu" data-id="f-aplref-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The remaining page-load cost is S20&#x27;s stream re-parse</h4>
+    <div class="r-fu-body"><p>Pointer, not work. After the restart, warm <code>/_discover</code> for reckon and nova spends its time in <code>partition_live_runs</code> re-parsing every live run's stream. That work is owned by <a href="/reckon/plans/a-follower-outlives-its-monitor#s9">a-follower-outlives-its-monitor &sect;9</a>, which carries this measurement.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-follower-outlives-its-monitor §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -266,8 +285,14 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260923T131555070866-served-loader-reads-discovery-only" data-who="reckon-ship" data-when="2026-09-23T13:52:16.089Z">
     <div class="r-comment-body"><p>served loader reads /_discover alone when it answers; projection.json then index.json only on refusal or 404; zero added failures across three regression files; review 95, record counts corrected at landing</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20260923T1545-s3-promoted" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
+    <div class="r-comment-body"><p>Gate <code>tests/test_served_loader_reads_discovery_only.py</code> passed, 4 of 4; the three regression files hold at 5, 4 and 3 passed against base <code>56e13e11</code>; independent review 95. Its findings were record errors, corrected at landing in <code>620a9de7</code>: the per-file counts had been written rotated as 3, 5 and 4. Section closed.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260923T131555069467-project-picker-never-waits" data-who="reckon-ship" data-when="2026-09-23T13:49:28.134Z">
-    <div class="r-comment-body"><p>picker lists every mount while the rollup never resolves; other projects&#x27; discovers only on palette; shell.jsx needed no repair; negative control reddens at 00106ce2; review 97</p></div>
+    <div class="r-comment-body"><p>picker lists every mount while the rollup never resolves; other projects' discovers only on palette; shell.jsx needed no repair; negative control reddens at 00106ce2; review 97</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T1545-s4-promoted" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
+    <div class="r-comment-body"><p>Gate <code>tests/test_shell_project_list_is_immediate.py</code> passed, 2 of 2; independent review 97. The run was taken on the login node, not <code>all_debug</code>: no compute partition carries a browser binary, so the section's two named provenances could not produce a pass. That is accepted here and recorded. The review's other finding, that the palette assertion measures coverage rather than a count, is &sect;6. Section closed.</p></div>
 </div>
 </section>
 </main>
