@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T05:23:47",
+  "updated": "2026-09-23T05:36:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -281097,6 +281097,333 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T022234600678-a-promotion-records-the-head-it-promoted",
+        "plan": "scoring-should-stop-a-promotion",
+        "section": "\u00a72c",
+        "node": "a-promotion-records-the-head-it-promoted",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 301,
+                "cached_input_tokens": 527236,
+                "input_tokens": 527539,
+                "output_tokens": 1044,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 528583,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests in tests/test_promotion_landed_sweep.py assert directly that crew complete records the run's worktree head, not its own promote commit, as the promoted revision; that the sweep reports a promotion whose promoted revision is not an ancestor of the target head, against a synthesised repository in that state; that it reports one whose ancestry passes while a marker the change introduced is absent, against a second synthesised repository reproducing that pair; that a removal case whose removed marker is still present is reported; and that a promotion whose work landed intact is not reported; the negative control of recording the promote commit as the promoted revision is applied, the ancestry test is observed to pass vacuously or fail as stated in the plan, and that log is recorded in the manifest; tests/test_crew_promotion.py tests/test_promotion_harvests_the_receipt.py tests/test_a_promotion_never_creates_a_ledger.py report no added failures against base",
+          "estimated_hours": null,
+          "goal": "a promotion records the run's own head as the promoted revision and a sweep reports every promotion whose work is not an ancestor of the target head or whose introduced marker is absent from it",
+          "id": "a-promotion-records-the-head-it-promoted",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T02:22:36Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/manifest.md",
+          "negative_control": "record the promote commit rather than the run's worktree head as the promoted revision",
+          "plan": "scoring-should-stop-a-promotion",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72c",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_landed_sweep.py",
+            "docs/evidence/archive/scoring-should-stop-a-promotion-landed.html",
+            "docs/figures/scoring-should-stop-a-promotion",
+            "docs/plans/scoring-should-stop-a-promotion.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-s5-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T02:23:00Z",
+        "completed_at": "2026-09-23T02:52:12.706Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1742,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1752,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "25cccf9e41cafa90eae7fbc8466eb092a9a3888e",
+        "commits": [
+          "12888c176a3cd7326d499baf97a7bf2390bada35",
+          "d11917d6ee68a489393c5c2fb87f47530b4046ad"
+        ],
+        "changed_lines": {
+          "added": 696,
+          "removed": 0,
+          "files": 6
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_landed_sweep.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/gate.log",
+          "log_digest": "sha256:634adcd095b72f877ea81e5602820c0bbb1b9fafac8a12d0b9d42f47e6fb5c8a"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "crew complete records the run's worktree head as the promoted revision; sweep_promoted_revisions reports promotions whose work is not an ancestor or whose introduced marker is absent; 5 sweep tests pass at merged head 90f0ea7f; recording the promote commit instead makes the ancestry check pass vacuously; zero added failures; review 92; no CLI entry yet",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/manifest.md",
+        "scope_changed": false,
+        "session_id": "9feeb09d-1c66-41c3-a906-30933e70b240",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9833840,
+            "input_tokens_cumulative": 9833840,
+            "output_tokens": 47639,
+            "output_tokens_cumulative": 47639,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T02:52:12.706Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "elapsed_seconds": 363,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1560,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_derived": false,
+              "manifest_digest": "99f801e8bdd7193dd6cf6abb331b60092a6a21c2ec00c8c5d0120eab13da683e",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T010313574442-review-of-the-launcher-keeps-the-wait-status/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-the-launcher-keeps-the-wait-status",
+              "phase": "working",
+              "plan": "worker-death-is-recorded",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T010313574442-review-of-the-launcher-keeps-the-wait-status",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 1587,
+              "terminal_at": "2026-09-23T01:56:21Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/review-of-the-launcher-keeps-the-wait-status"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9833840,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1746.99,
+          "generated_tokens": 47639,
+          "generation_seconds": 1399.419,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.0,
+          "machine_seconds": 347.571,
+          "peak_input_tokens": 158408,
+          "tokens_per_second": 34.04,
+          "wall_tokens_per_second": 27.27
+        },
+        "follow_on_paths": [
+          "reckon/crew/promotion.py;",
+          "reckon/cli.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-promotion-records-the-head-it-promoted",
+          "session_id": "9feeb09d-1c66-41c3-a906-30933e70b240",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T02:52:12.706Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "d11917d6ee68a489393c5c2fb87f47530b4046ad",
+        "plan_impl_at_dispatch": 0.85,
+        "impl_move": {
+          "plan": "scoring-should-stop-a-promotion",
+          "at_dispatch": 0.85,
+          "at_complete": 0.88,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_promotion_landed_sweep.py"
+          ],
+          "declaration": "record the promote commit rather than the run's worktree head as the promoted revision",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T022234600678-a-promotion-records-the-head-it-promoted/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T03:12:36.657703+00:00",
+          "horizon_seconds": 3000,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T02:22:36Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 87.0,
+        "orientation_input_tokens": 2609462.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -281395,6 +281722,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2185
+    "_version": 2186
   }
 }
