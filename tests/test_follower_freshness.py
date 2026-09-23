@@ -170,7 +170,7 @@ def test_failed_reexec_reports_once_and_keeps_the_registration(
     monkeypatch.setattr(runs, "follower_code_stamp", lambda: next(stamps, "changed"))
     monkeypatch.setattr(
         cli_module.os,
-        "execv",
+        "execve",
         lambda *_args: (_ for _ in ()).throw(OSError("execution refused")),
     )
     output = io.StringIO()
