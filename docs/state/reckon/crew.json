@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T14:04:31",
+  "updated": "2026-09-23T14:07:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -301648,6 +301648,329 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T034846945410-a-resumed-session-carries-context-census",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a78",
+        "node": "a-resumed-session-carries-context-census",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1273,
+                "cached_input_tokens": 723541,
+                "input_tokens": 724818,
+                "output_tokens": 527,
+                "reasoning_output_tokens": 230,
+                "total_tokens": 725345,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "docs/research/data/session-carryover.json lists, for every run directory under /home/ITER/mcintos/.config/reckon/crew/runs, its run id, backend, member, whether it resumed an existing session, the session id, the prior run that last used that session, and the first assistant turn's input size taken from that turn's own usage record (input plus cache-read plus cache-creation tokens), not the result record's cumulative total; it states per backend the count of resumed runs, the count whose first turn inherited more than its own prompt, and the median and maximum inherited tokens; it states in words what the result record's modelUsage.inputTokens measures on the clive and codex dialects, with one run of each as the example; a positive control shows the census reports zero inherited context for one run known to have started a fresh session; a test in tests/test_session_carryover_census.py runs the census over a synthesised runs directory holding one fresh run and one resumed run, and asserts it classifies both correctly; the negative control of taking the result record's cumulative total instead of the first turn's usage is applied, the fresh fixture is observed to be misreported, and that log is recorded in the manifest",
+          "estimated_hours": null,
+          "goal": "a census of every recorded crew run that states, per run, how much context its first turn inherited from an earlier node's session",
+          "id": "a-resumed-session-carries-context-census",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T03:48:50Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/manifest.md",
+          "negative_control": "take the result record's cumulative modelUsage total instead of the first assistant turn's own usage",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/data/session-carryover.json",
+            "reckon/crew/carryover_census.py",
+            "tests/test_session_carryover_census.py",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-cot-sentinel-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T03:49:22Z",
+        "completed_at": "2026-09-23T08:17:05.275Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 16051,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 16063,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "4940e86edb78f9eb18c38b17e5ec1a16343f4397",
+        "commits": [
+          "61d6a2d0b164560e451fa07f5c161a9251d10547"
+        ],
+        "changed_lines": {
+          "added": 737,
+          "removed": 402,
+          "files": 6
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "work-rejected",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034846945410-a-resumed-session-carries-context-census/manifest.md",
+        "scope_changed": false,
+        "session_id": "4a9c6bac-ce49-446f-9d65-0830f7118aed",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 31210568,
+            "input_tokens_cumulative": 31210568,
+            "output_tokens": 142402,
+            "output_tokens_cumulative": 142402,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T08:17:05.275Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "elapsed_seconds": 962,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1065,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4ed8ff18",
+                "50b523fa",
+                "673daa07",
+                "b2d6b7f4"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "9401950082d701378db3b5740e197e78876fff0bf7fb8891332cbd09b4578b5b",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T021758002591-review-deaths-by-effort-and-role/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260923T021758002591-review-deaths-by-effort-and-role --gate <verdict> --commit 4ed8ff18 --commit 50b523fa --commit 673daa07 --commit b2d6b7f4",
+              "node": "review-deaths-by-effort-and-role",
+              "phase": "working",
+              "plan": "a-review-dies-where-nobody-is-looking",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260923T021758002591-review-deaths-by-effort-and-role",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 1097,
+              "terminal_at": "2026-09-23T03:30:51Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/review-deaths-by-effort-and-role"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 15,
+            "evidence": 13,
+            "fit": 15,
+            "goal_fidelity": 14,
+            "scope_discipline": 0
+          },
+          "absent": [],
+          "total": 57
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 35696232,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 12470.392,
+          "generated_tokens": 180000,
+          "generation_seconds": 11333.5,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 1136.892,
+          "peak_input_tokens": 166305,
+          "tokens_per_second": 15.88,
+          "wall_tokens_per_second": 14.43
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-resumed-session-carries-context-census",
+          "session_id": "4a9c6bac-ce49-446f-9d65-0830f7118aed",
+          "session_source": "stream",
+          "retained_at": "2026-09-23T08:17:05.275Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "61d6a2d0b164560e451fa07f5c161a9251d10547",
+        "plan_impl_at_dispatch": 0.23,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": 0.23,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "test_paths": [
+            "tests/test_session_carryover_census.py"
+          ],
+          "reason": "gate-not-passing"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T04:38:50.172887+00:00",
+          "horizon_seconds": 3000,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T03:48:50Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 42.0,
+        "orientation_input_tokens": 4471578.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -301960,6 +302283,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2299
+    "_version": 2300
   }
 }
