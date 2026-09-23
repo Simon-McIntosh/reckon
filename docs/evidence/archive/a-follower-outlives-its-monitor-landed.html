@@ -12,13 +12,59 @@
   <meta name="plan-recorded-at" content="2026-09-23T09:12:00Z">
   <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass">
   <meta name="plan-environment" content="login node, Python 3.14, matplotlib 3.11.2, real subprocesses under a temporary RECKON_HOME">
-  <meta name="plan-commits" content="b48fdc21 9ad95695 8587710c">
+  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c">
   <title>A Follower Outlives Its Monitor &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
   <main class="plan-doc">
+    <section id="s2-attach-line-resolves">
+      <h2>&sect;2 &mdash; The attach line names an executable that resolves</h2>
+      <p>Commit <code>f8f36b76</code> at 2026-09-23 &mdash; <em>fix(crew): the follower attach line
+      names the running reckon executable</em>. <code>_watch_attach_line</code> in
+      <code>reckon/crew/runs.py</code> composes its first token from a single resolver,
+      <code>_reckon_console_script()</code>, which prefers
+      <code>Path(sys.executable).parent / "reckon"</code> and falls back to
+      <code>shutil.which</code>, raising <code>CrewError</code> rather than composing a line whose
+      executable does not exist. Every surface that prints the line inherits the change because they
+      all call the composer.</p>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>The gate, at <code>f8f36b76</code>: 2 passed.</strong>
+        <code>tests/test_attach_line_resolves.py</code> composes the line through
+        <code>_watch_attach_line</code>, asserts its first token is an absolute path to an executable
+        file, and runs that token as <code>&lt;token&gt; crew follow --help</code> with
+        <code>PATH=/usr/bin:/bin</code>, requiring exit 0. A second test points
+        <code>sys.executable</code> at a directory with no sibling script and stubs
+        <code>shutil.which</code> to nothing, and requires <code>CrewError</code>.</li>
+        <li><strong>The declared negative control is executed and logged.</strong> Restoring the bare
+        word <code>reckon</code> as the first token makes the gate report <strong>2 failed</strong>,
+        and the bare token under the arming shell's PATH exits <strong>127</strong>. The log's first
+        line repeats the declared mutation verbatim.</li>
+        <li><strong>Existing tests, delta against the base revision: added failures 0.</strong> The two
+        granted fixture files carry the same five failures before and after the change (spec-level
+        dispatch refusals and mount lookups unrelated to this line), 16 passed in both runs.</li>
+        <li><strong>The resolver bug it exposed.</strong> The watcher unit's own resolver called
+        <code>Path(sys.executable).resolve().parent</code>; because a virtualenv's interpreter is a
+        symlink into the base distribution, that prefix left the virtualenv and the console script with
+        it. The two now share the corrected helper, which takes the directory without resolving.</li>
+      </ul>
+
+      <h3>Owed outside this node's fence</h3>
+      <p>Two further existing tests assert the attach line's text. Both pass at the base revision and
+      fail against this change, and both sit outside the granted write scope, so this node did not
+      touch them:</p>
+      <ul>
+        <li><code>tests/test_crew_session_delivery.py:223</code> asserts
+        <code>line.startswith("reckon crew follow ")</code>.</li>
+        <li><code>tests/test_crew.py:1887</code> compares the CLI-emitted waiver against a hardcoded
+        <code>attach_line</code> literal.</li>
+      </ul>
+      <p>Each needs its literal replaced with the composer's output; until then
+      <code>main</code> carries two red assertions that measure this landing's intended change.</p>
+    </section>
     <h2 id="s3">&sect;3 &mdash; The follower announces its own end</h2>
     <p>A follower armed with <code>--lifetime</code> ends itself when that deadline passes: one final
     line, exit status 0, registration released. The line is tagged

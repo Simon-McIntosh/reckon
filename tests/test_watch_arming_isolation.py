@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
+from reckon.crew import runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
 
 # `reckon.crew` re-exports the dispatch callable under the submodule's name, so
@@ -156,10 +157,12 @@ def test_the_suppressed_dispatch_records_the_same_waiver_as_an_explicit_one(
     config_home, repo = fixture_project
 
     def waiver(session: str) -> dict:
+        # The attach line is whatever the shared composer emits, so this
+        # asserts dispatch carries the composed line rather than restating it.
         return {
             "requested": True,
             "arming_line": "reckon crew watch --project sample",
-            "attach_line": f"reckon crew follow --project sample --session {session}",
+            "attach_line": runs._watch_attach_line("sample", session=session),
             "watcher_live": False,
             "session_attached": False,
         }
