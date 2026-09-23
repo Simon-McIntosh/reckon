@@ -1,0 +1,677 @@
+{
+  "produced_by": "monitor-staleness-census",
+  "plan": "the-monitor-under-measurement",
+  "window": {
+    "start": "2026-09-16T00:00:00+00:00",
+    "end": "2026-09-23T00:00:00+00:00",
+    "days": 7
+  },
+  "population": {
+    "projects": [
+      "reckon",
+      "nova",
+      "imas-efit",
+      "imas-ambix"
+    ],
+    "transcript_dirs_searched": 1412,
+    "transcript_root": "/home/ITER/mcintos/.claude/projects",
+    "watch_stream_root": "/home/ITER/mcintos/.config/reckon/crew/watch",
+    "monitor_calls_all_time": 1311,
+    "monitor_calls_in_window": 719,
+    "armed_followers_in_window": 719,
+    "monitor_calls_in_window_that_started_no_task": 0
+  },
+  "outcome_partition": {
+    "note": "Only the four outcome rows partition the armed followers: every Monitor that started a task in the window ended in exactly one of them. The code-reload row is a fifth cause counted over a different population (commits, not armings), so it is excluded from this sum and its count does not enter it.",
+    "rows": [
+      "host-expiry",
+      "producer-gap",
+      "arming-failure",
+      "other-script-failure"
+    ],
+    "identity": "620 + 86 + 12 + 1 = 719 = armed_followers_in_window"
+  },
+  "script_failure_population": {
+    "failure_notices_all_time": 34,
+    "failure_notices_in_window_by_notice_time": 14,
+    "distinct_task_ids_with_a_failure_notice": 33,
+    "armed_in_window_with_a_failure_notice": 13,
+    "note": "a call is classified by when it was ARMED, while its failure notice may arrive on the other side of the window boundary, so the count of notices whose own timestamp falls inside the window is not the count of armings classified here; a probe that counted notices alone reports a larger number for that reason"
+  },
+  "positive_control": {
+    "claim": "the imas-efit transcripts for 2026-09-22 yield at least nine expiry notices",
+    "observed": 20,
+    "holds": true,
+    "matcher": "Monitor expired after (\\d+)m with (no|\\d+) events? delivered",
+    "examples": [
+      "[Monitor expired after 30m with 8 events delivered. Re-arm it if you still need the watch.]",
+      "[Monitor expired after 30m with 2 events delivered. Re-arm it if you still need the watch.]",
+      "[Monitor expired after 30m with 7 events delivered. Re-arm it if you still need the watch.]"
+    ]
+  },
+  "causes": {
+    "host-expiry": {
+      "definition": "a follower that met the host's thirty-minute expiry, announced by a notice reading 'Monitor expired after'",
+      "pattern_searched": "Monitor expired after (\\d+)m with (no|\\d+) events? delivered",
+      "population_searched": "task-notification events across the four checkouts' transcripts",
+      "count": 620,
+      "notices_in_window": 625,
+      "notices_in_window_distinct_by_task": 622,
+      "examples": [
+        {
+          "quote": "[Monitor expired after 10m with 5 events delivered. Re-arm it if you still need the watch.]",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code--reckon-worktrees-nova-a0f1e0938fc2-s19-codex-20260916-cca-which-mechanism-puts-current-on-the-low-field-side/ed78097b-7c8e-4a80-b01d-6e42d51e9aef.jsonl",
+          "line": 547,
+          "timestamp": "2026-09-21T06:02:30.970000+00:00",
+          "task_id": "b2ur63ri7"
+        },
+        {
+          "quote": "[Monitor expired after 10m with 4 events delivered. Re-arm it if you still need the watch.]",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code--reckon-worktrees-nova-a0f1e0938fc2-s19-codex-20260916-cca-which-mechanism-puts-current-on-the-low-field-side/ed78097b-7c8e-4a80-b01d-6e42d51e9aef.jsonl",
+          "line": 598,
+          "timestamp": "2026-09-21T06:06:09.571000+00:00",
+          "task_id": "b9h1dlo68"
+        },
+        {
+          "quote": "[Monitor expired after 10m with 2 events delivered. Re-arm it if you still need the watch.]",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code--reckon-worktrees-nova-a0f1e0938fc2-s19-codex-20260916-cca-which-mechanism-puts-current-on-the-low-field-side/ed78097b-7c8e-4a80-b01d-6e42d51e9aef.jsonl",
+          "line": 730,
+          "timestamp": "2026-09-21T06:13:47.145000+00:00",
+          "task_id": "bwxc0hlx4"
+        }
+      ],
+      "prose_only_hits_excluded": 6
+    },
+    "producer-gap": {
+      "definition": "a follower whose source ended before its expiry (the seat was released), so the stream's producer stopped without a notice",
+      "pattern_searched": "an arming whose expiry deadline elapsed inside the window with no notice bearing its task id",
+      "population_searched": "Monitor armings in the window whose expiry deadline preceded the window's close",
+      "count": 86,
+      "derivation": "armed followers meeting none of the other outcomes: armed_followers_in_window - host-expiry - arming-failure - other-script-failure - still-armed",
+      "denominator": 719,
+      "baseline_bursts_in_streams": 2,
+      "examples": [
+        {
+          "quote": "cd /home/ITER/mcintos/Code/imas-ambix && uv run --project /home/ITER/mcintos/Code/reckon reckon crew follow --project imas-ambix --session telemetry-spine",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/98f13dbe-0703-4abd-a5e4-65bfdb2eeee2.jsonl",
+          "line": 1899,
+          "timestamp": "2026-09-18T20:08:16.382000+00:00",
+          "task_id": "bep7pfnof",
+          "description": "imas-ambix serve-telemetry-spine fleet"
+        },
+        {
+          "quote": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project imas-ambix --session ambix-s24-local",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/fe5e6227-20a2-4f56-b5dc-a8a8121122f9.jsonl",
+          "line": 871,
+          "timestamp": "2026-09-18T10:26:28.343000+00:00",
+          "task_id": "boafo703c",
+          "description": "imas-ambix S24"
+        },
+        {
+          "quote": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project imas-efit --session ship-s13-20260916",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/2acd71f7-d577-4918-93ad-8efdea445708.jsonl",
+          "line": 3525,
+          "timestamp": "2026-09-17T22:49:04.490000+00:00",
+          "task_id": "b0a21zpjc",
+          "description": "imas-efit S13"
+        }
+      ],
+      "stream_examples": [
+        {
+          "stream": "/home/ITER/mcintos/.config/reckon/crew/watch/nova-19e05df6b2e5.events",
+          "project": "nova",
+          "clock_stamp": "05:59:48",
+          "lines_in_burst": 6,
+          "quote": "05:59:48  h200-matrix-benchmark         \u2192 working                 6 live \u00b7 0 blocked \u00b7 0 unpromoted"
+        },
+        {
+          "stream": "/home/ITER/mcintos/.config/reckon/crew/watch/nova-19e05df6b2e5.events",
+          "project": "nova",
+          "clock_stamp": "11:21:39",
+          "lines_in_burst": 9,
+          "quote": "11:21:39  sse-polish-and-tracking       dispatched \u2192 working      10 live \u00b7 0 blocked \u00b7 1 unpromoted"
+        }
+      ],
+      "still_armed_at_window_close": 0
+    },
+    "arming-failure": {
+      "definition": "an armed follower whose script the host reported as failed with exit code 127, so the attach line's command was never found and nothing was watched",
+      "pattern_searched": "Monitor \"([^\"]*)\" script failed \\(exit (\\d+)\\)",
+      "population_searched": "task-notification events across the four checkouts' transcripts, matched with the description's escaped quotes resolved",
+      "count": 12,
+      "cross_check_tool_result_bodies_mentioning_a_missing_command": 0,
+      "positive_control": {
+        "claim": "the imas-efit session e2fc50d7 yields the host's failure notice for task bjx1kic75",
+        "observed": 1,
+        "holds": true,
+        "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/e2fc50d7-e1ab-4c66-bcda-1e6a97b468b7.jsonl",
+        "task_id": "bjx1kic75",
+        "summary": "Monitor \"imas-efit S13\" script failed (exit 127)",
+        "note": "an earlier matcher searched the Monitor tool_result bodies for exit 127 and found nothing, and its corpus-wide control passed for a different pattern while missing a description the host delivers as a task notification"
+      },
+      "examples": [
+        {
+          "quote": "Monitor \"imas-efit S13\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/2acd71f7-d577-4918-93ad-8efdea445708.jsonl",
+          "line": 73,
+          "armed_at": "2026-09-17T09:54:46.845000+00:00"
+        },
+        {
+          "quote": "Monitor \"imas-efit S13\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-efit/e2fc50d7-e1ab-4c66-bcda-1e6a97b468b7.jsonl",
+          "line": 265,
+          "armed_at": "2026-09-22T11:25:46.818000+00:00"
+        },
+        {
+          "quote": "Monitor \"nova single-grid-solver-cutover fleet\" script failed (exit 127)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-nova/d4ec2ce4-0617-4d7e-b9a0-3be01c3acb4b.jsonl",
+          "line": 2967,
+          "armed_at": "2026-09-22T09:49:55.930000+00:00"
+        }
+      ]
+    },
+    "other-script-failure": {
+      "definition": "an armed follower whose script the host reported as failed with an exit code other than 127, so the command ran and ended non-zero rather than never starting",
+      "pattern_searched": "Monitor \"([^\"]*)\" script failed \\(exit (\\d+)\\)",
+      "population_searched": "the same task-notification events as the arming failure",
+      "count": 1,
+      "exit_codes_seen": {
+        "2": 1
+      },
+      "examples": [
+        {
+          "quote": "Monitor \"nova S19\" script failed (exit 2)",
+          "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-nova/8fac263d-04b1-4202-bc28-df1b0b73ec93.jsonl",
+          "line": 9103,
+          "armed_at": "2026-09-18T07:44:56.438000+00:00"
+        }
+      ]
+    },
+    "code-reload": {
+      "definition": "an in-place re-exec by _FollowerReloader in reckon/cli.py, which replaces every armed follower at a stream-record boundary",
+      "pattern_searched": "git commits touching reckon/cli.py or reckon/crew/*.py inside the window",
+      "population_searched": "the reckon repository's git history",
+      "count": 198,
+      "unit": "commits that advance follower_code_stamp, each re-execing every armed follower",
+      "examples": [
+        {
+          "quote": "3377932872bc fix(crew): carry the lane advisory onto the promoted ledger row",
+          "committed": "2026-09-22T20:59:28+02:00"
+        },
+        {
+          "quote": "569598f0c88c Merge the honest none-declaration rule",
+          "committed": "2026-09-22T20:07:49+02:00"
+        },
+        {
+          "quote": "8ba6c0113b8c fix(crew): tell the node what promotion does with a bare none declaration",
+          "committed": "2026-09-22T20:01:43+02:00"
+        }
+      ],
+      "examples_note": "This row's examples are the commits themselves, with their timestamps, rather than transcript paths: the reloader acts on a commit, so the commit is the evidence and no transcript line quotes the re-exec. The other rows cite transcript paths.",
+      "deciding_source": "reckon/crew/runs.py:116 follower_code_stamp",
+      "reloader_source": "reckon/cli.py:1681 _FollowerReloader.poll",
+      "caveat": "the re-exec leaves no banner a transcript distinguishes from ordinary prose, so this count is the opportunity for a reload, not reloads observed"
+    }
+  },
+  "monitor_parameters": {
+    "persistent_passed_all_time": 453,
+    "persistent_passed_in_window": 0,
+    "calls_total_all_time": 1311,
+    "harness_promise_to_persistent_calls": "Monitor started (task ..., persistent \u2014 runs until TaskStop or session end)",
+    "harness_promise_to_non_persistent_calls": "Monitor started (task ..., expires in 30m unless the source ends first; you get one notice at expiry \u2014 re-arm if you still need the watch)",
+    "persistent_calls_that_still_met_the_expiry": 0,
+    "non_persistent_calls_that_met_the_expiry": 751,
+    "verdict": "a persistent Monitor does not meet the thirty-minute expiry; only non-persistent ones do",
+    "last_call_passing_persistent": {
+      "ts": "2026-09-15T13:40:15.915000+00:00",
+      "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-imas-ambix/52baf927-8066-49b2-94da-e4d32c07a1f3.jsonl",
+      "line": 8193,
+      "task_id": "ba1fmj1r4",
+      "project": null,
+      "session": null
+    },
+    "first_non_persistent_call_that_met_the_expiry": {
+      "ts": "2026-09-14T20:41:15.559000+00:00",
+      "transcript": "/home/ITER/mcintos/.claude/projects/-home-ITER-mcintos-Code-reckon/3332e8d8-dcef-4091-9774-c9680478b165.jsonl",
+      "line": 160,
+      "task_id": "b8nrg6iex",
+      "project": "reckon",
+      "session": "ship-s16-20260914"
+    },
+    "persistent_flag_last_seen_at": "2026-09-15T13:40:15.915000+00:00"
+  },
+  "rearm_intervals": {
+    "sessions_with_two_or_more_armings": 64,
+    "overall_median_minutes": 30.23,
+    "per_session": {
+      "/home/ITER/mcintos/Code/reckon:nova-s19-thomson": {
+        "armings": 2,
+        "median_interval_minutes": 1.81,
+        "min_interval_minutes": 1.81,
+        "max_interval_minutes": 1.81
+      },
+      "/home/ITER/mcintos/Code/reckon:nova-wss-20260918": {
+        "armings": 5,
+        "median_interval_minutes": 32.47,
+        "min_interval_minutes": 31.17,
+        "max_interval_minutes": 102.34
+      },
+      "/home/ITER/mcintos/Code/reckon:s16-lead-review": {
+        "armings": 6,
+        "median_interval_minutes": 9.41,
+        "min_interval_minutes": 0.5,
+        "max_interval_minutes": 1277.53
+      },
+      "/home/ITER/mcintos/Code/reckon:s18-takeover-20260919": {
+        "armings": 35,
+        "median_interval_minutes": 30.39,
+        "min_interval_minutes": 18.05,
+        "max_interval_minutes": 768.77
+      },
+      "/home/ITER/mcintos/Code/reckon:s19-batched": {
+        "armings": 2,
+        "median_interval_minutes": 319.97,
+        "min_interval_minutes": 319.97,
+        "max_interval_minutes": 319.97
+      },
+      "/home/ITER/mcintos/Code/reckon:s19-codex-20260916": {
+        "armings": 163,
+        "median_interval_minutes": 30.22,
+        "min_interval_minutes": 0.32,
+        "max_interval_minutes": 761.93
+      },
+      "/home/ITER/mcintos/Code/reckon:s19-handoff-20260915": {
+        "armings": 50,
+        "median_interval_minutes": 30.21,
+        "min_interval_minutes": 29.89,
+        "max_interval_minutes": 66.24
+      },
+      "/home/ITER/mcintos/Code/reckon:s19-labeller": {
+        "armings": 2,
+        "median_interval_minutes": 952.98,
+        "min_interval_minutes": 952.98,
+        "max_interval_minutes": 952.98
+      },
+      "/home/ITER/mcintos/Code/reckon:s19-relaunch": {
+        "armings": 2,
+        "median_interval_minutes": 139.32,
+        "min_interval_minutes": 139.32,
+        "max_interval_minutes": 139.32
+      },
+      "/home/ITER/mcintos/Code/reckon:s24-ship-01": {
+        "armings": 3,
+        "median_interval_minutes": 924.94,
+        "min_interval_minutes": 104.58,
+        "max_interval_minutes": 1745.29
+      },
+      "/home/ITER/mcintos/Code/reckon:ship-s13-20260916": {
+        "armings": 30,
+        "median_interval_minutes": 30.44,
+        "min_interval_minutes": 30.1,
+        "max_interval_minutes": 317.59
+      },
+      "/home/ITER/mcintos/Code/reckon:telemetry-spine": {
+        "armings": 31,
+        "median_interval_minutes": 30.12,
+        "min_interval_minutes": 30.07,
+        "max_interval_minutes": 3380.04
+      },
+      "imas-ambix:ambix-s19-01": {
+        "armings": 3,
+        "median_interval_minutes": 233.24,
+        "min_interval_minutes": 110.33,
+        "max_interval_minutes": 356.15
+      },
+      "imas-ambix:ambix-s24-local": {
+        "armings": 11,
+        "median_interval_minutes": 30.24,
+        "min_interval_minutes": 30.12,
+        "max_interval_minutes": 117.42
+      },
+      "imas-ambix:dsv41-four-card-20260915": {
+        "armings": 14,
+        "median_interval_minutes": 30.5,
+        "min_interval_minutes": 0.88,
+        "max_interval_minutes": 463.84
+      },
+      "imas-ambix:dsv41-restart-20260917": {
+        "armings": 8,
+        "median_interval_minutes": 30.62,
+        "min_interval_minutes": 30.12,
+        "max_interval_minutes": 65.77
+      },
+      "imas-ambix:dsv41-tune-20260917": {
+        "armings": 5,
+        "median_interval_minutes": 30.71,
+        "min_interval_minutes": 30.18,
+        "max_interval_minutes": 31.24
+      },
+      "imas-ambix:flat-columns": {
+        "armings": 5,
+        "median_interval_minutes": 30.17,
+        "min_interval_minutes": 30.14,
+        "max_interval_minutes": 30.9
+      },
+      "imas-ambix:host-attribution-repair": {
+        "armings": 2,
+        "median_interval_minutes": 30.28,
+        "min_interval_minutes": 30.28,
+        "max_interval_minutes": 30.28
+      },
+      "imas-ambix:probe-and-provenance": {
+        "armings": 3,
+        "median_interval_minutes": 32.11,
+        "min_interval_minutes": 30.27,
+        "max_interval_minutes": 33.96
+      },
+      "imas-ambix:sglang-vocabulary": {
+        "armings": 4,
+        "median_interval_minutes": 30.17,
+        "min_interval_minutes": 30.16,
+        "max_interval_minutes": 30.34
+      },
+      "imas-ambix:slurm-fleet": {
+        "armings": 15,
+        "median_interval_minutes": 30.15,
+        "min_interval_minutes": 30.1,
+        "max_interval_minutes": 493.7
+      },
+      "imas-ambix:slurm-fleet-placement": {
+        "armings": 4,
+        "median_interval_minutes": 57.46,
+        "min_interval_minutes": 30.1,
+        "max_interval_minutes": 58.98
+      },
+      "imas-ambix:wire-telemetry-spine": {
+        "armings": 6,
+        "median_interval_minutes": 30.14,
+        "min_interval_minutes": 30.08,
+        "max_interval_minutes": 171.2
+      },
+      "imas-efit:review-2026-09-08": {
+        "armings": 2,
+        "median_interval_minutes": 9497.17,
+        "min_interval_minutes": 9497.17,
+        "max_interval_minutes": 9497.17
+      },
+      "imas-efit:ship-s13-20260916": {
+        "armings": 54,
+        "median_interval_minutes": 30.26,
+        "min_interval_minutes": 1.37,
+        "max_interval_minutes": 3488.03
+      },
+      "imas-efit:ship-s13-20260921e": {
+        "armings": 8,
+        "median_interval_minutes": 30.95,
+        "min_interval_minutes": 30.14,
+        "max_interval_minutes": 191.29
+      },
+      "imas-efit:ship-s13-20260922": {
+        "armings": 18,
+        "median_interval_minutes": 30.67,
+        "min_interval_minutes": 1.06,
+        "max_interval_minutes": 131.4
+      },
+      "nova:nova-27-20260922": {
+        "armings": 2,
+        "median_interval_minutes": 1.05,
+        "min_interval_minutes": 1.05,
+        "max_interval_minutes": 1.05
+      },
+      "nova:s18-fable-20260922": {
+        "armings": 21,
+        "median_interval_minutes": 30.19,
+        "min_interval_minutes": 0.88,
+        "max_interval_minutes": 76.68
+      },
+      "nova:s18-pta": {
+        "armings": 3,
+        "median_interval_minutes": 639.42,
+        "min_interval_minutes": 307.4,
+        "max_interval_minutes": 971.43
+      },
+      "nova:s19-codex-20260916": {
+        "armings": 24,
+        "median_interval_minutes": 30.49,
+        "min_interval_minutes": 0.22,
+        "max_interval_minutes": 56.08
+      },
+      "nova:s19-playable": {
+        "armings": 5,
+        "median_interval_minutes": 159.37,
+        "min_interval_minutes": 18.68,
+        "max_interval_minutes": 392.03
+      },
+      "nova:s19-review": {
+        "armings": 2,
+        "median_interval_minutes": 0.49,
+        "min_interval_minutes": 0.49,
+        "max_interval_minutes": 0.49
+      },
+      "reckon:660d357e-1ede-4027-b678-d89d9391ff8f": {
+        "armings": 31,
+        "median_interval_minutes": 30.24,
+        "min_interval_minutes": 0.08,
+        "max_interval_minutes": 802.02
+      },
+      "reckon:monitor-rox-20260922": {
+        "armings": 4,
+        "median_interval_minutes": 30.13,
+        "min_interval_minutes": 30.09,
+        "max_interval_minutes": 30.34
+      },
+      "reckon:rca-worker-channel-20260915": {
+        "armings": 12,
+        "median_interval_minutes": 30.17,
+        "min_interval_minutes": 30.09,
+        "max_interval_minutes": 55.34
+      },
+      "reckon:ship-budget-20260921": {
+        "armings": 20,
+        "median_interval_minutes": 30.19,
+        "min_interval_minutes": 0.2,
+        "max_interval_minutes": 80.68
+      },
+      "reckon:ship-cdocw-20260921": {
+        "armings": 16,
+        "median_interval_minutes": 30.07,
+        "min_interval_minutes": 0.47,
+        "max_interval_minutes": 134.38
+      },
+      "reckon:ship-cdocw-20260922": {
+        "armings": 22,
+        "median_interval_minutes": 30.09,
+        "min_interval_minutes": 30.06,
+        "max_interval_minutes": 30.4
+      },
+      "reckon:ship-cot-drain-20260909": {
+        "armings": 2,
+        "median_interval_minutes": 167.63,
+        "min_interval_minutes": 167.63,
+        "max_interval_minutes": 167.63
+      },
+      "reckon:ship-crpc-20260921": {
+        "armings": 25,
+        "median_interval_minutes": 30.09,
+        "min_interval_minutes": 0.26,
+        "max_interval_minutes": 983.61
+      },
+      "reckon:ship-lane-aware-20260914": {
+        "armings": 2,
+        "median_interval_minutes": 192.15,
+        "min_interval_minutes": 192.15,
+        "max_interval_minutes": 192.15
+      },
+      "reckon:ship-s14": {
+        "armings": 3,
+        "median_interval_minutes": 731.63,
+        "min_interval_minutes": 0.22,
+        "max_interval_minutes": 1463.05
+      },
+      "reckon:ship-s15": {
+        "armings": 2,
+        "median_interval_minutes": 298.86,
+        "min_interval_minutes": 298.86,
+        "max_interval_minutes": 298.86
+      },
+      "reckon:ship-s15-0903": {
+        "armings": 12,
+        "median_interval_minutes": 66.77,
+        "min_interval_minutes": 6.02,
+        "max_interval_minutes": 717.42
+      },
+      "reckon:ship-s15-2026-09-04": {
+        "armings": 4,
+        "median_interval_minutes": 113.91,
+        "min_interval_minutes": 0.21,
+        "max_interval_minutes": 3232.48
+      },
+      "reckon:ship-s15-20260914": {
+        "armings": 3,
+        "median_interval_minutes": 204.32,
+        "min_interval_minutes": 0.51,
+        "max_interval_minutes": 408.13
+      },
+      "reckon:ship-s16": {
+        "armings": 3,
+        "median_interval_minutes": 524.94,
+        "min_interval_minutes": 504.52,
+        "max_interval_minutes": 545.35
+      },
+      "reckon:ship-s16-20260914": {
+        "armings": 32,
+        "median_interval_minutes": 30.26,
+        "min_interval_minutes": 30.08,
+        "max_interval_minutes": 208.87
+      },
+      "reckon:ship-s17-20260915": {
+        "armings": 20,
+        "median_interval_minutes": 30.24,
+        "min_interval_minutes": 30.08,
+        "max_interval_minutes": 53.88
+      },
+      "reckon:ship-s18-20260914": {
+        "armings": 3,
+        "median_interval_minutes": 100.78,
+        "min_interval_minutes": 0.48,
+        "max_interval_minutes": 201.07
+      },
+      "reckon:ship-s18-20260915": {
+        "armings": 62,
+        "median_interval_minutes": 30.2,
+        "min_interval_minutes": 0.34,
+        "max_interval_minutes": 2317.53
+      },
+      "reckon:ship-s18-20260918": {
+        "armings": 11,
+        "median_interval_minutes": 30.09,
+        "min_interval_minutes": 0.12,
+        "max_interval_minutes": 184.16
+      },
+      "reckon:ship-s19-20260922": {
+        "armings": 4,
+        "median_interval_minutes": 30.12,
+        "min_interval_minutes": 0.17,
+        "max_interval_minutes": 30.17
+      },
+      "reckon:ship-s8": {
+        "armings": 2,
+        "median_interval_minutes": 342.47,
+        "min_interval_minutes": 342.47,
+        "max_interval_minutes": 342.47
+      },
+      "reckon:ship-s9": {
+        "armings": 2,
+        "median_interval_minutes": 1323.46,
+        "min_interval_minutes": 1323.46,
+        "max_interval_minutes": 1323.46
+      },
+      "reckon:ship-window-20260922": {
+        "armings": 19,
+        "median_interval_minutes": 30.11,
+        "min_interval_minutes": 30.06,
+        "max_interval_minutes": 55.48
+      },
+      "reckon:ship-worker-spend-20260909": {
+        "armings": 2,
+        "median_interval_minutes": 0.2,
+        "min_interval_minutes": 0.2,
+        "max_interval_minutes": 0.2
+      },
+      "reckon:spa-blank-01": {
+        "armings": 3,
+        "median_interval_minutes": 77.89,
+        "min_interval_minutes": 1.53,
+        "max_interval_minutes": 154.25
+      },
+      "reckon:spa-v2-design": {
+        "armings": 2,
+        "median_interval_minutes": 0.35,
+        "min_interval_minutes": 0.35,
+        "max_interval_minutes": 0.35
+      },
+      "~/Code/reckon:imas-ambix-8c": {
+        "armings": 2,
+        "median_interval_minutes": 267.93,
+        "min_interval_minutes": 267.93,
+        "max_interval_minutes": 267.93
+      },
+      "~/Code/reckon:s18-hexgrid": {
+        "armings": 7,
+        "median_interval_minutes": 31.63,
+        "min_interval_minutes": 12.86,
+        "max_interval_minutes": 175.88
+      },
+      "~/Code/reckon:s19-relaunch": {
+        "armings": 3,
+        "median_interval_minutes": 1041.99,
+        "min_interval_minutes": 576.23,
+        "max_interval_minutes": 1507.74
+      }
+    }
+  },
+  "sweep_launched_worker": {
+    "question": "is a worker launched by the follower's own recovery sweep a child of the follower process, so that a host expiry which kills the follower also kills it?",
+    "answer": "yes as to parentage, no as to the kill: the sweep reaches subprocess.Popen, which makes the worker the follower's child, but it passes start_new_session=True, so the worker sits in its own session and process group and survives the follower's death",
+    "deciding_file": "reckon/crew/dispatch.py",
+    "deciding_line_parentage": 4585,
+    "deciding_line_survives": 4592,
+    "deciding_source": "start_new_session=True",
+    "call_chain": [
+      "reckon/cli.py:1633 _sweep_lapsed_holds",
+      "reckon/crew/resumption.py:964 sweep",
+      "reckon/crew/resumption.py:993 launch = _spawn",
+      "reckon/crew/resumption.py:677 pid = launcher(...)",
+      "reckon/crew/dispatch.py:4560 _spawn",
+      "reckon/crew/dispatch.py:4592 start_new_session=True"
+    ],
+    "resumed_run_stream_end_within_a_minute_of_an_expiry": {
+      "question": "does a resumed run's stream end within a minute of a host expiry notice?",
+      "answer": "yes, at close quarters to the base rate, so the coincidence does not discriminate on its own",
+      "run_streams_ending_in_window": 1889,
+      "coincidence_within_60s": 483,
+      "null_expected_coincidences": 234.3,
+      "notice_coverage_of_window": 0.124,
+      "examples": [
+        {
+          "run_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260916T055536290363-cca-exact-clip-warm-cost-and-workspace/resume-2.jsonl",
+          "stream_end": "2026-09-16T07:53:49.120789+00:00",
+          "notice_ts": "2026-09-16T07:52:57.418000+00:00",
+          "delta_seconds": 51.7
+        },
+        {
+          "run_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260916T070630305673-ecq-polygon-exact-density-moments/resume-1.jsonl",
+          "stream_end": "2026-09-16T07:39:52.085972+00:00",
+          "notice_ts": "2026-09-16T07:40:16.755000+00:00",
+          "delta_seconds": -24.7
+        },
+        {
+          "run_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260916T070630305673-ecq-polygon-exact-density-moments/resume-5.jsonl",
+          "stream_end": "2026-09-16T10:30:59.505474+00:00",
+          "notice_ts": "2026-09-16T10:31:09.920000+00:00",
+          "delta_seconds": -10.4
+        }
+      ]
+    }
+  }
+}

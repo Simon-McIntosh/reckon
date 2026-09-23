@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-monitor-under-measurement-landed">
   <meta name="plan-title" content="The Monitor Under Measurement &mdash; landed evidence">
-  <meta name="plan-summary" content="Cumulative record of the follower measurements: a cell census of every rendered row, a census of 118 stalls by worker liveness, and a source path map of where scope, de-duplication, the sweep and the attach line are decided.">
+  <meta name="plan-summary" content="Cumulative record of the follower measurements: a cause census of every follower stop, a cell census of every rendered row, a census of 118 stalls by worker liveness, and a source path map of where scope, de-duplication, the sweep and the attach line are decided.">
   <meta name="plan-evidence-for" content="reckon:the-monitor-under-measurement">
-  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s3,reckon:the-monitor-under-measurement#s4,reckon:the-monitor-under-measurement#s5">
+  <meta name="plan-verifies" content="reckon:the-monitor-under-measurement#s2,reckon:the-monitor-under-measurement#s3,reckon:the-monitor-under-measurement#s4,reckon:the-monitor-under-measurement#s5">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="qualified-pass">
   <meta name="plan-environment" content="Linux workstation; detached git worktrees; locally served worker deepseek-v4.1-flash; matplotlib">
-  <meta name="plan-commits" content="91a4e14e,73cbb5c0,a727e296,e12ad508,91b0d3ed,5082fe7f,a22867da,ea078bd7">
-  <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png,docs/research/data/monitor-stall-census.json,docs/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png,docs/research/data/monitor-scope-path-map.json,docs/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg">
+  <meta name="plan-commits" content="91a4e14e,73cbb5c0,a727e296,e12ad508,91b0d3ed,5082fe7f,a22867da,ea078bd7,00bda9b9,6737d0a8,6d5a52b4,59f87782">
+  <meta name="plan-artifacts" content="docs/research/data/monitor-row-census.json,docs/figures/the-monitor-under-measurement/model-cell-and-reason-clip.png,docs/research/data/monitor-stall-census.json,docs/figures/the-monitor-under-measurement/stall-liveness-by-outcome.png,docs/research/data/monitor-scope-path-map.json,docs/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg,docs/research/data/monitor-staleness-census.json,docs/figures/the-monitor-under-measurement/staleness-causes.png">
   <title>The Monitor Under Measurement &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -356,6 +356,108 @@
     wait pass &mdash; is a repair rather than this map, and is recorded for the followup plans.
     Nothing here asserts that the monitor's behaviour changes; it records where the behaviour is
     decided.</p>
+  </section>
+
+
+  <section id="s2-cause-census">
+    <h2>§2 — Why followers go stale: a cause census</h2>
+    <p><strong>Deliverable.</strong>
+    <code>docs/research/data/monitor-staleness-census.json</code>, one row per cause, each carrying
+    its count, the pattern searched, the population searched and quoted examples with their
+    transcript paths. Scope was the reckon, nova, imas-efit and imas-ambix checkouts including
+    their worktrees: 1412 transcript directories, 1610 transcript files, 1311 Monitor calls
+    (all time) of which 719 were armed inside the window.</p>
+
+    <p><strong>The positive control holds.</strong> The plan set the control that the imas-efit
+    transcripts for 2026-09-22 yield at least nine expiry notices, because that coordinator
+    reported nine. The matcher, <code>Monitor expired after (\d+)m with (no|\d+) events?
+    delivered</code>, returns <strong>20</strong> for that session and day. The instrument was
+    additionally shown to see prose that merely quotes the string: two such records were found
+    and excluded from the count, because a notice is delivered as a
+    <code>&lt;task-notification&gt;</code> event, never as text a reader is quoting.</p>
+
+    <table>
+      <thead><tr><th>Cause</th><th>Count</th><th>Population</th></tr></thead>
+      <tbody>
+        <tr><td>Host expiry</td><td>620</td><td>armed followers in the window</td></tr>
+        <tr><td>Producer gap (seat released before expiry)</td><td>86</td><td>armed followers whose expiry deadline preceded the window's close</td></tr>
+        <tr><td>Arming failure (exit 127)</td><td>12</td><td>armed followers in the window whose task carries a host <code>script failed</code> notice</td></tr>
+        <tr><td>Other script failure</td><td>1</td><td>the four rows partition the 719 armed followers in the window</td></tr>
+        <tr><td>Code reload</td><td>198</td><td>commits touching <code>reckon/cli.py</code> or <code>reckon/crew/*.py</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>719 = 620 + 86 + 12 + 1. Every armed follower in the window falls into exactly one of the
+    four outcome rows, so the census is a partition rather than overlapping searches; the
+    code-reload row is counted over a different population (commits, not armings) and is excluded
+    from the sum. Zero armings were still running when the window closed.</p>
+
+    <p><strong>The host's parameter set.</strong> 453 Monitor calls passed
+    <code>persistent</code>; the harness answers such a call with <em>"runs until TaskStop or
+    session end"</em>, and answers a call without it with <em>"expires in 30m unless the source
+    ends first"</em>. None of the 453 persistent calls met the thirty-minute expiry; 751
+    non-persistent calls did. The finding that matters for the repair plans is the timing: every
+    one of the 453 persistent calls predates 2026-09-16, so <code>persistent_passed_in_window
+    = 0</code> and not one of the 719 in-window armings carried the flag. The re-arm storm the
+    coordinators reported is a re-arm storm in a window where nobody was passing
+    <code>persistent</code>. The median interval between successive armings in one session is
+    <strong>30.23 minutes</strong> over 64 sessions, which is the thirty-minute expiry read
+    back out of the transcripts. The boundary at which the flag stopped being passed is
+    recorded: the last call that carried it was armed 2026-09-15T13:40:15Z in the imas-ambix
+    transcript <code>52baf927&hellip;</code>; the first non-persistent call that met the expiry
+    was armed 2026-09-14T20:41:15Z in the reckon transcript <code>3332e8d8&hellip;</code>.</p>
+
+    <p><strong>Refuted and repaired: the arming-failure row.</strong> An earlier reading of this
+    census reported <strong>0</strong> arming failures and a producer gap of <strong>100</strong>,
+    and the coordinator refuted it from a real field case. The host reports a failed arming as a
+    task notification whose summary is <code>Monitor &lt;description&gt; script failed
+    (exit N)</code>, in the imas-efit session <code>e2fc50d7</code> for task
+    <code>bjx1kic75</code> among others. Two independent defects hid it: the walk yielded no
+    record for a failure-only line, and a regular expression carrying a literal quote cannot
+    match the raw transcript, where the quote is escaped as <code>\"</code>. Matched on the
+    host's form, for any exit code, and after de-escaping the line, the window holds
+    <strong>13</strong> armed followers with a failure notice &mdash; 12 at exit 127 and 1 at exit
+    2 &mdash; so the arming-failure row is 12, a fourth row carries the other script failure, and
+    the producer gap that had been absorbing them falls to <strong>86</strong>. The row now
+    carries its own positive control, the named task, which is matched before the zero it
+    replaced could be read.</p>
+
+    <p><strong>Sweep-launched workers survive the follower.</strong> Yes as to parentage, no as
+    to the kill. <code>_sweep_lapsed_holds</code> (<code>reckon/cli.py:1633</code>) calls
+    <code>sweep</code> (<code>reckon/crew/resumption.py:964</code>), which takes
+    <code>launch = _spawn</code> (<code>reckon/crew/resumption.py:993</code>) and calls it at
+    <code>reckon/crew/resumption.py:677</code>. <code>_spawn</code>
+    (<code>reckon/crew/dispatch.py:4560</code>) starts the worker with
+    <code>subprocess.Popen</code> at <code>:4585</code>, which makes it the follower's child as
+    its docstring states, but passes <code>start_new_session=True</code> at
+    <code>:4592</code>, which places the worker in its own session and process group. A host
+    expiry that kills the follower therefore does not take the worker down.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-monitor-under-measurement/staleness-causes.png"
+           alt="Left panel: 620 host expiries, 86 seat releases, 12 arming failures, 1 other script failure. Right panel: 0 percent of persistent Monitor calls met the 30-minute expiry against 88
+                 percent of the rest.">
+      <figcaption>Left: the complete partition of 719 in-window armings. Right: the expiry rate
+      split by the <code>persistent</code> flag — zero of 453.</figcaption>
+    </figure>
+
+    <details>
+      <summary>What the census does not establish</summary>
+      <ul>
+        <li><strong>Code reload is an opportunity, not an observation.</strong> The in-place
+        re-exec leaves no banner a transcript distinguishes from ordinary prose, so the row counts
+        the 198 commits that advance <code>follower_code_stamp</code>, not reloads observed.</li>
+        <li><strong>The streams could not carry the producer-gap count.</strong> The
+        <code>.events</code> files stamp time-of-day only, and the imas-efit stream holds no
+        ticker rows at all, so producer gaps are derived from the transcripts. Two baseline
+        bursts are visible where the streams do carry rows.</li>
+        <li><strong>The resumed-stream coincidence does not discriminate.</strong> 1846 run
+        streams end inside the window; 463 end within a minute of a notice, against a uniform null
+        of 221 and a notice coverage of 12% of the window. Both run ends and notices cluster
+        strongly, so the uniform null is the wrong reference and the coincidence is reported as
+        uninformative rather than as evidence that a worker died at an expiry.</li>
+      </ul>
+    </details>
   </section>
 </main>
 </body>
