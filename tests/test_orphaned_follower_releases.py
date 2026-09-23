@@ -15,10 +15,17 @@ recorded consumer is that parent, and killing it is what reparents the follower
 without also killing the test. The follower's stdout is a file so "wrote nothing
 after the kill" is read rather than inferred.
 
-The gate is a single test, and it declares one negative control: with the new
-consumer check deleted from the follower's wait pass, the orphaned follower is
-still alive ten seconds after the kill and the registration it holds denies the
-next follower.
+Two tests share the arming and the temporary home, and they split on what the
+consumer does. The release test kills the intermediate parent, so the follower's
+recorded consumer is gone: within ten seconds the follower leaves, its
+registration is free, and the next follower is the holder. The control test
+leaves the parent alive, so the recorded consumer is still reading: past that
+same ten seconds the follower is still running and still the holder, because the
+check that ends an orphan must not end a follower whose lines reach someone.
+
+The gate declares one negative control: with the consumer check forced to report
+the consumer gone however the parent is doing, every follower releases, so the
+live-consumer test fails while the release test still passes.
 """
 
 from __future__ import annotations
@@ -223,6 +230,49 @@ def _assert_registration_free() -> None:
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+def _assert_registration_locked() -> None:
+    """Prove the registration is still held, by a non-blocking acquire failing."""
+    path = runs.follower_lock_path(PROJECT, SESSION)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        else:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            pytest.fail(
+                "a follower whose consumer is still reading must keep the "
+                "registration locked, so a non-blocking acquire must fail"
+            )
+
+
+def _holds_through_release_window(
+    follower_pid: int, start_time: str | None, intermediate: subprocess.Popen
+) -> None:
+    """Require the follower to survive the window an orphan releases within.
+
+    The window is the release case's: a follower that has lost its consumer
+    must leave within ten seconds. Here the consumer is alive throughout, so
+    the check must not fire and the follower must still be running at the far
+    end of that same window.
+    """
+    deadline = time.monotonic() + RELEASE_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        if intermediate.poll() is not None:
+            _stderr = intermediate.communicate(timeout=RELEASE_WITHIN_SECONDS)[1]
+            pytest.fail(
+                "the intermediate parent exited on its own while it was meant "
+                f"to stay the follower's live consumer; stderr={_stderr!r}"
+            )
+        if _consumer_gone(follower_pid, start_time):
+            pytest.fail(
+                "a follower whose consumer is still reading must not release: "
+                f"it left inside the {RELEASE_WITHIN_SECONDS!r}s window in which "
+                "an orphaned follower releases"
+            )
+        time.sleep(POLL_SECONDS)
+
+
 def _start_second_follower(home: Path) -> subprocess.Popen:
     return subprocess.Popen(
         [
@@ -316,6 +366,53 @@ def test_an_orphaned_follower_releases_its_registration_and_leaves(home) -> None
         _wait_until_holder(second, deadline)
     finally:
         _kill(second)
+        _kill(intermediate)
+        if follower_pid is not None and not _consumer_gone(follower_pid, start_time):
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(follower_pid, 9)
+
+    assert _tree(real_dir) == before == set(), (
+        "a follower pointed at a temporary home must leave the real follower "
+        "directory untouched"
+    )
+
+
+def test_a_follower_whose_consumer_reads_keeps_its_registration(home) -> None:
+    """A follower whose consumer is still reading holds through the window.
+
+    The release case's control: the same arming, with the intermediate parent
+    left alive so the follower's recorded consumer is still reading. Past the
+    ten seconds in which an orphaned follower releases and leaves, this
+    follower is still running, ``follower_state`` still names it as the holder,
+    and its registration is still locked. It separates a follower that holds the
+    lock because its consumer is gone from one that holds it because its
+    consumer is there.
+    """
+    real_dir = _real_follower_dir(PROJECT)
+    before = _tree(real_dir)
+
+    intermediate: subprocess.Popen | None = None
+    follower_pid: int | None = None
+    start_time: str | None = None
+    try:
+        intermediate, _stdout_path, _stderr_path, pid_path = _start_intermediate(
+            home, home
+        )
+        follower_pid = _follower_pid(pid_path, intermediate)
+        _wait_until_armed(follower_pid, intermediate)
+        start_time = runs._process_start_time(follower_pid)
+
+        _holds_through_release_window(follower_pid, start_time, intermediate)
+
+        state = runs.follower_state(PROJECT, SESSION)
+        assert state["registered"] is True, (
+            "a follower whose consumer is still reading must stay registered"
+        )
+        assert str(state["follower"].get("pid")) == str(follower_pid), (
+            "the live follower must remain the holder named by follower_state"
+        )
+        _assert_registration_locked()
+    finally:
         _kill(intermediate)
         if follower_pid is not None and not _consumer_gone(follower_pid, start_time):
             with contextlib.suppress(ProcessLookupError):
