@@ -86,8 +86,11 @@
       that one run file in place of <code>crew.json</code>. <code>append_run</code> itself does not
       commit. It refuses when its own target path already exists, or while <code>crew.json</code> still
       holds a <code>runs</code> row with the same id, naming whichever it found. Until §3 has run, the second
-      check reads <code>crew.json</code>. So §1 removes the rewrite and the retry queue but not that read,
-      and §3 removes the read. §3 is dispatched as soon as §1 merges. Once §3 has emptied the old list,
+      check scans <code>crew.json</code>'s bytes for the run id without building the run list. Only when
+      the id occurs does it parse the document, to confirm that the match is a top-level
+      <code>runs</code> row rather than an id nested inside another run's record. So §1 removes the
+      rewrite and the retry queue, leaves a byte scan, and §3 removes the scan. §3 is queued as soon as
+      §1 merges and runs when no peer holds uncommitted work in <code>docs/state</code>. Once §3 has emptied the old list,
       the path check is the whole guard.</p>
       <p><strong>The index write moves after the file.</strong> The run file no longer carries
       <code>store_write</code>. After the file is written, the promotion updates the index once and
@@ -115,11 +118,12 @@
       <code>{"members", "runs", "holds"}</code>. Its <code>runs</code> becomes the union of the run files
       under <code>runs/</code> and any rows still in <code>crew.json</code>'s <code>runs</code> list. If
       the same id appears in both, the two copies are compared through the serialiser. Identical copies,
-      which an interrupted §3 split leaves behind, are read once. Differing copies make
-      <code>load</code> refuse, naming the id. Every other reader of the run
+      which an interrupted §3 split leaves behind, are read once. Differing copies make the
+      whole <code>load</code> call raise, naming the id and both paths. It does not return the rest of
+      the list, because a run whose record disagrees with itself cannot be counted once and correctly. Every other reader of the run
       list is made to go through <code>load</code> or through the index, including recovery,
       calibration, the census tools and the MCP views. This section audits every site under
-      <code>reckon/</code> that reads the run list or opens the ledger file, repoints any site that
+      <code>reckon/</code> that reads the run list or opens <code>crew.json</code>, repoints any site that
       bypasses <code>load</code>, and lists every site and its disposition in the manifest. The files are the authority and the index is a cache of them.
       A keyed question may use the index when it exists. When the index is absent, or does not hold
       the same set of run ids as the files, the reader answers from the files and the index is rebuilt.</p>
@@ -129,7 +133,9 @@
       answer must be identical across all nine combinations of those three placements with the index
       present, deleted, and rebuilt. An id held identically in both places is read once, and an id
       whose two copies differ makes <code>load</code> refuse, naming it. Outside
-      <code>reckon/ledger.py</code>, no site under <code>reckon/</code> opens the ledger file. The negative control makes
+      <code>reckon/ledger.py</code>, no site under <code>reckon/</code> opens <code>crew.json</code>; §3's
+      split is written inside <code>reckon/ledger.py</code>, so it stays within that boundary. Reading
+      run files is expected everywhere and is not what this checks. The negative control makes
       <code>load</code> skip the run files, and with all rows in run files and the index absent it must
       then return an empty <code>runs</code> list.</p>
     </section>
@@ -139,12 +145,14 @@
       <p><strong>Measure.</strong> A one-time migration covers every project in <code>mounts.json</code>
       whose resolved <code>crew.json</code> exists and holds a <code>runs</code> key, including an empty
       list, which yields zero files and the key's removal. Projects with no <code>crew.json</code>, or
-      no <code>runs</code> key, are reported as skipped. Before writing, the split refuses if any run
-      file already present differs from the serialiser's output for its row. For each project it writes every row of that list to <code>runs/&lt;run_id&gt;.json</code>
+      no <code>runs</code> key, are reported as skipped. Before writing anything for a project, the split
+      checks every run file already present against the serialiser's output for its row. If any
+      differs, that project's whole split stops: no file is written, the <code>runs</code> key stays,
+      no commit is made, and the report names each differing file. Other projects proceed. For each project it writes every row of that list to <code>runs/&lt;run_id&gt;.json</code>
       through the one serialiser, keeping the row's fields exactly as they are, <code>store_write</code>
       included. It then removes the <code>runs</code> key from <code>crew.json</code> and leaves
       <code>members</code> and <code>holds</code> in place for §4. Each project is its own commit with
-      nothing else in it.</p>
+      nothing else in it, including a project whose empty list yields only the key's removal.</p>
       <p><strong>Falsifier.</strong> For every migrated project, the row count before equals the file
       count after. Each file's bytes equal the serialiser's output for its source row. A second run
       writes nothing and makes no commit. A dry run writes nothing. It prints, per project, the row count and how many rows have no file yet. It also
