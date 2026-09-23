@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="95">
 </head>
 <body>
   <main class="plan-doc">
@@ -1416,6 +1416,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20260922T213939819649-review-of-a-cited-identifier-resolves-in-its-own-store" data-who="reckon-ship" data-when="2026-09-22T21:45:21.702Z">
     <div class="r-comment-body"><p>the process ended 322s in, during the provider usage-limit window that stopped every run in this project; the manifest never left in-progress and no review record was written, so nothing is recoverable from it and the reviewed run needs a fresh reviewer under a new node id</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store" data-who="reckon-ship" data-when="2026-09-22T21:39:16.750Z">
+    <div class="r-comment-body"><p>Promotion resolves every identifier a manifest cites against the repository and refuses one resolving to no object; merged at e147cbed, verified in HEAD by the markers the change introduced rather than by reachability. Gate: the node&#x27;s own file is 10 passed exit 0 at the delivered tree; the wider population is 1 failed 136 passed at head against the identical failure id and count at base aecb4e5f, so no failure is added; the declared mutation reddens exactly the three refusal cases at 3 failed 7 passed with the declaration verbatim on the red log&#x27;s first line. Independent review 86/100 (durability 16, evidence 15, fit 18, goal fidelity 18, scope discipline 19), three findings all carried. Two the coordinator found independently: the manifest cited four gate logs under the configuration home where none existed while the real logs sit under the checkout&#x27;s reports root, a cited identifier resolving to no store and so this section&#x27;s own defect committed by its own record; and no gate log&#x27;s first line names the revision, tree or command that the template this plan landed requires. The third is the reviewer&#x27;s and is the substantive one: the case at tests/test_cited_identifier_resolves.py:369 passes under the declared mutation because a fabricated citation left unrefused still trips the worktree-head guard, so its assertion holds whichever refusal fired and would not catch a regression. A fourth, found while assembling this citation: gate-head-new-file.log is misnamed, carrying the population plus the new file at 1 failed 138 passed rather than the file alone, so the manifest&#x27;s ten-passed claim was backed only by the post-revert control log. The test_logs citation is repaired to the four paths that exist, each verified by read-back, with the delivered manifest kept as manifest.md.asdelivered so a repaired field stays distinguishable from a fabricated one.</p></div>
 </div>
 </section>
 </main>

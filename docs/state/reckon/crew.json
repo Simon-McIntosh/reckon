@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T03:40:17",
+  "updated": "2026-09-23T03:45:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -274049,6 +274049,278 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store",
+        "plan": "crew-runtime-positive-controls",
+        "section": "\u00a718",
+        "node": "a-cited-identifier-resolves-in-its-own-store",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1399,
+                "cached_input_tokens": 346054,
+                "input_tokens": 347455,
+                "output_tokens": 639,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 348094,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "93197dbb-b781-4e8b-bbba-45ccdc721fa1",
+            "session_id": "ship-crpc-20260921"
+          },
+          "done_when": "tests/test_cited_identifier_resolves.py passes with exit 0 over at least 6 cases entering through the promotion path that records a run commits: a 40-character sha that resolves, an abbreviated sha that resolves, a 40-character hex string that resolves to no object, a string that is not hex, an empty citation, and a citation naming an existing tag; the refusal text contains the unresolvable citation and the run id; and the focused gate adds no failure the stated base revision does not also report",
+          "estimated_hours": 0.6,
+          "goal": "promotion resolves every identifier a manifest cites against the repository before recording it, and refuses a citation that resolves to no object instead of storing it",
+          "id": "a-cited-identifier-resolves-in-its-own-store",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T20:15:40Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store/manifest.md",
+          "negative_control": "delete the resolution call in the citation check in reckon/crew/promotion.py so every cited identifier is recorded without being looked up",
+          "plan": "crew-runtime-positive-controls",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a718",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_cited_identifier_resolves.py",
+            "docs/plans/crew-runtime-positive-controls.html",
+            "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+            "docs/figures/crew-runtime-positive-controls"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-791cd98e623fd636bb87",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T20:16:05Z",
+        "completed_at": "2026-09-22T21:39:16.750Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4925,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4991,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "aecb4e5f83f971828236bf94ac6ee376d566ce88",
+        "commits": [
+          "ecf665b33918ed45f93e4c32cf8280304944f725",
+          "535d087e058832dd4a45e7742f27f8686c52122b"
+        ],
+        "changed_lines": {
+          "added": 669,
+          "removed": 5,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cited_identifier_resolves.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store/manifest.md",
+        "scope_changed": false,
+        "session_id": "9af3a6ac-28b0-42fc-8bcb-3300739de4e5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 12499545,
+            "input_tokens_cumulative": 15831402,
+            "output_tokens": 58596,
+            "output_tokens_cumulative": 73554,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T21:39:16.750Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 16,
+            "evidence": 15,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 86
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 30447896,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 4983.753,
+          "generated_tokens": 188816,
+          "generation_seconds": 4707.968,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 275.785,
+          "peak_input_tokens": 166237,
+          "tokens_per_second": 40.11,
+          "wall_tokens_per_second": 37.89
+        },
+        "follow_on_paths": [
+          "tests/test_a_short_commit_list_is_reported.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-crpc-20260921/a-cited-identifier-resolves-in-its-own-store",
+          "session_id": "9af3a6ac-28b0-42fc-8bcb-3300739de4e5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T21:39:16.750Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "plan_impl_at_dispatch": 0.947,
+        "impl_move": {
+          "plan": "crew-runtime-positive-controls",
+          "at_dispatch": 0.947,
+          "at_complete": 0.98,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_cited_identifier_resolves.py"
+          ],
+          "declaration": "delete the resolution call in the citation check in reckon/crew/promotion.py so every cited identifier is recorded without being looked up",
+          "log": "negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201537754208-a-cited-identifier-resolves-in-its-own-store/negative_control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:00:40.749807+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T20:15:40Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 141.0,
+        "orientation_input_tokens": 2955014.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -274347,6 +274619,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2169
+    "_version": 2170
   }
 }
