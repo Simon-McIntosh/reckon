@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192">
-<meta name="plan-impl" content="0.31">
+<meta name="plan-commits" content="06a008fb,3263f5a1">
+<meta name="plan-impl" content="0.36">
 </head>
 <body>
   <main class="plan-doc">
@@ -463,6 +463,9 @@
 <div class="r-comment" data-section="s9" data-id="c-20260923T0815-compaction-record-finished" data-who="compaction-record-finished" data-when="2026-09-23T08:15:00+02:00">
     <div class="r-comment-body"><p><strong>Record completed by <code>compaction-record-finished</code>.</strong> The data record lists both compaction records with their file, line, trigger and pre_tokens: <code>stream.jsonl</code> line 3904 (trigger auto, pre_tokens 176242) and <code>resume-1.jsonl</code> line 459 (trigger auto, pre_tokens 171919). <code>results_written_after_compaction</code> is 37 of 40 file entries, appended after the first compaction record, so results were written both before and after the boundary.</p>
 <p><code>ended_with_complete_manifest</code> is <strong>false</strong>: the third resume was refused on its first turn (<code>Prompt is too long</code>, <code>terminal_reason: blocking_limit</code>, 0 input tokens on the turn against 7,485,800 cumulative). <code>early_turn_end</code> records resume-1's final result text, a closing sentence announcing an action with no tool call behind it. The count of assistant records before the first compaction is 86, not the 91 an earlier derivation recorded; an independent count confirms 86. §9 is not closed here: a worker does not close its own node.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260923T0756-compaction-record-landed" data-who="reckon-ship" data-when="2026-09-23T07:56:00Z">
+    <div class="r-comment-body"><p><strong>Compaction demonstration record landed</strong> (merged 551db5dd; commits 06a008fb, 3263f5a1). The worker compacted twice automatically: 176,242 → 27,863 tokens in 125 s, and 171,919 → 20,158 in 186 s. 37 of its 40 corpus reads were written after the first compaction. It did not end with a complete manifest: its third resume was refused with <code>blocking_limit</code>. Review: 77. Both findings are record-keeping. The landing commits were missing from plan-commits, and are added here. The evidence summary still counts four sections.</p><p><strong>Why it compacted at all.</strong> The harness uses a 200,000-token window. The launcher exports <code>CLAUDE_CODE_MAX_CONTEXT_TOKENS=480000</code>, confirmed in a live worker's environment, and the engine serves 512,000. All 832 DSv4 runs since 2026-09-15 that report a window report 200,000. The leading hypothesis is the launcher's <code>behavesAs: claude-sonnet-5</code> mapping, which gives the harness Sonnet's window; a one-node probe can confirm or refute it. So this plan's compaction deaths, <q>Prompt is too long</q> on resume and compaction that never completes, occur on a window about 2.4 times smaller than the lane serves.</p></div>
 </div>
 </section>
 </main>
