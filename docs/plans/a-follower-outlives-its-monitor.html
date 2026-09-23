@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="33">
+  <meta name="plan-version" content="35">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -392,16 +392,38 @@
     stream's parsed result is kept against its path, size and mtime, and reused while all three
     match. When the file has only grown, only the appended bytes are parsed. The classification
     result must be identical to a full re-parse.</p>
+    <p><strong>The same parse is the dominant cost of a page load.</strong> Measured by reckon-e4 at
+    about 17:31 local on 2026-09-23, after the discovery repair (56e13e11) removed the file-parse
+    cost. Six <code>py-spy</code> samples during a <code>/_discover/nova</code> request all sat in one
+    chain: <code>discover_plans</code>, <code>_attach_ready_set</code>, <code>build_roadmap</code>,
+    <code>partition_live_runs</code> in <code>reckon/mcp_views.py</code>, then
+    <code>classify_pointer</code>. From there it read streams by three paths:
+    <code>_stream_budget</code> through <code>observe_log</code> and <code>parse_events</code>;
+    <code>_admission_refusal</code> in <code>recovery.py</code>, through its own
+    <code>json.loads</code>; and <code>_budget_timing</code> through
+    <code>_stream_completion_stamp</code> and <code>_terminal_stream_data</code> in
+    <code>reckon/crew/promotion.py</code>, then <code>parse_events</code>. Warm
+    <code>/_discover</code> times tracked live-pointer count and commit rate: 49 s for reckon and 95 s
+    for nova, against 1.3 s for imas-codex and 5 s for imas-efit. The same request varied between
+    1.6 s and 95 s. So the cache sits below <code>classify_pointer</code> and serves every caller,
+    and all three reading paths go through it. A cache that only the watcher's call site consults
+    leaves the page load as it is.</p>
     <p><strong>Done when</strong> <code>tests/test_watch_stream_parse_is_cached.py</code> builds a
     live pointer whose stream holds 20,000 events in a temporary <code>RECKON_HOME</code>. It runs
     ten watcher snapshots with the stream unchanged, counting stream parses through a counter the
     test installs, and asserts at most one full parse. It then appends one event and asserts the next
     snapshot parses only the appended bytes. After every snapshot it asserts the classification
-    equals a full re-parse's. A second measure is stated as numbers: CPU time for those ten
-    snapshots at the base revision and at the head. The negative control is executed and logged:
-    with the cache disabled, the parse count is ten and the test fails. The write paths are
-    <code>reckon/_backends.py</code>, <code>reckon/crew/recovery.py</code> and that test. The fix
-    runs in <code>recovery.py</code>'s serial chain.</p>
+    equals a full re-parse's. The same test then calls <code>partition_live_runs</code> ten times
+    over that unchanged pointer and asserts that the stream is read in full at most once across all
+    three reading paths, including <code>_admission_refusal</code>'s. A second measure is stated as
+    numbers: CPU time for those ten snapshots, and the wall time of one warm
+    <code>discover_plans</code> call over a temporary project holding 30 such pointers, each at the
+    base revision and at the head. The negative control is executed and logged: with the cache
+    disabled, the parse count is ten and the test fails. The write paths are
+    <code>reckon/_backends.py</code>, <code>reckon/crew/recovery.py</code>,
+    <code>reckon/crew/promotion.py</code> and that test. The fix runs in <code>recovery.py</code>'s
+    serial chain, and after a-dispatch-returns-without-its-worker's sections that write
+    <code>promotion.py</code>.</p>
 
     <h2 id="s10">&sect;10 &mdash; A watcher a test starts does not outlive the test</h2>
     <p>Measured the same day: watcher processes started by tests were still running long after
@@ -524,7 +546,7 @@
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260923T131050977224-lifetime-survives-reload" data-who="reckon-ship" data-when="2026-09-23T14:00:47.945Z">
-    <div class="r-comment-body"><p>a follower&#x27;s lifetime deadline survives a source-change reload (bc229de1, merged 701bb535); review 89 — its env-leak finding is fixed by the lifetime-deadline-reaches-only-the-reload node, and the plan&#x27;s 10.71 s gate-alone figure has no log (the logged gate is 3 passed in 30.83 s); manifest commits field repaired from &#x27;sha: subject&#x27; strings to bare shas, as-delivered copy kept</p></div>
+    <div class="r-comment-body"><p>a follower's lifetime deadline survives a source-change reload (bc229de1, merged 701bb535); review 89 — its env-leak finding is fixed by the lifetime-deadline-reaches-only-the-reload node, and the plan's 10.71 s gate-alone figure has no log (the logged gate is 3 passed in 30.83 s); manifest commits field repaired from 'sha: subject' strings to bare shas, as-delivered copy kept</p></div>
 </div>
 </section>
 </main>
