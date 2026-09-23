@@ -326,6 +326,34 @@
     <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s6">the landed record</a>.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="palette-cycle-is-proven" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the palette cycle is proven before its count is read.</strong> Commit
+    <code>ea1a0649</code> <em>test(ui): prove the palette cycle before reading the inventory count</em>
+    edits <code>tests/test_shell_project_list_is_immediate.py</code> alone. Each open is confirmed by
+    the palette's own presence and each close by its absence, so the probe no longer reads past a cycle
+    that did not happen. It reports the booleans it observed and the number of completed open cycles,
+    and the test asserts that number is <code>2</code> before it reads the count. A cycle is counted
+    only when an observed close is followed by a reopen.
+    <code>docs/ui/shell.jsx</code> is unchanged.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Two cases pass</strong> in <code>tests/test_shell_project_list_is_immediate.py</code>
+      at <code>ea1a0649</code>, on the login node, with the cycle counter reading two.</li>
+      <li><strong>The defect reproduces before the repair:</strong> with the close step removed from the
+      unmodified probe, so the palette never closes, the two existing assertions still passed &mdash;
+      the cycle was read past.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> removing the probe's
+      close step leaves the palette open, the counter reports one completed cycle, and the cycle
+      assertion fails where the count assertion alone passed.</li>
+    </ul>
+    <figure>
+      <img src="/reckon/figures/a-page-load-reads-each-file-once/palette-cycle.svg"
+           alt="Sequence diagram of the palette cycle: open, fetching effect, close, reopen, with cycles counted 1 then 2; the negative control removes the close step so the count stops at 1.">
+      <figcaption>The cycle the probe proves, and the close step the negative control removes.</figcaption>
+    </figure>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s6-cycle">the landed record</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">

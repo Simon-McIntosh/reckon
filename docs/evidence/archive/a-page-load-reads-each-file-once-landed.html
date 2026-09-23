@@ -296,6 +296,61 @@ E       {'imas-codex': 2, 'imas-efit': 2, 'imas-ink': 2, 'nova': 2, 'reckon': 2}
       login-node local path), so the run was taken on the login node, as &sect;4 records. It is two
       short probes against a <code>file://</code> document with no served process and no network.</p>
     </section>
+
+    <section id="s6-cycle">
+      <h2>&sect;6 &mdash; The palette cycle is proven before its count is read</h2>
+      <p>The independent review of the &sect;6 count (score 96) found one more blindness. The probe
+      opens the palette, closes it and opens it again, but it discarded the results of its close and
+      reopen waits and read the request list after a fixed 250&nbsp;ms sleep. A palette cycle that
+      silently failed therefore left one <code>/_discover</code> request per project, and both the
+      coverage and the count assertion passed without the fetching effect ever having run twice.</p>
+      <h3>What changed</h3>
+      <p>Commit <code>ea1a0649</code> edits <code>tests/test_shell_project_list_is_immediate.py</code>
+      alone. Each open is confirmed by the palette's own presence and each close by its absence, so
+      the probe no longer reads past a cycle that did not happen. The probe reports the booleans it
+      observed and the number of completed open cycles, and the test asserts that number is
+      <code>2</code> <em>before</em> it reads the count. A cycle is counted only if the close was
+      observed and the reopen followed it, so a second open with no intervening close is not a new
+      cycle. <code>docs/ui/shell.jsx</code> is unchanged.</p>
+      <figure>
+        <img src="/reckon/figures/a-page-load-reads-each-file-once/palette-cycle.svg"
+             alt="Sequence diagram of the palette cycle: open, fetching effect, close, reopen, with cycles counted 1 then 2; the negative control removes the close step so firstClosed is false and the count stops at 1.">
+        <figcaption>The cycle the probe proves, and the close step the negative control removes.</figcaption>
+      </figure>
+      <h3>The gate</h3>
+      <p>The defect was reproduced before the repair: with the close step removed from the unmodified
+      probe, so the palette never closes, the two existing assertions still passed &mdash; the probe
+      read past a cycle that never happened (<code>logs/repro-defect.log</code>). After the repair the
+      same file passes:</p>
+      <pre><code>$ pytest -q tests/test_shell_project_list_is_immediate.py
+..                                                                       [100%]
+2 passed in 5.75s</code></pre>
+      <p>Run at this worktree, revision <code>ea1a0649</code> (uncommitted tree at run time, matching
+      the commit content), on the login node (<code>logs/gate-head.log</code>). The cycle assertion
+      reading <code>cycles == 2</code> passed, which is the measurement that the second open followed
+      an observed close.</p>
+      <h3>The negative control</h3>
+      <p>The declared control removes the probe's close step &mdash; the two-line
+      <code>.r-cmdk-scrim</code> mousedown dispatch &mdash; so the palette never closes, and reddens
+      exactly the cycle assertion:</p>
+      <pre><code>remove the probe's close step so the palette never closes; the cycle assertion must fail where the count assertion alone passed
+&gt;       assert result["cycles"] == 2, (
+E       AssertionError: the palette completed 1 of 2 open cycles (opened=True closed=False
+E       reopened=True); a cycle whose close or reopen never landed cannot be read past
+E       assert 1 == 2
+FAILED tests/test_shell_project_list_is_immediate.py::test_other_project_inventories_load_only_for_the_palette
+1 failed, 1 passed in 9.72s</code></pre>
+      <p>The same mutation, with the cycle assertion stripped and the count assertions left in place,
+      passes &mdash; the request list still holds one inventory per project, so the count alone was
+      blind to the unproven cycle (<code>logs/negative-control-count-alone.log</code>). The close step
+      was restored immediately after the run and the tree returned to the committed content; the red
+      log is <code>logs/negative-control.log</code>.</p>
+      <p><strong>Environment note.</strong> The gate is a headless-browser test and no supported
+      browser binary exists on any SLURM compute partition (<code>/opt/google/chrome</code> is a
+      login-node local path), so the run was taken on the login node, as &sect;4 and the &sect;6 count
+      record. It is two short probes against a <code>file://</code> document with no served process
+      and no network.</p>
+    </section>
   </main>
 </body>
 </html>

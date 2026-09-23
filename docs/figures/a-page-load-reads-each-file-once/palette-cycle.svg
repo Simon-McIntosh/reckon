@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 560" width="940" height="560" font-family="system-ui, sans-serif" font-size="13">
+<rect width="940" height="560" fill="#ffffff"/>
+<text x="24" y="30" font-size="16" font-weight="600" fill="#111">The palette cycle the probe proves before it reads the count</text>
+
+<rect x="90" y="58" width="190" height="30" rx="6" fill="#eef2ff" stroke="#8ea2ff"/>
+<text x="185" y="78" text-anchor="middle" fill="#1b2b6b" font-weight="600">Test probe</text>
+<rect x="620" y="58" width="210" height="30" rx="6" fill="#eef7ee" stroke="#8cc48c"/>
+<text x="725" y="78" text-anchor="middle" fill="#1d4a1d" font-weight="600">Palette (.r-cmdk)</text>
+
+<line x1="185" y1="88" x2="185" y2="470" stroke="#c7c7c7" stroke-dasharray="4 4"/>
+<line x1="725" y1="88" x2="725" y2="470" stroke="#c7c7c7" stroke-dasharray="4 4"/>
+
+<!-- cycle 1 open -->
+<line x1="185" y1="118" x2="725" y2="118" stroke="#2f6fdb" stroke-width="2" marker-end="url(#mk-2f6fdb)"/>
+<text x="200" y="110" fill="#2f6fdb">openPalette(): click .r-topbar-search</text>
+<line x1="725" y1="140" x2="185" y2="140" stroke="#2f6fdb" stroke-width="2" marker-end="url(#mk-2f6fdb)"/>
+<text x="215" y="156" fill="#12336b">palette present &#8594; firstOpened = true</text>
+<rect x="300" y="168" width="340" height="28" rx="6" fill="#e7f0ff" stroke="#2f6fdb"/>
+<text x="470" y="187" text-anchor="middle" fill="#12336b">fetching effect runs: one /_discover per mount</text>
+<rect x="720" y="168" width="196" height="28" rx="6" fill="#eef2ff" stroke="#8ea2ff"/>
+<text x="818" y="187" text-anchor="middle" fill="#1b2b6b" font-weight="600">cycles = 1</text>
+
+<!-- cycle 1 close -->
+<line x1="185" y1="224" x2="725" y2="224" stroke="#a06f00" stroke-width="2" marker-end="url(#mk-a06f00)"/>
+<text x="200" y="216" fill="#7a5500">close step: mousedown .r-cmdk-scrim</text>
+<line x1="725" y1="246" x2="185" y2="246" stroke="#a06f00" stroke-width="2" marker-end="url(#mk-a06f00)"/>
+<text x="215" y="262" fill="#6b4d00">palette absent &#8594; firstClosed = true</text>
+
+<!-- cycle 2 reopen -->
+<line x1="185" y1="292" x2="725" y2="292" stroke="#2f6fdb" stroke-width="2" marker-end="url(#mk-2f6fdb)"/>
+<text x="200" y="284" fill="#2f6fdb">openPalette() again</text>
+<line x1="725" y1="314" x2="185" y2="314" stroke="#2f6fdb" stroke-width="2" marker-end="url(#mk-2f6fdb)"/>
+<text x="215" y="330" fill="#12336b">palette present &#8594; reopened = true</text>
+<rect x="300" y="342" width="340" height="28" rx="6" fill="#e7f0ff" stroke="#2f6fdb"/>
+<text x="470" y="361" text-anchor="middle" fill="#12336b">effect runs again: guard suppresses repeats</text>
+<rect x="720" y="342" width="196" height="28" rx="6" fill="#eef2ff" stroke="#8ea2ff"/>
+<text x="818" y="361" text-anchor="middle" fill="#1b2b6b" font-weight="600">cycles = 2</text>
+
+<rect x="300" y="386" width="616" height="30" rx="6" fill="#dbe8ff" stroke="#2f6fdb"/>
+<text x="316" y="406" fill="#12336b" font-weight="600">assert cycles == 2, then assert each /_discover appears exactly once</text>
+
+<!-- mutation panel -->
+<rect x="90" y="436" width="826" height="104" rx="6" fill="#fdecec" stroke="#b23b3b"/>
+<text x="110" y="460" fill="#8a2020" font-weight="600">Negative control that removes the close step:</text>
+<text x="110" y="482" fill="#8a2020">the message never reaches the palette, so it stays open and firstClosed = false.</text>
+<text x="110" y="502" fill="#8a2020">The second open is not a new cycle, so cycles = 1 and the cycle assertion fails &#8212;</text>
+<text x="110" y="522" fill="#8a2020">while the request list still holds one inventory per project, so the count alone would pass.</text>
+
+<defs>
+<marker id="mk-2f6fdb" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#2f6fdb"/></marker>
+<marker id="mk-a06f00" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#a06f00"/></marker>
+</defs>
+</svg>
