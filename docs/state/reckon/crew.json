@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T04:15:14",
+  "updated": "2026-09-23T04:16:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -278444,6 +278444,341 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T211337757018-the-context-fit-uses-the-effective-window",
+        "plan": "a-review-dies-where-nobody-is-looking",
+        "section": "\u00a77",
+        "node": "the-context-fit-uses-the-effective-window",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 288,
+                "cached_input_tokens": 301684,
+                "input_tokens": 301974,
+                "output_tokens": 683,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 302657,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "a report at docs/research/data/clive-effective-window.json lists every recorded run under /home/ITER/mcintos/.config/reckon/crew/runs whose stream ends with a result reading Prompt is too long, with its estimated input tokens, and states the lowest refused estimate as the effective boundary; a backend can declare that effective boundary and _context_fit_verdict uses the smaller of it and the declared window; tests in tests/test_routing_surface.py assert a node estimated between the effective boundary and the declared window is refused with a reason naming both figures and a node below the boundary is allowed; the negative control of making _context_fit_verdict read only the declared window is applied, the refusal test is observed to fail, and that log is recorded in the manifest",
+          "estimated_hours": null,
+          "goal": "the context-fit check refuses a node against the lane's effective refusal boundary, derived from recorded Prompt is too long refusals, rather than its declared window",
+          "id": "the-context-fit-uses-the-effective-window",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T21:13:40Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/manifest.md",
+          "negative_control": "make _context_fit_verdict ignore the effective boundary and compare only against the declared window",
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/routing.py",
+            "reckon/crew/context_budget.py",
+            "tests/test_routing_surface.py",
+            "docs/research/data/clive-effective-window.json",
+            "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+            "docs/figures/a-review-dies-where-nobody-is-looking",
+            "docs/plans/a-review-dies-where-nobody-is-looking.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-s3-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T21:14:20Z",
+        "completed_at": "2026-09-23T01:47:12.604Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 16353,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 16372,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "fa98d32a5ea59e1bec2793823b7e16104bff56e9",
+        "commits": [
+          "2b14b31475c4f5cea052615881409346fcf0bb62",
+          "e8991877006579dddd704f402bccf2bdab0b3ce4",
+          "7326e6eea4665e00078d7d5cc9285e588d70d084",
+          "ed2bc107a5c709779249132faf9375de5d8cc4b5",
+          "640398eaa557a42a32b63d743497c36fb3286bed",
+          "b2edc192d8f057b6511847424df12ea7848967d5"
+        ],
+        "changed_lines": {
+          "added": 723,
+          "removed": 11,
+          "files": 6
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_routing_surface.py -k 'boundary or effective or declared_window'",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/gate-green.log",
+          "log_digest": "sha256:30d7b67218651c1cd68e812d00bc53145b3b303023078f495a93b0c3e33e716a"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/manifest.md",
+        "scope_changed": false,
+        "session_id": "7d21c59a-403a-4fa4-89a5-cec774897060",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6324446,
+            "input_tokens_cumulative": 6324446,
+            "output_tokens": 23452,
+            "output_tokens_cumulative": 23452,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T01:47:12.604Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 908,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2708,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 969,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 this node's gate is \"no tracked repository file is changed\"",
+                "so no commit was made and the worktree is clean at base sha 2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65 (git status --porcelain empty). Precedent: run r-20260914T130210419244-burn-visible-reuse-map reported commits: none for the same reason."
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ccf445983de09a28d58121eb885decda3e7cb9a94c33e7e5432479773abbedc6",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan worker-death-is-recorded --section '\u00a75' --role review --spec-level exact --node review-of-s19-reuse-map --goal 'attach an independent review to run r-20260922T201221096806-s19-reuse-map' --done-when 'the review for r-20260922T201221096806-s19-reuse-map stores a parsed record scoring all 5 dimensions in the range 0..20' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260922T201221096806-s19-reuse-map.json --time-budget 30m --session ship-s19-20260922 --allow-unreconciled-runs --local",
+              "node": "s19-reuse-map",
+              "phase": "working",
+              "plan": "worker-death-is-recorded",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260922T201221096806-s19-reuse-map",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 1076,
+              "terminal_at": "2026-09-22T20:56:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 18,
+            "fit": 18,
+            "goal_fidelity": 16,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 20614476,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 844.928,
+          "generated_tokens": 106367,
+          "generation_seconds": 419.538,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 425.39,
+          "peak_input_tokens": 166027,
+          "tokens_per_second": 253.53,
+          "wall_tokens_per_second": 125.89
+        },
+        "follow_on_paths": [
+          "reckon/schema/flight.yaml",
+          "reckon/_flight_schema.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/the-context-fit-uses-the-effective-window",
+          "session_id": "7d21c59a-403a-4fa4-89a5-cec774897060",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T01:47:12.604Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "a-review-dies-where-nobody-is-looking",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_routing_surface.py"
+          ],
+          "declaration": "make _context_fit_verdict ignore the effective boundary and compare only against the declared window",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:58:40.288437+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T21:13:40Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 128.0,
+        "orientation_input_tokens": 4890397.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -278742,6 +279077,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2178
+    "_version": 2179
   }
 }
