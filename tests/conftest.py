@@ -15,6 +15,7 @@ default is suppression, so arming is opted into rather than out of.
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 from pathlib import Path
@@ -44,32 +45,81 @@ _PRODUCER_LIFECYCLE_MODULES = frozenset(
 )
 
 
-def watch_producers_under(root: Path) -> list[tuple[int, Path]]:
-    """Live watch producers whose configuration home lies under ``root``.
+def watch_record_dirs(root: Path) -> list[Path]:
+    """Watcher-record directories belonging to configuration homes under ``root``.
 
-    A producer is bound to this run by the home it reports into, read from its
-    own process environment — not by a name, and not by a parent that has
-    already exited, because the supervisor is detached on purpose.
+    Each producer writes its seat record — the pid it registered, under the lock
+    it holds — into its own home's ``crew/watch`` directory, so the directory's
+    location says which home the producer belongs to.
+    """
+    found = [
+        candidate
+        for candidate in root.rglob("watch")
+        if candidate.is_dir() and candidate.parent.name == "crew"
+    ]
+    return sorted(set(found))
+
+
+def watcher_record_pids(root: Path) -> list[tuple[int, Path]]:
+    """Registered watch producer pids, with the home each record lies under.
+
+    The pid comes from the record the producer wrote into its own configuration
+    home, never from a scan of command lines. A command-line pattern matches any
+    process carrying the words — a peer's producer, the test runner that spawned
+    one, the shell that ran the scan — while a record names exactly one home and
+    the process registered against it.
     """
     found: list[tuple[int, Path]] = []
-    for entry in Path("/proc").iterdir():
-        if not entry.name.isdigit():
-            continue
-        try:
-            argv = (entry / "cmdline").read_bytes().split(b"\0")
-            if b"watch" not in argv or b"--project" not in argv:
-                continue
-            environ = (entry / "environ").read_bytes().split(b"\0")
-        except OSError:
-            continue
-        for variable in environ:
-            name, _, value = variable.partition(b"=")
-            if name != b"RECKON_HOME" or not value:
-                continue
-            home = Path(os.fsdecode(value))
-            if root == home or root in home.parents:
-                found.append((int(entry.name), home))
+    for directory in watch_record_dirs(root):
+        home = directory.parent.parent
+        for record in sorted(directory.glob("*.lock")):
+            pid = _record_pid(record)
+            if pid is not None:
+                found.append((pid, home))
     return found
+
+
+def _record_pid(record: Path) -> int | None:
+    try:
+        value = json.loads(record.read_text() or "{}")
+    except (OSError, ValueError):
+        return None
+    pid = value.get("pid") if isinstance(value, dict) else None
+    return pid if isinstance(pid, int) and pid > 0 else None
+
+
+def _named_config_home(pid: int) -> Path | None:
+    """The configuration home ``pid`` names in its own environment, if any."""
+    try:
+        environ = Path("/proc", str(pid), "environ").read_bytes().split(b"\0")
+    except OSError:
+        return None
+    for item in environ:
+        name, _, value = item.partition(b"=")
+        if name == b"RECKON_HOME" and value:
+            return Path(os.fsdecode(value))
+    return None
+
+
+def reapable_watch_pids(root: Path) -> list[int]:
+    """Pids this run may terminate, from the records under ``root``.
+
+    A record names the pid that registered it at the time it registered, which
+    is a claim about the past: the number may since have been reused by an
+    unrelated process. The process's own environment settles it. A pid whose
+    environment names a configuration home other than the record's is refused,
+    so a record that has drifted from the process it points at cannot turn the
+    session teardown into a signal aimed at somebody else's watcher. A pid whose
+    environment cannot be read is refused too — an unreadable environment is not
+    evidence that the process is ours.
+    """
+    pids: list[int] = []
+    for pid, home in watcher_record_pids(root):
+        named = _named_config_home(pid)
+        if named is None or named.resolve() != home.resolve():
+            continue
+        pids.append(pid)
+    return pids
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -84,7 +134,7 @@ def reaped_watch_producers(tmp_path_factory):
     """
     root = tmp_path_factory.getbasetemp()
     yield
-    for pid, _home in watch_producers_under(root):
+    for pid in reapable_watch_pids(root):
         signal_worker(pid, signal.SIGTERM)
 
 

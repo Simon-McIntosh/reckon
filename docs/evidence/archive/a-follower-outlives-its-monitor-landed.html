@@ -8,11 +8,11 @@
   <meta name="plan-slug" content="a-follower-outlives-its-monitor">
   <meta name="plan-title" content="A Follower Outlives Its Monitor">
   <meta name="plan-evidence-for" content="a-follower-outlives-its-monitor">
-  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s2 a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6">
+  <meta name="plan-verifies" content="a-follower-outlives-its-monitor#s2 a-follower-outlives-its-monitor#s3 a-follower-outlives-its-monitor#s6 a-follower-outlives-its-monitor#s7 a-follower-outlives-its-monitor#s10">
   <meta name="plan-recorded-at" content="2026-09-23T09:12:00Z">
-  <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass; section 2's attach-line corrective landed, added failures 0">
+  <meta name="plan-verdict" content="section 3 landed with one documented bound deviation; section 6 landed, pass; section 2's attach-line corrective landed, added failures 0; section 10 landed, pass">
   <meta name="plan-environment" content="login node, Python 3.14, matplotlib 3.11.2, real subprocesses under a temporary RECKON_HOME">
-  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c 0be48943">
+  <meta name="plan-commits" content="f8f36b76 b48fdc21 9ad95695 8587710c 0be48943 5194657a 7c5f69b9">
   <title>A Follower Outlives Its Monitor &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -315,6 +315,56 @@
         <li><code>tests/test_orphaned_follower_releases.py</code> &mdash; the gate.</li>
         <li><code>docs/figures/a-follower-outlives-its-monitor/orphan_release_timeline.py</code> &mdash; the figure source.</li>
       </ul>
+    </section>
+    <section id="s10-test-watchers-are-reaped">
+      <h2>&sect;10 &mdash; A watcher a test starts does not outlive the test</h2>
+      <p><strong>Outcome &mdash; the session teardown finds its producers by record, not by pattern.</strong>
+      Commit <code>7c5f69b9</code> <em>fix(tests): reap a session's watch producers by pid, not by a pattern</em>
+      rewrites the session fixture in <code>tests/conftest.py</code>. It previously located live producers by
+      scanning <code>/proc</code> for command lines carrying the words <code>watch</code> and
+      <code>--project</code> &mdash; a pattern that matches any process carrying those words, including a
+      peer's watcher and the shell that ran the scan. It now enumerates the seat records each producer
+      writes into its own configuration home (<code>&lt;RECKON_HOME&gt;/crew/watch/&lt;project&gt;-&lt;digest&gt;.lock</code>)
+      and reads the registered <code>pid</code> from each. A record is acted on only while the process it
+      names still reports <em>that same home</em> in its own environment; a reused pid, a record that has
+      drifted from its process, or an unreadable environment is refused rather than signalled.</p>
+      <section id="s10-figure">
+        <figure>
+          <img src="/reckon/figures/a-follower-outlives-its-monitor/watch-producer-reap.svg"
+               alt="Sequence: a child pytest session arms a detached watch producer, the session teardown reads the pid from the seat record and signals it, the producer and its supervisor exit, and the parent asserts none remains after one second."/>
+          <figcaption>The reap, end to end: the arming is detached, so the session that arms the producer
+          cannot wait on it &mdash; the record it leaves in its own home is what the teardown resolves.</figcaption>
+        </figure>
+      </section>
+      <h3>Measured</h3>
+      <ul>
+        <li>The node's gate, <code>tests/test_test_watchers_are_reaped.py</code> at revision <code>7c5f69b9</code>,
+        run together with the covering dispatch test: <strong>3 passed, 1 skipped</strong>. The skipped case is
+        the child-side arming test, which runs only inside the subprocess session. Positive control: the parent
+        asserts a seat record for <code>proj</code> exists under the child's <code>--basetemp</code> before it
+        asserts the absence, so a child that never armed cannot read as a pass.</li>
+        <li>The declared negative control &mdash; <em>remove the teardown termination from the conftest fixture</em>
+        &mdash; is executed and logged. With the two-line signal loop removed, the child session leaves
+        <strong>two processes</strong> naming its home (pid 396241 the detached supervisor, pid 396308 the
+        watcher) and the gate reports <strong>1 failed</strong>
+        (<code>negative-control.log</code> in the run directory). Both were reaped by explicit pid after the
+        red run, verified against their environment first.</li>
+        <li>The refusal that bounds the teardown is asserted, not assumed:
+        <code>test_a_record_naming_another_home_is_refused</code> writes two records under one root &mdash; one
+        whose process names that root's own home, one whose process names a home elsewhere &mdash; and requires
+        <code>reapable_watch_pids</code> to return the first pid and not the second. A process whose environment
+        cannot be read is refused on the same footing.</li>
+      </ul>
+      <h3>Bound of this measure</h3>
+      <p>The child runs the <em>arming half</em> of
+      <code>tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher</code> &mdash; the same fixtures, patches and command,
+      stopping before that test's own <code>unwatch</code>. Running it whole would unwind the very producer
+      under measure, and the gate would then pass whether the session fixture worked or not; the child
+      therefore ends while the producer is still live, which is exactly the state a session fixture has to
+      answer for.</p>
+      <h3>Scope</h3>
+      <p>The promotion and the merge are the coordinator's. Nothing outside
+      <code>tests/conftest.py</code> and the new test module changed.</p>
     </section>
   </main>
 </body>
