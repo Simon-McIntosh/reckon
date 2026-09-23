@@ -554,6 +554,73 @@ EXIT=1</pre>
     a hand-run sweep outside any follower stays unfiltered by design.</p>
   </section>
 
+  <section id="s4-delivery">
+    <h2>&sect;4 &mdash; A delivered review ends its turn</h2>
+    <p><strong>Node:</strong> <code>a-delivered-review-ends-its-turn</code> landed the second half of
+    &sect;4's measure, recorded in the plan's 2026-09-23T07:45Z comment: a review whose record is
+    stored and whose manifest reads complete has nothing left to produce, and a reviewer that keeps
+    streaming past that point spends the lane the review holds.</p>
+
+    <p><strong>Mechanism.</strong> <code>_review_dispatch_fields</code> now states the stopping point
+    in the review's done-when, beside the record condition it qualifies, so a reviewer reads the two
+    together rather than inferring an end from the delivery condition alone. A new public
+    <code>review_delivered(record)</code> answers whether a run is a reviewer that delivered, reading
+    the run's own manifest file directly &mdash; the classifier defers a live process's terminal
+    verdict, so it cannot answer this &mdash; and the stored record through the predicate promotion
+    uses, so a watcher and a coordinator cannot disagree about what counts as delivered. Each watcher
+    tick calls <code>_stop_delivered_reviews</code>, which ends a delivered review once its newest
+    stream write is more than <code>DELIVERED_REVIEW_GRACE_SECONDS</code> (300&nbsp;s) past the later
+    of the record and manifest writes, signals the run's own recorded pid through the existing
+    identity-checked <code>_signal_process_group</code>, and sets <code>phase: stopped</code> with an
+    <code>ended_after_delivery</code> block carrying the grace, the stop time and both paths. A stop
+    that cannot be delivered is left for the next tick rather than recorded.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/delivery-grace-stop.png"
+           alt="Four reviews on one time axis: delivered with a 10-minute stream is stopped at the SIGTERM marker; delivered with 1-minute and 30-second streams are left running inside the grace; one with no stored record streams uncapped and is never stopped">
+      <figcaption>The grace is measured from the instant of delivery &mdash; record stored and
+      manifest complete. Only the review whose stream outlives that instant by more than the grace is
+      stopped; a delivery that never happened is not a delivery however long its stream runs.</figcaption>
+    </figure>
+
+    <h3>What the gate shows</h3>
+    <ul>
+      <li>a delivered review still streaming 10 minutes after delivery is signalled on its own
+      recorded pid and its record carries <code>ended_after_delivery</code> with grace 300&nbsp;s,
+      the stop time and both paths;</li>
+      <li>a delivered review whose stream is only 60&nbsp;s past delivery is left running with no
+      <code>ended_after_delivery</code>;</li>
+      <li>a reviewer with no stored record is never stopped, however stale its stream;</li>
+      <li>a reviewer whose manifest reads <code>blocked</code> rather than <code>complete</code> is
+      left running;</li>
+      <li>a run that is not a reviewer is never stopped by this rule;</li>
+      <li><code>review_delivered</code> answers with the record and manifest paths and a
+      <code>delivered_at</code> equal to the later of their mtimes.</li>
+    </ul>
+
+    <h3>Controls</h3>
+    <p><strong>Negative.</strong> The declared mutation &mdash; <em>make
+    <code>review_delivered</code> always return <code>False</code> so the watcher never stops a
+    delivered review</em> &mdash; is applied and case 1 is observed not stopped: the signaller's call
+    list is <code>[]</code> where the green run records one call on pid 4321. The red log is
+    <code>negative-control.log</code> in the node's run directory, its first line the declared string
+    verbatim.</p>
+    <p><strong>Base delta.</strong> The declared selection &mdash;
+    <code>tests/test_a_delivered_review_ends_its_turn.py</code> plus
+    <code>tests/test_review_reflex_sweep.py</code> &mdash; records 9 passed at base
+    <code>ef9ddbac</code> (the new module does not exist there, so it contributes coverage rather than
+    a regression) and 16 passed at this head: 9 unchanged plus the new module's 7, no added failures.
+    A wider related selection &mdash; the ticker, watch-lifetime, external-wait, scoring-state,
+    rewritten-terminal-manifest and review-role modules &mdash; reproduces exactly the same 4
+    failures and 75 passes at base and at this head.</p>
+
+    <p><strong>What this does not claim.</strong> That the brief's new sentence changes a reviewer's
+    behaviour is not measured here; the gate shows only that the sentence is composed into the brief
+    a reader receives, and that the watcher stops a delivered review once the grace has passed. The
+    goal line of the composed dispatch is left byte-identical because an existing assertion pins it.
+    Verifying the merged result belongs to a separately dispatched test node.</p>
+  </section>
+
   <section id="record-scope">
     <h2>Record scope</h2>
     <p>This record currently covers §2, §3, §4, §6, §7, §8 and §9. The plan's other sections are separate nodes
@@ -562,6 +629,11 @@ EXIT=1</pre>
     <p>&sect;2 landed after that note was written, by <code>review-deaths-by-effort-and-role</code>. Its
     section is <a href="#s2">&sect;2 &mdash; the experiment neither session could run</a>; the note
     above is left as written so the record shows what the earlier landings were told.</p>
+    <p>&sect;4 carries two anchors, because two nodes landed its two halves. The
+    <a href="#s4">lane-composition half</a> is <code>the-review-lane-follows-the-owning-run</code>;
+    the <a href="#s4-delivery">delivery half</a>, added later, is
+    <code>a-delivered-review-ends-its-turn</code>; the plan's own &sect;4 prose and its driving
+    comments carry both.</p>
   </section>
 
 
