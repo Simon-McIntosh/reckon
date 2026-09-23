@@ -9,12 +9,12 @@
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
   <meta name="plan-summary" content="Four sections of the plan, each recorded by its own node: the death census separates role from effort (§2), the audit reads the state a document carries (§6 guard half), classification reads a run's deliverable before its process (§3), and the context fit is taken against the lane's recorded refusal boundary (§7).">
   <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
-  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s2,reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7,reckon:a-review-dies-where-nobody-is-looking#s9">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
   <meta name="plan-commits" content="910657ad,c8cc423a,2b14b314,e8991877,ed2bc107,4ed8ff18,50b523fa,673daa07">
-  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py,reckon/crew/context_budget.py,reckon/crew/routing.py,tests/test_routing_surface.py,docs/research/data/clive-effective-window.json">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py,reckon/crew/context_budget.py,reckon/crew/routing.py,tests/test_routing_surface.py,docs/research/data/clive-effective-window.json,docs/research/data/compaction-demonstration.json">
   <title>A Review Dies Where Nobody Is Looking &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -447,6 +447,51 @@ EXIT=1</pre>
     <p>&sect;2 landed after that note was written, by <code>review-deaths-by-effort-and-role</code>. Its
     section is <a href="#s2">&sect;2 &mdash; the experiment neither session could run</a>; the note
     above is left as written so the record shows what the earlier landings were told.</p>
+  </section>
+
+
+  <section id="s9">
+    <h2>&sect;9 &mdash; A local worker compacts and continues, and still cannot be resumed</h2>
+    <p>A locally served worker (<code>deepseek-v4.1-flash</code>, 200000-token window) read 40
+    corpus run streams in increasing size order, appending one entry per file. It compacted twice on
+    the way; its session then could not be reopened, so this record is finished from the run's own
+    streams. Artifact:
+    <a href="/reckon/research/data/compaction-demonstration.json">docs/research/data/compaction-demonstration.json</a>.</p>
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/compaction-timeline.svg"
+           alt="Three terminal attempts of one run against their own line axes: stream.jsonl compacting at line 3904 of 176,242 pre-tokens and continuing to write 37 more entries; resume-1.jsonl compacting at line 459 of 171,919 pre-tokens and ending on a sentence with no tool call; resume-3.jsonl, three lines, refused on its first turn.">
+      <figcaption>Compaction fires inside a run and the worker continues past it. The resume is
+      where the run stops: the third resume never opens, and the second ends on a sentence rather
+      than a deliverable.</figcaption>
+    </figure>
+    <table>
+      <caption>The compaction records in the run's streams, counted by <code>type</code> and <code>subtype</code>.</caption>
+      <thead><tr><th>file</th><th>line</th><th>trigger</th><th>pre_tokens</th></tr></thead>
+      <tbody>
+        <tr><td><code>stream.jsonl</code></td><td>3904</td><td><code>auto</code></td><td>176242</td></tr>
+        <tr><td><code>resume-1.jsonl</code></td><td>459</td><td><code>auto</code></td><td>171919</td></tr>
+      </tbody>
+    </table>
+    <p><strong>What the record states.</strong> The two compaction records above are counted by
+    <code>type</code> and <code>subtype</code> over the run's streams, never by the substring:
+    a substring scan returns 41 hits, of which 39 are the string inside tool output, because the
+    worker was grepping its own streams for it. <code>results_written_after_compaction</code> is
+    <strong>37</strong> of 40 file entries appended after the first compaction record, so results
+    were written both before and after the boundary.</p>
+    <p><strong>The resume path does not survive it.</strong>
+    <code>ended_with_complete_manifest</code> is <strong>false</strong>. The run's third resume was
+    refused on its first turn: <code>Prompt is too long</code>,
+    <code>terminal_reason: blocking_limit</code>, zero input tokens on the turn against
+    <strong>7,485,800</strong> cumulative input tokens on the session. So compaction fires and the
+    worker continues within a run, but a session that has compacted can still be too large to
+    reopen.</p>
+    <p><strong>A second shape, recorded on resume-1.</strong> Its final result text is
+    <q>Confirmed 86 (the earlier recorded 91 was mis-derived). Let me read the data file to correct
+    it.</q> &mdash; a closing sentence announcing an action, with no tool call behind it. 86 is the
+    count of assistant records before the first compaction, which an independent count confirms;
+    91 was mis-derived.</p>
+
+
   </section>
 
 </main>
