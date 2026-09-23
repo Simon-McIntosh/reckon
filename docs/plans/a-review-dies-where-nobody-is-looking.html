@@ -312,6 +312,20 @@
       <code>docs/research/data/clive-effective-window.json</code>, which carries both figures.
       Evidence, gate and the negative control:
       <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#effective-window">§7 execution evidence</a>.</p>
+
+      <p><strong>The fixture that blocked this section's gate is repaired (2026-09-23).</strong> The
+      §7 gate recorded <code>tests/test_routing_surface.py</code> at <strong>2 failed, 6 errors, 6
+      passed</strong>, all eight the ledger fixture refusing to promote into a temporary state
+      directory. The cause was in the fixture, not in any production file:
+      <code>_project</code> built each temporary project outside any checkout, so the initialisation
+      guard's <code>_ledger_ever_tracked</code> query could not be answered, and it kept its
+      conservative refusal. The fixture now runs <code>git init</code> in the project directory it
+      creates, so the guard reads an absent ledger as a genuinely new project and creates it; the
+      file reports <strong>14 passed</strong>. No production source changed, and removing the
+      initialisation reinstates the eight failures. The plan text above is left as written — it
+      described the file when it was measured. Execution evidence:
+      <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#effective-window">§7
+      execution evidence</a>.</p>
     </section>
 
     <section id="s8" data-reckon="section">

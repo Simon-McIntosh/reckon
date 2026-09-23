@@ -303,6 +303,60 @@ EXIT=1</pre>
     result in <code>docs/research/data/clive-effective-window.json</code> is what documents the
     figure. The measure also ranges over this node's own change only: verifying the merged result is
     a separately dispatched node's job.</p>
+
+    <h3>The routing-surface fixture now initialises a repository, closing the file's failures</h3>
+
+    <p><strong>The failures the gate above left standing are repaired here.</strong> The gate line
+    recorded <strong>2 failed, 6 errors, 6 passed</strong> for
+    <code>tests/test_routing_surface.py</code> and attributed all eight to a ledger fixture refusing
+    to promote into a temporary state directory. That attribution was correct, and the cause was in
+    the fixture rather than in any production file: <code>_project</code> built each temporary
+    project as a bare directory tree under pytest's <code>tmp_path</code>, outside any checkout.
+    <code>ledger.append_run</code>'s initialisation guard asks git whether the absent ledger path was
+    ever recorded, so it can tell a genuinely new project from a committed ledger deleted from the
+    working tree; outside a checkout git cannot answer at all, <code>_ledger_ever_tracked</code>
+    returns <code>None</code>, and the guard keeps its conservative refusal rather than reading
+    silence as a fresh start. <code>append_run</code> therefore raised before a single run was
+    recorded, which is why the file's <code>gamma</code> and <code>project</code> fixtures failed
+    outright and every fixture driven through <code>_run</code> errored.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/ledger-init-guard.svg"
+           alt="The initialisation guard's decision path: git cannot answer outside a checkout, so the guard returns None and refuses; inside a checkout git answers False and the ledger is created. The uninitialised fixture lands on the refuse branch with 2 failed and 6 errors; the initialised fixture lands on the create branch with 14 passed.">
+      <figcaption>The guard branches on whether git can answer for the path. The fixture decided
+      which branch it landed on, and a one-line repository initialisation moves it across.</figcaption>
+    </figure>
+
+    <p><strong>What landed.</strong> The <code>_project</code> fixture runs <code>git init</code> in
+    the project directory it creates, so the guard's query has a checkout whose history can answer
+    for the ledger path. The history is empty and untruncated, so
+    <code>_ledger_ever_tracked</code> returns <code>False</code> — git has never recorded the path —
+    and the guard reads the absent ledger as a genuinely new project and creates it. No production
+    file is touched; the change is the fixture alone, and no test was disabled or relaxed to reach
+    green.</p>
+
+    <table>
+      <caption>The gate on this node's own change, before and after.</caption>
+      <thead><tr><th>Tree</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>base revision <code>4940e86e</code>, fixture unmodified</td><td><strong>2 failed, 6 errors, 6 passed</strong> (<code>before.log</code>)</td></tr>
+        <tr><td>same tree, <code>git init</code> added to <code>_project</code></td><td><strong>14 passed</strong> (<code>after.log</code>)</td></tr>
+        <tr><td>the after tree with the <code>git init</code> removed again</td><td><strong>2 failed, 6 errors, 6 passed</strong>, the same eight ids (<code>negative-control.log</code>)</td></tr></tbody>
+    </table>
+
+    <p><strong>Negative control.</strong> The declared mutation
+    <em>remove the git init from the _project fixture</em> is applied to the fixed file and the gate
+    rerun. The eight failures return and the traceback is the initialisation guard's own refusal,
+    <code>LedgerError: refusing to promote run 'first' for 'alpha': ledger file … does not
+    exist</code>, so the check fails against the mutation it declares rather than for any other
+    reason. The log's first line repeats the declared string verbatim:
+    <code>~/.config/reckon/crew/runs/r-20260923T034937486674-routing-surface-fixture-initialises-its-repo/negative-control.log</code>.</p>
+
+    <p><strong>What this does not claim.</strong> The measure ranges over this node's own change
+    only; verifying the merged result is a separately dispatched node's job. The plan's §7 text
+    still records the file's failures as a standing condition — that line described the file at the
+    time it was written and is left as written, since this record is the annotation rather than a
+    rewrite of it.</p>
   </section>
 
   <section id="s2">
