@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-fleet-shares-one-allocation">
   <meta name="plan-title" content="The fleet shares one allocation">
   <meta name="plan-summary" content="Declare placement once at the host layer so every project runs as steps in one reservation, and count the roster by what was placed.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,6 +23,8 @@
   <title>The fleet shares one allocation | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -68,33 +70,33 @@
     backend. A project whose runs are not placed is unbounded by the roster.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="reservation-scope" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the workstation hold one shared reservation, or one per project?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="one-shared">One shared reservation, declared at the host layer</button>
-          <button class="r-opt" data-value="per-project">One per project, declared in each project layer</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="who-holds-the-allocation" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Which command holds the fleet's allocation once it is shared?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="reckon-ensure">reckon crew placement --ensure, retiring the per-project holder</button>
-          <button class="r-opt" data-value="keep-project-holder">A project-side holder keeps sizing and holding it</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reservation-scope" data-choice="one-shared" data-by="Simon McIntosh" data-when="2026-09-23T14:08:19+00:00">
+    <p class="r-dec-q">Does the workstation hold one shared reservation, or one per project?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="one-shared">One shared reservation, declared at the host layer</button>
+      <button class="r-opt" data-value="per-project">One per project, declared in each project layer</button>
+      </p>
+    <p class="r-dec-rat">The goal is to move the fleet, not one repository at a time. Per-project placement means five repositories hold five allocations, well over a hundred cores, to escape a shared four-core ceiling. One reservation held once with every session placing into it is what the design already describes.</p>
+    </div>
+<div class="r-dec" data-key="who-holds-the-allocation" data-choice="reckon-ensure" data-by="Simon McIntosh" data-when="2026-09-23T14:08:19+00:00">
+    <p class="r-dec-q">Which command holds the fleet&#x27;s allocation once it is shared?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="reckon-ensure">reckon crew placement --ensure, retiring the per-project holder</button>
+      <button class="r-opt" data-value="keep-project-holder">A project-side holder keeps sizing and holding it</button>
+      </p>
+    <p class="r-dec-rat">Once the reservation is shared it stops being any one project&#x27;s, so the command that holds it belongs where every project reads it. The project-side holder retires; partition and size become arguments to the ensure command rather than a second implementation of it.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-fsa-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23">
-        <h4 class="r-fu-title">Declare placement at the host layer and count the roster by what was placed</h4>
-        <div class="r-fu-body"><p>Move the placement declaration into <code>~/.config/reckon/flight.yaml</code> so every project places into one reservation, and take the roster count from each pointer's recorded placement rather than from every run on the backend. Prove it with two dispatches under two different projects reaching one published job id and requesting one allocation between them.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship the-fleet-shares-one-allocation</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fsa-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Declare placement at the host layer and count the roster by what was placed</h4>
+    <div class="r-fu-body"><p>Move the placement declaration into <code>~/.config/reckon/flight.yaml</code> so every project places into one reservation, and take the roster count from each pointer's recorded placement rather than from every run on the backend. Prove it with two dispatches under two different projects reaching one published job id and requesting one allocation between them.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-fleet-shares-one-allocation</pre>
+    </article>
+</section>
 
   </main>
 </body>

@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-cutover-is-measured-against-its-baseline">
   <meta name="plan-title" content="A cutover is measured against its baseline">
   <meta name="plan-summary" content="Roll the fleet into the shared allocation and report the throttled share over a working day against the recorded baseline.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,6 +22,8 @@
   <title>A cutover is measured against its baseline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -60,26 +62,26 @@
     what the fleet does while no reservation is held.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="allocation-death-recovery" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What happens to placed workers when the allocation ends?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
-          <button class="r-opt" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
-          <button class="r-opt" data-value="fall-back-unplaced">Workers fall back to running unplaced on the login node</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="allocation-death-recovery" data-choice="refuse-and-report" data-by="Simon McIntosh" data-when="2026-09-23T14:08:26+00:00">
+    <p class="r-dec-q">What happens to placed workers when the allocation ends?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
+      <button class="r-opt" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
+      <button class="r-opt" data-value="fall-back-unplaced">Workers fall back to running unplaced on the login node</button>
+      </p>
+    <p class="r-dec-rat">Losing the reservation kills every placed worker on the machine at once, so the state after it must be loud and deliberate rather than self-healing. An automatic re-hold can mint a second allocation when the first is merely unreachable, and an unplaced fallback lets the fleet drift back to the ceiling the cutover exists to escape, in silence.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23">
-        <h4 class="r-fu-title">Roll the fleet in and measure the throttled share over a working day</h4>
-        <div class="r-fu-body"><p>Place workers from at least two projects, resolve a live worker's host to prove it rather than reading the configuration back, and report the throttled share of the user slice beside the recorded baseline. Exercise the allocation-death path once on a worker nobody needs and write down the recovery.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Roll the fleet in and measure the throttled share over a working day</h4>
+    <div class="r-fu-body"><p>Place workers from at least two projects, resolve a live worker's host to prove it rather than reading the configuration back, and report the throttled share of the user slice beside the recorded baseline. Exercise the allocation-death path once on a worker nobody needs and write down the recovery.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
+    </article>
+</section>
 
   </main>
 </body>
