@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T13:01:40",
+  "updated": "2026-09-23T13:07:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2235,10 +2235,15 @@
         "id": "row-glance",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "ed40b02d-af59-4fcd-a053-43c122f41987",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ed40b02d-af59-4fcd-a053-43c122f41987"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "s15-attrib",
@@ -294961,6 +294966,283 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T044813655234-row-shows-destination-only",
+        "plan": "a-monitor-row-reads-at-a-glance",
+        "section": "\u00a72",
+        "node": "row-shows-destination-only",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 446,
+                "cached_input_tokens": 299283,
+                "input_tokens": 299733,
+                "output_tokens": 62,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 299795,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "a rendered transition from working to unpromoted contains the word unpromoted once and neither the word working nor an arrow; a baseline row contains now immediately before its state; the reason cell of the same event at the same width is at least 13 columns wider than at the base revision, stated as two column counts; every existing test that asserted the from-state or the arrow is updated to assert its absence, and the test run over the five fenced test files is stated as passed and failed counts at the base revision and at head with added failures 0; the declared negative control is applied, the absence assertion is observed to fail, and that log is recorded in the manifest",
+          "estimated_hours": null,
+          "goal": "a follower row renders only the state a run moved into, and a baseline row marks itself with the word now",
+          "id": "row-shows-destination-only",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T04:48:15Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044813655234-row-shows-destination-only/manifest.md",
+          "negative_control": "restore the from-state cell and the transition arrow in the ticker row",
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_session_delivery.py",
+            "tests/test_crew_watch_stream.py",
+            "tests/test_crew.py",
+            "docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html",
+            "docs/figures/a-monitor-row-reads-at-a-glance",
+            "docs/plans/a-monitor-row-reads-at-a-glance.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "row-glance",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T04:48:41Z",
+        "completed_at": "2026-09-23T08:58:32.999Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 14979,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 14991,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+        "commits": [
+          "868ca4f5cc69409e36b0af6e7225a21966e2ede8",
+          "9b5458a1883ce023f24202677a7c431b1267c8cf",
+          "db30997d172bf6c6a77e2749b99ec39c80681e94",
+          "c336aae85c10ef1321b03f47b1a7a040b243a001"
+        ],
+        "changed_lines": {
+          "added": 399,
+          "removed": 110,
+          "files": 8
+        },
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044813655234-row-shows-destination-only/manifest.md",
+        "scope_changed": false,
+        "session_id": "ed40b02d-af59-4fcd-a053-43c122f41987",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 19912556,
+            "input_tokens_cumulative": 19912556,
+            "output_tokens": 151165,
+            "output_tokens_cumulative": 151165,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T08:58:32.999Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 17,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 20242544,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 14987.475,
+          "generated_tokens": 165354,
+          "generation_seconds": 14146.855,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 840.62,
+          "peak_input_tokens": 166631,
+          "tokens_per_second": 11.69,
+          "wall_tokens_per_second": 11.03
+        },
+        "follow_on_paths": [
+          "test_crew.py",
+          "dispatch/watch"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/row-shows-destination-only",
+          "session_id": "ed40b02d-af59-4fcd-a053-43c122f41987",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T08:58:32.999Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "c336aae85c10ef1321b03f47b1a7a040b243a001",
+        "impl_move": {
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "test_paths": [
+            "tests/test_crew.py",
+            "tests/test_crew_session_delivery.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_watch_stream.py"
+          ],
+          "reason": "gate-not-passing"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T05:48:15.779815+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T04:48:15Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no numeric 'headroom'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 177.0,
+        "orientation_input_tokens": 3106804.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -295273,6 +295555,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2277
+    "_version": 2279
   }
 }
