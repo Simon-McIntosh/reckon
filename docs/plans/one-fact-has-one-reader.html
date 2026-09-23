@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="one-fact-has-one-reader">
+  <meta name="plan-title" content="One fact has one reader — plan state resolves through a single authority">
+  <meta name="plan-summary" content="Sprint membership and the active sprint are each stored twice and read differently by roadmap and audit, so one project has two answers.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-standalone" content="It repairs how stored plan state is read, which no other live plan touches; work-scheduling-surface owns what the pushed sprint MEANS and is the nearest neighbour, but neither blocks the other and wiring a dependency would report one of them falsely held.">
+  <title>One fact has one reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S18">
+<meta name="plan-modified" content="2026-09-23">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Two surfaces, one project, two answers</h2>
+
+    <p>Reckon stores two facts about plan scheduling in two places each, and different
+    read paths consult different copies. Nothing reconciles them, so a caller's answer
+    depends on which function they happened to call, and the audit's own findings are in
+    part a report of reckon disagreeing with itself rather than of anything wrong in the
+    project being audited.</p>
+
+    <p>The first fact is <strong>which sprint a plan belongs to</strong>. It is written as
+    <code>&lt;meta name="plan-sprint"&gt;</code> on the plan, and again as an entry in that
+    sprint resource's <code>items[]</code>. <code>roadmap</code> picks a plan up from the
+    scalar; the audit checks membership against the item list. A plan carrying only the
+    scalar is therefore scheduled and missing at the same time.</p>
+
+    <p>The second fact is <strong>which sprint is active</strong>. <code>roadmap</code>
+    reports the sprint whose stored status is <code>active</code>, which is what the
+    <code>push</code> op maintains. <code>read_plan(project, "index")</code> instead calls
+    <code>_derive_default_sprint_focus</code> in <code>reckon/project_state.py</code>,
+    which walks composed order and returns the first sprint holding any unfinished item.
+    That walk never reads sprint status at all, so the op's own record is ignored and a
+    closed sprint can be elected.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 210" width="100%" role="img"
+           aria-label="One fact stored in two records, read by two surfaces, producing two answers">
+        <text x="0" y="14" font-family="system-ui" font-size="13" fill="#111">the fact</text>
+        <text x="220" y="14" font-family="system-ui" font-size="13" fill="#111">where it is stored</text>
+        <text x="470" y="14" font-family="system-ui" font-size="13" fill="#111">who reads it</text>
+        <line x1="0" y1="22" x2="640" y2="22" stroke="#bbb" stroke-width="1"/>
+
+        <text x="0" y="52" font-family="system-ui" font-size="13" fill="#111">sprint membership</text>
+        <text x="220" y="45" font-family="system-ui" font-size="13" fill="#111">plan-sprint (on the plan)</text>
+        <text x="220" y="65" font-family="system-ui" font-size="13" fill="#111">items[] (on the sprint)</text>
+        <line x1="425" y1="41" x2="462" y2="41" stroke="#555" stroke-width="1"/>
+        <line x1="425" y1="61" x2="462" y2="61" stroke="#555" stroke-width="1"/>
+        <text x="470" y="45" font-family="system-ui" font-size="13" fill="#111">roadmap → on critical path</text>
+        <text x="470" y="65" font-family="system-ui" font-size="13" fill="#111">audit → missing from sprint</text>
+
+        <line x1="0" y1="86" x2="640" y2="86" stroke="#ddd" stroke-width="1"/>
+
+        <text x="0" y="116" font-family="system-ui" font-size="13" fill="#111">the active sprint</text>
+        <text x="220" y="109" font-family="system-ui" font-size="13" fill="#111">status = active (push op)</text>
+        <text x="220" y="129" font-family="system-ui" font-size="13" fill="#111">composed order (derived)</text>
+        <line x1="425" y1="105" x2="462" y2="105" stroke="#555" stroke-width="1"/>
+        <line x1="425" y1="125" x2="462" y2="125" stroke="#555" stroke-width="1"/>
+        <text x="470" y="109" font-family="system-ui" font-size="13" fill="#111">roadmap → S24</text>
+        <text x="470" y="129" font-family="system-ui" font-size="13" fill="#111">read_plan(index) → S1</text>
+
+        <line x1="0" y1="150" x2="640" y2="150" stroke="#bbb" stroke-width="1"/>
+        <text x="0" y="172" font-family="system-ui" font-size="13" fill="#111">
+          The audit then compares the two readings and reports the difference as a finding
+        </text>
+        <text x="0" y="192" font-family="system-ui" font-size="13" fill="#111">
+          about the project — active-sprint-mismatch is an artefact of this split.
+        </text>
+      </svg>
+      <figcaption>Each fact has two records and two readers. Neither reader is wrong about
+      the record it consults; the defect is that there are two records.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — The legacy aggregate is not the cause, and this must be recorded</h2>
+
+    <p>The obvious suspect is the superseded aggregate at
+    <code>docs/state/&lt;project&gt;/index.json</code>, which is still on disk and still
+    contains sprint rows. <strong>It is not being read, and a session that assumes it is
+    will repair the wrong file.</strong> This was checked on imas-ambix rather than
+    assumed.</p>
+
+    <p>That aggregate lists sprints S0 through S23 and contains no S24, S25 or S26 at all,
+    and its stored <code>active_sprint_id</code> is <code>S17</code>. Both
+    <code>roadmap</code> and the audit report S24, S25 and S26, and both treat S24 as the
+    pushed sprint. A reader of the frozen file could not produce those answers, so neither
+    surface is reading it. The migration marker at
+    <code>docs/.reckon/project-state-migration.json</code> confirms
+    <code>format: distributed</code>, <code>status: complete</code>, and the composed read
+    path returns <code>source_format: "distributed"</code>.</p>
+
+    <p>So both copies of both facts live <em>inside</em> the distributed store. That is
+    worse than a stale legacy file, because there is no obviously-retired artifact to
+    delete and no reader is doing anything wrong. It also means the fix cannot be "finish
+    the migration" — the migration is complete.</p>
+
+    <p>The frozen aggregate is still a trap for the next reader, and §4 disposes of it
+    separately from the defect proper.</p>
+
+    <h2 id="s3">§3 — What was measured</h2>
+
+    <p>All of the following were read from live projects on 2026-09-23, from the stores and
+    the source rather than from a plan's description of itself.</p>
+
+    <table>
+      <thead>
+        <tr><th>Observation</th><th>Where</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A plan declaring <code>plan-sprint=S24</code> and absent from S24's
+          <code>items[]</code> appears on S24's critical path at 4.2 h and is simultaneously
+          reported <code>plan-sprint-missing-item</code>.</td>
+          <td>imas-ambix, <code>local-lane-admission-control</code></td>
+        </tr>
+        <tr>
+          <td>Three further plans declared a sprint whose item list never held them, so live
+          work at impl 0.92 and 0.83 was invisible to every sprint-scoped roadmap for weeks.</td>
+          <td>imas-ambix S17</td>
+        </tr>
+        <tr>
+          <td>The inverse also occurs: a plan held as a member of one sprint while its own
+          scalar named a different one.</td>
+          <td>imas-ambix, <code>mast-machine-configuration-map</code></td>
+        </tr>
+        <tr>
+          <td><code>read_plan(index)</code> elected a <em>shipped</em> sprint as the active
+          one, because a member slug that does not resolve has no status and
+          <code>str(status or "")</code> is not in <code>COMPLETED_STATUSES</code>.</td>
+          <td>imas-ambix, elected S1 against pushed S24</td>
+        </tr>
+        <tr>
+          <td>The same election picked a <em>done</em> sprint with no dangling members at
+          all, purely because status is never consulted — so the two causes are each
+          independently sufficient.</td>
+          <td>reckon, elected S12 while S16 and S18 both carry active</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The last row carries a second finding that belongs to whoever schedules reckon
+    rather than to this plan: two sprints hold <code>active</code> simultaneously, which the
+    audit reports at error severity as <code>multiple-active-sprints</code> and which is its
+    only blocking finding. Two actives cannot arise from the <code>push</code> op, which
+    promotes and demotes in one versioned write; they arise from a bare <code>set</code> on
+    status. That matters here because <strong>a derivation that reads status is only as good
+    as the invariant behind status</strong>, so §5 covers the write as well as the read.</p>
+
+    <h2 id="s4">§4 — The repair</h2>
+
+    <p>The shape of the fix is that each fact gets one authority and every surface resolves
+    through it. Which copy becomes authoritative is the decision below, and it is not
+    obvious in both cases, so it is recorded rather than assumed.</p>
+
+    <p>For <strong>membership</strong>, one record must derive from the other rather than
+    both being authored. Whichever direction is chosen, the composed read must expose a
+    single answer and the audit must stop comparing two independently-authored copies.
+    While both remain writable, a session that sets one and not the other creates a plan
+    that is scheduled and missing at once, which is the failure mode that hid live work for
+    weeks.</p>
+
+    <p>For <strong>the active sprint</strong>, the composed read must consult stored status
+    rather than walking composed order. The <code>push</code> op already maintains the
+    invariant that makes this well defined; the derivation simply does not read it. Where
+    the invariant is broken and two sprints carry <code>active</code>, the read has no
+    correct answer and must say so rather than choosing — a deterministic pick makes the
+    violation survivable, and a violation that is survivable stops being maintained.</p>
+
+    <p>Independently of both, an unresolvable member slug must be reported as a broken
+    reference rather than silently counted as unfinished work. That single line is what let
+    a shipped sprint win an election, and the same latent behaviour will distort any future
+    reader that counts unfinished items.</p>
+
+    <p>Finally the frozen aggregate should be made unmistakable — moved, renamed, or given a
+    refusal on read — so that a session investigating a membership question cannot mistake
+    it for the store. It is correctly ignored today and it cost one session a detour anyway.</p>
+
+    <h2 id="s5">§5 — Done when</h2>
+
+    <p>A plan's sprint membership has exactly one authored record, and a plan that names a
+    sprint is either a member of it or reported as an error — never both scheduled and
+    missing. <code>roadmap</code> and the audit return the same membership for every plan in
+    a project, demonstrated on a project that currently disagrees.</p>
+
+    <p><code>read_plan(index)</code> and <code>roadmap</code> return the same
+    <code>active_sprint_id</code>, that value is the sprint whose stored status is
+    <code>active</code>, and a project with no active sprint or with more than one gets an
+    explicit answer rather than an elected one. A regression test covers a closed sprint
+    appearing earlier in composed order than the pushed one, and a second covers a sprint
+    carrying a dangling member slug: the first must not be elected, and the second must be
+    reported as a broken reference while the pushed sprint is still returned.</p>
+
+    <p>Writing status directly cannot create a second active sprint; the path that can
+    maintain the invariant is the only path that can change it.</p>
+
+    <p>Neither test may read its expected value from the constant the code under test reads —
+    the circular-assertion shape already recorded against the telemetry spine.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="membership-authority" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Which record is authoritative for sprint membership — the plan&#x27;s
+        scalar, or the sprint&#x27;s item list?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="sprint-items">The sprint&#x27;s items[] is authoritative; the plan scalar is derived on read</button>
+      <button class="r-opt" data-value="plan-scalar">The plan&#x27;s plan-sprint is authoritative; sprint membership is derived on read</button>
+      <button class="r-opt" data-value="items-plus-refusal">items[] is authoritative and a plan naming a sprint that does not hold it is refused at write</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="ambiguous-active-sprint" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What should the composed read return when the one-pushed-sprint
+        invariant is broken and two sprints carry active?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="refuse">Refuse and surface, leaving the error-level finding to carry the complaint</button>
+      <button class="r-opt" data-value="deterministic">Elect deterministically by a stated rule and report the violation alongside</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="legacy-aggregate-disposal" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What happens to the superseded per-project index.json now that
+        the migration is complete?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="keep">Keep as-is; it already declares itself superseded in its own body</button>
+      <button class="r-opt" data-value="relocate">Relocate under an archive path so it cannot be mistaken for the store</button>
+      <button class="r-opt" data-value="refuse-read">Keep in place but make any read of it raise, naming the distributed store</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ofhor-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-edit one-fact-has-one-reader" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Settle the three authority decisions before any code moves</h4>
+    <div class="r-fu-body"><p>All three decisions in this plan change what the repair IS, not merely how it is written, so none of the sections can be dispatched until they are locked. The membership one is the load-bearing choice: whichever record becomes derived stops being writable, and callers that set it today will need to change.</p><p>The active-sprint half has a measured constraint worth carrying into the decision. Reckon's own state currently violates the one-pushed-sprint invariant, with S16 and S18 both marked active, which the audit reports at error severity as its only blocking finding. That is not a hypothetical for the ambiguity decision, it is the live condition the read must answer in today.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship one-fact-has-one-reader</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
