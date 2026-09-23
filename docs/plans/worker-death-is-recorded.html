@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -330,6 +330,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T0730-failed-resume-erases-session" data-who="reckon-ship" data-when="2026-09-23T07:30:00+02:00">
     <div class="r-comment-body"><p><strong>Finding for step 4: a failed resume erases the run's route back to its session.</strong> Measured 2026-09-23 on <code>r-20260923T034826819549-a-local-worker-compacts-and-continues</code>. A resume launched while the lane's router was being replaced died at once with <code>clive: global catalog is unreachable</code>, leaving an empty <code>resume-2.jsonl</code>. From then on, <code>crew resume</code> and <code>crew(action="session")</code> both reported no session id in the pointer, the stream or the ledger. Yet <code>stream.jsonl</code> carries session <code>30e9d441…</code> in 5,624 records, and <code>resume-1.jsonl</code> in 3,074. The stream lookup reads only the newest stream file, so one empty file hides the session every earlier file recorded. The coordinator recovered it by writing the id back into the live pointer by hand; the pre-repair pointer is kept in the run directory. <strong>Measure:</strong> the session lookup reads every stream the run has written, newest non-empty first. A test with an empty newest resume stream still resolves the session from the earlier one.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T0533-stall-reads-first-stream" data-who="reckon-ship" data-when="2026-09-23T05:33:00Z">
+    <div class="r-comment-body"><p><strong>A third way the recovery path misreads a run: the stall detector reads only the first stream.</strong> Two runs were reported <code>stalled</code> (<q>stream quiet for 903s</q>) while each was working. The a-review-dies §4 run's <code>resume-1.jsonl</code> was written at 07:32:36, two seconds before its stall row was read, and its <code>stream.jsonl</code> last at 07:17:25. The ledger-tests review's <code>lane-change-2.jsonl</code> was advancing while its row read stalled on <code>sonnet 5</code>, the lane it had left. So a resumed or lane-changed run, which is exactly the run someone has already intervened on, is the one classified as stalled, and the classification invites a second intervention. <strong>Measure:</strong> stream age is the newest mtime across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>, and a test with a stale first stream and a fresh resume stream must not classify stalled. This shares its reader with the session lookup finding above (read every stream, newest non-empty first), so one node should own both.</p></div>
 </div>
 </section>
 </main>
