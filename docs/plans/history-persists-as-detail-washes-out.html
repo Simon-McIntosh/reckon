@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -380,7 +380,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-hpdw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship history-persists-as-detail-washes-out" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship history-persists-as-detail-washes-out" data-resolved-at="2026-09-23T15:42:11+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Expand and dual-write before anything reads the database — §3</h4>
     <div class="r-fu-body">Execution order is forced by the reversibility argument
       rather than by preference: the expand and dual-write stages must both hold before
@@ -391,6 +391,12 @@
       stages do not wait on them. Both decisions are open and neither blocks the
       expand stage.</div>
     <pre class="r-fu-prompt">/reckon-ship history-persists-as-detail-washes-out</pre>
+    <p class="r-fu-outcome"><p>Superseded. The lead locked <code>committed-export-scope</code> to durable rows committed as one file per run, which makes the committed files the record and the database an index. A read-back of this plan (report at <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/review-of-history-persists-as-detail-washes-out/read-back.md</code>) found 50 sentences in §2–§4 and §7 that read two ways under that decision, 43 of them load-bearing, because §1–§6 were written for the database-as-store direction. The per-run ledger work therefore moves to its own plan, <code>the-ledger-is-one-file-per-run</code>, and the expand and dual-write order this followup named is not executed. What stays here is rotation (§5) and the open <code>detail-horizon</code> decision, both re-read against per-run files when they are taken up.</p></p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The per-run ledger is carried by its own plan</h4>
+    <div class="r-fu-body"><p>Pointer. The ledger write, read, split and roster work now lives in <code>the-ledger-is-one-file-per-run</code>. Rotation (§5) and <code>detail-horizon</code> stay here and are taken up after that plan's §3 split, restated for per-run files.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-ledger-is-one-file-per-run</pre>
     </article>
 </section>
 
@@ -442,6 +448,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260910T090157091906-hpdw-a-question-reaches-an-index-not-a-scan" data-who="crew-role-scope" data-when="2026-09-10T09:49:26.071Z">
     <div class="r-comment-body"><p>The store answers a question through an index again, without giving up durable-by-default. One QUERY_KEYS declaration drives the columns, their indexes and the insert, so schema and insert cannot drift, and the complete durable record still sits in the payload beside them. Base 98 passed 1 failed, head 103 passed 0 failed, 0 added, and the one base failure passes at head. Each of the five keys is asserted on the planner's own text reading SEARCH with no SCAN, not on elapsed time, and a member query returns the same rows through the column as through the payload. A store predating the current shape migrates in place on open: asserted against both earlier shapes and against a copy of the real live store. Verified by the coordinator on the real store rather than a copy: 22 rows preserved, the payload column added, four indexes created, and the plan now reads SEARCH runs USING INDEX idx_runs_member. 136 passed at the merged head.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260923T1545-s7-moved" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
+    <div class="r-comment-body"><p>This section's nodes are carried by <code>the-ledger-is-one-file-per-run</code> (8637fa06). Measures are now stated for all four, including the roster node the read-back found had none. Read that plan, not this section, for the per-run ledger.</p></div>
 </div>
 </section>
 </main>
