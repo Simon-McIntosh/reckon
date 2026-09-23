@@ -52,6 +52,36 @@ formed from the filename and the diff</code></pre>
       <p>The codex backends themselves live in the operator's flight configuration - <code>~/.config/reckon/flight.yaml</code> and <code>docs/state/reckon/flight.yaml</code> - which are outside this node's write scope. The schema accepts the declaration now and a codex-declaring lane is exercised by the tests; adding <code>input_modalities: [text, image]</code> to those backends is the step that makes the existing codex lanes eligible for a figure profile.</p>
       <p><strong>Figure not produced.</strong> The decision is naturally a three-box flow - profile requires, candidate resolves, declared or refused - and a graphic would carry it better than prose. It was not rendered before this node's time fence was spent, so this record states the decision in the table and prose rather than describing a figure that is not there.</p>
     </section>
+
+    <section id="s2-attachment-reaching-argv" data-reckon="section">
+      <h2>The figure reaches the command line, or the launch refuses</h2>
+      <p>Execution record for <a href="/reckon/plans/a-review-can-see-the-figure">a-review-can-see-the-figure</a> §2. A node's figures are now attached where the plan is composed - <code>reckon._backends.launch_plan(..., images=...)</code>, the argument vector the launcher actually runs - rather than threaded through a helper only a test calls. The codex dialect emits one <code>-i &lt;path&gt;</code> per file; every dialect with no way to hand an image to its harness raises by lane rather than dropping the figure and answering without it.</p>
+
+      <img src="/reckon/figures/a-review-can-see-the-figure/attachment-reaches-argv.svg" alt="One entry point on the left - a node declaring figures, passed to launch_plan, resolved through the dialect selected by the command - fanning to two outcomes. On the left, codex exec emits one -i flag per file, each immediately followed by its own path and all preceding the trailing prompt marker: codex exec --json -C /wt ... -i a.png -i b.png -. On the right, the claude, clive and in-harness lanes raise a BackendError naming the lane, so no argv is produced and the figure is never dropped. A figureless node on either lane is unaffected.">
+
+      <h3>What the argv carries</h3>
+      <p>The attachment is judged on the object the launcher runs, never on a helper's return value: a direct call proves the function, not the wiring. A codex backend handed two figures resolves to exactly two <code>-i</code> flags, each immediately followed by its own path, and both before the trailing <code>-</code> that carries the prompt on stdin.</p>
+      <pre><code>['codex', 'exec', '--json', '-C', '/wt',
+ '--dangerously-bypass-approvals-and-sandbox',
+ '-i', 'a.png', '-i', 'b.png', '-']</code></pre>
+      <p>Handed no figures the same backend emits no <code>-i</code> at all. The flags precede the <code>resume</code> subcommand for the same reason every other <code>exec</code> option does: <code>resume</code> takes only a session id and a prompt, so an option placed after it is rejected outright rather than carried into the resumed turn.</p>
+
+      <h3>Falsifier, and the lane named by the refusal</h3>
+      <p>A lane with no image flag is refused, not silently degraded, and the refusal carries the name of the lane the operator configured - the local harness that shares the claude flag grammar reports the lane, not the dialect family behind it:</p>
+      <pre><code>BackendError: the 'clive' dialect cannot carry attached images, so 1 figure(s)
+would be dropped from the command line; route a figure review to a dialect that
+emits an image flag</code></pre>
+      <p>An in-harness lane has no command line to carry the figure at all and is refused the same way, naming itself: <code>backend 'native-harness' has launch: 'in-harness'; only a 'cli' backend can be spawned</code>. A figureless node on a text-only lane composes its argv exactly as before, because the refusal responds to the figure and not to the lane.</p>
+
+      <h3>Negative control</h3>
+      <p>The declared mutation is that the codex dialect's argv ignores its <code>images</code> argument, so no <code>-i</code> flag is emitted. Applied, it reddened exactly the two attachment tests - <code>assert 0 == 2</code> on the flag count, and <code>ValueError: list.index(x): x not in list</code> for a one-figure launch - while the six others stayed green, the empty-tuple test among them. The discrimination therefore sits on the emitted flag, not on the lane count. The mutation was reverted and the gate re-run green.</p>
+
+      <h3>Gate</h3>
+      <p><code>tests/test_launch_plan_attaches_images.py</code> - <strong>8 passed, exit 0</strong>. Eight cases: two figures emit one flag per path; a flag precedes the prompt terminator; a flag precedes <code>resume</code>; no figures emit no flag (and a text-only lane is unaffected with none); and the claude, clive and in-harness lanes each raise naming their own lane.</p>
+
+      <h3>Base revision, and what is not this node's</h3>
+      <p>The affected selection at the base revision (the same command, minus the new file) is <strong>3 failed, 79 passed</strong>; the same selection plus the new file is <strong>3 failed, 87 passed</strong>. The three failures are identical and pre-existing at base - they live in <code>tests/test_backends.py</code>, which is not a path this node may write, and none of the changed lines can reach them. The delta this node adds is <strong>zero failures</strong>. The pre-existing red is recorded under follow-ons rather than triaged here.</p>
+    </section>
   </main>
 </body>
 </html>

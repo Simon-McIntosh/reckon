@@ -112,6 +112,45 @@
       appear in the resolved argv; then drop the modality declaration and require a refusal rather than
       an argv with the flags quietly absent. Assert against the argv the launcher would run, not against
       a helper's return value — a direct call proves the function, not the wiring.</p>
+
+      <article class="r-comment" data-section="s2" data-id="c-run-r-20260923T055341375356-launch-plan-carries-images" data-who="crew-worker" data-when="2026-09-23">
+        <div class="r-comment-body">
+          <p><strong>Landed: the argv half, asserted where the launcher would put it.</strong>
+          <code>reckon._backends.launch_plan</code> takes an <code>images</code> argument and threads
+          it to each dialect's <code>argv()</code>. The codex dialect emits one <code>-i &lt;path&gt;</code>
+          per file, each flag immediately followed by its own path, and the flags precede the
+          <code>resume</code> subcommand for the same reason every other <code>exec</code> option does.
+          Handed no figures the same backend emits no <code>-i</code>. Every dialect with no way to
+          hand an image to its harness — claude, clive, and an in-harness lane — raises
+          <code>BackendError</code> naming the lane the operator configured, rather than dropping the
+          figure and answering from the filename and the diff.</p>
+          <p><strong>The falsifier, applied.</strong> A clive backend handed one figure raises
+          <code>the 'clive' dialect cannot carry attached images, so 1 figure(s) would be dropped from
+          the command line</code> — the local harness reports the lane, not the claude dialect family
+          behind it. A codex backend handed two figures resolves to exactly two <code>-i</code> flags
+          in the vector the launcher runs. The declared negative control (make the codex dialect's argv
+          ignore its <code>images</code> argument, so no <code>-i</code> flag is emitted) reddened
+          exactly the two attachment tests with <code>assert 0 == 2</code> while the six others stayed
+          green; the mutation was reverted and the gate re-run green.</p>
+          <p><strong>Gate.</strong> <code>tests/test_launch_plan_attaches_images.py</code> —
+          <strong>8 passed, exit 0</strong>. At the base revision the affected selection is
+          <strong>3 failed, 79 passed</strong> and the same selection plus the new file is
+          <strong>3 failed, 87 passed</strong>: the three failures are identical and pre-existing in
+          <code>tests/test_backends.py</code>, which is outside this node's write scope, so the delta
+          this node adds is zero failures. That pre-existing red is a follow-on, not a triage here.</p>
+          <p><strong>Not landed here, by fence.</strong> The dialect emits the flag; the declaration
+          that a codex lane <em>receives</em> images is <code>input_modalities: [text, image]</code> in
+          the flight layer (<code>docs/state/reckon/flight.yaml</code>), which this node may not
+          write. Routing a node's declared figures through the real dispatch path is a separate node,
+          since it lands in <code>reckon/crew/dispatch.py</code>. <strong>Bypassing
+          <code>/reckon-edit</code></strong> because this worker's fenced landing contract requires
+          its own append-only plan comment and cumulative-evidence record; shared lifecycle state,
+          followup resolution and terminal status remain coordinator-owned.</p>
+          <p>Figure: <a href="/reckon/figures/a-review-can-see-the-figure/attachment-reaches-argv.svg">the
+          attachment path from a node's figures to the composed argv</a>. Evidence:
+          <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed#s2-attachment-reaching-argv">s2-attachment-reaching-argv</a>.</p>
+        </div>
+      </article>
     </section>
 
     <section id="s3" data-reckon="section">
