@@ -27,13 +27,39 @@ version: 1
 # estimated-over-actual, so it measures less deliberation per run rather than
 # more throughput; read the horizon, not the speed.
 
+# No dispatch resumes an earlier worker's session, set 2026-09-23 by the lead.
+#
+# A member's session is keyed by agent configuration, so with reuse on every
+# dispatch to that member resumed the previous node's conversation. Measured the
+# same day across 5,440 runs: 312 of 2,089 local runs resumed one, inheriting a
+# median 81,957 tokens (max 494,189) on top of a ~60k fresh overhead, and 1,315
+# of 3,105 codex runs resumed one. A reflex review resumed a session that had
+# just died looping in compaction. New work gets a new session; continuing the
+# SAME run (crew resume) does not read this key and is unaffected.
+
 backends:
+  claude:
+    session_reuse: false
+  claude-haiku:
+    session_reuse: false
+  claude-opus:
+    session_reuse: false
+  clive:
+    session_reuse: false
+  codex:
+    session_reuse: false
+  codex-astra:
+    session_reuse: false
+  codex-luna:
+    session_reuse: false
+  codex-terra:
+    session_reuse: false
   codex-spark:
     launch: cli
     command: codex
     model: gpt-5.3-codex-spark
     sandbox: worktree-full
-    session_reuse: true
+    session_reuse: false
     time_budget: 15m
 
 default_backend: clive
