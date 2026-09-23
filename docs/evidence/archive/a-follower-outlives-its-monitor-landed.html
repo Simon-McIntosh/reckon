@@ -453,6 +453,65 @@
         figure source.</li>
       </ul>
     </section>
+    <section id="s7-watch-lifetime-tests-read-the-canonical-state">
+      <h2>&sect;7 &mdash; The watch lifetime tests read the canonical state word</h2>
+      <p><strong>Outcome &mdash; the three tests the archive named as owed read the classifier's word.</strong>
+      Commit <code>484192a8</code> at 2026-09-23 &mdash; <em>test(crew): watch lifetime tests assert the
+      classifier's unpromoted state</em>. The classifier reports <code>completed_unpromoted</code> for a
+      delivered run that has not been promoted; these three tests still asserted the earlier word
+      <code>complete</code> and so failed against the current classifier. The correction is confined to
+      <code>tests/test_crew_watch_lifetime.py</code>: no source file changed.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-follower-outlives-its-monitor/watch-state-lifecycle.png"
+             alt="Three state boxes left to right — dispatched, completed unpromoted, promoted — with arrows marked worker exits and promotes. A note lists the four assertion sites corrected. A separate box states that the stored pointer phase reads complete, which these tests do not read.">
+        <figcaption>The classifier's state word across a delivered run's life. A delivered, unreviewed run
+        reads <code>completed_unpromoted</code>; the correction moves four assertion sites onto that word,
+        while the pointer's own stored <code>phase</code> stays <code>complete</code> because the tests read
+        the classifier rather than the stored phase.</figcaption>
+      </figure>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>The gate, at <code>484192a8</code>: 3 passed in 6.41 s.</strong>
+        <code>tests/test_crew_watch_lifetime.py</code> runs its three tests green.</li>
+        <li><strong>Base revision <code>19016a54</code>: 3 failed.</strong> All three fail on the same
+        assertion, each reporting <code>'completed_unpromoted' == 'complete'</code>:
+        <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> on both its baseline
+        <code>to_state</code> and its promoted <code>from_state</code>,
+        <code>test_dispatch_is_admitted_during_the_stale_terminal_window</code> and
+        <code>test_empty_fleet_still_waits_for_its_first_pointer</code> on their baseline
+        <code>to_state</code>. So four assertion sites across the three tests moved from
+        <code>complete</code> to <code>completed_unpromoted</code>.</li>
+        <li><strong>One repair beyond the state word was needed to reach three passed.</strong> The dispatch
+        boundary refuses a node that declares no specification level
+        (<code>reckon/crew/node.py</code>), and the dispatch test's task fixture omitted it. That refusal
+        sat behind the state-word assertion, so it surfaced only once the state word was corrected. The
+        fixture now declares <code>spec_level="exact"</code>; without it the file reports 1 failed, 2
+        passed at the corrected state word.</li>
+        <li><strong>No source file changed</strong>, and no source file needed to: the classifier's word was
+        already correct, so the record shows a test reading the wrong word rather than a source defect.</li>
+      </ul>
+
+      <h3>Negative control</h3>
+      <p>Declared as: restore the expected word <code>complete</code> in the three assertions. With the three
+      tests' expected word set back to <code>complete</code>, the gate fails all three on exactly that
+      assertion &mdash; <code>3 failed in 2.60 s</code>, the same three ids. The mutation was reverted and the
+      gate ran green again; the red log is cited under the node's manifest.</p>
+
+      <h3>What was owed and left</h3>
+      <p>Verifying the merged result belongs to a separately dispatched test node. This node leaves the
+      archive's <code>plan-verifies</code> and <code>plan-owes</code> head scalars untouched, so the
+      coordinator can fold this section's commit into them.</p>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>tests/test_crew_watch_lifetime.py</code> &mdash; the three corrected tests and the fixture's
+        specification level.</li>
+        <li><code>docs/figures/a-follower-outlives-its-monitor/watch_state_lifecycle.py</code> &mdash; the
+        figure source.</li>
+      </ul>
+    </section>
   </main>
 </body>
 </html>
