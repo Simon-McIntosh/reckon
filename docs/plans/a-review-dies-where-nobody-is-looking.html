@@ -202,6 +202,21 @@
       unchanged against base <code>75b39d4d</code> with no added failures; the declared negative
       control fails the two exclusion tests. Evidence:
       <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#s4">&sect;4 record</a>.</p>
+      <p><strong>Landed (the delivery half).</strong> The second half of this section's measure is
+      that a review which has delivered ends its turn. The composed review brief now states, in its
+      done-when beside the record condition it qualifies, that the turn ends once the record is
+      stored and the manifest reads complete. Each watcher tick reads every live pointer through a
+      new public <code>review_delivered(run)</code>, and ends any review whose stored record parses
+      and whose manifest reads <code>complete</code> once its stream has kept growing for 300
+      seconds past the later of those two writes. The stop reaches the run's own recorded pid and
+      nothing wider, and the run record carries <code>ended_after_delivery</code> with the grace and
+      the stop time. Gate: 7 tests in the new module, all against a stub signaller; the declared
+      negative control, disabling <code>review_delivered</code> so it never reports a delivery,
+      leaves the streaming review observed not stopped. Base delta:
+      <code>tests/test_review_reflex_sweep.py</code> passes 9 at base <code>ef9ddbac</code> and the
+      same 9 at this head, with the new module's 7 the only addition. Landing commit
+      <code>9cda3533</code>. Evidence:
+      <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#s4-delivery">&sect;4 delivery record</a>.</p>
     </section>
 
     <section id="s5" data-reckon="section">
