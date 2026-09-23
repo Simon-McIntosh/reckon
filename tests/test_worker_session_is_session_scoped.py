@@ -1,12 +1,10 @@
-"""A stored session resolves only for the coordinator session that owns it.
+"""A dispatch-time session comes from the task's own runs, not from the roster.
 
-The roster keys a member's session by agent configuration alone, so without an
-owner any dispatch, from any coordinator session on any day, resumes the same
-conversation. Both stored-session branches — the configuration-keyed entry in
-the `sessions` map and the legacy entry reached through the bare `session_id`
-plus `session_model` fields — must obey the ownership rule, because closing one
-alone leaves the other resuming. A session the roster carries no owner for is
-foreign by default: nothing proves it belongs to the session dispatching now.
+The roster entry is a directory, not an authority: it records which sessions a
+member has carried, and it is where a captured session is written back so a
+later reader can find it. What a dispatch may continue is decided from the run
+records of its own task, so a session another node left on the member — or one
+written under a configuration the dispatch happens to match — is never offered.
 
 The end-to-end cases drive `crew.dispatch` and read the launched argv back,
 since a helper-level assertion is exactly how the resumed-conversation defect
@@ -24,7 +22,6 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.calibration import agent_configuration_key
 from reckon.crew import resumption
 
 # `crew` re-exports a `dispatch` function under that name, so the module is
@@ -39,7 +36,7 @@ CONFIG = {
             "command": "codex",
             "model": "some-model",
             "effort": "medium",
-            "sandbox": "worktree-full",
+            "sandbox": "full",
             "session_reuse": True,
             "time_budget": "25m",
         }
@@ -47,190 +44,23 @@ CONFIG = {
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
-MEDIUM_AGENT = {
-    "backend": "alpha",
-    "launch": "cli",
-    "model": "some-model",
-    "effort": "medium",
-    "sandbox": "worktree-full",
-}
-DISPATCHING_SESSION = "660d357e-1ede-4027-b678-d89d9391ff8f"
-OTHER_SESSION = "1f2c7b40-9a11-4e5d-8f3a-2b6c1d0e9a77"
 STORED_SESSION = "266f04b2-75c1-43f0-aa27-0d72a67b340f"
 FIXTURE = Path(__file__).parent / "fixtures" / "backends" / "codex-turn.jsonl"
+FIXTURE_SESSION = "019ff509-8a60-7723-94fd-65942a6d8faa"
 
-
-def _configuration_key(agent: Mapping[str, object]) -> str:
-    return agent_configuration_key({"agent": agent})
-
-
-def _member(**overrides: object) -> dict[str, object]:
-    entry: dict[str, object] = {
-        "id": "worker-a",
-        "harness": "alpha",
-        "role": "implement",
-        "session_id": None,
-        "session_model": None,
-        "sessions": {},
-    }
-    entry.update(overrides)
-    return entry
-
-
-# ── the configuration-keyed branch ──────────────────────────────────────────
-
-
-def test_a_stored_session_owned_by_another_session_is_not_returned() -> None:
-    """The defect: a foreign entry resolved for whoever dispatched to it."""
-    key = _configuration_key(MEDIUM_AGENT)
-    member = _member(
-        sessions={key: STORED_SESSION}, session_owners={key: OTHER_SESSION}
-    )
-
-    assert (
-        dispatch_module._session_for_configuration(
-            member,
-            MEDIUM_AGENT,
-            (),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        is None
-    )
-
-
-def test_a_stored_session_owned_by_the_dispatching_session_is_returned() -> None:
-    """Closing the lookup must not make every entry inert."""
-    key = _configuration_key(MEDIUM_AGENT)
-    member = _member(
-        sessions={key: STORED_SESSION}, session_owners={key: DISPATCHING_SESSION}
-    )
-
-    assert (
-        dispatch_module._session_for_configuration(
-            member,
-            MEDIUM_AGENT,
-            (),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        == STORED_SESSION
-    )
-
-
-def test_a_stored_session_with_no_recorded_owner_is_not_returned() -> None:
-    """An entry set outside any dispatch proves nothing about its owner."""
-    key = _configuration_key(MEDIUM_AGENT)
-    member = _member(sessions={key: STORED_SESSION})
-
-    assert (
-        dispatch_module._session_for_configuration(
-            member,
-            MEDIUM_AGENT,
-            (),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        is None
-    )
-
-
-# ── the legacy branch, reached through session_id and session_model ──────────
-
-
-def _legacy_member(owner: str | None) -> dict[str, object]:
-    """A model-keyed entry whose capture evidence already agrees with it.
-
-    The run history matches, so the only thing that can withhold the session is
-    the recorded owner — which is what these cases are about.
-    """
-    entry = _member(session_id=STORED_SESSION, session_model="some-model")
-    if owner is not None:
-        entry["session_owners"] = {"some-model": owner}
-    return entry
-
-
-LEGACY_CAPTURE_RUN = {
-    "member": "worker-a",
-    "session_id": STORED_SESSION,
-    "agent": MEDIUM_AGENT,
-}
-
-
-def test_a_legacy_session_owned_by_another_session_is_not_returned() -> None:
-    """The same defect survives there, so the branches are asserted apart."""
-
-    assert (
-        dispatch_module._session_for_configuration(
-            _legacy_member(OTHER_SESSION),
-            MEDIUM_AGENT,
-            (LEGACY_CAPTURE_RUN,),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        is None
-    )
-
-
-def test_a_legacy_session_owned_by_the_dispatching_session_is_returned() -> None:
-    assert (
-        dispatch_module._session_for_configuration(
-            _legacy_member(DISPATCHING_SESSION),
-            MEDIUM_AGENT,
-            (LEGACY_CAPTURE_RUN,),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        == STORED_SESSION
-    )
-
-
-def test_a_legacy_session_with_no_recorded_owner_is_not_returned() -> None:
-    assert (
-        dispatch_module._session_for_configuration(
-            _legacy_member(None),
-            MEDIUM_AGENT,
-            (LEGACY_CAPTURE_RUN,),
-            dispatching_session=DISPATCHING_SESSION,
-        )
-        is None
-    )
-
-
-def test_the_withholding_names_the_session_and_its_recorded_owner() -> None:
-    """A withheld session carries what a reader needs to see why."""
-    key = _configuration_key(MEDIUM_AGENT)
-    member = _member(
-        sessions={key: STORED_SESSION}, session_owners={key: OTHER_SESSION}
-    )
-
-    resolution = dispatch_module._member_session_resolution(
-        member, MEDIUM_AGENT, (), dispatching_session=DISPATCHING_SESSION
-    )
-
-    assert resolution["session_id"] is None
-    withheld = resolution["withheld"]
-    assert withheld["session_id"] == STORED_SESSION
-    assert withheld["owner"] == OTHER_SESSION
-    assert OTHER_SESSION in withheld["reason"]
-
-
-def test_an_unowned_session_is_withheld_with_no_owner_named() -> None:
-    key = _configuration_key(MEDIUM_AGENT)
-    member = _member(sessions={key: STORED_SESSION})
-
-    resolution = dispatch_module._member_session_resolution(
-        member, MEDIUM_AGENT, (), dispatching_session=DISPATCHING_SESSION
-    )
-
-    assert resolution["session_id"] is None
-    assert resolution["withheld"]["owner"] is None
-    assert resolution["withheld"]["session_id"] == STORED_SESSION
-
-
-# ── the capture path records the owner ──────────────────────────────────────
+NODE_ID = "session-scope-node"
 
 
 @pytest.fixture()
-def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+@pytest.fixture()
+def repo(tmp_path: Path, home: Path) -> Path:
     root = tmp_path / "repo"
     (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
     (root / "docs" / "plans").mkdir(parents=True)
@@ -262,45 +92,15 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ["commit", "-q", "-m", "chore: seed"],
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
-    (config_home / "mounts.json").write_text(json.dumps({"proj": str(root / "docs")}))
+    (home / "mounts.json").write_text(json.dumps({"proj": str(root / "docs")}))
+    ledger.register_member("proj", "worker-a", harness="alpha", root=root)
     return root
 
 
-def _capture(record: Mapping[str, object]) -> Mapping[str, object] | None:
-    return dispatch_module._capture_member_session(record)
-
-
-def test_the_capture_path_records_the_owning_coordinator_session(
-    repo: Path,
-) -> None:
-    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
-
-    captured = _capture(
-        {
-            "project": "proj",
-            "repo": str(repo),
-            "member": "worker-a",
-            "session_id": STORED_SESSION,
-            "agent": MEDIUM_AGENT,
-            "session": DISPATCHING_SESSION,
-        }
-    )
-
-    assert captured is not None and captured["captured"] is True
-    key = _configuration_key(MEDIUM_AGENT)
-    stored = ledger.member("proj", "worker-a", repo)
-    assert stored is not None
-    assert stored["sessions"] == {key: STORED_SESSION}
-    assert stored["session_owners"] == {key: DISPATCHING_SESSION}
-
-
-# ── a dispatch to a member holding only foreign entries ─────────────────────
-
-
-def _node(home: Path, sequence: int) -> crew.TaskNode:
+def _node(home: Path) -> crew.TaskNode:
     return crew.TaskNode(
-        id=f"session-scope-node-{sequence}",
-        goal="verify a foreign stored session is withheld from a dispatch",
+        id=NODE_ID,
+        goal="verify a roster session is not the dispatch-time authority",
         plan="plan-a",
         section="session-routing",
         spec_level="guided",
@@ -308,90 +108,105 @@ def _node(home: Path, sequence: int) -> crew.TaskNode:
             "pytest tests/test_worker_session_is_session_scoped.py reports every "
             "case passing"
         ),
-        write_paths=[f"reckon/session_scope_{sequence}.py"],
+        write_paths=[f"reckon/session-scope/{NODE_ID}.py"],
         time_budget="20m",
-        manifest_path=str(home / f"session-scope-node-{sequence}.md"),
+        manifest_path=str(home / f"{NODE_ID}.md"),
     )
 
 
 def _dispatch(
-    home: Path, repo: Path, sequence: int, *, config: Mapping[str, object] = CONFIG
+    home: Path, repo: Path, *, session: str = "coordinator-1"
 ) -> dict[str, object]:
     return crew.dispatch(
-        node=_node(home, sequence),
+        node=_node(home),
         project="proj",
         repo=repo,
-        config=config,
-        session=DISPATCHING_SESSION,
+        config=CONFIG,
+        session=session,
         member="worker-a",
-        launcher=lambda *args, **kwargs: 0,
+        launcher=lambda *args, **kwargs: 999921,
     )
 
 
-def _register_with_foreign_session(repo: Path) -> str:
-    """Register a member whose only stored session belongs to another session."""
-    key = _configuration_key(MEDIUM_AGENT)
-    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
-    data, version = ledger.load("proj", root=repo)
-    for entry in data["members"]:
-        if str(entry.get("id")) != "worker-a":
-            continue
-        entry["sessions"] = {key: STORED_SESSION}
-        entry["session_owners"] = {key: OTHER_SESSION}
-    ledger.write("proj", data, version, root=repo)
-    return key
+def _complete(record: Mapping[str, object], session_id: str) -> None:
+    Path(str(record["log_path"])).write_text(
+        FIXTURE.read_text().replace(FIXTURE_SESSION, session_id)
+    )
+    observed = crew.observe(str(record["run_id"]))
+    assert observed["phase"] == "complete"
+    assert observed["session_id"] == session_id
 
 
-def test_a_dispatch_withholding_a_foreign_session_carries_no_resume(
-    repo: Path,
+def _stored_roster_session(repo: Path) -> None:
+    """A roster entry holding a session this task never ran."""
+    data, version = ledger.load("proj", repo)
+    data["members"][0].update(
+        {
+            "session_id": STORED_SESSION,
+            "session_model": "some-model",
+            "sessions": {"some-model": STORED_SESSION},
+        }
+    )
+    ledger.write("proj", data, version, repo)
+
+
+def test_a_roster_session_no_run_of_this_task_left_is_withheld(
+    home: Path, repo: Path
 ) -> None:
     """Asserted against the launched argv, not against the stored record."""
-    _register_with_foreign_session(repo)
+    _stored_roster_session(repo)
 
-    dispatched = _dispatch(repo.parent / "config", repo, 1)
+    dispatched = _dispatch(home, repo)
 
     assert dispatched["session_id"] is None
     assert "resume" not in dispatched["argv"]
 
 
-def test_a_dispatch_records_the_withheld_session_its_owner_and_a_reason(
-    repo: Path,
+def test_the_absence_names_that_no_run_of_this_task_left_a_session(
+    home: Path, repo: Path
 ) -> None:
-    _register_with_foreign_session(repo)
+    _stored_roster_session(repo)
 
-    dispatched = _dispatch(repo.parent / "config", repo, 1)
+    dispatched = _dispatch(home, repo)
 
-    withheld = dispatched["session_withheld"]
-    assert withheld["session_id"] == STORED_SESSION
-    assert withheld["owner"] == OTHER_SESSION
-    assert withheld["reason"]
-
-
-def _register_with_owned_session(repo: Path) -> str:
-    """Register a member whose stored session belongs to the dispatching session."""
-    key = _configuration_key(MEDIUM_AGENT)
-    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
-    data, version = ledger.load("proj", root=repo)
-    for entry in data["members"]:
-        if str(entry.get("id")) != "worker-a":
-            continue
-        entry["sessions"] = {key: STORED_SESSION}
-        entry["session_owners"] = {key: DISPATCHING_SESSION}
-    ledger.write("proj", data, version, root=repo)
-    return key
+    absence = dispatched["session_id_absent"]
+    assert absence["point"] == "dispatch-no-same-task-session"
+    assert absence["reason"]
 
 
-def test_a_dispatch_to_a_member_owning_its_session_still_resumes(
-    repo: Path,
+def test_a_run_of_this_task_supplies_the_session_instead(
+    home: Path, repo: Path
 ) -> None:
-    """The ownership rule narrows the lookup; it does not disable reuse."""
-    _register_with_owned_session(repo)
+    """The run record is the authority; the roster entry is beside the point."""
+    _stored_roster_session(repo)
+    _complete(_dispatch(home, repo), STORED_SESSION)
 
-    dispatched = _dispatch(repo.parent / "config", repo, 1)
+    again = _dispatch(home, repo, session="coordinator-2")
 
-    assert dispatched["session_id"] == STORED_SESSION
-    assert dispatched["argv"][dispatched["argv"].index("resume") + 1] == STORED_SESSION
-    assert dispatched["session_withheld"] is None
+    assert again["session_id"] == STORED_SESSION
+    assert again["argv"][again["argv"].index("resume") + 1] == STORED_SESSION
+    assert again["session_withheld"] is None
+
+
+# ── the capture path still writes the session back onto the roster ──────────
+
+
+def test_the_capture_path_records_the_session_on_the_roster(repo: Path) -> None:
+    captured = dispatch_module._capture_member_session(
+        {
+            "project": "proj",
+            "repo": str(repo),
+            "member": "worker-a",
+            "session_id": STORED_SESSION,
+            "agent": {"backend": "alpha", "launch": "cli", "model": "some-model"},
+            "session": "coordinator-1",
+        }
+    )
+
+    assert captured is not None and captured["captured"] is True
+    stored = ledger.member("proj", "worker-a", repo)
+    assert stored is not None
+    assert STORED_SESSION in json.dumps(stored.get("sessions") or {})
 
 
 # ── the run record still resolves a session ─────────────────────────────────
@@ -401,7 +216,6 @@ def test_a_run_whose_member_holds_no_matching_entry_still_resolves(
     repo: Path,
 ) -> None:
     """The roster is not the recovery path; the run's own record is."""
-    _register_with_foreign_session(repo)
     pointer = {
         "run_id": "run-no-matching-entry",
         "project": "proj",
