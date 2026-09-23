@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="100%" role="img" aria-label="A decision path in append_run when the ledger file is absent. The guard asks git whether the path was ever tracked. Outside any checkout git cannot answer, the guard reads None, cannot tell a new project from a deleted ledger, and refuses. Inside a checkout git answers False, the absence is a genuinely new project, and the ledger is created. The routing-surface fixture sat outside a checkout and refused, giving two failures and six errors; initialising a repository in it makes git answer, giving fourteen passes.">
+  <title>The initialisation guard's branch, and which side each fixture state lands on</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6470"></path>
+    </marker>
+  </defs>
+
+  <rect x="230" y="20" width="300" height="44" rx="6" fill="#eef2f7" stroke="#6b7f96"></rect>
+  <text x="380" y="47" text-anchor="middle" font-size="13" fill="#243447">append_run: ledger file is absent</text>
+
+  <line x1="380" y1="64" x2="380" y2="96" stroke="#5b6470" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+  <path d="M380 96 L520 140 L380 184 L240 140 Z" fill="#fbf4e4" stroke="#b08a3e"></path>
+  <text x="380" y="132" text-anchor="middle" font-size="12.5" fill="#5a4413">does git ever record</text>
+  <text x="380" y="150" text-anchor="middle" font-size="12.5" fill="#5a4413">this path in a checkout?</text>
+
+  <line x1="288" y1="168" x2="150" y2="228" stroke="#a33" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"></line>
+  <text x="196" y="188" text-anchor="middle" font-size="12" fill="#a33">cannot answer</text>
+  <text x="196" y="203" text-anchor="middle" font-size="11" fill="#a33">(None)</text>
+
+  <line x1="472" y1="168" x2="610" y2="228" stroke="#2f6f4f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+  <text x="566" y="188" text-anchor="middle" font-size="12" fill="#2f6f4f">answers False</text>
+
+  <rect x="30" y="228" width="250" height="54" rx="6" fill="#f7e3e0" stroke="#a33"></rect>
+  <text x="155" y="250" text-anchor="middle" font-size="12" fill="#7a3527">new project and deleted ledger</text>
+  <text x="155" y="268" text-anchor="middle" font-size="12" fill="#7a3527">look identical &#8594; refuse</text>
+
+  <rect x="500" y="228" width="250" height="54" rx="6" fill="#dcecdf" stroke="#2f6f4f"></rect>
+  <text x="625" y="250" text-anchor="middle" font-size="12" fill="#26402f">never tracked &#8594; genuinely</text>
+  <text x="625" y="268" text-anchor="middle" font-size="12" fill="#26402f">new project &#8594; create</text>
+
+  <text x="155" y="298" text-anchor="middle" font-size="11" fill="#7a3527">fixture without git init: 2 failed, 6 errors</text>
+  <text x="625" y="298" text-anchor="middle" font-size="11" fill="#26402f">fixture with git init: 14 passed</text>
+</svg>
