@@ -79,6 +79,14 @@ _MD_BOLD = re.compile(r"\*\*[^*\n]+\*\*")
 _MD_LEADING = re.compile(r"^\s*(?:[-*+]\s+|#{1,6}\s+)", re.MULTILINE)
 _STUB_PROSE = re.compile(r"\bSee (?:state|plan) §|^\s*TODO\b|^\s*TBD\b", re.IGNORECASE)
 _PRE_LINE_LIMIT = 120
+# The scalar family whose duplicate the reader resolves last-wins: two lines,
+# one value read, and a writer updating the other line reports success while
+# the surface keeps the old value.
+_SCALAR_META_PREFIX = "plan-"
+# Tags whose authored imbalance the parser repairs into a well-formed tree, so
+# every later check reads the repaired document and the audit says OK. Each is
+# counted from the raw tag stream (see _StructureScanner).
+_BALANCE_TAGS = ("tr",)
 
 SEVERITIES = ("error", "warn", "info")
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
@@ -555,16 +563,23 @@ class _StructureScanner(HTMLParser):
         self.open_sections: list[str] = []
         self.stray_closes = 0
         self.headers = 0
+        # {tag: [opens, closes]} for the balance-checked tags.
+        self.tag_balance: dict[str, list[int]] = {tag: [0, 0] for tag in _BALANCE_TAGS}
 
     def handle_starttag(self, tag: str, attrs) -> None:
         tag = tag.lower()
+        if tag in self.tag_balance:
+            self.tag_balance[tag][0] += 1
         if tag == "section":
             self.open_sections.append(dict(attrs).get("id") or "")
         elif tag == "header":
             self.headers += 1
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() != "section":
+        tag = tag.lower()
+        if tag in self.tag_balance:
+            self.tag_balance[tag][1] += 1
+        if tag != "section":
             return
         if self.open_sections:
             self.open_sections.pop()
@@ -626,7 +641,117 @@ def _structure_findings(html_text: str) -> list[Finding]:
                 " another document spliced into this one",
             )
         )
+    for tag, (opens, closes) in scanner.tag_balance.items():
+        if opens == closes:
+            continue
+        if opens > closes:
+            missing = opens - closes
+            out.append(
+                Finding(
+                    "error",
+                    f"{tag}-unclosed",
+                    f"{missing} <{tag}> opened and never closed — the browser"
+                    " reflows every following element into the last one instead"
+                    " of standing them beside it",
+                )
+            )
+            continue
+        stray = closes - opens
+        out.append(
+            Finding(
+                "error",
+                f"{tag}-stray-close",
+                f"{stray} stray </{tag}> with no matching <{tag}> open — an"
+                " authored row boundary is misplaced",
+            )
+        )
     return out
+
+
+def _scalar_duplicate_findings(soup: BeautifulSoup) -> list[Finding]:
+    """Report a duplicated ``plan-*`` scalar, which the reader resolves last-wins.
+
+    ``read_state`` walks every ``<meta>`` in document order and overwrites the
+    field each time, so a duplicate is not an ambiguity the reader reports — it
+    is one value silently chosen. A union-resolved merge of two landing records
+    leaves exactly this shape: two ``plan-version`` lines, the writer updates
+    one, and every write is reported as a successful change to a value the
+    surface never reads.
+    """
+    seen: dict[str, list[str]] = {}
+    for meta in soup.find_all("meta"):
+        name = (meta.get("name") or "").strip().lower()
+        if not name.startswith(_SCALAR_META_PREFIX):
+            continue
+        seen.setdefault(name, []).append(str(meta.get("content") or ""))
+    out: list[Finding] = []
+    for name, values in seen.items():
+        if len(values) < 2:
+            continue
+        rendered = ", ".join(f"'{value}'" for value in values)
+        out.append(
+            Finding(
+                "error",
+                "duplicate-plan-scalar",
+                f'<meta name="{name}"> appears {len(values)} times ({rendered}) —'
+                " the reader takes the last one, so a writer updating any other"
+                " line reports success while the surface keeps the final value",
+            )
+        )
+    return out
+
+
+def _resource_island_findings(doc_type: str, soup: BeautifulSoup) -> list[Finding]:
+    """Report a typed resource whose state island is absent or unparseable.
+
+    A sprint / milestone / blocker / timeline / review page carries its state in
+    the ``reckon-resource-state`` island; the markup around it is presentation.
+    With the island absent the document still renders and still passes every
+    presentation check, while any plan read in the project fails — the project
+    enumerates every sprint document, so one unreadable member fails the whole
+    read for every session.
+    """
+    if doc_type not in _TYPED_RESOURCE_TYPES:
+        return []
+    # Only a page that renders the resource body carries the state contract: a
+    # fragment holding the reckon-* identity metas and no resource shell is
+    # metadata, not a resource page, and requiring an island of it would fail a
+    # document that presents nothing to read.
+    if soup.find(class_="reckon-resource") is None:
+        return []
+    from reckon.project_state import RESOURCE_SCRIPT_ID
+
+    island = soup.find("script", id=RESOURCE_SCRIPT_ID)
+    if island is None:
+        return [
+            Finding(
+                "error",
+                "resource-island-missing",
+                f"{doc_type} resource with no"
+                f' <script id="{RESOURCE_SCRIPT_ID}"> state island — the island'
+                " IS the resource's state and the markup around it is"
+                " presentation; without it every plan read in the project fails",
+            )
+        ]
+    try:
+        data = json.loads(island.string or "")
+    except (TypeError, ValueError) as exc:
+        return [
+            Finding(
+                "error",
+                "resource-island-malformed",
+                f'<script id="{RESOURCE_SCRIPT_ID}"> does not parse as JSON: {exc}',
+            )
+        ]
+    if not isinstance(data, dict):
+        return [
+            Finding(
+                "error",
+                "resource-island-malformed",
+                f'<script id="{RESOURCE_SCRIPT_ID}"> must hold a JSON object',
+            )
+        ]
+    return []
 
 
 def _unwired_plan_findings(
@@ -696,9 +821,15 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     # repairs an unclosed section into a well-formed tree (see _StructureScanner).
     out.extend(_structure_findings(html_text))
 
+    # (g) Scalar duplicates — the authoritative state, not the prose around it.
+    out.extend(_scalar_duplicate_findings(soup))
+
     # Document type — research/doc are non-actionable; plan requires status.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
     doc_type = ((rt.get("content") if rt else "") or "plan").strip().lower()
+
+    # (g) Typed-resource state island — again the state, not the presentation.
+    out.extend(_resource_island_findings(doc_type, soup))
 
     # (e) Required meta tags ------------------------------------------------
     present = {

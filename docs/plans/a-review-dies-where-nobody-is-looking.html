@@ -208,6 +208,41 @@
       contiguous block so a three-way merge treats them as a single hunk rather than three
       independently unionisable lines. The structural fix is the one that prevents recurrence; the guard
       is what makes the existing four visible.</p>
+
+      <p><strong>Landed — the guard half.</strong> The three misses this section names now each report a
+      named error from <code>audit-doc</code>: <code>duplicate-plan-scalar</code> for any
+      <code>plan-*</code> scalar appearing twice, <code>resource-island-missing</code> and
+      <code>resource-island-malformed</code> for a typed resource whose state island is absent or does not
+      parse, and <code>tr-unclosed</code> for the imbalance this section's peer found in the third
+      <code>&lt;tr&gt;</code> case. The row check extends the raw-tag scanner that already emits
+      <code>section-unclosed</code>, which is the tag-list cost the peer predicted rather than a new
+      mechanism; the other two read the parsed document, because the authoritative state is what the
+      reader consumes and the prose is not.</p>
+
+      <p><strong>Falsified against the fixtures that passed.</strong> Three documents that reported
+      <code>OK</code> before the change now each exit non-zero with its code — a plan carrying
+      <code>plan-impl</code> twice, a sprint resource with its island removed, and a table with one
+      <code>&lt;/tr&gt;</code> among four rows — while a well-formed document of each kind still reports
+      <code>OK</code>. The negative control is applied and recorded: with the duplicate check removed from
+      the committed tree, the duplicated-scalar fixture passes the audit again. The population over the
+      whole corpus is measured rather than asserted: <strong>14 <code>duplicate-plan-scalar</code>
+      findings across 4 documents</strong>, which confirms this section's count of four evidence records
+      independently, and <strong>1 <code>tr-unclosed</code></strong>, with no island finding over 21
+      typed-resource pages that all carry a parseable island. Those four documents each repeat an entire
+      header block — two <code>plan-title</code>, two <code>plan-summary</code>, two
+      <code>plan-recorded-at</code> — which is the union-merged landing record this section describes.</p>
+
+      <p><strong>Not landed, and still open.</strong> The structural half is untouched: <code>impl</code>,
+      <code>version</code> and <code>modified</code> are not yet written as one contiguous block, and the
+      reader still resolves a duplicate last-wins instead of refusing or deduplicating deterministically.
+      So this section's guard exists and its recurrence is still possible. The five documents the new
+      checks report — the four duplicated-header evidence records and the one unclosed-row table — are
+      also unrepaired: they sit outside the node that added the checks, and repairing a document an audit
+      has only just learned to see belongs to the node that owns those paths.</p>
+
+      <p><strong>Evidence.</strong> The landed record, the quoted reproduction and the population figure
+      live at <a href="/plan/reckon/a-review-dies-where-nobody-is-looking-landed">the attached evidence
+      record</a>.</p>
     </section>
 
     <section id="s7" data-reckon="section">
