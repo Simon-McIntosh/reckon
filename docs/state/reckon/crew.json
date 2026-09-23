@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T13:37:40",
+  "updated": "2026-09-23T13:38:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -3639,10 +3639,15 @@
         "id": "s20-reviewer-c",
         "harness": "clive",
         "role": "review",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "1e7de818-1907-4a1f-95e4-8bdfd3e2cd51",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "1e7de818-1907-4a1f-95e4-8bdfd3e2cd51"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "s20-reviewer-d",
@@ -297909,6 +297914,280 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T044807192716-dispatch-lifetime-probe",
+        "plan": "a-dispatch-returns-without-its-worker",
+        "section": "\u00a72",
+        "node": "dispatch-lifetime-probe",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1137,
+                "cached_input_tokens": 297694,
+                "input_tokens": 298835,
+                "output_tokens": 71,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 298906,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "docs/research/data/dispatch-lifetime.json names the file and line that keeps the dispatch process alive with the quoted source, lists the process tree observed after launch with each process role, and states for SIGTERM, SIGKILL and SIGHUP each whether the stub marker file appeared; tests/test_dispatch_lifetime_probe.py produced it with a stub backend whose command sleeps 60 s then writes a marker file, dispatched in a temporary repository with a temporary crew config home, and asserts the real live pointer directory under the user config home is untouched afterwards",
+          "estimated_hours": null,
+          "goal": "a recorded measurement of what holds reckon crew dispatch open after its worker launches and whether the worker survives the dispatch process dying",
+          "id": "dispatch-lifetime-probe",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T04:48:08Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/manifest.md",
+          "negative_control": "none: the test records observed behaviour rather than asserting a repair, and its one guard, the untouched real pointer directory, can only be falsified by writing into the real fleet",
+          "plan": "a-dispatch-returns-without-its-worker",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/data/dispatch-lifetime.json",
+            "tests/test_dispatch_lifetime_probe.py",
+            "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+            "docs/figures/a-dispatch-returns-without-its-worker",
+            "docs/plans/a-dispatch-returns-without-its-worker.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "dispatch-life",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T04:48:29Z",
+        "completed_at": "2026-09-23T10:41:46.390Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 21189,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 21197,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+        "commits": [
+          "69ddff477c0bfbad1f7c8e7cb28d9d7e52d6c50a",
+          "31fbcfb7b84974d628148adbf1d8273375834a4d",
+          "14b5b9e90ef9fed7b2cf7906977803c10061ac13",
+          "3e684cc5796822dfb39f2a971e9e7014fdf5d4c5"
+        ],
+        "changed_lines": {
+          "added": 1625,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_lifetime_probe.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/probe-full.log",
+          "log_digest": "sha256:e705b9c6a7c1366e83082de6c659999c025e050abf487f507ee6bd0d1f097640"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044807192716-dispatch-lifetime-probe/manifest.md",
+        "scope_changed": false,
+        "session_id": "f4000fcc-5a47-4d10-a144-28867194384a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 0,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 0,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T10:41:46.390Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 13,
+            "evidence": 14,
+            "fit": 17,
+            "goal_fidelity": 16,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 80
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 47260079,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 0.117,
+          "generated_tokens": 231015,
+          "generation_seconds": 15395.046,
+          "input_budget_tokens": 480000,
+          "tokens_per_second": 15.01,
+          "wall_tokens_per_second": 1974487.18
+        },
+        "follow_on_paths": [
+          "docs/state/sample/crew.json"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/dispatch-lifetime-probe",
+          "session_id": "f4000fcc-5a47-4d10-a144-28867194384a",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T10:41:46.390Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "3e684cc5796822dfb39f2a971e9e7014fdf5d4c5",
+        "impl_move": {
+          "plan": "a-dispatch-returns-without-its-worker",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "none-recorded",
+          "test_paths": [
+            "tests/test_dispatch_lifetime_probe.py"
+          ],
+          "declaration": "none: the test records observed behaviour rather than asserting a repair, and its one guard, the untouched real pointer directory, can only be falsified by writing into the real fleet",
+          "reason": "the test records observed behaviour rather than asserting a repair, and its one guard, the untouched real pointer directory, can only be falsified by writing into the real fleet"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T05:48:08.594556+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T04:48:08Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no numeric 'headroom'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 372.0,
+        "orientation_input_tokens": 4041292.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -298221,6 +298500,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2289
+    "_version": 2291
   }
 }
