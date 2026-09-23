@@ -351,6 +351,41 @@
     <p>Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s8-reload-deadline">the landed record</a>.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="lifetime-deadline-reaches-only-the-reload" data-when="2026-09-23">
+    <p><strong>Outcome — the carried deadline reaches the replacement image and no other
+    process.</strong> Commit <code>a3dadfa0</code> <em>fix(crew): carry a follower's lifetime
+    deadline only to its replacement image</em> stops the deadline entering the follower's own
+    <code>os.environ</code>. Carrying it in the environment is what survives the reload, but a
+    process's environment is inherited by every child it starts, and the recovery sweep starts a
+    condition probe through <code>subprocess.run</code> with no <code>env=</code>. The value is
+    now held in a local, written only into the mapping the re-exec passes, and read and removed
+    from <code>os.environ</code> in one call when the replacement starts — so it enters no
+    environment but the replacement's, and is gone before that image can start anything.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li>The gate, <code>tests/test_follow_lifetime_survives_reload.py</code> and
+      <code>tests/test_follow_lifetime.py</code> in one invocation at base
+      <code>b52244a8</code>: <strong>4 passed in 44.53 s</strong>, exit 0.</li>
+      <li>The new case parks a live run on a declared external wait whose probe records the
+      environment it was handed, so the follower's own sweep subprocess path is what runs it. The
+      recorded line carries <code>RECKON_HOME</code> (the instrument sees the environment) and no
+      <code>RECKON_FOLLOWER_LIFETIME_DEADLINE</code>. Read again after the reload: five probe runs
+      across two images, the deadline absent from every one, and the reload still ends the arming
+      with exit 0 and the <code>follower end:</code> line.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> with the arming
+      branch writing the deadline into <code>os.environ</code> again, the new case fails red on
+      exactly that mechanism, printing the child environment that inherited the variable. The red
+      log's first line is the declared string byte-for-byte.</li>
+      <li><strong>No new lint findings:</strong> <code>ruff check</code> over the two changed
+      paths adds none; the two pre-existing <code>cli.py</code> findings (<code>SIM103</code>,
+      <code>SIM105</code>) are unchanged at the base.</li>
+    </ul>
+    <p>Two findings outside this node's scope are reported rather than fixed: the arming overshoots
+    and a second pair of hand-off variables still inherit into children — both written up under
+    <em>What was owed and left</em> in the landed record.</p>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s8-deadline-reaches-the-replacement">the landed record</a>.</p>
+    </div>
+
     <h2 id="s9">&sect;9 &mdash; A watcher does not re-read every stream on every poll</h2>
     <p>Measured on 2026-09-23 at about 11:45 UTC, after imas-ambix-b6 reported that watchers were
     most of the login node's CPU. Five project watchers were running, for nova, imas-efit, reckon,
