@@ -253,10 +253,19 @@ def _run_trial(tmp_path: Path, marker_dir: Path, spec: dict) -> dict:
     A signal is sent only after the worker's pid file appears, so it always
     lands on a dispatch process whose worker already exists: killing a process
     that has not yet launched anything measures nothing.
+
+    Each trial gets its own repository because the crew ledger is a committed
+    file inside it: a dispatch killed mid-flight leaves that file staged and
+    uncommitted, and the next dispatch in the same repository then refuses to
+    commit its own member registration over the leftover. Sharing one
+    repository made the trial after a killed one fail for the previous trial's
+    reason instead of measuring anything.
     """
     trial = spec["name"]
     signal_number = spec["signal"]
-    repo = tmp_path / "repo"
+    repo = tmp_path / f"repo-{trial}"
+    if not (repo / ".git").exists():
+        _build_repo(repo)
     config_home = tmp_path / f"home-{trial}"
     config_home.mkdir(parents=True, exist_ok=True)
     (config_home / "mounts.json").write_text(
@@ -629,17 +638,14 @@ def _render_figure(trials: dict, names: list[str]) -> str | None:
 
 @pytest.fixture()
 def probe_env(tmp_path: Path) -> dict:
-    """Build a throwaway repository and marker directory for one probe run."""
+    """Provide the scratch space one probe run needs.
+
+    The repository is built per trial by ``_run_trial``, so nothing here
+    outlives a single dispatch's ledger writes.
+    """
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
-    repo = tmp_path / "repo"
-    base_sha = _build_repo(repo)
-    return {
-        "tmp_path": tmp_path,
-        "marker_dir": marker_dir,
-        "repo": repo,
-        "base_sha": base_sha,
-    }
+    return {"tmp_path": tmp_path, "marker_dir": marker_dir}
 
 
 def test_dispatch_lifetime_probe(probe_env: dict) -> None:
