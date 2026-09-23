@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T07:53:25",
+  "updated": "2026-09-23T08:02:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1149,10 +1149,15 @@
         "id": "follow-scope",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-23"
+        "session_id": "ef8d7c58-986e-4307-8f4a-c54edcece1e7",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ef8d7c58-986e-4307-8f4a-c54edcece1e7"
+        },
+        "created": "2026-09-23",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s20-20260923"
+        }
       },
       {
         "id": "follower-life",
@@ -3179,10 +3184,15 @@
         "id": "s18t-crpc-ensure-c",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-19"
+        "session_id": "aae7d181-a20a-40a0-825f-822fa1924ad4",
+        "session_model": "deepseek-v4.1-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "aae7d181-a20a-40a0-825f-822fa1924ad4"
+        },
+        "created": "2026-09-19",
+        "session_owners": {
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "ship-s19-20260922"
+        }
       },
       {
         "id": "s18t-crpc-f1f2f3-c",
@@ -284886,6 +284896,281 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T044804790780-scoped-follow-counts-at-the-command",
+        "plan": "a-scoped-follower-counts-its-own-session",
+        "section": "\u00a72",
+        "node": "scoped-follow-counts-at-the-command",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 367,
+                "cached_input_tokens": 297327,
+                "input_tokens": 297696,
+                "output_tokens": 755,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 298451,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f4306977-b478-4372-aa42-5bf2b8c69f17",
+            "session_id": "ship-s20-20260923"
+          },
+          "done_when": "tests/test_follow_counts_its_session.py drives the reckon crew follow command itself, not the helper, for session S over a temporary crew config home whose live pointers hold 1 working run of session S plus 1 working and 1 blocked run of a second session; asserting on the trailing figures only, the scoped line reads 1 working 0 blocked, the unscoped follower over the same fixture reads 2 working 1 blocked, and the scoped figures differ from the unscoped figures; the declared negative control is applied, the scoped assertion is observed to fail, and that failing log is recorded in the manifest; the real live pointer directory under the user config home is asserted untouched",
+          "estimated_hours": null,
+          "goal": "reckon crew follow --session S prints trailing figures counted over the runs of session S only",
+          "id": "scoped-follow-counts-at-the-command",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T04:48:06Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044804790780-scoped-follow-counts-at-the-command/manifest.md",
+          "negative_control": "remove session=session from the format_watch_transition call in crew follow in reckon/cli.py",
+          "plan": "a-scoped-follower-counts-its-own-session",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_follow_counts_its_session.py",
+            "docs/evidence/archive/a-scoped-follower-counts-its-own-session-landed.html",
+            "docs/figures/a-scoped-follower-counts-its-own-session",
+            "docs/plans/a-scoped-follower-counts-its-own-session.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "follow-scope",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T04:48:25Z",
+        "completed_at": "2026-09-23T05:11:52.014Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1395,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1407,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "d6817708a55941eafa2e1522ec63b3197265d541",
+        "commits": [
+          "9853fb354702e2760de59263c34fbf5e6c10dccd"
+        ],
+        "changed_lines": {
+          "added": 315,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follow_counts_its_session.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044804790780-scoped-follow-counts-at-the-command/gate-scoped-follow.log",
+          "log_digest": "sha256:ab8a033d60c678bc97f9445633f387a629761c56f60ef06f60ffe0e7f8f3303b"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044804790780-scoped-follow-counts-at-the-command/manifest.md",
+        "scope_changed": false,
+        "session_id": "ef8d7c58-986e-4307-8f4a-c54edcece1e7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9196935,
+            "input_tokens_cumulative": 9196935,
+            "output_tokens": 35091,
+            "output_tokens_cumulative": 35091,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T05:11:52.014Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 18,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9196935,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1402.09,
+          "generated_tokens": 35091,
+          "generation_seconds": 1196.302,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 31.6,
+          "machine_seconds": 205.788,
+          "peak_input_tokens": 151578,
+          "tokens_per_second": 29.33,
+          "wall_tokens_per_second": 25.03
+        },
+        "follow_on_paths": [
+          "tests/test_crew_ticker_layout.py::test_the_action_set_is_one_set_with_three_readers",
+          "tests/test_crew_session_delivery.py::test_the_refusal_names_where_the_arming_primitive_is_documented",
+          "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter.",
+          "related-suite-base.log"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/scoped-follow-counts-at-the-command",
+          "session_id": "ef8d7c58-986e-4307-8f4a-c54edcece1e7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T05:11:52.014Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "9853fb354702e2760de59263c34fbf5e6c10dccd",
+        "impl_move": {
+          "plan": "a-scoped-follower-counts-its-own-session",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_follow_counts_its_session.py"
+          ],
+          "declaration": "remove session=session from the format_watch_transition call in crew follow in reckon/cli.py",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044804790780-scoped-follow-counts-at-the-command/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T044804790780-scoped-follow-counts-at-the-command/negative_control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T05:28:06.216558+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T04:48:06Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no numeric 'headroom'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 86.0,
+        "orientation_input_tokens": 3254931.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -285184,6 +285469,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2214
+    "_version": 2217
   }
 }
