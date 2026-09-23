@@ -1,0 +1,146 @@
+make newest_stream return stream.jsonl only, so a resumed or lane-changed run's age is read from its first stream
+# mutation applied: RUN_STREAM_GLOBS = ("stream.jsonl",) in reckon/crew/recovery.py
+# revision 2721bdba40e73fbc66760bf857527962dcbcb1a7 tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/newest-stream-is-read-everywhere
+# command PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/newest-stream-is-read-everywhere python -m pytest tests/test_newest_stream_is_read_everywhere.py
+FFF.FF.F                                                                 [100%]
+=================================== FAILURES ===================================
+____________________ test_the_newest_non_empty_stream_wins _____________________
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home0')
+
+    def test_the_newest_non_empty_stream_wins(isolated_reckon_home: Path) -> None:
+        """A fresh resume outranks the first stream the pointer named."""
+        directory = _run_directory("r-resumed")
+        _write(directory / "stream.jsonl", text="old\n", mtime=1000.0)
+        fresh = _write(directory / "resume-1.jsonl", text="new\n", mtime=2000.0)
+    
+        found = recovery.newest_stream(directory)
+    
+        assert found is not None
+>       assert found[0] == fresh
+E       AssertionError: assert PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home0/crew/runs/r-resumed/stream.jsonl') == PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home0/crew/runs/r-resumed/resume-1.jsonl')
+
+tests/test_newest_stream_is_read_everywhere.py:71: AssertionError
+_______________________ test_a_lane_change_stream_counts _______________________
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home1')
+
+    def test_a_lane_change_stream_counts(isolated_reckon_home: Path) -> None:
+        """A run that changed lane is writing to lane-change-N.jsonl, and that is
+        the stream its activity must be read from."""
+        directory = _run_directory("r-lane")
+        _write(directory / "stream.jsonl", text="old\n", mtime=1000.0)
+        _write(directory / "resume-1.jsonl", text="resumed\n", mtime=1500.0)
+        lane = _write(directory / "lane-change-2.jsonl", text="lane\n", mtime=3000.0)
+    
+        found = recovery.newest_stream(directory)
+    
+        assert found is not None
+>       assert found[0] == lane
+E       AssertionError: assert PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home1/crew/runs/r-lane/stream.jsonl') == PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home1/crew/runs/r-lane/lane-change-2.jsonl')
+
+tests/test_newest_stream_is_read_everywhere.py:86: AssertionError
+____________________ test_an_empty_newer_stream_is_skipped _____________________
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home2')
+
+    def test_an_empty_newer_stream_is_skipped(isolated_reckon_home: Path) -> None:
+        """A stream file opened but not yet written is not activity, so the reader
+        falls back to the newest non-empty one."""
+        directory = _run_directory("r-empty")
+        _write(directory / "stream.jsonl", text="old\n", mtime=1000.0)
+        earlier = _write(directory / "resume-1.jsonl", text="resumed\n", mtime=2000.0)
+        _write(directory / "resume-2.jsonl", text="", mtime=4000.0)
+    
+        found = recovery.newest_stream(directory)
+    
+        assert found is not None
+>       assert found[0] == earlier
+E       AssertionError: assert PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home2/crew/runs/r-empty/stream.jsonl') == PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home2/crew/runs/r-empty/resume-1.jsonl')
+
+tests/test_newest_stream_is_read_everywhere.py:101: AssertionError
+_________ test_a_stale_first_stream_with_a_fresh_resume_is_not_stalled _________
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home4')
+
+    def test_a_stale_first_stream_with_a_fresh_resume_is_not_stalled(
+        isolated_reckon_home: Path,
+    ) -> None:
+        """The incident: the pointer still names stream.jsonl while resume-1.jsonl
+        is being written, so a reader of the first stream alone ages a live run as
+        stalled."""
+        directory = _run_directory("r-classify-resume")
+        now = 100_000.0
+        _write(directory / "stream.jsonl", text="old\n", mtime=now - 5_000.0)
+        _write(directory / "resume-1.jsonl", text="new\n", mtime=now - 5.0)
+    
+        record = _record("r-classify-resume", directory)
+        snapshot = recovery._watch_snapshot(record, moment=now, stall_seconds=600)
+    
+>       assert snapshot["state"] != "stalled"
+E       AssertionError: assert 'stalled' != 'stalled'
+
+tests/test_newest_stream_is_read_everywhere.py:130: AssertionError
+______________ test_a_fresh_lane_change_keeps_a_run_from_stalling ______________
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home5')
+
+    def test_a_fresh_lane_change_keeps_a_run_from_stalling(
+        isolated_reckon_home: Path,
+    ) -> None:
+        """A lane-changed run is producing output on its lane stream; the stale
+        first stream must not stall it."""
+        directory = _run_directory("r-classify-lane")
+        now = 100_000.0
+        _write(directory / "stream.jsonl", text="old\n", mtime=now - 5_000.0)
+        _write(directory / "lane-change-1.jsonl", text="lane\n", mtime=now - 5.0)
+    
+        record = _record("r-classify-lane", directory)
+        snapshot = recovery._watch_snapshot(record, moment=now, stall_seconds=600)
+    
+>       assert snapshot["state"] != "stalled"
+E       AssertionError: assert 'stalled' != 'stalled'
+
+tests/test_newest_stream_is_read_everywhere.py:146: AssertionError
+_ test_an_empty_newest_resume_still_resolves_the_session_from_an_earlier_stream _
+
+isolated_reckon_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5238/reckon-home7')
+
+    def test_an_empty_newest_resume_still_resolves_the_session_from_an_earlier_stream(
+        isolated_reckon_home: Path,
+    ) -> None:
+        """A resumed turn writes resume-2.jsonl, empty until its first event; the
+        session it is continuing is in resume-1.jsonl, and the lookup must fall
+        back to it rather than report an absence."""
+        run_id = "r-session-fallback"
+        directory = _run_directory(run_id)
+        _write(
+            directory / "resume-1.jsonl",
+            text=FIXTURE.read_text(encoding="utf-8"),
+            mtime=1_000.0,
+        )
+        newest = _write(directory / "resume-2.jsonl", text="", mtime=2_000.0)
+    
+        record = _record(run_id, directory, log_path=str(newest))
+    
+        resolved = resumption.resolve_session(run_id, record=record)
+    
+        expected = _backends.observe_log(
+            backend_name="alpha",
+            backend={"launch": "cli", "command": "codex"},
+            log_path=directory / "resume-1.jsonl",
+        ).session_id
+        assert expected == FIXTURE_SESSION
+>       assert resolved["resolved"] is True
+E       assert False is True
+
+tests/test_newest_stream_is_read_everywhere.py:191: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_the_newest_non_empty_stream_wins
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_a_lane_change_stream_counts
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_an_empty_newer_stream_is_skipped
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_a_stale_first_stream_with_a_fresh_resume_is_not_stalled
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_a_fresh_lane_change_keeps_a_run_from_stalling
+FAILED tests/test_newest_stream_is_read_everywhere.py::test_an_empty_newest_resume_still_resolves_the_session_from_an_earlier_stream
+6 failed, 2 passed in 6.46s
+EXIT=1

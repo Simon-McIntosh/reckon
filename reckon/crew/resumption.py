@@ -67,6 +67,7 @@ from reckon.crew.recovery import (
     classify_pointer,
     dispatch_awaiting_reviews,
     external_wait,
+    stream_paths_newest_first,
 )
 from reckon.crew.runs import (
     _manifest_mtime_ns,
@@ -400,28 +401,42 @@ def _pointer_session(record: Mapping[str, Any]) -> str:
 
 
 def _stream_session(record: Mapping[str, Any]) -> str:
-    """The session id the run's own stream carries, or empty.
+    """The session id the run's newest non-empty stream carries, or empty.
 
     This is the source the incident turned on. A pointer carrying no session id
     means only that nothing has folded the stream in yet — resume has re-read
     it for months — so reading the pointer alone reports an absence that is not
-    one.
+    one. The streams are read newest first, because a run that has resumed or
+    changed lane writes to a newer file than its first stream; a newer stream
+    that carries no id yet therefore falls back to an earlier one rather than
+    answering an absence it cannot support.
     """
     from reckon import _backends
 
-    log = Path(str(record.get("log_path") or ""))
-    if record.get("launch") != "cli" or not log.is_file():
+    if record.get("launch") != "cli":
         return ""
-    try:
-        backend = _backend_settings(record, None)
-        observation = _backends.observe_log(
-            backend_name=str(record.get("backend") or ""),
-            backend=backend,
-            log_path=log,
-        )
-    except (CrewError, OSError, ValueError):
-        return ""
-    return str(observation.session_id or "").strip()
+    run_id = str(record.get("run_id") or "")
+    directory = (
+        Path(run_dir(run_id))
+        if run_id
+        else Path(str(record.get("log_path") or ".")).parent
+    )
+    for log in stream_paths_newest_first(
+        directory, include=(record.get("log_path"),)
+    ):
+        try:
+            backend = _backend_settings(record, None)
+            observation = _backends.observe_log(
+                backend_name=str(record.get("backend") or ""),
+                backend=backend,
+                log_path=log,
+            )
+        except (CrewError, OSError, ValueError):
+            continue
+        found = str(observation.session_id or "").strip()
+        if found:
+            return found
+    return ""
 
 
 def _ledger_session(run_id: str, *, project: str, root: Any) -> str:

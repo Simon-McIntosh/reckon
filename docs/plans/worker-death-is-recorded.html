@@ -278,6 +278,42 @@
     process table, so a dead process holds no seat. That is a reading of the guard, not a
     counterexample run, and it is reported as such rather than offered as proof.</p>
 
+    <h3 id="s5-landing-the-newest-stream-is-read-everywhere">&sect;5 landing &mdash; the newest stream is read everywhere</h3>
+    <p>Landed: one reader answers where a run is writing. A resumed or lane-changed run
+    writes to a new file beside <code>stream.jsonl</code>, and two consumers had each
+    taken the first file they knew by name &mdash; the stall classifier aged the run
+    against <code>stream.jsonl</code>, so a healthy resumed run read as quiet since it
+    started, and the session lookup read the pointer's <code>log_path</code>, so an id
+    written to a later stream was not found. <code>recovery.newest_stream(run_dir)</code>
+    now returns the newest non-empty stream across <code>stream.jsonl</code>,
+    <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>, with its ordered
+    sibling <code>recovery.stream_paths_newest_first</code> serving the lookup. An empty
+    file is not activity, so the reader skips it and falls back to the next-newest
+    stream, and the pointer's own log path joins the candidates so a stream outside its
+    run directory is still read. The stall classification in <code>recovery.py</code>
+    reads stream age through the reader, and
+    <code>reckon.crew.resumption.resolve_session</code> reads the id through it
+    newest-first. The mechanism is drawn in
+    <a href="/reckon/figures/worker-death-is-recorded/newest-stream-reader.svg">the
+    newest-stream-reader figure</a>.</p>
+    <p>Evidence: gate
+    <code>docs/figures/worker-death-is-recorded/newest-stream-gate-after.log</code>
+    &mdash; the new <code>tests/test_newest_stream_is_read_everywhere.py</code> and eight
+    focused recovery/resumption files, <strong>6 failed, 107 passed</strong>, with the
+    eight new tests passing. The same selection at the base revision (<code>2721bdba</code>)
+    in <code>newest-stream-gate-base.log</code> is <strong>6 failed, 99 passed</strong>,
+    the same six failure ids, so no failure is a new one. The declared negative control
+    restricts the reader to <code>stream.jsonl</code> and turns
+    <strong>6 failed, 2 passed</strong> &mdash; exactly the reader-enumeration tests,
+    including the stale-first-stream case; log
+    <code>negative-control-newest-stream.log</code>, whose first line repeats the
+    declared mutation verbatim. A reader inventory (<code>newest-stream-grep.log</code>)
+    shows neither module names <code>stream.jsonl</code> outside the reader's own
+    candidate list, so no second stall-age or session-lookup reader opens it. The six
+    pre-existing failures are environmental &mdash; a pytest temporary repository is not
+    a git worktree, so promotion refuses &mdash; and are reported as follow-ons rather
+    than absorbed here.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a

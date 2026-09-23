@@ -1,0 +1,363 @@
+# revision 2721bdba40e73fbc66760bf857527962dcbcb1a7 tree /tmp/nss-baseline-2952329
+# command PYTHONPATH=/tmp/nss-baseline-2952329 python -m pytest tests/test_crew_finished_display.py tests/test_crew_run_identity.py tests/test_blocked_names_both_reasons.py tests/test_external_wait.py tests/test_wait_shapes.py tests/test_crew_orientation.py tests/test_crew_recover.py tests/test_paused_is_not_blocked.py tests/test_lane_killed_run_is_blocked.py
+F....F....F................................................FF........... [ 68%]
+......F..........................                                        [100%]
+=================================== FAILURES ===================================
+__ test_terminal_manifest_survives_an_alive_process_and_a_newer_log[complete] __
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_terminal_manifest_survive0')
+status = 'complete'
+
+    @pytest.mark.parametrize("status", ["complete", "failed"])
+    def test_terminal_manifest_survives_an_alive_process_and_a_newer_log(
+        tmp_path, status
+    ) -> None:
+        """A verdict on disk outlives a later, unrelated log line while a live
+        process defers the outcome: the manifest is never discarded and its raw
+        spelling is preserved, the run reads running until the process exits, and
+        only then does the manifest's verdict apply."""
+        record, log, manifest = _record(
+            tmp_path=tmp_path, phase="working", process_alive=True
+        )
+        now = time.time()
+        _touch(
+            manifest,
+            text=f"node: the-node\nstatus: {status}\ncommits: HEAD\n",
+            mtime=now - 10,
+        )
+        _touch(log, text='{"type":"turn.started"}\n', mtime=now)
+    
+        row = recovery.classify_pointer(record, now_seconds=now + 1)
+    
+        assert row["manifest_present"] is True
+        assert row["manifest_reported_status"] == status
+        assert row["classification"] == "running"
+    
+        record["process_alive"] = False
+        dead = recovery.classify_pointer(record, now_seconds=now + 1)
+>       assert dead["classification"] == (
+            "completed_unpromoted" if status == "complete" else "failed"
+        )
+E       AssertionError: assert 'scoring' == 'completed_unpromoted'
+E         
+E         - completed_unpromoted
+E         + scoring
+
+tests/test_crew_finished_display.py:79: AssertionError
+___ test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances ____
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_manifest_reporting_termin0')
+
+    def test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances(
+        tmp_path,
+    ) -> None:
+        """A run killed right after dispatch is still read from its manifest."""
+        record, _log, manifest = _record(
+            tmp_path=tmp_path, phase="starting", process_alive=False
+        )
+        now = time.time()
+        _touch(
+            manifest, text="node: the-node\nstatus: complete\ncommits: HEAD\n", mtime=now
+        )
+    
+        row = recovery.classify_pointer(record, now_seconds=now)
+    
+>       assert row["classification"] == "completed_unpromoted"
+E       AssertionError: assert 'scoring' == 'completed_unpromoted'
+E         
+E         - completed_unpromoted
+E         + scoring
+
+tests/test_crew_finished_display.py:166: AssertionError
+________________ test_promoted_session_resolves_from_the_ledger ________________
+
+repository = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_promoted_session_resolves0/repo')
+
+    def test_promoted_session_resolves_from_the_ledger(
+        repository: Path,
+    ) -> None:
+>       ledger.append_run(
+            PROJECT,
+            ledger.build_record(
+                run_id="run-promoted",
+                plan="plan-a",
+                node="node-a",
+                gate="passed",
+                session_id="session-ledger",
+            ),
+            root=repository,
+        )
+
+tests/test_crew_run_identity.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project = 'proj'
+record = {'run_id': 'run-promoted', 'plan': 'plan-a', 'section': '', 'node': 'node-a', ...}
+root = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_promoted_session_resolves0/repo')
+attempts = 12, allow_create = False
+
+    def append_run(
+        project: str,
+        record: Mapping[str, Any],
+        *,
+        root: str | Path | None = None,
+        attempts: int = 12,
+        allow_create: bool = False,
+    ) -> dict[str, Any]:
+        """Append one completed run, retrying when a concurrent write intervenes.
+    
+        The retry is what makes two interleaved promotions both survive: the loser
+        re-reads the ledger the winner just wrote and appends to that, so neither
+        record is lost. A second record for the same run id is refused instead —
+        that is not concurrency, it is a double promotion, and it would double-count
+        the measurements the calibration loops read. An absent ledger is refused
+        only when git shows the path was once tracked: a committed ledger missing
+        from the working tree is a deletion to recover, since the independent run
+        store already holds each promoted run, while a path git has never recorded
+        is a genuinely new project and is initialised. Where git cannot answer, the
+        refusal stands, and ``allow_create=True`` remains the explicit way to
+        initialise a project outside a checkout.
+        """
+        run_id = str(record.get("run_id") or "")
+        if not run_id:
+            raise LedgerError("a run record must carry a run_id")
+        ledger_root = _run_ledger_root(project, root)
+        path = ledger_path(project, ledger_root)
+        if (
+            not path.exists()
+            and not allow_create
+            and _ledger_ever_tracked(path) is not False
+        ):
+>           raise LedgerError(
+                f"refusing to promote run {run_id!r} for {project!r}: ledger file "
+                f"{path} does not exist. The run store at {_run_store_location()} "
+                "is the independent authority that holds every promoted run; "
+                "recover the ledger or initialise a genuinely new project with "
+                "allow_create=True."
+            )
+E           reckon.ledger.LedgerError: refusing to promote run 'run-promoted' for 'proj': ledger file /run/user/39486/pytest-of-mcintos/pytest-5240/test_promoted_session_resolves0/repo/docs/state/proj/crew.json does not exist. The run store at /run/user/39486/pytest-of-mcintos/pytest-5240/reckon-home10/crew/run_store.db is the independent authority that holds every promoted run; recover the ledger or initialise a genuinely new project with allow_create=True.
+
+reckon/ledger.py:1860: LedgerError
+__________ test_first_observation_blocks_and_names_a_mismatched_field __________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_first_observation_blocks_0/crew-home')
+
+    def test_first_observation_blocks_and_names_a_mismatched_field(
+        crew_home: Path,
+    ) -> None:
+        record = _pointer(crew_home)
+        manifest = Path(record["manifest_path"])
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(
+            _report(record, orientation_worktree="/repo/the-wrong-worktree")
+        )
+    
+>       observed = crew.observe(record["run_id"], config={})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_crew_orientation.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch.py:4799: in observe
+    return _mutate_pointer(run_id, fold)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/runs.py:353: in _mutate_pointer
+    record = mutation(previous)
+             ^^^^^^^^^^^^^^^^^^
+reckon/crew/dispatch.py:4765: in fold
+    parse_manifest(manifest.read_text()).get("status") or ""
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/reports.py:311: in parse_manifest
+    fields = _refuse_undetermined_status(fields, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+fields = {'orientation_worktree': '/repo/the-wrong-worktree', 'orientation_base_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'orientation_write_paths': '["reckon/crew/dispatch.py", "tests/test_orientation.py"]'}
+path = None
+
+    def _refuse_undetermined_status(
+        fields: dict[str, Any], path: str | None
+    ) -> dict[str, Any]:
+        """Raise when the parsed fields still leave the status undetermined.
+    
+        Three shapes are undetermined rather than merely absent. A body whose
+        parsed top-level fields are all outside the manifest vocabulary is prose
+        wearing a ``key: value`` shape, not a manifest; a body whose parsed fields
+        read as manifest fields but omit the status key entirely is a report
+        wearing a manifest shape, not a worker verdict; and a status naming a word
+        no part of the system recognises would be carried forward as a state it
+        never was. All three raise. A bare list-attribute excerpt (``commits:``
+        without a status, say) keeps parsing — it is a fragment of a manifest being
+        read for its attributes, not a verdictless manifest — and a body declaring
+        itself a recovery artifact through a truthy ``derived`` field keeps parsing
+        too, because recovery fabricates that shape without a status when it
+        preserves a terminal run's evidence. A well-formed terminal, non-terminal
+        or waiting status — and an unsubstituted terminal template, which the
+        classifier reads as unwritten rather than refused — keeps parsing.
+        """
+        if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
+            raise ManifestParseError(
+                _incidental_prose_manifest_message(path, sorted(fields))
+            )
+        if "status" not in fields and not _declares_derived(fields):
+            outcome_fields = set(fields) & _OUTCOME_MANIFEST_FIELDS
+            if outcome_fields:
+>               raise ManifestParseError(
+                    _missing_status_manifest_message(path, sorted(outcome_fields))
+                )
+E               reckon.crew.reports.ManifestParseError: cannot read manifest: the body reads as manifest fields (orientation_base_sha, orientation_worktree, orientation_write_paths) but carries no status key, so its status cannot be determined; expected a JSON object or the 'key: value' text form carrying a status line
+
+reckon/crew/reports.py:684: ManifestParseError
+___________ test_first_observation_leaves_a_matching_phase_untouched ___________
+
+crew_home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_first_observation_leaves_0/crew-home')
+
+    def test_first_observation_leaves_a_matching_phase_untouched(crew_home: Path) -> None:
+        record = _pointer(crew_home, phase="working")
+        manifest = Path(record["manifest_path"])
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(_report(record))
+    
+>       observed = crew.observe(record["run_id"], config={})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_crew_orientation.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch.py:4799: in observe
+    return _mutate_pointer(run_id, fold)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/runs.py:353: in _mutate_pointer
+    record = mutation(previous)
+             ^^^^^^^^^^^^^^^^^^
+reckon/crew/dispatch.py:4765: in fold
+    parse_manifest(manifest.read_text()).get("status") or ""
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/reports.py:311: in parse_manifest
+    fields = _refuse_undetermined_status(fields, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+fields = {'orientation_worktree': '/repo/worktrees/orientation-run', 'orientation_base_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'orientation_write_paths': '["reckon/crew/dispatch.py", "tests/test_orientation.py"]'}
+path = None
+
+    def _refuse_undetermined_status(
+        fields: dict[str, Any], path: str | None
+    ) -> dict[str, Any]:
+        """Raise when the parsed fields still leave the status undetermined.
+    
+        Three shapes are undetermined rather than merely absent. A body whose
+        parsed top-level fields are all outside the manifest vocabulary is prose
+        wearing a ``key: value`` shape, not a manifest; a body whose parsed fields
+        read as manifest fields but omit the status key entirely is a report
+        wearing a manifest shape, not a worker verdict; and a status naming a word
+        no part of the system recognises would be carried forward as a state it
+        never was. All three raise. A bare list-attribute excerpt (``commits:``
+        without a status, say) keeps parsing — it is a fragment of a manifest being
+        read for its attributes, not a verdictless manifest — and a body declaring
+        itself a recovery artifact through a truthy ``derived`` field keeps parsing
+        too, because recovery fabricates that shape without a status when it
+        preserves a terminal run's evidence. A well-formed terminal, non-terminal
+        or waiting status — and an unsubstituted terminal template, which the
+        classifier reads as unwritten rather than refused — keeps parsing.
+        """
+        if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
+            raise ManifestParseError(
+                _incidental_prose_manifest_message(path, sorted(fields))
+            )
+        if "status" not in fields and not _declares_derived(fields):
+            outcome_fields = set(fields) & _OUTCOME_MANIFEST_FIELDS
+            if outcome_fields:
+>               raise ManifestParseError(
+                    _missing_status_manifest_message(path, sorted(outcome_fields))
+                )
+E               reckon.crew.reports.ManifestParseError: cannot read manifest: the body reads as manifest fields (orientation_base_sha, orientation_worktree, orientation_write_paths) but carries no status key, so its status cannot be determined; expected a JSON object or the 'key: value' text form carrying a status line
+
+reckon/crew/reports.py:684: ManifestParseError
+____________ test_a_promoted_run_still_answers_from_its_ledger_row _____________
+
+home = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_a_promoted_run_still_answ0/config')
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_a_promoted_run_still_answ0')
+
+    def test_a_promoted_run_still_answers_from_its_ledger_row(
+        home: Path, tmp_path: Path
+    ) -> None:
+        """Promotion takes the pointer; the session it recorded still answers.
+    
+        This is the third source, and it is the one a coordinator needs after the
+        operation that made the incident irreversible has already happened.
+        """
+        from reckon import ledger
+        from reckon.crew.resumption import resolve_session
+    
+        run_id = "r-20260904T032000000000-node-a"
+        repo = tmp_path / "repo"
+        repo.mkdir(parents=True, exist_ok=True)
+        row = ledger.build_record(
+            run_id=run_id,
+            plan="plan-a",
+            gate="not-run",
+            agent={"backend": "alpha"},
+            completed_at="2026-09-04T03:20:00Z",
+            session_id="sess-in-the-ledger",
+            outcome="promoted while the lane was refusing",
+        )
+>       ledger.append_run(PROJECT, row, root=repo)
+
+tests/test_crew_recover.py:706: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project = 'proj'
+record = {'run_id': 'r-20260904T032000000000-node-a', 'plan': 'plan-a', 'section': '', 'node': '', ...}
+root = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5240/test_a_promoted_run_still_answ0/repo')
+attempts = 12, allow_create = False
+
+    def append_run(
+        project: str,
+        record: Mapping[str, Any],
+        *,
+        root: str | Path | None = None,
+        attempts: int = 12,
+        allow_create: bool = False,
+    ) -> dict[str, Any]:
+        """Append one completed run, retrying when a concurrent write intervenes.
+    
+        The retry is what makes two interleaved promotions both survive: the loser
+        re-reads the ledger the winner just wrote and appends to that, so neither
+        record is lost. A second record for the same run id is refused instead —
+        that is not concurrency, it is a double promotion, and it would double-count
+        the measurements the calibration loops read. An absent ledger is refused
+        only when git shows the path was once tracked: a committed ledger missing
+        from the working tree is a deletion to recover, since the independent run
+        store already holds each promoted run, while a path git has never recorded
+        is a genuinely new project and is initialised. Where git cannot answer, the
+        refusal stands, and ``allow_create=True`` remains the explicit way to
+        initialise a project outside a checkout.
+        """
+        run_id = str(record.get("run_id") or "")
+        if not run_id:
+            raise LedgerError("a run record must carry a run_id")
+        ledger_root = _run_ledger_root(project, root)
+        path = ledger_path(project, ledger_root)
+        if (
+            not path.exists()
+            and not allow_create
+            and _ledger_ever_tracked(path) is not False
+        ):
+>           raise LedgerError(
+                f"refusing to promote run {run_id!r} for {project!r}: ledger file "
+                f"{path} does not exist. The run store at {_run_store_location()} "
+                "is the independent authority that holds every promoted run; "
+                "recover the ledger or initialise a genuinely new project with "
+                "allow_create=True."
+            )
+E           reckon.ledger.LedgerError: refusing to promote run 'r-20260904T032000000000-node-a' for 'proj': ledger file /run/user/39486/pytest-of-mcintos/pytest-5240/test_a_promoted_run_still_answ0/repo/docs/state/proj/crew.json does not exist. The run store at /run/user/39486/pytest-of-mcintos/pytest-5240/test_a_promoted_run_still_answ0/config/crew/run_store.db is the independent authority that holds every promoted run; recover the ledger or initialise a genuinely new project with allow_create=True.
+
+reckon/ledger.py:1860: LedgerError
+=========================== short test summary info ============================
+FAILED tests/test_crew_finished_display.py::test_terminal_manifest_survives_an_alive_process_and_a_newer_log[complete]
+FAILED tests/test_crew_finished_display.py::test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances
+FAILED tests/test_crew_run_identity.py::test_promoted_session_resolves_from_the_ledger
+FAILED tests/test_crew_orientation.py::test_first_observation_blocks_and_names_a_mismatched_field
+FAILED tests/test_crew_orientation.py::test_first_observation_leaves_a_matching_phase_untouched
+FAILED tests/test_crew_recover.py::test_a_promoted_run_still_answers_from_its_ledger_row
+6 failed, 99 passed in 17.91s
+EXIT=1
