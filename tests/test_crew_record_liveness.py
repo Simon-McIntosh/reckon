@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from reckon.crew import runs
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -146,3 +148,93 @@ def test_no_module_decides_record_liveness_with_a_bare_pid() -> None:
 def test_the_module_owning_the_primitive_still_calls_it() -> None:
     """The scan is not blind on a file it is known to match."""
     assert _process_alive_calls((CREW / "runs.py").read_text())
+
+
+# --- the recorded start time is re-derived on every read ---------------------
+
+
+@pytest.fixture()
+def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point the crew tree at a temp home, leaving the real one untouched."""
+    live_directory = runs.live_dir()
+    before = (
+        sorted(item.name for item in live_directory.iterdir())
+        if (live_directory.is_dir())
+        else []
+    )
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    yield config_home
+    after = (
+        sorted(item.name for item in live_directory.iterdir())
+        if (live_directory.is_dir())
+        else []
+    )
+    assert after == before
+
+
+def _write_pointer(home: Path, run_id: str, **fields: Any) -> None:
+    record = {
+        "run_id": run_id,
+        "project": "liveness-fixture",
+        "created_at": runs._utc_now(),
+        **fields,
+    }
+    runs._write_json(runs.pointer_path(run_id), record)
+
+
+def test_a_pointer_whose_process_is_gone_stops_working(home: Path) -> None:
+    """The read model, not the accessor: a dead pid stops reading as running."""
+    pid = _reaped_pid()
+    # A positive control so the False below is a measurement: the primitive
+    # reads a process known to be present, then the pointer is re-read.
+    assert runs.process_alive(os.getpid()) is True
+    _write_pointer(home, "r-gone", phase="working", pid=pid, pid_start_time="12345")
+    reloaded = [row for row in runs.list_live() if row["run_id"] == "r-gone"]
+    assert len(reloaded) == 1
+    assert reloaded[0]["process_alive"] is False
+
+
+def test_a_reused_pid_is_not_read_as_a_survivor() -> None:
+    """A live pid under a start tick that disagrees is the previous process."""
+    live = os.getpid()
+    actual = runs._process_start_time(live)
+    assert actual is not None, "the check needs a readable start tick to compare"
+    # The pid is genuinely alive, so a False can only come from the start time.
+    assert runs.process_alive(live) is True
+    stale = str(int(actual) + 1)
+    assert runs.record_process_alive({"pid": live, "pid_start_time": stale}) is False
+
+
+def test_a_matching_start_time_reads_alive() -> None:
+    live = os.getpid()
+    actual = runs._process_start_time(live)
+    assert actual is not None
+    assert runs.record_process_alive({"pid": live, "pid_start_time": actual}) is True
+
+
+def test_a_record_without_a_start_tick_is_unchanged() -> None:
+    """An absent tick is not a mismatch: the primitive's answer stands."""
+    live = os.getpid()
+    assert runs.record_process_alive({"pid": live}) is True
+    dead = _reaped_pid()
+    assert runs.record_process_alive({"pid": dead}) is False
+
+
+def test_the_seat_guard_keeps_a_running_holder_with_a_stale_tick() -> None:
+    """The one caller that asks "is the process running", not "is it the one".
+
+    A seat guard must not refuse to see a running holder, so it opts out of the
+    reuse check rather than depending on the check being absent.
+    """
+    live = os.getpid()
+    actual = runs._process_start_time(live)
+    assert actual is not None
+    stale = str(int(actual) + 1)
+    assert (
+        runs.record_process_alive(
+            {"pid": live, "pid_start_time": stale}, match_start_time=False
+        )
+        is True
+    )

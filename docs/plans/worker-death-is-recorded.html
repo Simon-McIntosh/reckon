@@ -156,6 +156,33 @@
     on both. Step four is independent of all of them and is the one that decides whether
     the remedy is reachable in practice.</p>
 
+    <h3 id="s5-landing-liveness-re-derived-on-read">&sect;5.2 landing &mdash; liveness re-derived on read</h3>
+    <p>Landed: the start-time comparison that catches a reused pid moved out of the four
+    hand-written call sites (<code>list_live</code>, <code>producer_live</code>,
+    <code>follower_state</code>, <code>watch_state</code>) and into
+    <code>record_process_alive</code>, the one accessor every read path already runs
+    through. A pointer whose process is gone, or whose pid now names a different process,
+    therefore reports not-running wherever the record is read &mdash; including
+    <code>drain</code>, <code>claims</code>, <code>node</code>, <code>directory</code>,
+    <code>routing</code> and <code>promotion</code>, which previously re-derived only the
+    bare pid answer.</p>
+    <p>The check reads the process table, so it is taken only when this module's own
+    <code>process_alive</code> is the probe that answered; a caller handing in a
+    substitute probe owns the whole read. That is what keeps the liveness substitution
+    that the existing tests rely on authoritative, while every production call path &mdash;
+    which passes the real primitive through &mdash; still gets the check. The seat guard
+    (<code>_record_producer_running</code> / <code>_record_producer_dead</code>) opts out
+    explicitly with <code>match_start_time=False</code>: it asks whether the process is
+    running, not whether it is the registered one.</p>
+    <p>Evidence: <a href="/reckon/plans/worker-death-is-recorded">the plan</a>'s
+    <code>docs/evidence/archive/worker-death-is-recorded-landed.html</code>. Gate
+    <code>docs/figures/worker-death-is-recorded/gate.log</code> &mdash; 54 passed, exit 0.
+    Negative control <code>docs/figures/worker-death-is-recorded/negative-control.log</code>,
+    the declared mutation repeated verbatim on its first line: skipping the comparison
+    turns the reused-pid case red (1 failed, 8 passed). The
+    <code>interrupted</code> phase that consumes this fact (&sect;5.3), the wait-status
+    record (&sect;5.1) and the session-id gap (&sect;5.4) remain open.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a

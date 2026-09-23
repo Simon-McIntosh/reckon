@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" font-family="system-ui, sans-serif" font-size="14">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="640" fill="#fbfbfd"/>
+  <text x="24" y="34" font-size="18" font-weight="600" fill="#1b1b1f">record_process_alive(record): the reuse check runs on every read</text>
+
+  <rect x="330" y="60" width="240" height="46" rx="8" fill="#e8eefc" stroke="#4a6fd0"/>
+  <text x="450" y="88" text-anchor="middle" fill="#12224a">read the run record</text>
+  <line x1="450" y1="106" x2="450" y2="128" stroke="#555" marker-end="url(#a)"/>
+
+  <rect x="330" y="128" width="240" height="46" rx="8" fill="#ffffff" stroke="#999999"/>
+  <text x="450" y="149" text-anchor="middle">record carries a placement?</text>
+  <text x="450" y="166" text-anchor="middle" font-size="12" fill="#666666">yes: the scheduler job answers</text>
+  <line x1="450" y1="174" x2="450" y2="196" stroke="#555555" marker-end="url(#a)"/>
+  <text x="462" y="190" fill="#666666" font-size="12">no</text>
+
+  <rect x="330" y="196" width="240" height="46" rx="8" fill="#ffffff" stroke="#999999"/>
+  <text x="450" y="217" text-anchor="middle">record names a pid?</text>
+  <text x="450" y="234" text-anchor="middle" font-size="12" fill="#666666">no: answers None</text>
+  <line x1="450" y1="242" x2="450" y2="264" stroke="#555555" marker-end="url(#a)"/>
+
+  <rect x="330" y="264" width="240" height="46" rx="8" fill="#ffffff" stroke="#999999"/>
+  <text x="450" y="285" text-anchor="middle">the probe answers</text>
+  <text x="450" y="302" text-anchor="middle" font-size="12" fill="#666666">process_alive(pid)</text>
+  <line x1="450" y1="310" x2="450" y2="330" stroke="#555555" marker-end="url(#a)"/>
+
+  <polygon points="450,330 700,384 450,438 200,384" fill="#fff4e0" stroke="#d08a20"/>
+  <text x="450" y="374" text-anchor="middle" fill="#4a2c00">probe says running</text>
+  <text x="450" y="392" text-anchor="middle">AND the probe IS this module's</text>
+  <text x="450" y="408" text-anchor="middle" fill="#4a2c00">process_alive AND a start tick is recorded?</text>
+
+  <line x1="200" y1="384" x2="122" y2="384" stroke="#555555" marker-end="url(#a)"/>
+  <text x="150" y="374" fill="#666666" font-size="12">no</text>
+  <rect x="30" y="356" width="92" height="56" rx="8" fill="#eef7ee" stroke="#3f8f4f"/>
+  <text x="76" y="380" text-anchor="middle" font-size="12">keep the</text>
+  <text x="76" y="396" text-anchor="middle" font-size="12">probe's answer</text>
+
+  <line x1="450" y1="438" x2="450" y2="456" stroke="#555555" marker-end="url(#a)"/>
+  <text x="462" y="452" fill="#666666" font-size="12">yes</text>
+
+  <rect x="300" y="456" width="300" height="52" rx="8" fill="#fdeaea" stroke="#c04040"/>
+  <text x="450" y="478" text-anchor="middle">compare the running start tick</text>
+  <text x="450" y="496" text-anchor="middle">to the recorded one</text>
+  <line x1="450" y1="508" x2="450" y2="528" stroke="#555555" marker-end="url(#a)"/>
+
+  <rect x="270" y="528" width="360" height="86" rx="8" fill="#e8eefc" stroke="#4a6fd0"/>
+  <text x="450" y="552" text-anchor="middle">equal: running (True), the registered process</text>
+  <text x="450" y="576" text-anchor="middle" font-weight="600" fill="#7a1010">differ: not running (False)</text>
+  <text x="450" y="598" text-anchor="middle" font-weight="600" fill="#7a1010">the pid was reused</text>
+</svg>
