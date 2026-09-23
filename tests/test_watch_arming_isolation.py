@@ -11,6 +11,7 @@ directory even when a caller bypasses the fixture.
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import shlex
 import shutil
@@ -285,39 +286,40 @@ def test_the_shared_fixture_keeps_writes_out_of_the_real_home(
 def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
     tmp_path: Path,
 ) -> None:
-    """The session backstop identifies producers by environment, not by name.
+    """The record's home is the binding, not the process name.
 
     A producer armed by an opted-in test is detached and is nobody's child, so
-    what ties it to this run is the temporary home in its own environment.
+    no process tree ties it to this run. What does is the seat record it writes
+    into its own configuration home's ``crew/watch`` directory: the record names
+    the pid, and the directory's location names the run. A record under another
+    run's home belongs to that run and must not be found from this one.
     """
-    from tests.conftest import watch_producers_under
+    from tests.conftest import watcher_record_pids
 
     inside = tmp_path / "inside"
     outside = Path(tempfile.mkdtemp(prefix="reckon-ordinary-home-"))
-    inside.mkdir()
+    (inside / "crew" / "watch").mkdir(parents=True)
+    (outside / "crew" / "watch").mkdir(parents=True)
 
-    def producer(home: Path) -> subprocess.Popen:
-        return subprocess.Popen(
-            [
-                "python3",
-                "-c",
-                "import time; time.sleep(30)",
-                "crew",
-                "watch",
-                "--project",
-                "sample",
-            ],
+    def register(home: Path) -> subprocess.Popen:
+        process = subprocess.Popen(
+            ["python3", "-c", "import time; time.sleep(30)"],
             env={**os.environ, "RECKON_HOME": str(home)},
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+        (home / "crew" / "watch" / "sample-00.lock").write_text(
+            json.dumps({"pid": process.pid, "project": "sample"}),
+            encoding="utf-8",
+        )
+        return process
 
-    processes = [producer(inside), producer(outside)]
+    processes = [register(inside), register(outside)]
     try:
-        found = watch_producers_under(tmp_path)
+        found = watcher_record_pids(tmp_path)
 
-        assert [pid for pid, _home in found] == [processes[0].pid]
-        assert not watch_producers_under(Path("/nonexistent-root"))
+        assert found == [(processes[0].pid, inside)]
+        assert not watcher_record_pids(Path("/nonexistent-root"))
     finally:
         for process in processes:
             process.terminate()
