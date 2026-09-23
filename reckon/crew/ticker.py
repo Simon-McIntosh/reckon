@@ -223,9 +223,11 @@ BASELINE_MARKER = "now"
 
 # The marker cell is held on every row, blank on a transition, so the state
 # word beside it lands on one screen column whether the row is news or
-# inventory. The trailing column is the gap that keeps the model cell off a
-# ten-column state word.
-MARKER = len(BASELINE_MARKER)
+# inventory. The cell carries the marker and the space that separates it from
+# the state, because a marker butted against its state reads as one token
+# (`nowworking`) with no boundary to scan. The trailing column is the gap that
+# keeps the model cell off a ten-column state word.
+MARKER = len(BASELINE_MARKER) + 1
 STATE_REGION = MARKER + STATE + 1
 
 # States a run does not leave. A baseline row for one of these is inventory

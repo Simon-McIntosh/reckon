@@ -705,6 +705,44 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     assert "dispatched" in first_sighting
 
 
+def test_the_baseline_marker_stands_as_its_own_word_before_the_state(
+    monkeypatch,
+) -> None:
+    """A baseline row reads `now working`, never the single token `nowworking`.
+
+    The marker and the state are two facts a reader scans separately — that the
+    row is inventory, and the state the run sits in. Butting the two words
+    together leaves no boundary for the eye to catch, so the marker stops being
+    a word the row can be found by and does not do what it was added for. The
+    separation is one space, and it costs no column: the marker cell holds one
+    width whether it carries the word or is blank, so the state cell keeps the
+    same screen column on a baseline as it does on a transition.
+    """
+    rows = _follow_rows(
+        monkeypatch,
+        [
+            _fact_event(event="baseline", from_state=None, to_state="working"),
+            _fact_event(from_state="dispatched", to_state="working"),
+        ],
+        "--width",
+        "180",
+    )
+    baseline, transition = rows[0], rows[1]
+
+    # Two words, one space between them: the marker's own word, then the state.
+    assert "now working" in baseline
+    assert "nowworking" not in baseline
+    assert baseline.index("working") == baseline.index("now") + len("now") + 1
+
+    # The row does not carry the state twice or drop the marker, and the blank
+    # marker cell of a transition leaves its state on the same column.
+    assert baseline.count("working") == 1
+    assert "now" not in transition
+    assert _state_cell_start(baseline, "working") == _state_cell_start(
+        transition, "working"
+    )
+
+
 def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     monkeypatch,
 ) -> None:
