@@ -120,7 +120,12 @@ def test_claude_read_only_grant_excludes_the_worktree(tmp_path: Path) -> None:
 
 
 def test_codex_read_only_argv_is_unchanged(tmp_path: Path) -> None:
-    """The codex dialect's read-only argv stays byte-identical."""
+    """The codex dialect's read-only argv stays byte-identical.
+
+    The dialect's own argv, so the fence wrapper is not composed: this pins
+    what the dialect builds from the sandbox tier, while the fence is a
+    wrapper around a launch and is asserted on its own.
+    """
     delivery = tmp_path / "delivery"
     delivery.mkdir()
     manifest = delivery / "manifest.md"
@@ -136,6 +141,7 @@ def test_codex_read_only_argv_is_unchanged(tmp_path: Path) -> None:
         worktree=str(tmp_path / "worktree"),
         manifest_path=str(manifest),
         writable_directories=roots,
+        fence=False,
     )
     expected = [
         "codex",
