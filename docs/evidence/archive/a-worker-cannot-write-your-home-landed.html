@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c">
-  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg">
+  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt">
   <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -182,6 +182,78 @@ edit checkout-path refused=False isError=False path=/tmp/&hellip;/.worktrees/wt/
     by <code>crew resume</code> with nothing added under <code>~/.claude/projects</code> &mdash;
     needs a dispatched run and was not exercised here. Both belong to that section and
     run in one bound, at a size that fits one turn.</p>
+
+    <h3>Node: fenced-launch-neighbour-tests &mdash; the four neighbouring tests, repaired</h3>
+    <p>The four failures the previous node reported as out of scope are repaired here. They
+    are not one defect: three pin the <em>dialect's own</em> argument vector, and one is an
+    environment assertion that must not be loosened. A test that pins an exact argv is
+    measuring the vector the dialect builds, so the three argv pins pass
+    <code>fence=False</code> explicitly &mdash; the fence is a wrapper composed
+    <em>around</em> that vector and is asserted by
+    <code>tests/test_launch_plan_fences_the_home.py</code>. The environment test is the
+    case where the fence cannot be taken out of the measurement, because the harness home
+    the run owns is part of the plan's environment; it is therefore repaired by naming the
+    exact key set rather than by relaxing to a subset comparison, which any mapping would
+    satisfy.</p>
+
+    <table>
+      <thead>
+        <tr><th>test</th><th>what it pins</th><th>repair</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_no_figures_emit_no_flag</code></td>
+          <td>the dialect argv of a figureless codex and claude launch</td>
+          <td><code>fence=False</code> &mdash; measures the dialect vector, not the wrapper</td>
+        </tr>
+        <tr>
+          <td><code>test_a_text_only_lane_with_no_figures_is_unaffected</code></td>
+          <td>the dialect argv a figureless claude lane composes</td>
+          <td><code>fence=False</code> &mdash; same measurement</td>
+        </tr>
+        <tr>
+          <td><code>test_codex_read_only_argv_is_unchanged</code></td>
+          <td>codex's read-only argv, byte for byte</td>
+          <td><code>fence=False</code> &mdash; the sandbox tier is the subject</td>
+        </tr>
+        <tr>
+          <td><code>test_run_record_agent_configuration_excludes_environment</code></td>
+          <td>the plan environment, and that the record carries none of it</td>
+          <td>exact key set: the declared key plus <code>CODEX_HOME</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>No figure accompanies this node's record: the decision is a table of four tests and
+    the layer each measures, which the graphics mandate explicitly excludes from images,
+    and the argv nesting itself is already drawn by
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code>.</p>
+
+    <h3>Gate</h3>
+    <p>Base <code>f073da71</code> and the head <code>7bdadce0</code>, each captured once on
+    an <code>all_debug</code> partition, over the same selection &mdash; the three repaired
+    files plus <code>tests/test_backends.py</code>,
+    <code>tests/test_each_run_owns_its_harness_home.py</code> and
+    <code>tests/test_launch_plan_fences_the_home.py</code>. Base
+    <code>7 failed / 62 passed</code>; head <code>3 failed / 66 passed</code>. The four
+    repaired tests move to passing and <strong>no failure is added</strong>; the three that
+    remain are the pre-existing rate-limit budget-parsing failures with identical ids. Lint
+    over the touched paths adds nothing (7&nbsp;&rarr;&nbsp;5 across the three files, all
+    pre-existing), and <code>ruff format --check</code> reports the three already
+    formatted.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>revert the fix in tests/test_backend_environment.py so its
+    assertion compares plan.environment to the one-key mapping again, and that test
+    fails</em>. Applied, the test fails on the entry the strict comparison exists to name:</p>
+    <pre>E       AssertionError: assert {'API_TOKEN':...a/codex-home'} == {'API_TOKEN':...enter-ledger'}
+E         Left contains 1 more item:
+E         {'CODEX_HOME': '&hellip;/runs/r-&hellip;-node-a/codex-home'}</pre>
+    <p>So the repair is load-bearing: the exact comparison is what detects the harness home
+    the run now owns, and a one-key comparison would have passed silently against a mapping
+    the launcher no longer produces. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt</code>,
+    whose first line is the declared mutation verbatim.</p>
   </section>
 </main>
 </body>

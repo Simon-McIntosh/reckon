@@ -191,6 +191,30 @@
         <code>test_backend_sandbox_delivery.py</code> one); they lie outside this node's
         scope and are reported rather than patched.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260923T1715-neighbour-argv-pins" data-who="node fenced-launch-neighbour-tests" data-when="2026-09-23T17:20:00+00:00">
+        <div class="r-comment-body"><p><strong>The four neighbouring failures above are
+        repaired.</strong> Each met the composed-by-default fence from a different direction,
+        so each is answered by what it now claims to measure. Three assert on the
+        <em>dialect's own</em> argument vector — a figureless lane's argv, and codex's
+        read-only argv byte for byte — and now pass <code>fence=False</code> explicitly,
+        because the fence is a wrapper <em>around</em> a launch and is asserted by
+        <code>tests/test_launch_plan_fences_the_home.py</code> rather than here. The fourth is the run-record
+        environment check, which is neither an argv pin nor loosenable: the plan environment
+        now carries the run's harness home beside the declared entries, so the assertion reads
+        the exact key set — the declared key plus <code>CODEX_HOME</code> — and the declared
+        value, and the record-side assertions that no environment key reaches the ledger are
+        unmoved. Gate over the six neighbouring files on an <code>all_debug</code> partition:
+        base <code>f073da71</code> <code>7 failed / 62 passed</code>, head <code>7bdadce0</code>
+        <code>3 failed / 66 passed</code>; the three that remain are the pre-existing
+        budget-parsing failures with identical ids, so the change adds none. Negative control
+        reverts the environment assertion to the one-key mapping and the test then fails on
+        the unexpected <code>CODEX_HOME</code> entry. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2</code>.
+        Commit <code>7bdadce0</code>. The section's own falsifier — a real fenced clive worker
+        completed and resumed with nothing added under <code>~/.claude/projects</code> — is
+        still owed and is untouched by this node.</p></div>
+      </div>
     </section>
 
     <section id="s3" data-reckon="section">

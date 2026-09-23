@@ -1,0 +1,43 @@
+slurmstepd: error: Unable to create TMPDIR [/run/user/39486]: Permission denied
+slurmstepd: error: Setting TMPDIR to /tmp
+rev=f073da717b3d6b2946133e6c91e275402256970d tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/fenced-launch-neighbour-tests cmd=pytest -q tests/test_launch_plan_attaches_images.py tests/test_backend_environment.py tests/test_backend_sandbox_delivery.py tests/test_backends.py tests/test_each_run_owns_its_harness_home.py tests/test_launch_plan_fences_the_home.py
+E         
+E         - known
+E         + unknown
+E         ? ++
+
+tests/test_backends.py:444: AssertionError
+____________ test_an_empty_rate_limit_mapping_is_not_a_measurement _____________
+
+    def test_an_empty_rate_limit_mapping_is_not_a_measurement() -> None:
+        budget = _backends.dialect_for(CLAUDE)._budget({})
+    
+        assert budget["headroom"] == "unknown"
+        assert budget["utilisation_pct"] is None
+>       assert "no numeric utilisation" in budget["detail"]
+E       AssertionError: assert 'no numeric utilisation' in 'rate-limit event carried no unifiedWindows'
+
+tests/test_backends.py:457: AssertionError
+_____________ test_known_headroom_answers_the_exhaustion_question ______________
+
+    def test_known_headroom_answers_the_exhaustion_question() -> None:
+>       assert (
+            _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget)
+            is False
+        )
+E       AssertionError: assert None is False
+E        +  where None = <function budget_exhausted at 0x7f89142435e0>({'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...})
+E        +    where <function budget_exhausted at 0x7f89142435e0> = _backends.budget_exhausted
+E        +    and   {'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...} = Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='').budget
+E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
+
+tests/test_backends.py:498: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_launch_plan_attaches_images.py::test_no_figures_emit_no_flag
+FAILED tests/test_launch_plan_attaches_images.py::test_a_text_only_lane_with_no_figures_is_unaffected
+FAILED tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment
+FAILED tests/test_backend_sandbox_delivery.py::test_codex_read_only_argv_is_unchanged
+FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
+FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
+FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
+7 failed, 62 passed in 8.83s
