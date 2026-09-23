@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Three worker-death mechanisms are now recorded: launcher wait status, liveness re-derived on read, and interrupted classification with resume-or-redispatch recovery.">
   <meta name="plan-evidence-for" content="reckon:worker-death-is-recorded">
   <meta name="plan-verifies" content="reckon:worker-death-is-recorded#s5">
-  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,45eabfb6,f84945eb">
+  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,45eabfb6,f84945eb,badc8f46,b16fa8e1">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python in the repository's own root environment; detached git worktree">
@@ -200,9 +200,11 @@
       <p><code>interrupted</code> is now a terminal run phase, so it releases a roster
       member rather than occupying a live seat. The classifier returns a structured
       <code>interruption</code> block containing the signal number and name where the
-      launcher recorded one. Without an exit record, only an already orphaned pointer or
-      a dead pointer whose worktree has commits beyond its base qualifies; a bare dead
-      process with nothing retained keeps the existing abandoned reading.</p>
+      launcher recorded one. On the live CLI path, a dead process with no terminal event
+      is folded to <code>orphaned</code> by <code>dispatch.observe</code> before this
+      classifier runs, and that phase becomes <code>interrupted</code>. Therefore
+      <code>abandoned</code> is no longer reachable through the live observation path;
+      it remains only as a compatibility reading for records that bypass that fold.</p>
 
       <p>Recovery is derived from durable session evidence. A pointer, stream, or ledger
       session id yields <code>recovery: resume</code> and the executable
@@ -212,24 +214,28 @@
 
       <h3>Measured controls</h3>
       <ul>
-        <li>The exact node gate ran on <code>all_debug</code> at
-        <code>f84945eb</code>: <strong>51 passed, exit 0</strong>. It includes one fixture
+        <li>The repaired node gate ran on <code>all_debug</code> at
+        <code>b16fa8e1</code>: <strong>53 passed, exit 0</strong>. It includes one fixture
         for each inventory shape — working with retained commits, orphaned, and stopped —
         plus the recorded-SIGTERM case, completed/promoted controls, and a genuinely live
-        pid whose start time matches.</li>
+        pid whose start time matches. It also asserts that <code>recover()</code> counts
+        an interrupted row and exercises the live CLI fold from a dead unterminated
+        process through <code>orphaned</code> to <code>interrupted</code>.</li>
         <li>The declared negative control removed only the interrupted arm from
         <code>classify_pointer</code>. The SIGTERM test then failed because the run read
         <code>abandoned</code> instead of <code>interrupted</code>
-        (<strong>1 failed, 7 deselected</strong>).</li>
-        <li>The mandatory recovery contact set was red at the orientation revision
-        (<strong>132 passed, 6 failed</strong>) and after the implementation
-        (<strong>138 passed, 8 failed</strong>). The two additional failures are legacy
-        assertions in <code>tests/test_ledger.py</code> that deliberately killed runs
-        remain abandoned. Updating that out-of-scope test contract is retained as a
-        follow-on rather than weakening the new phase.</li>
+        (<strong>1 failed, 9 deselected</strong>).</li>
+        <li>An independent review scored the first landing <strong>74</strong>. It found
+        that the live fold makes abandoned unreachable, that interrupted was absent from
+        the recovery tally, and that no test crossed the real fold boundary. The tally and
+        both regressions are now repaired in <code>badc8f46</code> and
+        <code>b16fa8e1</code>. A separate scoped node owns the two corresponding
+        <code>tests/test_ledger.py</code> expectation changes.</li>
       </ul>
-      <p>Implementation: <code>45eabfb6</code> (fixture census) and
-      <code>f84945eb</code> (classification and recovery). Logs:
+      <p>Implementation: <code>45eabfb6</code> (fixture census),
+      <code>f84945eb</code> (classification and recovery), <code>badc8f46</code>
+      (live-path and count regressions), and <code>b16fa8e1</code> (recovery tally).
+      Original landing logs:
       <code>docs/figures/worker-death-is-recorded/interrupted-reproduction.log</code>,
       <code>interrupted-gate.log</code>, and
       <code>negative-control-interrupted.log</code>.</p>
