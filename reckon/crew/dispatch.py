@@ -4027,9 +4027,17 @@ def dispatch(
                 _signal_process_group(spawned_pid, spawned_start_time)
             except (CrewError, OSError):
                 pass
-        _remove_worktree(repo_root, worktree["path"])
-        shutil.rmtree(directory, ignore_errors=True)
+        # The pointer goes first. The worktree remover refuses a worktree that a
+        # live pointer still claims, and until this run's own pointer is gone it
+        # is that claim — so removing the worktree first raised, and the unlink
+        # and the run-directory removal below never ran. A refusal reached after
+        # the pointer write therefore left a live pointer behind, which a reader
+        # takes for a run whose process died without a manifest. Unlinking first
+        # clears the claim, and the run directory follows, so a refusal is
+        # indistinguishable from a dispatch that never ran.
         pointer_path(run_id).unlink(missing_ok=True)
+        shutil.rmtree(directory, ignore_errors=True)
+        _remove_worktree(repo_root, worktree["path"])
         raise
     return record
 

@@ -161,6 +161,127 @@
       <strong>Follow-ons.</strong> None.
     </p>
 
+  <h2 id="s5">&sect;5 &mdash; A refused dispatch leaves no pointer, no worktree and no watch row</h2>
+    <p>
+      Node <code>refusal-leaves-no-trace</code>, at revision <code>12155ff8</code>.
+      The reproduction came first, as the section requires: every refusal path
+      <code>dispatch</code> can return after worktree creation begins was forced in a
+      temporary <code>RECKON_HOME</code> and repository, and each was read for a
+      leftover. Four paths were already clean; one class was not.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>refusal path (after worktree creation begins)</th>
+          <th>where</th>
+          <th>before the pointer write?</th>
+          <th>residue at <code>12155ff8</code></th>
+          <th>residue after repair</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>an occupied worktree path</td>
+          <td><code>_create_worktree</code> (<code>routing.py</code>)</td>
+          <td>yes</td>
+          <td>none added</td>
+          <td>none added</td>
+        </tr>
+        <tr>
+          <td>no working directory for the worktree</td>
+          <td><code>_backends.launch_working_directory</code> raises</td>
+          <td>yes</td>
+          <td>none</td>
+          <td>none</td>
+        </tr>
+        <tr>
+          <td>the worker will not spawn</td>
+          <td>the spawn raises <code>OSError</code></td>
+          <td>yes</td>
+          <td>none</td>
+          <td>none</td>
+        </tr>
+        <tr>
+          <td>the boundary tree snapshot raises</td>
+          <td><code>_repository_tree_snapshot</code></td>
+          <td><strong>no</strong> &mdash; after</td>
+          <td><strong>live pointer + run directory + worktree</strong></td>
+          <td>none</td>
+        </tr>
+        <tr>
+          <td>the peer-channel wiring raises</td>
+          <td><code>_wire_peer_channels</code></td>
+          <td><strong>no</strong> &mdash; after</td>
+          <td><strong>live pointer + run directory + worktree</strong></td>
+          <td>none</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The defect is the order of dispatch's own unwind, not a missing
+      guard.</strong> On any failure after the worktree is cut, the unwind removes
+      the worktree and only then unlinks the pointer. But the worktree remover
+      refuses a worktree that a live pointer still claims, and until this run's own
+      pointer is unlinked it is that claim. So a failure reached after the pointer
+      write &mdash; the tree snapshot, the peer wiring, the watcher read, the member
+      registration, the final pointer write &mdash; met the remover with its own
+      pointer on disk, the remover raised, and the unlink and the run-directory
+      removal that follow it never ran. The live pointer that survived is the
+      measured artefact, recorded in the negative-control run below, whose failing
+      assertion reads <code>assert ['r-20260923T&hellip;-node-refused'] == []</code>
+      &mdash; a run still live after a refused dispatch, which a reader takes for a
+      process gone without a manifest and reports <code>abandoned</code>.
+    </p>
+    <p>
+      The repair is ordering: unlink the pointer first, so the claim is gone before
+      the remover runs, then remove the run directory and the worktree.
+      <code>reckon/crew/dispatch.py</code>, in <code>dispatch</code>'s
+      <code>except Exception</code> unwind.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/refusal_unwind_order.png"
+           alt="Two panels of the same five-step unwind. Left, base revision: unwire peer channels, signal the spawned worker, then remove the worktree, which refuses because a live pointer claims it; the following two steps, remove the worktree's run directory and unlink the pointer, never run, leaving a pointer, run directory and worktree behind as a trace that reads as a death. Right, repaired: the same first two steps, then unlink the pointer, which clears the claim, then remove the run directory and the worktree, leaving nothing.">
+      <figcaption>
+        Left: at the base revision the worktree remover refuses on the run's own
+        live claim, so the unlink that would clear it never runs and the pointer
+        survives. Right: unlinking the pointer first clears the claim, and every
+        later step completes &mdash; a refusal leaves nothing.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>The gate.</strong> <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>
+      forces each path above in a temporary crew home and repository and asserts, for
+      each, no live pointer, no run directory, no worktree and no watcher transition
+      row naming the node. A positive control drives the ordinary successful path and
+      shows every read does see a present run, so the clean result is a measurement
+      rather than a blind read; the occupied-worktree case additionally asserts the
+      earlier run's worktree is left untouched, because the refusal must not
+      over-reach. <code>list_live</code>'s own publishing read is driven with a
+      registered producer, which is the path the durable watcher uses.
+    </p>
+    <p>
+      <strong>Runs.</strong> Green: six cases, 12.5&nbsp;s, pass &mdash;
+      <code>~/.config/reckon/crew/runs/r-20260923T131048752851-refusal-leaves-no-trace/logs/gate.log</code>.
+      Negative control: <code>reckon/crew/dispatch.py</code> restored to the base
+      revision <code>12155ff8</code>, so the worktree removal again precedes the
+      unlink; the run reports <code>2 failed, 4 passed</code>, the two post-pointer
+      cases failing on <code>AssertionError: assert ['r-20260923T&hellip;-node-refused']
+      == []</code>, and the four pre-pointer cases still passing, which shows the red
+      is aimed at the repaired path rather than at the file &mdash;
+      <code>logs/negative-control.log</code> in the same run directory.
+    </p>
+    <p>
+      <strong>Follow-ons.</strong> The occupied-worktree refusal is correct, but the
+      worktree it refuses over is a leftover: after <code>crew discard</code> of a
+      launch-failed run the worktree stays on disk and a re-dispatch of the same node
+      is refused with <code>worktree path already exists</code>. Removing it is the
+      discarding command's job, not dispatch's, so it is recorded here rather than
+      repaired in this node. &sect;6 owns the sibling case, a refusal returned beside
+      a live pointer, whose candidate cause &mdash; the tree-snapshot exception
+      handler signalling a launched worker's process group &mdash; is removed by
+      &sect;3 moving that snapshot into the supervisor.
+    </p>
+
   </main>
 </body>
 </html>
