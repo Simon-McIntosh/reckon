@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" width="1000" height="520" font-family="ui-sans-serif, system-ui, sans-serif">
+  <style>
+    .box { fill:#ffffff; stroke:#334155; stroke-width:1.5; }
+    .input { fill:#eef2ff; stroke:#4f46e5; }
+    .plan { fill:#f8fafc; stroke:#334155; }
+    .carry { fill:#ecfdf5; stroke:#059669; }
+    .refuse { fill:#fef2f2; stroke:#dc2626; }
+    .lbl { font-size:13px; fill:#0f172a; }
+    .small { font-size:11px; fill:#475569; }
+    .code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; fill:#0f172a; }
+    .arrow { stroke:#64748b; stroke-width:1.6; fill:none; marker-end:url(#ah); }
+    .head { font-size:15px; font-weight:600; fill:#0f172a; }
+    .t { font-size:12px; fill:#334155; }
+  </style>
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="32" class="head">How a node's figures reach the command line — and where a lane that cannot carry them refuses</text>
+  <text x="30" y="54" class="t">One entry point, two outcomes: the figure is attached at the launcher, resolved through the lane's command, and either emitted as image flags or refused by the lane's own name.</text>
+
+  <rect x="30" y="88" width="210" height="86" rx="6" class="box input"/>
+  <text x="44" y="112" class="lbl">node declares figures</text>
+  <text x="44" y="132" class="small">the images the run wrote</text>
+  <text x="44" y="152" class="code">images=("a.png","b.png")</text>
+
+  <line x1="240" y1="131" x2="290" y2="131" class="arrow"/>
+
+  <rect x="290" y="88" width="240" height="86" rx="6" class="box plan"/>
+  <text x="304" y="112" class="lbl">launch_plan(..., images=...)</text>
+  <text x="304" y="132" class="small">the plan the launcher runs —</text>
+  <text x="304" y="150" class="small">the test reads .argv, not a helper</text>
+
+  <line x1="530" y1="131" x2="580" y2="131" class="arrow"/>
+
+  <rect x="580" y="88" width="240" height="86" rx="6" class="box plan"/>
+  <text x="594" y="112" class="lbl">dialect selected by command</text>
+  <text x="594" y="132" class="small">keyed on the command's own name — the</text>
+  <text x="594" y="150" class="small">configured lane, not the model behind it</text>
+
+  <line x1="700" y1="174" x2="700" y2="196" class="arrow"/>
+  <text x="700" y="216" class="small" text-anchor="middle" fill="#475569">dialect.argv(images)</text>
+
+  <line x1="700" y1="224" x2="285" y2="264" class="arrow"/>
+  <line x1="700" y1="224" x2="880" y2="264" class="arrow"/>
+  <text x="430" y="240" class="small" text-anchor="middle">codex declares image</text>
+  <text x="845" y="240" class="small" text-anchor="middle">no image flag</text>
+
+  <rect x="100" y="264" width="370" height="168" rx="6" class="box carry"/>
+  <text x="116" y="290" class="lbl">codex exec — one flag per file</text>
+  <text x="116" y="312" class="small">each -i is immediately followed by its own</text>
+  <text x="116" y="328" class="small">path, and precedes the resume subcommand:</text>
+  <text x="116" y="354" class="code">codex exec --json -C /wt ...</text>
+  <text x="116" y="372" class="code">  -i a.png -i b.png -</text>
+  <text x="116" y="398" class="small">images=() emits no -i; the flag carries the</text>
+  <text x="116" y="414" class="small">attachment, so the path is where it lands.</text>
+
+  <rect x="620" y="264" width="340" height="168" rx="6" class="box refuse"/>
+  <text x="636" y="290" class="lbl">claude · clive · in-harness</text>
+  <text x="636" y="312" class="small">raises BackendError naming the lane; it never</text>
+  <text x="636" y="328" class="small">drops the figure and answers without the image:</text>
+  <text x="636" y="354" class="code">the 'clive' dialect cannot carry</text>
+  <text x="636" y="372" class="code">attached images, so 1 figure(s)</text>
+  <text x="636" y="398" class="small">A figureless node on the same lane is</text>
+  <text x="636" y="414" class="small">unaffected: the refusal responds to the figure.</text>
+
+  <text x="30" y="470" class="small">The refusal is the measure. A lane that answers from the filename, the path and the diff returns a well-formed verdict it could not have formed.</text>
+</svg>

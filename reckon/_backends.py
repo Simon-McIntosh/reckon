@@ -823,8 +823,38 @@ class Dialect:
         writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
+        images: Sequence[str] = (),
     ) -> list[str]:
         raise NotImplementedError
+
+    def _lane(self, command: str) -> str:
+        """Name this dialect as the caller names the lane.
+
+        Dialect resolution keys on the command's own name, so that is the
+        identity a refusal must carry: the local harness that shares the claude
+        flag grammar is a separate configured lane, and must report the name of
+        the lane that refused rather than the name of the dialect family behind
+        it, so the operator can tell which configured lane is at fault.
+        """
+        return Path(command).name
+
+    def _refuse_images(self, command: str, images: Iterable[str]) -> None:
+        """Raise for a dialect that has no way to hand an image to its harness.
+
+        A dialect that cannot carry the attachment must not drop it and run a
+        well-formed prompt without the figure: the verdict that comes back is
+        formed from the filename and the diff, and a review reporting a
+        judgement it could not have made is worse than no review. Named by
+        lane, and emphatically not by substituting a lane that can.
+        """
+        attached = list(images)
+        if not attached:
+            return
+        raise BackendError(
+            f"the {self._lane(command)!r} dialect cannot carry attached images, "
+            f"so {len(attached)} figure(s) would be dropped from the command "
+            "line; route a figure review to a dialect that emits an image flag"
+        )
 
     def working_directory(
         self,
@@ -968,6 +998,7 @@ class _CodexDialect(Dialect):
         writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
+        images: Sequence[str] = (),
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
         argv += self._sandbox_flags(backend.get("sandbox"))
@@ -986,6 +1017,12 @@ class _CodexDialect(Dialect):
             argv += ["-c", f"model_reasoning_effort={effort}"]
         if final_message_path:
             argv += ["-o", final_message_path]
+        # `codex exec` reads attached figures as `-i <path>`, one flag per
+        # file, and they must precede `resume`: a figure placed after the
+        # subcommand is rejected, the subcommand taking only a session id and
+        # the prompt on stdin.
+        for image in images:
+            argv += ["-i", str(image)]
         if resume_session:
             # Every option above belongs to `exec`, not to its `resume`
             # subcommand, so they must precede it. Passing the working directory
@@ -1286,7 +1323,9 @@ class _ClaudeDialect(Dialect):
         writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
+        images: Sequence[str] = (),
     ) -> list[str]:
+        self._refuse_images(command, images)
         argv = [command, "-p", "--output-format", "stream-json", "--verbose"]
         if resume_session:
             argv += ["--resume", resume_session]
@@ -1736,6 +1775,7 @@ def launch_plan(
     writable_directories: Iterable[str | Path] = (),
     final_message_path: str | Path | None = None,
     resume_session: str | None = None,
+    images: Iterable[str | Path] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -1770,6 +1810,7 @@ def launch_plan(
         writable_directories=tuple(str(path) for path in writable_directories),
         final_message_path=final_path,
         resume_session=resume_session,
+        images=tuple(str(image) for image in images),
     )
     return LaunchPlan(
         backend=backend_name,
