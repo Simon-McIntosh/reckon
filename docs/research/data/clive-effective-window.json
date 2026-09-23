@@ -1,12 +1,14 @@
 {
- "generated_at": "2026-09-22T22:03:45Z",
+ "generated_at": "2026-09-23T00:00:00Z",
  "source_runs_dir": "/home/ITER/mcintos/.config/reckon/crew/runs",
  "backend": "clive",
  "model": "deepseek-v4.1-flash",
+ "model_filter": "this figure is over the lane's own model only; runs on any other model are reported under excluded_refusals rather than pooled into it, because a pooled minimum is the narrowest neighbour's boundary and belongs to that lane",
  "declared_window_tokens": 480000,
  "declared_window_source": "flight configuration, clive backend usable_input_window",
  "effective_boundary_tokens": 200000,
- "boundary_basis": "lowest estimated input among recorded refusals on this model",
+ "boundary_basis": "lowest-estimate-among-refused-runs",
+ "pooled_boundary_tokens_across_every_model": 73728,
  "estimate_basis": "announced-context-window recorded in the refusal stream's modelUsage block; the rejected request produced no usage of its own, so the window the endpoint announced bounds its input from below",
  "refused_runs": [
   {
@@ -58,65 +60,81 @@
  "excluded_refusals": {
   "other_models": [
    {
-    "model": "glm-5.3",
     "run_id": "r-20260902T202623136611-orientation-checked-at-first-observation",
+    "model": "glm-5.3",
     "announced_context_window": 98304
    },
    {
-    "model": "glm-5.3",
     "run_id": "r-20260903T053716224631-orientation-checked-at-first-observation",
+    "model": "glm-5.3",
     "announced_context_window": 73728
    },
    {
-    "model": "glm-5.3",
     "run_id": "r-20260903T122938955014-the-display-test-asserts-the-honest-bucket",
+    "model": "glm-5.3",
     "announced_context_window": 73728
    },
    {
-    "model": "glm-5.3",
     "run_id": "r-20260903T122950897279-a-duplicate-backend-key-is-refused",
+    "model": "glm-5.3",
     "announced_context_window": 73728
    },
    {
-    "model": "glm-5.3",
     "run_id": "r-20260903T123348139014-finished-work-is-never-displayed-as-working",
+    "model": "glm-5.3",
     "announced_context_window": 73728
    }
   ],
   "unmeasured_estimate": [
    {
     "run_id": "r-20260914T143417615980-burn-meter-on-crew",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260915T100737785937-a-finished-run-is-not-stalled",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260915T110218590987-the-wait-fields-show-their-form",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260915T161848926966-the-reconstruction-keeps-its-settings",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260916T203300574845-ddout-case-rename",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260917T103829858481-evidence-record-row-coverage",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260918T082249366629-followup-currency-against-landed-commits",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    },
    {
     "run_id": "r-20260921T073825402133-declared-parser-mutation-reddens-the-contract-test",
+    "model": null,
+    "announced_context_window": null,
     "reason": "no modelUsage block in the refusal stream"
    }
   ]
  },
- "note": "A refusal stream records the engine-announced context window; for this lane that is 200000 against a declared usable window of 480000, so the declared figure overstates what the endpoint accepts by more than a factor of two."
+ "note": "A refusal stream records the engine-announced context window; for this lane that is 200000 against a declared usable window of 480000, so the declared figure overstates what the endpoint accepts by more than a factor of two. The figure is the lowest estimate among this lane's own refusals; pooling every model instead returns the narrowest lane's figure, which is a different lane's boundary."
 }

@@ -59,19 +59,24 @@
         <circle cx="150" cy="150" r="4" fill="#4f7a5e"></circle>
         <text x="60" y="196" font-size="11" fill="#6b7f96">The gate is the smaller of the two figures; a refusal inside the band names both, because the remedy differs between them.</text>
       </svg>
-      <figcaption>Both boundaries on one axis, with the two estimates the new tests use. Nothing here is a claim about where the endpoint's true limit lies — 200000 is the largest input the recordings show it rejecting, and the check refuses on it in the same direction the endpoint did.</figcaption>
+      <figcaption>Both boundaries on one axis, with the two estimates the new tests use. 200000 is the lowest estimate among this lane's recorded refusals — the same figure <code>effective_boundary_tokens</code> carries in the boundary data — and it is a property of this lane's model alone, not of the provider: a census pooled across every model returns a different lane's tighter figure. The check refuses at this boundary in the same direction the endpoint did.</figcaption>
     </figure>
 
     <p><strong>What landed.</strong> <code>reckon.crew.context_budget.refusal_census</code> reads every
     run stream and keeps those whose last result is an error carrying the refusal text, taking each
     run's estimate as the context window its own result announced for the model it was served on,
-    and returning the lowest of them as the effective boundary. The estimate is deliberately the
+    and returning the lowest of them as the effective boundary. A boundary belongs to one lane, so
+    the census is narrowed to the lane's own model — pooling every model returns the minimum across
+    lanes, which is the narrowest neighbour's figure rather than this lane's — and the runs that
+    narrowing excludes are reported alongside rather than dropped. The estimate is deliberately the
     lowest figure the recording supports rather than a usage count: the rejected request produced no
     usage record of its own, so the announced window is what bounds it from below, and a run carrying
     no <code>modelUsage</code> block is reported unmeasured rather than zero, so it cannot move the
     boundary. <code>reckon.crew.routing._context_fit_verdict</code> then gates on the smaller of the
     declared window and a declared <code>effective_input_window</code>, and a refusal inside the band
-    between the two names both figures.</p>
+    between the two names both figures. Either figure may be absent: a lane declaring no window is
+    unbounded and its recorded boundary alone gates it, and a lane with no recorded boundary keeps
+    its declared window.</p>
 
     <table>
       <caption>What the node asserts, and where the assertion is made.</caption>
@@ -80,18 +85,22 @@
         <tr><td>A node estimated between the recorded boundary and the declared window is refused, with <code>window_tokens</code> at the boundary, <code>declared_window_tokens</code> at the window, and a reason naming both figures as digits</td><td><code>test_estimate_between_the_record_boundary_and_the_declared_window_is_refused</code></td></tr>
         <tr><td>A node estimated below the recorded boundary is admitted, with no shortfall and the boundary still reported</td><td><code>test_estimate_below_the_record_boundary_is_allowed</code></td></tr>
         <tr><td>The estimate the verdict reports is the standing floor plus the file tokens the node's own declared write path yields, so the assertion is on the wiring rather than on the fixture</td><td>the first assertion of the refusal test, computed through <code>routing._tokens_for_bytes</code></td></tr>
+        <tr><td>The census narrowed to one model returns that model's figure, where pooling every model returns a different and tighter one, with the excluded runs reported</td><td><code>test_the_boundary_is_taken_over_the_lanes_own_model</code></td></tr>
+        <tr><td>The published boundary file agrees with the census of the runs it names: the figure is recomputed from the file's own listed refusals and required to match</td><td><code>test_the_recorded_lane_boundary_agrees_with_the_row_it_is_taken_over</code></td></tr>
+        <tr><td>A lane declaring no window is gated by its recorded boundary alone, rather than refused for the window it never declared</td><td><code>test_a_lane_with_no_declared_window_uses_its_recorded_boundary</code></td></tr>
       </tbody>
     </table>
 
     <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m
-    pytest -p no:cacheprovider -q tests/test_routing_surface.py -k record_boundary</code> —
-    <strong>2 passed</strong>. The whole file is <strong>2 failed, 6 errors, 3 passed</strong>, and
-    the same file extracted from the base revision with <code>git archive</code> gives
-    <strong>2 failed, 6 errors, 1 passed</strong>: identical failure ids, so the added-failure count
-    is zero and the two passes are this change's own. The failures are a ledger fixture refusing to
-    promote into a temporary state directory and are untouched by this node's files. Lint and format
-    are clean on all three changed paths, and the finding count over them is <strong>12 against 15
-    at base</strong> — no finding added.</p>
+    pytest -p no:cacheprovider -q tests/test_routing_surface.py -k "record_boundary or lanes_own_model
+    or no_declared_window or agrees"</code> — <strong>5 passed</strong>. The whole file is
+    <strong>2 failed, 6 errors, 6 passed</strong>, and the same file extracted from the base revision
+    <code>fa98d32a</code> with <code>git archive</code> gives <strong>2 failed, 6 errors, 1
+    passed</strong>: identical failure ids, so the added-failure count is zero and the five passes are
+    this change's own. The failures are a ledger fixture refusing to promote into a temporary state
+    directory and are untouched by this node's files. Lint and format are clean on all three changed
+    paths, and the finding count over them is <strong>12 against 15 at base</strong> — no finding
+    added.</p>
 
     <p><strong>Negative control.</strong> The declared mutation is applied to a scratch tree
     extracted from the base revision carrying only this node's three files, with the gate line
