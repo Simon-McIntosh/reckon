@@ -295,6 +295,21 @@
       <p><strong>Measure.</strong> Establish the effective refusal boundary for the lane and make the
       context-fit check use it, so a node that will be refused is refused before launch by reckon with a
       reason, rather than after launch by the endpoint with three records and no deliverable.</p>
+
+      <p><strong>Measured and landed 2026-09-23.</strong> The boundary is read from the recordings
+      rather than declared: a census of every run stream whose last result is an error carrying the
+      refusal text finds five runs on this lane, each announcing a 200000-token context window while
+      the configuration declares 480000. The census is taken over this lane's own model, because
+      pooling every model returns the narrowest neighbour's figure — 73728 — which is that lane's
+      boundary and not this one's. The context-fit verdict now gates on the smaller of the declared
+      window and the recorded boundary and names both figures in a refusal inside the band, so a node
+      the endpoint would refuse is refused by reckon before a worktree is created; a lane that
+      declares no window is unbounded and its recorded boundary alone gates it. The half that remains
+      is the declaration — the key is read from the resolved backend mapping, and a later node will
+      declare it in the flight schema so a production caller can supply it. Boundary data:
+      <code>docs/research/data/clive-effective-window.json</code>, which carries both figures.
+      Evidence, gate and the negative control:
+      <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#effective-window">§7 execution evidence</a>.</p>
     </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">

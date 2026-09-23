@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking-landed">
   <meta name="plan-title" content="A Review Dies Where Nobody Is Looking &mdash; landed evidence">
-  <meta name="plan-summary" content="Two sections of the plan, each recorded by its own node: the audit reads the state a document carries (§6 guard half), and classification reads a run\'s deliverable before its process (§3).">
+  <meta name="plan-summary" content="Three sections of the plan, each recorded by its own node: the audit reads the state a document carries (§6 guard half), classification reads a run's deliverable before its process (§3), and the context fit is taken against the lane's recorded refusal boundary (§7).">
   <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
-  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s6,reckon:a-review-dies-where-nobody-is-looking#s3,reckon:a-review-dies-where-nobody-is-looking#s7">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
-  <meta name="plan-commits" content="910657ad,c8cc423a">
-  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py">
+  <meta name="plan-commits" content="910657ad,c8cc423a,2b14b314,e8991877,ed2bc107">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_audit.py,reckon/crew/recovery.py,tests/test_live_process_outranks_classification.py,reckon/crew/context_budget.py,reckon/crew/routing.py,tests/test_routing_surface.py,docs/research/data/clive-effective-window.json">
   <title>A Review Dies Where Nobody Is Looking &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -207,6 +207,111 @@ EXIT=1</pre>
       &mdash; the derived reset clears the presence flag but not the recorded status &mdash; is
       outside this node's write scope and is recorded in the manifest's <code>follow_ons</code>.</p>
     </section>
+
+  <section id="effective-window">
+    <h2>§7 — The context fit gated on the boundary the lane actually refused at</h2>
+
+    <p><strong>The defect, reproduced from the recordings.</strong> The plan records a run that
+    passed the pre-dispatch context fit at an estimate of roughly 285k against a declared
+    <code>usable_input_window</code> of 480000 and was then refused by the endpoint after three
+    records, with no deliverable. Reading every recorded run stream under
+    <code>~/.config/reckon/crew/runs</code> whose last result is an error carrying the refusal text
+    finds <strong>18 such runs</strong>, of which five were served on the flash model this lane
+    carries. Every one of those five announces a context window of <strong>200000</strong> tokens in
+    its own <code>modelUsage</code> block, against the 480000 the configuration declares — the
+    declared figure overstates what the endpoint accepts by more than a factor of two.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 210" width="100%" role="img" aria-label="A token axis. The declared usable input window of 480000 is drawn as the outermost boundary; the effective boundary of 200000, read from the refusal recordings, is drawn well inside it; a node estimated at 270000 falls in the band between the two, which the old check admitted and the endpoint refused, while a node estimated at 48000 falls below both and is admitted.">
+        <title>Declared window, recorded boundary, and the band between them</title>
+        <line x1="60" y1="150" x2="690" y2="150" stroke="#243447" stroke-width="1"></line>
+        <rect x="60" y="60" width="610" height="26" fill="#dfe9f5" stroke="#6b7f96"></rect>
+        <rect x="60" y="60" width="248" height="26" fill="#cfe6d8" stroke="#4f7a5e"></rect>
+        <line x1="308" y1="46" x2="308" y2="150" stroke="#2f6f4f" stroke-width="2"></line>
+        <line x1="670" y1="46" x2="670" y2="150" stroke="#6b7f96" stroke-width="2" stroke-dasharray="5 4"></line>
+        <line x1="399" y1="86" x2="399" y2="150" stroke="#a33" stroke-width="2"></line>
+        <circle cx="399" cy="150" r="4" fill="#a33"></circle>
+        <text x="60" y="42" font-size="12" fill="#3a3d44">0</text>
+        <text x="308" y="34" font-size="12" fill="#2f6f4f">effective boundary 200000</text>
+        <text x="670" y="34" text-anchor="end" font-size="12" fill="#6b7f96">declared window 480000</text>
+        <text x="184" y="78" text-anchor="middle" font-size="12" fill="#26402f">admitted at any estimate below the record</text>
+        <text x="489" y="78" text-anchor="middle" font-size="12" fill="#7a3527">band the old check admitted and the endpoint refused</text>
+        <text x="399" y="106" text-anchor="middle" font-size="11" fill="#a33">node estimate ~270000</text>
+        <text x="150" y="170" text-anchor="middle" font-size="11" fill="#4f7a5e">node estimate ~48000</text>
+        <circle cx="150" cy="150" r="4" fill="#4f7a5e"></circle>
+        <text x="60" y="196" font-size="11" fill="#6b7f96">The gate is the smaller of the two figures; a refusal inside the band names both, because the remedy differs between them.</text>
+      </svg>
+      <figcaption>Both boundaries on one axis, with the two estimates the new tests use. 200000 is the lowest estimate among this lane's recorded refusals — the same figure <code>effective_boundary_tokens</code> carries in the boundary data — and it is a property of this lane's model alone, not of the provider: a census pooled across every model returns a different lane's tighter figure. The check refuses at this boundary in the same direction the endpoint did.</figcaption>
+    </figure>
+
+    <p><strong>What landed.</strong> <code>reckon.crew.context_budget.refusal_census</code> reads every
+    run stream and keeps those whose last result is an error carrying the refusal text, taking each
+    run's estimate as the context window its own result announced for the model it was served on,
+    and returning the lowest of them as the effective boundary. A boundary belongs to one lane, so
+    the census is narrowed to the lane's own model — pooling every model returns the minimum across
+    lanes, which is the narrowest neighbour's figure rather than this lane's — and the runs that
+    narrowing excludes are reported alongside rather than dropped. The estimate is deliberately the
+    lowest figure the recording supports rather than a usage count: the rejected request produced no
+    usage record of its own, so the announced window is what bounds it from below, and a run carrying
+    no <code>modelUsage</code> block is reported unmeasured rather than zero, so it cannot move the
+    boundary. <code>reckon.crew.routing._context_fit_verdict</code> then gates on the smaller of the
+    declared window and a declared <code>effective_input_window</code>, and a refusal inside the band
+    between the two names both figures. Either figure may be absent: a lane declaring no window is
+    unbounded and its recorded boundary alone gates it, and a lane with no recorded boundary keeps
+    its declared window.</p>
+
+    <table>
+      <caption>What the node asserts, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>A node estimated between the recorded boundary and the declared window is refused, with <code>window_tokens</code> at the boundary, <code>declared_window_tokens</code> at the window, and a reason naming both figures as digits</td><td><code>test_estimate_between_the_record_boundary_and_the_declared_window_is_refused</code></td></tr>
+        <tr><td>A node estimated below the recorded boundary is admitted, with no shortfall and the boundary still reported</td><td><code>test_estimate_below_the_record_boundary_is_allowed</code></td></tr>
+        <tr><td>The estimate the verdict reports is the standing floor plus the file tokens the node's own declared write path yields, so the assertion is on the wiring rather than on the fixture</td><td>the first assertion of the refusal test, computed through <code>routing._tokens_for_bytes</code></td></tr>
+        <tr><td>The census narrowed to one model returns that model's figure, where pooling every model returns a different and tighter one, with the excluded runs reported</td><td><code>test_the_boundary_is_taken_over_the_lanes_own_model</code></td></tr>
+        <tr><td>The published boundary file agrees with the census of the runs it names: the figure is recomputed from the file's own listed refusals and required to match</td><td><code>test_the_recorded_lane_boundary_agrees_with_the_row_it_is_taken_over</code></td></tr>
+        <tr><td>A lane declaring no window is gated by its recorded boundary alone, rather than refused for the window it never declared</td><td><code>test_a_lane_with_no_declared_window_uses_its_recorded_boundary</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m
+    pytest -p no:cacheprovider -q tests/test_routing_surface.py -k "record_boundary or lanes_own_model
+    or no_declared_window or agrees"</code> — <strong>5 passed</strong>. The whole file is
+    <strong>2 failed, 6 errors, 6 passed</strong>, and the same file extracted from the base revision
+    <code>fa98d32a</code> with <code>git archive</code> gives <strong>2 failed, 6 errors, 1
+    passed</strong>: identical failure ids, so the added-failure count is zero and the five passes are
+    this change's own. The failures are a ledger fixture refusing to promote into a temporary state
+    directory and are untouched by this node's files. Lint and format are clean on all three changed
+    paths, and the finding count over them is <strong>12 against 15 at base</strong> — no finding
+    added.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation is applied to a scratch tree
+    extracted from the base revision carrying only this node's three files, with the gate line
+    replaced by <code>gating_tokens = window_tokens</code> and the boundary branch neutralised, so
+    the verdict compares only against the declared window. Under it the named refusal test
+    <strong>fails</strong> — <code>assert True is False</code>, the node is admitted where it must be
+    refused — and the second test fails with it on the window figure. The log's first line repeats
+    the declared mutation verbatim:
+    <code>~/.config/reckon/crew/runs/r-20260922T211337757018-the-context-fit-uses-the-effective-window/negative-control.log</code>.</p>
+
+    <p><strong>What this does not claim.</strong> The declaration path is half-wired. The verdict
+    reads <code>effective_input_window</code> from the resolved backend mapping, which is what the
+    tests drive, but that key cannot yet be written into flight config: the backend model in
+    <code>reckon/schema/flight.yaml</code> is <code>extra=&quot;forbid&quot;</code> and enumerates its
+    slots, so an operator setting it today is rejected as an unknown key. Those files are outside
+    this node's write paths and are carried under <code>follow_ons</code> in the node manifest.
+    Until they land, the boundary is data an operator cannot set from configuration, and the census
+    result in <code>docs/research/data/clive-effective-window.json</code> is what documents the
+    figure. The measure also ranges over this node's own change only: verifying the merged result is
+    a separately dispatched node's job.</p>
+  </section>
+
+  <section id="record-scope">
+    <h2>Record scope</h2>
+    <p>This record currently covers §7 only. The plan's other sections are separate nodes and their
+    outcomes are not claimed here. Sections land here as their nodes report; a peer landing into this
+    file should append its own section rather than replace the file.</p>
+  </section>
+
 </main>
 </body>
 </html>

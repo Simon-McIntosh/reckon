@@ -1571,23 +1571,62 @@ def _context_file_inputs(
 def _context_fit_verdict(
     *, resolution: DispatchPlan, repo: Path
 ) -> dict[str, Any] | None:
-    """Compare one node's deterministic context estimate with its backend window."""
+    """Compare one node's deterministic context estimate with its backend window.
+
+    The window that gates the refusal is the smaller of the declared lane window
+    and the effective boundary the backend records for its lane. The two are
+    different quantities: the declared window is what the configuration claims
+    the endpoint accepts, while the effective boundary is the lowest input a
+    recorded refusal shows the endpoint actually rejected
+    (:func:`reckon.crew.context_budget.refusal_census`). A lane whose endpoint
+    refuses below its declared figure would otherwise pass this check and then
+    die at the endpoint with three records and no deliverable, which is the
+    loss this comparison exists to prevent.
+
+    Either figure may be absent and neither absence is a zero. A lane that
+    declares no window is unbounded, so its recorded boundary alone gates it; a
+    lane with no recorded boundary keeps its declared window.
+    """
 
     declared_window = resolution.backend_settings.get("usable_input_window")
-    if declared_window is None:
+    effective_boundary = resolution.backend_settings.get("effective_input_window")
+    if declared_window is None and effective_boundary is None:
         return None
     try:
-        window_tokens = int(declared_window)
+        window_tokens = int(declared_window) if declared_window is not None else None
     except (TypeError, ValueError) as exc:
         raise CrewError(
             f"backend {resolution.backend!r} declares a non-integer usable input "
             f"window {declared_window!r}"
         ) from exc
-    if window_tokens <= 0:
+    try:
+        boundary_tokens = (
+            int(effective_boundary) if effective_boundary is not None else window_tokens
+        )
+    except (TypeError, ValueError) as exc:
+        raise CrewError(
+            f"backend {resolution.backend!r} declares a non-integer effective input "
+            f"window {effective_boundary!r}"
+        ) from exc
+    if window_tokens is not None and window_tokens <= 0:
         raise CrewError(
             f"backend {resolution.backend!r} declares a non-positive usable input "
             f"window {window_tokens}"
         )
+    if boundary_tokens is None or boundary_tokens <= 0:
+        raise CrewError(
+            f"backend {resolution.backend!r} declares a non-positive effective input "
+            f"window {boundary_tokens}"
+        )
+    # An absent declared window means unbounded, never zero: a lane that states
+    # no ceiling keeps whatever boundary its own recordings establish, rather
+    # than being refused because the window it never declared reads as nothing.
+    gating_tokens = (
+        boundary_tokens
+        if window_tokens is None
+        else min(window_tokens, boundary_tokens)
+    )
+    narrows = window_tokens is not None and boundary_tokens < window_tokens
 
     standing_tokens, standing = _standing_context_input(
         repo, resolution.backend_settings
@@ -1596,17 +1635,37 @@ def _context_fit_verdict(
         repo, resolution.node, resolution.authority
     )
     estimated_tokens = standing_tokens + file_tokens
-    shortfall_tokens = max(0, estimated_tokens - window_tokens)
+    shortfall_tokens = max(0, estimated_tokens - gating_tokens)
+    if shortfall_tokens == 0:
+        reason = "within-context-window"
+    elif narrows:
+        # Both figures are named, because the remedy differs: an estimate inside
+        # this band is refused by reckon for a lane boundary the configuration
+        # does not state, so a reader who sees only the declared window would
+        # look for the fault in the node size.
+        reason = (
+            f"context-window-exceeded: estimated {estimated_tokens} tokens is "
+            f"above the effective boundary {boundary_tokens} recorded for backend "
+            f"{resolution.backend!r}, whose declared window is {window_tokens}"
+        )
+    elif window_tokens is None:
+        reason = (
+            f"context-window-exceeded: estimated {estimated_tokens} tokens is "
+            f"above the effective boundary {boundary_tokens} recorded for backend "
+            f"{resolution.backend!r}, which declares no window of its own"
+        )
+    else:
+        reason = "context-window-exceeded"
     return {
         "allowed": shortfall_tokens == 0,
         "estimated_tokens": estimated_tokens,
-        "window_tokens": window_tokens,
-        "shortfall_tokens": shortfall_tokens,
-        "reason": (
-            "within-context-window"
-            if shortfall_tokens == 0
-            else "context-window-exceeded"
+        "window_tokens": gating_tokens,
+        "declared_window_tokens": window_tokens,
+        "effective_boundary_tokens": (
+            boundary_tokens if narrows or window_tokens is None else None
         ),
+        "shortfall_tokens": shortfall_tokens,
+        "reason": reason,
         "inputs": {
             "standing_instructions": standing,
             "repository_files": files,
