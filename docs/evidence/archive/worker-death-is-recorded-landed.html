@@ -7,13 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="worker-death-is-recorded-landed">
   <meta name="plan-title" content="A worker's death is recorded — landed evidence">
-  <meta name="plan-summary" content="Liveness is re-derived on every read: the accessor that owns the pid lookup now carries the recorded start tick, so a pointer whose process is gone, or whose pid was reused, stops reporting as running wherever the record is read.">
+  <meta name="plan-summary" content="Two steps of §5, each recorded by its own node: the reaper keeps each worker\'s wait status on its run (step 1), and liveness is re-derived on every read so a dead or reused pid stops reporting as running (step 2).">
   <meta name="plan-evidence-for" content="reckon:worker-death-is-recorded">
   <meta name="plan-verifies" content="reckon:worker-death-is-recorded#s5">
+  <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90">
   <meta name="plan-recorded-at" content="2026-09-22">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; login node; Python in the repository's own root environment; detached git worktree">
-  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log">
+  <meta name="plan-artifacts" content="reckon/crew/runs.py,tests/test_crew_record_liveness.py,docs/figures/worker-death-is-recorded/gate.log,docs/figures/worker-death-is-recorded/negative-control.log,reckon/crew/dispatch.py,tests/test_crew_launch_failure.py,docs/figures/worker-death-is-recorded/reap-wait-status.svg">
   <title>A worker's death is recorded — landed evidence | reckon">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -115,6 +116,69 @@
       now, and outside this node's write paths.</li>
     </ul>
   </section>
+
+    <section id="s5-1">
+      <h2>&sect;5.1 &mdash; The launcher keeps the wait status it already holds</h2>
+      <p>Plan &sect;5.1. The reaper was the only place that ever observed a worker's end:
+      it held <code>os.waitstatus_to_exitcode(status)</code> at the moment the child was
+      reaped and threw it away whenever the stream was non-empty, so a worker ended by a
+      signal kept its <code>working</code> phase and carried nothing about its process
+      having gone. That is the whole of this node: the status is now kept.</p>
+
+      <img src="/reckon/figures/worker-death-is-recorded/reap-wait-status.svg"
+           alt="The reaper branches on whether the stream is empty: an empty stream records a launch failure and sets the phase; an unplaced run with a non-empty stream records the wait status and leaves the phase alone; a placed launch whose payload ran records nothing."
+           style="max-width:100%">
+
+      <table>
+        <thead><tr><th>How the wait ended</th><th>Recorded on the run</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>process exited, code N</td><td><code>exit_code: N</code></td>
+              <td>it chose to end</td></tr>
+          <tr><td>process signalled, signal S</td>
+              <td><code>signal: S</code>, <code>signal_name: SIGTERM</code></td>
+              <td>it ended by nothing it chose, and the two cases want different responses</td></tr>
+        </tbody>
+      </table>
+      <p>A signalled process chose nothing, so it records no exit code; a signal number
+      outside the named set is still recorded by number, so an unfamiliar kill is legible
+      rather than dropped. The record lives in the pointer's <code>wait_status</code> and
+      in the same three fields on a run's launch-failure entry.</p>
+
+      <h3>What was measured</h3>
+      <p>Two cases in <code>tests/test_crew_launch_failure.py</code>, each spawning a stub
+      backend through the real spawn and reaped on a real tick, each reading the run record
+      rather than a log:</p>
+      <ul>
+        <li>a stub that writes one turn and then <code>kill -TERM $$</code> records
+        <code>signal: 15</code> and <code>signal_name: SIGTERM</code>, with
+        <code>exit_code</code> absent, its phase left <code>working</code> and no
+        launch-failure entry;</li>
+        <li>a stub that writes one turn and then <code>exit 3</code> records
+        <code>exit_code: 3</code> with no signal.</li>
+      </ul>
+      <p>Both streams are non-empty, which is the case the launcher was discarding, so the
+      record can only have come from the wait. The existing empty-stream cases are
+      unchanged, and the focused gate runs 7 passed at <code>b0c8ff90</code>.</p>
+      <p>The declared negative control restores the branch that discards the wait status
+      when the stream is non-empty; the signal case is then observed to fail, and that log
+      is <code>negative-control-discard-wait-status.log</code> in the node's run directory.
+      Gate log: <code>gate-wait-status-focused.log</code>, same directory.</p>
+
+      <h3>Corrected inside the node</h3>
+      <p>The first cut recorded the wait status for a placed launch too. A scheduler
+      client's wait status is the client's rather than the worker's, and a placed run whose
+      payload log shows a turn ran must gain no record at all —
+      <code>tests/test_crew_placed_liveness.py::test_the_payload_log_decides_that_the_work_ran</code>
+      caught it, failing on a record it was
+      never meant to see. The placement case now returns before any pointer write, and
+      that file and this node's gate are green together (25 passed).</p>
+
+      <h3>Boundary</h3>
+      <p>A run already in a terminal phase is left untouched: the existing guard that never
+      relabels a finished run is unchanged, so a straggler reap arriving after a promotion
+      adds nothing. Classifying an interrupted run, and the phase that names it, are
+      &sect;5.3 — a different node.</p>
+    </section>
 </main>
 </body>
 </html>
