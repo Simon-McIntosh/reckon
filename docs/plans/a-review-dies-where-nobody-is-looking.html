@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192">
 <meta name="plan-impl" content="0.31">
@@ -415,6 +415,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T0555-census-landed" data-who="reckon-ship" data-when="2026-09-23T05:55:00+02:00">
     <div class="r-comment-body">§2 answered at ecbe9d35. Across the recorded local-lane runs, review at xhigh dies at 12.2% (45 of 369) and investigate at xhigh at 2.6% (2 of 76). Both use the read-only sandbox and the same effort, so <strong>role discriminates, not effort or sandbox</strong>. The fix is provisioning for the review role, not routing by effort. Review at high has too few runs to separate: 1 of 11. This retracts the coordinator's earlier small-sample reading, from this sprint's own reviews, that effort discriminated. The census now reads liveness through record_process_alive, so an in-flight run is not counted dead. The re-review scored 92 with all three prior findings fixed. §2 is done: 4 of 13 nodes.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T033143050328-rereview-of-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T03:49:25.794Z">
+    <div class="r-comment-body"><p>re-review stored and parsed at 92 with all three prior findings fixed; read before the census was promoted</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260923T0550-scope-extension" data-who="reckon-ship" data-when="2026-09-23T05:50:00+02:00">
     <div class="r-comment-body">Scope extended at the lead's direction on 2026-09-23. §8 measures whether a resumed member session sends one worker's gathered context into the next node, which slows turnaround and spends the codex subscription, and then stops fresh nodes from inheriting it. §9 demonstrates that a local worker compacts and continues at the window, and carries the harness-level prevention for each death shape this plan's RCA identifies. The executable denominator rises from 10 to 13 nodes: §8 measure, §8 refuse-to-inherit, §9 demonstration. impl moves to 0.23 on 3 of 13 landed.</div>
