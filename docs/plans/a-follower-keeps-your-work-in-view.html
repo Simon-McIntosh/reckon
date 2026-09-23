@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="5">
+  <meta name="plan-version" content="6">
   <meta name="plan-depends-on" content="a-scoped-follower-counts-its-own-session">
   <title>A Follower Keeps Your Work In View | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -155,6 +155,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260923T0045-sweep-locked" data-who="reckon-ship" data-when="2026-09-23T00:45:00+00:00">
     <div class="r-comment-body"><p>Decision locked on measurement: the project watcher sweeps a session after ten minutes with no live follower, records itself as the writer of every sweep action, and treats a session whose pointers name another host as unknown. The grace period comes from the 90th percentile re-arm gap of 9.7 minutes, not the 99th percentile first proposed, because the tail beyond it is absent coordinators. The implementing node adds three tests beside the one this section names: a session unattended for eleven minutes is swept by the watcher and the resumed run records the watcher as its writer; a session unattended for nine minutes is not swept; a session whose pointer names another host is not swept. Its write paths extend to <code>reckon/crew/recovery.py</code> for the watcher's tick.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0710-grace-population" data-who="reckon-ship" data-when="2026-09-23T07:10:00+00:00">
+    <div class="r-comment-body"><p><strong>Do not retune the ten-minute grace against the re-arm gap distribution.</strong> That distribution holds only sessions that re-armed; a follower that never comes back emits no gap and is absent from it by construction, which is the case the sweep exists for. imas-ambix-f6 pointed this out on 2026-09-23, and its own session is in the sample once for a re-arm on 2026-09-21 and missing for the follower it then lost for good. Ten minutes stands because it sits above the present-coordinator mode, not because the distribution bounds the absent case. A later tuning must measure the absent population directly, from sessions whose live pointers outlive every follower registration.</p><p><strong>A live instance, read at 07:05 UTC on 2026-09-23.</strong> imas-ambix has had no follower since the evening of 2026-09-22, and run <code>r-20260922T195432401622-placement-answers-the-scheduler</code> classifies as <code>scoring</code>: its manifest has been complete with two commits since 20:12 UTC, and no review was dispatched in the 5.5 hours since, because today only a follower's sweep dispatches reviews. Its pointer's stored phase still reads <code>starting</code>, the phase lag recorded on <a href="/reckon/plans/a-follower-outlives-its-monitor#s4">a-follower-outlives-its-monitor §4</a>. The watcher sweep this section adds would have dispatched that review ten minutes after the follower was lost.</p></div>
 </div>
 </section>
 </main>
