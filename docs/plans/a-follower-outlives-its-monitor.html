@@ -18,13 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="37">
+  <meta name="plan-version" content="38">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-impl" content="0.78">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -493,6 +493,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T1400-s10-landed" data-who="reckon-ship" data-when="2026-09-23T14:00:00Z">
     <div class="r-comment-body"><p>§10 landed, merged at <code>f891f2ed</code>. The session teardown in <code>tests/conftest.py</code> reads each watch producer's pid from the seat record it wrote under the test's temporary <code>RECKON_HOME</code>, where the code it replaces scanned command lines. It signals a pid only when that process's own environment names the same home, so a reused pid is never touched. With the teardown removed, the child test session left its supervisor and watcher alive and the gate failed. The review is pending.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T1605-s7-s10-landed" data-who="" data-when="2026-09-23">
+    <div class="r-comment-body"><p>Seven of nine sections are landed; §4 (replay) and §9 (stream-parse cache) remain. <strong>§10</strong>: <code>test-watchers-are-reaped</code> promoted (<code>7c5f69b9</code>, merged <code>f891f2ed</code>, review 80). Its review found that the change removed <code>watch_producers_under</code> from <code>tests/conftest.py</code> while <code>tests/test_watch_arming_isolation.py</code> still imports it, so one test fails on main with ImportError. Corrective node <code>arming-isolation-reads-the-watcher-records</code> is running. <strong>§7</strong>: the orphan-release test now proves that a follower whose consumer is still reading keeps running past the release window, and the figure script is ruff-clean (<code>bc72dfca</code>, <code>ce74b88a</code>, merged <code>208fa22b</code>, review 91). <strong>§8</strong>: the reload node is promoted. The node scoping the carried deadline to the replacement image (<code>a3dadfa0</code>) awaits its review, and it reports that each replacement image's setup time adds to the deadline's end, a follow-on for <code>reckon/cli.py</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>
