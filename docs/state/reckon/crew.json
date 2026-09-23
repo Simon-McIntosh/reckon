@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T03:14:28",
+  "updated": "2026-09-23T03:15:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -271062,6 +271062,281 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T204206499719-a-dead-pid-stops-reading-working",
+        "plan": "worker-death-is-recorded",
+        "section": "\u00a75",
+        "node": "a-dead-pid-stops-reading-working",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 878,
+                "cached_input_tokens": 223574,
+                "input_tokens": 224454,
+                "output_tokens": 30,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 224484,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "tests in tests/test_crew_record_liveness.py assert that a pointer with phase working and a pid with no process reads process_alive false, and a pointer whose pid is alive but whose recorded start time differs from _process_start_time reads false, and a genuinely live pid with a matching start time reads true; the negative control of making record_process_alive skip the start-time comparison is applied, the reused-pid test is observed to fail, and that log is recorded in the manifest; the existing liveness tests tests/test_crew_placed_liveness.py tests/test_liveness_is_read_when_it_is_used.py tests/test_dispatch_guard_consults_liveness.py tests/test_liveness_lookup_is_reachable.py still pass",
+          "estimated_hours": null,
+          "goal": "a live pointer whose recorded pid has no process, or whose process start time no longer matches the recorded one, reads as not running on every read",
+          "id": "a-dead-pid-stops-reading-working",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T20:42:10Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204206499719-a-dead-pid-stops-reading-working/manifest.md",
+          "negative_control": "make record_process_alive skip the process start-time comparison",
+          "plan": "worker-death-is-recorded",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_crew_record_liveness.py",
+            "docs/evidence/archive/worker-death-is-recorded-landed.html",
+            "docs/figures/worker-death-is-recorded",
+            "docs/plans/worker-death-is-recorded.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-liveness-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T20:42:45Z",
+        "completed_at": "2026-09-22T22:07:39.975Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5071,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5094,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+        "commits": [
+          "76a3ee0f3e94e9c7e1f107ebcbcaa8c42e65c989"
+        ],
+        "changed_lines": {
+          "added": 338,
+          "removed": 24,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=. python -m pytest -q -p no:cacheprovider tests/test_crew_record_liveness.py tests/test_crew_placed_liveness.py tests/test_liveness_is_read_when_it_is_used.py tests/test_dispatch_guard_consults_liveness.py tests/test_liveness_lookup_is_reachable.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204206499719-a-dead-pid-stops-reading-working/gate.log",
+          "log_digest": "sha256:c45910c8681b448a4e6baadbfbeb5c8aa048c686b782178e14c8af496227cf94"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204206499719-a-dead-pid-stops-reading-working/manifest.md",
+        "scope_changed": false,
+        "session_id": "4f309ec8-1555-413f-bb3d-4d46466c0b5e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16683312,
+            "input_tokens_cumulative": 16683312,
+            "output_tokens": 66060,
+            "output_tokens_cumulative": 66060,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T22:07:39.975Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16850701,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5090.226,
+          "generated_tokens": 72666,
+          "generation_seconds": 3737.277,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 1352.949,
+          "peak_input_tokens": 166089,
+          "tokens_per_second": 19.44,
+          "wall_tokens_per_second": 14.28
+        },
+        "follow_on_paths": [
+          "test_crew_watch_visibility.py",
+          "test_removed_flag_migration.py",
+          "test_receipt_after_release.py",
+          "claims.py",
+          "recovery.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-dead-pid-stops-reading-working",
+          "session_id": "4f309ec8-1555-413f-bb3d-4d46466c0b5e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T22:07:39.975Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "worker-death-is-recorded",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew_record_liveness.py"
+          ],
+          "declaration": "make record_process_alive skip the process start-time comparison",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204206499719-a-dead-pid-stops-reading-working/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204206499719-a-dead-pid-stops-reading-working/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:22:10.755504+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T20:42:10Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 146.0,
+        "orientation_input_tokens": 2009203.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -271360,6 +271635,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2144
+    "_version": 2145
   }
 }
