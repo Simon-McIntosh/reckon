@@ -90,6 +90,23 @@
       <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html#s2</code>.
     </p>
 
+    <p>
+      <strong>Opted in, and aimed at the directory it names.</strong> The probe
+      starts real processes and rewrites its artifact, so it now skips unless
+      <code>RECKON_RUN_DISPATCH_PROBE=1</code> is set, with a skip reason that
+      names the variable; a default run reports one skip. The real-pointer guard
+      had been resolving the configuration home when it was called, by which
+      point the suite's own <code>RECKON_HOME</code> fixture had redirected it to
+      a throwaway home, so both directories it compared were the fixture's and
+      the assertion held because the probe writes nowhere near the fixture rather
+      than because the real fleet was left alone. The directory is now captured
+      when the module loads, before any fixture runs, and the artifact records
+      <code>~/.config/reckon/crew/live</code> as the path it checked. The declared
+      negative control &mdash; resolving the directory at call time again, and
+      writing a sentinel into that fixture directory during the test &mdash; makes
+      the guard fail, which is the log kept with the node's manifest.
+    </p>
+
     <h2 id="s3">&sect;3 &mdash; Dispatch returns once the worker is launched</h2>
     <p>Make a CLI dispatch print its JSON result and exit as soon as the worker process is running
     and its live pointer is written. The worker must survive the dispatch process ending by any of

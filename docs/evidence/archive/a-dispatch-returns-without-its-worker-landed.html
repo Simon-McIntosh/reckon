@@ -126,6 +126,41 @@
       candidate node for &sect;5, which owns a refusal that leaves a run behind.
     </p>
 
+  <h2 id="s2-opt-in">&sect;2 &mdash; The probe is opted in, and its guard reads the real directory</h2>
+    <p>
+      Node <code>dispatch-probe-is-opt-in</code>. The probe starts real processes
+      and rewrites its artifact, so it now skips unless
+      <code>RECKON_RUN_DISPATCH_PROBE=1</code> is set; a run without the variable
+      reports <code>1 skipped</code>, and the skip reason names the variable.
+    </p>
+    <p>
+      The real-pointer guard had been resolving the configuration home when it was
+      called, after the suite's autouse <code>RECKON_HOME</code> fixture had already
+      redirected it to a throwaway home. Both directories the guard compared were
+      therefore the fixture's, and the committed artifact recorded a
+      <code>pytest-of-&hellip;</code> path with <code>untouched: true</code> against a
+      directory the probe never writes to &mdash; a true statement standing in for
+      the one that was needed. The directory is now captured when the module loads,
+      before any fixture runs, and the regenerated artifact records
+      <code>/home/ITER/mcintos/.config/reckon/crew/live</code> with
+      <code>untouched: true</code> and no probe pointer found there.
+    </p>
+    <p>
+      <strong>Runs.</strong> Green: one test, five trials, 335 s, pass &mdash;
+      <code>~/.config/reckon/crew/runs/r-20260923T114513054683-dispatch-probe-is-opt-in/probe-green.log</code>.
+      Skip: same run directory, <code>probe-skipped.log</code>, <code>1 skipped</code>
+      with the reason naming the variable. Negative control: the guard resolves the
+      home at call time again and a sentinel naming one of the probe's own pointers
+      is written into that fixture directory, so the guard's assertion is the only
+      thing that can fail &mdash; it does, reporting
+      <code>the probe wrote its own live pointers into the real fleet directory:
+      ['r-&hellip;-probe-graceful.json']</code>, at
+      <code>probe-negative-control.log</code> in the same run directory.
+    </p>
+    <p>
+      <strong>Follow-ons.</strong> None.
+    </p>
+
   </main>
 </body>
 </html>
