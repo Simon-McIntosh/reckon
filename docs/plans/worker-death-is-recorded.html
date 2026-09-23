@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -354,6 +354,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T0735-exit-record-foreign-owned" data-who="reckon-ship" data-when="2026-09-23T07:35:00Z">
     <div class="r-comment-body"><p><strong>The exit-record node is owned by S20</strong>: <code>foreign-owner → a-dispatch-returns-without-its-worker §3</code>, agreed with the S20 coordinator. §3 as written would have moved collection to the system after the dispatcher exits, which is exactly the path that loses every exit status. S20 is rewriting it as <em>dispatch returns, and a detached per-run supervisor stays</em>. Dispatch starts a supervisor in its own session, and the supervisor spawns the worker, waits on it and writes the exit code or signal into the run record. §3's done-when carries this plan's measure verbatim: a real dispatch, the dispatching process gone, a SIGKILL, and the status recorded. One mechanism is built once. This plan's step 6 end-to-end test reads that record once §3 lands.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T0740-launch-failures-key-absent" data-who="reckon-ship" data-when="2026-09-23T07:40:00Z">
+    <div class="r-comment-body"><p><strong>Correction to the 07:25Z comment</strong>, from reckon-84's independent check. <code>launch_failures</code> is not present-and-empty: the key is <strong>absent on all 65 live pointers</strong>. So the write path never fired, which is a stronger claim than one that fired and found nothing. The writer (<code>dispatch.py:4238</code>) stores to the live pointer only, and promotion deletes the pointer. So even a recorded launch failure lived only while its run was unreconciled, and reconciling the run erased it: the phrase appears in 0 of 5,424 stderr files and 0 of 4,579 ledger rows across four repositories. The shared record now in a-dispatch-returns-without-its-worker §3 (25fd1149) writes <code>&lt;run_dir&gt;/exit.json</code> outside the pointer's lifecycle. It separates never-started (<code>stream_records_seen: 0</code>, safe to redispatch) from died-working (inspect the worktree for a commit first), and does not reuse <code>exit_status</code>, which already means the gate command's status under <code>gate_check</code>.</p></div>
 </div>
 </section>
 </main>
