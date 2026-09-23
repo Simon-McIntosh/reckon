@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
-<meta name="plan-commits" content="76a3ee0f">
-<meta name="plan-impl" content="0.17">
+<meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -261,6 +261,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260922T204205769571-the-launcher-keeps-the-wait-status" data-who="reckon-ship" data-when="2026-09-22T21:57:27.178Z">
     <div class="r-comment-body"><p>the reaper records exit code or signal number and name on the run record, including for runs with a non-empty stream; 7 launch-failure tests pass; restoring the discard reddens the SIGTERM case; review 95</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T0405-wait-status-landed" data-who="reckon-ship" data-when="2026-09-23T04:05:00+02:00">
+    <div class="r-comment-body">§5 step 1 landed (2 of 6 steps): the reaper records the exit code, or the signal number and name, on the run record, including for a run whose stream is non-empty. Merged at ce017571 and promoted passed. 7 launch-failure tests pass, restoring the discard turns the SIGTERM case red, and the review scored 95. Its one finding, that the wait-status fields on launch_failures entries are unasserted, is folded into step 6's end-to-end test. Steps 3 (interrupted phase), 4 (session id) and 5 (roadmap) are next; step 3 can now go because both of its inputs have landed.</div>
 </div>
 </section>
 </main>
