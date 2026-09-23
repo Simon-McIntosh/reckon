@@ -365,13 +365,16 @@
         charge against the result record's cumulative figure on the claude dialect — two different
         quantities, which is why the census reads the former.</figcaption>
       </figure>
-      <p><strong>The answer is a population, not a demonstration</strong> (snapshot of 5,440 run
-      directories taken 2026-09-23). On the local lane, 312 of 2,089 runs resumed a session and
-      <strong>282 of those carried in more history than their own prompt</strong>, a median of 81,957
-      tokens and a maximum of 494,190. The opus-class lane is worse in proportion: 12 resumed runs,
-      all 12 above their own prompt, median 204,651, maximum 457,438.</p>
+      <p><strong>The answer is a population, not a demonstration</strong> (snapshot of 5,473 run
+      directories taken 2026-09-23; the census regenerates from the live run directory, so its exact
+      per-lane counts move as the fleet runs — <code>docs/research/data/session-carryover.json</code>
+      holds the figures this text reports). On the local lane 2,120 runs carried 318 that resumed an
+      earlier session, and <strong>284 of those carried in more history than their own prompt</strong>
+      — roughly nine in ten — with a median of about 82,000 tokens and a maximum of about 494,000. The
+      opus-class lane is worse in proportion: 12 resumed runs, all 12 above their own prompt, a median
+      of about 205,000 and a maximum of about 457,000.</p>
       <p><strong>The codex lane is where the waste is paid and it is not answerable from the
-      stream.</strong> 1,315 of the 3,105 codex-lane runs resumed a session, but the codex grammar
+      stream.</strong> 1,358 of the 3,268 codex-lane runs resumed a session, but the codex grammar
       publishes no per-<code>assistant</code> usage at all: its only usage-bearing record is one
       <code>turn.completed</code> per run, whose <code>usage.input_tokens</code> is the charged input
       <em>summed over every model request the turn made</em>, one per tool round-trip, each
@@ -383,10 +386,14 @@
       <p><strong>The two candidate figures are not interchangeable, and the difference is
       measurable.</strong> Example run <code>r-20260905T162101540255-cank-bounding-box-shape-rows</code>
       reports <code>modelUsage.inputTokens = 90,775,155</code> against a <code>contextWindow</code> of
-      1,016,576 while its first turn carried 53,458. Its scope is not even uniform across harness
-      versions — the same field reads as a run-length sum on that run and as a single request's figure
-      (118) on another — which is why the census reads <code>assistant.message.usage</code> of the
-      first turn instead.</p>
+      1,016,576 while its first turn carried 53,458. The field is the run's total <em>un-cached</em>
+      input — the cached shares live in <code>cacheReadInputTokens</code> and
+      <code>cacheCreationInputTokens</code> — so it is a run-length aggregate whose magnitude tracks
+      cache behaviour rather than turn count: a long opus run,
+      <code>r-20260905T172708183399-cank-wall-null-flux-tangent</code>, reports <code>118</code>
+      against <code>6,510,365</code> cache-read tokens because almost all of its input was cached.
+      Either reading is the sum over the run's requests, which is why the census reads
+      <code>assistant.message.usage</code> of the first turn instead.</p>
       <p><strong>The motivating death, re-read.</strong>
       <code>r-20260923T031542572571-cca-exact-bank-callback-capacity-from-the-mesh</code> is in the
       census as a resumed run whose prior session-owner was
@@ -396,7 +403,7 @@
       record reads 8,839,975 against a 200,000 window. The first-turn instrument under-reports a
       refusal by construction; that is recorded as a limitation below rather than papered over.</p>
       <p><strong>Controls.</strong> A run that opened a session reports exactly zero inherited tokens
-      by construction, not by a threshold: 1,777 local runs report zero, e.g.
+      by construction, not by a threshold: more than 1,800 claude-dialect runs report zero, e.g.
       <code>r-20260812T084415142910-flight-check-b</code> (first turn 70,899, inherited 0). The
       negative control substitutes the result record's cumulative total for the first turn and is
       observed to misreport a fresh run — the fixture fresh node reports having inherited 118,500

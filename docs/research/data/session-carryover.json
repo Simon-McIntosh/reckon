@@ -3,15 +3,15 @@
   "baseline_basis": "fresh-overhead = median over session-opening runs of first-turn-input minus own-prompt; a session-opening run's inherited figure is zero by construction; a resumed run's inherited figure is first-turn-input minus own-prompt minus fresh-overhead",
   "chars_per_token_estimate": 4,
   "fresh_baseline_tokens": {
-    "claude": 63182.5,
+    "claude": 63206.0,
     "codex": null
   },
   "fresh_overhead_tokens": {
-    "claude": 60369.0,
+    "claude": 60375.0,
     "codex": null
   },
   "dialect_notes": {
-    "clive": "claude-code grammar: the terminal result record carries a modelUsage.inputTokens for the run's model, and it is neither the first turn's size nor any single request's. Example run r-20260905T162101540255-cank-bounding-box-shape-rows reports modelUsage.inputTokens=90775155.0 against contextWindow=1016576 while its first turn carried 53458.0: the result figure sums the run's requests, so it grows with how long the run lived, and the example reads far past its own contextWindow, which no single request's input can. The census therefore reads the first assistant turn's own assistant.message.usage rather than this terminal aggregate.",
+    "clive": "claude-code grammar: the terminal result record carries a modelUsage entry per model the run used, whose inputTokens is the run's total un-cached input \u2014 the share of every request's prompt served from outside the cache \u2014 while the same entry also reports cacheReadInputTokens and cacheCreationInputTokens. It is therefore a run-level aggregate that tracks the run's length and its cache behaviour rather than any single request: example run r-20260905T162101540255-cank-bounding-box-shape-rows reports modelUsage.inputTokens=90775155.0 against contextWindow=1016576 while its first turn carried 53458.0, and a run whose context is almost entirely cached reports a couple of hundred un-cached tokens against millions of cache-read ones. Neither reading is the first turn's size, so the census reads the first assistant turn's own assistant.message.usage instead.",
     "codex": "codex grammar: there is no result record and no modelUsage, and no per-assistant usage either. A run writes exactly one turn.completed, whose usage.input_tokens is the charged input summed over every model request the turn made \u2014 one request per tool round-trip, each re-sending the whole context \u2014 so the figure grows with the run's length and is not any single request's input or a first-turn size. Example run r-20260817T195444348517-source-shift-localization reports turn.completed usage.input_tokens=526640050.0. Because the first request's own input is nowhere published on this dialect, a codex run's inherited context cannot be separated from how many tool round-trips it performed, and the census reports no first-turn figure for it rather than the contaminated sum."
   },
   "examples": {
@@ -39,25 +39,25 @@
       "runs": 29,
       "resumed_runs": 12,
       "resumed_inherited_over_own_prompt": 12,
-      "median_inherited_tokens": 204648.0,
-      "max_inherited_tokens": 457435.0
+      "median_inherited_tokens": 204642.0,
+      "max_inherited_tokens": 457429.0
     },
     "claude-opus": {
       "runs": 56,
       "resumed_runs": 9,
       "resumed_inherited_over_own_prompt": 9,
-      "median_inherited_tokens": 149519.0,
-      "max_inherited_tokens": 299886.0
+      "median_inherited_tokens": 149513.0,
+      "max_inherited_tokens": 299880.0
     },
     "clive": {
-      "runs": 2102,
-      "resumed_runs": 315,
+      "runs": 2120,
+      "resumed_runs": 318,
       "resumed_inherited_over_own_prompt": 284,
-      "median_inherited_tokens": 81954.0,
-      "max_inherited_tokens": 494187.0
+      "median_inherited_tokens": 81695.0,
+      "max_inherited_tokens": 494181.0
     },
     "codex": {
-      "runs": 3106,
+      "runs": 3107,
       "resumed_runs": 1315,
       "resumed_inherited_over_own_prompt": 0,
       "median_inherited_tokens": null,
@@ -71,7 +71,7 @@
       "max_inherited_tokens": null
     },
     "codex-luna": {
-      "runs": 39,
+      "runs": 38,
       "resumed_runs": 10,
       "resumed_inherited_over_own_prompt": 0,
       "median_inherited_tokens": null,
@@ -28349,7 +28349,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 184581.0,
+      "inherited_tokens": 184575.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -41903,7 +41903,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 56074.0,
+      "inherited_tokens": 56068.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -41957,7 +41957,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 60001.0,
+      "inherited_tokens": 59995.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -43937,7 +43937,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 171620.0,
+      "inherited_tokens": 171614.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44117,7 +44117,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 56023.0,
+      "inherited_tokens": 56017.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44135,7 +44135,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84030.0,
+      "inherited_tokens": 84024.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44225,7 +44225,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 79353.0,
+      "inherited_tokens": 79347.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44261,7 +44261,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 114622.0,
+      "inherited_tokens": 114616.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44279,7 +44279,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 74242.0,
+      "inherited_tokens": 74236.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44297,7 +44297,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 248159.0,
+      "inherited_tokens": 248153.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44315,7 +44315,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 137721.0,
+      "inherited_tokens": 137715.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44333,7 +44333,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 106025.0,
+      "inherited_tokens": 106019.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44351,7 +44351,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 101398.0,
+      "inherited_tokens": 101392.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44369,7 +44369,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 83188.0,
+      "inherited_tokens": 83182.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44405,7 +44405,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 179761.0,
+      "inherited_tokens": 179755.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -44423,7 +44423,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 158947.0,
+      "inherited_tokens": 158941.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -45503,7 +45503,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 118400.0,
+      "inherited_tokens": 118394.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -45557,7 +45557,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 151885.0,
+      "inherited_tokens": 151879.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -45665,7 +45665,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 124362.0,
+      "inherited_tokens": 124356.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46259,7 +46259,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55093.0,
+      "inherited_tokens": 55087.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46349,7 +46349,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 82695.0,
+      "inherited_tokens": 82689.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46565,7 +46565,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 135390.0,
+      "inherited_tokens": 135384.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46583,7 +46583,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87446.0,
+      "inherited_tokens": 87440.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46601,7 +46601,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 77588.0,
+      "inherited_tokens": 77582.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46619,7 +46619,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 73251.0,
+      "inherited_tokens": 73245.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46655,7 +46655,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84915.0,
+      "inherited_tokens": 84909.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46889,7 +46889,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 215064.0,
+      "inherited_tokens": 215058.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -46943,7 +46943,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 268575.0,
+      "inherited_tokens": 268569.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -47141,7 +47141,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 216991.0,
+      "inherited_tokens": 216985.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -47195,7 +47195,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 54306.0,
+      "inherited_tokens": 54300.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -47231,7 +47231,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 107916.0,
+      "inherited_tokens": 107910.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -47249,7 +47249,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 157408.0,
+      "inherited_tokens": 157402.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -47285,7 +47285,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 266330.0,
+      "inherited_tokens": 266324.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -52577,7 +52577,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55309.0,
+      "inherited_tokens": 55303.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -52649,7 +52649,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 139985.0,
+      "inherited_tokens": 139979.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -53207,7 +53207,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 278947.0,
+      "inherited_tokens": 278941.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -53585,7 +53585,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 328064.0,
+      "inherited_tokens": 328058.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -53675,7 +53675,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 431619.0,
+      "inherited_tokens": 431613.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -54971,7 +54971,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 73793.0,
+      "inherited_tokens": 73787.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -55025,7 +55025,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95448.0,
+      "inherited_tokens": 95442.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -55763,7 +55763,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 141314.0,
+      "inherited_tokens": 141308.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -55871,7 +55871,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 158107.0,
+      "inherited_tokens": 158101.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -56105,7 +56105,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 204885.0,
+      "inherited_tokens": 204879.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -56537,7 +56537,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 159742.0,
+      "inherited_tokens": 159736.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -56645,7 +56645,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 317409.0,
+      "inherited_tokens": 317403.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -56735,7 +56735,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 226379.0,
+      "inherited_tokens": 226373.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -57059,7 +57059,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 300321.0,
+      "inherited_tokens": 300315.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -57347,7 +57347,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 255551.0,
+      "inherited_tokens": 255545.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -57689,7 +57689,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 298000.0,
+      "inherited_tokens": 297994.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59165,7 +59165,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 337911.0,
+      "inherited_tokens": 337905.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59309,7 +59309,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 316815.0,
+      "inherited_tokens": 316809.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59363,7 +59363,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 139731.0,
+      "inherited_tokens": 139725.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59543,7 +59543,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 123724.0,
+      "inherited_tokens": 123718.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59741,7 +59741,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87426.0,
+      "inherited_tokens": 87420.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -59795,7 +59795,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 250514.0,
+      "inherited_tokens": 250508.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -60065,7 +60065,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 104403.0,
+      "inherited_tokens": 104397.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -61253,7 +61253,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 159524.0,
+      "inherited_tokens": 159518.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -61397,7 +61397,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 126618.0,
+      "inherited_tokens": 126612.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -61739,7 +61739,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 308367.0,
+      "inherited_tokens": 308361.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -62117,7 +62117,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 111936.0,
+      "inherited_tokens": 111930.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -62423,7 +62423,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 30855.0,
+      "inherited_tokens": 30849.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63359,7 +63359,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 67732.0,
+      "inherited_tokens": 67726.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63377,7 +63377,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 43140.0,
+      "inherited_tokens": 43134.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63413,7 +63413,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 110745.0,
+      "inherited_tokens": 110739.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63521,7 +63521,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81465.0,
+      "inherited_tokens": 81459.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63539,7 +63539,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 94951.0,
+      "inherited_tokens": 94945.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63611,7 +63611,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 149613.0,
+      "inherited_tokens": 149607.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63773,7 +63773,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 272274.0,
+      "inherited_tokens": 272268.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63827,7 +63827,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 90596.0,
+      "inherited_tokens": 90590.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -63845,7 +63845,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 49352.0,
+      "inherited_tokens": 49346.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -64673,7 +64673,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 132740.0,
+      "inherited_tokens": 132734.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -64997,7 +64997,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 198842.0,
+      "inherited_tokens": 198836.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65195,7 +65195,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 85384.0,
+      "inherited_tokens": 85378.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65213,7 +65213,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 69366.0,
+      "inherited_tokens": 69360.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65267,7 +65267,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 256329.0,
+      "inherited_tokens": 256323.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65879,7 +65879,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 106264.0,
+      "inherited_tokens": 106258.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65915,7 +65915,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 114974.0,
+      "inherited_tokens": 114968.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -65969,7 +65969,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 122990.0,
+      "inherited_tokens": 122984.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66077,7 +66077,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 155873.0,
+      "inherited_tokens": 155867.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66095,7 +66095,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 346580.0,
+      "inherited_tokens": 346574.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66491,7 +66491,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 96754.0,
+      "inherited_tokens": 96748.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66671,7 +66671,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81595.0,
+      "inherited_tokens": 81589.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66689,7 +66689,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 121392.0,
+      "inherited_tokens": 121386.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66707,7 +66707,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 112170.0,
+      "inherited_tokens": 112164.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66743,7 +66743,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 232373.0,
+      "inherited_tokens": 232367.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66779,7 +66779,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 168918.0,
+      "inherited_tokens": 168912.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66797,7 +66797,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 369617.0,
+      "inherited_tokens": 369611.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66815,7 +66815,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 105487.0,
+      "inherited_tokens": 105481.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66851,7 +66851,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 205456.0,
+      "inherited_tokens": 205450.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66905,7 +66905,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 241901.0,
+      "inherited_tokens": 241895.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66941,7 +66941,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 329374.0,
+      "inherited_tokens": 329368.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66959,7 +66959,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 126005.0,
+      "inherited_tokens": 125999.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66977,7 +66977,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 228357.0,
+      "inherited_tokens": 228351.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -66995,7 +66995,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 290640.0,
+      "inherited_tokens": 290634.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67031,7 +67031,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 174464.0,
+      "inherited_tokens": 174458.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67139,7 +67139,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 356383.0,
+      "inherited_tokens": 356377.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67157,7 +67157,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 222091.0,
+      "inherited_tokens": 222085.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67193,7 +67193,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 419545.0,
+      "inherited_tokens": 419539.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67229,7 +67229,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 285250.0,
+      "inherited_tokens": 285244.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67247,7 +67247,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 494187.0,
+      "inherited_tokens": 494181.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67337,7 +67337,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 171051.0,
+      "inherited_tokens": 171045.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67355,7 +67355,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 239988.0,
+      "inherited_tokens": 239982.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67373,7 +67373,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 397571.0,
+      "inherited_tokens": 397565.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -67445,7 +67445,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 303734.0,
+      "inherited_tokens": 303728.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68219,7 +68219,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 8353.0,
+      "inherited_tokens": 8347.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68237,7 +68237,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 8281.0,
+      "inherited_tokens": 8275.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68327,7 +68327,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 4820.0,
+      "inherited_tokens": 4814.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68399,7 +68399,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 79887.0,
+      "inherited_tokens": 79881.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68543,7 +68543,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 53929.0,
+      "inherited_tokens": 53923.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68705,7 +68705,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 6341.0,
+      "inherited_tokens": 6335.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68867,7 +68867,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 9998.0,
+      "inherited_tokens": 9992.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -68885,7 +68885,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 77697.0,
+      "inherited_tokens": 77691.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69011,7 +69011,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 80541.0,
+      "inherited_tokens": 80535.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69083,7 +69083,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 63110.0,
+      "inherited_tokens": 63104.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69119,7 +69119,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 96517.0,
+      "inherited_tokens": 96511.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69155,7 +69155,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 35733.0,
+      "inherited_tokens": 35727.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69191,7 +69191,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 15625.0,
+      "inherited_tokens": 15619.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69281,7 +69281,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 5120.0,
+      "inherited_tokens": 5114.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69425,7 +69425,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87373.0,
+      "inherited_tokens": 87367.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69461,7 +69461,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 97808.0,
+      "inherited_tokens": 97802.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69479,7 +69479,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 104985.0,
+      "inherited_tokens": 104979.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69497,7 +69497,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95368.0,
+      "inherited_tokens": 95362.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69533,7 +69533,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 85778.0,
+      "inherited_tokens": 85772.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69551,7 +69551,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 75611.0,
+      "inherited_tokens": 75605.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69605,7 +69605,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 51924.0,
+      "inherited_tokens": 51918.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69893,7 +69893,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 103432.0,
+      "inherited_tokens": 103426.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -69983,7 +69983,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 102123.0,
+      "inherited_tokens": 102117.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70019,7 +70019,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55930.0,
+      "inherited_tokens": 55924.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70055,7 +70055,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 7381.0,
+      "inherited_tokens": 7375.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70163,7 +70163,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 50388.0,
+      "inherited_tokens": 50382.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70199,7 +70199,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 98145.0,
+      "inherited_tokens": 98139.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70271,7 +70271,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 17940.0,
+      "inherited_tokens": 17934.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70289,7 +70289,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 101539.0,
+      "inherited_tokens": 101533.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70307,7 +70307,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 48638.0,
+      "inherited_tokens": 48632.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70361,7 +70361,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 12549.0,
+      "inherited_tokens": 12543.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70505,7 +70505,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 8753.0,
+      "inherited_tokens": 8747.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70631,7 +70631,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 61004.0,
+      "inherited_tokens": 60998.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70685,7 +70685,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 7485.0,
+      "inherited_tokens": 7479.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70811,7 +70811,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 105652.0,
+      "inherited_tokens": 105646.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70847,7 +70847,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 53422.0,
+      "inherited_tokens": 53416.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -70901,7 +70901,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 15085.0,
+      "inherited_tokens": 15079.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71063,7 +71063,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 93624.0,
+      "inherited_tokens": 93618.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71099,7 +71099,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81954.0,
+      "inherited_tokens": 81948.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71171,7 +71171,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 98571.0,
+      "inherited_tokens": 98565.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71945,7 +71945,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 101090.0,
+      "inherited_tokens": 101084.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71963,7 +71963,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 94407.0,
+      "inherited_tokens": 94401.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71981,7 +71981,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 25764.0,
+      "inherited_tokens": 25758.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -71999,7 +71999,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95789.0,
+      "inherited_tokens": 95783.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72017,7 +72017,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 62317.0,
+      "inherited_tokens": 62311.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72053,7 +72053,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 78803.0,
+      "inherited_tokens": 78797.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72143,7 +72143,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 64985.0,
+      "inherited_tokens": 64979.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72179,7 +72179,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84868.0,
+      "inherited_tokens": 84862.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72287,7 +72287,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 89319.0,
+      "inherited_tokens": 89313.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72629,7 +72629,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 45338.0,
+      "inherited_tokens": 45332.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72773,7 +72773,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 54680.0,
+      "inherited_tokens": 54674.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -72953,7 +72953,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 53308.0,
+      "inherited_tokens": 53302.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -73025,7 +73025,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 96894.0,
+      "inherited_tokens": 96888.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -73043,7 +73043,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 97427.0,
+      "inherited_tokens": 97421.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -73061,7 +73061,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81563.0,
+      "inherited_tokens": 81557.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -73097,7 +73097,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 21398.0,
+      "inherited_tokens": 21392.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -73187,7 +73187,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 12803.0,
+      "inherited_tokens": 12797.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -77831,7 +77831,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 46735.0,
+      "inherited_tokens": 46729.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78245,7 +78245,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 70513.0,
+      "inherited_tokens": 70507.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78335,7 +78335,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 78981.0,
+      "inherited_tokens": 78975.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78353,7 +78353,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 51493.0,
+      "inherited_tokens": 51487.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78371,7 +78371,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 67259.0,
+      "inherited_tokens": 67253.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78443,7 +78443,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84411.0,
+      "inherited_tokens": 84405.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78533,7 +78533,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 59199.0,
+      "inherited_tokens": 59193.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78551,7 +78551,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 38646.0,
+      "inherited_tokens": 38640.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78569,7 +78569,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 63810.0,
+      "inherited_tokens": 63804.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78587,7 +78587,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 88163.0,
+      "inherited_tokens": 88157.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78605,7 +78605,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 25031.0,
+      "inherited_tokens": 25025.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78731,7 +78731,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 69241.0,
+      "inherited_tokens": 69235.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78749,7 +78749,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 86680.0,
+      "inherited_tokens": 86674.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78767,7 +78767,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 78769.0,
+      "inherited_tokens": 78763.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78785,7 +78785,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 94668.0,
+      "inherited_tokens": 94662.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78821,7 +78821,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95268.0,
+      "inherited_tokens": 95262.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78875,7 +78875,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 43611.0,
+      "inherited_tokens": 43605.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -78911,7 +78911,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 26209.0,
+      "inherited_tokens": 26203.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -79163,7 +79163,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": "clive-audit-5",
-      "inherited_tokens": 64488.0,
+      "inherited_tokens": 64482.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -79289,7 +79289,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 12692.0,
+      "inherited_tokens": 12686.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -79397,7 +79397,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 35558.0,
+      "inherited_tokens": 35552.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -79595,7 +79595,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 71465.0,
+      "inherited_tokens": 71459.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -79865,7 +79865,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 13283.0,
+      "inherited_tokens": 13277.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80441,7 +80441,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 68308.0,
+      "inherited_tokens": 68302.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80459,7 +80459,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 48842.0,
+      "inherited_tokens": 48836.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80477,7 +80477,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 50565.0,
+      "inherited_tokens": 50559.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80513,7 +80513,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 93067.0,
+      "inherited_tokens": 93061.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80585,7 +80585,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 74266.0,
+      "inherited_tokens": 74260.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -80729,7 +80729,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 102354.0,
+      "inherited_tokens": 102348.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81053,7 +81053,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 101418.0,
+      "inherited_tokens": 101412.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81089,7 +81089,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81682.0,
+      "inherited_tokens": 81676.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81107,7 +81107,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95791.0,
+      "inherited_tokens": 95785.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81125,7 +81125,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 54042.0,
+      "inherited_tokens": 54036.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81179,7 +81179,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 78480.0,
+      "inherited_tokens": 78474.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81251,7 +81251,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 41312.0,
+      "inherited_tokens": 41306.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81287,7 +81287,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 106343.0,
+      "inherited_tokens": 106337.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81413,7 +81413,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87782.0,
+      "inherited_tokens": 87776.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81449,7 +81449,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 35239.0,
+      "inherited_tokens": 35233.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81467,7 +81467,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55555.0,
+      "inherited_tokens": 55549.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -81521,7 +81521,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 39449.0,
+      "inherited_tokens": 39443.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -83789,7 +83789,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 98569.0,
+      "inherited_tokens": 98563.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -83807,7 +83807,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 107678.0,
+      "inherited_tokens": 107672.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -83825,7 +83825,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 116127.0,
+      "inherited_tokens": 116121.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84059,7 +84059,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 211250.0,
+      "inherited_tokens": 211244.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84383,7 +84383,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84059.0,
+      "inherited_tokens": 84053.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84455,7 +84455,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 176549.0,
+      "inherited_tokens": 176543.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84473,7 +84473,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 166150.0,
+      "inherited_tokens": 166144.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84491,7 +84491,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 299886.0,
+      "inherited_tokens": 299880.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -84743,7 +84743,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 145089.0,
+      "inherited_tokens": 145083.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -85229,7 +85229,7 @@
       "backend": "claude-opus",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 149519.0,
+      "inherited_tokens": 149513.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -87335,7 +87335,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 77514.0,
+      "inherited_tokens": 77508.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88217,7 +88217,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 70552.0,
+      "inherited_tokens": 70546.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88361,7 +88361,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 72340.0,
+      "inherited_tokens": 72334.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88469,7 +88469,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 64989.0,
+      "inherited_tokens": 64983.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88685,7 +88685,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 98110.0,
+      "inherited_tokens": 98104.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88721,7 +88721,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 86555.0,
+      "inherited_tokens": 86549.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88847,7 +88847,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 88054.0,
+      "inherited_tokens": 88048.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88883,7 +88883,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 75621.0,
+      "inherited_tokens": 75615.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -88901,7 +88901,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 91633.0,
+      "inherited_tokens": 91627.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -89387,7 +89387,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 40182.0,
+      "inherited_tokens": 40176.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -89675,7 +89675,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 20945.0,
+      "inherited_tokens": 20939.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -89837,7 +89837,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 6650.0,
+      "inherited_tokens": 6644.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90125,7 +90125,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 82607.0,
+      "inherited_tokens": 82601.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90161,7 +90161,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87609.0,
+      "inherited_tokens": 87603.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90251,7 +90251,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 65998.0,
+      "inherited_tokens": 65992.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90305,7 +90305,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 15934.0,
+      "inherited_tokens": 15928.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90359,7 +90359,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 25535.0,
+      "inherited_tokens": 25529.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90431,7 +90431,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 52371.0,
+      "inherited_tokens": 52365.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90521,7 +90521,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 8561.0,
+      "inherited_tokens": 8555.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90557,7 +90557,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 74952.0,
+      "inherited_tokens": 74946.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -90611,7 +90611,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 92131.0,
+      "inherited_tokens": 92125.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -91025,7 +91025,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 66337.0,
+      "inherited_tokens": 66331.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -91043,7 +91043,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87192.0,
+      "inherited_tokens": 87186.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -91889,7 +91889,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 97831.0,
+      "inherited_tokens": 97825.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -91979,7 +91979,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 51254.0,
+      "inherited_tokens": 51248.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -92087,7 +92087,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 66177.0,
+      "inherited_tokens": 66171.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -92285,7 +92285,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 57502.0,
+      "inherited_tokens": 57496.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -92537,7 +92537,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 77250.0,
+      "inherited_tokens": 77244.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -92915,7 +92915,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 100481.0,
+      "inherited_tokens": 100475.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -92933,7 +92933,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 153485.0,
+      "inherited_tokens": 153479.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93059,7 +93059,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 70263.0,
+      "inherited_tokens": 70257.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93239,7 +93239,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 38782.0,
+      "inherited_tokens": 38776.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93275,7 +93275,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 52904.0,
+      "inherited_tokens": 52898.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93401,7 +93401,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55049.0,
+      "inherited_tokens": 55043.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93419,7 +93419,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 207019.0,
+      "inherited_tokens": 207013.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93509,7 +93509,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 109386.0,
+      "inherited_tokens": 109380.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93545,7 +93545,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 62816.0,
+      "inherited_tokens": 62810.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93563,7 +93563,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 101275.0,
+      "inherited_tokens": 101269.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93653,7 +93653,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 254718.0,
+      "inherited_tokens": 254712.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93671,7 +93671,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 115916.0,
+      "inherited_tokens": 115910.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93725,7 +93725,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 37349.0,
+      "inherited_tokens": 37343.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93761,7 +93761,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 37502.0,
+      "inherited_tokens": 37496.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -93887,7 +93887,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 86091.0,
+      "inherited_tokens": 86085.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94067,7 +94067,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 103165.0,
+      "inherited_tokens": 103159.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94085,7 +94085,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81701.0,
+      "inherited_tokens": 81695.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94193,7 +94193,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87922.0,
+      "inherited_tokens": 87916.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94229,7 +94229,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 41446.0,
+      "inherited_tokens": 41440.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94283,7 +94283,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 78949.0,
+      "inherited_tokens": 78943.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94301,7 +94301,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 83982.0,
+      "inherited_tokens": 83976.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94373,7 +94373,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 97002.0,
+      "inherited_tokens": 96996.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94409,7 +94409,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 65714.0,
+      "inherited_tokens": 65708.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94499,7 +94499,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 202277.0,
+      "inherited_tokens": 202271.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94535,7 +94535,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 117132.0,
+      "inherited_tokens": 117126.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94553,7 +94553,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 47303.0,
+      "inherited_tokens": 47297.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94607,7 +94607,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 336777.0,
+      "inherited_tokens": 336771.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94643,7 +94643,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 88568.0,
+      "inherited_tokens": 88562.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94697,7 +94697,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 187347.0,
+      "inherited_tokens": 187341.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94769,7 +94769,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 85383.0,
+      "inherited_tokens": 85377.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94805,7 +94805,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55263.0,
+      "inherited_tokens": 55257.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94931,7 +94931,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 70081.0,
+      "inherited_tokens": 70075.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94967,7 +94967,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 18006.0,
+      "inherited_tokens": 18000.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -94985,7 +94985,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 83771.0,
+      "inherited_tokens": 83765.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95021,7 +95021,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 21386.0,
+      "inherited_tokens": 21380.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95057,7 +95057,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 82904.0,
+      "inherited_tokens": 82898.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95093,7 +95093,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 86669.0,
+      "inherited_tokens": 86663.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95183,7 +95183,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 14249.0,
+      "inherited_tokens": 14243.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95201,7 +95201,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 391534.0,
+      "inherited_tokens": 391528.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95219,7 +95219,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 76307.0,
+      "inherited_tokens": 76301.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -95344,7 +95344,7 @@
       "prior_run": null,
       "backend": "codex",
       "backend_basis": "recorded",
-      "member": "fleet-placement-queries",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -95471,7 +95471,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 99554.0,
+      "inherited_tokens": 99548.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96047,7 +96047,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 56861.0,
+      "inherited_tokens": 56855.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96119,7 +96119,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 87869.0,
+      "inherited_tokens": 87863.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96245,7 +96245,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 81563.0,
+      "inherited_tokens": 81557.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96335,7 +96335,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 89999.0,
+      "inherited_tokens": 89993.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96479,7 +96479,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 99792.0,
+      "inherited_tokens": 99786.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96497,7 +96497,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 68389.0,
+      "inherited_tokens": 68383.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96551,7 +96551,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 439672.0,
+      "inherited_tokens": 439666.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96569,7 +96569,7 @@
       "backend": "claude",
       "backend_basis": "recorded",
       "member": null,
-      "inherited_tokens": 457435.0,
+      "inherited_tokens": 457429.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96659,7 +96659,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 73347.0,
+      "inherited_tokens": 73341.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96695,7 +96695,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 56278.0,
+      "inherited_tokens": 56272.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96713,7 +96713,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 32120.0,
+      "inherited_tokens": 32114.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96911,7 +96911,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 96381.0,
+      "inherited_tokens": 96375.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96929,7 +96929,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 89916.0,
+      "inherited_tokens": 89910.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96947,7 +96947,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 71859.0,
+      "inherited_tokens": 71853.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -96965,7 +96965,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 95547.0,
+      "inherited_tokens": 95541.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97091,7 +97091,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 59224.0,
+      "inherited_tokens": 59218.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97109,7 +97109,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 89592.0,
+      "inherited_tokens": 89586.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97127,7 +97127,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 84715.0,
+      "inherited_tokens": 84709.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97179,8 +97179,8 @@
       "resumed": false,
       "prior_run": null,
       "backend": "clive",
-      "backend_basis": "recorded",
-      "member": "s18t-awcj-s7-c",
+      "backend_basis": "dialect-lane",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -97268,9 +97268,9 @@
       "own_prompt_tokens": 3851,
       "resumed": false,
       "prior_run": null,
-      "backend": "codex-luna",
-      "backend_basis": "recorded",
-      "member": "cank-bound-c",
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -97307,7 +97307,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 55928.0,
+      "inherited_tokens": 55922.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97343,7 +97343,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 39844.0,
+      "inherited_tokens": 39838.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97395,8 +97395,8 @@
       "resumed": false,
       "prior_run": null,
       "backend": "clive",
-      "backend_basis": "recorded",
-      "member": "follower-scout",
+      "backend_basis": "dialect-lane",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -97505,7 +97505,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 63259.0,
+      "inherited_tokens": 63253.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97541,7 +97541,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": "session-791cd98e623fd636bb87",
-      "inherited_tokens": 20413.0,
+      "inherited_tokens": 20407.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -97629,8 +97629,8 @@
       "resumed": false,
       "prior_run": null,
       "backend": "clive",
-      "backend_basis": "recorded",
-      "member": "s20-reviewer-a",
+      "backend_basis": "dialect-lane",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -97696,7 +97696,7 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/stream.jsonl",
       "first_turn_input_tokens": 65121.0,
       "first_turn_basis": "first-assistant-turn-usage",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 16413762.0,
       "own_prompt_tokens": 3925,
       "resumed": false,
       "prior_run": null,
@@ -97738,7 +97738,7 @@
       "prior_run": null,
       "backend": "claude",
       "backend_basis": "recorded",
-      "member": "session-55bf6c96c5d2a7a668b1",
+      "member": null,
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
@@ -97768,7 +97768,7 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T052157652054-card-model-name-recorded/stream.jsonl",
       "first_turn_input_tokens": 65914.0,
       "first_turn_basis": "first-assistant-turn-usage",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 15403279.0,
       "own_prompt_tokens": 3176,
       "resumed": false,
       "prior_run": null,
@@ -97786,7 +97786,7 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T052850820000-compaction-record-finished/stream.jsonl",
       "first_turn_input_tokens": 65744.0,
       "first_turn_basis": "first-assistant-turn-usage",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 9159004.0,
       "own_prompt_tokens": 3930,
       "resumed": false,
       "prior_run": null,
@@ -97811,7 +97811,7 @@
       "backend": "clive",
       "backend_basis": "dialect-lane",
       "member": null,
-      "inherited_tokens": 83686.0,
+      "inherited_tokens": 83680.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -98128,14 +98128,14 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T062047051418-placement-tests-hold-the-resolution/stream.jsonl",
       "first_turn_input_tokens": 154543.0,
       "first_turn_basis": "first-assistant-turn-usage",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 13307191.0,
       "own_prompt_tokens": 3202,
       "resumed": true,
       "prior_run": "r-20260922T182717694207-fleet-placement-token",
       "backend": "clive",
       "backend_basis": "recorded",
       "member": "fleet-placement-token",
-      "inherited_tokens": 90972.0,
+      "inherited_tokens": 90966.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -98218,7 +98218,7 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T062535582142-review-of-promotion-reads-the-review-of-the-head-it-promotes/stream.jsonl",
       "first_turn_input_tokens": 64661.0,
       "first_turn_basis": "first-assistant-turn-usage",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 4942940.0,
       "own_prompt_tokens": 2764,
       "resumed": false,
       "prior_run": null,
@@ -98243,7 +98243,7 @@
       "backend": "clive",
       "backend_basis": "recorded",
       "member": "follower-readback",
-      "inherited_tokens": 52396.0,
+      "inherited_tokens": 52390.0,
       "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
       "inherited_over_own_prompt": true
     },
@@ -98254,7 +98254,7 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T062821975138-router-global-gate/stream.jsonl",
       "first_turn_input_tokens": null,
       "first_turn_basis": "unavailable-in-dialect",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 17150635.0,
       "own_prompt_tokens": 3342,
       "resumed": false,
       "prior_run": null,
@@ -98272,13 +98272,337 @@
       "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T062936465924-pcrf-production-route-trip-panels/stream.jsonl",
       "first_turn_input_tokens": null,
       "first_turn_basis": "unavailable-in-dialect",
-      "turn_cumulative_input_tokens": null,
+      "turn_cumulative_input_tokens": 10677315.0,
       "own_prompt_tokens": 3819,
       "resumed": false,
       "prior_run": null,
       "backend": "codex-astra",
       "backend_basis": "recorded",
       "member": "s18-pcrf-a2",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T063035658218-review-of-pcrf-shadow-telemetry-test-follows-the-node-flux-rule",
+      "dialect": "claude",
+      "session_id": "82136814-ff1a-46ff-afd3-4f595b6de358",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T063035658218-review-of-pcrf-shadow-telemetry-test-follows-the-node-flux-rule/stream.jsonl",
+      "first_turn_input_tokens": 0.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": 42105010.0,
+      "own_prompt_tokens": 2772,
+      "resumed": true,
+      "prior_run": "r-20260923T033420709514-review-of-pcrf-merge-radius-carries-the-pitch",
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-71ebec9b1921ac205409",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T063133855748-nova-null-exchange-record",
+      "dialect": "claude",
+      "session_id": "da65b54d-e71a-4a12-84f9-19ddba68b68c",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T063133855748-nova-null-exchange-record/stream.jsonl",
+      "first_turn_input_tokens": 84131.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 3836,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "clive-47",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T063235271112-kv-capacity-levers",
+      "dialect": "codex",
+      "session_id": "01a0ccf8-06dc-79d0-af1c-f4f39485de19",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T063235271112-kv-capacity-levers/stream.jsonl",
+      "first_turn_input_tokens": null,
+      "first_turn_basis": "unavailable-in-dialect",
+      "turn_cumulative_input_tokens": 17948539.0,
+      "own_prompt_tokens": 2802,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "codex",
+      "backend_basis": "recorded",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T063724251715-engine-bypass-trace",
+      "dialect": "claude",
+      "session_id": "991fe87a-e4e1-4d0e-9f4d-e576507fb89b",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T063724251715-engine-bypass-trace/stream.jsonl",
+      "first_turn_input_tokens": 65559.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2718,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "llac-bypass",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T064331062779-review-of-every-dispatched-run-carries-a-session-id",
+      "dialect": "claude",
+      "session_id": "c571ce21-7515-44a8-994e-2dc4c6e2916f",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T064331062779-review-of-every-dispatched-run-carries-a-session-id/stream.jsonl",
+      "first_turn_input_tokens": 64667.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2728,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T065115255764-review-of-compaction-record-finished",
+      "dialect": "claude",
+      "session_id": "342f8541-69b1-4d73-9baa-a7018c83563f",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T065115255764-review-of-compaction-record-finished/stream.jsonl",
+      "first_turn_input_tokens": 64524.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2675,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T065132564803-review-of-uv-executable-resolved-before-use",
+      "dialect": "claude",
+      "session_id": "897aba8a-9e6d-4546-add5-7980cdd52e0c",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T065132564803-review-of-uv-executable-resolved-before-use/stream.jsonl",
+      "first_turn_input_tokens": 83151.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2702,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T065346200557-review-of-fsapi-sol-ledger-receipt-revision-and-gate",
+      "dialect": "claude",
+      "session_id": "c4446ec8-6d1c-44f2-9555-fc84461a35b6",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T065346200557-review-of-fsapi-sol-ledger-receipt-revision-and-gate/stream.jsonl",
+      "first_turn_input_tokens": 0.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": 39718587.0,
+      "own_prompt_tokens": 2728,
+      "resumed": true,
+      "prior_run": "r-20260923T010158215829-review-of-cna-centroid-bars-carry-the-qualified-flag",
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-337d1d569f61f639eedc",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "first-turn-minus-own-prompt-and-harness-preamble",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T065927152407-review-of-kv-capacity-levers",
+      "dialect": "claude",
+      "session_id": "e6051a18-0dcd-4041-8874-6ac51c2318ca",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T065927152407-review-of-kv-capacity-levers/stream.jsonl",
+      "first_turn_input_tokens": null,
+      "first_turn_basis": "unavailable-in-dialect",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2646,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T070045356669-review-of-pcrf-terminal-panel-markers-and-record-corrections",
+      "dialect": "claude",
+      "session_id": "82136814-ff1a-46ff-afd3-4f595b6de358",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070045356669-review-of-pcrf-terminal-panel-markers-and-record-corrections/stream.jsonl",
+      "first_turn_input_tokens": null,
+      "first_turn_basis": "unavailable-in-dialect",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2760,
+      "resumed": true,
+      "prior_run": "r-20260923T063035658218-review-of-pcrf-shadow-telemetry-test-follows-the-node-flux-rule",
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-71ebec9b1921ac205409",
+      "inherited_tokens": null,
+      "inherited_basis": "unavailable",
+      "inherited_over_own_prompt": null
+    },
+    {
+      "run_id": "r-20260923T070527568473-review-of-router-global-gate",
+      "dialect": "claude",
+      "session_id": "544082fe-e43e-4e54-8ecd-1cbf979cb386",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070527568473-review-of-router-global-gate/stream.jsonl",
+      "first_turn_input_tokens": 65502.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2646,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-d90b188b6863f5649170",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T070655994931-review-of-the-roadmap-names-interrupted-runs",
+      "dialect": "claude",
+      "session_id": "9cdb8c69-f4bc-48e6-83b5-a28010e8fb2d",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070655994931-review-of-the-roadmap-names-interrupted-runs/stream.jsonl",
+      "first_turn_input_tokens": 64618.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2702,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-6d80c05644e8b1f59e04",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T070739865198-session-carry-sites-mapped",
+      "dialect": "claude",
+      "session_id": "d3cb8996-a4d9-4919-8fb4-e0450b2c9c27",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070739865198-session-carry-sites-mapped/stream.jsonl",
+      "first_turn_input_tokens": 64637.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2753,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "s19-nw-scout",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T070739870166-guidance-teaches-same-task-reuse",
+      "dialect": "claude",
+      "session_id": "03fc8926-9588-466c-b81e-628a179db54a",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070739870166-guidance-teaches-same-task-reuse/stream.jsonl",
+      "first_turn_input_tokens": 65915.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 4023,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "s19-nw-guidance",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T070752749247-codex-resume-burn-before",
+      "dialect": "claude",
+      "session_id": "b1c60fff-c453-4e2b-9be4-30e95b5a750e",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/stream.jsonl",
+      "first_turn_input_tokens": 65865.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 3996,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "dialect-lane",
+      "member": null,
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T071023453794-review-of-every-dispatched-run-carries-a-session-id",
+      "dialect": "claude",
+      "session_id": "cd021cd2-b35c-40b1-ae3b-a953f8aa4128",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T071023453794-review-of-every-dispatched-run-carries-a-session-id/stream.jsonl",
+      "first_turn_input_tokens": 64789.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2814,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "s19-review-wdr4",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T071248760033-review-of-compaction-record-finished",
+      "dialect": "claude",
+      "session_id": "54de8766-a756-458f-8277-21c8f5c84e0b",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T071248760033-review-of-compaction-record-finished/stream.jsonl",
+      "first_turn_input_tokens": 64656.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2753,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "s19-review-compact",
+      "inherited_tokens": 0.0,
+      "inherited_basis": "session-opening",
+      "inherited_over_own_prompt": false
+    },
+    {
+      "run_id": "r-20260923T071746091362-review-of-placement-tests-hold-the-resolution",
+      "dialect": "claude",
+      "session_id": "7d4da34a-0ad2-4539-ac54-62a4835cc74b",
+      "stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T071746091362-review-of-placement-tests-hold-the-resolution/stream.jsonl",
+      "first_turn_input_tokens": 59572.0,
+      "first_turn_basis": "first-assistant-turn-usage",
+      "turn_cumulative_input_tokens": null,
+      "own_prompt_tokens": 2711,
+      "resumed": false,
+      "prior_run": null,
+      "backend": "clive",
+      "backend_basis": "recorded",
+      "member": "session-55bf6c96c5d2a7a668b1",
       "inherited_tokens": 0.0,
       "inherited_basis": "session-opening",
       "inherited_over_own_prompt": false
