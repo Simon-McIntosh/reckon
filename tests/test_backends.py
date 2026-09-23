@@ -514,3 +514,40 @@ def test_recorded_fixtures_cover_every_dialect() -> None:
         for command in _backends.known_dialects()
     }
     assert translations <= recorded
+
+
+def test_the_filesystem_fence_is_off_unless_asked_for() -> None:
+    """A launch without the fence keeps its exact argv, so no field run changes.
+
+    The fence is opt-in until a per-run harness home exists: a read-only
+    ``~/.claude`` without one stops a worker writing its own transcript. Any
+    regression that fences by default would break every dispatch, so the
+    default is asserted against the exact argv rather than a shape.
+    """
+    plain = _backends.launch_plan(
+        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt"
+    )
+    assert plain.argv[:2] == ["claude", "-p"]
+    assert "bwrap" not in plain.argv
+
+    fenced = _backends.launch_plan(
+        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt", fence=True
+    )
+    assert fenced.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert fenced.argv.index("--") > 3
+
+
+@pytest.mark.parametrize(
+    "backend", [CODEX, CLAUDE, {"launch": "cli", "command": "clive"}]
+)
+def test_the_filesystem_fence_applies_to_every_cli_dialect(backend) -> None:
+    """Dispatch, resume and redispatch all build through this one function."""
+    resumed = _backends.launch_plan(
+        backend_name="b",
+        backend=backend,
+        prompt="advice",
+        worktree="/wt",
+        resume_session="S",
+        fence=True,
+    )
+    assert resumed.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]

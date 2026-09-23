@@ -91,6 +91,29 @@
       into each granted root succeeds. A write into the worktree succeeds. The negative control drops
       the <code>--ro-bind</code> for <code>~/.claude</code>, and the <code>~/.claude</code> sentinel must be
       deleted. The fence must be shown to be the thing that held.</p>
+
+      <div class="r-comment" data-section="s1" data-id="c-20260923T1115-fence-landed" data-who="node launch-plan-wraps-a-filesystem-fence" data-when="2026-09-23T11:15:00+00:00">
+        <div class="r-comment-body"><p><strong>Landed in this section.</strong>
+        <code>launch_plan</code> now takes <code>fence</code> (default <code>False</code>)
+        and an injectable <code>fence_home</code>, and composes the worker's argv as
+        <code>bwrap --dev-bind / /</code>, one <code>--ro-bind</code> per existing
+        protected path, a <code>--bind</code> for each write root inside a protected path,
+        then <code>--</code> and the harness argv. The wrap sits at the one point every
+        dialect and every entry path &mdash; dispatch, resume and redispatch &mdash; builds
+        its argv, so it cannot be omitted for one of the three; the off-by-default
+        contract is pinned by an exact-argv assertion. Proved by executing the composed
+        argv with a stub in place of the harness: every protected sentinel survives
+        <code>rm -rf</code>, every granted root and the worktree are writable, and the
+        declared negative control (<em>drop the --ro-bind for the ~/.claude stand-in so
+        its sentinel can be deleted</em>) deletes that sentinel. Run unfenced, all 15
+        sentinels are deleted, so survival is not vacuous. Gate: base <code>94d2b091</code>
+        and this commit both give <code>3 failed, 58 passed</code> over the five existing
+        launch-plan test files with identical failing ids (zero added); lint delta zero.
+        Commit <code>9125b986</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s1</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-layering.svg</code>.
+        The fence stays off until &sect;2 gives each run its own harness home.</p></div>
+      </div>
     </section>
 
     <section id="s2" data-reckon="section">

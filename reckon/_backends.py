@@ -1762,6 +1762,99 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
     return dialect
 
 
+# ── Filesystem fence ────────────────────────────────────────────────────────
+
+# The harness command the fence composes. Named once so the argv a reader sees
+# and the capability a refusal names are the same string.
+FENCE_BINARY = "bwrap"
+
+
+def protected_paths(home: str | Path | None = None) -> list[Path]:
+    """Return the existing paths the fence makes read-only, home-relative.
+
+    The set is derived from the home directory rather than stored absolute, so
+    the same declaration fences a test's temp home and the operator's real one.
+    Main checkouts under ``Code`` are expanded to the immediate children that
+    are themselves git repositories, which admits every checkout a worker could
+    reach through the shared editable install while leaving the worktree pool
+    (``Code/.reckon-worktrees``) out — a worker's own tree lives there.
+    """
+    root = Path(home) if home is not None else Path.home()
+    named = [
+        root / ".claude",
+        root / ".claude.json",
+        root / ".codex",
+        root / ".config" / "reckon",
+        root / ".agents",
+        root / "Code" / "dotfiles",
+        root / ".ssh",
+        root / ".gitconfig",
+        root / ".config" / "git",
+        root / ".config" / "gh",
+        root / ".netrc",
+        root / "public",
+        root / ".local" / "bin",
+    ]
+    checkouts = root / "Code"
+    if checkouts.is_dir():
+        named.extend(
+            child
+            for child in sorted(checkouts.iterdir(), key=lambda path: path.name)
+            if (child / ".git").exists()
+        )
+    # ``Code/dotfiles`` is named above and is also a checkout, so the same path
+    # can arrive twice; a duplicate read-only overlay is harmless to bubblewrap
+    # but doubles the argv and reads as a mistake. Preserve order, drop repeats.
+    return list(dict.fromkeys(path for path in named if path.exists()))
+
+
+def _within_any(path: Path, roots: Sequence[Path]) -> bool:
+    return any(path == root or path.is_relative_to(root) for root in roots)
+
+
+def fence_argv(
+    argv: Sequence[str],
+    *,
+    writable_directories: Iterable[str | Path] = (),
+    worktree: str | Path | None = None,
+    manifest_path: str | Path | None = None,
+    home: str | Path | None = None,
+) -> list[str]:
+    """Wrap a launch argv so protected paths are read-only to the worker.
+
+    The whole filesystem is dev-bind-mounted writable, each existing protected
+    path is then overlaid read-only, and the run's own write roots are re-bound
+    writable where they fall inside a protected path. bubblewrap applies its
+    mounts in argv order, so a later bind over an earlier read-only overlay is
+    what keeps a worker's run directory and worktree writable while everything
+    else under the same protected root stays sealed.
+
+    A write root is the run's declared writable directories, its worktree, and
+    the run directory the manifest lives in — the last because a worker that
+    cannot write its own manifest has delivered nothing.
+    """
+    protected = protected_paths(home)
+    roots: list[Path] = [Path(path) for path in writable_directories]
+    if worktree is not None:
+        roots.append(Path(worktree))
+    if manifest_path is not None:
+        roots.append(Path(manifest_path).parent)
+
+    fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
+    for path in protected:
+        fenced += ["--ro-bind", str(path), str(path)]
+    granted: set[str] = set()
+    for root in roots:
+        key = str(root)
+        if key in granted or not _within_any(root, protected):
+            continue
+        granted.add(key)
+        fenced += ["--bind", key, key]
+    fenced.append("--")
+    fenced += list(argv)
+    return fenced
+
+
 # ── Public translation surface ──────────────────────────────────────────────
 
 
@@ -1776,6 +1869,8 @@ def launch_plan(
     final_message_path: str | Path | None = None,
     resume_session: str | None = None,
     images: Iterable[str | Path] = (),
+    fence: bool = False,
+    fence_home: str | Path | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -1812,6 +1907,19 @@ def launch_plan(
         resume_session=resume_session,
         images=tuple(str(image) for image in images),
     )
+    # Every dialect, every entry point — fresh dispatch, resume and redispatch
+    # all build their argv here — so the fence is applied once and cannot be
+    # left off for one of the three. It defaults off so no field-run behaviour
+    # changes until a per-run harness home exists: a read-only ``~/.claude``
+    # without one stops a worker writing its own transcript.
+    if fence:
+        argv = fence_argv(
+            argv,
+            writable_directories=writable_directories,
+            worktree=worktree_path,
+            manifest_path=manifest,
+            home=fence_home,
+        )
     return LaunchPlan(
         backend=backend_name,
         dialect=dialect.name,
