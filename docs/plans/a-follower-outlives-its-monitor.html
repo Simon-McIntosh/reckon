@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="41">
+  <meta name="plan-version" content="42">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -545,7 +545,7 @@
     <div class="r-comment-body"><p>review of orphan-release-keeps-a-live-consumer scored 91 with no findings; the node is merged (208fa22b) and promoted</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141826952758-watch-lifetime-tests-read-the-canonical-state" data-who="reckon-ship" data-when="2026-09-23T14:49:34.345Z">
-    <div class="r-comment-body"><p>watch lifetime tests assert the classifier&#x27;s unpromoted state (484192a8, merged bcfc46ef); review 88: the gate log was captured before the commit, so its header names base 19016a54 while its content is the head edit, and the base-failure log was overwritten by the negative control; verify-gate re-runs the gate at the merged head</p></div>
+    <div class="r-comment-body"><p>watch lifetime tests assert the classifier's unpromoted state (484192a8, merged bcfc46ef); review 88: the gate log was captured before the commit, so its header names base 19016a54 while its content is the head edit, and the base-failure log was overwritten by the negative control; verify-gate re-runs the gate at the merged head</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T053030852489-review-of-attach-line-resolves" data-who="reckon-ship" data-when="2026-09-23T07:44:31.545Z">
     <div class="r-comment-body"><p>independent review of attach-line-resolves: total 93; findings: the landed record cites a nonexistent sha f8f6617 for f8f36b76, and two edited tests compute the expected line from the composer under test; both carried to the corrective node</p></div>
@@ -588,6 +588,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260923T115049769604-test-watchers-are-reaped" data-who="reckon-ship" data-when="2026-09-23T13:49:26.558Z">
     <div class="r-comment-body"><p>a test session reaps its watch producers by pid from their records (7c5f69b9, merged f891f2ed); review 80 found it removed watch_producers_under while tests/test_watch_arming_isolation.py still imports it, so one test fails on main with ImportError — corrective node arming-isolation-reads-the-watcher-records dispatched on §10</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260923T145135255555-review-of-test-watchers-are-reaped" data-who="reckon-ship" data-when="2026-09-23T15:23:20.945Z">
+    <div class="r-comment-body"><p>review of test-watchers-are-reaped scored 80; its removed-helper finding was repaired by arming-isolation-reads-the-watcher-records (merged b471b45c)</p></div>
 </div>
 </section>
 </main>
