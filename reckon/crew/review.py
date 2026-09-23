@@ -454,6 +454,25 @@ def _complete_review_exists(
     return False
 
 
+def _partial_identity(record: Mapping[str, Any]) -> str:
+    """Return the identity that keeps two partial records of one run apart.
+
+    A record that cannot supply both halves of the revision pair is stored
+    outside current-review selection, keyed by the run that wrote it. Two such
+    records from one reviewing run would otherwise land on one path and the
+    second would destroy the first, so the head the partial did carry — the one
+    fact that distinguishes two partial answers about the same run — is folded
+    in ahead of the reviewing-run id. That id stays last so the suffix a caller
+    was already told about is unchanged, and a record carrying no run id falls
+    back to its own timestamp.
+    """
+    head_sha = carried_revision_pair(record)[3]
+    reviewing = str(record.get("review_run_id") or "").strip()
+    if reviewing:
+        return "-".join(part for part in (head_sha or "", reviewing) if part)
+    return str(record.get("timestamp") or "").strip() or "unknown"
+
+
 def _incomplete_review_path(
     project: str,
     reviewed_run_id: str,
@@ -461,13 +480,47 @@ def _incomplete_review_path(
     base_dir: str | Path | None,
 ) -> Path:
     """Return a durable path excluded from current-review selection."""
-    identity = str(record.get("review_run_id") or record.get("timestamp") or "unknown")
-    identity = re.sub(r"[^A-Za-z0-9._-]+", "-", identity).strip("-.") or "unknown"
+    identity = re.sub(r"[^A-Za-z0-9._-]+", "-", _partial_identity(record))
+    identity = identity.strip("-.") or "unknown"
     return (
         review_store_root(base_dir)
         / project
         / f"{reviewed_run_id}.incomplete-{identity}.json"
     )
+
+
+def _stored_partial_identity(path: Path) -> str:
+    """Return the partial identity a stored file holds, or ``""`` if unreadable."""
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return _partial_identity(stored) if isinstance(stored, Mapping) else ""
+
+
+def _partial_review_path(
+    project: str,
+    reviewed_run_id: str,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None,
+) -> Path:
+    """Return where a record lacking the revision pair is stored.
+
+    A complete record stored beside this run keeps the partial out of
+    current-review selection whatever it carries. With no complete record, the
+    first partial keeps the legacy path so a reader that has not learned to name
+    a revision still finds it; rewriting that same partial targets the same
+    path, while a second partial carrying different revision evidence must not
+    overwrite it and moves to the identity-keyed path beside it.
+    """
+    if _complete_review_exists(project, reviewed_run_id, base_dir):
+        return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
+    legacy = review_path(project, reviewed_run_id, base_dir)
+    if not legacy.is_file():
+        return legacy
+    if _stored_partial_identity(legacy) == _partial_identity(record):
+        return legacy
+    return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
 
 
 def store_review(
@@ -481,11 +534,10 @@ def store_review(
     file. A missing ``timestamp`` is stamped with the current UTC moment so
     every stored record carries one; an existing timestamp is preserved. The
     five legacy revision spellings are normalised onto the canonical base/head
-    pair before writing. A complete pair selects a revision-keyed path. An
-    incomplete record keeps the legacy path when no complete review exists, so
-    older callers retain their storage contract; once a complete record exists,
-    the incomplete record is preserved under its reviewing-run identity without
-    entering current-review selection. The write is atomic.
+    pair before writing. A complete pair selects a revision-keyed path. A record
+    lacking the pair is preserved outside current-review selection under its
+    reviewing-run identity, so it can neither displace a complete review nor
+    overwrite another partial record of the same run. The write is atomic.
     """
     project = record.get("project")
     reviewed_run_id = record.get("reviewed_run_id")
@@ -510,10 +562,8 @@ def store_review(
             base_dir,
             reviewed_head_sha=head_sha,
         )
-    elif _complete_review_exists(project, reviewed_run_id, base_dir):
-        path = _incomplete_review_path(project, reviewed_run_id, record, base_dir)
     else:
-        path = review_path(project, reviewed_run_id, base_dir)
+        path = _partial_review_path(project, reviewed_run_id, record, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(

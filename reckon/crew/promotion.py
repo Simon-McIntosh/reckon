@@ -1056,8 +1056,7 @@ def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
     The worker's cited tip is preferred over the worktree's ``HEAD`` because a
     shared checkout can advance under other runs between the commit and the
     promotion, and the cited tip is the revision whose diff promotion already
-    measured. A run that cited no commit asserts no code, so it records no
-    revision rather than the base it was dispatched at.
+    measured.
     """
     if commit_list:
         return str(commit_list[-1])
@@ -2355,6 +2354,8 @@ def _require_review_waiver(
     review: Mapping[str, Any] | None,
     review_action: str,
     waiver_reason: str,
+    promoted_head: str = "",
+    stale_head: str = "",
 ) -> dict[str, str] | None:
     """Refuse an unreviewed promotion of a run that changed the repository.
 
@@ -2367,15 +2368,31 @@ def _require_review_waiver(
     is still refused rather than slipping through on its silence. The review
     role is exempt, because the review it wrote for another run is its own
     deliverable; requiring another review would recurse without a stopping point.
+
+    ``review`` is the record whose own comment says it read ``promoted_head``; a
+    record of a different revision does not satisfy the gate. When such a record
+    exists, its head arrives as ``stale_head`` so the refusal can name both
+    revisions: an operator told only that no review is stored looks for a record
+    that is already on disk, and one told which two revisions disagree knows the
+    review must be recomposed against the new head.
+
+    The classification alone cannot carry the decision, because the classifier
+    reads the store without naming a revision and so counts a review of an
+    earlier head as a complete review of the run. A parsed record at a different
+    head is therefore promotable and unreviewed at once, and the head comparison
+    — which only this gate makes — is what separates them.
     """
     from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
 
     role = _pointer_role(record)
     reason = str(waiver_reason).strip()
     changed_repository = bool(_manifest_repository_paths(record))
+    review_required = classification == "scoring" or (
+        classification == "promotable" and bool(stale_head)
+    )
     unreviewed = (
         verdict == "passed"
-        and classification == "scoring"
+        and review_required
         and role != REVIEW_ROLE
         and (role == "implement" or changed_repository)
         and not (review and review.get("status") == "parsed")
@@ -2384,10 +2401,7 @@ def _require_review_waiver(
         if reason:
             return {"reason": reason}
         raise CrewError(
-            f"run {run_id!r} is classified scoring because no complete independent "
-            f"review is stored. Produce it with `{review_action}`, or promote anyway "
-            "with --waive-unreviewed-promotion REASON stating why this run may land "
-            "without review"
+            _unreviewed_refusal(run_id, review_action, promoted_head, stale_head)
         )
     if reason:
         raise CrewError(
@@ -2395,6 +2409,35 @@ def _require_review_waiver(
             f"--waive-unreviewed-promotion {reason!r} to waive"
         )
     return None
+
+
+def _unreviewed_refusal(
+    run_id: str,
+    review_action: str,
+    promoted_head: str,
+    stale_head: str,
+) -> str:
+    """State why an unreviewed promotion is refused, naming both revisions.
+
+    A run promoted on the strength of a review of an earlier revision is the
+    failure this gate exists for, and an operator who reads only "no review is
+    stored" goes looking for a record that is already on disk. Naming the
+    revision the promotion asserts beside the one the stored record read makes
+    the repair obvious: the review must be recomposed against the new head.
+    """
+    revision = (
+        f"the stored review read revision {stale_head[:12]} and this promotion "
+        f"asserts {promoted_head[:12]}: no review of the promoted revision is "
+        "stored"
+        if stale_head and promoted_head
+        else "no complete independent review is stored"
+    )
+    return (
+        f"run {run_id!r} is classified scoring because {revision}. Produce it "
+        f"with `{review_action}`, or promote anyway with "
+        "--waive-unreviewed-promotion REASON stating why this run may land "
+        "without review"
+    )
 
 
 def complete(
@@ -2476,7 +2519,15 @@ def complete(
 
         classified = classify_pointer(record)
         classification_name = str(classified.get("classification") or "")
-        reviewed = _review_row_block(landing_project, run_id)
+        # The revision this promotion asserts, resolved before the gate reads
+        # the store, so a review of an earlier revision is refused rather than
+        # accepted as evidence about code the repair has already moved past.
+        promoted_revision = _run_promoted_revision(record, commit_list)
+        reviewed, stale_review_head = _review_for_promotion(
+            landing_project,
+            run_id,
+            promoted_revision=promoted_revision,
+        )
         review_waived = _require_review_waiver(
             run_id,
             record,
@@ -2485,6 +2536,8 @@ def complete(
             review=reviewed,
             review_action=str(classified.get("next_action") or ""),
             waiver_reason=review_waiver,
+            promoted_head=promoted_revision,
+            stale_head=stale_review_head,
         )
         candidate_remedy = classified.get("resume_remedy")
         resume_remedy = (
@@ -3123,20 +3176,71 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
         }
 
 
-def _review_row_block(project: str, run_id: str) -> dict[str, Any] | None:
-    """Return the ledger-row block for this run's stored review, if any.
+def _review_for_promotion(
+    project: str,
+    run_id: str,
+    *,
+    promoted_revision: str = "",
+) -> tuple[dict[str, Any] | None, str]:
+    """Return this run's review of the promoted revision, and any other head.
 
-    The record lands on the committed row at promotion, so the dimensions
-    survive the loss of the crew configuration home. A review the store
-    cannot read is recorded as ``unreadable`` — a distinct third state — so a
-    later reader can tell an anomaly from a run that was simply promoted
-    unreviewed, and from a parsed review whose dimensions measure zero.
+    A review is evidence about a diff, and landing work invalidates it: once a
+    repair lands, the stored verdict describes code that no longer exists, so a
+    reader that takes the presence of a review as evidence about the code being
+    promoted is reading a true statement that stopped being the one required.
+    The record is therefore selected by the revision it recorded reading, not by
+    which file the store happens to hold newest.
+
+    The first element is the ledger-row block for that record — the shape that
+    lands on the committed row, so the dimensions survive the loss of the crew
+    configuration home. The second is the head a non-matching record did not
+    match, empty when none exists, so a refusal can name both revisions rather
+    than report an absence. A record that records no head at all cannot be
+    compared and predates the field, so it is accepted as the run's review
+    rather than refusing every review stored before the field existed. A store
+    that cannot be read yields an
+    ``unreadable`` block — a distinct third state — so a later reader can tell
+    an anomaly from a run that was simply promoted unreviewed, and from a parsed
+    review whose dimensions measure zero.
     """
     try:
-        stored = review_module.read_review(project, run_id)
+        stored = review_module.read_review(
+            project, run_id, reviewed_head_sha=promoted_revision or None
+        )
+        if stored is None and promoted_revision:
+            newest = review_module.read_review(project, run_id)
+            if newest is not None and not _reviewed_head(newest):
+                stored = newest
+            else:
+                return None, _reviewed_head(newest) if newest else ""
     except (OSError, ValueError):
-        return review_module.ledger_block({"status": "unreadable"})
-    return review_module.ledger_block(stored)
+        return review_module.ledger_block({"status": "unreadable"}), ""
+    return review_module.ledger_block(stored), ""
+
+
+def _reviewed_head(record: Mapping[str, Any]) -> str:
+    """Return the head revision a stored review recorded reading."""
+    return review_module.carried_revision_pair(record)[3] or ""
+
+
+def _run_promoted_revision(
+    record: Mapping[str, Any], commit_list: Sequence[str]
+) -> str:
+    """Resolve the revision a promotion of this run asserts, from its own tree.
+
+    The same reading the promoted row records, taken before the review gate
+    reads the store so the gate compares against the revision this promotion
+    will name rather than against whatever the store holds newest. The cited tip
+    is canonicalised as the row canonicalises it, so a citation that names the
+    revision symbolically or in abbreviation still matches the full sha a review
+    recorded reading.
+    """
+    worktree = Path(str(record.get("worktree") or ""))
+    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    if commit_list:
+        tip = str(commit_list[-1])
+        return _promoted_revision(tree, [_commit_canonical_id(tree, tip) or tip])
+    return _promoted_revision(tree, [])
 
 
 def plan_impl_at(
@@ -3788,7 +3892,7 @@ def _complete_locked(
     gate_check = _preserve_cited_gate_log(run_id, gate_check)
     # The revision this promotion asserts landed, resolved while the run's tree
     # is still present. A shadow asserts no code, so it records none.
-    promoted_revision = "" if shadow else _promoted_revision(tree, commit_list)
+    promoted_revision = "" if shadow else _run_promoted_revision(record, commit_list)
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
