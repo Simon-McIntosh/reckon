@@ -1,0 +1,36 @@
+remove the interrupted branch from classify_pointer so a signalled run keeps its last live phase
+revision=f84945eb0acad60f10f686d24b0c92f6785c566f mutation-tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-killed-run-reads-interrupted command=PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_interrupted_phase.py -k signalled
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_a_signalled_run_is_interrupted_with_its_signal_and_resume_route _____
+
+tmp_path = PosixPath('/run/user/39486/pytest-of-mcintos/pytest-5012/test_a_signalled_run_is_interr0')
+
+    def test_a_signalled_run_is_interrupted_with_its_signal_and_resume_route(
+        tmp_path: Path,
+    ) -> None:
+        # The liveness probe first sees this process, so its later absence is a
+        # measured result rather than an instrument that returns False for every pid.
+        assert runs.process_alive(os.getpid()) is True
+        pointer = _pointer(
+            tmp_path,
+            "r-signalled",
+            wait_status=_sigterm_wait_status(),
+            session_id="session-survives",
+        )
+        assert runs.record_process_alive(pointer) is False
+    
+        row = recovery.classify_pointer(pointer)
+    
+>       assert row["classification"] == "interrupted"
+E       AssertionError: assert 'abandoned' == 'interrupted'
+E         
+E         - interrupted
+E         + abandoned
+
+tests/test_crew_interrupted_phase.py:107: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_crew_interrupted_phase.py::test_a_signalled_run_is_interrupted_with_its_signal_and_resume_route
+1 failed, 7 deselected in 4.86s
+
+EXIT=1
