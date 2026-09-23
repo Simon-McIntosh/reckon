@@ -193,6 +193,15 @@
       <p><strong>This is where the orchestrator-lane reviews came from</strong>, and it matters for
       sequencing: a fence at the dispatch boundary would not have refused them, because the party
       choosing the lane was a project-wide sweep attributing its own default to someone else's run.</p>
+      <p><strong>Landed.</strong> The lane is composed from the owning run's recorded backend, the
+      locally served lane and the configured rest in that order, and the new flight key
+      <code>review_excluded_backends</code> removes a named backend before any ordering, so a
+      fallback cannot step around it. A sweep bookends only runs whose pointer session matches the
+      follower registration its process holds, and the printed next-action carries the owning lane.
+      Gate: 19 tests across the new module and the two reflex modules, the 13 pre-existing ones
+      unchanged against base <code>75b39d4d</code> with no added failures; the declared negative
+      control fails the two exclusion tests. Evidence:
+      <a href="/reckon/evidence/archive/a-review-dies-where-nobody-is-looking-landed#s4">&sect;4 record</a>.</p>
     </section>
 
     <section id="s5" data-reckon="section">

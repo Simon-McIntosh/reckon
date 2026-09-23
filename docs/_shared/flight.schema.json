@@ -766,6 +766,16 @@
                         "null"
                     ]
                 },
+                "review_excluded_backends": {
+                    "description": "Names of backends that review routing must never select, whatever lane composes the review and whatever backend has already dropped the dispatch. A review fallback walks a list of configured backends, so an exclusion it can step around is a note rather than a rule; naming a backend here removes it from every composed review lane.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "roles": {
                     "additionalProperties": {
                         "anyOf": [
@@ -1373,6 +1383,16 @@
             "description": "Name of the locally served backend selected by `reckon crew dispatch --local`. Must name a key of `backends` once every layer has been merged. Absent means this host has no declared local worker route.",
             "type": [
                 "string",
+                "null"
+            ]
+        },
+        "review_excluded_backends": {
+            "description": "Names of backends that review routing must never select, whatever lane composes the review and whatever backend has already dropped the dispatch. A review fallback walks a list of configured backends, so an exclusion it can step around is a note rather than a rule; naming a backend here removes it from every composed review lane.",
+            "items": {
+                "type": "string"
+            },
+            "type": [
+                "array",
                 "null"
             ]
         },
