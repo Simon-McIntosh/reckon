@@ -39,20 +39,25 @@
     placement declared so far has lived in the project layer, which scopes it to one
     repository. That is the safe choice for a first trial and the wrong shape for the goal:
     the aim is to move <em>the fleet</em> off the login node, and a per-project declaration
-    solves it one twelfth at a time.</p>
-    <p>The arithmetic decides it. Per-project placement means every project holds its own
-    allocation to escape a shared four-core ceiling &mdash; five repositories, five
-    allocations, well over a hundred cores reserved for a fleet that fits in one. One
-    shared allocation is both cheaper and what the design already describes.</p>
+    solves it for one project at a time out of thirteen.</p>
+    <p>The arithmetic decides it, and the count is measured rather than assumed:
+    <code>~/.config/reckon/mounts.json</code> lists <strong>thirteen mounted projects</strong>
+    on this workstation. Per-project placement means each one that wants off the login node
+    holds an allocation of its own to escape a shared four-core ceiling. At the twenty-eight
+    cores the current allocation carries, a fleet that fits inside one would reserve several
+    hundred. One shared allocation is both cheaper and what the design already describes.</p>
 
     <h2 id="s2">&sect;2 &mdash; What the roster must count</h2>
     <p>On 2026-09-23 a host-global reservation was published while only one project had
     declared a placement, and forty five runs across four repositories were counted against
     a ceiling of twenty five while exactly one step ran inside the allocation. Dispatch was
     refused workstation-wide for four minutes. The cap was right; its population was not.</p>
-    <p>The repair that landed keyed reservations per project, which removes the asymmetry by
-    shrinking the counted side. It is correct and it is not the end state: under host-layer
-    placement every run on the lane is genuinely placed, so counting them all is right again.
+    <p>The repair that landed keyed the reservation <em>record</em> per project &mdash; each
+    project reads only its own <code>reservation.json</code> and deliberately does not fall
+    back to the host-global one &mdash; and scoped the roster count to the reading project.
+    It removes the asymmetry by shrinking the counted side. It is correct and it is not the end state: under host-layer placement every run reaching the backend is genuinely placed, so the
+    placed-run count and the whole-backend count coincide. They coincide only while that
+    holds, which is why the rule is written on the placed runs rather than on the coincidence.
     The durable rule is narrower than either: <strong>the roster counts the runs that were
     actually placed</strong>, which is true under both arrangements and needs no reasoning
     about which layer declared what. A pointer already records its placement, so the count
@@ -67,17 +72,20 @@
     record and the guarantee the keying was protecting moves to where it belongs: the
     roster counts placed runs, so a project is bounded by what it actually placed rather
     than by who happened to publish the record.</p>
-    <p>The lane concurrency bound is a separate quantity and deliberately stays cross-project:
-    a served lane is shared by everything that calls it, whereas an allocation is not.</p>
+    <p>The lane concurrency bound is a separate quantity and deliberately stays cross-project.
+    A served lane is consumed by every caller that sends it a request, placed or not, so its
+    bound has to count them all. An allocation is consumed only by the workers actually
+    running as steps inside it, so its bound counts those and nothing else. That difference
+    is the whole argument for scoping the roster to placed runs.</p>
 
     <h2 id="s3">&sect;3 &mdash; Done when</h2>
     <p>Placement is declared once, in the host layer, and a dispatch from a project that has
-    never heard of it becomes a step in the one reservation. Two dispatches under two
-    different projects reach the same published job id and request one allocation between
-    them &mdash; the property a single-project case cannot demonstrate, since it passes just
+    never heard of it becomes a step in the one reservation. Two dispatches under two different projects reach the same published job id and exactly one
+    allocation is created across the pair &mdash; the assertion counts allocations, not
+    placement requests, since both dispatches legitimately request placement &mdash; the property a single-project case cannot demonstrate, since it passes just
     as well against a design holding one reservation per dispatcher. The roster refusal counts
-    placed runs only, asserted with a population mixing placed and unplaced runs on one
-    backend. A project whose runs are not placed is unbounded by the roster.</p>
+    placed runs only, asserted over a population on a single backend holding both placed and unplaced runs, so
+    the rule is exercised rather than merely satisfied by a homogeneous population. A project whose runs are not placed is unbounded by the roster.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
