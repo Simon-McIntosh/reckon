@@ -1,0 +1,379 @@
+{
+  "node": "a-local-worker-compacts-and-continues",
+  "plan": "reckon:a-review-dies-where-nobody-is-looking \u00a79",
+  "purpose": "Demonstrate whether a local-lane worker compacts its conversation at the lane's effective context boundary and continues to a complete manifest, rather than dying at the boundary.",
+  "lane": {
+    "model": "deepseek-v4.1-flash",
+    "effective_context_boundary_tokens": 200000,
+    "boundary_source": "docs/research/data/clive-effective-window.json and the corpus census of compact_boundary records"
+  },
+  "design": {
+    "task": "Read, one at a time in increasing stream.jsonl size order, the 40 largest run stream files under the configured runs directory; after each, append one entry with its run id, record count and last record type.",
+    "corpus_root": "/home/ITER/mcintos/.config/reckon/crew/runs",
+    "file_count": 40,
+    "size_band_bytes": [
+      12357556,
+      36878301
+    ],
+    "order": "increasing stream.jsonl byte size; the 40 largest run directories by stream size"
+  },
+  "compaction_marker": {
+    "record_type": "system",
+    "record_subtype": "compact_boundary",
+    "source": "this node's own stream",
+    "own_stream": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034826819549-a-local-worker-compacts-and-continues/stream.jsonl",
+    "metadata_keys": [
+      "trigger",
+      "pre_tokens",
+      "post_tokens",
+      "cumulative_dropped_tokens",
+      "duration_ms",
+      "preserved_segment",
+      "preserved_messages"
+    ],
+    "turn_definition": "the count of assistant records emitted before the compact_boundary record in this node's own stream"
+  },
+  "compaction_events": [
+    {
+      "trigger": "auto",
+      "record_type": "system",
+      "record_subtype": "compact_boundary",
+      "stream_line_index": 3903,
+      "stream_total_lines": 4016,
+      "assistant_records_before": 91,
+      "turn_at_which_it_fired": 91,
+      "context_tokens_before": 176242,
+      "context_tokens_after": 27863,
+      "cumulative_dropped_tokens": 148379,
+      "duration_ms": 125503,
+      "last_corpus_file_read_before": "r-20260915T043415918538-r-mobile-wall-recuration",
+      "files_completed_before": 3
+    }
+  ],
+  "results_written_before_compaction": true,
+  "results_written_after_compaction": null,
+  "ended_with_complete_manifest": null,
+  "files": [
+    {
+      "run_id": "r-20260916T210946867358-west-curate-topology-cleanup",
+      "records": 52196,
+      "last_record_type": "result",
+      "stream_bytes": 12357556,
+      "order_index": 1,
+      "written_during_stage": "before-compaction"
+    },
+    {
+      "run_id": "r-20260916T203727867325-inert-keep-reason-table",
+      "records": 58507,
+      "last_record_type": "result",
+      "stream_bytes": 12661701,
+      "order_index": 2,
+      "written_during_stage": "before-compaction"
+    },
+    {
+      "run_id": "r-20260915T043415918538-r-mobile-wall-recuration",
+      "records": 44956,
+      "last_record_type": "result",
+      "stream_bytes": 12780597,
+      "order_index": 3,
+      "written_during_stage": "before-compaction"
+    },
+    {
+      "run_id": "r-20260910T135536998360-n-swcr-a-minted-name-carries-a-catalog-status",
+      "records": 10881,
+      "last_record_type": "result",
+      "stream_bytes": 13137521,
+      "order_index": 4,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260911T001005914789-cca-cut-cell-clipped-coupling",
+      "records": 49188,
+      "last_record_type": "result",
+      "stream_bytes": 13287159,
+      "order_index": 5,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T035656675196-load-bearing-rows-3-5-8",
+      "records": 62219,
+      "last_record_type": "result",
+      "stream_bytes": 13380309,
+      "order_index": 6,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T140308217177-failopen-validator-not-run-r2",
+      "records": 36168,
+      "last_record_type": "result",
+      "stream_bytes": 13452934,
+      "order_index": 7,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260903T100248973237-n-sourceless-names-are-surfaced-and-healed-b",
+      "records": 41791,
+      "last_record_type": "result",
+      "stream_bytes": 13517432,
+      "order_index": 8,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T203648928142-mobile-wall-null-grid-guard",
+      "records": 59727,
+      "last_record_type": "result",
+      "stream_bytes": 13670970,
+      "order_index": 9,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T203232458501-load-bearing-doc-rows-r2",
+      "records": 64022,
+      "last_record_type": "result",
+      "stream_bytes": 13913236,
+      "order_index": 10,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T053656352101-review-of-cco-bounded-row-step-control",
+      "records": 69135,
+      "last_record_type": "result",
+      "stream_bytes": 14228022,
+      "order_index": 11,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T061300372845-xml-limiter-resolved-contours",
+      "records": 56675,
+      "last_record_type": "result",
+      "stream_bytes": 14634130,
+      "order_index": 12,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260907T084423959219-pfs-app-demo-readiness",
+      "records": 64239,
+      "last_record_type": "result",
+      "stream_bytes": 14648196,
+      "order_index": 13,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T185550355515-n-a-stopped-run-releases-its-claim-without-waiting-for-age",
+      "records": 8297,
+      "last_record_type": "result",
+      "stream_bytes": 14692894,
+      "order_index": 14,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260915T034817551159-arrival-is-non-destructive",
+      "records": 64350,
+      "last_record_type": "result",
+      "stream_bytes": 15119680,
+      "order_index": 15,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260905T121715258923-nia-stale-pins-re-expression",
+      "records": 71283,
+      "last_record_type": "user",
+      "stream_bytes": 15199894,
+      "order_index": 16,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T210644979410-validation-set-recovery-w1-currency",
+      "records": 73885,
+      "last_record_type": "result",
+      "stream_bytes": 15648327,
+      "order_index": 17,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T204827388338-disabled-tests-inventory-refresh",
+      "records": 66673,
+      "last_record_type": "result",
+      "stream_bytes": 15992176,
+      "order_index": 18,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260825T142838652415-n-taggingmaturity",
+      "records": 153,
+      "last_record_type": "turn.completed",
+      "stream_bytes": 16017936,
+      "order_index": 19,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260903T131423195755-the-log-stores-facts-not-renders",
+      "records": 72009,
+      "last_record_type": "result",
+      "stream_bytes": 16254966,
+      "order_index": 20,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T050738546364-review-of-ecq-sampled-arc-gauss-route",
+      "records": 80145,
+      "last_record_type": "result",
+      "stream_bytes": 16601779,
+      "order_index": 21,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T133444118073-swallow-census-gate-r2",
+      "records": 70692,
+      "last_record_type": "result",
+      "stream_bytes": 16742866,
+      "order_index": 22,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260915T162515158690-the-reconstruction-keeps-its-settings",
+      "records": 77512,
+      "last_record_type": "system",
+      "stream_bytes": 16952899,
+      "order_index": 23,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260914T160220568583-msc-solve-profile-kernel-count",
+      "records": 72015,
+      "last_record_type": "result",
+      "stream_bytes": 17067567,
+      "order_index": 24,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260914T152335508652-cca-limiter-contact-sub-panel",
+      "records": 75275,
+      "last_record_type": "result",
+      "stream_bytes": 17689565,
+      "order_index": 25,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260915T060249909962-pfs-reduced-newton-converged-before-budget",
+      "records": 77927,
+      "last_record_type": "system",
+      "stream_bytes": 18176719,
+      "order_index": 26,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260921T035705405532-fsa-audit-figures-cut-cell",
+      "records": 216,
+      "last_record_type": "result",
+      "stream_bytes": 18332800,
+      "order_index": 27,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260905T120506861337-n-sli-the-timestamp-work-did-not-add-failures",
+      "records": 415,
+      "last_record_type": "result",
+      "stream_bytes": 18420324,
+      "order_index": 28,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T204834010483-ecq-sampled-arc-gauss-route",
+      "records": 77976,
+      "last_record_type": "result",
+      "stream_bytes": 18841020,
+      "order_index": 29,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260914T185929330315-cca-private-region-parallel-kernel",
+      "records": 91380,
+      "last_record_type": "result",
+      "stream_bytes": 21578195,
+      "order_index": 30,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260905T085005354395-msc-one-conditioning-rule-for-the-carry",
+      "records": 102230,
+      "last_record_type": "result",
+      "stream_bytes": 22016915,
+      "order_index": 31,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T040450396515-raw-ids-plan-table-currency",
+      "records": 102027,
+      "last_record_type": "result",
+      "stream_bytes": 22285750,
+      "order_index": 32,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260916T210526365533-dvf-cocos-scout",
+      "records": 107500,
+      "last_record_type": "result",
+      "stream_bytes": 22634806,
+      "order_index": 33,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260921T035158562068-fsa-audit-figures-null-identification",
+      "records": 396,
+      "last_record_type": "result",
+      "stream_bytes": 23695733,
+      "order_index": 34,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T150901405868-sli-attempt-cap-cohort-carries-a-triageable-disposition",
+      "records": 16336,
+      "last_record_type": "result",
+      "stream_bytes": 24477493,
+      "order_index": 35,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260915T140915223249-closing-a-sprint-refuses-unheld-work",
+      "records": 119943,
+      "last_record_type": "result",
+      "stream_bytes": 25994870,
+      "order_index": 36,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260915T143954593693-a-cached-reading-shows-its-age",
+      "records": 120712,
+      "last_record_type": "result",
+      "stream_bytes": 26401568,
+      "order_index": 37,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260905T084051745035-nia-census-slot-exhaustion-repair",
+      "records": 128436,
+      "last_record_type": "result",
+      "stream_bytes": 27274265,
+      "order_index": 38,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260910T151523673841-cca-gate-b-frozen-current-flux-image",
+      "records": 136446,
+      "last_record_type": "result",
+      "stream_bytes": 29723098,
+      "order_index": 39,
+      "written_during_stage": "after-compaction"
+    },
+    {
+      "run_id": "r-20260917T035523189950-topology-ids-point-geometry-wiring",
+      "records": 140920,
+      "last_record_type": "result",
+      "stream_bytes": 36878301,
+      "order_index": 40,
+      "written_during_stage": "after-compaction"
+    }
+  ],
+  "compaction_occurred": true
+}
