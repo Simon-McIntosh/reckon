@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="4">
+  <meta name="plan-version" content="7">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -66,17 +66,54 @@
     <h2 id="s3">&sect;3 &mdash; Dispatch returns once the worker is launched</h2>
     <p>Make a CLI dispatch print its JSON result and exit as soon as the worker process is running
     and its live pointer is written. The worker must survive the dispatch process ending by any of
-    the three signals in &sect;2, including a signal that arrives during what is today the hold. Collection of the worker's exit moves off the dispatching
-    process: liveness is already read from the pointer's recorded pid by
-    <code>record_process_alive</code>, and a worker whose parent has exited is reparented and
-    collected by the system. Keep the launched-worker reaper for the follower's own sweep-launched
-    workers only if &sect;2 shows it is still needed there.</p>
-    <p><strong>Done when</strong> a test dispatches the stub backend of &sect;2 and observes the
-    dispatch process exit within five seconds with the run id in its JSON output, then kills
-    nothing and observes the stub's marker file appear. A second test sends SIGKILL to the dispatch
-    process before it returns and still observes the marker. The negative control is recorded:
-    reinstating the wait that &sect;2 identified makes the first test fail on the five-second
-    bound, and the log of that failing run is kept with the manifest. The write paths are
+    the three signals in &sect;2, including a signal that arrives during what is today the hold.</p>
+    <p><strong>Collection of the worker's exit moves to a detached per-run supervisor, never to
+    init.</strong> A worker reparented to init has its exit status collected by init, and reckon
+    never sees it. Measured on 2026-09-23 on worker-death-is-recorded &sect;5: 0 exit records across
+    every live pointer after a night of at least eight worker deaths. So dispatch starts a small
+    supervisor process in its own session. The supervisor spawns the worker, writes the worker's pid,
+    and reports the launch back to dispatch, which then prints its result and exits. The supervisor
+    waits on the worker and records its exit status and, when a signal ended it, the signal name. It
+    writes that record to the run directory and to the live pointer, then exits. The supervisor
+    writes the pointer only when the pointer still exists. It must never recreate a pointer that has
+    gone, because a discarded pointer was rewritten back into existence by a late writer on
+    2026-09-23. The run-directory record is what survives a discard. Liveness stays read from the
+    pointer's recorded worker pid by <code>record_process_alive</code>.</p>
+    <p><strong>One exit record serves a death and a launch failure.</strong> The supervisor writes
+    <code>exit.json</code> in the run directory, and copies the same object under the pointer's
+    <code>exit</code> key while the pointer exists. Its fields:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>worker_pid</code></td><td>integer</td><td>the process the supervisor waited on</td></tr>
+        <tr><td><code>launched_at</code></td><td>UTC ISO-8601</td><td>when the worker process started</td></tr>
+        <tr><td><code>exited_at</code></td><td>UTC ISO-8601</td><td>when the supervisor collected the exit</td></tr>
+        <tr><td><code>exit_code</code></td><td>integer or null</td><td>the status for a normal exit; null when a signal ended it</td></tr>
+        <tr><td><code>signal</code></td><td>integer or null</td><td>the signal number when a signal ended it; null otherwise</td></tr>
+        <tr><td><code>signal_name</code></td><td>string or null</td><td>for example <code>SIGKILL</code>; null otherwise</td></tr>
+        <tr><td><code>stream_records_seen</code></td><td>integer</td><td>records across the run's stream files at exit; 0 means the worker exited before its first record, which is a launch failure</td></tr>
+        <tr><td><code>last_record_type</code></td><td>string or null</td><td>the type of the newest stream record, for example <code>result</code>, <code>assistant</code> or <code>system</code>; null when none was written</td></tr>
+        <tr><td><code>recorded_by</code></td><td>string</td><td><code>supervisor</code>, so a reader can tell a collected exit from an inferred one</td></tr>
+      </tbody>
+    </table>
+    <p>A reader composes nothing at read time that this record carries. A launch failure is
+    <code>stream_records_seen == 0</code>, not a second format. crew-runtime-positive-controls'
+    launch-failure record and a-stalled-row-says-whether-the-worker-lives' death row read these
+    fields rather than deriving their own.</p>
+    <p><strong>Done when</strong> <code>tests/test_dispatch_returns_without_worker.py</code> covers
+    four cases with the stub backend of &sect;2, in a temporary repository and a temporary
+    <code>RECKON_HOME</code>. First, the dispatch process exits within five seconds with the run id
+    in its JSON output, nothing is killed, and the stub's marker file appears. Second, SIGKILL sent
+    to the dispatch process before it returns still leaves the marker file appearing. Third, the
+    measure from worker-death-is-recorded &sect;5, verbatim: a real dispatch, the dispatching process
+    gone, SIGKILL, and the exit status still recorded. Here the dispatch has returned, the worker
+    receives SIGKILL, and within ten seconds both the run directory's exit record and the pointer
+    carry the exit status with signal name <code>SIGKILL</code>. Fourth, the pointer is discarded
+    before the worker exits, and after the exit no pointer exists for the run while the run
+    directory's exit record does. The negative control is executed and logged: reinstating the wait
+    that &sect;2 identified makes the first case fail on the five-second bound, and removing the
+    supervisor's wait makes the third case fail. Both failing logs are kept with the manifest. The
+    real pointer directory under the user's config home is asserted untouched. The write paths are
     <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_returns_without_worker.py</code>.</p>
 
     <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
@@ -146,6 +183,11 @@
     <pre class="r-fu-prompt">/reckon-ship a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20260923T0710-reparent-loses-the-exit" data-who="reckon-ship" data-when="2026-09-23T07:10:00Z">
+    <div class="r-comment-body"><p><strong>§3 as written would lose every worker's exit record. It is held until it is revised.</strong> The S19 session measured this on 2026-09-23 (worker-death-is-recorded §5, commit <code>2e5e8f53</code>). <code>launch_failures</code> holds 0 exit records across every live pointer, and the ledger carries no <code>signal_name</code>, after a night of at least eight worker deaths. The reason: <code>crew dispatch</code> exits after launching, its reaper thread dies with it, and the worker is reparented to init (a live review worker read PPID 1), so init collects the status and reckon never sees it. §3 currently makes that path the design: <em>a worker whose parent has exited is reparented and collected by the system</em>. The serve logged 20,507 HTTP 200 responses and no non-200 over the same period, so the mid-thinking deaths are client-side, and this missing record is what would name them.</p><p>The revision proposed to S19 keeps one mechanism with one owner. Dispatch returns, and a detached per-run supervisor stays. The supervisor runs in its own session, spawns the worker, waits on it, records the exit status and signal into the pointer, and then exits. Dispatch returns once the supervisor reports the launch. The done-when would gain S19's measure: a real dispatch, the dispatching process gone, the worker SIGKILLed, and the exit status still recorded. Which session builds the supervisor is being agreed with S19. §3 is not dispatched until that is settled and the section text is revised.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
