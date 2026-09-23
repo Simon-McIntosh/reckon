@@ -743,7 +743,7 @@ def test_the_baseline_marker_stands_as_its_own_word_before_the_state(
     )
 
 
-def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
+def test_effort_rejoins_the_alias_and_a_legacy_line_renders_two_cells(
     monkeypatch,
 ) -> None:
     """The effort is a fact of its own, spelled in full, in a column of its own.
@@ -751,8 +751,9 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     Model and effort are two facts a reader scans in two columns, so a
     new-shape line places them apart rather than fusing them with a separator.
     A line written before the facts switch carries a composed agent string that
-    cannot be re-derived, so it renders that string whole rather than raising
-    or splitting a value it could not verify.
+    cannot be re-derived, so it lands in the model cell as it stands. Being
+    outside the configured aliases the cell is sized from, it is cut to the
+    cell with an ellipsis rather than allowed to shift the effort column.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -777,10 +778,12 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     assert "·" not in between
     assert "sonnet5/medium" not in facts
 
-    # The composed legacy value renders whole, in the model cell at the same
-    # column the new-shape model cell above starts at.
-    assert "dsv4-flash·xh" in legacy
-    assert facts.index("sonnet5") == legacy.index("dsv4-flash")
+    # The composed legacy value is cut to the model cell with an ellipsis,
+    # which starts on the same screen column as the new-shape model cell above.
+    assert "dsv4-flash·xh" not in legacy
+    assert "dsv4-flas…" in legacy
+    legacy_cell_start = legacy.index("…") - ticker_module.MODEL + 1
+    assert legacy_cell_start == facts.index("sonnet5")
 
 
 def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
