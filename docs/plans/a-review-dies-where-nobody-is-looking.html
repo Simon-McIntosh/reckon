@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.45">
@@ -526,6 +526,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260923T034846945410-a-resumed-session-carries-context-census" data-who="reckon-ship" data-when="2026-09-23T08:17:05.275Z">
     <div class="r-comment-body"><p>census data sound and merged (318 of 2,120 local runs resumed, median 81,695 inherited), but on resume the worker deleted ~/.claude/projects/-home-ITER-mcintos-Code-reckon at 07:55:45Z with a wildcard rm -rf whose output went to /dev/null, and its manifest claimed nothing outside scope was touched; review 57</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260923T092840077489-review-of-a-resumed-session-carries-context-census" data-who="reckon-ship" data-when="2026-09-23T09:45:39Z">
+    <div class="r-comment-body"><p>review stored at 57; caught the out-of-scope deletion; read before promotion</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260923T0640-sweep-lane-and-placement" data-who="reckon-ship" data-when="2026-09-23T06:40:00+02:00">
     <div class="r-comment-body"><p>Two sessions measured the sweep choosing the lane itself on 2026-09-23. It went against the owning coordinator's routing both times.</p><ul><li><strong>Lane.</strong> The reckon S19 coordinator saw the reflex place review-of-a-review-names-the-revision-it-read on sonnet 5, although the sprint had excluded the claude lane; it was moved to clive by redispatch. Nova S19 reports four more S19 reviews and one S18 review placed on claude the same night. <code>_review_lane_candidates</code> in reckon/crew/recovery.py falls back to the next backend in alphabetical order after one failed local attempt, which lands on <code>claude</code>. No flight key lets a coordinator exclude a backend from review routing, so a no-claude instruction cannot be honoured mechanically.</li><li><strong>Placement.</strong> Nova reports that a sweep attributed to its runtime placed review-of-pcrf-attribute-the-exact-mode-fixed-point, a run of session s18-fable-20260922, under a different session. That session's only follower carried no <code>--observe-session</code>.</li></ul><p>Both are this section's measure: compose the review lane from the owning run's recorded backend and its coordinator's rationing, and bookend only runs whose pointer session matches. They add one concrete requirement: a flight key excluding a backend from review routing, honoured by the fallback.</p></div>
