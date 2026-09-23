@@ -38,7 +38,10 @@
     one <code>git status --porcelain=v1 -z --untracked-files=all</code> (<code>routing._tree_state</code>).
     The snapshot exists to refuse a promotion when a run changed a tree other than its own. The review
     run <code>r-20260923T172710072463-third-read-back-of-the-ledger</code> recorded 312 trees at
-    dispatch. Its <code>crew complete</code> was still running after three hours, starting a new
+    dispatch. The same walk runs under <code>crew follow</code> and on dispatch's post-launch path. Two
+    followers with a 29-minute lifetime ran for 3 h 36 m and 2 h 07 m, because the deadline is checked
+    between polls and one poll sat inside a walk. That run's <code>crew complete</code> was still
+    running after three hours, starting a new
     <code>git status</code> in a different retained worktree about every 30 seconds while peer commits
     were nearly idle. That 30 seconds per tree reflects a degraded shared filesystem. The same morning
     one tree cost about 3.3 seconds, which is still about 17 minutes per snapshot at 312 trees, paid once
@@ -64,9 +67,13 @@
 
     <section id="s1" data-reckon="section">
       <h2>§1 — A fenced run's boundary check reads its own worktree and the main checkout</h2>
-      <p><strong>Measure.</strong> When a run's launch plan composed the fence, the supervisor's
-      snapshot and promotion's re-snapshot each record and compare exactly two trees: the run's own
-      worktree and the repository's main checkout. The run record carries whether the fence was
+      <p><strong>Measure.</strong> When a run's launch plan composed the fence, every path that
+      reaches <code>routing._repository_tree_snapshot</code> or <code>routing._tree_state</code>
+      records and compares exactly two trees for it: the run's own worktree and the repository's main
+      checkout. That includes the supervisor's snapshot, promotion's re-snapshot, dispatch's
+      post-launch path, and whatever <code>crew follow</code> reaches through its sweeps. This section
+      starts by listing every caller of those two functions and the entry point that reaches it, with
+      the list recorded in the manifest. The run record carries whether the fence was
       composed, and the promotion reads that record, not the current default. A run launched with
       <code>--no-fence</code>, or recorded before this change, keeps the full scan of every registered
       worktree. The refusal a promotion gives when the main checkout changed unexpectedly is
@@ -75,7 +82,10 @@
       through the <code>crew complete</code> entry point with a <code>git</code> shim on
       <code>PATH</code> that counts <code>status</code> calls: a fenced run's snapshot holds 2 trees and
       its promotion makes 2 status calls, while an unfenced run's snapshot holds 51 trees and its
-      promotion makes 51. A fenced run whose worker wrote into the main checkout is still refused at
+      promotion makes 51. With the same shim, one dispatch of a fenced run and one poll of
+      <code>crew follow</code> over it each make at most 2 status calls for that run. The per-tree cost
+      no longer depends on how many worktrees are registered, so a follower's lifetime deadline is not
+      held for hours inside a single poll. A fenced run whose worker wrote into the main checkout is still refused at
       promotion, naming the tree. The negative control sends the fenced branch through the full scan,
       and the fenced run's count must then read 51.</p>
     </section>
