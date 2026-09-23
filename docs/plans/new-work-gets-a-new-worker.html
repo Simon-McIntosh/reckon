@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.29">
 </head>
@@ -198,6 +198,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T1045-task-keyed-landed" data-who="reckon-ship" data-when="2026-09-23T10:45:00Z">
     <div class="r-comment-body"><p><strong>§2 landed and is live</strong> (merged adbb6067, commits 4cfc76a4, 798e549d). The dispatch-time session decision is now <code>_task_session_resolution</code>, and the member-keyed <code>_member_session_resolution</code> is gone from the running module. A prior session is composed only when its run carried the same project, plan and node id. It is found from committed run records and live pointers, not the member's map, and a session whose run ended too large to continue is never composed.</p><p>Gate: 24 passed across the new file and the three updated session tests. Two adjacent test files fail, the same 2 as at base e3e51cd1. The declared mutation, restoring member-keyed selection, reddens the cross-task case (1 failed). Review: 90. Its two findings are: a latent contradiction in a test file that still asserts <code>member add --session</code> reuse, which belongs to §3; and two missing trailing newlines.</p><p>The worker delivered a manifest with empty <code>commits</code>, <code>tests</code> and <code>test_logs</code>. The coordinator filled them from the run's own <code>gate.log</code>, adjacent logs and commit list, and kept <code>manifest.md.asdelivered</code>. The stopgap config (<code>session_reuse: false</code>) stays in place until §3 lands and §7 restores same-task reuse.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T083243545039-session-resumes-only-its-own-task" data-who="reckon-ship" data-when="2026-09-23T09:58:35.545Z">
+    <div class="r-comment-body"><p>dispatch resumes a session only for the same task; 24 passed; mutation reddens the cross-task case; review 90</p></div>
 </div>
 </section>
 </main>
