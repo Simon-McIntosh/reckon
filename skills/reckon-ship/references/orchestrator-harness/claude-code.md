@@ -39,14 +39,24 @@ as the session lasts, and silence reads exactly like a quiet fleet.
 
 ```
 Monitor({
-  command: 'reckon crew follow --project <project> --session <session>',
+  command: '/abs/path/to/reckon crew follow --project <project>'
+         + ' --session <session> --lifetime 29m',
   description: '<project> <sprint-or-plan>',   // e.g. 'imas-codex S9'
-  persistent: true,
+  timeout_ms: 1800000,
 })
 ```
 
-`persistent: true` because a wave outlives the default timeout, and the
-follower is meant to cover the whole session rather than one wave.
+**Arm the attach line verbatim, never a retyped command.** The monitor's
+shell does not inherit this session's `PATH`, so a bare `reckon` there can exit
+127 before the first line — and a monitor that dies inside a second reads as a
+quiet fleet rather than as a failure.
+
+The attach line reckon prints — `attach_line` in the dispatch payload, and the
+same field in a `watcher-required` refusal — already names the entry point
+absolutely, resolved beside the interpreter that composed it. Add
+`--lifetime 29m`: the follower then ends itself a minute under the host's
+thirty-minute cap, so the last line a reader sees is the follower's own, not
+the host's expiry notice.
 
 **Launch the follower with colour: never pass `--no-color`.** The pane this
 host renders the ticker into reads ANSI colour, and the follower's colour set
@@ -56,6 +66,14 @@ into one grey line, which the reader then has to parse word by word. The lead
 asked for colour explicitly on 2026-09-16 after a coordinator armed a
 `--no-color` follower; `--theme dark|light` is the only appearance flag a
 coordinator should pass, and only when the pane's background calls for it.
+
+**What an agent reader gets is the escape sequences, not the colour.** Each
+line is delivered as the body of a chat notification, so the same row a human
+pane renders in hue reaches an agent as its own escape sequences wrapped around
+the words; there is no renderer in between, and the colour is decoration rather
+than a channel. The state word must carry the state alone — a state
+distinguished only by hue is invisible to every reader who is not looking at
+the pane.
 
 **Make the description name the work, and stop.** This host prints it verbatim
 as the visible row of every notification — `Monitor event: "<description>"` — so
@@ -109,10 +127,11 @@ coordinator is working the same sprint — name them on the same `Monitor`, one
 
 ```
 Monitor({
-  command: 'reckon crew follow --project <project> --session <yours>'
-         + ' --observe-session <peer-a> --observe-session <peer-b>',
+  command: '/abs/path/to/reckon crew follow --project <project>'
+         + ' --session <yours> --observe-session <peer-a>'
+         + ' --observe-session <peer-b> --lifetime 29m',
   description: '<project> <sprint-or-plan>',
-  persistent: true,
+  timeout_ms: 1800000,
 })
 ```
 
@@ -120,11 +139,16 @@ Monitor({
 reads `Monitor expired after 30m with N events delivered`, and from that moment
 the session has no delivering follower — so the next `reckon crew dispatch` is
 refused with `watcher-required` (exit 8), which is the first many coordinators
-learn of it. `timeout_ms` is capped at 1800000, so a session outlasting thirty
-minutes **will** meet this at least once. Re-arm on the expiry notice, before
-anything else, with the same flag set including every `--observe-session`;
-re-attaching replays a baseline of every live run, so nothing that happened in
-the gap is lost.
+learn of it. `timeout_ms` is capped at 1,800,000 milliseconds — thirty minutes
+— so a session outlasting that cap **will** meet this at least once. A follower
+armed with `--lifetime 29m` ends itself first, and **its final
+line is the one to re-arm on**: marked as the follower's end rather than a
+fleet event, it names the attach line to arm and the owning session's runs that
+need the coordinator, and it releases the registration on the way out. Re-arm
+on it before anything else, with the same flag set including every
+`--observe-session`; a follower that re-attaches to a session holding a record
+replays the runs
+whose state changed since it, so nothing that happened in the gap stays hidden.
 
 ### Filtering
 
