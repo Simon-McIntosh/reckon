@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="29">
+  <meta name="plan-version" content="30">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -457,6 +457,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-set-20260923T1227-s7-orphan-releases" data-who="reckon-ship" data-when="2026-09-23T12:27:16Z">
     <div class="r-comment-body"><p>The follower now checks its recorded consumer on each wait pass. The consumer is the parent recorded at registration, so a re-parent to init shows up as <code>os.getppid()</code> no longer naming it, and the recorded start time is the pid-reuse guard. When the consumer is gone the follower stops, prints nothing, and releases the registration by leaving, freeing the advisory lock for the session's next follower. Gate: <code>tests/test_orphaned_follower_releases.py</code>, 1 passed in 3.37 s. The negative control is applied and logged: deleting the check from the wait pass leaves the orphan still running ten seconds after the kill. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s7-orphaned-follower-releases">the landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260923T131100865299-watch-lifetime-failures-attributed" data-who="reckon-ship" data-when="2026-09-23T14:12:33.345Z">
+    <div class="r-comment-body"><p>test_crew_watch_lifetime.py: 3 failed at base b52bf914, at 1a64dede and at 31ee6939, identical ids, all asserting the pre-6255c53c state word complete where the classifier emits completed_unpromoted; new failures at head 0; the orphan release added none</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T053030852489-review-of-attach-line-resolves" data-who="reckon-ship" data-when="2026-09-23T07:44:31.545Z">
     <div class="r-comment-body"><p>independent review of attach-line-resolves: total 93; findings: the landed record cites a nonexistent sha f8f6617 for f8f36b76, and two edited tests compute the expected line from the composer under test; both carried to the corrective node</p></div>
