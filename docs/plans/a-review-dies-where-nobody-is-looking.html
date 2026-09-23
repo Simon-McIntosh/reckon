@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="12">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="13">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192">
-<meta name="plan-impl" content="0.23">
+<meta name="plan-impl" content="0.31">
 </head>
 <body>
   <main class="plan-doc">
@@ -410,10 +410,14 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T024644047165-review-of-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T03:18:46.716Z">
     <div class="r-comment-body"><p>review stored and parsed at 79; its three findings went back to the census session as a repair</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T021758002591-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T04:40:00.000Z">
+    <div class="r-comment-body"><p>Census of every recorded run on the locally served lane: 1577 runs, 110 dead. At a constant effort of xhigh, role separates the rate 4.6x (review 12.1% 45/373 against investigate 2.6% 2/76 and test 5.9% 3/51), so role discriminates while effort is held fixed; within review, high (1/12) is too small to separate effort from role, so the plan's ban on justifying a fix by effort stands. Death is read from the terminal shape of the run's stream (no result record and no live pointer); liveness is derived from the pointer's pid and recorded start tick rather than a stored field, so an in-flight run reads running rather than dead. A manifest-complete positive control is read not-dead and the declared negative control reddens the completed fixture. 9 focused tests pass; artifact docs/research/data/review-death-by-effort.json</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260923T0555-census-landed" data-who="reckon-ship" data-when="2026-09-23T05:55:00+02:00">
+    <div class="r-comment-body">§2 answered at ecbe9d35. Across the recorded local-lane runs, review at xhigh dies at 12.2% (45 of 369) and investigate at xhigh at 2.6% (2 of 76). Both use the read-only sandbox and the same effort, so <strong>role discriminates, not effort or sandbox</strong>. The fix is provisioning for the review role, not routing by effort. Review at high has too few runs to separate: 1 of 11. This retracts the coordinator's earlier small-sample reading, from this sprint's own reviews, that effort discriminated. The census now reads liveness through record_process_alive, so an in-flight run is not counted dead. The re-review scored 92 with all three prior findings fixed. §2 is done: 4 of 13 nodes.</div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260923T0550-scope-extension" data-who="reckon-ship" data-when="2026-09-23T05:50:00+02:00">
     <div class="r-comment-body">Scope extended at the lead's direction on 2026-09-23. §8 measures whether a resumed member session sends one worker's gathered context into the next node, which slows turnaround and spends the codex subscription, and then stops fresh nodes from inheriting it. §9 demonstrates that a local worker compacts and continues at the window, and carries the harness-level prevention for each death shape this plan's RCA identifies. The executable denominator rises from 10 to 13 nodes: §8 measure, §8 refuse-to-inherit, §9 demonstration. impl moves to 0.23 on 3 of 13 landed.</div>
-<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T021758002591-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T04:40:00.000Z">
-    <div class="r-comment-body"><p>Census of every recorded run on the locally served lane: 1577 runs, 110 dead. At a constant effort of xhigh, role separates the rate 4.6x (review 12.1% 45/373 against investigate 2.6% 2/76 and test 5.9% 3/51), so role discriminates while effort is held fixed; within review, high (1/12) is too small to separate effort from role, so the plan&#39;s ban on justifying a fix by effort stands. Death is read from the terminal shape of the run&#39;s stream (no result record and no live pointer); liveness is derived from the pointer&#39;s pid and recorded start tick rather than a stored field, so an in-flight run reads running rather than dead. A manifest-complete positive control is read not-dead and the declared negative control reddens the completed fixture. 9 focused tests pass; artifact docs/research/data/review-death-by-effort.json</p></div>
 </div>
 </section>
 </main>
