@@ -114,6 +114,7 @@ STATE_HUE = {
     "light": {
         "blocked": 124,
         "failed": 124,
+        "launch-failed": 124,
         "stopped": 124,
         "abandoned": 124,
         "stalled": 130,
@@ -134,6 +135,7 @@ STATE_HUE = {
     "dark": {
         "blocked": 203,
         "failed": 203,
+        "launch-failed": 203,
         "stopped": 203,
         "abandoned": 203,
         "stalled": 179,
@@ -635,14 +637,17 @@ def _derive_effort(effort: Any) -> str:
     return word.lower()
 
 
-def declared_model_aliases() -> tuple[str, ...]:
+def declared_model_aliases(project: str | None = None) -> tuple[str, ...]:
     """The aliases the resolved flight config declares, deduped and sorted.
 
     Every backend may declare an alias — the display label rendered in the pane
     in place of its model identifier — so the pane can size one column to the
-    whole configured vocabulary. Resolution reads the same layers a dispatch
-    does (shipped, host, project, override), so the column the reader's pane
-    uses is the one a run sent through this configuration would carry.
+    whole configured vocabulary. Resolution reads the same four layers a
+    dispatch does — shipped, host, project and override — with ``project``
+    selecting the project layer, so the column the reader's pane uses is the one
+    a run sent through that configuration would carry. A row names its own
+    project, and the pane is sized from that project's layer rather than a
+    project-less resolution the dispatch would never take.
 
     A config that cannot be read yields no aliases rather than raising: this is
     a display surface, and a pane that will not render because a config file is
@@ -655,7 +660,7 @@ def declared_model_aliases() -> tuple[str, ...]:
     except ImportError:
         return ()
     try:
-        config = flight_module.resolve().config
+        config = flight_module.resolve(project).config
     except (OSError, ValueError, flight_module.FlightConfigError):
         return ()
     backends = config.get("backends")
@@ -821,17 +826,23 @@ class Ticker:
         theme: str = DEFAULT_THEME,
         color: bool = False,
         model_aliases: Iterable[str] | None = None,
+        project: str | None = None,
     ) -> None:
         self.theme = theme if theme in PALETTE else DEFAULT_THEME
-        # The model cell is sized once, from the aliases the configuration
-        # declares, so effort lands on one screen column and an id outside that
+        # The model cell is sized from the aliases the configuration declares,
+        # so effort lands on one screen column and an id outside that
         # vocabulary is cut rather than allowed to shift the cells after it. An
         # explicit set overrides the resolved config, which lets a caller size
-        # the column for a vocabulary it already holds.
-        self.model_width = model_cell_width(
-            declared_model_aliases() if model_aliases is None else model_aliases
-        )
-        self.width = max(int(width), MIN_WIDTH - MODEL + self.model_width)
+        # the column for a vocabulary it already holds. Otherwise a row's own
+        # sets which layers the config resolves through: each row names its
+        # project, so a project alias widens the cell for that project's rows,
+        # matching what a dispatch through the same configuration would carry.
+        self._requested_width = int(width)
+        self._fixed_aliases = None if model_aliases is None else tuple(model_aliases)
+        self._project = project
+        self._alias_widths: dict[str | None, int] = {}
+        self.model_width = self._model_width(project)
+        self.width = self._grid_width(self.model_width)
         # NO_COLOR is the caller's environment overriding the caller's flag, per
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
@@ -845,6 +856,25 @@ class Ticker:
         # every live run, which is a fact about the reading rather than a defect
         # in it, because an age nobody observed cannot be reported honestly.
         self._entered: dict[str, tuple[str, float]] = {}
+
+    def _model_width(self, project: str | None) -> int:
+        """The model cell's width for ``project``, resolved once and remembered.
+
+        A pane streaming one project resolves one width; a configured alias set
+        held by the caller fixes it for every project. Cached so the config is
+        read once per project rather than once per row.
+        """
+        if self._fixed_aliases is not None:
+            return model_cell_width(self._fixed_aliases)
+        if project not in self._alias_widths:
+            self._alias_widths[project] = model_cell_width(
+                declared_model_aliases(project)
+            )
+        return self._alias_widths[project]
+
+    def _grid_width(self, model_width: int) -> int:
+        """The whole grid's width: the request, raised to fit a wider model cell."""
+        return max(self._requested_width, MIN_WIDTH - MODEL + model_width)
 
     def hue(self, node: str) -> int:
         """The node's colour, claimed on first sighting and kept thereafter."""
@@ -903,6 +933,12 @@ class Ticker:
         silently ate the fleet's numbers instead.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
+        # The row names its own project, so the model column is sized from the
+        # project layer its dispatch would read rather than a project-less
+        # resolution. A row with no project falls back to the instance's, and
+        # then to the project-less layers.
+        row_project = str(event.get("project") or "").strip() or self._project
+        model_width = self._model_width(row_project)
         raw_to_state = str(event.get("to_state") or "unknown")
         typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
@@ -944,7 +980,7 @@ class Ticker:
             (f"{BASELINE_MARKER if baseline else '':<{MARKER}}", "dim"),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" ", None),
-            (f"{elide(model_cell, self.model_width):<{self.model_width}}", "dim"),
+            (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
             (" " * PAIR_GAP, None),
             (f"{effort_cell:<{EFFORT}}", "dim"),
         ]
@@ -953,7 +989,7 @@ class Ticker:
         cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
-        room = max(self.width - head, 0)
+        room = max(self._grid_width(model_width) - head, 0)
         # The ages are read against the counters they qualify, so they take the
         # fixed columns and the clause keeps the margin. Every column ahead of
         # the reason is sized by what it carries, so the ages are paid for out
