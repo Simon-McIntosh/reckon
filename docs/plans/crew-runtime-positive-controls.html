@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="101">
 </head>
 <body>
   <main class="plan-doc">
@@ -1063,6 +1063,41 @@
     worker's own gate run &mdash; the four measured cases, the boundary and the seven-case fence are in
     <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed#s19">&sect;19 landed</a>.</p>
 
+    <h2 id="s20">&#167;20 &mdash; A control is judged by what it did, not by how it was worded</h2>
+    <p>The declared negative control is admitted by comparing the declaration against the text of the red log.
+    Across this plan and the sprint that produced the lead's decision, <strong>twelve sound controls have been
+    refused by that comparison and none has been caught by it</strong>. Five workers produced five shapes &mdash;
+    a path followed by an em dash and prose, a mapping of sub-keys, a markdown heading with the path beneath, a
+    relative path with a labelled second line &mdash; every one a reasonable reading of a field whose name says
+    <em>log</em>, every one carrying at least as much information as the guard wanted, every one refused.</p>
+    <p>The comparison is also defeatable in the one direction that matters, by the person it blocks: pasting the
+    declaration into the log satisfies it while adding no evidence, and nothing afterwards distinguishes that
+    from an honest re-run. A guard that can be satisfied by rewording, and that has never once separated a sound
+    control from an unsound one, is reporting a protection it does not provide.</p>
+    <p>Replace it with the two facts a guard can verify without reading any wording: <strong>the control run
+    exits non-zero</strong>, and <strong>its failure set differs from the baseline's</strong>. Keep the
+    declaration where it already lives on the node record, and print it beside the log in the promotion output
+    so a person judges the match. A reader comparing a declaration with a red log is the better instrument for
+    <em>is this the right mutation</em>, and unlike a substring test it cannot be satisfied by rewording. This is
+    the same design rule as the two sections before it &mdash; ask the store what happened rather than police the
+    form of the sentence describing it.</p>
+    <p><strong>Done when.</strong> Cases in <code>tests/test_control_gate_checks_facts.py</code> assert that a
+    control whose run exits non-zero with a failure set differing from the baseline's is admitted whatever its
+    wording, including a declaration sharing no words with its log; that a control whose run exits zero is
+    refused; that a control exiting non-zero with a failure set identical to the baseline's is refused, which is
+    the case a substring test cannot see at all; that a log whose first line merely repeats the declaration while
+    the run exited zero is refused, which is the defeat the old guard admitted; and that the promotion output
+    carries the declaration text beside the log path so the human comparison the decision relies on is actually
+    available. The declared mutation is applied, <code>tests/test_control_gate_checks_facts.py</code> is observed
+    to fail, and the red log is recorded with the mutation verbatim on its first line.</p>
+    <p><strong>Files.</strong> <code>reckon/crew/promotion.py</code>, where
+    <code>_require_declared_negative_control</code> performs the comparison, and a new
+    <code>tests/test_control_gate_checks_facts.py</code>. The four record repairs travelling with this decision
+    &mdash; a case that must name which guard fired, a gate log that must carry its revision on line one, a log
+    whose name must match its contents, and a presented citation that must be refused rather than filtered
+    &mdash; are carried in the followup rather than folded in here, because each is a separate property and this
+    section owns one.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
@@ -1195,6 +1230,11 @@
     <h4 class="r-fu-title">Replace the verbatim control match, and make the cases and logs say which guard fired</h4>
     <div class="r-fu-body"><p>One change and four repairs, all in or around the promotion gate.</p><p><strong>The guard checks facts, not wording.</strong> <code>_require_declared_negative_control</code> still compares the declaration against the log's text. Twelve sound controls have been refused by it and none caught, and pasting the declaration into the log satisfies it while adding no evidence. Gate instead on the two facts a guard can verify without reading any wording: the control run exits non-zero, and its failure set differs from the baseline's. Keep the declaration on the node record and print it beside the log so a person judges the match.</p><p><strong>A case must say which guard fired.</strong> The case at <code>tests/test_cited_identifier_resolves.py:369</code> passes under the declared mutation, because an unrefused citation still trips the worktree-head guard and the assertion holds either way. Assert the refusal that is under test, not an exit code any refusal would produce.</p><p><strong>A gate log names its tree on line one.</strong> None of the logs this plan's own nodes produced carries the revision, tree and command on the first line, although the manifest template requires it. The requirement is stated and unchecked, which is the shape that decays.</p><p><strong>A log's name must match its contents.</strong> A log called for the new file alone carried the whole population, so a claim about the file rested on a different log than the one cited.</p><p><strong>The presented-commit branch still drops silently.</strong> An unresolvable citation presented beside a commit is filtered away rather than refused, pinned as intended silence by a test outside the last node's fence; it must land with that file.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls — replace the verbatim negative-control match with a gate on the control&#x27;s exit status and failure-set delta, repair the non-discriminating case and the presented-commit branch, and make gate logs name their revision on line one. Dispatch only when reckon/crew/promotion.py carries no live claim.</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-a-launch-failure-leaves-a-record" data-status="open" data-written-by="ship-crpc-20260921" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A launch failure leaves something a later reader can find</h4>
+    <div class="r-fu-body"><p>A worker whose launch fails leaves a run classified <code>abandoned</code> with a null manifest <strong>and nothing else</strong>. Both the diagnosis and its number are composed at classification time from a transient attempt record and discarded.</p><p>Measured across four repositories on 2026-09-23. The sentence a reader actually sees &mdash; <em>the launch for backend 'clive' exited with status 2 before writing</em> &mdash; is an f-string in <code>reckon/crew/recovery.py:2903</code> and <code>reckon/crew/resumption.py:630</code>. It appears in <strong>0 of 5,424</strong> worker stderr files, 0 live pointers, and 0 of 4,579 ledger rows across reckon, imas-efit, imas-codex and nova, each count carried with a positive control on the same mechanism so the zeros are evidence rather than silence. The number is no better off: of 2,721 rows carrying an <code>exit_status</code>, every one sits under <code>gate_check</code> and is the gate command's status supplied by a coordinator at promotion, not the launch's. Status 2 appears nowhere because it was never a gate status.</p><p>The cost is not hypothetical. Twenty-five workers died inside one hour on 2026-09-22 and the fleet cannot say how: the serve was healthy throughout, no rate limit was hit, and exactly one kill-family command executed in the surrounding eleven hours. The one instrument that could have separated that cohort from the next has no field to read, and no later pass will manage it, because the evidence was never written rather than lost.</p><p>Persist the attempt's exit status onto the run record at classification, and persist the composed diagnosis or at minimum its inputs. A reader six months from now will grep for the only string they ever saw and find nothing in any store, which is how this session nearly reported a real mass failure as a clean result.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-runtime-positive-controls — persist a launch failure&#x27;s exit status and composed diagnosis onto the run record at classification, so an abandoned run carries evidence a later reader can search rather than a sentence rendered once and discarded.</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
