@@ -584,8 +584,10 @@ def _negative_control_report(root: Path) -> list[str]:
         *lines,
         f"stub exit: {completed.returncode}",
         f"main checkout plan unchanged: {_sha256(fixture.main_plan) == before}",
-        f"stand-in ~/.claude holds only its sentinel: "
-        f"{sorted(p.name for p in fixture.claude.iterdir())}",
+        (
+            "stand-in ~/.claude holds only its sentinel: "
+            f"{sorted(p.name for p in fixture.claude.iterdir())}"
+        ),
     ]
 
 
