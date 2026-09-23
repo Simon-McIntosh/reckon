@@ -132,6 +132,65 @@
       session, and nothing under the real <code>~/.claude</code> changed. That is checked by a before
       and after listing of <code>~/.claude/projects</code> restricted to the run's worktree name. A
       codex worker does the same with <code>~/.codex/auth.json</code> unchanged.</p>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260923T1555-harness-home-landed" data-who="node each-run-owns-its-harness-home" data-when="2026-09-23T15:55:00+00:00">
+        <div class="r-comment-body"><p><strong>Landed in this section.</strong>
+        Each run now owns the home its harness writes in: <code>launch_plan</code> sets
+        <code>CLAUDE_CONFIG_DIR</code> to <code>&lt;run_dir&gt;/harness</code> for the claude and
+        clive dialects and <code>CODEX_HOME</code> to <code>&lt;run_dir&gt;/codex-home</code>
+        for codex, seeds each with the directory alone, and binds the operator's
+        <code>~/.codex/auth.json</code> read-only into the codex home rather than copying
+        it. The home is seeded only when the manifest's parent directory already exists,
+        because a preview composes a plan before anything has been created. With the
+        harness state and the plan write both homed inside the run, the fence is composed
+        by default (<code>fence=True</code>) &mdash; which is what &sect;1 was waiting for.</p>
+
+        <p><strong>One addition to &sect;1's granted roots: the lock directory.</strong>
+        Every plan write serialises through <code>&lt;config&gt;/locks/&lt;namespace&gt;/&lt;hash&gt;.lock</code>,
+        and taking the lock is a write. A worker editing the copy of a plan in its own
+        worktree takes the same lock as one editing the main checkout, so a sealed lock
+        directory would refuse it every plan write it could make, its own worktree copy
+        included. The directory is therefore seeded and granted writable alongside the run
+        directory the fence already re-opened inside a sealed config home. Measured under
+        the fence before the grant: <code>mkdir</code> of an existing directory succeeds,
+        while opening a lock file and creating a new directory both fail
+        <q>Read-only file system</q>.</p>
+
+        <p><strong>The MCP measure above is now covered.</strong> A fenced stub that
+        starts reckon's MCP server as a child of the fenced process and calls
+        <code>edit_plan</code> without <code>checkout_path</code> is refused with
+        <q>Read-only file system</q>, and the main checkout's plan file is byte-identical
+        afterwards (sha256 compared before and after); the same call naming the worker's
+        worktree lands there and reports version 1. The refusal names the target path, not
+        the lock, because the lock is taken first.</p>
+
+        <p><strong>Declared negative control.</strong> <em>leave CLAUDE_CONFIG_DIR unset so
+        the fenced stub writes under the stand-in ~/.claude</em> &mdash; applied, that write
+        is refused and the stand-in <code>~/.claude</code> holds only its sentinel, so the
+        state write's success rests on the harness home rather than on a fence that
+        happened to allow it. The plan-write half of the measure is unmoved, which is the
+        check that the two are independent. Gate over the declared selection on an
+        <code>all_debug</code> partition: base <code>d753e65b</code> and the head both
+        report the same three pre-existing budget-parsing failures with identical ids
+        (<code>3 failed, 42 passed</code> and <code>3 failed, 48 passed</code>), so this change
+        adds none; lint over the touched paths adds nothing. Commits
+        <code>c72c460e</code> and <code>ed6f3f3c</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg</code>.</p>
+
+        <p><strong>Still owed by this section</strong>, and run in one bound at a size that
+        fits one turn: the falsifier's own probe &mdash; a real clive worker, fenced,
+        completing a one-file node so its stream carries a <code>session_id</code> and its
+        transcript lands under <code>&lt;run_dir&gt;/harness</code>, <code>crew resume</code>
+        with nothing added under <code>~/.claude/projects</code> for that worktree, and a
+        codex worker with <code>~/.codex/auth.json</code> unchanged. Four failures in
+        neighbouring test files are newly visible, all assertions that pin an exact argv or
+        an exact plan environment and so meet the new default
+        (<code>test_launch_plan_attaches_images.py</code> two,
+        <code>test_backend_environment.py</code> one,
+        <code>test_backend_sandbox_delivery.py</code> one); they lie outside this node's
+        scope and are reported rather than patched.</p></div>
+      </div>
     </section>
 
     <section id="s3" data-reckon="section">

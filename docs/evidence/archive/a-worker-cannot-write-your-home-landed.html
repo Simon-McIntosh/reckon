@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-cannot-write-your-home-landed">
   <meta name="plan-title" content="A Worker Cannot Write Your Home &mdash; landed evidence">
-  <meta name="plan-summary" content="One section per node: the launch argv is wrapped in a read-only filesystem fence (§1).">
+  <meta name="plan-summary" content="One section per node: the launch argv is wrapped in a read-only filesystem fence (§1), and each run owns the harness home its worker writes in (§2).">
   <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
-  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s1">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s1,reckon:a-worker-cannot-write-your-home#s2">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="9125b986">
-  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg">
+  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg">
   <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -93,6 +93,95 @@ claude sentinel exists unfenced: False</pre>
     <code>3 failed, 60 passed</code>. Lint delta is zero on both touched files
     (<code>_backends.py</code> 6&nbsp;&rarr;&nbsp;6, <code>test_backends.py</code>
     4&nbsp;&rarr;&nbsp;4, the new test file 0).</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; A worker's own harness state lives in its run</h2>
+    <p><strong>Node:</strong> <code>each-run-owns-its-harness-home</code>.</p>
+
+    <p><strong>What landed.</strong> <code>launch_plan</code> now points the harness at
+    a home inside the run: <code>CLAUDE_CONFIG_DIR</code> at
+    <code>&lt;run&gt;/harness</code> for the claude and clive dialects, and
+    <code>CODEX_HOME</code> at <code>&lt;run&gt;/codex-home</code> for codex. Each home is
+    seeded with the directory alone, and only when the manifest's parent directory
+    already exists &mdash; a preview composes a plan before anything has been created,
+    and a run with nowhere to keep a transcript is not given a variable pointing at
+    one. The operator's <code>~/.codex/auth.json</code> is bound read-only into the
+    codex home rather than copied, so a worker cannot shadow a login the operator
+    refreshes. With both homes in place the fence is now composed by default
+    (<code>fence=True</code>), which is what &sect;1 was waiting for.</p>
+
+    <p><strong>The lock directory, an addition to the granted roots.</strong> Every plan
+    write serialises through <code>&lt;config&gt;/locks/&lt;namespace&gt;/&lt;hash&gt;.lock</code>,
+    and opening that file is a write. A worker editing the copy of a plan in its own
+    worktree takes the same lock as one editing the main checkout, so a sealed lock
+    directory refuses a fenced worker <em>every</em> plan write it could make. The
+    directory is therefore seeded and granted writable, beside the run directory the
+    fence already re-opened inside a sealed config home. Measured under the fence
+    before the grant: <code>mkdir</code> of an existing directory succeeds, while
+    opening a lock file and creating a new directory both fail
+    <q>Read-only file system</q>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg"
+           alt="The run directory and the two harness homes it owns, the two routes a fenced worker's edit_plan takes, and the declared negative control.">
+      <figcaption>A run owns its own harness home, and a plan write has two routes out
+      &mdash; only one of which lands in the worker's worktree.</figcaption>
+    </figure>
+
+    <p><strong>Method.</strong> <code>tests/test_each_run_owns_its_harness_home.py</code>
+    stands a home, a main checkout, a worktree and a live run directory in a temp tree,
+    composes the plan through <code>launch_plan</code>, asserts the environment and the
+    composed argv, and then executes the argv with a stub in place of the harness. The
+    stub writes its own state where its own variable points, attempts to remove the
+    codex login, and optionally starts reckon's MCP server as a child of the fenced
+    process and calls <code>edit_plan</code> twice &mdash; once without
+    <code>checkout_path</code> and once naming the worktree.</p>
+
+    <h3>The reproduction, quoted</h3>
+    <pre>harness-state-write ok /tmp/&hellip;/crew/runs/r1/harness/session-probe.txt
+edit no-checkout-path refused=True isError=True path=None detail=Error executing tool edit_plan: [Errno 30] Read-only file system: '/tmp/&hellip;/Code/proj/docs/plan-a.html.tmp'
+edit checkout-path refused=False isError=False path=/tmp/&hellip;/.worktrees/wt/docs/plan-a.html detail={ "ok": true, "message": "Updated plan plan-a to version 1." &hellip; }</pre>
+    <p>The refusal names the target path and not the lock, because the lock is taken:
+    the write into the sealed main checkout then fails on its own temp file. The main
+    checkout's plan file is byte-identical afterwards (sha256 compared before and
+    after), and the worktree's copy carries the replacement text. So the fence holds
+    the route that goes live for every session through the editable install, while the
+    worker keeps the route it exists to take.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>leave CLAUDE_CONFIG_DIR unset so the fenced stub writes
+    under the stand-in ~/.claude</em>. Applied, the harness state write is refused
+    there under <q>Read-only file system</q> instead of landing in
+    <code>&lt;run&gt;/harness/</code>, and the stand-in <code>~/.claude</code> holds
+    only its sentinel &mdash; so the state write's success in the main measure is
+    attributable to the harness home and not to a fence that happened to allow it. The
+    plan-write half of the measure is unmoved by the mutation, which is the check that
+    the two are independent. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/negative-control-harness-home.txt</code>,
+    whose first line is the declared mutation verbatim.</p>
+
+    <h3>Gate</h3>
+    <p>Base revision <code>d753e65b</code> and the head were run on an
+    <code>all_debug</code> partition over the declared selection &mdash;
+    <code>tests/test_backends.py</code>, <code>tests/test_launch_plan_fences_the_home.py</code>
+    and this node's new file (absent at base). Both report the same three pre-existing
+    budget-parsing failures with identical ids: <code>3 failed, 42 passed</code> at base
+    and <code>3 failed, 48 passed</code> at the head, so zero failures were added. Lint
+    over the touched paths adds nothing (<code>_backends.py</code> 7&nbsp;&rarr;&nbsp;6
+    from a pre-existing long line the reformat removed, <code>test_backends.py</code>
+    5&nbsp;&rarr;&nbsp;4, the new test file clean).</p>
+
+    <p><strong>Out of scope, reported not patched.</strong> Four failures in neighbouring
+    files are newly visible at the head, all of them assertions that pin an exact argv or
+    an exact plan environment and therefore meet the new default:
+    <code>test_launch_plan_attaches_images.py</code> (two tests),
+    <code>test_backend_environment.py</code> (one) and
+    <code>test_backend_sandbox_delivery.py</code> (one). &sect;2's own falsifier &mdash; a
+    real clive worker, fenced, completing a node with a <code>session_id</code>, resumed
+    by <code>crew resume</code> with nothing added under <code>~/.claude/projects</code> &mdash;
+    needs a dispatched run and was not exercised here. Both belong to that section and
+    run in one bound, at a size that fits one turn.</p>
   </section>
 </main>
 </body>
