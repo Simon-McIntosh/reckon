@@ -91,7 +91,7 @@
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="allocation-death-recovery" data-choice="auto-rehold" data-by="Simon McIntosh" data-when="2026-09-23T14:11:46+00:00">
-    <p class="r-dec-q">What happens to placed workers when the allocation ends?</p>
+    <p class="r-dec-q">What happens to placed workers when the allocation has ended &mdash; confirmed gone, not merely unreadable from the asking host?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="refuse-and-report">Dispatch refuses and the monitor reports the lost reservation</button>
       <button class="r-opt chosen" data-value="auto-rehold">The next dispatch re-holds an allocation automatically</button>
@@ -104,8 +104,8 @@
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Roll the fleet in and measure the throttled share over a working day</h4>
-    <div class="r-fu-body"><p>Place workers from at least two projects, resolve a live worker's host to prove it rather than reading the configuration back, and report the throttled share of the user slice beside the recorded baseline. Exercise the allocation-death path once on a worker nobody needs and write down the recovery.</p></div>
+    <h4 class="r-fu-title">Place the fleet, measure the throttled fraction, and show the re-hold</h4>
+    <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> &mdash; resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
     </article>
 </section>
