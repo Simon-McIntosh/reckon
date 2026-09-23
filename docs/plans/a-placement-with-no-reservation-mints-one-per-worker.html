@@ -51,8 +51,12 @@
     a reservation first, so the fallback is never reached. The protection is a habit, not
     a mechanism: nothing in the code requires the reservation to exist before the
     declaration takes effect.</p>
-    <p>Host-layer placement removes the habit. A declaration in
-    <code>~/.config/reckon/flight.yaml</code> applies to every project on the workstation,
+    <p>Host-layer placement is what will remove the habit, and it has not happened yet:
+    <code>~/.config/reckon/flight.yaml</code> carries no <code>placement</code> key at the
+    time of writing, so nothing at the host layer reaches the fallback on this workstation
+    today. That makes this plan preventive rather than urgent &mdash; and it is the reason
+    to land it before the declaration, not after. Once made, a declaration there applies to
+    every project on the workstation,
     and a project that has published no reservation of its own reaches the fallback on its
     first dispatch. Reservations became per-project keyed on 2026-09-23, so a named project
     reads only its own record and does not fall back to the host-global one. That keying is
@@ -64,9 +68,11 @@
     <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2>
     <p>The remedy is not to refuse and it is not to mint. A dispatch that finds no
     readable reservation <strong>holds the shared one</strong> &mdash; the same allocation
-    every other worker on the workstation uses &mdash; publishes it to the <em>host-global
-    record</em>, the single unkeyed reservation every project reads, and places itself
-    inside it as a step. Every follow-on worker then finds
+    every other worker on the workstation uses &mdash; publishes it to the <em>host-global record</em> &mdash; the single unkeyed reservation
+    every project reads once the keying retirement has landed &mdash; and places itself
+    inside it as a step. <strong>That retirement is a precondition of this section, not a
+    consequence of it:</strong> implemented alone against today's code, a dispatch would
+    publish a record no other project reads, and the sharing mechanism would not share. Every follow-on worker then finds
     that record and joins the allocation rather than asking for one. One allocation is
     created, once, by whoever happens to dispatch first.</p>
     <p>The distinction this plan turns on is between <em>minting</em> and
@@ -93,9 +99,11 @@
     reached or the query fails, the dispatch waits and retries rather than concluding that
     nothing is held. That is a different case from an allocation which is alive but cannot
     be joined &mdash; a step creation failing against a live allocation is an error to
-    report, never a reason to hold a second one. Both end the same way, because a second
-    allocation held beside a live one is the per-worker minting this plan exists to remove,
-    arriving by a slower route.</p>
+    report, never a reason to hold a second one. The two cases are handled differently &mdash; one waits and retries, the other reports
+    &mdash; and they carry the same prohibition, which is that neither may end in a second
+    allocation. Mishandled, both converge on the same defect: a second allocation held
+    beside a live one is the per-worker minting this plan exists to remove, arriving by a
+    slower route.</p>
     <p><strong>Done when.</strong> A dispatch declaring placement with no readable
     reservation holds the shared allocation, publishes it, and runs its worker as a step
     inside it with <code>--overlap</code> and the job id it just published. A second
