@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T18:57:06",
+  "updated": "2026-09-23T18:58:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -320764,6 +320764,228 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T160312479206-page-load-remeasured",
+        "plan": "a-page-load-reads-each-file-once",
+        "section": "\u00a75",
+        "node": "page-load-remeasured",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1734,
+                "cached_input_tokens": 502385,
+                "input_tokens": 504121,
+                "output_tokens": 96,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 504217,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "7d3382d5-6772-46fc-8699-0b25bce47c6f",
+            "session_id": "page-load-20260923"
+          },
+          "done_when": "the report at the write path records wall time, status and bytes for the six requests in a cold pass and a warm pass started at least 10 s after the cold pass ends, the host, its load average at each pass start and each pass's UTC window, one 304 ETag revalidation of a figure and the gzipped size of /_discover/nova; the verdict states whether every warm request answered 200 in under 2 s and names each slower one with a py-spy dump frame taken while it ran",
+          "estimated_hours": null,
+          "goal": "Record cold and warm timings of the six section-one requests against the restarted reckon.service",
+          "id": "page-load-remeasured",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T16:03:12Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 7,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 98000,
+            "observed_at": "2026-09-23T16:03:05Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T160312479206-page-load-remeasured/manifest.md",
+          "negative_control": "the verdict line is computed from the recorded warm timings; setting one recorded warm time to 2.5 s must flip the verdict to failed",
+          "plan": "a-page-load-reads-each-file-once",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/page-load-20260923/page-load-remeasured",
+            "docs/evidence/archive/a-page-load-reads-each-file-once-landed.html",
+            "docs/figures/a-page-load-reads-each-file-once",
+            "docs/plans/a-page-load-reads-each-file-once.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "page-load-remeasure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T16:03:27Z",
+        "completed_at": "2026-09-23T16:54:52.157Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3074,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3085,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "562e3b6909259846d989ce03ff78ca3aa8591c39",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "negative-result",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T160312479206-page-load-remeasured/manifest.md",
+        "scope_changed": false,
+        "session_id": "03c01f46-8da2-4826-ac3b-370ed0236863",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T16:54:52.157Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "follow_on_paths": [
+          "/_projects/index.json",
+          "13.6",
+          "reckon/serve.py:1205"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "measurement node: the deliverable is the timing report under the session's reports directory",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/page-load-20260923/page-load-remeasured",
+          "session_id": "03c01f46-8da2-4826-ac3b-370ed0236863",
+          "session_source": "pointer",
+          "retained_at": "2026-09-23T16:54:52.157Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "ff7b2c98a3e3bf30b4385d27f9dee44b7d12a491",
+        "plan_impl_at_dispatch": 0.6,
+        "impl_move": {
+          "plan": "a-page-load-reads-each-file-once",
+          "at_dispatch": 0.6,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "failure-classification:negative-result"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T16:33:12.870020+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T16:03:12Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 7,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 0,
+          "mean_context": 98000,
+          "observed_at": "2026-09-23T16:03:05Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 62.0,
+        "orientation_input_tokens": 1291086.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -321076,6 +321298,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2377
+    "_version": 2378
   }
 }

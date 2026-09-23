@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -362,7 +362,10 @@
     <div class="r-comment-body"><p>read-back of a-page-load-reads-each-file-once: 28 multi-reading sentences, 11 material; the section-5 items (warm pass, host load, hard gate) resolved in the plan text; section 2 to 4 items settled by their landings</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T1655-s5-first-measure" data-who="reckon-ship" data-when="2026-09-23T16:55:00Z">
-    <div class="r-comment-body"><p>First re-measure, run <code>page-load-remeasured</code>, 16:22 to 16:23Z at load 8 to 12, against pid 1356099: the gate fails on one request. Warm figures: <code>/_discover</code> for reckon 0.60 s, imas-efit 0.59 s, nova 1.33 s and imas-codex 0.51 s; <code>/crew</code> 0.76 s; <code>/_projects/index.json</code> 13.6 s. A figure revalidates at 304, and <code>/_discover/nova</code> gzips to 1,327,615 of 5,507,121 bytes. The cold pass was not a first touch, because browser traffic had already warmed the process. The rollup's residual cost is &sect;7; &sect;5 is measured again once &sect;7 is merged and the service restarted. Report: <code>~/.config/reckon/crew/reports/reckon/page-load-20260923/page-load-remeasured/report.md</code>.</p></div>
+    <div class="r-comment-body"><p>First re-measure, run <code>page-load-remeasured</code>, 16:22 to 16:23Z at load 8 to 12, against pid 1356099: the gate fails on one request. Warm figures: <code>/_discover</code> for reckon 0.60 s, imas-efit 0.59 s, nova 1.33 s and imas-codex 0.51 s; <code>/crew</code> 0.76 s; <code>/_projects/index.json</code> 13.6 s. A figure revalidates at 304, and <code>/_discover/nova</code> gzips to 1,327,615 of 5,507,121 bytes. The cold pass was not a first touch, because browser traffic had already warmed the process. The rollup's residual cost is §7; §5 is measured again once §7 is merged and the service restarted. Report: <code>~/.config/reckon/crew/reports/reckon/page-load-20260923/page-load-remeasured/report.md</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260923T160312479206-page-load-remeasured" data-who="reckon-ship" data-when="2026-09-23T16:54:52.157Z">
+    <div class="r-comment-body"><p>warm /_discover 0.5-1.3 s and /crew 0.76 s, but /_projects/index.json 13.6 s warm fails the 2 s gate; py-spy puts the rollup in per-project signature walks, now section 7</p></div>
 </div>
 </section>
 </main>
