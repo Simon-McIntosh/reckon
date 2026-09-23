@@ -58,7 +58,11 @@
     It removes the asymmetry by shrinking the counted side. It is correct and it is not the end state: under host-layer placement every run reaching the backend is genuinely placed, so the
     placed-run count and the whole-backend count coincide. They coincide only while that
     holds, which is why the rule is written on the placed runs rather than on the coincidence.
-    The durable rule is narrower than both the project-scoped count the landed repair introduced and the whole-backend count it replaced: <strong>the roster counts the runs that were
+    The durable rule is selected more specifically than both the project-scoped count the
+    landed repair introduced and the whole-backend count it replaced &mdash; it is chosen by
+    the recorded fact that a run was placed, rather than by project membership or by backend
+    membership. It is not necessarily a smaller count: under host-layer placement it equals
+    the whole-backend count, which is the point. <strong>the roster counts the runs that were
     actually placed</strong>, which is true under both arrangements and needs no reasoning
     about which layer declared what. A pointer already records its placement, so the count
     can be taken from the fact rather than inferred from the configuration.</p>
@@ -97,7 +101,7 @@
       <button class="r-opt chosen" data-value="one-shared">One shared reservation, declared at the host layer</button>
       <button class="r-opt" data-value="per-project">One per project, declared in each project layer</button>
       </p>
-    <p class="r-dec-rat">The goal is to move the fleet, not one repository at a time. Per-project placement means five repositories hold five allocations, well over a hundred cores, to escape a shared four-core ceiling. One reservation held once with every session placing into it is what the design already describes.</p>
+    <p class="r-dec-rat">The goal is to move the fleet, not one repository at a time. Per-project placement means the mount list on this workstation holds thirteen projects, and at the twenty-eight cores the current allocation carries, per-project placement would reserve several hundred cores for a fleet that fits inside one, all to escape a shared four-core ceiling. An earlier wording of this rationale said five repositories, a figure that was never counted and that understated its own case. One reservation held once with every session placing into it is what the design already describes.</p>
     </div>
 <div class="r-dec" data-key="who-holds-the-allocation" data-choice="reckon-ensure" data-by="Simon McIntosh" data-when="2026-09-23T14:08:19+00:00">
     <p class="r-dec-q">Which command holds the fleet&#x27;s allocation once it is shared?</p>

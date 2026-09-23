@@ -54,8 +54,7 @@
     <p>Host-layer placement is what will remove the habit, and it has not happened yet:
     <code>~/.config/reckon/flight.yaml</code> carries no <code>placement</code> key at the
     time of writing, so nothing at the host layer reaches the fallback on this workstation
-    today. That makes this plan preventive rather than urgent &mdash; and it is the reason
-    to land it before the declaration, not after. Once made, a declaration there applies to
+    today. That makes this plan preventive rather than urgent &mdash; and it is the reason to land it before that host-layer declaration is made, not after. Once made, a declaration there applies to
     every project on the workstation,
     and a project that has published no reservation of its own reaches the fallback on its
     first dispatch. Reservations became per-project keyed on 2026-09-23, so a named project
@@ -67,8 +66,9 @@
 
     <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2>
     <p>The remedy is not to refuse and it is not to mint. A dispatch that finds no
-    readable reservation <strong>holds the shared one</strong> &mdash; the same allocation
-    every other worker on the workstation uses &mdash; publishes it to the <em>host-global record</em> &mdash; the single unkeyed reservation
+    readable reservation <strong>holds the shared one</strong> &mdash; the workstation-wide allocation every other
+    worker is placed into, which need not exist yet and is created here if it does not
+    &mdash; publishes it to the <em>host-global record</em> &mdash; the single unkeyed reservation
     every project reads once the keying retirement has landed &mdash; and places itself
     inside it as a step. <strong>That retirement is a precondition of this section, not a
     consequence of it:</strong> implemented alone against today's code, a dispatch would
@@ -109,8 +109,10 @@
     inside it with <code>--overlap</code> and the job id it just published. A second
     dispatch under a different project reads that same host-global record, starts no
     allocation of its own, and runs its worker as a step in the allocation it found,
-    asserted against a recording scheduler as exactly one allocation request across both
-    dispatches together.
+    asserted against a recording scheduler as exactly one <em>allocation-obtaining</em>
+    request across both dispatches together &mdash; the count is of requests that ask the
+    scheduler for an allocation, and the two step launches the clauses above require are
+    not counted.
     Concurrent dispatches racing from no record still produce one allocation. A live
     allocation is never replaced, and a backend declaring no placement is untouched. The
     test that currently pins the bare-<code>srun</code> wrapping is replaced by one whose
