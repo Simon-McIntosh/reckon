@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.45">
@@ -560,6 +560,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260923T071248760033-review-of-compaction-record-finished" data-who="reckon-ship" data-when="2026-09-23T08:00:23.745Z">
     <div class="r-comment-body"><p>fresh high-effort review stored at 77, record-keeping findings only; read before promotion</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20260923T1136-deaths-against-load" data-who="reckon-ship" data-when="2026-09-23T11:36:00Z">
+    <div class="r-comment-body"><p><strong>Do the deaths track lane load?</strong> The correlation node is <code>deaths-against-lane-load</code>. Its report and data are at <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/deaths-against-lane-load.{md,json}</code>. Its review scored 80.</p><p>Of 76 local-lane runs since 04:38Z, 19 died: 16 killed mid-thinking and 3 with <q>Prompt is too long</q>, all 3 on resumed sessions. 18 of the 19 deaths happened with 16 or more requests in flight, against 1 of 27 at 8 to 16. But survivors were measured at scan time and deaths at their own time, which overstates the contrast. Fresh against resumed shows no difference: 5 of 19 against 5 of 15, with overlapping intervals. The declared positive control, the 06:12Z outage, did not reproduce: no worker stream names a refusal. Nearly every death is a review.</p><p><strong>Load does not explain it alone.</strong> A fresh review, <code>r-20260923T102352472441</code>, died mid-thinking at 10:52:38Z after 119 turns, peak input 164,894 and one successful compaction. The lane read 4 running at 10:21Z and 13 at 11:09Z, well under its computed budget. The lane owner's engine log records 20,507 HTTP 200 responses and 0 non-200 over the same window. The engine is completing every request, so the kill is on the client side, and the missing evidence is the worker's exit signal. That record is being built by a-dispatch-returns-without-its-worker §3. The review's findings: the report link 404s, the instrument lives outside the repository, and the refusal detector was never shown to fire.</p></div>
 </div>
 </section>
 </main>
