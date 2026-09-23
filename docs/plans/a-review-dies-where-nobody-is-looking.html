@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
-<meta name="plan-impl" content="0.45">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -593,6 +593,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T110228349429-review-of-deaths-against-lane-load" data-who="reckon-ship" data-when="2026-09-23T11:29:16.595Z">
     <div class="r-comment-body"><p>review stored at 80; read before promotion</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-ardwnil-delivered-review-stop-landed" data-who="reckon-e5" data-when="">
+    <div class="r-comment-body"><p><strong>A delivered review now ends its turn.</strong> Commits 9cda3533 and e66d34a0, merged at f3b26ec0. When a review run's record is stored and its manifest reads complete, the watcher stops that worker through <code>routing._signal_process_group</code>. The call refuses if the process start time does not match or the pid leads its own process group. Gate: the declared selection passes 16 (9 unchanged plus 7 new). A wider related selection shows the same 4 pre-existing failures and 75 passes at base ef9ddbac and at head. Negative control: <code>review_delivered</code> made to always return False, after which the delivered case is not stopped and the signaller records no call.</p><p><strong>Independent review: 90/100</strong> (fit 19, goal fidelity 19, scope 20, evidence 16, durability 16). It raised two findings, both carried to the next node that touches <code>recovery.py</code>. (1) The <code>delivered_at</code> assertion in <code>tests/test_a_delivered_review_ends_its_turn.py:189</code> compares the function's return value against <code>max()</code> of its own two mtimes, which the fixture sets equal. So it cannot fail on the earlier-write regression it exists to catch. The fixture must date the two writes apart. (2) The <code>manifest_status_is_template(status)</code> clause at <code>reckon/crew/recovery.py:589</code> is reached only when <code>status == "complete"</code>, which a template status never equals, so it cannot fire. Either remove the clause or order it before the equality test, and test whichever is kept. <code>recovery.py</code> now passes to the S20 session's chain, and this section's per-run <code>local_only</code> node follows that chain carrying both fixes.</p></div>
 </div>
 </section>
 </main>
