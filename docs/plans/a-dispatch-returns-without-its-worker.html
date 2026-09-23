@@ -253,6 +253,39 @@
     path at the base revision. The write paths are <code>reckon/crew/dispatch.py</code> and that
     test.</p>
 
+    <h3>Landed &mdash; node <code>refusal-leaves-no-trace</code>, the reproduction first</h3>
+    <p>Node <code>refusal-leaves-no-trace</code> landed
+    <code>tests/test_refused_dispatch_leaves_no_pointer.py</code>, which forces each refusal path
+    after worktree creation begins. Four were already clean at the base revision
+    <code>12155ff8</code>: an occupied worktree path, an unresolved working directory, a worker
+    that will not spawn, and the watcher-required refusal. <strong>One class was not.</strong> Any
+    failure reached after the pointer write &mdash; the tree snapshot, the peer wiring, the
+    watcher read, the member registration, the final pointer write &mdash; met a defect in
+    <code>dispatch</code>'s own unwind.</p>
+    <p><strong>The defect.</strong> The unwind removed the worktree before unlinking the pointer.
+    The worktree remover refuses a worktree that a live pointer still claims, and until this run's
+    own pointer is unlinked it is that claim, so the remover raised and the unlink and the
+    run-directory removal after it never ran. The reproduction recorded the live pointer
+    <code>r-20260923T133703863731-node-refused</code> surviving a refused dispatch &mdash; pointer,
+    run directory and worktree, the residue that reads as a death.</p>
+    <p><strong>The test's design.</strong> For each refusal path the gate asserts that no live
+    pointer, no run directory, no worktree and no watcher transition row naming the node remain. It
+    also asserts that a refusal over a pre-existing worktree leaves that earlier run's tree
+    untouched, so the refusal does not over-reach, and that a positive control driving the ordinary
+    successful path shows every read does see a present run, so the clean assertion is a measurement
+    rather than a blind read. The real pointer directory under the user's config home is asserted
+    untouched, because an isolated read does not prove an isolated write.</p>
+    <p>The repair reorders the <code>except Exception</code> unwind in
+    <code>reckon/crew/dispatch.py</code>: unlink the pointer first, so the claim is gone before the
+    remover runs, then remove the run directory and the worktree. The mechanism, the five paths and
+    the figure are recorded in
+    <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;5.</p>
+    <p><strong>Not repaired here, recorded instead.</strong> The plan's <code>crew discard</code>
+    case &mdash; a discarded launch-failed run leaves its worktree, and a re-dispatch of the same
+    node is then refused with <code>worktree path already exists</code> &mdash; is the discarding
+    command's to fix, not dispatch's. It is a follow-on of this node rather than part of it, and the
+    refusal itself is correct.</p>
+
     <h2 id="s6">&sect;6 &mdash; A refusal is never returned for a dispatch that launched</h2>
     <p>imas-efit-e3 measured this at about 02:58 UTC on 2026-09-23, in session
     <code>ship-s13-20260922</code>. Two consecutive dispatches of node
