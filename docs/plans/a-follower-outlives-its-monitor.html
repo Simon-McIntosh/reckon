@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="9">
+  <meta name="plan-version" content="11">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -115,8 +115,16 @@
     already promoted stays suppressed.</p>
     <p>Three terms in this section are pinned to one reading. <em>Suppressed set</em> means the
     human path's own filter, <code>_row_is_stale_inventory</code> in <code>reckon/cli.py</code>.
-    The <code>SETTLED_STATES</code> constant in <code>reckon/crew/ticker.py</code> stays unchanged,
-    because the ticker uses it to answer a different question. <em>Delivers a row</em> means a row
+    The <code>SETTLED_STATES</code> constant in <code>reckon/crew/ticker.py</code> keeps its value.
+    Its only consumer is <code>settled_at_attach</code>, called by that filter alone, so the filter's
+    derivation changes and the constant's name keeps describing states that are settled rather than
+    states that are hidden. <em>The record</em> is a separate sidecar file in
+    <code>follower_dir</code>, named for the session: <code>&lt;session&gt;.delivered.json</code>. It
+    lives outside the flocked registration file, so writing it never contends with the registration
+    lock, and <code>follower_state</code> does not expose it. <em>A run that differs from the
+    record</em> includes a live run the record does not name at all, for example one dispatched
+    while no follower was attached. Such a run is replayed as a transition from
+    <code>dispatched</code>, so the header's count and the replay count the same population. <em>Delivers a row</em> means a row
     actually written to the pane, never a row generated and then suppressed. <em>Live run</em> means
     every live pointer the owning session holds, including unpromoted, failed and abandoned ones, so
     the header counts the same population the replay reports.</p>
@@ -186,7 +194,7 @@
     <code>sys.executable -m reckon crew follow --project P --session S</code>, or through the
     absolute path of the running console script, never the bare word <code>reckon</code>. The test
     kills the parent with SIGKILL and, within ten seconds of that kill, observes all three of these:
-    the follower process has exited; the session's registration file is no longer locked, proved by
+    the follower process has exited with nothing written to its stdout after the kill; the session's registration file is no longer locked, proved by
     taking the lock non-blocking; and a second follower started for the same session is the
     registered holder, with <code>follower_state</code> naming that second process's pid. The
     negative control is executed and logged: with the new consumer check deleted, the orphaned
