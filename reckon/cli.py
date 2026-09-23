@@ -1750,6 +1750,97 @@ class _FollowerReloader:
             )
 
 
+# The one line on this stream that is about the follower rather than the fleet.
+# The stream carries worker transitions and fleet posture, so the follower's own
+# ending has to be marked or a reader cannot tell it from a fleet event — and it
+# is the one fact about the follower a reader must act on.
+FOLLOWER_END_EVENT = "follower-end"
+
+
+def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
+    """List the owning session's runs whose state needs the coordinator now.
+
+    Read at the moment the follower ends rather than accumulated from the
+    stream. The line's job is to name what is outstanding as the pane goes
+    dark, and a run falls into a needs-action state whether or not a producer
+    ever wrote a transition for it — a run that finished while no producer was
+    up would otherwise be named by nobody.
+    """
+    from reckon.crew import recovery as recovery_module
+    from reckon.crew import runs as runs_module
+
+    stall_seconds = recovery_module.parse_duration(
+        recovery_module.DEFAULT_WATCH_STALL_WINDOW
+    )
+    moment = recovery_module._utc_seconds()
+    blocked_states = recovery_module.FLEET_BLOCKED_STATES
+    unpromoted_states = recovery_module.FLEET_UNPROMOTED_STATES
+    wanted = frozenset((*blocked_states, *unpromoted_states))
+    rows: list[dict[str, str]] = []
+    for pointer in runs_module._list_live_records(project=project):
+        owner = str(pointer.get("session") or "")
+        # A pointer with no recorded owner stays in the counted set, matching
+        # the dispatch fence: absence cannot prove it belongs to a peer.
+        if session is not None and owner and owner != session:
+            continue
+        snapshot = recovery_module._watch_snapshot(
+            pointer, moment=moment, stall_seconds=stall_seconds
+        )
+        state = str(snapshot.get("state") or "")
+        if state not in wanted:
+            continue
+        rows.append(
+            {
+                "run_id": str(snapshot.get("run_id") or ""),
+                "node": str(snapshot.get("node") or ""),
+                "state": state,
+            }
+        )
+    return rows
+
+
+def _follower_end_line(
+    *,
+    attach_line: str,
+    needs: list[Mapping[str, str]],
+) -> str:
+    """Compose the single line a reader acts on as the pane goes dark."""
+    if not needs:
+        tail = "no runs need you"
+    else:
+        outstanding = ", ".join(f"{row['run_id']} ({row['node']})" for row in needs)
+        if len(needs) == 1:
+            tail = f"1 run needs you: {outstanding}"
+        else:
+            tail = f"{len(needs)} runs need you: {outstanding}"
+    return f"follower end: arming lifetime elapsed; re-arm with: {attach_line}; {tail}"
+
+
+def _follower_end_event(
+    project: str,
+    *,
+    session: str | None,
+    armed_seconds: float | None,
+    elapsed: float,
+) -> dict[str, Any]:
+    """Build the follower's own final transition, carrying the line to print."""
+    from reckon.crew import runs as runs_module
+
+    attach_line = runs_module._watch_attach_line(project, session=session)
+    needs = _needs_you_runs(project, session=session)
+    return {
+        "event": FOLLOWER_END_EVENT,
+        "project": project,
+        "session": session or "",
+        "run_id": None,
+        "armed_seconds": armed_seconds,
+        "elapsed_seconds": round(float(elapsed), 3),
+        "attach_line": attach_line,
+        "needs_you": needs,
+        "line": _follower_end_line(attach_line=attach_line, needs=needs),
+    }
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -1764,6 +1855,7 @@ def _follow_watch_lines(
     sweep_interval: float | None = None,
     clock=time.monotonic,
     resume: Mapping[str, Any] | None = None,
+    lifetime: float | None = None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1784,6 +1876,14 @@ def _follow_watch_lines(
     ``session``. They carry no registration: the attachment and its dispatch
     guard stay the owning session's alone, so observing never vouches for
     delivery of the observed session's runs.
+
+    ``lifetime`` bounds the arming itself. The host ends a Monitor at thirty
+    minutes and announces it only in its own words, so a follower armed for
+    slightly less reaches its own deadline first: it prints one line a reader
+    can act on and releases its registration, rather than leaving the pane to
+    stop silently. That line is the one deliberate exception to this stream's
+    fleet-only vocabulary, because the end of the stream is the one fact about
+    the follower a reader must act on.
     """
     from reckon.crew import runs
 
@@ -1794,6 +1894,24 @@ def _follow_watch_lines(
         str(run_id): str(state)
         for run_id, state in dict(resume_state.get("reported") or {}).items()
     }
+
+    started_at = clock()
+    lifetime_deadline = (
+        None if lifetime is None else started_at + max(0.0, float(lifetime))
+    )
+    lifetime_elapsed = False
+
+    def _check_lifetime() -> None:
+        """Mark this arming ended when its own deadline has passed.
+
+        The deadline is the follower's own, so it is read on the wait pass
+        rather than on any stream event: a follower with no producer up must
+        still reach its deadline, which is exactly the case where a reader
+        would otherwise see nothing at all and assume the pane is quiet.
+        """
+        nonlocal lifetime_elapsed
+        if lifetime_deadline is not None and clock() >= lifetime_deadline:
+            lifetime_elapsed = True
 
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
@@ -1808,6 +1926,7 @@ def _follow_watch_lines(
                     "offset": offset,
                 }
             )
+        _check_lifetime()
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
@@ -1848,7 +1967,7 @@ def _follow_watch_lines(
         except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
             return
 
-    while not _stopped():
+    while not _stopped() and not lifetime_elapsed:
         _sweep_on_cadence()
         if not runs.producer_live(project):
             _tick()
@@ -1879,6 +1998,8 @@ def _follow_watch_lines(
             if _stopped():
                 return
             _tick()
+            if lifetime_elapsed:
+                break
             sleeper(poll_interval)
         if not stream_path.exists():
             continue
@@ -1893,6 +2014,8 @@ def _follow_watch_lines(
                     if selected is not None:
                         yield selected
                     _tick(stream_path=stream_path, offset=stream.tell())
+                    if lifetime_elapsed:
+                        break
                     _sweep_on_cadence()
                     continue
                 # Stopping and losing what is already written would be the same
@@ -1903,11 +2026,21 @@ def _follow_watch_lines(
                 if not runs.producer_live(project):
                     break
                 _tick(stream_path=stream_path, offset=stream.tell())
+                if lifetime_elapsed:
+                    break
                 # The gate is time-based, so calling it from the wait pass as
                 # well as the line pass runs the recovery on elapsed time while
                 # a producer is up; the outer loop only iterates after attach.
                 _sweep_on_cadence()
                 sleeper(poll_interval)
+
+    if lifetime_elapsed:
+        yield _follower_end_event(
+            project,
+            session=session,
+            armed_seconds=lifetime,
+            elapsed=clock() - started_at,
+        )
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:
@@ -2052,6 +2185,18 @@ _ATTENTION_DEPRECATION = (
     help="Emit machine-readable transition objects rather than ticker lines.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+@click.option(
+    "--lifetime",
+    default=None,
+    metavar="DURATION",
+    help=(
+        "End this follower after DURATION (an integer plus s, m or h, e.g. 29m), "
+        "printing one final line that names how to re-arm and this session's "
+        "runs that need the coordinator. The host ends a Monitor at thirty "
+        "minutes, so arm slightly less and re-arm on the final line instead of "
+        "discovering the end when the host kills the pane."
+    ),
+)
 @_ticker_options
 def crew_follow(
     project,
@@ -2061,6 +2206,7 @@ def crew_follow(
     attention,
     json_output,
     pretty,
+    lifetime,
     width,
     theme,
     no_color,
@@ -2086,7 +2232,15 @@ def crew_follow(
     if attention:
         click.echo(_ATTENTION_DEPRECATION, err=True)
     from reckon.crew import runs as runs_module
+    from reckon.crew.node import parse_duration
     from reckon.crew.recovery import format_watch_transition
+
+    lifetime_seconds: float | None = None
+    if lifetime is not None:
+        try:
+            lifetime_seconds = float(parse_duration(lifetime))
+        except runs_module.CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
@@ -2121,7 +2275,16 @@ def crew_follow(
             run_ids=run_ids,
             on_poll=poll,
             resume=resume,
+            lifetime=lifetime_seconds,
         ):
+            if event.get("event") == FOLLOWER_END_EVENT:
+                # This one line is about the follower, not the fleet, so it is
+                # printed as it was written rather than rendered as a fleet row.
+                if json_output:
+                    _emit({"ok": True, **event}, pretty)
+                else:
+                    _echo_follow_line(str(event.get("line") or ""))
+                continue
             if json_output:
                 _emit({"ok": True, **event}, pretty)
             elif not _row_is_stale_inventory(event):
