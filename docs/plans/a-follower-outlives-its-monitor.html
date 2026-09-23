@@ -421,6 +421,9 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T104315648273-review-of-monitor-output-test-reads-the-new-arming" data-who="reckon-ship" data-when="2026-09-23T11:24:05.357Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-set-20260923T1227-s7-orphan-releases" data-who="reckon-ship" data-when="2026-09-23T12:27:16Z">
+    <div class="r-comment-body"><p>The follower now checks its recorded consumer on each wait pass. The consumer is the parent recorded at registration, so a re-parent to init shows up as <code>os.getppid()</code> no longer naming it, and the recorded start time is the pid-reuse guard. When the consumer is gone the follower stops, prints nothing, and releases the registration by leaving, freeing the advisory lock for the session's next follower. Gate: <code>tests/test_orphaned_follower_releases.py</code>, 1 passed in 3.37 s. The negative control is applied and logged: deleting the check from the wait pass leaves the orphan still running ten seconds after the kill. Evidence: <a href="/reckon/evidence/archive/a-follower-outlives-its-monitor-landed#s7-orphaned-follower-releases">the landed record</a>.</p></div>
+</div>
 </section>
 </main>
 </body>
