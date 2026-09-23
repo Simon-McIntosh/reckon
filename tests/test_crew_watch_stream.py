@@ -17,6 +17,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew import ticker as ticker_module
 
 
 @pytest.fixture()
@@ -132,9 +133,13 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     wide = recovery.Ticker(width=208, color=False)
     lines = [recovery.format_watch_transition(event, ticker=wide) for event in events]
     assert len(lines) == 2
-    # The state the run moved into is on the row and the one it left is not.
+    # The transition row names the state the run moved into and neither the
+    # one it left nor any arrow; the baseline row before it names its own
+    # state behind the marker word.
     assert sum("blocked" in line for line in lines) == 1
-    assert all("working" not in line for line in lines)
+    assert "working" not in lines[-1]
+    assert ticker_module.BASELINE_MARKER in lines[0]
+    assert lines[0].index(ticker_module.BASELINE_MARKER) < lines[0].index("working")
     assert all("→" not in line for line in lines)
     # The clause explaining a blocked state sits on the line, after the counts
     # rather than before them — never on a row of its own, which would cost a
