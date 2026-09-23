@@ -100,6 +100,7 @@ def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> Non
         prompt="p",
         worktree="/wt",
         manifest_path="/delivery/manifest.md",
+        fence=False,
     )
     assert plan.argv == [
         "codex",
@@ -123,6 +124,7 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
         worktree="/wt",
         manifest_path="/redelivery/manifest.md",
         resume_session="S",
+        fence=False,
     )
     assert plan.argv == [
         "codex",
@@ -177,6 +179,7 @@ def test_codex_write_tiers_keep_their_argv_and_worktree(sandbox, expected) -> No
         prompt="p",
         worktree="/wt",
         manifest_path="/delivery/manifest.md",
+        fence=False,
     )
     assert plan.argv == expected
     assert plan.cwd == "/wt"
@@ -516,22 +519,23 @@ def test_recorded_fixtures_cover_every_dialect() -> None:
     assert translations <= recorded
 
 
-def test_the_filesystem_fence_is_off_unless_asked_for() -> None:
-    """A launch without the fence keeps its exact argv, so no field run changes.
+def test_the_filesystem_fence_is_composed_by_default() -> None:
+    """Every launch is fenced unless the caller says otherwise.
 
-    The fence is opt-in until a per-run harness home exists: a read-only
-    ``~/.claude`` without one stops a worker writing its own transcript. Any
-    regression that fences by default would break every dispatch, so the
-    default is asserted against the exact argv rather than a shape.
+    The fence composes by default because each run owns the harness home the
+    fence would otherwise seal — a read-only ``~/.claude`` stops a worker
+    writing its own transcript only when the home is the operator's. A launch
+    that must keep its exact dialect argv asks for the fence to be left off, so
+    both directions are asserted against exact argv rather than a shape.
     """
     plain = _backends.launch_plan(
-        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt"
+        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt", fence=False
     )
     assert plain.argv[:2] == ["claude", "-p"]
     assert "bwrap" not in plain.argv
 
     fenced = _backends.launch_plan(
-        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt", fence=True
+        backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt"
     )
     assert fenced.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
     assert fenced.argv.index("--") > 3

@@ -53,6 +53,7 @@ describes the whole run and can legitimately exceed that window many times over.
 from __future__ import annotations
 
 import json
+import os
 import queue
 import re
 import subprocess
@@ -1764,9 +1765,123 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
 
 # ── Filesystem fence ────────────────────────────────────────────────────────
 
+# Each run owns the filesystem location its harness reads and writes its own
+# state from: the claude-shaped harness its configuration, transcripts and
+# session files, codex its configuration and session rollouts. Without a
+# per-run home the harness writes into the operator's own dot directory, which
+# the fence makes read-only — so the per-run home is what lets the fence be
+# switched on for real workers rather than only in the stub. The variable and
+# folder are named per dialect because the two harnesses disagree on both.
+_HARNESS_HOME = {
+    "claude": ("CLAUDE_CONFIG_DIR", "harness"),
+    "codex": ("CODEX_HOME", "codex-home"),
+}
+
+# The codex credential bound read-only into a run's codex home. Bound rather
+# than copied: a credential written under the run directory would be writable
+# by the worker, so the login the operator refreshes elsewhere could be
+# shadowed by its own stale copy.
+CODEX_AUTH_FILENAME = "auth.json"
+
 # The harness command the fence composes. Named once so the argv a reader sees
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
+
+
+def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
+    """Return the config home a run owns for its harness, or None.
+
+    The run directory is the parent of the node's manifest — the one place a
+    worker is always granted to write — so the harness home sits inside it and
+    a run's sessions are found under the run rather than in the operator's dot
+    directory. A dialect with no harness home of its own returns None, and no
+    environment is invented for it.
+    """
+    declared = _HARNESS_HOME.get(dialect_name)
+    return None if declared is None else Path(run_directory) / declared[1]
+
+
+def seed_harness_home(home: Path) -> None:
+    """Create a run's harness home with the minimum the launcher needs.
+
+    The minimum is the directory itself: each harness reads and writes a
+    configuration and session store beneath the folder its own variable names,
+    and neither requires a pre-written config to start. A credential is never
+    written here — the codex login is bound in read-only by the fence
+    (:func:`codex_auth_source`), so the run directory never holds a writable
+    copy of the operator's login.
+    """
+    home.mkdir(parents=True, exist_ok=True)
+
+
+def write_lock_directory(home: str | Path | None = None) -> Path:
+    """Return the lock namespace a plan write serialises through.
+
+    Every plan write holds an exclusive lock on a path-hashed file under the
+    reckon config home, so a worker that cannot write there cannot write a plan
+    at all — including the copy in its own worktree, which is the write a
+    fenced worker exists to make. The fence therefore grants this one subtree
+    writable and leaves the rest of the config home read-only.
+
+    Resolution mirrors the writer's (:func:`reckon._store._config_home`), which
+    is what makes the grant land on the directory the writer will open:
+    ``RECKON_HOME`` wins, then ``<home>/.config/reckon``, then the legacy
+    ``<home>/docs-server``.
+    """
+    env = os.environ.get("RECKON_HOME")
+    if env:
+        return Path(env).expanduser() / "locks"
+    root = Path(home) if home is not None else Path.home()
+    candidate = root / ".config" / "reckon"
+    base = candidate if candidate.exists() else root / "docs-server"
+    return base / "locks"
+
+
+def seed_write_lock_namespace(home: str | Path | None = None) -> Path | None:
+    """Create the lock directory a plan write opens its lock file in.
+
+    The fence binds this directory writable, so it has to exist before the bind
+    is composed, and the namespaces beneath it are the writer's own business —
+    the grant is a writable subtree, not a writable file. The config home
+    itself is never created: a home that does not exist is not sealed either,
+    and there is then nothing for the grant to re-open.
+    """
+    locks = write_lock_directory(home)
+    if not locks.parent.is_dir():
+        return None
+    locks.mkdir(parents=True, exist_ok=True)
+    return locks
+
+
+def codex_auth_source(home: str | Path | None = None) -> Path | None:
+    """Return the operator's codex login to bind read-only, or None.
+
+    Absent login is None and no bind is composed, so a machine without the
+    credential produces a fence that is short one read-only file rather than
+    one that refuses to start.
+    """
+    root = Path(home) if home is not None else Path.home()
+    candidate = root / ".codex" / CODEX_AUTH_FILENAME
+    return candidate if candidate.is_file() else None
+
+
+def _harness_credential_binds(
+    dialect_name: str,
+    harness: Path | None,
+    home: str | Path | None,
+) -> list[tuple[Path, Path]]:
+    """Return the read-only file binds a run's harness home needs, if any.
+
+    Only codex requires a credential file: it is exposed into the run's own
+    codex home so the harness authenticates from its run directory. The list is
+    empty for a dialect that needs no credential, for a run with no harness
+    home, and for a machine with no login — the fence is then short one bind
+    rather than refusing to start.
+    """
+    if dialect_name != "codex" or harness is None:
+        return []
+    auth = codex_auth_source(home)
+    return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
 
 
 def protected_paths(home: str | Path | None = None) -> list[Path]:
@@ -1819,6 +1934,7 @@ def fence_argv(
     worktree: str | Path | None = None,
     manifest_path: str | Path | None = None,
     home: str | Path | None = None,
+    read_only_binds: Iterable[tuple[str | Path, str | Path]] = (),
 ) -> list[str]:
     """Wrap a launch argv so protected paths are read-only to the worker.
 
@@ -1832,6 +1948,10 @@ def fence_argv(
     A write root is the run's declared writable directories, its worktree, and
     the run directory the manifest lives in — the last because a worker that
     cannot write its own manifest has delivered nothing.
+
+    ``read_only_binds`` are source/destination pairs mounted last: a writable
+    grant re-binds a whole subtree, so a file mounted underneath one is exposed
+    correctly only when it is mounted after that grant.
     """
     protected = protected_paths(home)
     roots: list[Path] = [Path(path) for path in writable_directories]
@@ -1850,6 +1970,8 @@ def fence_argv(
             continue
         granted.add(key)
         fenced += ["--bind", key, key]
+    for source, destination in read_only_binds:
+        fenced += ["--ro-bind", str(source), str(destination)]
     fenced.append("--")
     fenced += list(argv)
     return fenced
@@ -1869,7 +1991,7 @@ def launch_plan(
     final_message_path: str | Path | None = None,
     resume_session: str | None = None,
     images: Iterable[str | Path] = (),
-    fence: bool = False,
+    fence: bool = True,
     fence_home: str | Path | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
@@ -1897,6 +2019,24 @@ def launch_plan(
         manifest_path=manifest,
     )
     final_path = None if final_message_path is None else str(Path(final_message_path))
+    # The run directory is the manifest's parent — the one location a worker is
+    # always granted to write — and it is where the harness keeps its own state
+    # rather than in the operator's dot directory the fence seals. It is set
+    # whether or not the fence is composed, because a worker's transcript must
+    # land in its run whichever way it was launched.
+    #
+    # A manifest whose directory does not exist is not a live run — a preview
+    # composes a plan before anything has been created — so no home is seeded
+    # and no variable is invented for a run that has nowhere to keep it.
+    run_directory = None if manifest is None else Path(manifest).parent
+    harness = (
+        None
+        if run_directory is None or not run_directory.is_dir()
+        else harness_home(dialect.name, run_directory)
+    )
+    if harness is not None:
+        seed_harness_home(harness)
+        environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
     argv = dialect.argv(
         command=str(backend["command"]),
         backend=backend,
@@ -1909,16 +2049,26 @@ def launch_plan(
     )
     # Every dialect, every entry point — fresh dispatch, resume and redispatch
     # all build their argv here — so the fence is applied once and cannot be
-    # left off for one of the three. It defaults off so no field-run behaviour
-    # changes until a per-run harness home exists: a read-only ``~/.claude``
-    # without one stops a worker writing its own transcript.
+    # left off for one of the three. It is composed by default: the per-run
+    # harness home above means a read-only operator home no longer stops a
+    # worker writing its own transcript, which was the reason it was off.
     if fence:
+        # The run's write roots are the caller's grants plus the lock directory
+        # every plan write serialises through: a worker with a read-only lock
+        # directory can write no plan at all, its own worktree copy included.
+        write_roots = list(writable_directories)
+        lock_directory = seed_write_lock_namespace(fence_home)
+        if lock_directory is not None:
+            write_roots.append(lock_directory)
         argv = fence_argv(
             argv,
-            writable_directories=writable_directories,
+            writable_directories=write_roots,
             worktree=worktree_path,
             manifest_path=manifest,
             home=fence_home,
+            read_only_binds=_harness_credential_binds(
+                dialect.name, harness, fence_home
+            ),
         )
     return LaunchPlan(
         backend=backend_name,
