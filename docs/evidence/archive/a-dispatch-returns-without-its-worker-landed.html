@@ -271,6 +271,17 @@
       <code>logs/negative-control.log</code> in the same run directory.
     </p>
     <p>
+      <strong>Correction, recorded at promotion on 2026-09-23.</strong> The independent
+      review (score 94) found three inaccuracies in this record, none in the code. The
+      watcher-required refusal is not a member of the tested set: it raises before
+      <code>_create_worktree</code> is called, so no case, table row or negative control here
+      exercises it. The evidence table lists three pre-pointer rows, not the four the manifest
+      claimed. And <code>logs/gate.log</code> names base <code>12155ff8</code> in its header,
+      a revision where the test file does not exist, because it was captured before the commit.
+      The gate was re-run by <code>reckon crew verify-gate</code> at merged main
+      (<code>ae39108f</code>) with the venv interpreter, and passed with exit status 0.
+    </p>
+    <p>
       <strong>Follow-ons.</strong> The occupied-worktree refusal is correct, but the
       worktree it refuses over is a leftover: after <code>crew discard</code> of a
       launch-failed run the worktree stays on disk and a re-dispatch of the same node
