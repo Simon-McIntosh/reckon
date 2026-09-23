@@ -2245,12 +2245,16 @@ def _lane_reading_carry(
     the window observed binding, ``observed_at`` stamping when the reading was
     taken, and an optional ``suggested_shelf_life_seconds`` for how long the
     reading stays trustworthy. Parsing is strict, because the quiet failure
-    runs toward apparent headroom: every missing or malformed field collapses
-    the whole carry to ``unknown`` naming the reason, a field is never
-    resolved to zero, and a reader that cannot understand the instrument says
-    so rather than guessing. A reading older than its stated shelf life is
-    equally unknown, with its age stated, so a stale figure is never carried
-    as if it were current.
+    runs toward apparent headroom: a missing or malformed figure is withheld
+    as ``unknown`` naming which one it was, a field is never resolved to zero,
+    and a reader that cannot understand the instrument says so rather than
+    guessing. Strictness is per field rather than per document — what a
+    reading does carry is still measured, and discarding it along with the
+    field that failed serves nobody. What collapses the whole carry is a
+    defect in the reading ITSELF: no document, one that will not parse, a
+    missing or unintelligible ``observed_at``, or a reading older than its
+    stated shelf life, whose age is then stated so a stale figure is never
+    carried as if it were current.
 
     ``binding_observed`` is consumed as the document's own field and is never
     re-derived from whether the dispatch waited or was preempted — the carry
@@ -2284,16 +2288,14 @@ def _lane_reading_carry(
         return _lane_reading_unknown(
             detail=f"'observed_at' {stamp!r} lies in the future"
         )
+    # Each figure is withheld on its own. A document that omits one still
+    # measured the others, and the timestamp beside them is what makes any of
+    # them usable, so collapsing the reading over a single absent field
+    # discards measurements the lane did take. The lane omits its concurrency
+    # ceiling and nulls its headroom while the pool drains, which is precisely
+    # when a reader needs the running count and the mean context.
     headroom = _metric_number(document.get("headroom"))
-    if headroom is None:
-        return _lane_reading_unknown(
-            detail="lane document carries no numeric 'headroom'"
-        )
     mean_context = _metric_number(document.get("mean_context"))
-    if mean_context is None:
-        return _lane_reading_unknown(
-            detail="lane document carries no numeric 'mean_context'"
-        )
     binding = document.get("binding_observed")
     if isinstance(binding, str) and not binding.strip():
         binding = None
@@ -2308,20 +2310,30 @@ def _lane_reading_carry(
         carry["age_seconds"] = int(age.total_seconds())
         carry["suggested_shelf_life_seconds"] = shelf
         return carry
+    unreadable = [
+        name
+        for name, value in (
+            ("headroom", headroom),
+            ("mean_context", mean_context),
+        )
+        if value is None
+    ]
     return {
         "state": "fresh",
-        "headroom": headroom,
+        "headroom": "unknown" if headroom is None else headroom,
         # The field names WHICH constraint binds, and a lane with no such
-        # constraint has nothing to name rather than nothing to report. Carrying
-        # it unknown on its own keeps the headroom and mean context beside it,
-        # both already parsed and validated above; invalidating the whole
-        # reading over it discarded measurements the lane had made.
+        # constraint has nothing to name rather than nothing to report.
         "binding_observed": "unknown" if binding is None else binding,
-        "mean_context": mean_context,
+        "mean_context": "unknown" if mean_context is None else mean_context,
         "observed_at": stamp,
         "age_seconds": int(age.total_seconds()),
         "suggested_shelf_life_seconds": shelf,
-        "detail": "",
+        "detail": (
+            ""
+            if not unreadable
+            else "lane document carries no numeric "
+            + " or ".join(f"{name!r}" for name in unreadable)
+        ),
     }
 
 

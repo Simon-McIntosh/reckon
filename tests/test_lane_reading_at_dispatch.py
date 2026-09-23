@@ -137,22 +137,38 @@ def test_malformed_document_yields_unknown_naming_the_reason(
 
 
 def test_a_missing_or_non_numeric_field_never_resolves_to_zero() -> None:
+    """An unreadable figure is withheld, and it takes only itself with it.
+
+    Resolving an absent figure to zero is the dangerous failure, because zero
+    headroom reads as a lane under pressure and zero mean context sizes a lane
+    to infinity. Withholding the whole reading instead is the cheap failure
+    and it is not free: a lane omits its concurrency ceiling and nulls its
+    headroom while the pool drains, so a whole-reading collapse discards the
+    running count and the mean context exactly when they are wanted.
+    Both figures are kept apart here, each unknown only for itself.
+    """
     base = {
         "binding_observed": "weekly scoped",
         "mean_context": 73121.0,
         "observed_at": OBSERVED_STAMP,
     }
     missing = dispatch_module._lane_reading_carry({**base}, now=NOW)
-    assert missing["state"] == "unknown"
-    assert "headroom" in missing["detail"]
+    assert missing["headroom"] == "unknown"
     assert missing["headroom"] not in (0, 0.0)
+    assert "headroom" in missing["detail"]
+    # The reading is intact apart from the one figure it could not read.
+    assert missing["state"] == "fresh"
+    assert missing["mean_context"] == 73121.0
+    assert missing["binding_observed"] == "weekly scoped"
+    assert missing["observed_at"] == OBSERVED_STAMP
 
     non_numeric = dispatch_module._lane_reading_carry(
         {**base, "headroom": "ample"}, now=NOW
     )
-    assert non_numeric["state"] == "unknown"
-    assert "headroom" in non_numeric["detail"]
+    assert non_numeric["headroom"] == "unknown"
     assert non_numeric["headroom"] not in (0, 0.0)
+    assert "headroom" in non_numeric["detail"]
+    assert non_numeric["mean_context"] == 73121.0
 
     no_mean_context = {
         "headroom": 16.0,
@@ -160,9 +176,23 @@ def test_a_missing_or_non_numeric_field_never_resolves_to_zero() -> None:
         "observed_at": OBSERVED_STAMP,
     }
     mean_missing = dispatch_module._lane_reading_carry(no_mean_context, now=NOW)
-    assert mean_missing["state"] == "unknown"
-    assert "mean_context" in mean_missing["detail"]
+    assert mean_missing["mean_context"] == "unknown"
     assert mean_missing["mean_context"] not in (0, 0.0)
+    assert "mean_context" in mean_missing["detail"]
+    assert mean_missing["headroom"] == 16.0
+
+    # Both unreadable at once still names both and keeps the stamp, which is
+    # the shape a fully drained lane publishes.
+    drained = dispatch_module._lane_reading_carry(
+        {"binding_observed": None, "observed_at": OBSERVED_STAMP}, now=NOW
+    )
+    assert drained["headroom"] == "unknown"
+    assert drained["mean_context"] == "unknown"
+    assert drained["binding_observed"] == "unknown"
+    assert "headroom" in drained["detail"]
+    assert "mean_context" in drained["detail"]
+    assert drained["observed_at"] == OBSERVED_STAMP
+    assert drained["age_seconds"] is not None
 
 
 def test_stale_reading_yields_unknown_with_its_age_stated() -> None:
