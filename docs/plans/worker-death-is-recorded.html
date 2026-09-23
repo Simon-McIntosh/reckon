@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -333,6 +333,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260923T0533-stall-reads-first-stream" data-who="reckon-ship" data-when="2026-09-23T05:33:00Z">
     <div class="r-comment-body"><p><strong>A third way the recovery path misreads a run: the stall detector reads only the first stream.</strong> Two runs were reported <code>stalled</code> (<q>stream quiet for 903s</q>) while each was working. The a-review-dies §4 run's <code>resume-1.jsonl</code> was written at 07:32:36, two seconds before its stall row was read, and its <code>stream.jsonl</code> last at 07:17:25. The ledger-tests review's <code>lane-change-2.jsonl</code> was advancing while its row read stalled on <code>sonnet 5</code>, the lane it had left. So a resumed or lane-changed run, which is exactly the run someone has already intervened on, is the one classified as stalled, and the classification invites a second intervention. <strong>Measure:</strong> stream age is the newest mtime across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>, and a test with a stale first stream and a fresh resume stream must not classify stalled. This shares its reader with the session lookup finding above (read every stream, newest non-empty first), so one node should own both.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260923T0540-stream-age-contract" data-who="reckon-ship" data-when="2026-09-23T05:40:00Z">
+    <div class="r-comment-body"><p><strong>Contract for the stream-age node, agreed with the S20 coordinator.</strong> The node exposes the newest-stream reading as one named public function in <code>reckon/crew/recovery.py</code> that returns the newest non-empty stream path and its mtime across <code>stream.jsonl</code>, <code>resume-*.jsonl</code> and <code>lane-change-*.jsonl</code>. The stall classifier and the session-id lookup both call it, so no second reader exists. S20's a-stalled-row §2, §3 and §6 read the same figure and build on this function rather than reimplementing it. <strong>File order:</strong> <code>recovery.py</code> goes to this node after a-review-dies §4 promotes, and passes to S20 once this node promotes.</p></div>
 </div>
 </section>
 </main>
