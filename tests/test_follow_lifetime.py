@@ -26,6 +26,7 @@ which of the two went wrong.
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -116,6 +117,57 @@ def _kill(process: subprocess.Popen) -> tuple[str, str]:
     return stdout, stderr
 
 
+def _attach_line_shape(
+    line: str, project: str, session: str | None = None
+) -> None:
+    """Assert the attach line's shape, never a literal or the composer itself.
+
+    The first token has to be an absolute path to the running ``reckon``
+    console script, because the shell that arms the line need not carry the
+    interpreter's bin directory on PATH. The remaining tokens are the fixed
+    command carrying exactly the caller's project and session.
+    """
+    tokens = shlex.split(line)
+    executable = tokens[0] if tokens else ""
+    assert os.path.isabs(executable), f"the first token is not absolute: {line!r}"
+    assert os.path.isfile(executable), f"the first token is not a file: {line!r}"
+    assert os.access(executable, os.X_OK), f"the first token is not runnable: {line!r}"
+    assert os.path.basename(executable) == "reckon", (
+        f"the first token is not the reckon console script: {line!r}"
+    )
+    expected = ["crew", "follow", "--project", project]
+    if session is not None:
+        expected += ["--session", session]
+    assert tokens[1:] == expected, (
+        f"the attach line's arguments are not the fixed command: {line!r}"
+    )
+
+
+def _assert_attach_line_within(reported: str, project: str, session: str) -> None:
+    """Assert the reported line carries the attach line, by the attach line's shape.
+
+    The report embeds the command inside a longer line, so it is located by its
+    first token — an absolute path to the report's ``reckon`` console script —
+    and the arguments that follow are checked as the composed line's shape. The
+    report separates that segment with a semicolon, which is the report's
+    punctuation rather than part of the command, so it is trimmed.
+    """
+    tokens = shlex.split(reported)
+    start = next(
+        (
+            index
+            for index, token in enumerate(tokens)
+            if os.path.isabs(token) and os.path.basename(token) == "reckon"
+        ),
+        None,
+    )
+    assert start is not None, f"the line names no reckon executable: {reported!r}"
+    arguments = ["crew", "follow", "--project", project, "--session", session]
+    window = tokens[start : start + 1 + len(arguments)]
+    window[-1] = window[-1].rstrip(";,")
+    _attach_line_shape(" ".join(window), project, session)
+
+
 def _wait_until_armed(process: subprocess.Popen) -> None:
     """Wait for the follower to hold its registration, or fail saying which.
 
@@ -203,9 +255,7 @@ def test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on(home) -> No
     assert final.startswith("follower end:"), (
         f"the last line must be marked as the follower's end; got {final!r}"
     )
-    assert runs._watch_attach_line(PROJECT, session=SESSION) in final, (
-        f"the line must name the attach line to re-arm with; got {final!r}"
-    )
+    _assert_attach_line_within(final, PROJECT, SESSION)
     assert RUN_ID in final, (
         f"the line must name the run that needs a decision; {final!r}"
     )

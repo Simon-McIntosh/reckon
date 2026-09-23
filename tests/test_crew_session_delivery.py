@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -215,13 +216,38 @@ def test_an_unscoped_follower_marks_foreign_ownership_with_a_glyph(home) -> None
     assert "mine" not in recovery.format_watch_transition(events[0])
 
 
+def _assert_attach_line_shape(
+    line: str, project: str, session: str | None = None
+) -> None:
+    """Assert the attach line's shape, never a literal or the composer itself.
+
+    The first token has to be an absolute path to the running ``reckon``
+    console script, because the shell that arms the line need not carry the
+    interpreter's bin directory on PATH. The remaining tokens are the fixed
+    command carrying exactly the project and session this caller supplied.
+    """
+    tokens = shlex.split(line)
+    executable = tokens[0] if tokens else ""
+    assert os.path.isabs(executable), f"the first token is not absolute: {line!r}"
+    assert os.path.isfile(executable), f"the first token is not a file: {line!r}"
+    assert os.access(executable, os.X_OK), f"the first token is not runnable: {line!r}"
+    assert os.path.basename(executable) == "reckon", (
+        f"the first token is not the reckon console script: {line!r}"
+    )
+    expected = ["crew", "follow", "--project", project]
+    if session is not None:
+        expected += ["--session", session]
+    assert tokens[1:] == expected, (
+        f"the attach line's arguments are not the fixed command: {line!r}"
+    )
+
+
 def test_the_attach_line_is_one_bare_command_a_monitor_can_arm() -> None:
     line = runs._watch_attach_line("nova", session="s18-hexgrid")
     assert "|" not in line, "a pipe buffers the ticker and hides its refusals"
     assert "grep" not in line
     assert "true" not in line, "`|| true` turns a refusal into a silent success"
-    assert line.startswith("reckon crew follow ")
-    assert "--session s18-hexgrid" in line
+    _assert_attach_line_shape(line, "nova", "s18-hexgrid")
     # No state filter: a filter matching nothing yet is an empty pane, which
     # reads the same as a follower that never started, and a reader watching a
     # wave wants the starts and the working transitions too.
@@ -542,14 +568,14 @@ def test_the_live_read_can_answer_whether_this_session_is_attached(home) -> None
 
     unscoped = mcp._crew("proj", view="live")
     assert unscoped["watcher"]["session_attached"] is None
-    assert "--session" not in unscoped["watcher"]["attach_line"]
+    _assert_attach_line_shape(unscoped["watcher"]["attach_line"], "proj")
     assert all("mine" not in row for row in unscoped["runs"])
 
     with runs.follower_claim("proj", "mine", delivery="stream"):
         scoped = mcp._crew("proj", view="live", session="mine")
 
     assert scoped["watcher"]["session_attached"] is True
-    assert "--session mine" in scoped["watcher"]["attach_line"]
+    _assert_attach_line_shape(scoped["watcher"]["attach_line"], "proj", "mine")
     assert {row["node"]: row["mine"] for row in scoped["runs"]} == {
         "my-node": True,
         "peer-node": False,

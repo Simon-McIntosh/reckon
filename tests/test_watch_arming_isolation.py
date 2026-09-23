@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -20,7 +21,6 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
 
 # `reckon.crew` re-exports the dispatch callable under the submodule's name, so
@@ -106,6 +106,7 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
         goal="record one dispatch that arms nothing",
         plan="fixture",
         section="arming",
+        spec_level="guided",
         done_when="pytest reports no producer left behind by the suite",
         write_paths=[f"src/{name}.py"],
         time_budget="20m",
@@ -135,6 +136,32 @@ def _producer_processes(project: str) -> list[str]:
     return [line.strip() for line in listing.splitlines() if marker in line]
 
 
+def _assert_attach_line_shape(
+    line: str, project: str, session: str | None = None
+) -> None:
+    """Assert the attach line's shape, never a literal or the composer itself.
+
+    The first token has to be an absolute path to the running ``reckon``
+    console script, because the shell that arms the line need not carry the
+    interpreter's bin directory on PATH. The remaining tokens are the fixed
+    command carrying exactly the caller's project and session.
+    """
+    tokens = shlex.split(line)
+    executable = tokens[0] if tokens else ""
+    assert os.path.isabs(executable), f"the first token is not absolute: {line!r}"
+    assert os.path.isfile(executable), f"the first token is not a file: {line!r}"
+    assert os.access(executable, os.X_OK), f"the first token is not runnable: {line!r}"
+    assert os.path.basename(executable) == "reckon", (
+        f"the first token is not the reckon console script: {line!r}"
+    )
+    expected = ["crew", "follow", "--project", project]
+    if session is not None:
+        expected += ["--session", session]
+    assert tokens[1:] == expected, (
+        f"the attach line's arguments are not the fixed command: {line!r}"
+    )
+
+
 def test_a_dispatch_under_the_shared_fixture_arms_no_producer(
     fixture_project: tuple[Path, Path],
 ) -> None:
@@ -156,27 +183,25 @@ def test_the_suppressed_dispatch_records_the_same_waiver_as_an_explicit_one(
     """The no-watch waiver's shape is the seam, so it must not have moved."""
     config_home, repo = fixture_project
 
-    def waiver(session: str) -> dict:
-        # The attach line is whatever the shared composer emits, so this
-        # asserts dispatch carries the composed line rather than restating it.
-        return {
-            "requested": True,
-            "arming_line": "reckon crew watch --project sample",
-            "attach_line": runs._watch_attach_line("sample", session=session),
-            "watcher_live": False,
-            "session_attached": False,
-        }
+    def assert_waiver_shape(override: dict, session: str) -> None:
+        assert override["requested"] is True
+        assert override["arming_line"] == "reckon crew watch --project sample"
+        assert override["watcher_live"] is False
+        assert override["session_attached"] is False
+        _assert_attach_line_shape(override["attach_line"], "sample", session)
 
     suppressed = _dispatch(config_home, repo, "implicit", session="implied")
     explicit = _dispatch(
         config_home, repo, "explicit", session="asked", watch_override=True
     )
 
-    assert explicit["watch_override"] == waiver("asked")
-    assert suppressed["watch_override"] == waiver("implied")
-    assert crew.read_pointer(explicit["run_id"])["watch_override"] == waiver("asked")
-    assert crew.read_pointer(suppressed["run_id"])["watch_override"] == waiver(
-        "implied"
+    assert_waiver_shape(explicit["watch_override"], "asked")
+    assert_waiver_shape(suppressed["watch_override"], "implied")
+    assert_waiver_shape(
+        crew.read_pointer(explicit["run_id"])["watch_override"], "asked"
+    )
+    assert_waiver_shape(
+        crew.read_pointer(suppressed["run_id"])["watch_override"], "implied"
     )
 
 
