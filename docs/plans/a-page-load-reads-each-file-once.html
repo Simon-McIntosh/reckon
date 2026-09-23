@@ -290,6 +290,45 @@
     served figure is not this section's: once &sect;7 is merged and the operator restarts the
     service, &sect;5 is measured again, and its gate is the one that closes the plan.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="rollup-reuses-watched-walks" data-when="2026-09-23">
+    <p><strong>Outcome &mdash; the rollup reuses walks, and a watched tree's change drops its
+    walk.</strong> Commit <code>c06b0764</code> <em>perf(serve): drop a watched docs tree's
+    memoised walk on change.</em> In <code>reckon/serve.py</code> the per-connection
+    <code>_ProjectChangeWatch</code> yields its event read to a <code>consume()</code> method, over
+    which a new <code>_FleetChangeWatch</code> selects across every mounted tree's descriptor for the
+    life of the served process. On a notification it drops that tree's memoised discovery and its
+    walk signature, and nothing else's. The served reuse window rises to 60 s, read from
+    <code>RECKON_DISCOVERY_REUSE_S</code> with the module-level default left at 0, so the kernel is
+    the invalidation and the window is only the backstop for writes no local kernel reports. A POST
+    still clears every memoised walk.</p>
+    <figure>
+      <img src="/reckon/figures/a-page-load-reads-each-file-once/rollup-walks-per-request.png"
+           alt="Docs trees walked per consecutive rollup call: three on the cold pass, none over twenty unchanged calls, one for the rewritten tree">
+      <figcaption>Walked trees per <code>collect_projects</code> call over three mounted projects.</figcaption>
+    </figure>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Four cases pass</strong> in <code>tests/test_rollup_reuses_watched_walks.py</code>
+      at <code>c06b0764</code>: a cold pass walks each of the three trees once and twenty unchanged
+      rollups walk none; a rewritten plan file is seen on the next rollup within 1 s with exactly one
+      tree walked, the changed one; the served reuse window is 60 s and follows
+      <code>RECKON_DISCOVERY_REUSE_S</code>; and a POST against the running server empties every
+      memoised walk, so the next rollup walks all three trees.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> with the watch not
+      started, the rewrite is not seen within 1 s and the within-1-s assertion fails. The red log's
+      first line repeats the declared string, and the run is kept in the node's run directory.</li>
+      <li><strong>No added regression failures.</strong> <code>tests/test_discovery_reads_each_file_once.py</code>
+      and <code>tests/test_discovery_cache.py</code> report the same eleven passes at the base revision
+      and at <code>c06b0764</code>, run on <code>all_debug</code>.</li>
+      <li><strong>Environment.</strong> The gate is a unit test over temporary mounted projects, a
+      temporary mounts file and a temporary state root, so no real workspace is read or written; it
+      runs in seconds and was taken on a compute node.</li>
+    </ul>
+    <p>The served figure is still not this section's: once &sect;7 is merged and the operator restarts
+    the service, &sect;5 is measured again, and its gate closes the plan.</p>
+    <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s7">the landed record</a>.</p>
+    </div>
+
     <div class="r-note" data-reckon="landed" data-node="palette-counts-each-inventory-once" data-when="2026-09-23">
     <p><strong>Outcome &mdash; the palette asks for each inventory exactly once.</strong> Commit
     <code>58ed7a21</code> <em>test(ui): count each mounted project's palette inventory request once</em>
