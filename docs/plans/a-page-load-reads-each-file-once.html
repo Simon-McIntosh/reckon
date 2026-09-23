@@ -160,6 +160,15 @@
     other projects' <code>/_discover</code> only while the fleet home or the command palette is
     shown, one project at a time. Figure thumbnails in <code>docs/ui/shell-plans.jsx</code> load
     lazily.</p>
+    <p><strong>Landed</strong> at <code>26d03b02</code>, against an unchanged
+    <code>docs/ui/shell.jsx</code>: the mount-list fetch, the additive rollup merge and the
+    fleet-home-or-palette guard were already in place, so the gate found nothing to repair. The
+    negative control restores the base shell (<code>00106ce2</code>), which sourced the list from
+    the rollup alone, and the picker assertion reddens with an empty menu while the rollup
+    request is observed as made. The gate is a headless-browser test and no browser binary exists
+    on any compute partition, so it ran on the login node in two short probes against a local
+    file; the compute-node run skips through <code>installed_browser_or_skip</code>. See
+    <a href="/reckon/evidence/a-page-load-reads-each-file-once-landed">the landed evidence</a>.</p>
     <p><strong>Done when</strong> <code>tests/test_shell_project_list_is_immediate.py</code> loads
     the shell through <code>tests/spa_browser_harness.py</code> with the fetch layer mocked. It
     asserts three things.</p>
