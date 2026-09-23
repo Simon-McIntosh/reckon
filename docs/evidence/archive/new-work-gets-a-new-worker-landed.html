@@ -9,7 +9,7 @@
   <meta name="plan-title" content="New Work Gets A New Worker &mdash; landed evidence">
   <meta name="plan-summary" content="Sections of the plan each recorded by its own node: dispatch resumes a session only for the same task (§2), and the continuity guidance teaches the same rule (§5)">
   <meta name="plan-evidence-for" content="reckon:new-work-gets-a-new-worker">
-  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s2,reckon:new-work-gets-a-new-worker#s5">
+  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s2,reckon:new-work-gets-a-new-worker#s5,reckon:new-work-gets-a-new-worker#s6">
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.14 project venv; detached git worktree">
@@ -200,6 +200,50 @@ tests/test_run_record_reports_actual_resume.py
     to implement, so a coordinator following it now and a dispatch path landing §2 will agree —
     but the agreement is not asserted by any test in this node's scope, only by the two passages
     stating the same rule.</p>
+  </section>
+
+
+
+  <section id="codex-resume-burn">
+    <h2>Codex input spent carrying an earlier task's session — the before figure</h2>
+
+    <p>Codex's <em>stream</em> publishes one <code>turn.completed</code> usage summed over the
+    whole turn, so it cannot show what a run's <em>opening</em> request re-sent. Its client
+    <em>rollout</em> file can: one <code>token_count</code> per model request, and one
+    <code>task_started</code>/<code>task_complete</code> pair per <code>exec</code> run. A run that
+    resumes an earlier session appends a task to an existing rollout; a fresh run opens one. That
+    boundary is the instrument.</p>
+
+    <p><strong>Before figure.</strong> Over every codex run under
+    <code>~/.config/reckon/crew/runs</code>: 3,274 runs across 1,916 sessions; 1,916 fresh (median
+    opening-request input 40,997 tokens) and 1,358 resumed (41%; median 166,421). The input
+    attributable to the inherited transcript, priced above the fresh median, totals
+    <strong>172,082,502 tokens</strong>. <code>same_run</code> is zero — every resume is a
+    cross-task resume.</p>
+
+    <p><strong>Positive control.</strong>
+    <code>r-20260909T124530581873-n-swcr-observe-the-missing-validation</code> resumed the session
+    opened by <code>r-20260909T072310390297-n-pidp-restore-pedestal-density-family</code>; opening
+    request 378,921 tokens (9.2× the fresh median), inherited 337,924. It reads non-zero through the
+    same parser that reports 0 for a fresh run, so the total is measured rather than assumed.</p>
+
+    <p><strong>Corroborator.</strong> For that control the run's own stream reports
+    <code>turn.completed.usage.input_tokens = 13,970,122</code> and the rollout's per-request sum
+    over the same task is <code>13,970,122</code> — ratio exactly 1.0, two instruments that share no
+    parser.</p>
+
+    <p><strong>A false-positive control, kept.</strong> The dialect appends
+    <code>resume &lt;session id&gt;</code> to a codex <code>exec</code> argv, but no codex run's
+    recorded argv carries the syntax durably — argv lives only on the ephemeral live pointers — and
+    a pointer's <code>session_resumed</code> flag is not a substitute:
+    <code>r-20260923T034949217912-pcrf-production-route-ladder</code> carries
+    <code>session_resumed: true</code>, no resume token in argv, and a rollout that opened fresh.
+    The flag alone would report an inheritance that did not happen.</p>
+
+    <p><strong>Gate.</strong> One <code>srun</code> on partition <code>all_debug</code>,
+    <code>--time=00:59:00</code>, compute node <code>98dci4-clu-3141</code>, 71 seconds, never on the
+    login node. Data: <code>docs/research/data/codex-resume-burn.json</code>. Figure:
+    <img src="/reckon/figures/new-work-gets-a-new-worker/first-request-input.png" alt="Distribution of codex runs by opening-request input; the fresh-run median sits near 41k tokens and the resumed-run population is shifted well right, with the named positive control at 378,921 tokens."></p>
   </section>
 
 </main>
