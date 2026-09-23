@@ -368,8 +368,16 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
 
     The no-op above is only honest if the generator it feeds is unfiltered: a
     hidden seam that narrowed delivery would survive a flag that is not
-    threaded into it. One reader over a fleet that moves start to completion
+    threaded into it. One reader over a fleet that moves start to delivered
     must report each state.
+
+    The terminal state the fixture reaches is ``completed_unpromoted``, not
+    ``complete``: a manifest reporting completion with no independent review
+    attached is the run that still needs the coordinator to promote it, and
+    that is the state the reducer emits for it. ``complete`` is reserved for a
+    run whose review is already attached, so a fixture that reaches it would
+    need a stored review — the point here is the delivery path, so the
+    vocabulary the reducer produces is what the assertion names.
     """
     _write_pointer(home, "r-one", "one-node", session="mine", phase="starting")
     _write_pointer(home, "r-two", "two-node", session="mine", phase="working")
@@ -392,13 +400,15 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
             _wait_for(lambda: any(e["to_state"] == "working" for e in received))
             _deliver(home, "r-one", "complete")
             crew.list_live(project="proj")
-            _wait_for(lambda: any(e["to_state"] == "complete" for e in received))
+            _wait_for(
+                lambda: any(e["to_state"] == "completed_unpromoted" for e in received)
+            )
     finally:
         stop.set()
         thread.join(timeout=2)
 
     assert sorted(event["to_state"] for event in received) == [
-        "complete",
+        "completed_unpromoted",
         "dispatched",
         "working",
     ]

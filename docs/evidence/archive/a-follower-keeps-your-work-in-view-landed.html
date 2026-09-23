@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-keeps-your-work-in-view-landed">
+  <meta name="plan-title" content="A Follower Keeps Your Work In View — landed evidence">
+  <meta name="plan-summary" content="Per-node landing evidence for the follower's obligations line, drain line and session-scoped sweep.">
+  <meta name="plan-evidence-for" content="a-follower-keeps-your-work-in-view">
+  <meta name="plan-verifies" content="a-follower-keeps-your-work-in-view#s2">
+  <meta name="plan-commits" content="pending — node removed-flag-migration-red-triaged">
+  <meta name="plan-artifacts" content="tests/test_removed_flag_migration.py,docs/figures/a-follower-keeps-your-work-in-view/delivered-state-vocabulary.svg">
+  <meta name="plan-recorded-at" content="2026-09-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,follower,triage">
+  <title>A Follower Keeps Your Work In View — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Follower Keeps Your Work In View</h1>
+      <p class="lead">Two of the follower's new lines and the session-scoped sweep land here. One node's section is a triage of a red test that asserted a state name the reducer no longer emits.</p>
+    </header>
+
+    <section id="removed-flag-migration">
+      <h2>§2 &mdash; the delivery path carries no state filter (triaged)</h2>
+      <p><code>tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter</code>
+      was red at the dispatch base. It runs the real <code>cli._follow_watch_lines</code> over a
+      two-run fixture and asserts the reader delivers every state the fleet passes through. Its
+      terminal expectation named <code>complete</code>, and the wait for it timed out at
+      <code>_wait_for</code> (<code>tests/test_removed_flag_migration.py:363</code>) after the full
+      <code>WATCHER_LOAD_BOUND_SECONDS</code> budget.</p>
+      <p><strong>The source is right; the test was stale.</strong> A manifest reporting
+      <code>complete</code> with no independent review attached classifies <code>scoring</code> in
+      <code>reckon/crew/recovery.py</code> (<code>classify_pointer</code>, the
+      <code>manifest_status == "complete"</code> arm), and <code>_watch_snapshot</code> maps that to
+      the state <code>completed_unpromoted</code> — a delivered run still needing the coordinator to
+      promote it. <code>complete</code> is reserved for a <code>promotable</code> run, i.e. one whose
+      parsed review is already attached. Commit <code>6255c53c</code> (2026-09-08, <em>keep watch
+      states canonical</em>) fixed that mapping and updated <code>tests/test_crew_recovery.py</code>;
+      this test, written 2026-09-06, was not carried along. The corrected test asserts the vocabulary
+      the reducer actually produces.</p>
+      <p>The correction is the assertion only — the fixture, the real generator and the
+      no-threaded-flag property are unchanged. The two other occurrences of the literal
+      <code>"complete"</code> in the file are the synthetic <code>_TRANSITIONS</code> stub (fed
+      straight to the follower, so it re-emits exactly what it is handed) and the
+      <code>_deliver(..., "complete")</code> manifest input; neither is a state expectation.</p>
+      <figure>
+        <img src="/reckon/figures/a-follower-keeps-your-work-in-view/delivered-state-vocabulary.svg"
+             alt="A timeline of the fixture. r-one attaches in phase starting and the follower emits a dispatched baseline; r-two emits a working baseline; after r-one's manifest is written with status complete the follower emits a completed_unpromoted transition out of working, so the delivered set is dispatched, working and completed_unpromoted. A second panel records the stale assertion, which waited for a state named complete and timed out at _wait_for line 363. The source is right; only the expected word was stale.">
+        <figcaption>The three states the follower delivered, and the word the stale assertion waited for instead.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Target test at base</td><td>1 failed (timeout at <code>_wait_for</code>, 36.3 s)</td></tr>
+          <tr><td>Target test after correction</td><td>1 passed (2.5 s)</td></tr>
+          <tr><td>Runs in the fixture</td><td>2 (<code>r-one</code> starting, <code>r-two</code> working)</td></tr>
+          <tr><td>Rows the follower delivered</td><td>3, one per state</td></tr>
+          <tr><td>Delivered states</td><td><code>dispatched</code>, <code>working</code>, <code>completed_unpromoted</code></td></tr>
+          <tr><td>States a state filter would have removed</td><td>any non-matching one &mdash; the negative control drops 2 of 3 and the test fails</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control, executed.</strong> The declared mutation reintroduces a state
+      filter on the follower's selection in a scratch copy of the corrected test and requires the
+      test to fail. With the selection narrowed to a single state, the corrected test fails at
+      <code>_wait_for</code> in 38.1 s, proving the assertion measures the no-filter property rather
+      than merely restating the vocabulary. The log is
+      <code>r-20260923T093112405934-removed-flag-migration-red-triaged</code>'s
+      <code>negative_control_log</code>.</p>
+      <p><strong>A sibling failure in the same file is not this node's and is reported, not fixed.</strong>
+      <code>test_the_deprecation_announcement_reaches_stderr_and_not_the_stream</code> fails at the base
+      revision and after the correction alike, with <code>rows == []</code> at
+      <code>tests/test_removed_flag_migration.py:277</code>: the subprocess follower writes its
+      deprecation notice to stderr and no baseline row to stdout. The same CLI JSON path over a live
+      seat emits the baseline row in-process under <code>CliRunner</code>, so the empty stream is a
+      mechanism specific to the spawned run and outside this node's declared measure. It is recorded
+      as a follow-on rather than triaged here.</p>
+    </section>
+  </main>
+</body>
+</html>
