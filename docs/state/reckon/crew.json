@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T03:39:32",
+  "updated": "2026-09-23T03:40:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -273767,6 +273767,288 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260922T204207559107-a-lane-declares-its-input-modalities",
+        "plan": "a-review-can-see-the-figure",
+        "section": "\u00a71",
+        "node": "a-lane-declares-its-input-modalities",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 878,
+                "cached_input_tokens": 223574,
+                "input_tokens": 224454,
+                "output_tokens": 30,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 224484,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "reckon/schema/flight.yaml declares the slot and reckon/_flight_schema.py is regenerated from it, not hand-patched, with a test asserting the generated model and the schema agree on the slot; the codex backends in the shipped flight config declare image input; tests in tests/test_flight.py assert a figure profile resolving to a backend with no image modality raises a refusal whose text names that backend and the word image, and that it never falls through to default_backend; the negative control of making the resolver ignore the slot is applied, the refusal test is observed to fail, and that log is recorded in the manifest; tests/test_flight.py and tests/test_backend_reference_contract.py pass",
+          "estimated_hours": null,
+          "goal": "BackendConfig carries an input-modalities slot, the codex backends declare image input, and a figure profile routed to a backend declaring no image input is refused naming the backend and the missing capability",
+          "id": "a-lane-declares-its-input-modalities",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-22T20:42:11Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204207559107-a-lane-declares-its-input-modalities/manifest.md",
+          "negative_control": "make the figure-profile resolver ignore the input-modalities slot and fall through to default_backend",
+          "plan": "a-review-can-see-the-figure",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "reckon/flight.py",
+            "tests/test_flight.py",
+            "docs/evidence/archive/a-review-can-see-the-figure-landed.html",
+            "docs/figures/a-review-can-see-the-figure",
+            "docs/plans/a-review-can-see-the-figure.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s18t-awcj-proof-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-22T20:42:45Z",
+        "completed_at": "2026-09-22T21:37:07.265Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3237,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3262,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+        "commits": [
+          "f2ea930192175cd7f58879ab1bc0a84ea0e30727",
+          "5b1759ab4d607d6316f2bb7ee52bd95fd9a29d2c",
+          "428477c7c147bb86c68bc1654b2c446e7702eca3"
+        ],
+        "changed_lines": {
+          "added": 404,
+          "removed": 0,
+          "files": 7
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_flight.py tests/test_backend_reference_contract.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204207559107-a-lane-declares-its-input-modalities/gate.log",
+          "log_digest": "sha256:f7273f771cc004d14551ef02b63a57854e33d4624e5dcd4698efe4aaaf264d7d"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "BackendConfig declares input_modalities; select_profile_backend refuses a figure profile on a lane declaring no image by name and never falls through to default_backend; 93 flight tests pass; the fall-through mutation reddens both refusal tests; review 77, no caller or declaring lane yet by design",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204207559107-a-lane-declares-its-input-modalities/manifest.md",
+        "scope_changed": false,
+        "session_id": "af12b152-ad8a-48fc-97f5-5e428caecfc8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10462093,
+            "input_tokens_cumulative": 10462093,
+            "output_tokens": 51727,
+            "output_tokens_cumulative": 51727,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-22T21:37:07.265Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 14,
+            "fit": 18,
+            "goal_fidelity": 13,
+            "scope_discipline": 15
+          },
+          "absent": [],
+          "total": 77
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10462093,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3256.485,
+          "generated_tokens": 51727,
+          "generation_seconds": 3084.624,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.2,
+          "machine_seconds": 171.861,
+          "peak_input_tokens": 154477,
+          "tokens_per_second": 16.77,
+          "wall_tokens_per_second": 15.88
+        },
+        "follow_on_paths": [
+          "~/.config/reckon/flight.yaml",
+          "docs/state/reckon/flight.yaml;",
+          "tests/test_flight.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/_shared/flight.schema.json",
+            "reason": "generated from the in-fence LinkML source; the round-trip test compares them byte for byte, so it cannot stay stale"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-lane-declares-its-input-modalities",
+          "session_id": "af12b152-ad8a-48fc-97f5-5e428caecfc8",
+          "session_source": "pointer",
+          "retained_at": "2026-09-22T21:37:07.265Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "impl_move": {
+          "plan": "a-review-can-see-the-figure",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_flight.py"
+          ],
+          "declaration": "make the figure-profile resolver ignore the input-modalities slot and fall through to default_backend",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204207559107-a-lane-declares-its-input-modalities/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T204207559107-a-lane-declares-its-input-modalities/negative_control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-22T21:22:11.397617+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-22T20:42:11Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no 'binding_observed'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 100.0,
+        "orientation_input_tokens": 2509491.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -274065,6 +274347,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2168
+    "_version": 2169
   }
 }
