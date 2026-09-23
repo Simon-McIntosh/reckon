@@ -15,15 +15,14 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
-from reckon.crew import metering
-from reckon.crew import quota_weight
+from reckon.crew import metering, quota_weight, runs
 from reckon.crew import review as review_module
-from reckon.crew import runs
 from reckon.crew.node import (
-    DEFAULT_WATCH_STALL_WINDOW,
-    CrewError,
-    LOG_STALE_AFTER_SECONDS,
     _TERMINAL_RUN_PHASES,
+    DEFAULT_WATCH_STALL_WINDOW,
+    INTERRUPTED_RUN_PHASE,
+    LOG_STALE_AFTER_SECONDS,
+    CrewError,
     parse_duration,
 )
 from reckon.crew.reports import (
@@ -124,6 +123,7 @@ RECOVERY_VERBS = {
     "refused-at-admission": "resume",
     "launch-failed": "resume",
     "wait-aged": "investigate",
+    INTERRUPTED_RUN_PHASE: "redispatch",
 }
 RECOVERY_CLASSIFICATIONS = tuple(RECOVERY_VERBS)
 ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
@@ -141,6 +141,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "abandoned",
         "refused-at-admission",
         "wait-aged",
+        INTERRUPTED_RUN_PHASE,
         # A launch that never reached a model wants the coordinator to repair a
         # command or a PATH, which is work only a person can do; leaving it out
         # of the actionable count is how such a run reads as invisible while it
@@ -336,10 +337,9 @@ def _record_review_dispatch(
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
 
-    A skip is recorded as loudly as a dispatch: the plan's own review of this
-    node found that a review which ran and wrote nothing is indistinguishable
-    from one that was never dispatched, and a reflex that fires into that
-    ambiguity re-fires against the same run forever.
+    A skip is recorded as loudly as a dispatch: a review which ran and wrote
+    nothing is indistinguishable from one that was never dispatched, and a
+    reflex that fires into that ambiguity re-fires against the same run forever.
 
     The backend the attempt targeted is recorded beside its outcome, because it
     is the only durable fact that lets the next attempt know which lane already
@@ -2229,6 +2229,62 @@ def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool
     return _manifest_freshness(chain_record)
 
 
+def _interruption_evidence(
+    record: Mapping[str, Any], *, phase: str, process_alive: bool | None
+) -> tuple[dict[str, Any] | None, int]:
+    """Return why unfinished work stopped involuntarily, plus retained commits.
+
+    A launcher's wait status is direct evidence that a signal ended the worker.
+    Where no exit was recorded, death alone is ambiguous: an orphaned pointer
+    already records that no terminal event arrived, while commits beyond the
+    dispatch base prove an apparently working run left recoverable work behind.
+    A deliberate stop or a recorded completion/promotion always outranks either
+    inference.
+    """
+    if phase in {"complete", "promoted", "stopped"} or record.get("promoted_at"):
+        return None, 0
+
+    wait_status = record.get("wait_status")
+    if isinstance(wait_status, Mapping) and wait_status.get("signal") is not None:
+        signal_number = wait_status.get("signal")
+        signal_name = str(wait_status.get("signal_name") or f"signal {signal_number}")
+        return (
+            {
+                "reason": "signal",
+                "signal": signal_number,
+                "signal_name": signal_name,
+                "exit_code": wait_status.get("exit_code"),
+            },
+            0,
+        )
+
+    if process_alive is not False:
+        return None, 0
+    if phase == "orphaned":
+        return (
+            {
+                "reason": "dead-pid-no-exit",
+                "signal": None,
+                "signal_name": None,
+                "exit_code": None,
+            },
+            0,
+        )
+
+    commits = _commits_beyond_base(record)
+    if commits:
+        return (
+            {
+                "reason": "dead-pid-with-retained-work",
+                "signal": None,
+                "signal_name": None,
+                "exit_code": None,
+            },
+            commits,
+        )
+    return None, 0
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -2436,6 +2492,13 @@ def classify_pointer(
     terminal_at = None
     terminal_age_seconds = None
     deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
+    interruption = None
+    interruption_commits = 0
+    if manifest_status not in TERMINAL_MANIFEST_STATUSES:
+        interruption, interruption_commits = _interruption_evidence(
+            record, phase=phase, process_alive=alive
+        )
+        commits_beyond_base = interruption_commits
     review: dict[str, Any] | None = None
     review_error = ""
     if manifest_status == "complete" and not deferred_outcome:
@@ -2464,7 +2527,27 @@ def classify_pointer(
     process_gone = alive is not True
     marker = None
     needs_help_complete_value = None
-    if manifest_unwritten:
+    if interruption is not None:
+        classification = INTERRUPTED_RUN_PHASE
+        signal_name = interruption.get("signal_name")
+        if signal_name:
+            detail = (
+                f"the worker process ended by {signal_name} "
+                f"(signal {interruption['signal']}) before the run completed"
+            )
+        elif interruption["reason"] == "dead-pid-with-retained-work":
+            detail = (
+                "the worker process is gone with no recorded exit and the "
+                f"worktree carries {interruption_commits} commit"
+                f"{'s' if interruption_commits != 1 else ''} beyond the dispatch base"
+            )
+        else:
+            detail = (
+                "the worker process is gone with no recorded exit; its pointer "
+                "had already recorded that no terminal event arrived"
+            )
+        action = "resolve the surviving session before choosing a recovery"
+    elif manifest_unwritten:
         classification = "running"
         detail = (
             f"the manifest template at {manifest} is present but its status "
@@ -2942,8 +3025,26 @@ def classify_pointer(
 
     session_resolution = None
     resume_remedy = None
-    if classification == "blocked":
+    if classification in {"blocked", INTERRUPTED_RUN_PHASE}:
         session_resolution = _blocked_session_resolution(record, run_id)
+    if classification == INTERRUPTED_RUN_PHASE and session_resolution is not None:
+        resume_remedy = _resume_remedy(session_resolution, run_id)
+        if resume_remedy is not None:
+            action = resume_remedy["command"]
+            detail = (
+                f"{detail}; session {resume_remedy['session_id']!r} survives in "
+                f"the {resume_remedy['source']} record"
+            )
+        else:
+            absent_evidence = str(
+                session_resolution.get("detail")
+                or "no session id was found in the available run evidence"
+            )
+            action = (
+                f"inspect the worktree at {record.get('worktree')}, then redispatch "
+                "the unfinished work"
+            )
+            detail = f"{detail}; redispatch is required because {absent_evidence}"
     if session_resolution is not None and (
         refusal_block is not None
         or retry_block is not None
@@ -2963,7 +3064,9 @@ def classify_pointer(
                 )
 
     hold = refusal_block or exhaustion_block or retry_block or budget_hold
-    if manifest_unwritten:
+    if classification == INTERRUPTED_RUN_PHASE:
+        recovery_classification = INTERRUPTED_RUN_PHASE
+    elif manifest_unwritten:
         recovery_classification = "unwritten"
     elif classification in {"blocked", "paused"} and hold is not None:
         recovery_classification = "held"
@@ -2980,6 +3083,8 @@ def classify_pointer(
     else:
         recovery_classification = classification
     recovery_verb = RECOVERY_VERBS[recovery_classification]
+    if recovery_classification == INTERRUPTED_RUN_PHASE and resume_remedy is not None:
+        recovery_verb = "resume"
 
     lifting_condition = None
     if classification == WAITING_STATUS and wait is not None:
@@ -3021,6 +3126,10 @@ def classify_pointer(
             else None
         ),
         "phase": phase,
+        "effective_phase": (
+            INTERRUPTED_RUN_PHASE if classification == INTERRUPTED_RUN_PHASE else phase
+        ),
+        "interruption": interruption,
         "process_alive": alive,
         # False when the stored answer was carried because the launching host
         # could not be shown to be this host, or there is no pid to ask about.
@@ -3487,6 +3596,11 @@ def _watch_snapshot(
         # its own grid word would need a second routing route with no reader
         # benefit — the distinction that matters is that it is not blocked.
         state = WAITING_STATUS
+    elif classification == INTERRUPTED_RUN_PHASE:
+        # The compatibility watch vocabulary does not yet expose interruptions
+        # as their own column. Keep the run in the needs-action bucket while the
+        # row's recovery classification and action retain the precise cause.
+        state = "blocked"
     elif classification in {"blocked", "failed"}:
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once
