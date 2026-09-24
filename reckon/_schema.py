@@ -1181,7 +1181,7 @@ class PlanState(BaseModel):
         return self
 
 
-# ── IndexState (index.json envelope — modelled, not written by this agent) ──
+# ── IndexState (index.json envelope) ────────────────────────────────────────
 
 
 class _TolerantIndexModel(BaseModel):

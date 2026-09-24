@@ -2053,13 +2053,9 @@ def _validate_decision_transitions(working: dict, previous: dict) -> None:
 def _validate_continuation(working: dict, ops: list[dict]) -> None:
     """Refuse a plan landing that names neither a next step nor an end.
 
-    Work must not end without naming what comes next, and until now that rule
-    was carried by discipline alone — which is how a plan lands, tells nobody,
-    and the next session rediscovers the state from the code. A landing is a
-    batch that resolves a followup or sets a terminal status; it is accepted only
-    when an open followup still carries the chain, or some followup outcome says
-    in words that the chain closes here. Anything else would leave the chain
-    dangling silently, which is the failure this exists to make loud.
+    A batch resolving a followup or setting a terminal status must preserve an
+    open continuation or explicitly record that the chain closes. Otherwise a
+    landing would discard the next action without leaving a durable outcome.
     """
     resolved = [
         op
