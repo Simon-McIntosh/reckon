@@ -338,7 +338,12 @@ def test_a_foreign_projects_promoted_row_reaches_its_registered_checkout(
         + "\n"
     )
 
-    promoted = ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
+    # The registered checkout is a bare directory with no git history to
+    # consult, so an absent ledger there is initialised explicitly rather than
+    # through the tracked-path question a checkout-backed promotion asks.
+    promoted = ledger.append_run(
+        "imas-codex", MISROUTED_PROMOTED_ROW, root=repo, allow_create=True
+    )
 
     owner_ledger = owner_state / "crew.json"
     stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
@@ -409,9 +414,19 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     assert [item["run_id"] for item in stored] == [record["run_id"]]
     assert stored[0]["gate"] == "passed"
     assert stored[0]["commits"] == [record["base_sha"]]
-    # The ledger is the only state file the promotion changed.
+    # The promotion commits its own ledger row, so no state file is left
+    # uncommitted — and the ledger is the only state it touched.
     changed = [line for line in _porcelain(repo) if "docs/state" in line]
-    assert changed == [f"?? docs/state/{PROJECT}/crew.json"]
+    assert changed == []
+    ledger_relative = f"docs/state/{PROJECT}/crew.json"
+    committed = subprocess.run(
+        ["git", "show", "--name-only", "--format=", "HEAD"],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    assert ledger_relative in committed
 
 
 def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> None:
@@ -797,8 +812,10 @@ def test_review_scores_are_queryable_filtered_on_the_parent_run(
         review=_review_block(40, goal_fidelity=10, evidence=10, scope_discipline=10,
                              durability=5, fit=5),
     )
+    # A synthetic root with no git history cannot answer the tracked-path
+    # question, so the absent ledger is initialised explicitly.
     for record in (reviewed, unreviewed, other_plan):
-        ledger.append_run(PROJECT, record, root=root)
+        ledger.append_run(PROJECT, record, root=root, allow_create=True)
     rows, _version = ledger.load(PROJECT, root)
 
     planned = ledger.review_scores(rows["runs"], plan="plan-a")
@@ -1291,9 +1308,14 @@ def test_a_killed_run_that_delivered_is_scoring_pending_review(home, repo) -> No
     assert row["manifest_path"] == record["manifest_path"]
     assert row["next_action"].startswith("reckon crew dispatch")
     assert "--role review" in row["next_action"]
-    # And promotion then succeeds, so nothing was lost by the interruption.
+    # And promotion then succeeds once the review gate the lifecycle carries
+    # is waived, so nothing was lost by the interruption.
     promoted = crew.complete(
-        record["run_id"], gate="passed", commits=[record["base_sha"]]
+        record["run_id"],
+        gate="passed",
+        commits=[record["base_sha"]],
+        review_waiver="this node measures the recovery classification of a "
+        "killed delivery; the review lifecycle has its own coverage",
     )
     assert promoted["record"]["run_id"] == record["run_id"]
 
@@ -1509,10 +1531,14 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
     first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     crew.observe(first["run_id"])
 
+    # A second dispatch of the same task — the same plan and node id — reaches
+    # the session the member captured; the resolution is keyed to the task, so
+    # a different node under the same member offers nothing.
     second = _dispatch(
         repo,
         member="worker-a",
-        node_kwargs={"id": "node-b", "write_paths": ["reckon/session.py"]},
+        session="second",
+        node_kwargs={"write_paths": ["reckon/session.py"]},
     )
 
     assert second["session_id"] == SESSION_ID
@@ -2432,12 +2458,31 @@ def test_a_promoted_row_carries_the_budget_fallback_its_pointer_held(
         ),
         root=repo,
     )
+    # The dispatch names a committed member rather than registering one of its
+    # own: a hold recorded into the roster is left uncommitted by the hold
+    # write, and a session-routed dispatch then cannot commit its own session
+    # registration over it. Naming the member keeps this test on the fallback
+    # row it measures.
+    ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
+    subprocess.run(
+        ["git", "add", f"docs/state/{PROJECT}/crew.json"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: seed ledger\n\nFixture state."],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
     record = crew.dispatch(
         node=_node(),
         project=PROJECT,
         repo=repo,
         config=config,
         session="handover-session",
+        member="worker-a",
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
     )
     assert record["backend"] == "beta"
