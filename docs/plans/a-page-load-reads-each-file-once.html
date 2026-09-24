@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.67">
 </head>
@@ -395,15 +395,21 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-aplref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-aplref-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once" data-resolved-at="2026-09-24T12:32:51+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Verify the discovery repair and stop the served loader reading the aggregate</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 write disjoint files and run together. §5 follows their merge and the service restart.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once</pre>
+    <p class="r-fu-outcome">§2, §3, §4 and §6 landed and promoted: discovery repair 56e13e11, its test bfba8303, served loader c62ecb65, picker 797a6991, palette count 8f0a7158 and proven cycle fba4edf0. §7 is merged at dae29b19 and awaits its review. §5's first re-measure failed its gate on /_projects/index.json at 13.6 s warm, which is why §7 exists. Continued by f-aplref-003.</p>
     </article>
 <article class="r-fu" data-id="f-aplref-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor §9" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The remaining page-load cost is S20&#x27;s stream re-parse</h4>
     <div class="r-fu-body"><p>Pointer, not work. After the restart, warm <code>/_discover</code> for reckon and nova spends its time in <code>partition_live_runs</code> re-parsing every live run's stream. That work is owned by <a href="/reckon/plans/a-follower-outlives-its-monitor#s9">a-follower-outlives-its-monitor §9</a>, which carries this measurement.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-follower-outlives-its-monitor §9</pre>
+    </article>
+<article class="r-fu" data-id="f-aplref-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-page-load-reads-each-file-once §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Promote the rollup watch, then re-measure after a safe restart</h4>
+    <div class="r-fu-body"><p>§7 is merged at <code>dae29b19</code>. Its first review never launched in the 2026-09-23 storage storm and was completed as an infrastructure failure. The second review, <code>review-of-rollup-reuses-watched-walks</code>, was dispatched on 2026-09-24; promote run <code>r-20260923T170003171968-rollup-reuses-watched-walks</code> once it attaches. The served process, pid 2206491 started 20:18 CEST on 2026-09-23, already runs <code>dae29b19</code>, including its defect: <code>main</code> walks all 13 mounted docs trees to build the change watch before it listens, which left the port closed for about 5.5 minutes. Do not restart <code>reckon.service</code> for the §5 re-measure until <a href="/reckon/plans/the-page-paints-from-an-index#s2">the-page-paints-from-an-index §2</a> has landed; then restart and run §5, whose gate closes this plan.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-page-load-reads-each-file-once §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -457,6 +463,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260923T174223667217-review-of-palette-cycle-is-proven" data-who="reckon-ship" data-when="2026-09-23T18:14:05.327Z">
     <div class="r-comment-body"><p>independent review of palette-cycle-is-proven: total 94; finding: gate citation named ea1a0649 and 5.75 s against a log at de3a348f and 5.77 s, corrected in 1b422b2c</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260924T1245-s6-pointer" data-who="reckon-ship" data-when="2026-09-24T12:45:00Z">
+    <div class="r-comment-body"><p>The live pointer of <code>r-20260923T174223667217-review-of-palette-cycle-is-proven</code> outlived its promotion. Its ledger row was already written, and a second <code>crew complete</code> refused with "the ledger row ... is already written; do not re-promote. Landing or cleanup failed: landing comment ... already contains a different narrative". <code>complete</code> has no path for a pointer whose row already exists, so the pointer was discarded with the coordinator's agreement; no evidence is lost, because the row stands.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T180750003833-review-of-rollup-reuses-watched-walks" data-who="reckon-ship" data-when="2026-09-24T12:29:08Z">
     <div class="r-comment-body"><p>never launched: dispatched at 18:07Z during the login-node storage storm; no stream, manifest or review record was produced; the review is re-dispatched as a new run</p></div>

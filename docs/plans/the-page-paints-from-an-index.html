@@ -18,11 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S16">
-  <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan's pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -155,14 +158,40 @@
     gate, and the report names it with a <code>py-spy dump</code> frame. The write path is the
     report under the session's reports directory.</p>
 
+    <h2 id="s8">&sect;8 &mdash; Agent readers answer from the same index</h2>
+    <p>The MCP server and the CLI call <code>discover_plans</code> in their own processes
+    (<code>reckon/mcp.py</code> line 1250, <code>reckon/mcp_views.py</code> line 1985). They run
+    with the library's reuse window of 0 and no change watch, so every call walks every tree it
+    touches, including those of external dependencies, and each starts cold whenever the MCP
+    process restarts. On 2026-09-23, at load average 150, a <code>read_plan</code> of one sprint
+    sent nothing for 1,800 s and was aborted by its client, while the served process was answering.
+    A human and an agent reading the same project pay different costs, and the agent pays the
+    larger. The thin interface is the &sect;3 index: agent readers take list-level facts from
+    <code>reckon.metadata_index</code>, the same module and the same persisted file the served
+    process uses, and derive heavier state only for the resource they were asked about.</p>
+    <p><strong>Done when</strong> <code>tests/test_agent_readers_use_the_index.py</code> builds a
+    temporary project of 200 files and a temporary configuration home. It asserts that a
+    project-level <code>read_plan</code> summary and a sprint summary, called through the MCP view
+    functions after the index exists, parse 0 plan files and run no
+    <code>_walk_discovery_signature</code>, counted through counters the test installs. The
+    negative control is executed and logged: with the views routed through
+    <code>discover_plans</code> again, both counts exceed zero. The write paths are
+    <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code> and that test. This section runs
+    after &sect;3.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-tppfai-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-page-paints-from-an-index" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Serve metadata first and push changes, so a refresh is never needed</h4>
-        <div class="r-fu-body"><p>&sect;2 comes first because it keeps the site reachable across a restart. &sect;3, &sect;5 and &sect;6 run in that order on <code>reckon/serve.py</code>. &sect;4 follows &sect;3, and &sect;5 follows &sect;4 on <code>docs/ui/state-loader.js</code>. &sect;7 waits on the others and on a restart.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship the-page-paints-from-an-index</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tppfai-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-page-paints-from-an-index" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Serve metadata first and push changes, so a refresh is never needed</h4>
+    <div class="r-fu-body"><p>§2 comes first because it keeps the site reachable across a restart. §3, §5 and §6 run in that order on <code>reckon/serve.py</code>. §4 follows §3, and §5 follows §4 on <code>docs/ui/state-loader.js</code>. §7 waits on the others and on a restart.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-page-paints-from-an-index</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260924T1250-deployed-state" data-who="reckon-ship" data-when="2026-09-24T12:50:00Z">
+    <div class="r-comment-body"><p>Handover state, 2026-09-24. Nothing in this plan has been dispatched, because the local lane was paused for the engine relaunch and the fleet move. The served process, <code>reckon.service</code> pid 2206491 started 20:18 CEST on 2026-09-23, runs <code>dae29b19</code>, which contains the startup walk that &sect;2 removes. Land &sect;2 before any restart of the service, including the restart that <a href="/reckon/plans/a-page-load-reads-each-file-once#s5">a-page-load-reads-each-file-once &sect;5</a> needs. &sect;8 was added from the same evaluation: MCP readers re-derive discovery cold, with a reuse window of 0, and one <code>read_plan</code> hung for 1,800 s at load 150.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
