@@ -34,6 +34,8 @@ dependencies = [
 dev = [
     "linkml>=1.9",
     "pytest>=8.0",
+    "pytest-timeout>=2.3",
+    "pytest-xdist>=3.5",
     # Upper bound paired with the declared selection above: within a major line a
     # new ruff adds rules to categories this project selects, which would enlarge
     # the contract without anyone choosing to. Raise it deliberately.
@@ -48,6 +50,9 @@ Homepage = "https://github.com/Simon-McIntosh/reckon"
 Documentation = "https://github.com/Simon-McIntosh/reckon#readme"
 Issues = "https://github.com/Simon-McIntosh/reckon/issues"
 Source = "https://github.com/Simon-McIntosh/reckon"
+
+[tool.pytest.ini_options]
+timeout = 300
 
 [tool.ruff]
 # Generated from reckon/schema/flight.yaml. Linting it would invite hand edits

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-knows-it-is-on-compute-landed">
+  <meta name="plan-title" content="A Worker Knows It Is On Compute — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence for the compute-node plan: the suite declares its own per-test bound and its own parallel-safe temporary trees.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="a-worker-knows-it-is-on-compute">
+  <meta name="plan-verifies" content="a-worker-knows-it-is-on-compute#s5">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="pass">
+  <title>A Worker Knows It Is On Compute — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>A Worker Knows It Is On Compute — landed evidence</h1>
+      <p class="plan-summary">One cumulative record per plan. Each node appends its own section; this anchor carries the declared bound, the three observations that show it firing, and the negative control.</p>
+    </header>
+
+    <section id="s5">
+      <h2>&sect;5 — The suite carries its own bounds</h2>
+
+      <p><strong>What was declared.</strong> <code>pyproject.toml</code> adds
+      <code>pytest-timeout</code> and <code>pytest-xdist</code> to the <code>dev</code>
+      dependency group and a <code>[tool.pytest.ini_options]</code> section whose sole key is
+      <code>timeout = 300</code>. The three named tests below were observed in that order
+      (<code>pip</code>-free, through the declared plugin set), then the declaration was removed
+      to falsify its effect. <code>uv.lock</code> was regenerated with <code>uv lock</code>
+      (117 packages resolved; <code>execnet</code> 2.1.2, <code>pytest-timeout</code> 2.4.0,
+      <code>pytest-xdist</code> 3.8.0 added).</p>
+
+      <h3>Three observations, one mechanism</h3>
+      <table>
+        <thead><tr><th>Observation</th><th>Command shape</th><th>Header the plugin printed</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Bound fires</td>
+            <td><code>pytest … -o timeout=2</code></td>
+            <td><code>timeout: 2.0s</code></td>
+            <td><strong>1 failed</strong> — <code>Failed: Timeout (&gt;2.0s) from pytest-timeout</code> at the <code>time.sleep(10)</code> line</td>
+          </tr>
+          <tr>
+            <td>Declared default is live</td>
+            <td><code>pytest … -n 4 tests/test_doccheck.py</code></td>
+            <td><code>timeout: 300.0s</code>, <code>configfile: pyproject.toml</code></td>
+            <td><strong>25 passed</strong> in 2.00 s across 4 workers</td>
+          </tr>
+          <tr>
+            <td>Mutation: line removed</td>
+            <td><code>pytest …</code> with no override, bound deleted</td>
+            <td>— no <code>timeout:</code> line (the bound is gone)</td>
+            <td><strong>1 passed</strong> in 10.04 s — the 10 s sleep no longer times out</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>Why the middle row is the load-bearing one.</strong> The first row shows the
+      plugin can be told to fire, which a <code>-o</code> flag would do whether or not the file
+      declares anything. The middle row is the only observation that reads the declaration
+      itself: its header prints <code>configfile: pyproject.toml</code> and
+      <code>timeout: 300.0s</code>, so the <code>300</code> is the file's and not the command's.
+      The third row removes that line and the header's <code>timeout:</code> entry disappears with
+      it, so the middle row's value is shown to be produced by the declaration rather than by the
+      plugin's mere presence.</p>
+
+      <p><strong>What the throwaway test is for.</strong> It lives outside <code>tests/</code>
+      under <code>/tmp</code> and does one thing — <code>time.sleep(10)</code> — so the red is
+      unambiguously the bound rather than a real defect. The third row's green is the control: it
+      shows the same file passes when unbounded, so the red was the bound speaking.</p>
+
+      <h3>Logs</h3>
+      <p>The full logs are on disk beside this record, under <code>docs/figures/a-worker-knows-it-is-on-compute/</code>
+      (<code>timeout-fires.log</code>, <code>xdist-doccheck.log</code>, <code>mutation-no-bound.log</code>). They are
+      gitignored, so the decisive lines are reproduced here rather than linked, because a link to an uncommitted
+      file resolves nowhere for a later reader.</p>
+
+      <p><strong>Bound fires</strong> — <code>-o timeout=2</code>:</p>
+      <pre>plugins: timeout-2.4.0, xdist-3.8.0, anyio-4.13.0
+    def test_sleeps_ten_seconds():
+&gt;       time.sleep(10)
+E       Failed: Timeout (&gt;2.0s) from pytest-timeout.
+/tmp/reckon-timeout-probe/test_sleeps_past_the_bound.py:7: Failed
+============================== 1 failed in 2.08s ===============================</pre>
+
+      <p><strong>Declared default is live</strong> — <code>-n 4 tests/test_doccheck.py</code>:</p>
+      <pre>configfile: pyproject.toml
+plugins: timeout-2.4.0, xdist-3.8.0, anyio-4.13.0
+timeout: 300.0s
+25 passed in 2.00s</pre>
+
+      <p><strong>Mutation, bound removed</strong> — same throwaway, no override:</p>
+      <pre>mutation applied: the pyproject timeout line removed ([tool.pytest.ini_options] timeout = 300 deleted)
+plugins: timeout-2.4.0, xdist-3.8.0, anyio-4.13.0
+(no timeout: line in the header)
+1 passed in 10.04s</pre>
+
+      <p><strong>Scope.</strong> <code>git diff --stat</code> names <code>pyproject.toml</code> and
+      <code>uv.lock</code> and nothing else. No test file changed: the suite-repair plan owns the
+      tests themselves, and this node supplies the bound they run under.</p>
+    </section>
+  </main>
+</body>
+</html>
