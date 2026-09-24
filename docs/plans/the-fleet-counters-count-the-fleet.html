@@ -62,6 +62,11 @@
       <li>The <code>promoted</code> reproduction is recorded as a command with its output.</li>
       <li>No product file changes.</li>
     </ul>
+    <article id="fleet-counter-census-landing">
+      <h3>Counter census landing</h3>
+      <p>The fifty-observation report landed in commit <code>858b83d34fc68e08a6bad069650b3cccd29a9a06</code>. It found 31 classification disagreements (62%), zero stale disagreements, zero scope disagreements, and 19 agreements. All fifty unpromoted figures agreed. The largest error moved nine live runs from working to blocked.</p>
+      <p>The synthetic refusal also reproduced the false terminal word: after a pointer was withdrawn before worker creation with zero ledger rows, the production transition path rendered <code>promoted 0w&middot;0b&middot;0u</code>. Read the <a href="/reckon/research/fleet-counters-against-the-fleet.html">full census</a> and the <a href="/reckon/evidence/archive/the-fleet-counters-count-the-fleet-landed.html#fleet-counter-census">cumulative evidence record</a>. The driving followup remains open for coordinator adjudication.</p>
+    </article>
 
     <h2 id="s3">&sect;3 &mdash; Counters and terminal words follow the classification</h2>
     <p>The counter should be recomputed from the same classification the rows use, whenever any run's classification changes. A pointer that disappears should be called <code>promoted</code> only when a ledger row for that run exists. Otherwise the follower should call it <code>withdrawn</code>, with the refusal named when the dispatch recorded one.</p>

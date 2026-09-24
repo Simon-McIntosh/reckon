@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet-landed">
+  <meta name="plan-title" content="Fleet Counter Execution Record">
+  <meta name="plan-summary" content="Counter census, source paths, reproduction, verification, and retained limits">
+  <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-verifies" content="the-fleet-counters-count-the-fleet#s2">
+  <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06">
+  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="isolated worktree with project root virtual environment">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>Fleet Counter Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; cumulative record</p>
+      <h1>Fleet counter execution record</h1>
+      <p class="lead">The fifty-observation census landed with a reproduced false <code>promoted</code> terminal word. The measured counter disagreement is entirely classification drift in this slice.</p>
+    </header>
+
+    <section id="fleet-counter-census">
+      <h2>Counter census</h2>
+      <p>Commit <code>858b83d34fc68e08a6bad069650b3cccd29a9a06</code> adds the typed research report and its sequence plot. The report freezes durable watch-stream lines 5357&ndash;5406 by SHA-256 and independently reconstructs the live buckets from pointer arrivals, later worker receipts, stream activity, and explicit interrupted-exit details.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>Counter observations</td><td>50</td><td>Minimum census satisfied.</td></tr>
+          <tr><td>Classification disagreements</td><td>31 / 50 (62%)</td><td>Pending or live runs were counted as blocked after transient <code>abandoned</code> or <code>unreadable</code> classifications.</td></tr>
+          <tr><td>Stale disagreements</td><td>0 / 50 (0%)</td><td>A real bucket move changed the counters, providing the positive control.</td></tr>
+          <tr><td>Scope disagreements</td><td>0 / 50 (0%)</td><td>The compared project and session populations differ on the control observation, so the zero is measured rather than collapsed.</td></tr>
+          <tr><td>Unpromoted agreement</td><td>50 / 50 (100%)</td><td>The measured drift is wholly between working and blocked.</td></tr>
+          <tr><td>Largest displacement</td><td>9 runs</td><td><code>0w&middot;10b&middot;1u</code> emitted against <code>9w&middot;1b&middot;1u</code> reconstructed.</td></tr>
+        </tbody>
+      </table>
+      <p>Counter implementation and triggers are cited at watcher revision <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>. The source files are byte-identical at the node base <code>93b4db8220b920a40429d0b86964b4d0eb76c41c</code>.</p>
+    </section>
+
+    <section id="vanished-pointer-reproduction">
+      <h2>Vanished pointer reproduction</h2>
+      <p>An isolated synthetic config home produced <code>dispatched 1w&middot;0b&middot;0u</code>, then the pointer was withdrawn before worker creation with zero ledger rows. The production <code>fleet_transitions</code> and formatter path rendered the next line as <code>promoted 0w&middot;0b&middot;0u</code>. The report retains the complete command and output. Revision <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>, <code>reckon/crew/recovery.py:4519-4524</code>, chooses <code>promoted</code> solely from absence in the current pointer map; no receipt lookup guards the word.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Command</th><th>Result</th><th>Measure</th></tr></thead>
+        <tbody>
+          <tr><td><code>reckon audit-doc docs/research/fleet-counters-against-the-fleet.html --project reckon</code></td><td>passed</td><td>Typed resource, metadata, relationship, and project-absolute figure link accepted.</td></tr>
+          <tr><td><code>BeautifulSoup census assertion plus ElementTree SVG parse</code></td><td>passed</td><td>50 rows; 31 classification rows; 19 agreement rows; SVG is well-formed XML.</td></tr>
+          <tr><td><code>git diff --check</code> on the report and figure</td><td>passed</td><td>No whitespace errors.</td></tr>
+          <tr><td><code>synthetic pointer withdrawal through fleet_transitions</code></td><td>reproduced defect</td><td>Zero ledger rows still render as <code>promoted</code>.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Retained limit:</strong> this is a bounded slice of one project watcher. Zero stale and scope mismatches are not population-wide absence claims. No product code or test was changed by this node.</p>
+    </section>
+  </main>
+</body>
+</html>
