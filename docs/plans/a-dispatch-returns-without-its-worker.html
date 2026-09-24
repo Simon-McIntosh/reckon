@@ -339,6 +339,36 @@
       this case's own pointer still is. The predicate was falsified against both populations
       before the case was re-run; the record is in the same log.
     </p>
+    <p>
+      <strong>Repair, after review.</strong> Moving the snapshot into the supervisor left the
+      delegated lane with no baseline at all: an <code>in-harness</code> launch spawns no
+      process, so the branch that writes <code>tree-snapshot.json</code> was never reached, the
+      promotion check found no snapshot and returned no violations, and the refusal of a stray
+      uncommitted edit in another tree stopped firing for that lane. The shipped default backend
+      is the delegated one, so this was the lane most runs take. Dispatch now takes that
+      baseline inline in the same last repository-facing step, and writes the same run-directory
+      artifact, so one promotion check reads both lanes. Measured on <code>sirius_debug</code>:
+      the gate is <strong>5 passed in 189.59 s</strong> with the delegated case added.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/boundary_baseline_lanes.png"
+           alt="Two lanes. Left: dispatch returns and the supervisor takes the boundary baseline before spawning the worker. Right: dispatch takes the baseline inline, because no supervisor exists to take it later.">
+      <figcaption>
+        One baseline, taken as the last repository-facing step of dispatch in both lanes: by the
+        supervisor for a spawned run, by dispatch itself for a delegated one. Both write
+        <code>tree-snapshot.json</code> into the run directory, which is where promotion reads it.
+      </figcaption>
+    </figure>
+    <p>
+      The delegated case asserts the baseline is clean before the edit and non-empty after it, on
+      an untracked file at the run's declared path in the main checkout, and then that
+      <code>promotion._require_repository_tree_boundary</code> raises on it &mdash; 36 trees in the
+      snapshot, <code>[]</code> before and
+      <code>src/delegated.txt in main checkout &lt;repo&gt;</code> after. Negative control D drops
+      the inline snapshot and the case fails on <code>isinstance(None, dict)</code>, naming the
+      absent <code>tree-snapshot.json</code>; the overlay's own <code>package_root</code> is
+      reported so the control is known to have measured the mutated copy.
+    </p>
 
     <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
     <p>Once &sect;3 lands, a dispatch is an ordinary short command. Change every instruction that
