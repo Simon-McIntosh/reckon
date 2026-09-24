@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The Suite Is Green At Head">
+  <meta name="plan-summary" content="Measure every failing test at the current head, name its root cause, and repair each cause so a delta is readable from one run">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-standalone" content="Suite repair consumes no other plan&#x27;s evidence and gates no other plan; every node that measures by delta benefits, but none waits on it.">
+  <title>The Suite Is Green At Head | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; Inventory the failures at head and name each root cause</h2>
+    <p>The earlier plan <a href="/reckon/suite-failures-have-an-owner">Every Suite Failure Has An Owner</a>
+    cleared the fourteen standing failures it inventoried at <code>dc52c8d</code> and closed at impl 1.0.
+    Since then the repository has taken many landings, and there is no current reading of the suite at
+    head. A failure set is a property of a revision, not of the repository, so this section starts by
+    measuring rather than by assuming the earlier inventory still holds.</p>
+    <p>This section is diagnosis only. It changes no source or test file. Its deliverable is the
+    research record <code>docs/research/suite-failures-at-head.html</code> (<code>reckon-type=research</code>,
+    <code>plan-informs=the-suite-is-green-at-head</code>), which later sections cite as their input.</p>
+    <p><strong>Where it runs.</strong> The whole suite is heavy work and runs on SLURM compute, never on
+    the login node. A worker already running inside the fleet allocation (<code>SLURM_JOB_ID</code> set,
+    host not a login node) runs it in place; otherwise it submits to partition <code>all_debug</code> with
+    <code>--time</code> at most <code>00:59:00</code>. Either way <code>TMPDIR=/tmp</code>, one log per run,
+    and the record names the host and job id the run used. The earlier plan measured that
+    <code>tests/test_crew.py</code> completes in about 30 s on a compute node and stalls only on the login
+    node, so a stall on compute is itself a finding to record. If the suite cannot finish in one
+    one-hour job, split it by test file across jobs and name the split.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Inventory at a recorded revision</td><td>The record names the revision measured, the exact
+        command and partition used, the total pass, fail, error and skip counts, and every failing or erroring
+        node id. Each run's log path is recorded.</td></tr>
+        <tr><td>Grouped by cause, with evidence</td><td>Every failing node id is assigned to exactly one
+        cause group. Each group states its root cause in one sentence and cites the evidence for it: a
+        traceback line, the commit that changed the behaviour or the assertion, or a reproduction command.</td></tr>
+        <tr><td>Stale assertion distinguished from defect</td><td>Each group is classified as one of
+        <em>stale expectation</em> (the behaviour changed on purpose and the test did not), <em>product
+        defect</em> (the code is wrong), <em>test isolation</em> (the test reads or writes state outside the
+        repository, depends on order, or depends on today's date), or <em>environment</em> (fails only
+        because of the host). The record says which, and why. The earlier plan's locked decision still governs:
+        when behaviour changed deliberately, the test moves to the shipped behaviour.</td></tr>
+        <tr><td>Repair scope per group</td><td>For each group, the record names the files a repair would write
+        and whether any two groups' repairs would touch the same file, so &#167;2 can be cut into
+        non-overlapping nodes.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">&#167;2 &mdash; Repair each cause group</h2>
+    <p>One node per cause group identified in &#167;1, each cut to exclusive write paths from the
+    &#167;1 record's repair-scope column. This section's nodes are authored once &#167;1 has landed: the
+    cause groups are not known until then, and cutting nodes before the diagnosis would repeat the
+    mistake the earlier plan warned about, which is repairing several failures under one assumed cause.</p>
+    <p>No node disables, skips, xfails or deletes a failing test. Each repair either corrects a stale
+    assertion to the shipped behaviour, with the cause named, or fixes the product defect the test found.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Cause named before repair</td><td>Each node's landing record repeats the &#167;1 cause group it
+        repairs and whether it moved the assertion or the behaviour.</td></tr>
+        <tr><td>Zero added</td><td>Failure sets compared by node id at the node's base revision and at its head,
+        on compute; the group's failures are gone and no other node id moved from pass to fail.</td></tr>
+        <tr><td>Green at the integrated head</td><td>After every &#167;2 node merges, one full-suite run on
+        compute at the merged head reports zero failures and zero errors, with its revision and log recorded
+        in the cumulative evidence record.</td></tr>
+      </tbody>
+    </table>
+
+    
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-sgh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure the suite at head and diagnose every failure</h4>
+    <div class="r-fu-body"><p>Start with §1. §2's nodes are cut from its record.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §1</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
