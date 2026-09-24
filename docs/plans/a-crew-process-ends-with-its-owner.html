@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="32">
-<meta name="plan-impl" content="0.14">
+<meta name="plan-version" content="33">
+<meta name="plan-impl" content="0.29">
 </head>
 <body>
   <main class="plan-doc">
@@ -588,6 +588,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T1030-s5-landed" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>§5 landed</strong> (<code>d026717e</code>, <code>aaa888a5</code>; merged <code>b9514ecf</code>; review 92, re-review 98). The installed FastMCP SDK runs a synchronous tool inside its coroutine on the one event loop (<code>func_metadata.py</code>, <code>call_fn_with_arg_validation</code>), which is why one GPFS-blocked <code>read_plan</code> stopped every later call on 2026-09-23. Every registered tool now runs its unchanged body on a worker thread under a deadline, and answers a typed <code>storage-slow</code> naming the path and the wait. A timed-out write reports whether it landed; the review found that check ran on the loop, and it now runs off the loop under its own bound. Eight cases pass. The wider MCP surface shows the same five failures at base and head, so none were added. <strong>A running MCP server keeps the old code until it restarts</strong>, which is <code>/mcp</code> reconnect in each session. <strong>Follow-on (minor):</strong> nothing asserts the direct-path baseline stat stays off the loop; the shipped registration passes <code>path_hint</code>, so that branch is reached only by direct callers. One of the seven implementable sections has landed.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T1055-s2-landed" data-who="" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>§2 landed</strong> (<code>796583a4</code>, <code>2a98b781</code>; merged <code>74c1c5fe</code>; review 89, re-review 95). A follower's owner is fixed at first start and carried in <code>RECKON_FOLLOWER_OWNER</code> across a reload. Every follower, holder or read-only, checks it on each wait-pass tick, and a takeover records the original owner rather than its adopted parent, so an orphan can no longer become a holder that never exits. The first review found a 5 s bound (50 ticks) and an owner carry nothing asserted. The repair derives a 2.0 s bound from measured exit latencies of 0.81 to 0.91 s, and adds a reload under a live child subreaper that fails with the carry removed. Seven cases pass, the landed orphan-release test included, and all three mutations fail their own case. This edits §7 of <code>a-follower-outlives-its-monitor</code>'s landed <code>_check_consumer</code>, which now reads this owner. Two of the seven implementable sections have landed.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
