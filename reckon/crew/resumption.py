@@ -649,6 +649,31 @@ def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
     }
 
 
+def _spawn(plan: Any, *, log_path: Path, stderr_path: Path, prompt_path: Path) -> int:
+    """Start a resumed worker through the run's own supervisor.
+
+    A resumption leaves through the same supervisor a dispatch does, so its
+    worker is not a dispatch's grandchild and its exit is recorded. The
+    repository and worktree a resume continues in are the run's own recorded
+    ones and the log's directory is the run directory, so the details are read
+    back from the run rather than threaded through the call.
+    """
+    from reckon.crew.dispatch import supervised_launch
+
+    directory = Path(log_path).parent
+    record = read_pointer(directory.name)
+    worktree = str(record.get("worktree") or "")
+    return supervised_launch(
+        plan,
+        run_directory=directory,
+        repo_root=Path(str(record.get("repo") or directory)),
+        worktree=Path(worktree) if worktree else directory,
+        log_path=Path(log_path),
+        stderr_path=Path(stderr_path),
+        prompt_path=Path(prompt_path),
+    )
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -695,17 +720,8 @@ def _resume(
     attempt_started_at = _utc_now()
     manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
     if launcher is None:
-        from reckon.crew.dispatch import supervised_launch
-
-        worktree = Path(str(record.get("worktree") or ""))
-        pid = supervised_launch(
-            plan,
-            run_directory=directory,
-            repo_root=Path(str(record.get("repo") or directory)),
-            worktree=worktree if str(worktree) else directory,
-            log_path=log_path,
-            stderr_path=stderr_path,
-            prompt_path=advice_path,
+        pid = _spawn(
+            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
         )
     else:
         pid = launcher(
