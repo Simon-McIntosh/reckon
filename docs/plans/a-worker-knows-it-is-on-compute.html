@@ -72,6 +72,42 @@
       <li>No test reads the real <code>/proc</code> or real filesystems.</li>
     </ul>
 
+    <h3>Landing record</h3>
+    <p><code>reckon/host.py</code> exposes <code>host_facts()</code> returning
+    <code>in_allocation</code>, <code>job_id</code>, <code>step_id</code>,
+    <code>node</code>, the filesystem type of <code>/tmp</code> and of the home
+    directory, and <code>tmp_is_node_local</code>, each beside the file or helper
+    it was read from; <code>tests/test_host_facts.py</code> feeds fixture cgroup
+    and mount tables and stubs the mount predicate, so no case reads the real
+    <code>/proc</code>. The probe composes
+    <code>summary.SELF_CGROUP_PATH</code>/<code>_user_slice_dir</code> and
+    <code>dispatch._path_is_tmpfs</code>/<code>_is_node_local_path</code> without
+    editing either module; <code>placement.occupying_the_reservation</code>
+    answers a different question — whether a pointer set occupies the
+    reservation — and is left to its owner.</p>
+    <p>Nine cases pass (<code>9 passed in 0.30s</code>); four of them are the
+    section's own — inside the job cgroup reads true, the environment-inherited
+    shell reads false with the reason
+    <code>environment-inherited-outside-the-job-cgroup</code>, no SLURM at all
+    reads false, and a GPFS home beside an xfs <code>/tmp</code> gives
+    <code>tmp_filesystem: xfs</code>, <code>home_filesystem: gpfs</code> and
+    <code>tmp_is_node_local: true</code>. Two further cases pin the guard: the
+    declared mutation — the cgroup check replaced by a
+    <code>SLURM_JOB_ID</code> environment check — is applied in memory and the
+    environment-only case then reads <em>true</em>, so the cgroup check is what
+    makes it false. One recorded call in this job reads
+    <code>in_allocation: true</code> with <code>job_id 1277272</code>,
+    <code>node 98dci4-clu-2058</code> and <code>tmp_filesystem xfs</code>.</p>
+    <figure>
+      <img src="/reckon/figures/a-worker-knows-it-is-on-compute/host-facts-decision-flow.png"
+           alt="Two decision flows: in_allocation takes its answer from the process's own cgroup line, with the cgroup-naming branch the declared mutation replaces marked; tmp_is_node_local widens the tree's mount predicate with the mount's own filesystem type.">
+      <figcaption>The order each answer is taken in. The blue branch is the one
+      the declared mutation replaces, which is why the environment-only case
+      flips under it.</figcaption>
+    </figure>
+    <p>Full record:
+    <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s2">&sect;2 landed evidence</a>.</p>
+
     <h2 id="s3">&sect;3 &mdash; A nested launch is refused where it would fan out</h2>
     <p>This section adds <code>reckon/nested_launch.py</code>, plus thin shims named <code>srun</code>, <code>sbatch</code> and <code>salloc</code> under <code>reckon/host_shims/</code>. Placed first on a worker's <code>PATH</code>, a shim behaves as follows:</p>
     <ul>
