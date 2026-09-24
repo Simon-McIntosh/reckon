@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T00:41:27",
+  "updated": "2026-09-25T00:46:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -352135,6 +352135,27 @@
         "orientation_input_tokens": 10743731.0,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "not-run",
+          "integrated_revision": "080eb8fe97f77857d2142d7b7cae16013c17d0a3",
+          "checkout_revision": "080eb8fe97f77857d2142d7b7cae16013c17d0a3",
+          "checkout_on_integrated_revision": true,
+          "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew.py tests/test_ledger.py --deselect tests/test_crew.py::test_every_live_state_has_one_fleet_bucket_and_an_attention_route",
+          "gate_command_source": "stored",
+          "ran": true,
+          "exit_status": null,
+          "timed_out": true,
+          "reason": "the gate did not finish within the 300s re-run bound",
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "not-run",
+            "integrated_revision": "080eb8fe97f77857d2142d7b7cae16013c17d0a3",
+            "exit_status": null,
+            "reason": "the gate did not finish within the 300s re-run bound",
+            "message": "the gate passed at the worker's base but reports not-run on the integrated revision 080eb8fe97f7: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       },
       {
@@ -353272,6 +353293,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2519
+    "_version": 2520
   }
 }
