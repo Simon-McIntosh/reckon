@@ -2196,7 +2196,10 @@ AGREE: False</code></pre>
 
     <h3>Gate delta</h3>
     <p>Every file under <code>tests/</code> that imports <code>reckon.crew.prompts</code>, sixteen files
-    including this change's new one, run whole against a stated base.</p>
+    including this change's new one, run whole against a stated base. The head arm was re-run once the
+    documents landed &mdash; a docs-only difference above the code change &mdash; so the cited head log is
+    the later <code>b5354d1e</code> with the same two failures and 184 passes, and the earlier head log at
+    the code change itself is kept beside it.</p>
 
     <table>
       <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
@@ -2243,10 +2246,11 @@ AGREE: False</code></pre>
     ran, so the cohort's pass counts are known to have been produced by this change rather than by a
     neighbouring checkout's copy; the two failing ids were read from the same <code>FAILED &hellip;</code>
     summary shape at both revisions and compared as sorted sets rather than counts; and the mutation was
-    reverted rather than left to rot in the log, so the head cited above is the head the re-run measures. Lint
-    and format are judged by delta as well: <code>reckon/crew/prompts.py</code> carries three findings at the
-    base revision and three with the change, the new test file is clean of findings and of formatting
-    differences, and neither obligation was met by rewriting a file this node did not touch.</p>
+    reverted rather than left to rot in the log, so the revision cited above is the revision the restored
+    re-run measures. Lint and format are judged by delta as well: <code>reckon/crew/prompts.py</code> reports the same
+    two findings under the same invocation at the base revision and at the head, the new test file reports
+    none, and both changed paths are already formatted &mdash; so the change adds nothing to either
+    obligation, and neither was met by rewriting a file this node did not touch.</p>
 
     <p>Changed paths: <code>reckon/crew/prompts.py</code>,
     <code>tests/test_manifest_template_names_the_tree.py</code>,
@@ -2255,8 +2259,9 @@ AGREE: False</code></pre>
     <code>0fa5ddf9</code>; stated base <code>c590aaaa</code>. Receipts:
     <code>~/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/</code>
     &mdash; <code>logs/cohort-base.log</code> and
-    <code>logs/cohort-head-committed.log</code> (each naming the revision, the tree and the command on its
-    header lines, with the resolved module printed before the run), and
+    <code>logs/cohort-head-final.log</code> (each naming the revision, the tree and the command on its header
+    lines, and the head log additionally printing the resolved module path and working directory before the
+    run, which the base log cannot because the template that asks for them is this change), and
     <code>logs/negative-control-red.log</code> (the declared mutation on its first line, the six failures,
     and the restore), plus <code>logs/prompt-size.log</code> and <code>logs/prompt-size.diff</code> for the
     growth figure, with the measuring script and the two written-out prompts under <code>measure/</code>.
