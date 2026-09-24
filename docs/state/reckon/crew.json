@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:21:12",
+  "updated": "2026-09-25T01:22:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -357986,6 +357986,292 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T211828681310-host-facts-probe",
+        "plan": "a-worker-knows-it-is-on-compute",
+        "section": "\u00a72",
+        "node": "host-facts-probe",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2385,
+                "cached_input_tokens": 320590,
+                "input_tokens": 322977,
+                "output_tokens": 1938,
+                "reasoning_output_tokens": 49,
+                "total_tokens": 324915,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/host.py exposes host_facts() returning in_allocation, job_id, step_id, node, tmp filesystem type, home filesystem type and tmp_is_node_local each with its source, composing summary.py's cgroup readers (SELF_CGROUP_PATH, _user_slice_dir), placement.occupying_the_reservation, and dispatch._is_node_local_path/_path_is_tmpfs without editing those files (reuse map Node B1 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s23-reuse-map/reuse-map.md); tests/test_host_facts.py feeds fixture cgroup and mountinfo files and asserts four cases: inside the job cgroup, SLURM_JOB_ID set with a user.slice cgroup reading in_allocation false with reason environment-inherited-outside-the-job-cgroup, no SLURM, and a GPFS home beside an xfs node-local /tmp; no test reads the real /proc; the declared mutation (the cgroup check replaced by an environment check) is applied and the environment-only case observed to fail with its log recorded; one recorded call of host_facts() in this job reads in_allocation true",
+          "estimated_hours": null,
+          "goal": "add reckon/host.py whose host_facts() says whether this process is inside the SLURM allocation by its cgroup",
+          "id": "host-facts-probe",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T21:18:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 5,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 6,
+            "mean_context": 96000,
+            "observed_at": "2026-09-24T21:18:24Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211828681310-host-facts-probe/manifest.md",
+          "negative_control": "replace the cgroup check with a SLURM_JOB_ID environment check",
+          "plan": "a-worker-knows-it-is-on-compute",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/host.py",
+            "tests/test_host_facts.py",
+            "docs/evidence/archive/a-worker-knows-it-is-on-compute-landed.html",
+            "docs/figures/a-worker-knows-it-is-on-compute",
+            "docs/plans/a-worker-knows-it-is-on-compute.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-flag-migration",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T21:18:45Z",
+        "completed_at": "2026-09-24T22:45:33.977Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5128,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5208,
+        "stalled": true,
+        "time_budget": "35m",
+        "base_sha": "a130260c4ad33e9e9cc9bcfab207f7e9286a30e0",
+        "commits": [
+          "bf1725d6b28abc072f516b9b5342d6b13b0005c1",
+          "2700bda6cd3eeb07c2db9b478537b2239543090c",
+          "a4bbb242236c108617564278e50b6f0608e2f2d1",
+          "f2810b50f59ca3d1840ac6a8bd5981aaa6d208fd"
+        ],
+        "changed_lines": {
+          "added": 951,
+          "removed": 0,
+          "files": 8
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_host_facts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211828681310-host-facts-probe/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211828681310-host-facts-probe/manifest.md",
+        "scope_changed": false,
+        "session_id": "51c4a798-0149-4fc3-9da9-5baa13a0bcc2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14999919,
+            "input_tokens_cumulative": 14999919,
+            "output_tokens": 96062,
+            "output_tokens_cumulative": 96062,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T22:45:33.977Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 97
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 15167758,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5135.34,
+          "generated_tokens": 105339,
+          "generation_seconds": 4968.84,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 166.5,
+          "peak_input_tokens": 166539,
+          "tokens_per_second": 21.2,
+          "wall_tokens_per_second": 20.51
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/host-facts-probe",
+          "session_id": "51c4a798-0149-4fc3-9da9-5baa13a0bcc2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T22:45:33.977Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T22:45:34Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T21:19:56Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T211828681310-host-facts-probe",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 14412,
+          "worker_pid": 1315435
+        },
+        "promoted_revision": "f2810b50f59ca3d1840ac6a8bd5981aaa6d208fd",
+        "impl_move": {
+          "plan": "a-worker-knows-it-is-on-compute",
+          "at_dispatch": null,
+          "at_complete": 0.25,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_host_facts.py"
+          ],
+          "declaration": "replace the cgroup check with a SLURM_JOB_ID environment check",
+          "log": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/host-facts-probe/docs/figures/a-worker-knows-it-is-on-compute/host-facts-mutation.log",
+          "resolved_log": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/host-facts-probe/docs/figures/a-worker-knows-it-is-on-compute/host-facts-mutation.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T21:53:29.255740+00:00",
+          "horizon_seconds": 2100,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T21:18:29Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 5,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 6,
+          "mean_context": 96000,
+          "observed_at": "2026-09-24T21:18:24Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 154.0,
+        "orientation_input_tokens": 1296278.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -358298,6 +358584,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2545
+    "_version": 2546
   }
 }
