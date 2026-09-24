@@ -166,6 +166,44 @@
     figure <a href="/reckon/figures/the-suite-is-green-at-head/owned-ids-base-vs-head.png">owned
     ids base vs head</a>.</p>
 
+    <section id="s2-promotion-tests-meet-the-review-and-checkout-guards">
+    <header><span class="badge badge-shipped">&#10003; node landed 2026-09-24</span>
+    <h3>&#167;2 node: promotion tests meet the review and checkout guards</h3></header>
+    <p>Seven files, 31 failing node ids, all repaired except one, which is a product defect reported
+    rather than made. The base-revision reproduction of the &#167;4 list is exact: 12 + 9 + 1 + 2 + 4 + 2 + 1 = 31
+    ids, and at head only the named defect remains red, so no node id moved from pass to fail.</p>
+    <p><strong>Cause group.</strong> Two promotion refusals shipped after these fixtures were written
+    (<code>2986f5d1</code>, the unreviewed-promotion gate; <code>ddd16eba</code>, the committable-checkout gate),
+    and each fixture still asserted the state that existed before them. Every id in this group is a
+    <em>stale expectation</em>: the assertion was moved to the shipped behaviour, no product behaviour changed
+    for it. Three expectations were claims rather than omissions, and each was replaced by the property it
+    meant &mdash; the worktree audit asserted a literal git-call ceiling that moved with the ledger's
+    once-only absence probe, so it now asserts the count does not move with the peer population; the fleet
+    reading counts a delivered run awaiting review as actionable beside a returned one, which is the
+    shipped attention set.</p>
+    <p><strong>Reported, not repaired.</strong> One id is a product defect in
+    <code>reckon/crew/promotion.py</code>: <code>_preserve_cited_gate_log</code> returns
+    <code>None</code> at lines 628&ndash;630 when the gate check carries no <code>log_path</code>, which
+    discards the whole mapping &mdash; including a supplied <code>log_digest</code>. The refusal it then
+    produces reads <em>missing command, exit_status, log path or digest</em>, while
+    <code>reckon/ledger.py::gate_check_missing_fields</code> accepts <code>log_path</code> <em>or</em>
+    <code>log_digest</code>; the guard contradicts itself. Introduced by <code>bd576e66</code> (2026-09-22);
+    its red test predates it, added at <code>f05f85b5</code> (2026-08-26). Named in the node's
+    <code>follow_ons</code> for a separate node.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Base-revision ids reproduced</td><td>31, matching &#167;4 exactly; red log recorded</td></tr>
+        <tr><td>Ids still red at head</td><td>1 &mdash; the named product defect, a subset of the base set</td></tr>
+        <tr><td>Node ids moving pass to fail</td><td>0</td></tr>
+        <tr><td>Repaired files</td><td><code>test_gate_evidence</code>, <code>test_routing_evidence_fields</code>,
+        <code>test_crew_promotion</code>, <code>test_role_write_scope</code>, <code>test_receipt_after_release</code>,
+        <code>test_promotion_reads_the_terminal_record</code>, <code>test_promotion_beat_carries_fleet_state</code></td></tr>
+        <tr><td>Tests skipped, xfailed, deleted or weakened</td><td>none</td></tr>
+      </tbody>
+    </table>
+    </section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

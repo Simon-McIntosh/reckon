@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
+from reckon.crew import review as review_module
 from reckon.crew.node import role_may_write_repository_paths
 from reckon.crew.review import review_path, review_store_root
 from reckon.crew.runs import (
@@ -440,6 +441,28 @@ def _write_test_pointer(
     )
 
 
+def _stored_review(run_id: str) -> None:
+    """Attach a complete independent review so the review gate is satisfied.
+
+    A passing run that changed the repository is refused at promotion until a
+    complete review is stored, and that refusal is not what these tests
+    measure: one asserts the role-scope refusal that sits behind it, the other
+    the landing acceptance. Storing the review is setup, not subject.
+    """
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+        }
+    )
+    review_module.store_review(record)
+
+
 def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
     repository,
     tmp_path,
@@ -474,6 +497,7 @@ def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
         manifest=manifest,
         write_paths=["source.py"],
     )
+    _stored_review(run_id)
 
     with pytest.raises(crew.CrewError, match="verifier may read"):
         crew.complete(
@@ -786,6 +810,7 @@ def test_promoting_a_run_that_wrote_both_landing_paths_is_accepted(
         write_paths=[PLAN_FILE, EVIDENCE_RECORD],
         role="implement",
     )
+    _stored_review(run_id)
 
     result = crew.complete(
         run_id,

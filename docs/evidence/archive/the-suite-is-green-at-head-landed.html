@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -247,6 +247,102 @@
       <code>test_doctor</code> 9 passed, <code>test_crew_orientation</code> 4 passed, and
       <code>test_schema</code> 1 failed / 1558 passed, the one failure being the follow-on above.
       Logs: <code>.pytest-logs/head/</code>. Delta against base: 17 repaired, zero added.</p>
+    </section>
+
+
+    <section id="s2-promotion-tests-meet-the-review-and-checkout-guards">
+      <h2>&sect;2 node &mdash; promotion tests meet the review and checkout guards</h2>
+      <p>Seven red files, 31 failing node ids at the node's base revision
+      <code>77c20349</code>. Thirty of them pass at the node's head; one is a product
+      defect the node reports rather than repairs, per &sect;2's rule that a defect in
+      <code>reckon/</code> is named in <code>follow_ons</code> because several nodes
+      reach the same modules.</p>
+
+      <h3>The cause, named before repair</h3>
+      <p>Two promotion refusals shipped after these fixtures were written. A passing run
+      that changed the repository is refused until a complete independent review is stored
+      (the review gate), and a checkout that is not a git worktree is refused before either
+      store is written (the committable-checkout gate). Each fixture still asserted the
+      state that existed before them, which is the &sect;1 cause group <em>stale expectation
+      from a guard closed without updating the tests</em>. Every repaired id is that class:
+      the assertion was moved to the shipped behaviour and no product behaviour was changed
+      for it. Two exhaustion probes were the same shape &mdash; a provenance scan that had
+      been reading bare prose now reads a manifest body first, and a ledger that had been
+      read without a repository now answers its never-tracked question through git.</p>
+
+      <h3>Three expectations that were claims, not omissions</h3>
+      <p>These asserted a number where they meant a property, so the assertion was replaced
+      by the property rather than by the new number.</p>
+      <table>
+        <thead><tr><th>Fixture claim</th><th>What it now measures</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>The worktree audit makes at most nine git calls</td>
+            <td>The count does not move with the peer population. The literal had drifted because
+            the first promotion on an absent ledger performs a once-only six-call probe that no
+            later one repeats; the fixture now takes a warm-up landing first and compares two warm
+            landings, one alone and one beside twenty peer worktrees.</td>
+          </tr>
+          <tr>
+            <td>Exactly one fleet run is actionable</td>
+            <td>A returned run is actionable beside a blocked one. The fleet's third run is
+            <code>complete</code> with no independent review stored, which the attention set reports
+            as <code>scoring</code> &mdash; unfinished business until the review exists. The run
+            still working is neither.</td>
+          </tr>
+          <tr>
+            <td>A report stating a dispute is counted from its prose</td>
+            <td>A report must be a readable manifest before its prose is scanned, so each sample
+            carries the header that makes it a report rather than bare prose. This is the
+            provenance scan refusing to guess, and the sample was the stale half.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Measure</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base-revision reproduction, per file</td>
+              <td>12 + 9 + 1 + 2 + 4 + 2 + 1 = 31 ids, matching the research record's &sect;4 list exactly</td></tr>
+          <tr><td>Head, per file, own process and own <code>--basetemp</code></td>
+              <td><code>test_gate_evidence</code> 25 passed / 1 failed; <code>test_routing_evidence_fields</code> 21 passed;
+              <code>test_crew_promotion</code> 49 passed; <code>test_role_write_scope</code> 21 passed;
+              <code>test_receipt_after_release</code> 6 passed; <code>test_promotion_reads_the_terminal_record</code> 6 passed;
+              <code>test_promotion_beat_carries_fleet_state</code> 3 passed</td></tr>
+          <tr><td>Ids moving from pass to fail</td><td>0 &mdash; the single remaining id is a member of the base set</td></tr>
+          <tr><td>Negative control</td><td>each repaired file run as it stood at <code>77c20349</code> reproduces its listed ids
+              with the recorded error; red log at <code>/tmp/sgh-negative/base-revision-red.log</code>,
+              whose first line is the declared negative-control string</td></tr>
+          <tr><td>Skipped, xfailed, deleted or weakened</td><td>none</td></tr>
+          <tr><td>Lint and format delta</td><td>the commit adds no finding; the one remaining finding and the two
+              unformatted files are present at the base revision</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Reported, not repaired &mdash; one product defect</h3>
+      <p><code>reckon/crew/promotion.py::_preserve_cited_gate_log</code> returns <code>None</code>
+      at lines 628&ndash;630 when the gate check carries no <code>log_path</code>:</p>
+      <pre><code>raw = str(gate_check.get("log_path") or "").strip()
+if not raw:
+    return None</code></pre>
+      <p>The caller assigns that <code>None</code> over the whole gate check, so a check that
+      supplies a <code>log_digest</code> and no path loses its command, exit status and digest
+      together. Promotion then refuses with <em>missing command, exit_status, log path or
+      digest</em> &mdash; while <code>reckon/ledger.py::gate_check_missing_fields</code> accepts
+      <code>log_path</code> <em>or</em> <code>log_digest</code>. The guard contradicts its own
+      refusal text and its own validator, so the behaviour is wrong rather than the assertion.
+      Introduced by <code>bd576e66</code> (2026-09-22); the red test predates it, added at
+      <code>f05f85b5</code> (2026-08-26) with the gate-evidence refusal itself.</p>
+      <p>Reproduced at head through the public command:</p>
+      <pre><code>crew complete --run r-20260826T090200000000-node-a --gate passed \
+  --gate-command pytest --gate-exit-status 0 --gate-log-digest sha256:abc123
+Error: a passing gate requires the check that produced it;
+       missing command, exit_status, log path or digest</code></pre>
+      <p>The failing node id is
+      <code>test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code> in
+      <code>tests/test_gate_evidence.py</code>, and it is carried in the node's
+      <code>follow_ons</code> for a separate node.</p>
     </section>
   </main>
 </body>

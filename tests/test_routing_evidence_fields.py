@@ -12,11 +12,13 @@ later touch of already-named paths read differently from a defect.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import _plan_html, crew, ledger
+from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -55,7 +57,32 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
+    _seed_git_repository(root)
     return root
+
+
+def _seed_git_repository(root: Path) -> None:
+    """Make the fixture a git worktree with one commit.
+
+    Promotion refuses a checkout that cannot host the landing commit, and the
+    ledger reads an absent crew.json as a deletion to recover unless git can
+    report the path was never tracked — a question it answers only from a
+    checkout that carries at least one commit. Both guards read the repository,
+    so the fixture supplies one.
+    """
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "seed repository"),
+    ):
+        subprocess.run(
+            ["git", *arguments],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
 
 
 def _write_manifest(repository: Path, text: str, run_id: str) -> Path:
@@ -103,12 +130,34 @@ def _promote_with_manifest(
     if base_sha:
         pointer["base_sha"] = base_sha
     _write_json(pointer_path(run_id), pointer)
+    _stored_review(run_id)
     return crew.complete(
         run_id,
         gate="passed",
         no_commit="test: the report is the deliverable",
         root=repository,
     )
+
+
+def _stored_review(run_id: str) -> None:
+    """Attach a complete independent review so the review gate is satisfied.
+
+    A passing run that changed the repository is refused at promotion until a
+    complete review is stored, so the evidence field the promotion records is
+    what these tests measure; the review is setup, not subject.
+    """
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+        }
+    )
+    review_module.store_review(record)
 
 
 def _row(repository: Path, run_id: str) -> dict:
@@ -228,16 +277,25 @@ def test_a_clean_report_counts_zero_corrections() -> None:
 
 
 def test_a_report_stating_a_dispute_counts_it() -> None:
-    assert ledger.stated_correction_count("I disputed the premise of the brief") == 1
-    assert ledger.stated_correction_count("contrary to the brief") == 1
+    # Every report must be a readable manifest before its prose is scanned: a
+    # body whose status cannot be determined counts as unreadable, so each
+    # sample carries the header that makes it a report rather than bare prose.
+    header = "status: complete\n"
+    assert (
+        ledger.stated_correction_count(header + "I disputed the premise of the brief")
+        == 1
+    )
+    assert ledger.stated_correction_count(header + "contrary to the brief") == 1
     assert (
         ledger.stated_correction_count(
-            "the stated premise of the estimate is not the case"
+            header + "the stated premise of the estimate is not the case"
         )
         == 1
     )
     assert (
-        ledger.stated_correction_count("contrary to the brief.\nI disputed the premise")
+        ledger.stated_correction_count(
+            header + "outcome: contrary to the brief.\nI disputed the premise"
+        )
         == 2
     )
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import threading
 import time
 from datetime import UTC, datetime, timedelta
@@ -22,6 +23,7 @@ import pytest
 
 from reckon import _plan_html, crew
 from reckon.crew import promotion
+from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -60,7 +62,47 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
+    _seed_git_repository(root)
     return root
+
+
+def _seed_git_repository(root: Path) -> None:
+    """Make the fixture a git worktree whose committed docs are the base.
+
+    Promotion refuses a checkout that cannot host the landing commit, because
+    the ledger row and the plan comment it writes must land in one commit.
+    """
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "seed repository"),
+    ):
+        subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
+
+
+def _stored_review(run_id: str) -> None:
+    """Attach a complete independent review so the review gate is satisfied.
+
+    These tests measure the bounded settle that lets promotion fold a finished
+    run's own terminal record. A passing implement run that changed the
+    repository is refused at promotion until a complete review is stored, and
+    that refusal would fire ahead of the settle this file measures; the review
+    is setup, not subject.
+    """
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+        }
+    )
+    review_module.store_review(record)
 
 
 def _stamp(seconds_ago: int) -> str:
@@ -204,6 +246,7 @@ def test_a_terminal_record_landing_after_exit_is_folded_into_the_row(
     monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
     _fast_settle(monkeypatch)
 
+    _stored_review(run_id)
     promoted = crew.complete(
         run_id,
         gate="passed",
@@ -277,6 +320,7 @@ def test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback
     monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
     _fast_settle(monkeypatch)
 
+    _stored_review(run_id)
     began = time.monotonic()
     promoted = crew.complete(
         run_id,

@@ -138,7 +138,40 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         '<meta name="plan-effort-hours" content="4">'
         f"<title>{PLAN}</title></head><body></body></html>"
     )
+    _seed_git_repository(root)
     return root
+
+
+def _seed_git_repository(root: Path) -> None:
+    """Make the fixture a git worktree with one commit.
+
+    Promotion refuses a checkout that cannot host the landing commit, and the
+    ledger treats an absent crew.json as a deletion to recover unless git can
+    report the path was never tracked — which it can only answer from a
+    checkout that carries at least one commit. Both guards read the repository,
+    not the test, so the fixture supplies one. A second call commits only when
+    something is staged, so a test may re-run it after adding work.
+    """
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+    ):
+        subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+    )
+    if staged.returncode != 0:
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "seed repository"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
 
 
 def _write_pointer(
@@ -438,6 +471,7 @@ def test_reasoned_waiver_promotes_and_stores_observations(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T090600000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "waived.md"
     baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
     after = _suite_observation(
@@ -474,6 +508,7 @@ def test_repair_run_with_only_baseline_failures_is_clean(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T090700000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "clean.md"
     _write_suite_manifest(
         manifest,
@@ -500,16 +535,7 @@ def test_repair_run_with_only_baseline_failures_is_clean(
 def test_real_cited_commit_and_clean_suite_delta_promote_together(
     repository: Path, tmp_path: Path
 ) -> None:
-    for arguments in (
-        ("init", "-q", "-b", "main"),
-        ("config", "user.email", "worker@example.invalid"),
-        ("config", "user.name", "Worker"),
-        ("add", "docs"),
-        ("commit", "-q", "-m", "chore: seed repository"),
-    ):
-        subprocess.run(
-            ["git", *arguments], cwd=repository, check=True, capture_output=True
-        )
+    _seed_git_repository(repository)
     base_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=repository,
@@ -616,6 +642,7 @@ def test_fifteen_repair_promotions_with_no_added_failures_are_accepted(
 
     for index in range(15):
         run_id = f"r-20260826T10{index:02d}00000000-node-a"
+        _stored_review(run_id)
         manifest = tmp_path / f"repair-{index}.md"
         after_failures = (
             inherited_failures
@@ -992,6 +1019,7 @@ def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260826T090900000000-node-a"
+    _stored_review(run_id)
     baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
     after = _suite_observation(
         "after-abc",
@@ -1052,6 +1080,7 @@ def test_promoted_run_stores_failure_attribution_beside_added_ids(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260903T000100000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "attributed-waived.md"
     baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
     after = _suite_observation(
@@ -1123,6 +1152,7 @@ def test_attribution_naming_a_pre_existing_failure_is_dropped(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260903T000300000000-node-a"
+    _stored_review(run_id)
     manifest = tmp_path / "pre-existing-attribution.md"
     baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
     after = _suite_observation(
