@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="consumers-read-reckon-through-verbs">
+<meta name="reckon-type" content="plan">
+<title>consumers-read-reckon-through-verbs</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="Consumers Read Reckon Through Verbs">
+<meta name="plan-summary" content="Other repositories hardcode reckon&#x27;s config-home paths, pointer JSON and lane fields; a few read-only verbs give them a stable interface instead.">
+<meta name="plan-status" content="active">
+<meta name="plan-sprint" content="S22">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-informs" content="a-crew-process-ends-with-its-owner,the-fleet-shares-one-allocation">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="3">
+</head>
+<body>
+<main class="plan-doc">
+    <h1>Consumers Read Reckon Through Verbs</h1>
+
+    <h2 id="s1">&sect;1 &mdash; What consumers depend on, measured</h2>
+    <p>Reckon is the shared infrastructure for every other repository on this workstation, so
+    the question is inverted: where must a consumer know reckon's internals? On 2026-09-24 the
+    audit <code>consumers-reach-into-reckon-internals</code> searched imas-ambix, imas-codex,
+    imas-efit, nova and dotfiles. Its report is at
+    <code>~/.config/reckon/crew/reports/reckon/ship-s20-20260923/consumers-reach-into-reckon-internals.md</code>,
+    with every file and line in its appendix. Three couplings dominate:</p>
+    <ul>
+      <li><strong>Config-home paths, 1,537 lines.</strong> Consumers hardcode
+      <code>/home/ITER/mcintos/.config/reckon/...</code> with the username in it. Some is code:
+      nova writes sbatch <code>--output</code> into <code>crew/runs/&lt;run&gt;/</code>, and
+      imas-ambix writes into <code>crew/reports/</code>. Most is docs quoting run directories.
+      The resolver exists, <code>_config_home()</code> in <code>reckon/_store.py</code>
+      honouring <code>RECKON_HOME</code>, but it is private and no verb prints it.</li>
+      <li><strong><code>reckon crew</code> output, 151 lines.</strong> These are all docs, and the
+      CLI is already the interface consumers use. But nothing declares its JSON output shapes,
+      so callers grep prose.</li>
+      <li><strong><code>lane.json</code> fields, 91 lines, 56 of them code.</strong> The fields are
+      read by hand, including in <code>~/.agents/AGENTS.md</code>'s capacity gate. MCP has
+      <code>crew(view="lanes")</code>, but the CLI has no verb.</li>
+    </ul>
+    <p>Two coordinator surveys corroborate it. reckon-e5's
+    <code>s19-internals-consumers-survey</code> (report under
+    <code>crew/reports/reckon/ship-s19-20260922/</code>) found that
+    <code>skills/reckon-ship/scripts/worktree_fleet.py</code> re-implements pointer
+    classification and worktree layout; that the reckon-sync fallback writes
+    <code>mounts.json</code> and the state symlink from the shell; and that the recovery recipe
+    in <code>AGENTS.md</code> opens a live pointer's JSON for its <code>worktree</code>.
+    reckon-e4 found that the SPA knows the server's fallback chain
+    (<code>index.json</code>, then <code>projection.json</code>, then <code>/_discover</code>) and that
+    the mount list is a config-home file served by filename. It also found that
+    <code>crew observe</code> writes session captures into the committed roster
+    <code>docs/state/reckon/crew.json</code>. That dirties the shared checkout, and every other
+    session's <code>member add</code> is refused until someone commits it: 5 times in one day.
+    imas-codex has its own inventory in
+    <code>docs/evidence/imas-codex-replan/shared-infrastructure-coupling.md</code>.</p>
+
+    <h2 id="s2">&sect;2 &mdash; One verb prints where reckon keeps things</h2>
+    <p><code>reckon crew path --kind config-home|reports|runs|live|reviews [--project P] [--run R]</code>
+    prints the resolved absolute path. It reuses <code>_config_home()</code>'s precedence
+    (<code>RECKON_HOME</code>, then <code>~/.config/reckon</code>) rather than inventing one, and
+    with <code>--run</code> it prints that run's directory. <strong>Done when</strong>
+    <code>tests/test_crew_path_prints_the_resolved_home.py</code> shows, under a temporary
+    <code>RECKON_HOME</code>, each kind printing a path under it, and with it unset, a path under
+    <code>~/.config/reckon</code>. The negative control is executed and logged: a verb that
+    hardcodes the default ignores <code>RECKON_HOME</code> and fails. The write paths are
+    <code>reckon/cli.py</code> and that test.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Lane, run and claim facts come from verbs, not files</h2>
+    <p>Three read-only verbs, each printing JSON whose field names are declared once:</p>
+    <ul>
+      <li><code>reckon crew lanes</code> prints the fields <code>lane_document.py</code> already
+      parses, the same payload as the MCP <code>view="lanes"</code>.</li>
+      <li><code>reckon crew list --run R --field worktree|pid|phase|base_sha</code> prints one
+      pointer fact, so no recipe opens pointer JSON.</li>
+      <li><code>reckon crew claims [--path P]</code> prints which live run holds a write path,
+      read from each pointer's <code>node.write_paths</code>.</li>
+    </ul>
+    <p><strong>Done when</strong> tests cover each verb against temporary fixtures, and
+    <code>skills/reckon-ship/scripts/worktree_fleet.py</code> uses <code>crew list</code> and
+    <code>crew claims</code> in place of its own pointer classification. Its diff removes the
+    duplicated classifier. The write paths are <code>reckon/cli.py</code>,
+    <code>reckon/crew/lane_document.py</code>, that script and the tests.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Hand recipes become verbs</h2>
+    <p>Two coordinator recipes repeat daily and are error-prone.
+    <code>reckon crew repair-manifest --run R --set field=value</code> keeps
+    <code>manifest.md.asdelivered</code>, writes the field in its canonical shape, and runs
+    <code>check-manifest</code> afterwards. It replaces hand edits whose appends ran onto the
+    previous line on 2026-09-24. The reckon-sync fallback's writes of <code>mounts.json</code>
+    and the state symlink move behind <code>reckon sync --write</code>, which prints what it
+    wrote. <strong>Done when</strong> each verb has a test whose negative control reproduces the
+    hand-recipe defect, and <code>~/.agents/AGENTS.md</code> and the skills cite the verbs in
+    place of the recipes. The write paths are <code>reckon/cli.py</code>, the sync module the
+    node names, the skill files the node names, and the tests.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Session captures leave the committed roster</h2>
+    <p><code>crew observe</code> and dispatch write session captures into
+    <code>docs/state/&lt;project&gt;/crew.json</code>, a committed file. So every observation
+    dirties the shared checkout, and peers' roster writes refuse until someone commits it.
+    Captures move to <code>&lt;config-home&gt;/crew/sessions/&lt;project&gt;/&lt;member&gt;.json</code>.
+    The committed roster keeps only member identity and role. <code>new-work-gets-a-new-worker</code>
+    &sect;3 moves the session onto the run record, and this section and that one must agree.
+    Whichever lands second reads the first. <strong>Done when</strong> a test observes a run in a
+    temporary repository and home, and asserts that the committed roster file's bytes are
+    unchanged and the capture is under the config home. The write paths are the observe and
+    dispatch capture sites, which the node names, and that test.</p>
+
+    <h2 id="s6">&sect;6 &mdash; The CLI's JSON outputs are a declared contract</h2>
+    <p>The JSON that <code>crew dispatch</code>, <code>crew complete</code>, <code>crew list</code>
+    and the verbs above print is declared in one schema, versioned beside the flight config's
+    LinkML. A consumer can then validate what it parses, and a change to a field is a schema
+    change reviewers can see. The refusal classes consumers need are part of it. Preflight
+    refusals launch nothing, while post-launch refusals always carry the run id they created;
+    imas-codex measured a caller retrying against its own phantom run. <strong>Done when</strong>
+    a test validates each command's output against the schema over its existing fixtures, and a
+    refusal after launch carries <code>run_id</code> and <code>launched: true</code>. The
+    negative control is executed and logged: removing <code>run_id</code> from a post-launch
+    refusal fails validation. The write paths are the schema file, the commands' result
+    builders, which the node names, and the tests.</p>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-crrtv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship consumers-read-reckon-through-verbs §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read back, then land the path verb first</h4>
+    <div class="r-fu-body"><p>A new plan from the 2026-09-24 re-plan, never read back. First a read-back of §2 to §6. Then §2, the <code>crew path</code> verb: it is the smallest change and removes the largest coupling, 1,537 lines. After it lands, tell each consumer repository's coordinator the verb exists, citing the audit's appendix for their lines. <strong>Done when</strong> §2's test passes at merged main and the read-back lists no load-bearing forks.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship consumers-read-reckon-through-verbs §2</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
