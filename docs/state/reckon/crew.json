@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T14:56:51",
+  "updated": "2026-09-24T14:59:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -337279,6 +337279,343 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260923T165705059110-fenced-launch-neighbour-tests",
+        "plan": "a-worker-cannot-write-your-home",
+        "section": "\u00a72",
+        "node": "fenced-launch-neighbour-tests",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 232,
+                "cached_input_tokens": 211711,
+                "input_tokens": 211945,
+                "output_tokens": 926,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 212871,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "2577176f-d2bf-4de4-b10e-64ae1e8f98db",
+            "session_id": "ship-s19-20260922"
+          },
+          "done_when": "at base f073da71 these four fail and at your head they pass: tests/test_launch_plan_attaches_images.py::test_no_figures_emit_no_flag, tests/test_launch_plan_attaches_images.py::test_a_text_only_lane_with_no_figures_is_unaffected, tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment, tests/test_backend_sandbox_delivery.py::test_codex_read_only_argv_is_unchanged. Each fix keeps the test's intent: an argv-pinning test either passes fence=False explicitly because it measures the unfenced argv, or updates its expected argv to the fenced form, and the commit body says which and why for each; the environment test still proves the run record excludes the environment, so it must not be loosened to accept any mapping. Run the four files plus tests/test_backends.py tests/test_each_run_owns_its_harness_home.py tests/test_launch_plan_fences_the_home.py at base and at head on an all_debug partition (srun --partition=all_debug --time=00:30:00), each captured once to a log in the run directory; 0 added failures against base, and the 3 pre-existing rate-limit budget failures are the only ones left. The negative-control log's first line states the declared mutation verbatim and is written as an absolute path in the run directory. Commit by explicit path with a conventional subject and a body. Write the manifest before any long wait.",
+          "estimated_hours": null,
+          "goal": "make the four neighbouring tests that pin an exact launch argv or environment pass under the fence-by-default launch plan, without weakening what each asserts",
+          "id": "fenced-launch-neighbour-tests",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-23T16:57:05Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 20,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 96000,
+            "observed_at": "2026-09-23T16:56:45Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T165705059110-fenced-launch-neighbour-tests/manifest.md",
+          "negative_control": "revert the fix in tests/test_backend_environment.py so its assertion compares plan.environment to the one-key mapping again, and that test fails",
+          "plan": "a-worker-cannot-write-your-home",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_launch_plan_attaches_images.py",
+            "tests/test_backend_environment.py",
+            "tests/test_backend_sandbox_delivery.py",
+            "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+            "docs/figures/a-worker-cannot-write-your-home",
+            "docs/plans/a-worker-cannot-write-your-home.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19-nw-scout",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-23T16:57:28Z",
+        "completed_at": "2026-09-23T17:20:51.195Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1388,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1403,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "f073da717b3d6b2946133e6c91e275402256970d",
+        "commits": [
+          "7bdadce0c51008b75558e7a7ed9042431c9dc8b9",
+          "27e111615a8fce1712d44f686f6dd25409638237"
+        ],
+        "changed_lines": {
+          "added": 193,
+          "removed": 7,
+          "files": 8
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "srun --partition=all_debug --time=00:30:00 --cpus-per-task=4 --mem=32G bash -lc \"cd <worktree>; PYTHONPATH=$PWD <venv>/bin/python -m pytest -p no:cacheprovider -q <six neighbouring test files>\"",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T165705059110-fenced-launch-neighbour-tests/head.log",
+          "log_digest": "a6275f0e2b818cd1906340d8953b6e5f6b72a2c41509c37f9d7c885f9d14a5ac"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T165705059110-fenced-launch-neighbour-tests/manifest.md",
+        "scope_changed": false,
+        "session_id": "f469bac3-94dd-4a79-9b9b-4ce0f626cde2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4289596,
+            "input_tokens_cumulative": 4289596,
+            "output_tokens": 28427,
+            "output_tokens_cumulative": 28427,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-23T17:20:51.195Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1459,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 5059,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3412,
+              "log_fresh": false,
+              "manifest_commits": [
+                "9cda3533",
+                "e66d34a0"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "cab4e55e0384783ad58a18f10da9c55c1e7fd5d1383cc34fcde8b1586f6e6eef",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T143539802664-a-delivered-review-ends-its-turn/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-review-dies-where-nobody-is-looking --section '\u00a74' --role review --spec-level exact --node review-of-a-delivered-review-ends-its-turn --goal 'attach an independent review to run r-20260923T143539802664-a-delivered-review-ends-its-turn' --done-when 'the review for r-20260923T143539802664-a-delivered-review-ends-its-turn stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T143539802664-a-delivered-review-ends-its-turn.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260923T143539802664-a-delivered-review-ends-its-turn.at-e66d34a0a4e1a0a89d3147e9fdf54d2a21673b0f.json --time-budget 60m --session ship-s19-20260922 --allow-unreconciled-runs --backend clive",
+              "node": "a-delivered-review-ends-its-turn",
+              "phase": "starting",
+              "plan": "a-review-dies-where-nobody-is-looking",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260923T143539802664-a-delivered-review-ends-its-turn",
+              "session": "ship-s19-20260922",
+              "terminal_age_seconds": 3525,
+              "terminal_at": "2026-09-23T15:58:29Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/a-delivered-review-ends-its-turn"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4289596,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1398.663,
+          "generated_tokens": 28427,
+          "generation_seconds": 1331.764,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 23.9,
+          "machine_seconds": 66.899,
+          "peak_input_tokens": 114727,
+          "tokens_per_second": 21.35,
+          "wall_tokens_per_second": 20.32
+        },
+        "follow_on_paths": [
+          "~/.claude/projects",
+          "auth.json"
+        ],
+        "predecessor_run": "r-20260923T133306347157-each-run-owns-its-harness-home",
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/fenced-launch-neighbour-tests",
+          "session_id": "f469bac3-94dd-4a79-9b9b-4ce0f626cde2",
+          "session_source": "stream",
+          "retained_at": "2026-09-23T17:20:51.195Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "27e111615a8fce1712d44f686f6dd25409638237",
+        "plan_impl_at_dispatch": 0.25,
+        "impl_move": {
+          "plan": "a-worker-cannot-write-your-home",
+          "at_dispatch": 0.25,
+          "at_complete": 0.25,
+          "verdict": "waived",
+          "reason": "corrective for the unmerged per-run harness home; impl moves when that pair merges"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_backend_environment.py",
+            "tests/test_backend_sandbox_delivery.py",
+            "tests/test_launch_plan_attaches_images.py"
+          ],
+          "declaration": "revert the fix in tests/test_backend_environment.py so its assertion compares plan.environment to the one-key mapping again, and that test fails",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T165705059110-fenced-launch-neighbour-tests/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T165705059110-fenced-launch-neighbour-tests/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-23T17:37:05.857900+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-23T16:57:05Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 20,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 0,
+          "mean_context": 96000,
+          "observed_at": "2026-09-23T16:56:45Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 51.0,
+        "orientation_input_tokens": 1049048.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -337591,6 +337928,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2429
+    "_version": 2430
   }
 }
