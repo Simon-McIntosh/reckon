@@ -1237,11 +1237,29 @@ def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
     }
 
 
+def _run_directory_tree_snapshot(run_id: str) -> Mapping[str, Any] | None:
+    """Read the boundary snapshot a per-run supervisor left in the run directory.
+
+    The snapshot is taken by the supervisor after dispatch's writes and before
+    the worker's spawn, and its cost grows with the repository's worktree count,
+    so it is written to the run directory rather than carried on the pointer
+    dispatch returns. A run dispatched before the supervisor existed keeps its
+    snapshot on the pointer, which the caller falls back to.
+    """
+    try:
+        data = json.loads((run_dir(run_id) / "tree-snapshot.json").read_text())
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, Mapping) else None
+
+
 def _repository_tree_boundary_violations(
     run_id: str, record: Mapping[str, Any]
 ) -> list[str]:
     """Return the stray uncommitted edits found in another dispatch-visible tree."""
-    snapshot = record.get("repository_tree_snapshot")
+    snapshot = _run_directory_tree_snapshot(run_id)
+    if snapshot is None:
+        snapshot = record.get("repository_tree_snapshot")
     if not isinstance(snapshot, Mapping):
         return []
     before_trees = snapshot.get("trees")
