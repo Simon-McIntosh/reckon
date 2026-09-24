@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index-landed">
+  <meta name="plan-title" content="The Page Paints From An Index — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence: the served entry point binds and answers on its port before the fleet change watch finishes arming, so a restart no longer refuses connections while the watch walks every mounted tree.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="the-page-paints-from-an-index#s2">
+  <meta name="plan-commits" content="caa09a7c">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="pass">
+  <title>The Page Paints From An Index — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>The Page Paints From An Index — landed evidence</h1>
+      <p class="plan-summary">One cumulative record per plan. Each node appends its own section; this anchor carries the measure, the negative control and the figure for the node below.</p>
+    </header>
+
+    <section id="server-listens-before-it-watches">
+      <h2>server-listens-before-it-watches — the port answers before the watch is armed</h2>
+
+      <p><strong>The defect, reproduced from the code.</strong> <code>main</code> called
+      <code>start_fleet_change_watch(load_mounts())</code> before
+      <code>ThreadingHTTPServer(...).serve_forever()</code>, and
+      <code>_FleetChangeWatch.__init__</code> constructed one <code>_ProjectChangeWatch</code>
+      per mounted tree, each walking its tree with <code>os.walk</code>. The server socket was
+      therefore not bound until the last tree had been walked, so every connection was refused
+      during that walk. The <code>py-spy dump</code> in the plan's §1 put the main thread in
+      <code>_watch_tree</code> at <code>islink</code> with 10 of 13 trees done; this node's test
+      reproduces the refusal by patching watch construction to take 5 s per tree over three
+      mounted trees.</p>
+
+      <p><strong>The change.</strong> <code>main</code> constructs the
+      <code>ThreadingHTTPServer</code> first, which binds and listens, and then starts the fleet
+      watch, which now arms each tree on its background reader thread, one tree at a time.
+      <code>_FleetChangeWatch.start</code> sets <code>running</code> before launching the thread
+      so the arming loop's <code>running</code> check cannot run ahead of it, and a lock guards
+      the watch registry so a concurrent <code>close</code> cannot leave an fd registered after
+      teardown. A tree is covered by the discovery reuse window
+      (<code>RECKON_DISCOVERY_REUSE_S</code>, 60 s in the served process) until its watch is
+      armed. <code>armed_roots</code> reports which roots are covered.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-page-paints-from-an-index/startup-bind-and-arm.svg"
+             alt="Two startup timelines over three mounted trees whose watch construction takes 5 s each. Before: three sequential walks run from 0 s to 15 s, and only then does the port bind and serve, so it refuses connections for the whole 15 s. After: the port binds and serves at 0 s and answers _projects/mounts.json within 2 s, while the three arm-watch steps run one at a time on a background reader thread from 0 s to 15 s, each unarmed tree covered by the discovery reuse window.">
+        <figcaption>The port answers from 0 s while arming continues to 15 s on the reader thread.</figcaption>
+      </figure>
+
+      <h3>Measured, at <code>caa09a7c</code></h3>
+      <table>
+        <thead><tr><th>Case</th><th>Assertion</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_mounts_answer_before_the_watch_is_armed</code></td>
+              <td><code>/_projects/mounts.json</code> answers 200 within 2 s of launch, with fewer than three trees armed when it answers</td>
+              <td>pass</td></tr>
+          <tr><td><code>test_the_entry_point_answers_while_a_watch_still_arms</code></td>
+              <td>the port answers 200 while at least one tree is still unarmed</td>
+              <td>pass</td></tr>
+          <tr><td><code>test_every_tree_is_armed_within_the_bound</code></td>
+              <td>every mounted tree's watch is armed within 20 s</td>
+              <td>pass — 3 passed in 21 s</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Negative control, executed and logged.</strong> With
+      <code>_FleetChangeWatch.start</code> mutated to arm every tree on the calling thread before
+      the reader thread starts — the watch built before <code>serve_forever</code>, as
+      <code>main</code> had it — <code>test_mounts_answer_before_the_watch_is_armed</code> fails:
+      <code>mounts.json did not answer 200 within 2 s of launch; the port is bound only after the
+      change watch is built</code> (2 failed, 1 passed in 57 s; the arming-within-20-s case still
+      passes, because 15 s of arming is still inside its bound). The mutation was reverted and
+      the three cases pass at <code>caa09a7c</code>.</p>
+
+      <p><strong>Sibling tests, delta against the base revision.</strong> Twelve server-importing
+      test files were run with the change: 188 passed, 5 skipped, 2 failed. Both failures —
+      <code>test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity</code> and
+      <code>test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction</code>
+      — reproduce identically with <code>reckon/serve.py</code> restored from the base revision,
+      so they are pre-existing on the integrated tree and are not this node's scope. The delta is
+      zero added failures. Both live in files owned by a concurrent node
+      (<code>rendered-and-skill-contracts-match</code>) and are reported as a follow-on rather
+      than touched.</p>
+    </section>
+  </main>
+</body>
+</html>

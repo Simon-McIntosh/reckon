@@ -189,6 +189,14 @@ class _ProjectChangeWatch:
 class _FleetChangeWatch:
     """Watch every mounted docs tree for the life of the served process.
 
+    Each tree's watch is armed on the background reader thread, one tree at a
+    time, rather than before the thread starts: arming a tree walks it, and a
+    walk of a shared-filesystem tree can take seconds, so arming every tree up
+    front keeps the process from binding its port until the last walk is done.
+    The reader thread arms a tree and only then selects across the descriptors
+    armed so far, and a tree is covered by the discovery reuse window until its
+    watch is armed.
+
     A kernel notification on one tree drops that tree's memoised walk at once,
     so the reuse window never has to hide a change the kernel reported; it only
     backstops writes the kernel does not report, such as a write from another
@@ -198,30 +206,52 @@ class _FleetChangeWatch:
     """
 
     def __init__(self, trees: Iterable[Path]) -> None:
+        self._trees = sorted({Path(candidate).resolve() for candidate in trees})
         self._watches: dict[int, _ProjectChangeWatch] = {}
-        for tree in sorted({Path(candidate).resolve() for candidate in trees}):
-            try:
-                watch = _ProjectChangeWatch(tree)
-            except OSError as exc:
-                LOGGER.warning("Not watching %s for changes: %s", tree, exc)
-                continue
-            self._watches[watch.fd] = watch
+        self._lock = threading.Lock()
         self._stop_reader, self._stop_writer = os.pipe()
         self._thread: threading.Thread | None = None
         self.running = False
+
+    @property
+    def armed_roots(self) -> frozenset[Path]:
+        """Return the roots currently covered by an armed watch."""
+
+        with self._lock:
+            return frozenset(watch.root for watch in self._watches.values())
 
     def start(self) -> _FleetChangeWatch:
         """Begin watching every mounted tree; return self for chaining."""
         if self.running:
             return self
+        # `running` is set before the thread starts so the arming loop, which
+        # reads it to notice a concurrent close, cannot run ahead of it.
+        self.running = True
         self._thread = threading.Thread(
             target=self._run, name="reckon-tree-watch", daemon=True
         )
         self._thread.start()
-        self.running = True
         return self
 
+    def _arm_every_tree(self) -> None:
+        """Arm one tree at a time, registering each as its watch is built."""
+
+        for tree in self._trees:
+            if not self.running:
+                return
+            try:
+                watch = _ProjectChangeWatch(tree)
+            except OSError as exc:
+                LOGGER.warning("Not watching %s for changes: %s", tree, exc)
+                continue
+            with self._lock:
+                if not self.running:
+                    watch.close()
+                    return
+                self._watches[watch.fd] = watch
+
     def _run(self) -> None:
+        self._arm_every_tree()
         while self._watches:
             readable, _, _ = select.select([*self._watches, self._stop_reader], [], [])
             if self._stop_reader in readable:
@@ -239,15 +269,16 @@ class _FleetChangeWatch:
 
     def close(self) -> None:
         """Signal the watch thread to stop and release its descriptors."""
+        self.running = False
         with contextlib.suppress(OSError):
             os.write(self._stop_writer, b"x")
         if self._thread is not None:
             self._thread.join(timeout=2.0)
         self._thread = None
-        self.running = False
-        for watch in self._watches.values():
-            watch.close()
-        self._watches.clear()
+        with self._lock:
+            for watch in self._watches.values():
+                watch.close()
+            self._watches.clear()
         for descriptor in (self._stop_reader, self._stop_writer):
             with contextlib.suppress(OSError):
                 os.close(descriptor)
@@ -3074,6 +3105,12 @@ def main(
     if _MOUNTS_FILE and not _MOUNTS_FILE.exists():
         _MOUNTS_FILE.write_text("{}\n")
 
+    # Bind before building the change watch. Building it walks every mounted
+    # tree, which on a shared filesystem can take seconds per tree, and the
+    # port must answer throughout that walk; the watch is armed on its own
+    # thread and a tree is covered by the discovery reuse window until then.
+    server = ThreadingHTTPServer((_host, _port), Handler)
+
     start_fleet_change_watch(load_mounts())
 
     fqdn = socket.getfqdn()
@@ -3088,7 +3125,7 @@ def main(
     print(f"  mounts:  {_MOUNTS_FILE}", flush=True)
     print(f"  state:   {_STATE_ROOT}", flush=True)
     print(f"  shared:  {_SHARED_ROOT}", flush=True)
-    ThreadingHTTPServer((_host, _port), Handler).serve_forever()
+    server.serve_forever()
 
 
 if __name__ == "__main__":
