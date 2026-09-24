@@ -23,8 +23,8 @@
   <title>The fleet shares one allocation | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -95,13 +95,13 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="reservation-scope" data-choice="one-shared" data-by="Simon McIntosh" data-when="2026-09-23T14:08:19+00:00">
+<div class="r-dec" data-key="reservation-scope" data-choice="one-shared" data-by="Simon McIntosh" data-when="2026-09-23T19:14:07+00:00">
     <p class="r-dec-q">Does the workstation hold one shared reservation, or one per project?</p>
     <p class="r-dec-opts">
       <button class="r-opt chosen" data-value="one-shared">One shared reservation, declared at the host layer</button>
       <button class="r-opt" data-value="per-project">One per project, declared in each project layer</button>
       </p>
-    <p class="r-dec-rat">The goal is to move the fleet, not one repository at a time. Per-project placement means the mount list on this workstation holds thirteen projects, and at the twenty-eight cores the current allocation carries, per-project placement would reserve several hundred cores for a fleet that fits inside one, all to escape a shared four-core ceiling. An earlier wording of this rationale said five repositories, a figure that was never counted and that understated its own case. One reservation held once with every session placing into it is what the design already describes.</p>
+    <p class="r-dec-rat">The goal is to move the fleet, not one repository at a time. The count is measured rather than assumed: the mount list on this workstation holds thirteen projects, and at the twenty-eight cores the current allocation carries, per-project placement would reserve several hundred cores for a fleet that fits inside one, all to escape a shared four-core ceiling. One reservation held once with every session placing into it is what the design already describes. An earlier version of this rationale said five repositories, which was never counted; the figure understated its own case.</p>
     </div>
 <div class="r-dec" data-key="who-holds-the-allocation" data-choice="reckon-ensure" data-by="Simon McIntosh" data-when="2026-09-23T14:08:19+00:00">
     <p class="r-dec-q">Which command holds the fleet&#x27;s allocation once it is shared?</p>
@@ -117,7 +117,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-fsa-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Declare placement at the host layer and retire the per-project reservation keying</h4>
-    <div class="r-fu-body"><p>Move the placement declaration into <code>~/.config/reckon/flight.yaml</code> so every project places into one reservation, and <strong>retire the per-project reservation keying</strong> so a project can read a record it did not publish. Take the roster count from each pointer's recorded placement rather than from every run on the backend, and count it <strong>fleet-wide</strong> &mdash; one shared allocation has one roster. Prove it with two dispatches under two different projects reaching one published job id, with exactly one allocation created across the pair; the assertion counts allocations, not placement requests.</p></div>
+    <div class="r-fu-body"><p>Move the placement declaration into <code>~/.config/reckon/flight.yaml</code> so every project places into one reservation, and <strong>retire the per-project reservation keying</strong> so a project can read a record it did not publish. Take the roster count from each pointer's recorded placement rather than from every run on the backend, and count it <strong>fleet-wide</strong> — one shared allocation has one roster. Prove it with two dispatches under two different projects reaching one published job id, with exactly one allocation created across the pair; the assertion counts allocations, not placement requests.</p></div>
     <pre class="r-fu-prompt">/reckon-ship the-fleet-shares-one-allocation</pre>
     </article>
 </section>
@@ -128,6 +128,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260923T153334760120-second-review-of-the-fleet-shares-one-allocation" data-who="reckon-ship" data-when="2026-09-23T16:38:55.433Z">
     <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; findings were applied to the plan HTML</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260923T165810154743-third-review-of-the-fleet-shares-one-allocation" data-who="reckon-ship" data-when="2026-09-23T18:19:02.686Z">
+    <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; the findings were applied to the plan HTML</p></div>
 </div>
 </section>
 </main>
