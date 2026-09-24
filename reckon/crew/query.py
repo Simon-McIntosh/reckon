@@ -40,11 +40,18 @@ OPTIONAL_RUN_FIELDS = (
     "base_sha",
     "manifest_present",
     "commits",
+    "commits_beyond_base",
+    "log_age_seconds",
+    "manifest_reported_status",
 )
 
 RUN_SOURCES = frozenset({"all", "ledger", "live"})
 RUN_SCOPES = frozenset({"project", "workstation"})
 WORKSTATION_RUN_FIELDS = ("project", "repo", "repo_exists")
+
+#: A projected live row always carries the identity of the run it describes, so
+#: a caller that asked for one field can still tell which run answered.
+LIVE_ROW_ANCHOR = "run_id"
 
 
 class RunQueryError(ValueError):
@@ -60,25 +67,70 @@ def _path_exists(value: Any, *, directory: bool = False) -> bool:
     return path.is_dir() if directory else path.is_file()
 
 
+def _requested_field_names(fields: Iterable[str] | None) -> tuple[str, ...]:
+    """Return the requested field names, normalized and de-duplicated in order."""
+    if fields is None:
+        return ()
+    if isinstance(fields, str):
+        parts = fields.split(",")
+    else:
+        parts = [str(field) for field in fields]
+    return tuple(dict.fromkeys(part.strip() for part in parts if part.strip()))
+
+
+def _refuse_unknown_fields(requested: Iterable[str]) -> None:
+    """Reject field names outside the accepted set, naming what is accepted."""
+    unknown = sorted(
+        set(requested) - (set(DEFAULT_RUN_FIELDS) | set(OPTIONAL_RUN_FIELDS))
+    )
+    if not unknown:
+        return
+    raise RunQueryError(
+        "unknown runs fields "
+        + ", ".join(repr(field) for field in unknown)
+        + "; optional fields are "
+        + ", ".join(OPTIONAL_RUN_FIELDS)
+    )
+
+
 def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
     """Return default fields plus validated opt-in fields, in stable order."""
     if fields is None:
         return DEFAULT_RUN_FIELDS
-    if isinstance(fields, str):
-        requested = [part.strip() for part in fields.split(",") if part.strip()]
-    else:
-        requested = [str(field).strip() for field in fields if str(field).strip()]
-    known = set(DEFAULT_RUN_FIELDS) | set(OPTIONAL_RUN_FIELDS)
-    unknown = sorted(set(requested) - known)
-    if unknown:
-        raise RunQueryError(
-            "unknown runs fields "
-            + ", ".join(repr(field) for field in unknown)
-            + "; optional fields are "
-            + ", ".join(OPTIONAL_RUN_FIELDS)
-        )
+    requested = _requested_field_names(fields)
+    _refuse_unknown_fields(requested)
     extras = tuple(field for field in OPTIONAL_RUN_FIELDS if field in requested)
     return (*DEFAULT_RUN_FIELDS, *extras)
+
+
+def project_live_rows(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    fields: Iterable[str] | None = None,
+    session: str | None = None,
+) -> list[dict[str, Any]]:
+    """Classify each live pointer and project it to the requested fields.
+
+    The live view reads whole classifications, so ``fields`` was accepted and
+    ignored. A request now narrows each row to the fields asked for, always
+    carrying :data:`LIVE_ROW_ANCHOR` so a projected row still names its run.
+    Omitting ``fields`` returns the whole classification, which is what every
+    caller that does not narrow receives. An unknown field is refused here
+    through the same accepted set the compact read model validates against.
+
+    ``session`` marks which rows belong to the caller's own session, computed
+    from the full classification so the marker survives projection.
+    """
+    classified = [classify_pointer(record) for record in records]
+    if session is not None:
+        for row in classified:
+            row["mine"] = str(row.get("session") or "") == session
+    if fields is None:
+        return classified
+    requested = _requested_field_names(fields)
+    _refuse_unknown_fields(requested)
+    selected = tuple(dict.fromkeys((LIVE_ROW_ANCHOR, *requested)))
+    return [{field: row.get(field) for field in selected} for row in classified]
 
 
 def _resumability(
@@ -177,6 +229,25 @@ def _compact_row(
         "base_sha": str(record.get("base_sha") or ""),
         "manifest_present": bool(manifest_present),
         "commits": [str(commit) for commit in commits],
+        # The three fields a coordinator checks first, drawn from the same
+        # classification the live view already computes. A ledger row carries
+        # whatever its committed record recorded, so a source that has not
+        # stored them reports absence rather than inventing a value.
+        "commits_beyond_base": (
+            classified.get("commits_beyond_base", 0)
+            if source == "live"
+            else record.get("commits_beyond_base")
+        ),
+        "log_age_seconds": (
+            classified.get("log_age_seconds")
+            if source == "live"
+            else record.get("log_age_seconds")
+        ),
+        "manifest_reported_status": (
+            classified.get("manifest_reported_status")
+            if source == "live"
+            else record.get("manifest_reported_status")
+        ),
     }
     return {field: complete[field] for field in selected_fields}
 

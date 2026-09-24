@@ -106,6 +106,7 @@ from reckon.capability import (
 from reckon.crew.directory import DirectoryError
 from reckon.crew.directory import directory as crew_directory
 from reckon.crew.query import RunQueryError
+from reckon.crew.query import project_live_rows
 from reckon.crew.query import runs_view as crew_runs_view
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
@@ -3361,6 +3362,13 @@ def _crew(
     ``runs``, ``session`` filters the worker session identity carried by each
     compact row.
 
+    Pass ``fields`` to read only what you asked for: a ``live`` row is narrowed
+    to the requested fields plus ``run_id``, and ``runs`` accepts the three
+    fields a coordinator checks first — ``log_age_seconds``,
+    ``commits_beyond_base`` and ``manifest_reported_status`` — drawn from the
+    same classification ``live`` computes. An unknown field is refused with the
+    accepted set named.
+
     ``checkout_path`` follows the same worktree-routing contract as
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
@@ -3550,8 +3558,8 @@ def _crew(
                 **flight_module.flight_report(project, checkout_path=checkout_path),
             }
         if view == "live":
-            runs = [
-                crew_module.classify_pointer(record)
+            live_records = [
+                record
                 for record in crew_module.list_live()
                 if str(record.get("project") or "") == project
             ]
@@ -3559,9 +3567,9 @@ def _crew(
             # read: it marks which rows are the caller's own where several
             # coordinators share a project, and it is the only way the watcher
             # block can answer whether this caller will be told anything.
-            if session is not None:
-                for row in runs:
-                    row["mine"] = str(row.get("session") or "") == session
+            # `fields` narrows each row to what was asked for, so a caller
+            # reading one fact no longer receives the whole classification.
+            runs = project_live_rows(live_records, fields=fields, session=session)
             return {
                 "ok": True,
                 "project": project,
