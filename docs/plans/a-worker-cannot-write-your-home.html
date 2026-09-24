@@ -191,7 +191,7 @@
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T120839955492-review-of-launch-plan-wraps-a-filesystem-fence" data-who="reckon-ship" data-when="2026-09-23T12:29:55.545Z">
     <div class="r-comment-body"><p>fresh high-effort review stored at 89; read before promotion</p></div>
 </div>
-<div class="r-comment" data-section="_top" data-id="c-awcwyh-worker-written-memory" data-who="reckon-e5" data-when="">
+<div class="r-comment" data-section="s2" data-id="c-awcwyh-worker-written-memory" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>Workers are writing the coordinator's memory store right now.</strong> Measured 2026-09-23 18:22 local. After the deletion, <code>~/.claude/projects/-home-ITER-mcintos-Code-reckon/memory/</code> was repopulated. It now holds six memory files and an index, and every file carries an <code>originSessionId</code> that is not this coordinator's session. One is a run id (<code>r-20260923T084911255856-review-of-harness-reference-states-the-cap</code>). The others are worker session ids. They were written between 11:10 and 18:22, and one was modified at 18:22 by a live review. Each file is loaded into every later coordinator session in this repository as standing guidance. So a worker's local convention becomes coordinator instruction, with no review, no version and no commit. This is the write direction §2 closes: a per-run harness home gives each worker its own <code>projects/</code> tree, so a worker's memory tooling resolves inside its run and not into the operator's. The files are left in place, because they are the operator's to triage.</p></div>
 </div>
 </section>
