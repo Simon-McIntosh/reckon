@@ -76,7 +76,9 @@
     <h3 id="landed-dispatch-scope-and-mount-refusals">Dispatch scope and mount refusals &mdash; 16 of 17 ids green</h3>
     <p>Seventeen ids across six files, plus <code>test_crew_dispatch_arming</code> kept green. Each file was run at the
     base revision and again at this node's head, in its own process with its own <code>--basetemp</code>. Only
-    <code>tests/</code> differs between the two, so every repaired id passes at the product revision that failed it.</p>
+    <code>tests/</code> differs between the two, so every repaired id passes at the product revision that failed it; both
+    sides pin the product tree to this node's worktree and each log header names the resolved <code>reckon</code> path it
+    imported, so the comparison cannot drift onto another checkout through the shared environment.</p>
     <figure>
       <img src="/reckon/figures/the-suite-is-green-at-head/repair-classes-by-node-id.svg"
            alt="The seventeen owned failing node ids as a row of cells coloured by diagnosed cause, with a legend and the count for each cause.">
