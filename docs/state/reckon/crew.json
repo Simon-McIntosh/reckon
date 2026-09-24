@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:56:41",
+  "updated": "2026-09-25T01:58:02",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1546,10 +1546,15 @@
         "id": "implement-terra-d",
         "harness": "codex-terra",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-09"
+        "session_id": "01a0d5b1-6f3f-7d13-bfe0-b5823f2b5082",
+        "session_model": "gpt-5.6-terra",
+        "sessions": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a0d5b1-6f3f-7d13-bfe0-b5823f2b5082"
+        },
+        "created": "2026-09-09",
+        "session_owners": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "s22-coord"
+        }
       },
       {
         "id": "investigate-terra-b",
@@ -363310,6 +363315,337 @@
           "reason": null,
           "finding": null
         }
+      },
+      {
+        "run_id": "r-20260924T231118938600-settle-the-ledger-readings",
+        "plan": "the-ledger-is-one-file-per-run",
+        "section": "\u00a73",
+        "node": "settle-the-ledger-readings",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2864,
+                "cached_input_tokens": 404594,
+                "input_tokens": 407460,
+                "output_tokens": 1183,
+                "reasoning_output_tokens": 58,
+                "total_tokens": 408643,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "docs/plans/the-ledger-is-one-file-per-run.html is revised against the fourth read-back at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/fourth-read-back-of-the-ledger/read-back.md: the two load-bearing two-reading sentences L-1 and L-2 are each settled by one rewritten sentence in \u00a73 that classifies the run file a \u00a71-window promotion creates; the omission named in the read-back's \u00a76 (the integrated-gate re-record writer in reckon/crew/promotion.py has no route once crew.json is gone) becomes an r-dec decision in the plan's decisions section with two options (per-file write through the one serialiser, or retire the in-place update), each option's cost stated from the code, and a data-leaning naming the option the code evidence favours; a section comment lists L-1, L-2 and the omission with the quoted replacement or the decision key. /home/ITER/mcintos/Code/reckon/.venv/bin/reckon audit-doc docs/plans/the-ledger-is-one-file-per-run.html reports no ERROR, with its log recorded. Change no code and no other file.",
+          "estimated_hours": null,
+          "goal": "Revise the-ledger-is-one-file-per-run so its two remaining load-bearing readings have one reading and its re-record omission is a recorded decision",
+          "id": "settle-the-ledger-readings",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-24T23:11:19Z",
+            "read_at": "2026-09-24T23:11:20Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 2.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T231118938600-settle-the-ledger-readings/manifest.md",
+          "negative_control": "",
+          "plan": "the-ledger-is-one-file-per-run",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/plans/the-ledger-is-one-file-per-run.html",
+            "docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html",
+            "docs/figures/the-ledger-is-one-file-per-run"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "implement-terra-d",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-24T23:11:31Z",
+        "completed_at": "2026-09-24T23:22:39Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 668,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 668,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "9b0ab2997e792c02e23ae187fff427c89f29cbb2",
+        "commits": [
+          "698f597ab08df782004ac5de0435230d3230f146"
+        ],
+        "changed_lines": {
+          "added": 96,
+          "removed": 14,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon audit-doc docs/plans/the-ledger-is-one-file-per-run.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T231118938600-settle-the-ledger-readings/audit-doc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T231118938600-settle-the-ledger-readings/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d5b1-6f3f-7d13-bfe0-b5823f2b5082",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6271744,
+            "cached_input_tokens_cumulative": 6271744,
+            "input_tokens": 6485094,
+            "input_tokens_cumulative": 6485094,
+            "output_tokens": 26556,
+            "output_tokens_cumulative": 26556,
+            "reasoning_output_tokens": 12330,
+            "reasoning_output_tokens_cumulative": 12330
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-24T23:22:39Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 2.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-24T23:22:39Z"
+            }
+          ],
+          "notional_cost_usd": 13.2889,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 483,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 3183,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1037,
+              "log_fresh": false,
+              "manifest_commits": [
+                "0fa5ddf9 feat(crew): ask a scratch-tree measurement to name the tree it imported; 1ec9a2c7 docs(plans): land the manifest template naming the tree it imported; b5354d1e docs(plans): correct the composed prompt growth figure to the measured 546; 69677a2a docs(plans): correct the lint delta and receipt claims in the evidence anchor"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "60a9dfb5ebdd7ba0d41d1ec0ea05bc8bef9e137d9fe7bcb2e5a6a047219b79e8",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan work-does-not-fall-to-the-coordinator --section '\u00a711' --role review --spec-level exact --node review-of-manifest-names-the-tree-it-imported --goal 'attach an independent review to run r-20260924T211233454588-manifest-names-the-tree-it-imported' --done-when 'the review for r-20260924T211233454588-manifest-names-the-tree-it-imported stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211233454588-manifest-names-the-tree-it-imported.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211233454588-manifest-names-the-tree-it-imported.at-69677a2add2a520c8c6fdd1f3157795b9e84f899.json --time-budget 45m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "manifest-names-the-tree-it-imported",
+              "phase": "working",
+              "plan": "work-does-not-fall-to-the-coordinator",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T211233454588-manifest-names-the-tree-it-imported",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1102,
+              "terminal_at": "2026-09-24T22:53:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/manifest-names-the-tree-it-imported"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 17,
+            "fit": 16,
+            "goal_fidelity": 18,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 84
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 6271744,
+          "cumulative_input_tokens": 6485094,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 38886,
+          "generation_seconds": 529.722,
+          "machine_seconds": 59.592,
+          "tokens_per_second": 73.41
+        },
+        "follow_on_paths": [
+          "reckon/crew/promotion.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/settle-the-ledger-readings",
+          "session_id": "01a0d5b1-6f3f-7d13-bfe0-b5823f2b5082",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T23:22:39Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T23:22:40Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-24T23:12:50Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T231118938600-settle-the-ledger-readings",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 215,
+          "worker_pid": 1686586
+        },
+        "promoted_revision": "698f597ab08df782004ac5de0435230d3230f146",
+        "impl_move": {
+          "plan": "the-ledger-is-one-file-per-run",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:documentation"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "codex-terra",
+          "burn_multiple": 0.4454100231984387,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "no projected exhaustion is available for 'codex-terra'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+          "horizon_ends_at": "2026-09-24T23:46:20.224720+00:00",
+          "horizon_seconds": 2100,
+          "metered": true,
+          "observed_at": "2026-09-24T23:11:19Z",
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 577643,
+          "state": "quiet",
+          "utilisation_pct": 2.0
+        },
+        "lane_declaration": {
+          "backend": "codex-terra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-24T23:11:19Z",
+          "read_at": "2026-09-24T23:11:20Z",
+          "resolved_backend": "codex-terra",
+          "utilisation_pct": 2.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 75.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -363622,6 +363958,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2567
+    "_version": 2569
   }
 }
