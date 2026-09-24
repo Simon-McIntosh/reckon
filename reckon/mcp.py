@@ -105,11 +105,11 @@ from reckon.capability import (
 )
 from reckon.crew.directory import DirectoryError
 from reckon.crew.directory import directory as crew_directory
-from reckon.crew.query import RunQueryError
-from reckon.crew.query import project_live_rows
+from reckon.crew.query import RunQueryError, project_live_rows
 from reckon.crew.query import runs_view as crew_runs_view
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
+from reckon.mcp_budget import bound_response
 from reckon.mcp_views import (
     ResourceSelector,
     ViewRequestError,
@@ -364,6 +364,7 @@ def _deadline_tool(
     kind: str | Callable[[Mapping[str, Any]], str],
     label: str | None = None,
     path_hint: Callable[[Mapping[str, Any]], str | None] | None = None,
+    response_budget: bool = False,
 ) -> Callable[..., Any]:
     """Wrap one synchronous tool body as the async entry FastMCP registers."""
 
@@ -372,12 +373,15 @@ def _deadline_tool(
 
     async def tool(**kwargs: Any) -> Any:
         resolved_kind = kind(kwargs) if callable(kind) else kind
-        return await _run_under_deadline(
+        result = await _run_under_deadline(
             lambda: body(**kwargs),
             kind=resolved_kind,
             label=label,
             path_hint=(lambda: path_hint(kwargs)) if path_hint is not None else None,
         )
+        if response_budget and resolved_kind == "read":
+            return bound_response(result, tool=label, arguments=kwargs)
+        return result
 
     tool.__name__ = body.__name__
     tool.__qualname__ = body.__qualname__
@@ -4390,16 +4394,30 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
 
 if mcp is not None:
     read_plan_tool = mcp.tool(name="read_plan")(
-        _deadline_tool(_read_plan_tool, kind="read", path_hint=_plan_path_hint)
+        _deadline_tool(
+            _read_plan_tool,
+            kind="read",
+            path_hint=_plan_path_hint,
+            response_budget=True,
+        )
     )
     edit_plan_tool = mcp.tool(name="edit_plan")(
         _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint)
     )
-    roadmap_tool = mcp.tool(name="roadmap")(_deadline_tool(_roadmap_tool, kind="read"))
-    audit_tool = mcp.tool(name="audit")(
-        _deadline_tool(_audit_tool, kind="read", path_hint=_document_path_hint)
+    roadmap_tool = mcp.tool(name="roadmap")(
+        _deadline_tool(_roadmap_tool, kind="read", response_budget=True)
     )
-    crew_tool = mcp.tool(name="crew")(_deadline_tool(_crew, kind=_crew_call_kind))
+    audit_tool = mcp.tool(name="audit")(
+        _deadline_tool(
+            _audit_tool,
+            kind="read",
+            path_hint=_document_path_hint,
+            response_budget=True,
+        )
+    )
+    crew_tool = mcp.tool(name="crew")(
+        _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True)
+    )
     for tool_name in ("read_plan", "edit_plan", "roadmap", "audit", "crew"):
         _reject_unknown_tool_arguments(tool_name)
 

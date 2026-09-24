@@ -95,6 +95,29 @@
       <li>The declared mutation is applied: the budget check is removed. The over-budget tests are then observed to fail, and the log of that run is recorded.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="mcp-reads-fit-a-response-budget" data-when="2026-09-25">
+      <p><strong>Landed 2026-09-25.</strong> Commit <code>9e02b5f6</code> adds one
+      post-deadline response boundary for all four registered MCP reads. It measures compact
+      serialised characters against <code>RECKON_MCP_RESPONSE_CEILING</code> (default
+      <code>80,000</code>), returns values that fit without changing them, and replaces an oversized
+      value with a bounded <code>truncated</code> receipt carrying omitted counts and actionable
+      <code>narrow_with</code> arguments. Crew recovery writes are outside that read boundary.</p>
+      <p>The focused MCP gate passes <strong>80 tests</strong>. The synthetic over-budget fixtures
+      measured 11,883 characters for roadmap detail, 8,398 for crew scopes, 28,383 for crew live,
+      and 13,150 for both read-plan and audit before the repair. Removing the common budget call
+      makes all five oversized cases fail while three controls remain green. At the committed head,
+      the real S22 roadmap detail is 307,123 characters before bounding and a 322-character receipt
+      after it. The inherited <code>I001</code> at <code>reckon/mcp.py:51</code> is gone; that file has
+      18 lint findings against 19 at the base, with none in the new module or test.</p>
+      <figure>
+        <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/response-budget-flow.svg"
+             alt="Flow from an MCP read through the deadline and response budget, preserving answers that fit and replacing oversized answers with bounded truncation receipts.">
+        <figcaption>The boundary measures the transport value once and keeps the two outcomes explicit.</figcaption>
+      </figure>
+      <p>Evidence:
+      <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s3-response-budget">response-budget landing record</a>.</p>
+    </div>
+
     <h2 id="s4">&sect;4 &mdash; A crew read returns the fields it was asked for</h2>
     <p>The <code>fields</code> argument is accepted by <code>crew(view="live")</code> and then ignored. <code>crew(view="runs")</code> honours <code>fields</code>, but it refuses the three fields coordinators check first. After this section:</p>
     <ul>
