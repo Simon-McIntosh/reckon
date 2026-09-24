@@ -146,7 +146,7 @@
     where untracked files matter, since the declared paths are the only place a worker may
     legitimately create one. Dispatch also applies back-pressure. Before it creates a
     worktree, it counts the project's retained worktrees whose heads are integrated and
-    clean, and it reaps them without force. Above a stated ceiling of live unintegrated
+    clean, and it reaps them without force. Integration is necessary but not sufficient. In imas-codex-10's hand reap, 2 of 39 integrated trees held a worker's untracked logs, and a published plan comment cites those logs by name. So the reap first preserves untracked content to a durable location, verifies it by file count, and removes it. Only then does the tree remove without force, because it is now genuinely clean, not because a refusal was overridden. Above a stated ceiling of live unintegrated
     trees, it reports the count in the dispatch output rather than silently adding one
     more.</p>
     <p><strong>Done when</strong> none of the three call sites passes
