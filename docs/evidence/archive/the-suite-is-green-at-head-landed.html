@@ -248,6 +248,86 @@
       <code>test_schema</code> 1 failed / 1558 passed, the one failure being the follow-on above.
       Logs: <code>.pytest-logs/head/</code>. Delta against base: 17 repaired, zero added.</p>
     </section>
+
+    <section id="node-a-held-backend-reaches-its-declared-fallback">
+      <h2>a-held-backend-reaches-its-declared-fallback &mdash; the hold record obstructed its own registration</h2>
+      <p>Product defect in <code>reckon/ledger.py</code>. A dispatch whose backend was held
+      recorded the hold in the project roster and then refused to provision the session member it
+      registers next, so it never reached the fallback lane it declared. Three node ids in
+      <code>tests/test_budget.py</code> failed on that refusal at the node's base
+      <code>d4c5a54a</code>; all three pass at head <code>4bef6acc</code>.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/held-backend-fallback-base-vs-head.png"
+      alt="Horizontal bar chart of failing node ids per gate file: at base test_budget.py has
+      four failing ids and test_crew_dispatch_arming.py none; at this node's head test_budget.py
+      has one and test_crew_dispatch_arming.py none. The surviving id is a test-isolation defect
+      in a file this node may not write, not the fallback refusal."></p>
+
+      <h3>Cause, named with file and line</h3>
+      <p><strong>Reported chain, confirmed by reproduction.</strong> The dispatch's budget
+      verdict runs first and persists the hold through
+      <code>reckon/crew/routing.py:210</code> (<code>budget_module.record_checks</code>), which
+      writes <code>docs/state/&lt;project&gt;/crew.json</code> without committing it. The session
+      member is provisioned after the fallback resolves, at
+      <code>reckon/crew/routing.py:1262</code> (<code>_register_session_member</code>);
+      <code>commit=True</code> reaches <code>ledger.register_member</code>, whose
+      <code>_refuse_dirty_roster_commit</code> (<code>reckon/ledger.py:945</code>) refused and the
+      retry loop exhausted its twelve attempts, raising at
+      <code>reckon/crew/routing.py:1307</code>:</p>
+      <pre>reckon.crew.CrewError: could not provision session member
+'session-bd717b467075e0512424' after 12 attempts: cannot commit roster registration
+'session-bd717b467075e0512424': uncommitted roster content at
+docs/state/proj/crew.json; commit or discard that roster write before retrying</pre>
+      <p><strong>The defect.</strong> <code>_roster_obstruction</code> compares member rows
+      between the roster on disk and the roster at <code>HEAD</code>, which is the comparison its
+      own contract states &mdash; content that is no member row "is not a write anyone would be
+      publishing under someone else's subject". But when no member row differed it still returned
+      the generic sentence <code>obstruction = "uncommitted roster content at &lt;path&gt;"</code>
+      at <code>reckon/ledger.py:942</code>, so the tool's own hold row obstructed the registration
+      the same dispatch was making. The same branch left the idle reaper's committed removal
+      uncommitted whenever a hold was pending, so the registration that followed read a removed
+      row as another author's write.</p>
+      <p><strong>The repair.</strong> A roster difference that is no member row &mdash; the hold
+      history a budget check opens, a completed-run row &mdash; obstructs nothing, and the named
+      commit publishes it. <code>_roster_obstruction</code> now returns no obstruction when no
+      member row differs, matching the rule its docstring already carried. The guard is
+      unchanged for a genuine member-row write: <code>tests/test_roster_write_commits.py</code>
+      still refuses a second registration over a first author's uncommitted row and that file's
+      three tests pass.</p>
+
+      <h3>Verification</h3>
+      <p>Each gate file in its own pytest process with its own <code>--basetemp</code>, base
+      materialised with <code>git archive d4c5a54a</code> into a scratch tree and imported from
+      that tree:</p>
+      <table>
+        <thead><tr><th>File</th><th>Base d4c5a54a</th><th>Head 4bef6acc</th><th>Ids repaired</th></tr></thead>
+        <tbody>
+          <tr><td><code>tests/test_budget.py</code></td><td>4 failed / 66 passed</td><td>1 failed / 69 passed</td>
+            <td><code>test_a_held_backend_with_a_declared_fallback_dispatches_on_it</code>,
+            <code>test_unknown_headroom_on_a_fallback_declaring_backend_neither_holds_nor_falls_back</code>,
+            <code>test_one_backend_held_leaves_ready_nodes_on_another_dispatching</code></td></tr>
+          <tr><td><code>tests/test_crew_dispatch_arming.py</code></td><td>6 passed</td>
+            <td>6 passed</td><td>none</td></tr>
+        </tbody>
+      </table>
+      <p>All three repaired ids failed at base with the identical refusal quoted above, so one
+      cause, not three. No id moved from pass to fail. Delta against base: three repaired, zero
+      added. Logs: <code>logs/base.log</code>, <code>logs/head.log</code>, with the single-test
+      red run at <code>logs/red-at-base-single-test.log</code> in the run record.</p>
+
+      <h3>Follow-on</h3>
+      <p><strong>Not this node's to review, named for the coordinator.</strong> Node id
+      <code>tests/test_budget.py::test_the_preflight_spawns_no_process</code> is red at base and
+      red at head, so this change neither added nor removed it. Its trace never reaches the
+      repair: <code>_record</code> calls <code>ledger.append_run</code>, which reads the ledger's
+      tracking state through <code>subprocess.run</code>
+      (<code>reckon/ledger.py:1866</code>, <code>reckon/ledger.py:1801</code>), inside a test that
+      patches <code>subprocess.run</code> to refuse before calling <code>_record</code>. It is a
+      test-isolation defect in a file this node may not write; the node that owns
+      <code>tests/test_budget.py</code> holds it. <code>tests/test_ledger.py::test_a_second_node_reaches_the_members_captured_session</code>
+      is likewise red at base and at head under the same selection, and belongs to the
+      <code>test_ledger</code> node.</p>
+    </section>
   </main>
 </body>
 </html>
