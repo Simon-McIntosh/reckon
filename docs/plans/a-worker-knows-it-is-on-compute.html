@@ -24,6 +24,8 @@
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -59,6 +61,7 @@
       <li>whether <code>/tmp</code> is node-local</li>
     </ul>
     <p>When <code>SLURM_JOB_ID</code> is present but the cgroup does not name the job, the probe reports <code>in_allocation: false</code> with the reason <code>environment-inherited-outside-the-job-cgroup</code>. The module reads files and calls <code>statfs</code> only. It runs no scheduler command, so it costs nothing on the login node.</p>
+    <p><strong>Reuse, not a third reader.</strong> <code>reckon/crew/summary.py</code> already finds the process's own cgroup: <code>SELF_CGROUP_PATH</code>, <code>LOGIN_CGROUP_ROOT</code>, <code>_user_slice_dir</code> and <code>read_login_slice</code>. <code>reckon/crew/placement.py</code> already has <code>occupying_the_reservation</code>, which answers whether the process is inside the held job. <code>host_facts()</code> composes those two rather than parsing <code>/proc/self/cgroup</code> again. <code>placement.py</code> is claimed by S21, so this node reads it but does not edit it. The S21 coordinator pointed out this reuse on 2026-09-24.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>Tests feed fixture cgroup files and a stubbed <code>statfs</code>. They assert the four cases: inside the job cgroup, environment-only, no SLURM at all, and a GPFS home beside an xfs <code>/tmp</code>.</li>
@@ -74,6 +77,7 @@
       <li><strong>Outside the allocation</strong>, it execs the real binary with the argv unchanged. The real binary is found on <code>PATH</code> after the shim directory is removed.</li>
     </ul>
     <p>The shim never launches anything itself and never guesses a corrected command line.</p>
+    <p><strong>An explicit single-task step always passes.</strong> Some work deliberately runs a step into the held fleet job. For example, the imas-ambix fleet-view probes run <code>srun --overlap --jobid=&lt;fleet job&gt;</code> from the login node. So an srun whose argv carries <code>--overlap</code> together with either an explicit <code>--jobid</code> or <code>--ntasks=1</code> (or <code>-n 1</code>) execs the real binary unchanged, even inside the allocation. Only the implicit form, which inherits the job's task count, is refused. The login node is never inside the allocation, so nothing launched from it is refused. The shims reach only a worker's <code>PATH</code> (&sect;4). Nothing here changes the system <code>srun</code>.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>Tests install a fake real <code>srun</code> that records its argv and assert three cases:
@@ -85,6 +89,7 @@
       </li>
       <li>Removing the in-allocation check makes the refusal test fail. That failure is observed and its log is recorded.</li>
       <li>sbatch and salloc are covered by one parametrised case each.</li>
+      <li>Inside the allocation, <code>srun --overlap --jobid=&lt;id&gt; true</code> and <code>srun --overlap -n 1 true</code> each invoke the fake with identical argv, while plain <code>srun true</code> is refused.</li>
     </ul>
 
     <h2 id="s4">&sect;4 &mdash; Workers receive the shim and the facts</h2>
@@ -107,26 +112,18 @@
       <li><code>git diff --stat</code> names only <code>pyproject.toml</code> and <code>uv.lock</code>.</li>
     </ul>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-awkioc-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-24"
-               data-recommends-skill="/reckon-build a-worker-knows-it-is-on-compute"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Land &sect;2, &sect;3 and &sect;5</h4>
-        <div class="r-fu-body"><p>&sect;3 imports the &sect;2 probe, so it follows &sect;2. &sect;5 is independent. &sect;4 waits on its trigger.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-worker-knows-it-is-on-compute</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awkioc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-worker-knows-it-is-on-compute" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §2, §3 and §5</h4>
+    <div class="r-fu-body"><p>§3 imports the §2 probe, so it follows §2. §5 is independent. §4 waits on its trigger.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-knows-it-is-on-compute</pre>
+    </article>
+</section>
 
-    <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+    
   </main>
 </body>
 </html>
