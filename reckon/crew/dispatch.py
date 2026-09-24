@@ -4028,11 +4028,11 @@ def dispatch(
         # Starting the supervisor is dispatch's last repository-facing step.
         # Every write dispatch makes inside a repository — the worktree, the
         # member-registration commit above, every pointer write — is complete
-        # before this point, so the supervisor can take the boundary snapshot and
-        # spawn the worker with no handshake: there is nothing left for dispatch
-        # to write that the baseline must follow. After this dispatch writes only
-        # the pointer, which lives under the configuration home outside every
-        # repository. Dispatch waits for neither the snapshot nor the spawn.
+        # before this point, so the boundary baseline can follow it with no
+        # handshake: there is nothing left for dispatch to write that the
+        # baseline must follow. After this dispatch writes only the pointer,
+        # which lives under the configuration home outside every repository.
+        # Dispatch waits for neither the snapshot nor the spawn.
         if launch_kind == "cli" and plan is not None:
             if launcher is None:
                 spec_path = directory / SUPERVISOR_SPEC_NAME
@@ -4067,6 +4067,12 @@ def dispatch(
             record["pid"] = spawned_pid
             record["pid_start_time"] = spawned_start_time
             _write_json(pointer_path(run_id), record)
+        else:
+            # A delegated launch spawns no process, so there is no supervisor to
+            # take the boundary baseline after dispatch's writes. Dispatch takes
+            # it here instead, in the same last repository-facing step, so the
+            # baseline still predates every write this run's worker will make.
+            _write_boundary_tree_snapshot(directory, repo_root)
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
         if spawned_pid is not None:
@@ -4935,21 +4941,37 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     return process.pid
 
 
-def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
-    """Write the boundary snapshot, or its failure, into the run directory.
+def _write_boundary_tree_snapshot(
+    run_directory: Path, repo_root: Path
+) -> dict[str, Any]:
+    """Write the boundary baseline into the run directory and return it.
 
     The snapshot is a boundary baseline: it must follow dispatch's own writes
-    and predate any write the worker makes in another tree, which is why the
-    supervisor takes it exactly here, before spawning the worker. A snapshot
-    that raises is recorded and the launch continues — a scan failure must
-    never kill a worker nor turn a launch into a refusal.
+    and predate any write the worker makes in another tree. A snapshot that
+    raises is recorded and the launch continues — a scan failure must never
+    kill a worker nor turn a launch into a refusal. The write never creates the
+    run directory, so a baseline racing a discard is dropped rather than
+    bringing a discarded run back into existence.
+
+    Both launch lanes write this one artifact. A spawned run's supervisor takes
+    it after dispatch's writes and before the worker's spawn; a delegated run
+    spawns nothing, so dispatch takes it inline, in the same last
+    repository-facing step. Promotion reads it from the run directory either
+    way, so a stray uncommitted edit in another tree is refused for both.
     """
-    run_directory = Path(str(spec["run_directory"]))
     try:
-        snapshot: dict[str, Any] = _repository_tree_snapshot(Path(str(spec["repo"])))
-    except Exception as exc:  # noqa: BLE001 - a scan failure never kills a worker
+        snapshot: dict[str, Any] = _repository_tree_snapshot(repo_root)
+    except Exception as exc:  # noqa: BLE001 - a scan failure never kills a launch
         snapshot = {"available": False, "detail": f"{type(exc).__name__}: {exc}"}
     _supervisor_write(run_directory / TREE_SNAPSHOT_NAME, snapshot)
+    return snapshot
+
+
+def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
+    """Write the boundary snapshot, or its failure, into the run directory."""
+    _write_boundary_tree_snapshot(
+        Path(str(spec["run_directory"])), Path(str(spec["repo"]))
+    )
 
 
 def _supervisor_exit_record(

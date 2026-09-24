@@ -1,7 +1,9 @@
 """Gate: a CLI dispatch returns once its per-run supervisor is running.
 
-The four cases below run against a throwaway repository and a throwaway
-configuration home, with the same stub backend the dispatch probe uses. Three
+The cases below run against a throwaway repository and a throwaway
+configuration home, with the same stub backend the dispatch probe uses. Four of
+them measure the spawned lane; the last measures the delegated one, which
+spawns no process and must still take its own boundary baseline. Three
 instruments make the measurements mean something:
 
 * a ``git`` shim first on the child processes' ``PATH`` that records the pid
@@ -28,6 +30,7 @@ as it found it.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
@@ -45,6 +48,7 @@ import pytest
 import reckon
 from reckon._store import _config_home
 from reckon.crew import promotion
+from reckon.crew.node import CrewError
 
 # The package the cases exercise, resolved from the interpreter running them
 # rather than from the repository path, because the gate also runs against a
@@ -102,6 +106,25 @@ CONFIG: dict[str, Any] = {
             "command": STUB_COMMAND,
             "model": "local-stub",
             "effort": "low",
+            "sandbox": "worktree-full",
+            "session_reuse": False,
+            "time_budget": "25m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+# The delegated lane: the class of backend that spawns no process because the
+# calling harness runs the run itself. It declares no command, exactly as the
+# shipped default backend does, so nothing about this case can be satisfied by
+# a spawned process.
+IN_HARNESS_CONFIG: dict[str, Any] = {
+    "default_backend": "delegated",
+    "backends": {
+        "delegated": {
+            "launch": "in-harness",
             "sandbox": "worktree-full",
             "session_reuse": False,
             "time_budget": "25m",
@@ -512,6 +535,7 @@ def _start_dispatch(
     marker_dir: Path,
     stub_sleep: int,
     hold: bool,
+    config_data: dict[str, Any] | None = None,
 ) -> _Run:
     home = _case_home(host, tag)
     stub_dir = host["base"] / f"bin-{tag}"
@@ -536,7 +560,7 @@ def _start_dispatch(
         "project": PROJECT,
         "session": f"gate-session-{tag}",
         "bin_dir": str(stub_dir),
-        "config_data": CONFIG,
+        "config_data": config_data if config_data is not None else CONFIG,
         "node": f"gate-{tag}",
         "write_path": f"src/{tag}.txt",
         "done_when": (
@@ -1026,5 +1050,127 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
             "the supervisor wrote a pointer for a run that was discarded"
         )
     finally:
+        _finish(run, outcome)
+        host["outcomes"].append(outcome)
+
+
+def test_a_delegated_launch_records_a_boundary_snapshot(
+    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Case five: a lane that spawns nothing still takes the boundary baseline.
+
+    A delegated launch hands the run to the calling harness, so no supervisor
+    stands between dispatch and the worker. Dispatch must therefore take the
+    baseline itself, and it must land where the promotion check reads it — a run
+    directory snapshot — or the refusal below never fires for this lane and a
+    stray uncommitted edit in another tree lands unremarked.
+    """
+    tag = "delegated"
+    declared = f"src/{tag}.txt"
+    marker_dir = tmp_path / "markers"
+    marker_dir.mkdir()
+    run = _start_dispatch(
+        host,
+        tag=tag,
+        marker_dir=marker_dir,
+        stub_sleep=0,
+        hold=False,
+        config_data=IN_HARNESS_CONFIG,
+    )
+    outcome: dict[str, Any] = {
+        "case": "a delegated launch records the boundary snapshot inline"
+    }
+    stray = host["repo"] / declared
+    try:
+        run.process.wait(timeout=SPAWN_BOUND)
+        output = run.output()
+        outcome["driver_output"] = output
+        outcome["driver_stderr_tail"] = run.stderr()
+        assert run.process.returncode == 0, (
+            f"the delegated dispatch failed: {outcome['driver_stderr_tail']!r}"
+        )
+        assert output is not None and output.get("run_id"), (
+            "the delegated dispatch returned no run id"
+        )
+        assert output.get("pid") is None, (
+            f"the delegated launch named process {output.get('pid')!r}, so it "
+            "spawned one and this case no longer measures the lane that spawns "
+            "nothing"
+        )
+        run.pointer = run.read_pointer()
+        assert run.pointer, "the delegated dispatch published no pointer"
+        assert run.pointer.get("launch") == "in-harness", (
+            f"the pointer records launch {run.pointer.get('launch')!r}, so this "
+            "case did not measure a delegated launch"
+        )
+        run_id = str(output["run_id"])
+
+        # The baseline itself: written by dispatch, into the run directory,
+        # where the promotion check reads it.
+        snapshot_path = run.run_directory() / "tree-snapshot.json"
+        outcome["tree_snapshot_path"] = str(snapshot_path)
+        snapshot = _load_json(snapshot_path)
+        assert isinstance(snapshot, dict), (
+            f"the delegated launch wrote no readable boundary snapshot at "
+            f"{snapshot_path}, so this lane has no baseline for the promotion "
+            "check to compare against"
+        )
+        trees = [str(tree.get("path") or "") for tree in snapshot.get("trees") or ()]
+        outcome["tree_snapshot_tree_count"] = len(trees)
+        assert len(trees) >= WORKTREE_COUNT, (
+            f"the snapshot holds {len(trees)} trees, fewer than the "
+            f"{WORKTREE_COUNT} worktrees the scan had to cross"
+        )
+
+        record = {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(host["repo"]),
+            "worktree": str(run.pointer.get("worktree") or ""),
+            "node": {"write_paths": [declared]},
+        }
+        monkeypatch.setenv("RECKON_HOME", str(run.home))
+
+        # The baseline is clean: the last write this repository saw is dispatch's
+        # own member-registration commit, and it is behind the snapshot. A check
+        # that reported a violation here would make the one below prove nothing.
+        clean = promotion._repository_tree_boundary_violations(run_id, record)
+        outcome["violations_before_the_edit"] = clean
+        assert clean == [], (
+            "the boundary check already reported a violation before any edit "
+            f"was made, so a violation after it would prove nothing: {clean}"
+        )
+
+        # The stray edit: an untracked file at the run's declared path, in the
+        # main checkout rather than in the run's own worktree.
+        stray.parent.mkdir(parents=True, exist_ok=True)
+        stray.write_text("stray\n", encoding="utf-8")
+        violations = promotion._repository_tree_boundary_violations(run_id, record)
+        outcome["violations_after_the_edit"] = violations
+        assert violations, (
+            "a stray uncommitted edit at the run's declared path in the main "
+            "checkout was not reported, so the boundary check is not reading "
+            "this lane's snapshot"
+        )
+        assert any(declared in item for item in violations), (
+            f"the violation does not name the stray path {declared!r}: {violations}"
+        )
+        assert any("main checkout" in item for item in violations), (
+            f"the violation does not name the tree that holds the edit: {violations}"
+        )
+
+        # And the refusal a promotion would hit, rather than the predicate alone.
+        with pytest.raises(CrewError) as refusal:
+            promotion._require_repository_tree_boundary(run_id, record)
+        outcome["refusal"] = str(refusal.value)
+        assert declared in str(refusal.value) and "main checkout" in str(
+            refusal.value
+        ), f"the refusal does not name the stray edit: {refusal.value}"
+    finally:
+        if stray.exists():
+            stray.unlink()
+        # Only the directory this case created, and only while it is empty.
+        with contextlib.suppress(OSError):
+            stray.parent.rmdir()
         _finish(run, outcome)
         host["outcomes"].append(outcome)
