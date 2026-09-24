@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:30:11",
+  "updated": "2026-09-25T01:39:02",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -360326,6 +360326,298 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T200611194312-launches-route-through-the-fleet-fifo",
+        "plan": "a-dispatch-returns-without-its-worker",
+        "section": "\u00a710",
+        "node": "launches-route-through-the-fleet-fifo",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3948,
+                "cached_input_tokens": 300286,
+                "input_tokens": 304236,
+                "output_tokens": 2458,
+                "reasoning_output_tokens": 126,
+                "total_tokens": 306694,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "Protocol, fixed for this node and its sibling supervisor node: the request is one line of three space-separated fields, the word spawn, the run id and the absolute supervisor spec path, written to the requests FIFO in the fleet record's runtime_dir; the supervisor spec carries the supervisor argv under the key argv; the acknowledgement is the file spawned.json in the run directory holding pid and started_at. tests/test_dispatch_spawns_through_the_fleet.py, with a temporary runtime directory, a FIFO and a stub batch-step reader, shows five things: a dispatch writes one spawn line and records the acknowledged pid on the pointer; a dispatch with no fleet record forks as before; an unacknowledged FIFO refuses within 10 s leaving no pointer and no worktree; a crew watch producer start takes the same path; a sweep-dispatched review and a resumption both reach the supervisor. The declared negative control is executed and logged: with the FIFO branch bypassed, the acknowledged-pid assertion fails. The test files importing the changed modules show zero added failures against the base revision. The on-fleet-node scancel proof and any dotfiles change are out of scope.",
+          "estimated_hours": null,
+          "goal": "Dispatch, resumption and producer launches reach the supervisor through the fleet FIFO when a live fleet record names the dispatching node",
+          "id": "launches-route-through-the-fleet-fifo",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T20:06:11Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 0,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 102857,
+            "observed_at": "2026-09-24T20:06:11Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md",
+          "negative_control": "bypass the FIFO branch in _start_supervisor; the acknowledged-pid assertion must fail",
+          "plan": "a-dispatch-returns-without-its-worker",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/resumption.py",
+            "reckon/crew/recovery.py",
+            "reckon/crew/runs.py",
+            "reckon/cli.py",
+            "tests/test_dispatch_spawns_through_the_fleet.py",
+            "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+            "docs/figures/a-dispatch-returns-without-its-worker",
+            "docs/plans/a-dispatch-returns-without-its-worker.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "follower-life",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T20:06:22Z",
+        "completed_at": "2026-09-24T23:37:16.826Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12581,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12654,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+        "commits": [
+          "7ae4787af21513fc26b77643e402a587c690c684",
+          "ab9da177e956aae8939dc6372c26d567e416e612",
+          "19a0f17f4e85c1a9b97fe7130ffadc33306e73bf"
+        ],
+        "changed_lines": {
+          "added": 1006,
+          "removed": 28,
+          "files": 6
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_spawns_through_the_fleet.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/gate-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/manifest.md",
+        "scope_changed": false,
+        "session_id": "bec56985-9859-4ba0-89f7-055afa19b197",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2961286,
+            "input_tokens_cumulative": 2961286,
+            "output_tokens": 14423,
+            "output_tokens_cumulative": 14423,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T23:37:16.826Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 15,
+            "fit": 18,
+            "goal_fidelity": 16,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 86
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 31056411,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1222.506,
+          "generated_tokens": 166045,
+          "generation_seconds": 543.803,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.6,
+          "machine_seconds": 678.703,
+          "peak_input_tokens": 156395,
+          "tokens_per_second": 305.34,
+          "wall_tokens_per_second": 135.82
+        },
+        "follow_on_paths": [
+          "spawned.json",
+          "tests/test_mcp_recovery.py::test_sweep_dry_run_reports_what_it_would_resume"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/launches-route-through-the-fleet-fifo",
+          "session_id": "bec56985-9859-4ba0-89f7-055afa19b197",
+          "session_source": "stream",
+          "retained_at": "2026-09-24T23:37:16.826Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T21:55:27Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T20:07:29Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T200611194312-launches-route-through-the-fleet-fifo",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 19057,
+          "worker_pid": 1051853
+        },
+        "promoted_revision": "19a0f17f4e85c1a9b97fe7130ffadc33306e73bf",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "a-dispatch-returns-without-its-worker",
+          "at_dispatch": 0.33,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_dispatch_spawns_through_the_fleet.py"
+          ],
+          "declaration": "bypass the FIFO branch in _start_supervisor; the acknowledged-pid assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/negative-control-head.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200611194312-launches-route-through-the-fleet-fifo/negative-control-head.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T21:06:11.855280+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T20:06:11Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 0,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 102857,
+          "observed_at": "2026-09-24T20:06:11Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 249.0,
+        "orientation_input_tokens": 3055432.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -360638,6 +360930,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2555
+    "_version": 2556
   }
 }
