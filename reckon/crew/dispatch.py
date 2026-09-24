@@ -14,6 +14,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import uuid
@@ -54,7 +55,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.refusals import format_refusal
-from reckon.crew.recovery import REVIEW_NODE_PREFIX
+from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
@@ -1651,7 +1652,18 @@ def peer_read(
         os.close(descriptor)
 
 
+def _supervisor_command(argv: list[str]) -> int:
+    """Entry point for the detached per-run supervisor process."""
+    parser = argparse.ArgumentParser(prog="reckon-supervisor")
+    parser.add_argument("--spec", required=True)
+    arguments = parser.parse_args(argv)
+    return _run_supervisor(Path(arguments.spec))
+
+
 def _peer_command(argv: list[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == SUPERVISOR_ENTRY:
+        return _supervisor_command(arguments[1:])
     parser = argparse.ArgumentParser(description="Use a durable crew peer channel.")
     actions = parser.add_subparsers(dest="action", required=True)
     listing = actions.add_parser("peer-list")
@@ -3938,22 +3950,18 @@ def dispatch(
                 # argv[0] here, and after the wrap argv[0] is the scheduler.
                 harness_command = str(plan.argv[0]) if plan.argv else None
                 plan = apply_backend_placement(plan, backend, project)
-                spawn = launcher or _spawn
-                spawned_pid = spawn(
-                    plan,
-                    log_path=log_path,
-                    stderr_path=stderr_path,
-                    prompt_path=prompt_path,
-                )
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
-            spawned_start_time = _process_start_time(spawned_pid)
             placement = flight.placement_for(backend)
             job_id, job_id_status = placement_job_id(placement, run_id=run_id)
             record.update(
                 {
-                    "pid": spawned_pid,
-                    "pid_start_time": spawned_start_time,
+                    # The pointer's pid is the per-run supervisor's, written
+                    # once it is running, further down. Until then the run has no
+                    # process identity, which is why it starts empty rather than
+                    # naming a worker that is not spawned yet.
+                    "pid": None,
+                    "pid_start_time": None,
                     "argv": list(plan.argv),
                     "command": harness_command,
                     "dialect": plan.dialect,
@@ -3984,6 +3992,7 @@ def dispatch(
                 }
             )
         else:
+            plan = None
             record["directive"] = {
                 "attach_with": f"reckon crew attach --run {run_id} --task <task-id>",
                 "fences": {
@@ -4016,10 +4025,54 @@ def dispatch(
                 role=node.role,
                 root=ledger_root,
             )
-        # Registration can update the repository's committed crew ledger. Take
-        # the boundary baseline only after dispatch's own writes are complete.
-        record["repository_tree_snapshot"] = _repository_tree_snapshot(repo_root)
-        _write_json(pointer_path(run_id), record)
+        # Starting the supervisor is dispatch's last repository-facing step.
+        # Every write dispatch makes inside a repository — the worktree, the
+        # member-registration commit above, every pointer write — is complete
+        # before this point, so the boundary baseline can follow it with no
+        # handshake: there is nothing left for dispatch to write that the
+        # baseline must follow. After this dispatch writes only the pointer,
+        # which lives under the configuration home outside every repository.
+        # Dispatch waits for neither the snapshot nor the spawn.
+        if launch_kind == "cli" and plan is not None:
+            if launcher is None:
+                spec_path = directory / SUPERVISOR_SPEC_NAME
+                _write_json(
+                    spec_path,
+                    _supervisor_spec(
+                        run_id=run_id,
+                        run_directory=directory,
+                        repo_root=repo_root,
+                        worktree=Path(worktree["path"]),
+                        plan=plan,
+                        prompt_path=prompt_path,
+                        log_path=log_path,
+                        stderr_path=stderr_path,
+                    ),
+                )
+                spawned_pid = _start_supervisor(spec_path, directory)
+            else:
+                # A caller-supplied launcher is a test seam that stands in for
+                # the supervisor: it spawns synchronously and the boundary
+                # baseline is taken inline, exactly as the supervisor would.
+                spawned_pid = launcher(
+                    plan,
+                    log_path=log_path,
+                    stderr_path=stderr_path,
+                    prompt_path=prompt_path,
+                )
+                record["repository_tree_snapshot"] = _repository_tree_snapshot(
+                    repo_root
+                )
+            spawned_start_time = _process_start_time(spawned_pid)
+            record["pid"] = spawned_pid
+            record["pid_start_time"] = spawned_start_time
+            _write_json(pointer_path(run_id), record)
+        else:
+            # A delegated launch spawns no process, so there is no supervisor to
+            # take the boundary baseline after dispatch's writes. Dispatch takes
+            # it here instead, in the same last repository-facing step, so the
+            # baseline still predates every write this run's worker will make.
+            _write_boundary_tree_snapshot(directory, repo_root)
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
         if spawned_pid is not None:
@@ -4040,10 +4093,6 @@ def dispatch(
         _remove_worktree(repo_root, worktree["path"])
         raise
     return record
-
-
-if __name__ == "__main__":
-    raise SystemExit(_peer_command())
 
 
 # Every worker this process has launched but not yet waited on. The waiting is
@@ -4692,6 +4741,333 @@ def _spawn(
     _LAUNCHED_WORKERS_WAKE.set()
     _ensure_launched_worker_reaper()
     return process.pid
+
+
+# ── The per-run supervisor ──────────────────────────────────────────────────
+#
+# Dispatch must return as soon as a worker exists, but two things must happen
+# after it returns and neither can be left to a process that is gone: the
+# boundary tree snapshot — a walk whose cost grows with the repository's
+# worktree count — and collecting the worker's exit, which a reparented worker
+# hands to init and reckon never sees. Both move to one small process, started
+# per run in its own session, that outlives the dispatch command. Dispatch
+# writes the run's pointer naming that process and exits; the supervisor takes
+# the snapshot, spawns the worker, waits on it and writes the exit to the run
+# directory, then exits itself.
+#
+# The supervisor never writes the pointer and never creates the run directory.
+# Everything it produces lands beside the worker's stream under the run
+# directory, so a discard that removes only the pointer leaves the exit record
+# findable, and a discard that removes the whole directory drops the write
+# rather than bringing the run back.
+SUPERVISOR_SPEC_NAME = "supervisor.json"
+TREE_SNAPSHOT_NAME = "tree-snapshot.json"
+WORKER_RECORD_NAME = "worker.json"
+EXIT_RECORD_NAME = "exit.json"
+
+# The argv token that runs this module as the per-run supervisor. Named with
+# underscores so it can never collide with a real crew subcommand.
+SUPERVISOR_ENTRY = "__supervise__"
+
+
+def _supervisor_write(path: Path, payload: Mapping[str, Any]) -> bool:
+    """Write JSON into a run directory without ever creating that directory.
+
+    The run directory is the supervisor's only durable home, and it may be
+    removed while the supervisor is mid-run — a discard takes it. A write that
+    recreated the directory would bring a discarded run back into existence, so
+    a write whose directory has gone is dropped and reported by its return
+    value rather than by raising.
+    """
+    parent = path.parent
+    if not parent.is_dir():
+        return False
+    tmp: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp = Path(handle.name)
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    except OSError:
+        return False
+    finally:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+    return True
+
+
+def _stream_record_facts(paths: Iterable[Path]) -> tuple[int, Any]:
+    """Count a run's stream records and name the newest one's type.
+
+    Streams arrive newest write first, so the newest record is the last
+    parseable line of the first stream that holds any. A line that is not a
+    JSON object is not a record, so a truncated tail cannot masquerade as one.
+    """
+    total = 0
+    newest_type: Any = None
+    for path in paths:
+        try:
+            handle = path.open(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        count = 0
+        last_type: Any = None
+        with handle:
+            for line in handle:
+                text = line.strip()
+                if not text:
+                    continue
+                try:
+                    event = json.loads(text)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                count += 1
+                last_type = event.get("type")
+        total += count
+        if count and newest_type is None:
+            newest_type = last_type
+    return total, newest_type
+
+
+def _supervisor_spec(
+    *,
+    run_id: str,
+    run_directory: Path,
+    repo_root: Path,
+    worktree: Path,
+    plan: _backends.LaunchPlan,
+    prompt_path: Path,
+    log_path: Path,
+    stderr_path: Path,
+) -> dict[str, Any]:
+    """Describe everything the supervisor needs to take over the launch.
+
+    The plan is written out in full — argv, working directory and environment —
+    because the supervisor is a fresh process that never sees the resolved
+    launch plan otherwise. Everything else names a path the supervisor writes
+    to or reads from.
+    """
+    return {
+        "run_id": run_id,
+        "run_directory": str(run_directory),
+        "repo": str(repo_root),
+        "worktree": str(worktree),
+        "prompt_path": str(prompt_path),
+        "log_path": str(log_path),
+        "stderr_path": str(stderr_path),
+        "plan": {
+            "argv": list(plan.argv),
+            "cwd": plan.cwd,
+            "environment": dict(plan.environment),
+            "dialect": plan.dialect,
+            "backend": plan.backend,
+        },
+    }
+
+
+def _start_supervisor(spec_path: Path, run_directory: Path) -> int:
+    """Start the per-run supervisor in its own session and return its pid.
+
+    A session of its own is what makes the pointer's pid a process group that
+    ``crew stop`` can signal: the worker is spawned inside this group, so one
+    group signal reaches it, while a signal to the dispatch process alone — how
+    a host expiring a background shell ends it — cannot.
+    """
+    argv = [
+        sys.executable,
+        "-m",
+        "reckon.crew.dispatch",
+        SUPERVISOR_ENTRY,
+        "--spec",
+        str(spec_path),
+    ]
+    with open(run_directory / "supervisor.stderr.log", "ab") as errors:
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=errors,
+            start_new_session=True,
+        )
+    return process.pid
+
+
+def _worker_default_signals() -> None:
+    """Reset the signals the supervisor ignores back to default in the worker.
+
+    An ignored disposition is inherited across ``exec``, so a worker spawned
+    after the supervisor installs SIG_IGN for SIGTERM would ignore the stop
+    signal that ends it. The worker therefore starts with the default handlers
+    its launch would otherwise have had.
+    """
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    signal.signal(signal.SIGHUP, signal.SIG_DFL)
+
+
+def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
+    """Spawn the worker inside the supervisor's own process group."""
+    plan = spec["plan"]
+    with (
+        open(str(spec["prompt_path"]), "rb") as stdin,
+        open(str(spec["log_path"]), "wb") as stdout,
+        open(str(spec["stderr_path"]), "wb") as stderr,
+    ):
+        process = subprocess.Popen(
+            list(plan["argv"]),
+            cwd=plan.get("cwd"),
+            env={**os.environ, **(plan.get("environment") or {})},
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            start_new_session=False,
+            # The worker must start with the default signal dispositions rather
+            # than inheriting the supervisor's ignores: SIG_IGN survives exec, so
+            # a stop aimed at the group would pass through it. This runs in the
+            # supervisor's single-threaded child as it starts.
+            preexec_fn=_worker_default_signals,  # noqa: PLW1509
+        )
+    return process.pid
+
+
+def _write_boundary_tree_snapshot(
+    run_directory: Path, repo_root: Path
+) -> dict[str, Any]:
+    """Write the boundary baseline into the run directory and return it.
+
+    The snapshot is a boundary baseline: it must follow dispatch's own writes
+    and predate any write the worker makes in another tree. A snapshot that
+    raises is recorded and the launch continues — a scan failure must never
+    kill a worker nor turn a launch into a refusal. The write never creates the
+    run directory, so a baseline racing a discard is dropped rather than
+    bringing a discarded run back into existence.
+
+    Both launch lanes write this one artifact. A spawned run's supervisor takes
+    it after dispatch's writes and before the worker's spawn; a delegated run
+    spawns nothing, so dispatch takes it inline, in the same last
+    repository-facing step. Promotion reads it from the run directory either
+    way, so a stray uncommitted edit in another tree is refused for both.
+    """
+    try:
+        snapshot: dict[str, Any] = _repository_tree_snapshot(repo_root)
+    except Exception as exc:  # noqa: BLE001 - a scan failure never kills a launch
+        snapshot = {"available": False, "detail": f"{type(exc).__name__}: {exc}"}
+    _supervisor_write(run_directory / TREE_SNAPSHOT_NAME, snapshot)
+    return snapshot
+
+
+def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
+    """Write the boundary snapshot, or its failure, into the run directory."""
+    _write_boundary_tree_snapshot(
+        Path(str(spec["run_directory"])), Path(str(spec["repo"]))
+    )
+
+
+def _supervisor_exit_record(
+    *,
+    run_id: str,
+    worker_pid: int | None,
+    launched_at: str,
+    status: int | None,
+    run_directory: Path,
+) -> dict[str, Any]:
+    """Compose the one record written for a worker's exit or launch failure."""
+    paths = stream_paths_newest_first(run_directory)
+    count, last_type = _stream_record_facts(paths)
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "recorded_by": "supervisor",
+        "worker_pid": worker_pid,
+        "launched_at": launched_at,
+        "exited_at": _utc_now(),
+        "stream_records_seen": count,
+        "last_record_type": last_type,
+        # A worker that wrote no byte of its stream reached no model: that is a
+        # launch failure, and it wants a different recovery from a death while
+        # working, so the two are distinguished on the record itself.
+        "ended_during": "launch" if count == 0 else "working",
+    }
+    if status is None:
+        record.update({"exit_code": None, "signal": None, "signal_name": None})
+    else:
+        record.update(_wait_status_record(os.waitstatus_to_exitcode(status)))
+    return record
+
+
+def _run_supervisor(spec_path: Path) -> int:
+    """Take the snapshot, launch the worker, collect its exit, and stop.
+
+    The supervisor holds the worker's parentage for the whole run, so it is the
+    only process that can collect the exit a reparented worker would otherwise
+    hand to init. It ignores SIGTERM and SIGHUP so that a ``crew stop`` — a
+    group signal that must reach the worker — does not take it down before it
+    has written the exit the stop caused.
+    """
+    try:
+        spec = json.loads(spec_path.read_text())
+    except (OSError, ValueError):
+        return 0
+    if not isinstance(spec, Mapping):
+        return 0
+    run_directory = Path(str(spec.get("run_directory") or ""))
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    _supervisor_tree_snapshot(spec)
+    launched_at = _utc_now()
+    try:
+        pid = _supervisor_spawn_worker(spec)
+    except (OSError, ValueError, KeyError) as exc:
+        _supervisor_write(
+            run_directory / EXIT_RECORD_NAME,
+            _supervisor_exit_record(
+                run_id=str(spec.get("run_id") or ""),
+                worker_pid=None,
+                launched_at=launched_at,
+                status=None,
+                run_directory=run_directory,
+            )
+            | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
+        )
+        return 0
+    _supervisor_write(
+        run_directory / WORKER_RECORD_NAME,
+        {
+            "run_id": str(spec.get("run_id") or ""),
+            "pid": pid,
+            "pid_start_time": _process_start_time(pid),
+            "launched_at": launched_at,
+            "backend": str(spec["plan"].get("backend") or ""),
+            "argv": list(spec["plan"].get("argv") or ()),
+        },
+    )
+    try:
+        _, status = os.waitpid(pid, 0)
+    except ChildProcessError:
+        status = None
+    except OSError:
+        status = None
+    _supervisor_write(
+        run_directory / EXIT_RECORD_NAME,
+        _supervisor_exit_record(
+            run_id=str(spec.get("run_id") or ""),
+            worker_pid=pid,
+            launched_at=launched_at,
+            status=status,
+            run_directory=run_directory,
+        ),
+    )
+    return 0
 
 
 def attach(run_id: str, task: str) -> dict[str, Any]:
@@ -5980,3 +6356,11 @@ def record_resumption(
         return record
 
     return _mutate_pointer(run_id, resume)
+
+
+# The supervisor entry point. This guard sits at the end of the module because
+# the entry token and the supervisor's own machinery are defined with the rest
+# of the launch path below it, and a module run as the supervisor must have
+# them defined before it dispatches on its argv.
+if __name__ == "__main__":
+    raise SystemExit(_peer_command())

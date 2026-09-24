@@ -293,6 +293,151 @@
       &sect;3 moving that snapshot into the supervisor.
     </p>
 
+  <h2 id="s3">&sect;3 &mdash; A dispatch returns once its supervisor runs</h2>
+    <p>
+      Node <code>dispatch-returns-before-the-snapshot</code>, landed at revision
+      <code>c8f0b545</code> on 2026-09-24. The gate is
+      <code>tests/test_dispatch_returns_without_worker.py</code>; the implementation is the
+      launch path in <code>reckon/crew/dispatch.py</code> and the snapshot reader in
+      <code>reckon/crew/promotion.py</code>.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/dispatch_return_bound.png"
+           alt="Left: the boundary snapshot's position before and after the change. Right: seven measured dispatch returns, all under the five-second bound, with the control that puts the scan back inline at 35.9 s.">
+      <figcaption>
+        The scan is unchanged and still costs its 32 seconds; it no longer holds the caller.
+      </figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Measure</th><th>Value</th><th>How it was taken</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>gate result</td>
+          <td>4 passed in 150.07 s</td>
+          <td><code>sirius_debug</code>, <code>TMPDIR=/tmp</code>, the project interpreter,
+          the four cases in one run</td>
+        </tr>
+        <tr>
+          <td>case one alone, stability</td>
+          <td>1 passed in 36.24 / 36.09 / 35.86 s</td>
+          <td>three separate invocations, after the pointer guard below was corrected</td>
+        </tr>
+        <tr>
+          <td>dispatch's own return</td>
+          <td>1.67&ndash;3.02 s over seven calls; 1.82 s in the four-case run</td>
+          <td>the driver's own clock, against a five-second bound</td>
+        </tr>
+        <tr>
+          <td>the scan's cost, still paid</td>
+          <td>34.69&ndash;35.35 s to the marker</td>
+          <td>the stub's marker file, against a sixty-second bound</td>
+        </tr>
+        <tr>
+          <td>charged <code>git status</code> calls before dispatch returns</td>
+          <td>exactly one, of 33 for 32 trees</td>
+          <td>the shim's log; the call is the roster-obstruction check on
+          <code>docs/state/&lt;project&gt;/crew.json</code></td>
+        </tr>
+        <tr>
+          <td>trees in the boundary snapshot</td>
+          <td>32</td>
+          <td><code>tree-snapshot.json</code> in the run directory</td>
+        </tr>
+        <tr>
+          <td>promotion reads the snapshot from the run directory</td>
+          <td>its scan roots equal the snapshot's tree list</td>
+          <td><code>promotion._repository_tree_boundary_violations</code> with the
+          tree-snapshot reader instrumented</td>
+        </tr>
+        <tr>
+          <td>the real live-pointer directory</td>
+          <td>gained none of this gate's runs</td>
+          <td>intersection of what appeared with the pointers each case wrote in its own
+          temporary home</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Both declared negative controls fail as declared.</strong> The tree snapshot put
+      back between the launch and dispatch's return: case one fails on the five-second bound,
+      <code>assert 35.866654474288225 &lt;= 5.0</code>. The supervisor's wait removed: case
+      three fails with <code>the exit record names None rather than SIGKILL</code>. A third
+      control, at the predicate rather than end-to-end, separates a concurrent peer's pointer
+      from this case's own. All three are recorded in
+      <code>negative-control.log</code> in the run directory, whose first line is the declared
+      wording.
+    </p>
+    <p>
+      <strong>Found on the way, and corrected.</strong> Each control needs its own copy of the
+      package <em>and</em> of the test tree. A control that mutated the package and put it on
+      <code>PYTHONPATH</code> while running the worktree's own test file measured the
+      unmutated worktree and passed twice &mdash; <code>tests/</code> is a package, so pytest
+      prepends the worktree root to <code>sys.path</code> ahead of every
+      <code>PYTHONPATH</code> entry. The control runs now print the overlay they measured.
+      The same shape as the earlier correction above: a control that reports a pass is only
+      evidence once it has been shown to be capable of a fail.
+    </p>
+    <p>
+      <strong>Found on the way, and corrected: the pointer guard read the machine.</strong>
+      Case one's guard on the real live-pointer directory first asserted the directory gained
+      no entry at all. Under a concurrent session that is a monitor, not a test, and it failed
+      on a peer node's pointer
+      (<code>r-20260924T065103736235-second-review-of-a-crew-process-ends-with-its-owner.json</code>)
+      while every one of the case's own assertions held. The guard now intersects what
+      appeared with the pointers the case wrote in its own home. The peer's run is not this
+      case's leak; this case's own pointer still is, and that half was falsified before the
+      re-run.
+    </p>
+    <h2 id="s3-delegated-lane">&sect;3 &mdash; The delegated lane keeps its boundary baseline</h2>
+    <p>
+      A review of the landed change found one regression: the boundary baseline was written only
+      on the spawned lane. An <code>in-harness</code> launch spawns no process, so nothing
+      reached the branch that writes <code>tree-snapshot.json</code>; the promotion check found
+      no snapshot, returned no violations, and its refusal of a stray uncommitted edit in
+      another tree stopped firing. Since the shipped default backend launches
+      <code>in-harness</code>, that was the lane most runs take.
+    </p>
+    <table>
+      <thead><tr><th>Measure</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>gate, five cases, <code>sirius_debug</code></td><td>5 passed in 189.59 s</td></tr>
+        <tr><td>delegated dispatch's own process</td><td><code>pid: None</code> &mdash; the lane spawns nothing, which the case asserts</td></tr>
+        <tr><td>baseline written by dispatch</td><td><code>tree-snapshot.json</code>, 36 trees</td></tr>
+        <tr><td>boundary check before the stray edit</td><td><code>[]</code></td></tr>
+        <tr><td>boundary check after the stray edit</td><td><code>['src/delegated.txt in main checkout &lt;repo&gt;']</code></td></tr>
+        <tr><td>refusal raised</td><td><code>CrewError: run '&lt;run&gt;' has uncommitted changes at its declared paths outside its own worktree: src/delegated.txt in main checkout &lt;repo&gt;</code></td></tr>
+        <tr><td>delegated dispatch's return</td><td>37.81 s &mdash; the scan runs inline, as it did before the supervisor existed</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/boundary_baseline_lanes.png"
+           alt="Two lanes. Left: the supervisor takes the boundary baseline after dispatch returns and before spawning the worker. Right: dispatch takes the baseline inline, because no supervisor exists to take it later.">
+      <figcaption>
+        Where the baseline is taken depends on the lane; where it is read does not. Both write
+        the run directory's <code>tree-snapshot.json</code>.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>The measure that could have failed.</strong> The case first asserts the boundary
+      check reports nothing before the edit, so a violation afterwards is caused by the edit and
+      not by a tree that was already dirty. Without an inline baseline both reads return
+      <code>[]</code> and the second assertion fails, which is exactly what negative control D
+      shows: dropping the inline snapshot fails the case at
+      <code>isinstance(None, dict)</code>, naming the absent
+      <code>tree-snapshot.json</code>. The overlay is a full copy of the package and the test
+      tree, and the control prints the <code>package_root</code> it measured, so a pass for the
+      wrong reason is visible rather than assumed. Log appended to
+      <code>negative-control.log</code>; driver at
+      <code>~/.cache/reckon-gate/controls/run-control-d.sh</code>.
+    </p>
+    <p>
+      <strong>What the repair restores, and what it costs.</strong> A delegated dispatch waits
+      for the scan again &mdash; 37.81 s here &mdash; which is what it did before the supervisor
+      existed, because the baseline must follow dispatch's last repository write and no
+      supervisor exists to take it later. Only the spawned lane gets the fast return this plan
+      is about; that is a property of the lane, not a defect of the repair.
+    </p>
+
   </main>
 </body>
 </html>
