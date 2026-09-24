@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -739,6 +739,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T083750621668-rereview-of-follower-checks-its-owner" data-who="reckon-ship" data-when="2026-09-24T08:49:54.797Z">
     <div class="r-comment-body"><p>re-review of follower-checks-its-owner at 886a9ce3 scored 95 with no findings; merged 74c1c5fe</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260924T213000-first-commit-gone-evidence" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
+    <div class="r-comment-body">More evidence for f-acpewio-first-commit-gone, 2026-09-24. All six of s21-coord's wave-1 implement runs read 'blocked — resume: the worker process is gone with no recorded exit and the worktree carries 1 commit' right after their first commit: promotion-keeps-the-worker-exit 22:17:12, unfenced-codex-keeps-its-login 22:23:05, launches-route-through-the-fleet-fifo 22:28:36, server-listens-before-it-watches 22:29:25, the-fleet-supervisor-lives-in-reckon 22:36:29 and paid-headroom-is-published 22:44:39. In each case `ps -p <worker.json pid>` showed the worker alive (state Sl), and stream.jsonl had been written 1-2 s earlier. s22-coord saw the same on two codex runs, r-20260924T211306627533-section-is-a-typed-record and r-20260924T211605418631-settle-the-consumer-verbs-readings, whose worker.json pid is the node-wrapped codex process; it suspects the pid_start_time comparison fails for that pid. reckon-ee saw it on a clive run and a codex census. So the defect spans clive and codex and at least three coordinator sessions, and it fires at the first commit. The start-time check against the recorded worker pid is the first suspect.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T074932805443-review-of-mcp-reads-have-deadlines" data-who="reckon-ship" data-when="2026-09-24T08:01:38.475Z">
     <div class="r-comment-body"><p>review of mcp-reads-have-deadlines scored 92; its landing-stat-on-the-loop finding and gate-revision mismatch are being repaired by resuming the node</p></div>

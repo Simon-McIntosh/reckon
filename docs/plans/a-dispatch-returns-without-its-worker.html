@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="76">
+  <meta name="plan-version" content="77">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -694,6 +694,11 @@
     <div class="r-fu-body"><p>A worker's early orientation manifest carries <code>status: in-progress</code>. The follower renders that run as <code>unreadable</code> with a <q>repair: the manifest at …</q> remedy, which looks like a delivery defect when it is a healthy checkpoint. Observed on <code>r-20260924T190042181732-delivery-tests-read-the-scoring-state</code> at 21:02:30 and 21:02:52 (local), 1:44 into the run. It sits beside <code>f-adrwiw-launch-flicker</code>: both are live states the display misclassifies within the first minutes of a run.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
+<article class="r-fu" data-id="f-adrwiw-stop-before-spawn" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T21:30:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A stop during the pre-spawn snapshot is ignored, and the worker spawns anyway</h4>
+    <div class="r-fu-body"><p>Measured by s22-coord and relayed through reckon-ee on 2026-09-24. Runs <code>r-20260924T210848317887-row-drops-unread-cells</code> (supervisor pid 1265809) and <code>r-20260924T210913887464-manifest-names-the-tree-it-imported</code> (supervisor pid 1268007) were each stopped with <code>crew stop</code> during the supervisor's pre-spawn tree snapshot. Stop printed <q>SIGTERM sent to process group</q> and the follower read <q>stopped</q>. About 60 s later each supervisor spawned its clive worker anyway (children 1272399 and 1274866), and only a second stop ended them. So the supervisor does not act on SIGTERM while it is inside the snapshot, and it spawns after the stop was reported as done. Done when a stop delivered at any point before the spawn means no worker is ever spawned for that run. A test holds the supervisor in a stubbed snapshot, sends the stop, releases the snapshot and asserts no <code>worker.json</code> and no child. The negative control ignores SIGTERM during the snapshot, and the assertion then fails.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260923T0710-reparent-loses-the-exit" data-who="reckon-ship" data-when="2026-09-23T07:10:00Z">
@@ -768,6 +773,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T074343189752-rereview-of-dispatch-returns-before-the-snapshot" data-who="reckon-ship" data-when="2026-09-24T08:01:14.532Z">
     <div class="r-comment-body"><p>re-review of dispatch-returns-before-the-snapshot at 5ea86403 scored 93 with no findings; merged 3ad8b13c</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20260924T213000-launch-flicker-evidence" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
+    <div class="r-comment-body">More evidence for f-adrwiw-launch-flicker. Every one of the 11 dispatches s21-coord made between 22:04 and 23:20, six implement and five review, read abandoned 3-17 s after dispatch and working 1:57 to 9:04 later. The 9:04 case was the-fleet-supervisor-lives-in-reckon, launched together with five siblings. reckon-ee's r-20260924T204759725667-s23-reuse-map read abandoned at 0:14 while its supervisor (pid 1165048) was alive and supervisor.json still carried pid null. r-20260924T204832636912-fleet-counter-census read abandoned at 0:13. Throughout, the trailing counter read 2w, so the row and the counter disagreed about the same run.</div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T131048752851-refusal-leaves-no-trace" data-who="reckon-ship" data-when="2026-09-23T14:39:02.322Z">
     <div class="r-comment-body"><p>every refusal after worktree creation begins is shown to leave no pointer, worktree or watch row; two paths that did were repaired (merged 4248cbaf); review 94: the record counts the watcher-required refusal as in the tested set although it raises before worktree creation, the evidence table has three pre-pointer rows not four, and the gate log header names the base revision; correction appended to the landed record, gate re-verified at merged main</p></div>
 </div>
@@ -779,6 +787,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260924T200117808198-review-of-s21-reuse-map" data-who="reckon-build" data-when="2026-09-24T20:24:35.327Z">
     <div class="r-comment-body"><p>review of s21-reuse-map stored at 87: conclusions hold; one absence check passed without searching (bad pathspec) and one cli.py line is off by 39</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
+    <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
 </div>
 </section>
 </main>
