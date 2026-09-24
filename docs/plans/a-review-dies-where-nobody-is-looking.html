@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.5">
@@ -480,10 +480,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ardwnil-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ardwnil-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §1" data-resolved-at="2026-09-24T12:53:23+00:00" data-resolved-by="reckon-e5">
     <h4 class="r-fu-title">Find the memory bound first; §3 and §5 are cheap and independent</h4>
     <div class="r-fu-body"><p><strong>§1 is the cause and §2 is the experiment that tells you how much of it is routing versus provisioning — run §2 before anyone justifies a fix by effort, because effort and role are confounded in every observation so far.</strong> §3 and §5 do not wait on either: §3 recovers a third of the losses by classifying on the deliverable rather than the exit, and §5 is a two-line exception-handling repair whose absence cost three reproductions and a hand-run command to diagnose. §6 has a guard half and a structural half; land the structural one or it recurs. §4 carries a disagreement between two sessions that is itself the finding — build for determinism and print the composed argv rather than adjudicating which reading was right.</p><p><strong>Do not close the orchestrator-lane fence until §1 reports.</strong> Reviews went to that lane because this one was killing them, and a fence over an unrepaired lane costs the review loop entirely.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-review-dies-where-nobody-is-looking §1</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-ardwnil-002. §2 and §3 are done. §4's first nodes landed: the review lane follows its owning run (ce31f4d6), and a delivered review ends its turn (merged at f3b26ec0, review 90). The rest of §4 and the findings recorded as comments are carried forward.</p></p>
+    </article>
+<article class="r-fu" data-id="f-ardwnil-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-review-dies-where-nobody-is-looking §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Hold a review that has no lane, and let a finished review pass its own check</h4>
+    <div class="r-fu-body"><p><strong>Next, all in §4 and §3, recorded as comments on those sections.</strong> (1) The review reflex never creates a <code>native</code>, in-harness review. When every allowed backend is held, paused or capped, it creates no pointer and holds the run for review with the reason shown. Three occurrences on 2026-09-23 are the field case. The lane-pause check itself belongs to <code>a-crew-process-ends-with-its-owner</code>. (2) The manifest check accepts a review's granted store path and its <code>.at-&lt;sha&gt;</code> sibling, and asks no commit of a review. Two nova codex reviews are the field case. (3) The two findings from the review of the delivered-review stop: the <code>delivered_at</code> assertion in <code>tests/test_a_delivered_review_ends_its_turn.py</code> cannot fail, and the template-status clause in <code>reckon/crew/recovery.py</code> cannot fire. (1) and (3) touch <code>recovery.py</code>, so they go after the S20 chain there has merged. Done when each field case, replayed through <code>crew complete</code> or the follower's sweep, gives the stated result, and each negative control reddens its test. After that, §9's prevention and §1's remaining correlation, which needs <code>worker-death-is-recorded</code>'s exit record.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-review-dies-where-nobody-is-looking §4</pre>
     </article>
 </section>
 

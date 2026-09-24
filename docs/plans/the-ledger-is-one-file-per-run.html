@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -186,9 +186,15 @@
     <pre class="r-fu-prompt">/reckon-ship the-ledger-is-one-file-per-run</pre>
     <p class="r-fu-outcome"><p>Superseded by f-tlofpr-002. A read-back found its order wrong, since readers must land before the writer, and found its gate sentence self-contradictory ("through the merged tree before it is merged").</p></p>
     </article>
-<article class="r-fu" data-id="f-tlofpr-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tlofpr-002" data-status="resolved" data-written-by="reckon-e5" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship the-ledger-is-one-file-per-run" data-resolved-at="2026-09-24T12:52:54+00:00" data-resolved-by="reckon-e5">
     <h4 class="r-fu-title">Read, then write, then split; the roster and holds follow the session fix</h4>
     <div class="r-fu-body"><p>§2 lands first, then §1, then §3, then §4. §3 is its own commit per project and runs when no peer holds uncommitted work in <code>docs/state</code>. §4 is held until <code>new-work-gets-a-new-worker</code> §3 has landed. <code>reckon/ledger.py</code> is on every session's promotion path, so each node's gate has two parts. First, before merge, the worker's commit is merged onto current main in its worktree, and a promotion is driven through the <code>crew complete</code> entry point against a temporary project, never the live ledger. Second, after merge, the coordinator records the file list of the first live promotion commit made at the merged head.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship the-ledger-is-one-file-per-run §2</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-tlofpr-003, which adds the release step still owed before any node dispatches.</p></p>
+    </article>
+<article class="r-fu" data-id="f-tlofpr-003" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read back the third revision, then read, write, split</h4>
+    <div class="r-fu-body"><p><strong>Nothing in this plan has been implemented.</strong> Its text went through three read-backs. The first found 18 two-reading sentences, the second 9 and the third 4, and all were settled in revisions d1bd70d4, 2bd62d04 and ca99eae1. Their reports are under <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/</code> (<code>review-of-the-ledger-is-one-file-per-run</code>, <code>review-of-the-ledger-revision</code>, <code>third-read-back-of-the-ledger</code>). ca99eae1 has not been read back. <strong>Next:</strong> (1) dispatch a local read-back of the current text, which must find no load-bearing two-reading sentence. (2) §2 readers, then §1 writer, then §3 split, then §4 roster and holds (after <code>new-work-gets-a-new-worker</code> §3), with the two-part gate named above. Record each promotion's wall time beside the snapshot's tree count, so this plan is not credited with what <code>the-boundary-check-reads-two-trees</code> removes.</p></div>
     <pre class="r-fu-prompt">/reckon-ship the-ledger-is-one-file-per-run §2</pre>
     </article>
 </section>
@@ -197,17 +203,17 @@
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T154242550493-review-of-the-ledger-is-one-file-per-run" data-who="reckon-ship" data-when="2026-09-23T16:07:00.199Z">
     <div class="r-comment-body"><p>read-back of the per-run ledger plan: 18 load-bearing two-reading sentences; all settled in d1bd70d4, fresh read-back follows</p></div>
 </div>
-<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T161834173344-review-of-the-ledger-revision" data-who="reckon-ship" data-when="2026-09-23T17:15:02.102Z">
-    <div class="r-comment-body"><p>second read-back: 16 of 18 earlier items settled, 9 load-bearing forks left; all settled in the next revision, third read-back follows</p></div>
-</div>
-<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T172710072463-third-read-back-of-the-ledger" data-who="reckon-ship" data-when="2026-09-23T17:42:18.527Z">
-    <div class="r-comment-body"><p>third read-back: 8 of 9 settled, 4 load-bearing forks left; settled in ca99eae1, a fourth read-back follows</p></div>
-</div>
 <div class="r-comment" data-section="s1" data-id="c-tlofpr-rollback-drops-a-peer-row" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>A failed promotion's rollback staged a ledger that dropped a peer's row.</strong> Measured 2026-09-23 at 19:18 local. A promotion (<code>crew complete</code>) ran concurrently with a plan commit in the same checkout and failed on git's index lock. In that window a peer session's promotion committed its row (2e9361ab, <code>_version</code> 2385). The failed promotion's rollback then wrote the file back as it stood before its own attempt, <code>_version</code> 2384, and left it staged. The staged diff against HEAD removed exactly the peer's row, 515 lines, and added nothing. The next promotion from any session would have loaded that file and committed it, removing the peer's row from the record with no refusal. It was caught by reading <code>git diff --cached</code> and repaired by restoring HEAD's content, which the diff proved was a strict superset. The retried promotion also found its own row already in the SQLite shadow, written during the failed attempt, and recorded <code>store_write</code> as failed (<code>UNIQUE constraint failed: runs.run_id</code>). Per-run files remove both faults: a promotion never rewrites a file holding another run, so there is nothing to roll back over, and the index write comes after the file, so a failed attempt leaves no index row ahead of its record.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-tlofpr-snapshot-is-the-other-cost" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>The ledger is not the only reason promotions are slow.</strong> The third read-back's promotion ran from 20:03 on 2026-09-23 to about 00:00 the next day, roughly 4 hours, while peer commits were nearly idle. Its time went on the repository tree snapshot: a <code>git status --untracked-files=all</code> in each of the 312 worktrees recorded at dispatch. The same walk runs at dispatch and under <code>crew follow</code>. Per-run files remove the rewrite and the queue on one file, but not this walk. <code>the-boundary-check-reads-two-trees</code> carries that fix. When this plan's §1 gate records promotion wall time, it should also record the snapshot's tree count, so the two costs are not credited to each other.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T161834173344-review-of-the-ledger-revision" data-who="reckon-ship" data-when="2026-09-23T17:15:02.102Z">
+    <div class="r-comment-body"><p>second read-back: 16 of 18 earlier items settled, 9 load-bearing forks left; all settled in the next revision, third read-back follows</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T172710072463-third-read-back-of-the-ledger" data-who="reckon-ship" data-when="2026-09-23T17:42:18.527Z">
+    <div class="r-comment-body"><p>third read-back: 8 of 9 settled, 4 load-bearing forks left; settled in ca99eae1, a fourth read-back follows</p></div>
 </div>
 </section>
 </main>
