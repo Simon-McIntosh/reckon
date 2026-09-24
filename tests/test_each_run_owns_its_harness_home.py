@@ -15,6 +15,10 @@ Two properties, and the third is what makes the first two mean anything:
   refused with the main checkout's plan file byte-identical;
 * the operator's codex login is bound read-only into the run's codex home and
   stays readable and unremovable there;
+* a codex launch outside the fence keeps the operator's own home: the run's
+  codex home and its bound login exist to answer the fence, so with no fence
+  there is neither, and CODEX_HOME is left as the operator set it rather than
+  pointed at an empty run home that holds no login;
 * the declared negative control leaves ``CLAUDE_CONFIG_DIR`` unset, and the
   harness then writes its state under the stand-in ``~/.claude``, where the
   fence refuses it. Without the control the suite would pass against a wiring
@@ -447,6 +451,48 @@ def test_the_codex_login_is_bound_read_only_into_the_runs_codex_home(
     assert _line(lines, "codex-login-readable").endswith("'operator-login'")
     assert (codified / "auth.json").is_file()
     assert (fixture.codex / "auth.json").read_text() == "operator-login"
+
+
+@requires_bwrap
+def test_an_unfenced_codex_launch_keeps_the_operators_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No fence means no home to answer, so the operator's own is kept.
+
+    The run's codex home exists to survive the fence, which seals the
+    operator's ``~/.codex`` read-only and exposes the login into the run. With
+    no fence there is neither a seal to answer nor a login bound in, so a
+    CODEX_HOME pointed at an empty run home would displace the operator's login
+    with nothing. The unfenced launch therefore sets no CODEX_HOME and seeds no
+    home, while the fenced launch beside it does both.
+    """
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    # The run directory is live for both launches, so the absence below is the
+    # fence's doing rather than a manifest directory that names no run.
+    assert fixture.manifest.parent.is_dir()
+
+    unfenced = fixture.plan(dialect="codex", fence=False)
+    assert "CODEX_HOME" not in unfenced.environment
+    assert unfenced.argv[0] != _backends.FENCE_BINARY
+    assert not (fixture.run / "codex-home").exists()
+
+    fenced = fixture.plan(dialect="codex")
+    codified = fixture.run / "codex-home"
+    assert fenced.environment["CODEX_HOME"] == str(codified)
+    assert codified.is_dir()
+    assert [
+        str(fixture.codex / "auth.json"),
+        str(codified / "auth.json"),
+    ] in _bind_pairs(fenced.argv, "--ro-bind")
+
+    # The claude-shaped harness still adopts its home unfenced: a transcript
+    # must land in the run whichever way the worker was launched, and only the
+    # codex home is a fence artefact.
+    claude_unfenced = fixture.plan(fence=False)
+    assert claude_unfenced.environment["CLAUDE_CONFIG_DIR"] == str(
+        fixture.run / "harness"
+    )
 
 
 @requires_bwrap

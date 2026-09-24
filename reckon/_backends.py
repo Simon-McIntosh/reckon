@@ -2021,9 +2021,16 @@ def launch_plan(
     final_path = None if final_message_path is None else str(Path(final_message_path))
     # The run directory is the manifest's parent — the one location a worker is
     # always granted to write — and it is where the harness keeps its own state
-    # rather than in the operator's dot directory the fence seals. It is set
-    # whether or not the fence is composed, because a worker's transcript must
-    # land in its run whichever way it was launched.
+    # rather than in the operator's dot directory the fence seals. The
+    # claude-shaped harness needs it either way, because a worker's transcript
+    # must land in its run whichever way it was launched. The codex home is a
+    # fence artefact: the fence seals the operator's ``~/.codex`` read-only and
+    # exposes the login into the run's home, so adopting a home exists to answer
+    # the seal and the missing home is what a codex launch uses when it is
+    # unfenced. Without the seal there is nothing to answer and no login in the
+    # new CODEX_HOME, so pointing it at an empty run home would displace the
+    # operator's login with nothing. An unfenced codex launch keeps the
+    # operator's own home.
     #
     # A manifest whose directory does not exist is not a live run — a preview
     # composes a plan before anything has been created — so no home is seeded
@@ -2034,7 +2041,8 @@ def launch_plan(
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    if harness is not None:
+    adopts_harness_home = dialect.name != "codex" or fence
+    if harness is not None and adopts_harness_home:
         seed_harness_home(harness)
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
     argv = dialect.argv(
