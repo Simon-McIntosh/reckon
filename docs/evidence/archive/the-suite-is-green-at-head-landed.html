@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The Suite Is Green At Head">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-09-24T20:20:00Z">
+  <meta name="plan-verdict" content="node crew-and-ledger-files-are-green: 23 owned ids reproduced red at base, 22 repaired, 1 named as a product defect and left red; test_crew.py 17 to 1 failed, test_ledger.py 6 to 0 failed; added failures 0">
+  <meta name="plan-environment" content="SLURM allocation on compute node 98dci4-clu-2058, Python 3.14, one pytest process per file with its own --basetemp, PYTHONPATH pointed at the worktree and the interpreter taken from the shared repository environment">
+  <meta name="plan-commits" content="14995811">
+  <title>The Suite Is Green At Head &mdash; landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <!-- One <section> per repair node; a later node appends its own section
+         rather than rewriting this file. -->
+
+    <section id="crew-and-ledger-files-are-green">
+      <h2>crew-and-ledger-files-are-green &mdash; the crew and ledger files</h2>
+      <p>Owned write scope: <code>tests/test_crew.py</code>, <code>tests/test_ledger.py</code>. The node
+      carried 23 of the failing node ids listed in the research record's repair table (17 in
+      <code>test_crew.py</code>, 6 in <code>test_ledger.py</code>). The &sect;1 cause group it repeats: most
+      are guards closed deliberately, without updating the tests that had been passing only because the
+      guard was open.</p>
+
+      <h3>What was measured</h3>
+      <ul>
+        <li><strong>Base revision <code>77c20349</code>, before any repair.</strong>
+        <code>tests/test_crew.py</code> &mdash; <strong>17 failed, 187 passed</strong> in 134 s,
+        log <code>/tmp/sg-logs/base-crew.log</code>.
+        <code>tests/test_ledger.py</code> &mdash; <strong>6 failed, 89 passed</strong> in 244 s,
+        log <code>/tmp/sg-logs/base-ledger.log</code>.</li>
+        <li><strong>Repaired head <code>14995811</code>.</strong>
+        <code>tests/test_crew.py</code> &mdash; <strong>203 passed, 1 failed</strong>,
+        log <code>/tmp/sg-logs/HEAD-crew.log</code>.
+        <code>tests/test_ledger.py</code> &mdash; <strong>95 passed, 0 failed</strong>,
+        log <code>/tmp/sg-logs/HEAD-ledger.log</code>. Each file ran in its own pytest process with its own
+        <code>--basetemp</code>.</li>
+        <li><strong>Added failures: 0.</strong> Against the base revision no node id in either owned file
+        moved from pass to fail. The only id still red is the one named as a product defect below.</li>
+        <li><strong>The declared negative control was executed and logged.</strong> Declared mutation,
+        repeated verbatim as the first line of the log: <em>run each repaired file as it stood at the base
+        revision and observe its listed ids fail with the recorded error</em>. With both files restored to
+        the base revision the run reports <strong>23 failed, 276 passed</strong> in 334 s, listing exactly the
+        23 owned ids. Log: <code>/tmp/sg-logs/negative-control.log</code>. No test in either file is
+        skipped, xfailed, deleted or weakened.</li>
+      </ul>
+
+      <h3>What each red id needed</h3>
+      <p>Twenty-two ids were repaired, each by the class named here; the twenty-third is the defect below.</p>
+      <table>
+        <thead><tr><th>Repair class</th><th>Count</th><th>What it turned on</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Assertion moved to the shipped behaviour</td>
+            <td>16</td>
+            <td>A guard had closed and the test still asserted the open behaviour: the dispatch authority
+            set follows the project's registered mount rather than the repository the caller names; the dry
+            run and the in-harness directive report the plan's shared landing paths beside the declared
+            scope; the pointer is published before the spawn and again once the pid is known, so the write
+            whose failure is under study is the post-spawn one; budget observation reads the newest unified
+            window, and that utilisation is the one gating a request; a pid held by another owner proves the
+            process alive rather than dead; promotion requires an explicit review waiver or a review, and
+            commits its own ledger row so nothing is left uncommitted.</td>
+          </tr>
+          <tr>
+            <td>Test isolation &mdash; the fixture, not the product</td>
+            <td>6</td>
+            <td>The assertion was right and the fixture did not reach the behaviour it named. The two session
+            tests are keyed to the task rather than the member, so a fixture that moved the node id measured
+            the member instead of the model. Ledger fixtures that write into a synthetic root with no git
+            history need the absent ledger initialised explicitly, and a dispatch that names a member
+            commits the state file, so the fixture must commit the row it seeds rather than let the dispatch
+            refuse on uncommitted content.</td>
+          </tr>
+          <tr class="r-fail">
+            <td>Product defect &mdash; left red</td>
+            <td>1</td>
+            <td><code>tests/test_crew.py</code> <code>test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code>:
+            see below.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Owed outside this node's fence</h3>
+      <p><code>launch-failed</code> is a fleet blocked state and is absent from the watch attention
+      vocabulary, so it is the one blocked state that cannot wake a follower. The failing assertion is the
+      test's final line, <code>assert bucket_states[1] &lt;= attention</code> in
+      <code>tests/test_crew.py</code>, which holds that every blocked state can wake a follower. The
+      behaviour is wrong rather than the assertion, on three independent readings of the shipped code:</p>
+      <ul>
+        <li><code>reckon/crew/ticker.py:172</code> lists <code>launch-failed</code> in
+        <code>NEEDS_ACTION</code> &mdash; the run needs an action from its owner.</li>
+        <li><code>reckon/crew/recovery.py:4413</code> derives
+        <code>FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))</code>, so
+        <code>launch-failed</code> is a blocked state by the fleet's own construction.</li>
+        <li><code>reckon/crew/recovery.py:3627</code> classifies a pointer into the
+        <code>launch-failed</code> state, so the state is reachable in production.</li>
+      </ul>
+      <p>Yet <code>reckon/crew/runs.py:2420</code>, <code>WATCH_ATTENTION_STATES</code>, omits it, so a
+      follower watching for work that needs attention is never woken by a run whose launch failed. The
+      omitted state was introduced without extending the attention vocabulary. The module is shared across
+      repair nodes, so this node names the defect rather than repairing it in place, and the coordinator cuts
+      a separate node for it. The third panel of the figure shows the two sets and the single difference.</p>
+
+      <h3>Evidence</h3>
+      <ul>
+        <li>Figure: <code>docs/figures/the-suite-is-green-at-head/repair_delta.png</code> &mdash; red ids by
+        file at base and at head by the class of repair, and the <code>launch-failed</code> difference
+        between the fleet blocked states and the watch attention vocabulary.</li>
+        <li>Repair commit: <code>14995811</code>.</li>
+        <li>Logs: base and head runs and the declared negative control, as named above, under
+        <code>/tmp/sg-logs/</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -73,7 +73,40 @@
       </tbody>
     </table>
 
-    
+    <div class="r-note" data-reckon="landed" data-node="crew-and-ledger-files-are-green" data-when="2026-09-24">
+    <p><strong>Outcome &mdash; the crew and ledger files are green but for one named defect.</strong>
+    The node owned <code>tests/test_crew.py</code> and <code>tests/test_ledger.py</code>, carrying 23 of the
+    failing node ids in <a href="/reckon/research/suite-failures-at-head#s4">Suite Failures At Head &#167;4</a>.
+    All 23 were reproduced red at the base revision <code>77c20349</code> before any repair
+    (<code>test_crew.py</code> 17 failed, 187 passed; <code>test_ledger.py</code> 6 failed, 89 passed), and
+    each was then attributed to one of the &#167;1 cause groups.</p>
+    <p>Twenty-two were <em>assertion</em> repairs: the assertion was moved to the shipped behaviour, with
+    the cause named, because a guard commit had closed without updating the tests that had been passing only
+    while the guard was open. Sixteen of those moved an expectation &mdash; the dispatch authority set follows
+    the project's registered mount rather than the repository the caller named; the dry run and the in-harness
+    directive report the plan's shared landing paths beside the declared scope; the pointer is published
+    before the spawn and again once the pid is known, so the failure under study is the post-spawn write;
+    budget observation reads the newest unified window, whose utilisation is the one that gates a request; a
+    pid another owner holds is proof of life rather than of death; promotion now requires an explicit review
+    waiver or a review, and commits its own ledger row. Six were <em>isolation</em> repairs, in which the
+    assertion was correct and the fixture was not: the session tests are keyed to the task rather than the
+    member, so a fixture that moved the node id measured the member instead of the model, and a ledger write
+    into a synthetic root needs the absent ledger initialised explicitly.</p>
+    <p>The twenty-third id, <code>test_every_live_state_*</code> (<code>tests/test_crew.py</code>,
+    <code>launch-failed</code>), found a <strong>product defect</strong> and is left red. A run whose launch
+    failed is a fleet blocked state, but it is absent from the watch attention vocabulary, so it is the one
+    blocked state that cannot wake a follower. The module is shared across repair nodes, so the defect is
+    named for the coordinator rather than repaired in place; it is recorded with the file, the line and the
+    evidence below and in <code>follow_ons</code>.</p>
+    <p>The node's own delta, measured on compute one pytest process per file with its own
+    <code>--basetemp</code>: <code>test_crew.py</code> 17 &rarr; 1 failed, <code>test_ledger.py</code> 6 &rarr;
+    0 failed, and no node id in either file moved from pass to fail. The declared negative control was
+    executed against the base revision and logged. Evidence, figure and log paths:
+    <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed">the cumulative evidence record</a>.</p>
+    <img src="/reckon/figures/the-suite-is-green-at-head/repair_delta.png"
+         alt="Left: failing node ids by owned file at the base revision and at the repaired head, 17 to 1 and 6 to 0. Middle: the 23 ids by the class of repair, 16 assertions moved to shipped behaviour, 6 test-isolation fixtures, 1 product defect left red. Right: the fleet blocked states and whether each wakes a follower, with launch-failed the only one that does not."
+         style="max-width:100%">
+    </div>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
