@@ -26,18 +26,19 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # a row used to spend on the oldest member of each outstanding bucket.
 AGE_PATTERN = re.compile(r"[0-9]+m[a-z]\b")
 
-# What the row no longer spends. The rate cell and the separator in front of it
-# are five columns, and the elapsed format is one column narrower than the clock
-# it replaced.
+# What the row no longer spends, in columns, measured rather than assumed. Each
+# figure below was read at the 180-column default from the revision's own
+# renderer with the blocked fixture this file uses: the previous revision's
+# render carries 120 fixed columns, a margin of 60, and starts its clause at
+# column 126 — the age cells took six of that margin. This revision carries 120
+# less the recovered six, a margin of 66, and starts its clause at column 114.
+# The assertions below tie the count to that geometry rather than to each other,
+# so a layout that moved without giving the columns back would fail here.
 RECOVERED_COLUMNS = 6
-# The fixed-column floor and the room left for the clause before the rate and
-# age cells gave their columns back. Both are read at the 180-column default
-# with three counters and no age cell rendered: the room is what the row has
-# left once the counters, the measure block and the separator ahead of the
-# clause are placed. They are stated here so the recovery is a count rather than
-# a claim; the assertions below tie them to live geometry, not to each other.
 FLOOR_BEFORE = 127
+FIXED_BEFORE = 120
 REASON_ROOM_BEFORE = 60
+REASON_ROOM_AFTER = 66
 
 # The clause the blocked fixture renders, so the row's fixed columns can be
 # lifted clear of it.
@@ -163,6 +164,19 @@ def test_the_floor_falls_by_the_recovered_columns():
     assert ticker_module.MIN_WIDTH == FLOOR_BEFORE - RECOVERED_COLUMNS
 
 
+def test_the_clause_starts_at_the_measured_column(grid):
+    """The clause begins where the recovered columns put it, not where they claim.
+
+    The base row's clause begins at column 126, which is the 120 fixed columns
+    plus the six the age cells took from the margin. This row's begins at 114 —
+    the fixed columns less the six the rate and age cells spent — so the count
+    is read off the row rather than taken from the constant beside it.
+    """
+    at = plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
+    assert at == FIXED_BEFORE - RECOVERED_COLUMNS, at
+    assert at == 180 - REASON_ROOM_AFTER, at
+
+
 def test_the_clause_gains_the_recovered_columns(grid):
     """The margin grew by the same count, and is still bounded there.
 
@@ -171,6 +185,7 @@ def test_the_clause_gains_the_recovered_columns(grid):
     recovered columns reached the clause rather than stopping at the counters.
     """
     room = 180 - plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
+    assert room == REASON_ROOM_AFTER, room
     assert room == REASON_ROOM_BEFORE + RECOVERED_COLUMNS, room
     whole = grid.render(_event(to_state="blocked", detail=("x" * (room - 1)) + "z"))
     elided = grid.render(_event(to_state="blocked", detail=("x" * room) + "z"))
