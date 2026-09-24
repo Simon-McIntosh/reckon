@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:18:17",
+  "updated": "2026-09-25T01:18:44",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -357169,6 +357169,323 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T190103240134-dispatch-scope-and-mount-refusals",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a72",
+        "node": "dispatch-scope-and-mount-refusals",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1142,
+                "cached_input_tokens": 241186,
+                "input_tokens": 242330,
+                "output_tokens": 418,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 242748,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "Every node id listed for this node in Suite Failures At Head section 4 either passes, or is named in follow_ons as a product defect or environment failure with its node id, file and line, and the evidence that the behaviour rather than the assertion is wrong; passing is measured by running each owned file in its own pytest process with its own --basetemp on this compute node, and no node id in the owned files moves from pass to fail against the base. The manifest states, for every repaired id, its cause and its class: stale expectation, product defect, test isolation or environment. For each repaired file the pre-repair version was run at base and observed failing with its recorded error, and that red log path is recorded. No test is skipped, xfailed, deleted or weakened to pass.",
+          "estimated_hours": null,
+          "goal": "The red test files owned by node dispatch-scope-and-mount-refusals pass at head",
+          "id": "dispatch-scope-and-mount-refusals",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T19:01:03Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 6,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom' or 'mean_context'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": "2026-09-24T19:00:57Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190103240134-dispatch-scope-and-mount-refusals/manifest.md",
+          "negative_control": "run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_mounted_paths.py",
+            "tests/test_crew_dispatch_guard.py",
+            "tests/test_shared_landing_paths.py",
+            "tests/test_crew_workspace_requirements.py",
+            "tests/test_refused_dispatch_leaves_no_pointer.py",
+            "tests/test_crew_dispatch_arming.py",
+            "tests/test_crew_runs_scope.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "suite-green-f",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T19:01:09Z",
+        "completed_at": "2026-09-24T20:38:08.814Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5743,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5819,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "77c20349aa33b7ddda106d6b3a35fa62f9549fa5",
+        "commits": [
+          "ed2054cc4a62939ea3ab4343e4d15bb057ee79b6"
+        ],
+        "changed_lines": {
+          "added": 1,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_mounted_paths.py tests/test_crew_dispatch_guard.py tests/test_shared_landing_paths.py tests/test_crew_workspace_requirements.py tests/test_refused_dispatch_leaves_no_pointer.py tests/test_crew_dispatch_arming.py tests/test_crew_runs_scope.py --deselect tests/test_refused_dispatch_leaves_no_pointer.py::test_a_pre_pointer_spawn_refusal_leaves_no_trace",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190103240134-dispatch-scope-and-mount-refusals/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190103240134-dispatch-scope-and-mount-refusals/manifest.md",
+        "scope_changed": false,
+        "session_id": "7bad6873-0810-494e-81fe-1aa4775ea1a7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 36813596,
+            "input_tokens_cumulative": 36813596,
+            "output_tokens": 170148,
+            "output_tokens_cumulative": 170148,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T20:38:08.814Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 15,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 88
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 37746428,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5710.49,
+          "generated_tokens": 204663,
+          "generation_seconds": 5260.051,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 450.439,
+          "peak_input_tokens": 166722,
+          "tokens_per_second": 38.91,
+          "wall_tokens_per_second": 35.84
+        },
+        "follow_on_paths": [
+          "tests/test_refused_dispatch_leaves_no_pointer.py",
+          "reckon/crew/dispatch.py:4057",
+          "subprocess.Popen",
+          "crew.dispatch",
+          "reckon/crew/dispatch.py.",
+          "reckon/crew/routing.py:1116",
+          "reckon/crew/dispatch.py",
+          "docs/evidence/archive/the-suite-is-green-at-head-landed.html"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest process",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/dispatch-scope-and-mount-refusals",
+          "session_id": "7bad6873-0810-494e-81fe-1aa4775ea1a7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T20:38:08.814Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T19:02:39Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T19:02:16Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T190103240134-dispatch-scope-and-mount-refusals",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 82,
+          "worker_pid": 859864
+        },
+        "promoted_revision": "ed2054cc4a62939ea3ab4343e4d15bb057ee79b6",
+        "plan_impl_at_dispatch": 0.1,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.1,
+          "at_complete": 0.56,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew_dispatch_arming.py",
+            "tests/test_crew_dispatch_guard.py",
+            "tests/test_crew_mounted_paths.py",
+            "tests/test_crew_runs_scope.py",
+            "tests/test_crew_workspace_requirements.py",
+            "tests/test_refused_dispatch_leaves_no_pointer.py",
+            "tests/test_shared_landing_paths.py"
+          ],
+          "declaration": "run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190103240134-dispatch-scope-and-mount-refusals/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190103240134-dispatch-scope-and-mount-refusals/logs/negative-control.log"
+        },
+        "commit_list_shortfall": {
+          "kind": "presented_commits_subset_of_manifest",
+          "presented": 1,
+          "declared": 7,
+          "missing": [
+            "24aeb95bde4c9ef139d0c00e7cfbd3025d00c0d5",
+            "3acee604e406234ee68b1713cf8406a976fa79fc",
+            "3cedb371c4d766023347f7659150f547760afbce",
+            "477b358ce1ee305d4762dd0d8cbb428a888b506a",
+            "e1785677ff16fa2eb8755842a7b402d9133c3076",
+            "f50f31c4e13632b4079e8798455843d5392cc645"
+          ],
+          "message": "run 'r-20260924T190103240134-dispatch-scope-and-mount-refusals' has a passing gate presenting 1 commit(s) of the 7 its manifest declares; missing: 24aeb95bde4c9ef139d0c00e7cfbd3025d00c0d5, 3acee604e406234ee68b1713cf8406a976fa79fc, 3cedb371c4d766023347f7659150f547760afbce, 477b358ce1ee305d4762dd0d8cbb428a888b506a, e1785677ff16fa2eb8755842a7b402d9133c3076, f50f31c4e13632b4079e8798455843d5392cc645. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal \u2014 present the full list, or the boundary check may not cover the node's work"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T20:01:03.795952+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T19:01:03Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 6,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no numeric 'headroom' or 'mean_context'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": "2026-09-24T19:00:57Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 4.0,
+        "orientation_input_tokens": 11274532.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -357481,6 +357798,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2543
+    "_version": 2544
   }
 }
