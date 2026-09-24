@@ -96,15 +96,17 @@
     <h3>Measured</h3>
     <ul>
       <li><strong>All three behaviours asserted</strong> on a synthetic config home with two live
-      runs, head <code>39dee90a</code> against base <code>a130260c</code>:
+      runs, head <code>d5773b49</code> against base <code>a130260c</code>:
       <code>crew(view="live", fields=["classification","node"])</code> returns rows whose key set is
-      exactly <code>{run_id, classification, node}</code>; an unknown field is refused naming the
-      accepted set; and a <code>runs</code> read with <code>source="live"</code> returns the three
-      fields equal to <code>classify_pointer</code> for the same pointer, populated from a real git
-      worktree and log file. 3 passed.</li>
+      exactly <code>{run_id, classification, node}</code>; a <code>fields=["phase","process_alive"]</code>
+      read returns exactly <code>{run_id, phase, process_alive}</code>; a session-scoped
+      <code>fields=["node"]</code> read keeps <code>mine</code> on every row; an unknown field is
+      refused naming the live set; and a <code>runs</code> read with <code>source="live"</code> returns
+      the three fields equal to <code>classify_pointer</code> for the same pointer, populated from a
+      real git worktree and log file. 4 passed.</li>
       <li><strong>The declared negative control is executed and logged:</strong> removing the fields
-      projection from the live arm makes the projection test fail, the row key set growing from three
-      to the whole classification.</li>
+      projection from the live arm makes three of the four tests fail, every live row coming back as
+      the whole 48-key classification.</li>
       <li><strong>No new lint findings</strong> in the three edited files against base
       <code>a130260c</code> (21 against 22 at base).</li>
     </ul>
