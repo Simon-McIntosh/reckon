@@ -290,13 +290,17 @@
       (exit 0), each logged; under the declared mutation it is red again (exit 1), so the repaired
       branch is one the test can still drive. Both synthetic-tree runs pin the product tree with
       <code>PYTHONPATH</code>. Across the twenty-four test files importing
-      <code>reckon.crew.promotion</code>, base and head are 275 passed / 1 failed; the base failure
-      is this defect and the head failure is a load-induced timing flake in
-      <code>test_receipt_after_release</code> that passes alone at the same revision and whose
-      promotion call passes <code>gate_check=None</code>, so it never reaches the edited branch.
-      Attributable added failures: none. The test file is read, never edited.</p>
+      <code>reckon.crew.promotion</code>, base is 274 passed / 2 failed and head is 275 passed /
+      1 failed. The one failure the change removes is this defect. The other is a load-induced
+      timing flake in <code>test_receipt_after_release</code> present at both revisions &mdash; its
+      promotion call passes <code>gate_check=None</code>, so it never reaches the edited branch, and
+      it passes alone. Attributable added failures: none. The test file is read, never edited.</p>
 
-      <p>Commits: <code>81179778</code>. Full per-run logs, the delta table and the negative control:
+      <p>Commits: <code>81179778</code>, <code>67d5e552</code>. Full per-run logs and the delta
+      table: <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#a-digest-only-gate-check-is-kept">the
+      cumulative landed record</a>.</p>
+
+      <p>
       <img src="/reckon/figures/the-suite-is-green-at-head/digest-gate-check-states.svg"
       alt="Three states of the same digest-only gate check: base refuses it, head accepts it, the
       declared mutation returns it to refusal."></p>

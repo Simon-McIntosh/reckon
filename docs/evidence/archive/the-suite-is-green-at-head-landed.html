@@ -450,18 +450,20 @@ Error: a passing gate requires the check that produced it;
       twenty-three others). All twenty-four ran at base and at head, on compute, with
       <code>-n 8</code> and its own <code>--basetemp</code>.</p>
       <table>
-        <thead><tr><th>Suite</th><th>Revision</th><th>Passed / failed</th><th>Failing id</th></tr></thead>
+        <thead><tr><th>Suite</th><th>Revision</th><th>Passed / failed</th><th>Failing ids</th></tr></thead>
         <tbody>
-          <tr><td>base</td><td><code>c1e014bf</code></td><td>275 / 1</td><td>the digest test (the defect)</td></tr>
-          <tr><td>head</td><td><code>81179778</code></td><td>275 / 1</td><td><code>test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td></tr>
+          <tr><td>base</td><td><code>c1e014bf</code></td><td>274 / 2</td><td>the digest test (the defect); <code>test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td></tr>
+          <tr><td>head</td><td><code>81179778</code> (tree at <code>67d5e552</code>)</td><td>275 / 1</td><td><code>test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td></tr>
         </tbody>
       </table>
-      <p>The head suite's single failure is a timing assertion (<code>elapsed &lt; 2.0</code>,
-      <code>3.39&nbsp;s</code> observed) in <code>tests/test_receipt_after_release.py</code>. It is
-      not this change: its promotion call passes <code>gate_check=None</code>, so the branch this
-      node edited is never reached, and it passes alone at the same revision
+      <p>The head suite's single failure is a timing assertion (<code>elapsed &lt; 2.0</code>) in
+      <code>tests/test_receipt_after_release.py</code>. It is present at <em>both</em> revisions, so
+      it is not attributable to this change: the digest test is the one failure the change removes,
+      and the flake is unchanged. Its promotion call passes <code>gate_check=None</code>, so the
+      branch this node edited is never reached, and it passes alone at the same revision
       (<code>timing-serial.log</code>, 1 passed, exit 0). It is recorded as a load-induced flake,
-      not retried until green. Attributable added failures against the base revision: none.</p>
+      not retried until green. Attributable added failures against the base revision:
+      <strong>none</strong>.</p>
 
       <p><strong>Negative control — the declared mutation returns the pinned test to red.</strong>
       The mutation is declared verbatim: <em>restore 'return None' on _preserve_cited_gate_log's
