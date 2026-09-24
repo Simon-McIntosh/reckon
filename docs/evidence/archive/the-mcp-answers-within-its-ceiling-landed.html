@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-mcp-answers-within-its-ceiling-landed">
+  <meta name="plan-title" content="The MCP Answers Within Its Ceiling — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="the-mcp-answers-within-its-ceiling">
+  <title>The MCP Answers Within Its Ceiling — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The MCP Answers Within Its Ceiling — cumulative execution record</h1>
+    <p>
+      One anchor per landed node: the commit, the gate measure as executed, the tests, and anything
+      negative found on the way. The evergreen plan holds the design; this record holds what
+      happened.
+    </p>
+
+    <h2 id="s4-crew-read-honours-fields">&sect;4 — A crew read returns the fields it was asked for</h2>
+    <p>
+      Commits <code>39dee90a</code> (the projection and the widened runs vocabulary) and
+      <code>d5773b49</code> (live field validation against the live set) in the
+      <code>crew-live-honours-fields</code> worktree, base revision <code>a130260c</code>.
+    </p>
+
+    <p>
+      A narrowed <code>live</code> read returns the requested fields plus <code>run_id</code>, so the
+      key count falls from the whole classification to the request. The <code>runs</code> read is
+      additive: it always carries its base row, and the three coordinator fields widen the request.
+      The counts, measured:
+    </p>
+    <table>
+      <thead><tr><th>Read</th><th>Keys</th><th>Request</th></tr></thead>
+      <tbody>
+        <tr><td><code>live</code>, no <code>fields</code></td><td>48</td><td>the whole classification</td></tr>
+        <tr><td><code>live</code>, <code>fields=["classification","node"]</code></td><td>3</td><td>two fields plus <code>run_id</code></td></tr>
+        <tr><td><code>runs</code>, default</td><td>15</td><td>the compact base row</td></tr>
+        <tr><td><code>runs</code>, the three coordinator fields</td><td>18</td><td>base row plus three</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The defect, reproduced</h3>
+    <p>
+      <code>crew(view="live", fields=[…])</code> accepted the list and ignored it: the live arm
+      called <code>classify_pointer</code> per pointer and returned every field of the
+      classification, so the compact projection the <code>runs</code> view applies was never reached
+      on this path. <code>crew(view="runs")</code> honoured <code>fields</code> but refused the three
+      fields a coordinator checks first, because they were absent from the accepted set.
+    </p>
+    <p>
+      A second defect sat in the projection itself. It validated a requested field against the
+      compact <code>runs</code> vocabulary, so <code>fields=["phase"]</code> was refused although
+      every live row carries <code>phase</code>, and a field with no compact counterpart such as
+      <code>next_action</code> could not be asked for at all. When <code>session</code> was supplied,
+      the projection also dropped <code>mine</code>, so a session-scoped read that narrowed its
+      columns lost the one column the <code>session</code> argument exists to add.
+    </p>
+
+    <h3>The change</h3>
+    <ul>
+      <li><code>reckon/crew/query.py</code> — <code>commits_beyond_base</code>,
+        <code>log_age_seconds</code> and <code>manifest_reported_status</code> joined
+        <code>OPTIONAL_RUN_FIELDS</code>, so the existing refusal widened to accept them and the
+        compact row carries them from the same classification the live path computes. A new
+        <code>session</code>-aware <code>project_live_rows</code> classifies and, when
+        <code>fields</code> is given, projects each row to the requested fields plus
+        <code>run_id</code>. A requested field is now validated against the keys the live
+        classification actually produces — plus <code>mine</code> when a session was supplied — rather
+        than against the compact runs vocabulary, and <code>mine</code> is kept on every projected row
+        when <code>session</code> is given.</li>
+      <li><code>reckon/mcp.py</code> — the <code>live</code> arm routes through
+        <code>project_live_rows</code>, so the requested fields are honoured; the <code>mine</code>
+        marker is computed from the full classification and survives projection.</li>
+    </ul>
+
+    <h3>The gate measures, as executed</h3>
+    <p>
+      <code>tests/test_crew_live_honours_fields.py</code> on a synthetic config home with two live
+      runs, head <code>d5773b49</code> against base <code>a130260c</code>. Four tests, all passing:
+    </p>
+    <ul>
+      <li><strong>Live projection.</strong> <code>crew(view="live", fields=["classification",
+        "node"])</code> returns two rows whose key set is exactly
+        <code>{run_id, classification, node}</code>.</li>
+      <li><strong>Live-only fields are requestable.</strong>
+        <code>fields=["phase","process_alive"]</code> returns rows whose key set is exactly
+        <code>{run_id, phase, process_alive}</code> — names the compact runs vocabulary does not
+        carry.</li>
+      <li><strong>A session-scoped read keeps <code>mine</code>.</strong>
+        <code>fields=["node"]</code> with <code>session="session-run-1"</code> returns rows whose key
+        set is exactly <code>{run_id, node, mine}</code>, with <code>mine</code> true for the run
+        whose session matches and false for the other.</li>
+      <li><strong>Refusal names the live set.</strong> <code>fields=["not_a_field"]</code> returns
+        <code>ok: False</code> with a detail beginning <code>unknown live fields</code> and naming
+        <code>phase</code>, <code>process_alive</code>, <code>next_action</code> and
+        <code>classification</code> among the accepted fields.</li>
+      <li><strong>The three fields are populated from the classification.</strong> A
+        <code>runs</code> read with <code>source="live"</code> returns the three values equal to
+        <code>classify_pointer(row)</code> for the same pointer, with
+        <code>manifest_reported_status == "in-progress"</code>,
+        <code>commits_beyond_base == 1</code> (a real git worktree one commit past its base), and
+        <code>log_age_seconds</code> an int from the run's own log file.</li>
+    </ul>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>remove the fields projection from the live arm.</em> Applied to
+      <code>reckon/mcp.py</code> (the <code>fields=</code> argument dropped from the
+      <code>project_live_rows</code> call) and run over the whole gate: three of the four tests fail —
+      the projection test, the <code>mine</code> test and the refusal test — because every live row
+      comes back as the whole 48-key classification, so the key set, the <code>mine</code> column and
+      the <code>unknown live fields</code> refusal all disappear. The log is recorded beside the run.
+      The control was then reverted and the tree returned to the committed revision.
+    </p>
+
+    <h3>Findings outside this node's scope</h3>
+    <p>
+      <code>tests/test_crew_runs_scope.py::test_runs_scope_joins_every_configured_project_without_reading_fallback_home</code>
+      fails at this base revision, before this change, at an unrelated site:
+      <code>ledger.append_run</code> refuses to create the ledger because
+      <code>_ledger_ever_tracked</code> returns <code>None</code> for a ledger path under a
+      non-checkout temp directory. Reproduced independently of this change by calling
+      <code>ledger.append_run</code> on a fresh non-git temp tree. The test file itself is
+      unmodified here; the defect names <code>reckon/ledger.py</code>, which another node holds.
+    </p>
+
+  </main>
+</body>
+</html>
