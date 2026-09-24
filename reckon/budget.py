@@ -1400,6 +1400,28 @@ def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[
     return names
 
 
+def _published_windows(
+    document: Mapping[str, Any] | None,
+    document_path: str | Path | None,
+    moment: datetime,
+) -> dict[str, Any]:
+    """Read the published headroom document into one window reading per account.
+
+    The document is the observer's one reconciled record of every metered
+    account, so a caller that names no window source paces to it. Reading is
+    delegated to :mod:`reckon.crew.paid_lanes`, which owns the document's shape;
+    this module reads its own recorded evidence through :func:`recorded_windows`
+    and takes the published document only when nothing was injected, so an
+    explicit reading always wins.
+    """
+    from reckon.crew import paid_lanes
+
+    resolved = document
+    if resolved is None:
+        resolved = paid_lanes.read_document(document_path)
+    return paid_lanes.document_windows(resolved, moment=moment)
+
+
 def preflight(
     project: str,
     config: Mapping[str, Any],
@@ -1414,6 +1436,8 @@ def preflight(
     | None = None,
     windows: Mapping[str, Any] | None = None,
     ready: Iterable[Mapping[str, Any]] = (),
+    document: Mapping[str, Any] | None = None,
+    document_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Decide, per backend, whether a wave may open, and at what pace.
 
@@ -1436,8 +1460,20 @@ def preflight(
     the bar the stated ready set is judged against — see :func:`group_pace`. Both
     are optional, and a wave that names neither still gets the hold decision and
     a group block reading unknown, which is what absence of a signal means.
+
+    ``windows`` is the caller's own reading and always wins when given. When it
+    is absent the pace is read from the published headroom document -- through
+    ``document`` directly, or ``document_path``, or the document's default
+    location -- so the per-group figures and the per-backend accounts they are
+    drawn from come from one reconciled record rather than two readers.
     """
     moment = _now(now)
+    if windows is None:
+        # No caller-injected reading: pace from the published headroom document,
+        # which is the one place every metered account's windows are observed and
+        # reconciled. An absent document reads as no reading, so a host that has
+        # not run the observer yet reports unknown rather than a fabricated zero.
+        windows = _published_windows(document, document_path, moment)
     policy_block = policy(config)
     configured = config.get("backends") or {}
     if backends is not None:
