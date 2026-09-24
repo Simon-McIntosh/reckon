@@ -73,6 +73,70 @@
       </tbody>
     </table>
 
+    <div data-reckon="landing" data-node="dispatch-tests-declare-a-valid-node">
+      <h3>Landed &mdash; the nine owned files pass at head, 25 recorded ids repaired</h3>
+      <p><strong>Cause group repaired.</strong> Every one of the nine files was red for cause group 4
+      in <a href="/reckon/research/suite-failures-at-head">Suite Failures At Head</a>: assertions that
+      passed only while a guard was open, not a defect in the behaviour under test. The repairs move
+      the assertion to the shipped rule in all nine files and move no behaviour. The guards whose
+      closures the files had not absorbed are the declared specification level
+      (<code>d5811b20</code>), the lane-declaration refusal now gated on a budget-checking backend
+      (<code>f2b2c2c2</code>), session reuse keyed to the task rather than to the member
+      (<code>4cfc76a4</code>), the required declaration of a negative control when a node writes a
+      test file, and the grant of the shared landing paths to every node's write scope.</p>
+
+      <p><strong>What each file needed.</strong> Seven files needed only the missing declarations on
+      the node they build: a specification level (<code>test_crew_cross_project_claims</code>,
+      <code>test_crew_dryrun</code>, <code>test_crew_ephemeral_members</code>,
+      <code>test_crew_members</code>, <code>test_crew_watch_visibility</code>,
+      <code>test_execution_fit</code>) and, for <code>test_crew_routes</code>, a declared negative
+      control as well, because its node writes a test path (<code>tests/large_context.py</code>).
+      Two files needed their subject restated: <code>test_a_brief_points_rather_than_quotes</code>
+      compared two dry runs field by field, so the lane advisory's two wall-clock stamps
+      (<code>read_at</code>, <code>horizon_ends_at</code>) differed between invocations of the same
+      dispatch and are now masked before the comparison; and
+      <code>test_dispatch_lane_disagreement</code> resolved a member harness without a declared lane
+      against a backend with no budget check, which no longer refuses, so it now resolves
+      <code>alpha</code> &mdash; a budget-checking backend &mdash; and asserts the refusal's shipped
+      wording, which names the metered resolution, the absent declaration, and the unmetered
+      alternative that would serve the node.</p>
+
+      <p><strong>Two ids renamed to the shipped rule, with the recorded id they replace.</strong>
+      <code>test_bare_session_from_member_add_resumes_and_then_records_its_configuration</code>
+      asserted that a session recorded by <code>member add</code> is offered to a node that never ran
+      it, which is the reuse <code>4cfc76a4</code> removed; it is now
+      <code>test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code>, and
+      its body asserts that the first dispatch starts fresh (no <code>resume</code> in the composed
+      argv, no session id) and that completing the run's stream records the configuration it ran
+      under. <code>test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code>
+      claimed the same member-keyed reuse across two different node ids; the capture still lands on
+      the roster, keyed by the run's agent configuration and owned by the coordinator that opened it,
+      but a later node of that member starts a fresh conversation. Its body now asserts the member
+      reuse, the roster capture and its owner, and the named absence
+      (<code>dispatch-no-same-task-session</code>) on the follow-up run.</p>
+
+      <p><strong>Evidence.</strong> The gate ran on compute, one pytest process per file, each with
+      its own <code>--basetemp</code>: <strong>57 passed, 0 failed</strong> across
+      <code>test_a_brief_points_rather_than_quotes</code> (13),
+      <code>test_crew_cross_project_claims</code> (10), <code>test_crew_dryrun</code> (4),
+      <code>test_crew_ephemeral_members</code> (1), <code>test_crew_members</code> (3),
+      <code>test_crew_routes</code> (13), <code>test_crew_watch_visibility</code> (5),
+      <code>test_dispatch_lane_disagreement</code> (7), <code>test_execution_fit</code> (1), at base
+      revision <code>77c20349</code>. The negative control ran each file's base content, selecting
+      the recorded ids: <strong>25 of 25 failed, none passed</strong>, so every repaired assertion is
+      one that can still fail. The source tree is unmodified by this node, so no other file's
+      behaviour moved.</p>
+
+      <p>Full evidence, per-file logs and the negative-control log:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed">the cumulative landed
+      record</a>.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/recorded-ids-and-repaired-files.png"
+      alt="Horizontal bars per owned test file: red bars are the recorded failing ids at base, green
+      bars are the tests passing at the repaired head. Twenty-five red ids in total; fifty-seven
+      tests green at head."></p>
+    </div>
+
     
 
     <section data-reckon="followups" id="followups" class="r-followups">

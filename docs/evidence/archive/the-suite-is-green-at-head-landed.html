@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head-landed">
+  <meta name="plan-title" content="The Suite Is Green At Head — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence record for the suite-repair plan: the measured failure inventory at head, and per-node sections as each repair lands — the red file set, the cause group, the repaired ids and the negative control that keeps the repairs falsifiable.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s1,the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="de851cfa">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <title>The Suite Is Green At Head — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>The Suite Is Green At Head — landed evidence</h1>
+      <p class="plan-summary">This cumulative record holds the evidence for the suite-repair plan. Each repair node appends its own section as it lands: the red files it owned, the cause group behind them, the ids it repaired, and the negative control that shows the repaired assertions can still fail. The question the record answers is deliberately narrow — not "does the suite pass" but "was each red file red for the cause the repair names, and does the repaired assertion still bind".</p>
+    </header>
+
+    <section id="nine-crew-test-files">
+      <h2>The nine crew test files: 25 recorded ids red at base, 57 tests green at the repaired head</h2>
+
+      <p><strong>Scope.</strong> Nine test files owned by one repair node, carrying 25 of the failing node ids recorded for the plan's repair partition. One pytest process per file, each with its own <code>--basetemp</code>, never the whole suite in one process.</p>
+
+      <p><strong>Revisions.</strong> Base <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>; the repair is <code>de851cfa</code>, which changes the nine test files and no product source. Because the source tree is untouched, a reading at the repaired head differs from base only through the test files — which is what makes the comparison below a statement about the repairs rather than about the fleet.</p>
+
+      <p><strong>Cause.</strong> Every id was red for the same cause group: an assertion that had been passing only because a guard was open. The guards whose closures the files had not absorbed are the now-required declaration of a specification level, the required negative-control declaration on a node that writes a test path, a lane-declaration refusal that is now gated on the backend being metered rather than on the caller's silence, session reuse keyed to the task rather than to the member, and the grant of the shared landing paths to every node's write scope. The repairs move the assertion in all nine files and move no behaviour; the one file that compares two dry runs field by field now masks the lane advisory's wall-clock stamps, which differ between invocations of the same dispatch.</p>
+
+      <p><strong>Result at the repaired head — 57 passed, 0 failed.</strong>
+      <code>test_a_brief_points_rather_than_quotes</code> 13,
+      <code>test_crew_cross_project_claims</code> 10,
+      <code>test_crew_dryrun</code> 4,
+      <code>test_crew_ephemeral_members</code> 1,
+      <code>test_crew_members</code> 3,
+      <code>test_crew_routes</code> 13,
+      <code>test_crew_watch_visibility</code> 5,
+      <code>test_dispatch_lane_disagreement</code> 7,
+      <code>test_execution_fit</code> 1. Exit status <code>0</code> for every file's process.</p>
+
+      <p><strong>Negative control — 25 of 25 recorded ids failed, none passed.</strong> Each file was run as it stood at the base revision, selecting only the recorded ids, from a copy of the base content placed under a synthetic root so that the tree's own provenance never enters the reading. The first line of the control log states the control being run. All 25 ids failed with their recorded errors, so none of the repaired assertions is a test that would have passed at base anyway — each is one that can still fail. Full transcript: <code>negative-control.log</code> in the node's run directory, whose first line reads <em>run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error</em>.</p>
+
+      <p><strong>Two ids renamed to the rule they assert.</strong>
+      <code>test_bare_session_from_member_add_resumes_and_then_records_its_configuration</code> and
+      <code>test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code> claimed the
+      member-keyed session reuse that task-keyed reuse replaced. The first is now
+      <code>test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code>; the
+      second keeps its name and asserts the member reuse, the roster capture keyed to the run's agent
+      configuration and its owning coordinator, and the named absence
+      (<code>dispatch-no-same-task-session</code>) recorded on a follow-up node of that member. The
+      recorded id is written beside its replacement here because the rename removes it from the tree.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/recorded-ids-and-repaired-files.png"
+      alt="Horizontal bars per owned test file: red bars are the recorded failing ids at base, green bars are the tests passing at the repaired head. Twenty-five red ids in total; fifty-seven tests green at head."></p>
+
+      <p><strong>Not evidence for.</strong> This section does not claim the suite is green at head. Eight further repair nodes own the remaining red files, and the plan's §2 measure "Green at the integrated head" is answered by one full-suite run at the merged head after every node lands — which no node's own file-local reading can stand in for.</p>
+    </section>
+  </main>
+</body>
+</html>
