@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -87,6 +87,93 @@
     re-holding, because the ensure is reached through placement resolution and an undeclared
     backend never resolves a placement &mdash; so the rollback does not have to defeat the
     automatic re-hold, only to remove what triggers it.</p>
+    <p>The cutover also moves every background crew process, not only the agent sessions.
+    That means per-project producers, followers, and dispatch and complete loops, placed in
+    the order §4 sets. <strong>The proof</strong> is a census of the login node listing no
+    crew producer, follower or dispatch loop, beside the job ids of those processes on the
+    allocation. A configuration saying they are placed is not the proof.</p>
+
+    <h2 id="s4">&sect;4 &mdash; What moves, and in what order</h2>
+    <p><strong>The load is mostly not the sessions.</strong> Measured 2026-09-23 by
+    imas-ambix-b6: five per-project <code>reckon crew watch</code> producers used about 60% of
+    the login node's four-core quota (48, 48, 42, 26 and 15% of a core), while all agent
+    sessions together used 12%. The storage event that night added followers, dispatch loops
+    and unbounded searches that had outlived their sessions (imas-ambix's research note
+    <code>login-node-storage-contention</code>). Moving only the sessions would move the small
+    half.</p>
+    <p><strong>What the move buys, stated so it is not overclaimed.</strong> A process blocked
+    on GPFS adds to the load average of the node it runs on, and it queues behind that node's
+    single GPFS daemon. Moving processes to the allocation takes them off the login node's
+    load average and its daemon queue, so editors, git and interactive sessions stop waiting
+    behind them. It does not reduce metadata pressure on the filesystem itself: the same
+    <code>stat</code> and walk load reaches the same metadata service from
+    <code>98dci4-clu-2002</code>. Reducing that load is
+    <code>a-crew-process-ends-with-its-owner</code>'s job. The report for this plan claims
+    login-node relief and nothing more.</p>
+    <p><strong>Where.</strong> <code>rigel</code> carries infinite walltime. The fleet
+    allocation <code>ambix-fleet</code> (job 1276262) has been held there on
+    <code>98dci4-clu-2002</code> with an UNLIMITED limit (23 h 42 min at 2026-09-24 04:59Z).
+    Every <code>*_debug</code> partition caps at one hour and can never host a persistent
+    fleet.</p>
+    <p><strong>Order: producers first, sessions last.</strong> Producers are the measured
+    load. They carry no TTY or messaging risk, and they can be moved one at a time with the
+    rest of the fleet untouched. The existing producers are children of no current session,
+    so each is stopped and re-armed from inside the allocation deliberately; nothing moves
+    them otherwise. Followers and dispatch loops move with their parent session, because a
+    placed parent places its children. Sessions move last, in one operation.</p>
+    <figure>
+      <svg viewBox="0 0 760 200" role="img" aria-label="Session topology after the cutover" style="max-width:100%;font-family:system-ui,sans-serif;font-size:13px">
+        <rect x="10" y="20" width="250" height="160" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="20" y="42" fill="#111">login node 98dci4-srv-1006</text>
+        <rect x="30" y="60" width="210" height="40" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="135" y="85" text-anchor="middle" fill="#111">zellij server and panes</text>
+        <text x="30" y="130" fill="#111">editors, git, interactive shells</text>
+        <text x="30" y="160" fill="#555">/run/user: zellij socket stays here</text>
+        <rect x="420" y="20" width="330" height="160" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="430" y="42" fill="#111">allocation ambix-fleet on 98dci4-clu-2002 (rigel)</text>
+        <text x="440" y="75" fill="#111">claude sessions (one step per pane)</text>
+        <text x="440" y="100" fill="#111">followers and dispatch loops</text>
+        <text x="440" y="125" fill="#111">per-project producers</text>
+        <text x="440" y="150" fill="#111">workers, as steps in the reservation</text>
+        <text x="440" y="172" fill="#555">/run/user: cc-socks for every placed session</text>
+        <line x1="240" y1="80" x2="420" y2="75" stroke="#333"/>
+        <text x="330" y="68" text-anchor="middle" fill="#111">srun --overlap --pty</text>
+      </svg>
+      <figcaption>Each zellij pane on the login node runs its claude session as an
+      <code>srun --overlap --pty --jobid=&lt;fleet&gt;</code> step in the allocation. If the
+      allocation ends, each pane's step exits and leaves a prompt in a live zellij session,
+      rather than taking days of session state with it.</figcaption>
+    </figure>
+    <p><strong>Three constraints on the session move</strong>, each measured or checked
+    rather than assumed:</p>
+    <ul>
+      <li><strong>zellij stays on the login node.</strong> <code>/run/user/&lt;uid&gt;</code>
+      is node-local, so a zellij server started inside the allocation would be invisible from
+      the login node, and an ended allocation would take the server with it.</li>
+      <li><strong>The sessions move in one operation.</strong> Cross-session messaging uses
+      node-local sockets under <code>/run/user/&lt;uid&gt;/cc-socks</code>. A half-migrated
+      fleet splits into two islands that cannot message each other, and a send to an
+      unreachable peer looks like any other send.</li>
+      <li><strong>The launcher unsets the compute node's <code>uv</code> function.</strong>
+      There the login shell defines <code>uv</code> as a function that injects its own
+      <code>--no-sync</code>, so an explicit one becomes a duplicate and uv exits 2 (measured
+      2026-09-07). The launcher runs <code>unset -f uv</code> and calls <code>command
+      uv</code>, so no user has to remember it.</li>
+    </ul>
+    <p><strong>Done when</strong>, in this order:</p>
+    <ol>
+      <li><code>srun --overlap --pty --jobid=&lt;fleet&gt;</code> from a zellij pane runs an
+      interactive claude session with a working TTY. This is untested here, so it goes first:
+      if <code>--pty</code> and <code>--overlap</code> do not compose, the session half stops
+      at this step.</li>
+      <li>The producer of every active project runs as a step in the reservation, proven by
+      its job id, and none remains on the login node.</li>
+      <li>The sessions move in one operation. A cross-session message between two placed
+      sessions is delivered, and the login node shows no remaining claude session of the
+      fleet.</li>
+      <li>A placed session runs <code>uv run --no-sync</code> successfully through the
+      launcher.</li>
+    </ol>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -105,7 +192,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Place the fleet, measure the throttled fraction, and show the re-hold</h4>
-    <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it.</p></div>
+    <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it. Move every background crew process in the order §4 sets: first prove <code>srun --overlap --pty</code> composes from a zellij pane; then move producers, proven by job id, with none left on the login node; then move all sessions in one operation, with a cross-session message delivered between two placed sessions; and a placed session runs <code>uv run --no-sync</code> through the launcher. Claim login-node relief only, not reduced GPFS pressure.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
     </article>
 </section>
