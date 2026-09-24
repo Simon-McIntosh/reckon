@@ -103,6 +103,44 @@ def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
     return (*DEFAULT_RUN_FIELDS, *extras)
 
 
+def _live_field_vocabulary(
+    classified: Sequence[Mapping[str, Any]], *, with_mine: bool
+) -> set[str]:
+    """Return the field names a live row carries.
+
+    The live view serves whole classifications rather than the compact model,
+    so its accepted set is the keys :func:`classify_pointer` produces — read
+    from the rows in hand, and from a classification of an empty pointer when
+    there are none, because the shape does not depend on the record. ``mine``
+    is a field of the request, not of the classification, so it joins only when
+    a session was supplied.
+    """
+    vocabulary: set[str] = set()
+    for row in classified:
+        vocabulary.update(row)
+    if not vocabulary:
+        vocabulary.update(classify_pointer({}))
+    if with_mine:
+        vocabulary.add("mine")
+    return vocabulary
+
+
+def _refuse_unknown_live_fields(
+    requested: Iterable[str], classified: Sequence[Mapping[str, Any]], *, with_mine: bool
+) -> None:
+    """Reject field names a live row does not carry, naming the live set."""
+    vocabulary = _live_field_vocabulary(classified, with_mine=with_mine)
+    unknown = sorted(set(requested) - vocabulary)
+    if not unknown:
+        return
+    raise RunQueryError(
+        "unknown live fields "
+        + ", ".join(repr(field) for field in unknown)
+        + "; live fields are "
+        + ", ".join(sorted(vocabulary))
+    )
+
+
 def project_live_rows(
     records: Iterable[Mapping[str, Any]],
     *,
@@ -115,11 +153,15 @@ def project_live_rows(
     ignored. A request now narrows each row to the fields asked for, always
     carrying :data:`LIVE_ROW_ANCHOR` so a projected row still names its run.
     Omitting ``fields`` returns the whole classification, which is what every
-    caller that does not narrow receives. An unknown field is refused here
-    through the same accepted set the compact read model validates against.
+    caller that does not narrow receives. A requested field is validated
+    against the names a live row actually carries — the classification keys,
+    plus ``mine`` when a session is supplied — so a field like ``next_action``
+    can be asked for where the compact runs vocabulary has no such name.
 
-    ``session`` marks which rows belong to the caller's own session, computed
-    from the full classification so the marker survives projection.
+    ``session`` marks which rows belong to the caller's own session. The marker
+    is computed from the full classification and kept on every projected row,
+    because a session-scoped read that dropped ``mine`` would answer nothing
+    about which rows are the caller's.
     """
     classified = [classify_pointer(record) for record in records]
     if session is not None:
@@ -128,8 +170,10 @@ def project_live_rows(
     if fields is None:
         return classified
     requested = _requested_field_names(fields)
-    _refuse_unknown_fields(requested)
-    selected = tuple(dict.fromkeys((LIVE_ROW_ANCHOR, *requested)))
+    with_mine = session is not None
+    _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
+    always = (LIVE_ROW_ANCHOR, "mine") if with_mine else (LIVE_ROW_ANCHOR,)
+    selected = tuple(dict.fromkeys((*always, *requested)))
     return [{field: row.get(field) for field in selected} for row in classified]
 
 

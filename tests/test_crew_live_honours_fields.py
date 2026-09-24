@@ -125,6 +125,17 @@ def test_live_view_returns_exactly_the_requested_fields(
     for row in result["runs"]:
         assert set(row) == {"run_id", "classification", "node"}
 
+    # A live row carries fields the compact runs vocabulary has no name for,
+    # and those are requestable too.
+    classifier_fields = mcp._crew(
+        PROJECT,
+        view="live",
+        checkout_path=str(repository),
+        fields=["phase", "process_alive"],
+    )
+    for row in classifier_fields["runs"]:
+        assert set(row) == {"run_id", "phase", "process_alive"}
+
     # With no fields requested the whole classification is still served, so a
     # caller that never narrows keeps what it always received.
     whole = mcp._crew(PROJECT, view="live", checkout_path=str(repository))
@@ -132,7 +143,30 @@ def test_live_view_returns_exactly_the_requested_fields(
         assert "log_age_seconds" in row and "manifest_reported_status" in row
 
 
-def test_live_view_refuses_an_unknown_field_naming_the_accepted_set(
+def test_live_view_keeps_mine_when_a_session_is_given(
+    isolated_reckon_home: Path, tmp_path: Path
+) -> None:
+    """A session-scoped narrowed read still says which rows are the caller's."""
+    repository, _records = _two_live_runs(tmp_path)
+
+    result = mcp._crew(
+        PROJECT,
+        view="live",
+        checkout_path=str(repository),
+        session="session-run-1",
+        fields=["node"],
+    )
+
+    assert result["ok"]
+    rows = {row["run_id"]: row for row in result["runs"]}
+    assert set(rows) == {"run-1", "run-2"}
+    for row in rows.values():
+        assert set(row) == {"run_id", "node", "mine"}
+    assert rows["run-1"]["mine"] is True
+    assert rows["run-2"]["mine"] is False
+
+
+def test_live_view_refuses_an_unknown_field_naming_the_live_set(
     isolated_reckon_home: Path, tmp_path: Path
 ) -> None:
     repository, _records = _two_live_runs(tmp_path)
@@ -143,10 +177,10 @@ def test_live_view_refuses_an_unknown_field_naming_the_accepted_set(
 
     assert result["ok"] is False
     detail = str(result["detail"])
-    assert "unknown runs fields" in detail
+    assert "unknown live fields" in detail
     assert "not_a_field" in detail
-    # The refusal names what is accepted, so a caller can correct the request.
-    for accepted in COORDINATOR_FIELDS:
+    # The refusal names the live set, so a caller can correct the request.
+    for accepted in ("phase", "process_alive", "next_action", "classification"):
         assert accepted in detail
 
 
