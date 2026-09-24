@@ -22,7 +22,7 @@ import os
 import re
 import struct
 import termios
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from numbers import Real
 from typing import Any
@@ -53,21 +53,20 @@ PAIR_GAP = 1
 EFFORT = 7
 GAP = 2
 
-# The measure block: wall time and generation rate, in that order, behind the
-# fleet counters so the always-populated columns lead. Every cell is
-# right-aligned to a fixed width with a single space between cells, so the two
-# columns a reader scans stay put as figures change. The row no longer carries
-# model seconds, charged tokens or the notional dollar figure — a meter's spend
-# is a wider question than a pane can answer line by line, so those facts stay
-# in the record and only wall and rate reach the row, which frees exactly the
-# columns the reason now spends. The rate is generated output over model
-# seconds; it deliberately does not divide into the wall figure, and the two
-# readings are neighbours, not factors. SPEND counts content and the single
-# inter-cell space; the leading space before the wall cell is separate.
-WALL = 7
-RATE = 4
+# The measure block: the run's elapsed time, behind the fleet counters so the
+# always-populated columns lead. The cell is right-aligned to a fixed width, so
+# the column a reader scans for a run over its budget stays put as the figure
+# changes. It is the only measure the row carries. The generation rate sat
+# beside it and rendered the absence marker on nearly every row of the fleet
+# census: a rate is a reading about one model's throughput rather than about the
+# run, so the column bought a dash where a figure almost never arrived. WALL is
+# the widest token the elapsed format produces — the format's own ceiling, held
+# where it is derived — and narrower readings pad to it rather than moving the
+# cells after it. SPEND is the cell's width; the single space that separates it
+# from the counters is separate.
+WALL = 6
 SPEND_GAP = 1
-SPEND = WALL + SPEND_GAP + RATE
+SPEND = WALL
 
 # A cell with no measurement renders this, never a zero: a zero asserts a
 # measurement that was never taken, and this fleet holds large populations of
@@ -267,23 +266,6 @@ STAT_LETTER = {
     "queued": "q",
 }
 
-# The counter cells whose backlog belongs to the orchestrator: a blocked run
-# needs a decision and an unpromoted one needs merging, reviewing or recording.
-# The other two are work in progress and need nothing from the reader, so they
-# carry no age. Which states land in which bucket stays the fleet partition's
-# question — this names only the buckets that answer with an age, and the
-# states themselves are read from that partition rather than restated here.
-ACTIONABLE_CELLS = ("blocked", "unpromoted")
-
-# The fixed width an age occupies, held constant whether a cell has an age to
-# show or not: the block keeps one width as counts and ages change, so the
-# columns beside it never move. Held rather than trimmed because a field that
-# appears only when there is something to say shunts every column to its right
-# on the row that finally has news to deliver. Four characters hold a minute
-# count, an hour count and a day count, and the rare age past that is claimed
-# as `99d+` rather than allowed to widen the field.
-AGE = 4
-
 # Two digits and the bucket label per counter, joined by a bare middle dot with
 # no surrounding space. Two digits cover any fleet the dispatcher opens; a
 # wider count pushes its own label rather than silently misaligning the column
@@ -301,15 +283,12 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 # Everything before the reason consumes exactly this many columns with the role
 # word at its widest (documentation, thirteen), the model cell at its default
 # width of ten (a grid sized from a longer configured alias raises this floor by
-# the same amount it widens the cell), the
-# effort cell at seven, the four fleet counters and the measure cells (wall and
-# rate) in full — the measures sit behind the counters now, and the row no
-# longer carries model seconds, tokens or the dollar figure, which frees exactly
-# the columns that moved to the free text. The waiting counter's spelled word is
-# five columns wider than the single letter it replaced, so this floor moved by
-# that much and the reason's share of a fixed pane moved with it. Against the
-# 180-column DEFAULT_WIDTH budget that still leaves more than 30 for the reason,
-# and more than 60 on the 208-column pane this workstation measures (its
+# the same amount it widens the cell), the effort cell at seven, the four fleet
+# counters and the elapsed cell in full. The waiting counter's spelled word is
+# five columns wider than the single letter it replaced, so this floor carries
+# that much and the reason's share of a fixed pane carries it too. Against the
+# 180-column DEFAULT_WIDTH budget that still leaves more than 60 for the reason,
+# and more than 80 on the 208-column pane this workstation measures (its
 # observed cut, read directly with no inset subtracted) — both clear the
 # 12-column floor below which a clause is not worth reading, and the 180-column
 # figure is what a later added column spends first.
@@ -450,63 +429,38 @@ def local_clock(observed: Any) -> str:
     return moment.astimezone().strftime("%H:%M:%S")
 
 
-def _clock(seconds: float) -> str:
-    """Render a duration as h:mm:ss (or m:ss under an hour), seconds rounded."""
-    total = max(0, round(seconds))
-    hours, remainder = divmod(total, 3600)
-    minutes, secs = divmod(remainder, 60)
-    if hours:
-        return f"{hours}:{minutes:02d}:{secs:02d}"
-    return f"{minutes}:{secs:02d}"
+def _elapsed(seconds: float) -> str:
+    """Render an elapsed span in hours and minutes, minutes alone under one.
 
+    A clock's seconds are noise on a line a reader scans for a run over its
+    budget: the reading decides at the minute, and every column a cell spends
+    is a column the reason clause does not get below. So the unit grows with
+    the figure — ``57m`` under an hour, ``1h33m`` past it — and the shape of
+    the token says the magnitude without a unit legend.
 
-def _epoch(observed: Any) -> float | None:
-    """A stored UTC stamp as epoch seconds, or None when it is no reading.
-
-    A stamp that does not say which zone it is in cannot be placed on a clock,
-    so it yields no age rather than one computed against whatever zone the
-    reader happens to be sitting in. An age nobody could observe is not a
-    reading about the backlog, and the row already has a blank for it.
+    The token is held to the widest reading the cell can carry, six columns
+    for ``99h59m``; a run older than that is claimed as ``99h+`` rather than
+    allowed to widen the field and move every column after it.
     """
-    text = str(observed or "")
-    if len(text) < 19:
-        return None
-    try:
-        moment = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if moment.tzinfo is None:
-        return None
-    return moment.timestamp()
-
-
-def _age_span(seconds: float) -> str:
-    """An age as the coarsest unit that still carries its magnitude.
-
-    Minutes under an hour, hours under two days, days beyond — the unit grows
-    with the age so a reader comparing two backlogs is not left counting
-    characters to find the larger. The scale coarsens where a reader's action
-    does not change with it, which is why the two-day step is where hours stop
-    being worth printing.
-    """
-    if seconds < 3600:
-        return f"{int(seconds // 60)}m"
-    if seconds < 48 * 3600:
-        return f"{int(seconds // 3600)}h"
-    days = int(seconds // 86400)
-    return "99d+" if days > 99 else f"{days}d"
+    minutes = max(0, round(seconds)) // 60
+    if minutes < 60:
+        return f"{minutes}m"
+    hours, rest = divmod(minutes, 60)
+    if hours > 99:
+        return "99h+"
+    return f"{hours}h{rest:02d}m"
 
 
 def _bucket_of(state: Any, classification: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
     Membership is read from the fleet partition rather than restated, so the
-    counter and the age that follows it always describe the same population.
-    The import happens here rather than at module scope because the partition
-    imports this module: taking the names at import time would freeze them
-    before the partition has finished defining them. A held run counts as
-    waiting, which is the partition's own reading of a refusal that has been
-    accepted rather than acted on.
+    letter a counter prints always names the population it counts. The import
+    happens here rather than at module scope because the partition imports this
+    module: taking the names at import time would freeze them before the
+    partition has finished defining them. A held run counts as waiting, which
+    is the partition's own reading of a refusal that has been accepted rather
+    than acted on.
     """
     from reckon.crew.recovery import (
         FLEET_BLOCKED_STATES,
@@ -847,15 +801,6 @@ class Ticker:
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
         self._hues: dict[str, int] = {}
-        # When each run entered the bucket it now sits in, keyed by run. The
-        # record carries counts, not per-item ages, so the age of a bucket's
-        # oldest member is derived from the transitions this pane has itself
-        # seen: the instance lives as long as the reader's grid, and its first
-        # sighting of a run is the baseline the watch emitted on attach. An age
-        # is therefore the age within this pane's view — a re-attach restamps
-        # every live run, which is a fact about the reading rather than a defect
-        # in it, because an age nobody observed cannot be reported honestly.
-        self._entered: dict[str, tuple[str, float]] = {}
 
     def _model_width(self, project: str | None) -> int:
         """The model cell's width for ``project``, resolved once and remembered.
@@ -883,40 +828,6 @@ class Ticker:
             self._hues[node] = palette[len(self._hues) % len(palette)]
         return self._hues[node]
 
-    def _register(self, event: Mapping[str, Any], state: Any) -> None:
-        """Note when this run entered the bucket it now occupies.
-
-        A run already in the bucket keeps the stamp it arrived with, so the
-        oldest member's age grows while the backlog stands still rather than
-        resetting on every unrelated transition. A run that leaves every bucket
-        is dropped, because it is no longer a member of anything the row counts.
-        """
-        run = str(event.get("run_id") or event.get("node") or "")
-        moment = _epoch(event.get("observed_at"))
-        if not run or moment is None:
-            return
-        bucket = _bucket_of(state, event.get("recovery_classification"))
-        if bucket is None:
-            self._entered.pop(run, None)
-            return
-        held = self._entered.get(run)
-        if held is not None and held[0] == bucket:
-            return
-        self._entered[run] = (bucket, moment)
-
-    def _oldest_age(self, label: str, now: float) -> str:
-        """The age of the oldest run in ``label``'s bucket, or blank when empty.
-
-        Blank rather than zero: nothing outstanding and something that just
-        arrived are different facts, and a zero in this position reads as the
-        second. An empty bucket is the common case, so the age field spends its
-        width on nothing at all rather than on a figure a reader must discount.
-        """
-        stamps = [stamp for held, stamp in self._entered.values() if held == label]
-        if not stamps:
-            return ""
-        return _age_span(max(0.0, now - min(stamps)))
-
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
 
@@ -925,7 +836,7 @@ class Ticker:
         receives is its own by construction, so the column would only take room
         from the node beside it.
 
-        The counters precede the optional measures, which both sit before the
+        The counters precede the optional measure, which sits before the
         reason, because the pane clips its own right edge: the always-populated
         columns lead. Everything before the reason is fixed-width, so a row
         rendered wider than the pane can spare loses trailing free text and
@@ -954,10 +865,6 @@ class Ticker:
         )
         to_state = _display_state(entry_state)
         baseline = is_baseline(event)
-        # Recorded before the row is built, so a run that arrives in an
-        # actionable bucket on this very transition is a member of it when the
-        # counter beside it is rendered, and its age starts at this reading.
-        self._register(event, raw_to_state)
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
 
@@ -990,19 +897,13 @@ class Ticker:
 
         head = sum(len(text) for text, _ in cells)
         room = max(self._grid_width(model_width) - head, 0)
-        # The ages are read against the counters they qualify, so they take the
-        # fixed columns and the clause keeps the margin. Every column ahead of
-        # the reason is sized by what it carries, so the ages are paid for out
-        # of the free text — and only where the clause does not need those
-        # columns. A clause that claims the margin keeps it whole and the age
-        # blanks, which is the bargain the margin already makes: what is
-        # present holds its room and what is absent holds none.
+        # The clause keeps the whole margin: every column ahead of it is sized
+        # by what it carries, and what a row can say is what the pane has left
+        # after those. A width that leaves the reason nothing renders the fixed
+        # columns alone. The clause is one row and never wraps, so a bound on
+        # its length is a bound on the row.
         reason = self._reason(event, entry_state, room)
-        ages = self._age_cells(event)
-        if ages and len(reason) <= room - len(ages):
-            cells.append((ages, None))
-            cells.append((f"{reason:<{room - len(ages)}}", "dim"))
-        elif room:
+        if room:
             cells.append((f"{reason:<{room}}", "dim"))
         else:
             cells.append(("", None))
@@ -1078,36 +979,30 @@ class Ticker:
     def _spend_cells(
         self, event: Mapping[str, Any], to_state: str
     ) -> list[tuple[str, Any]]:
-        """Wall time and generation rate, fed by the transition record's facts.
+        """Elapsed time, fed by the transition record's fact.
 
-        Each fact is right-aligned to its fixed width with a single space
-        between cells, so the columns a reader scans stay put as figures change.
-        An unmeasured fact renders the dim absence marker, never a zero; a
-        measured zero stays a zero. Wall time on a transition into dispatched is
-        time zero by definition, so that cell blanks — blank rather than the
+        The figure is right-aligned to its fixed width so the column a reader
+        scans stays put as the span grows. An unmeasured span renders the dim
+        absence marker, never a zero; a measured zero stays a zero. Elapsed time
+        on a row is what the run has spent, so a transition into dispatched
+        reads zero by definition and that cell blanks — blank rather than the
         absence marker, because the marker already means unmeasured and blanking
         noise with it would collapse two different facts. The row carries only
-        these two figures; model seconds, charged tokens and the dollar figure
-        stay in the record, unrendered. The cells read the record's own figures
-        and shape them only here, so the persisted event stays re-renderable.
+        this figure; model seconds, charged tokens and the dollar figure stay in
+        the record, unrendered. The cell reads the record's own figure and
+        shapes it only here, so the persisted event stays re-renderable.
         """
-
-        def cell(value: Any, formatter: Callable[[float], str]) -> tuple[str, Any]:
-            if isinstance(value, Real):
-                return formatter(float(value)), None
-            return DIM_MARKER, "dim"
-
-        wall, wall_style = cell(event.get("spend_wall_seconds"), _clock)
+        value = event.get("spend_wall_seconds")
+        if isinstance(value, Real):
+            wall: str = _elapsed(float(value))
+            wall_style: Any = None
+        else:
+            wall, wall_style = DIM_MARKER, "dim"
         if to_state == "dispatched":
             wall, wall_style = "", None
-        rate, rate_style = cell(
-            event.get("spend_generation_rate"), lambda value: f"{value:.0f}"
-        )
         return [
             (" " * SPEND_GAP, None),
             (f"{wall:>{WALL}}", wall_style),
-            (" " * SPEND_GAP, None),
-            (f"{rate:>{RATE}}", rate_style),
         ]
 
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
@@ -1123,8 +1018,8 @@ class Ticker:
         The block carries no age itself: the count alone cannot separate a
         backlog being worked from one standing still — the same figure reads
         identically while a stalled item is cleared and a fresh one takes its
-        place — and the ages that answer that question are rendered by
-        ``_age_cells``, where the row has room for them.
+        place — and how long the oldest member has waited belongs to the
+        surface a reader goes to for it rather than to a row.
         """
         cells: list[tuple[str, Any]] = []
         wait_field = _COUNT_FIELD.get(_WAIT_CELL, _WAIT_CELL)
@@ -1140,32 +1035,6 @@ class Ticker:
         # so the clause is absent rather than unknown.
         cells += bound_cells(event.get("bounds"))
         return cells
-
-    def _age_cells(self, event: Mapping[str, Any]) -> str:
-        """The actionable buckets' oldest age, or empty when they hold nobody.
-
-        The count alone cannot separate a backlog being worked from one
-        standing still: clearing a stalled item while a fresh one arrives
-        clears the figure and leaves its membership turned over entirely. The
-        age of the oldest member is the fact that separates the two — it grows
-        while nothing is cleared and drops when the oldest item is dealt with.
-        The two buckets that are work in progress carry none, because nothing
-        is asked of the reader there.
-
-        Each age carries the same letter its counter prints, so a reading at
-        the end of a row still names its bucket. The field holds its width, so
-        the row's right edge never moves as counts and ages change. An empty
-        bucket renders nothing rather than a zero, because a zero here reads
-        as fresh work rather than as none.
-        """
-        now = _epoch(event.get("observed_at"))
-        if now is None:
-            return ""
-        return "".join(
-            f" {span:>{AGE}}{STAT_LETTER[label]}"
-            for label in ACTIONABLE_CELLS
-            if (span := self._oldest_age(label, now))
-        )
 
     def _paint(self, text: str, style: Any) -> str:
         if not self.color or style is None or not text:
