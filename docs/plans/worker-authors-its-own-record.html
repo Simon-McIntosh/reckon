@@ -15,15 +15,15 @@
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="low">
-  <meta name="plan-sprint" content="S18">
+  <meta name="plan-sprint" content="S22">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-depends-on" content="crew-observability-truth">
   <title>The Worker Authors Its Own Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="7">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -159,7 +159,7 @@
     <div class="r-comment-body"><p>Stopped and redispatched from a base carrying the template repair; nothing produced and nothing lost.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T154517849198-the-prompt-carries-the-two-limits" data-who="disc-local" data-when="2026-09-15T16:04:45Z">
-    <div class="r-comment-body"><p>Closed the follow-on §3 recorded in the archive on 2026-09-15: the runtime prompt now carries the two limits with the reason, so both audiences receive the same rule. <code>reckon/crew/prompts.py</code> embeds a standalone closure-authority contract beside the landing record: &ldquo;A worker does not close its own node: it must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes &mdash; a worker knows its node landed, not whether the section closed.&rdquo; Occurrences in <code>reckon/crew/prompts.py</code> before and after, as digits: driving followup 0 &rarr; 1, terminal status 0 &rarr; 1. The contract is gated by the same can-land condition as the landing record, so landing-capable roles carry it (implement, test) and read-only roles are composed and checked for the coherent absence of both (review, investigate), matching the existing per-role shape. The parity mechanism now also binds the two skill files that state the limits &mdash; <code>SKILL.md</code> and <code>references/sprint-orchestration.md</code> &mdash; deriving the clause from the prompt&rsquo;s own constant at test time; <code>references/worker-protocol.md</code> is not in the check because it carries the worker-side landing requirement and not the coordinator&rsquo;s closure authority. Focused gate <code>tests/test_crew_prompts.py</code>, <code>tests/test_skill_contract_parity.py</code>, <code>tests/test_schema.py::test_byte_identity_on_real_reckon_plans</code>: 39 passed against a 34-pass base, zero added failures. Commits 829cc19f and 1c11dff1. The driving followup and the section&rsquo;s terminal status remain unwritten by the worker, per the rule this landing records.</p></div>
+    <div class="r-comment-body"><p>Closed the follow-on §3 recorded in the archive on 2026-09-15: the runtime prompt now carries the two limits with the reason, so both audiences receive the same rule. <code>reckon/crew/prompts.py</code> embeds a standalone closure-authority contract beside the landing record: “A worker does not close its own node: it must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed.” Occurrences in <code>reckon/crew/prompts.py</code> before and after, as digits: driving followup 0 → 1, terminal status 0 → 1. The contract is gated by the same can-land condition as the landing record, so landing-capable roles carry it (implement, test) and read-only roles are composed and checked for the coherent absence of both (review, investigate), matching the existing per-role shape. The parity mechanism now also binds the two skill files that state the limits — <code>SKILL.md</code> and <code>references/sprint-orchestration.md</code> — deriving the clause from the prompt’s own constant at test time; <code>references/worker-protocol.md</code> is not in the check because it carries the worker-side landing requirement and not the coordinator’s closure authority. Focused gate <code>tests/test_crew_prompts.py</code>, <code>tests/test_skill_contract_parity.py</code>, <code>tests/test_schema.py::test_byte_identity_on_real_reckon_plans</code>: 39 passed against a 34-pass base, zero added failures. Commits 829cc19f and 1c11dff1. The driving followup and the section’s terminal status remain unwritten by the worker, per the rule this landing records.</p></div>
 </div>
 </section>
 </main>

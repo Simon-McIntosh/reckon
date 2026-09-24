@@ -18,12 +18,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="68">
+  <meta name="plan-version" content="69">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-sprint" content="S20">
+<meta name="plan-sprint" content="S21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.38">
 </head>
@@ -676,7 +676,7 @@
     </article>
 <article class="r-fu" data-id="f-adrwiw-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Reflex pointer records no pid, and dispatch races the reflex</h4>
-    <div class="r-fu-body"><p>Observed 2026-09-24 at 12:32Z. The follower's review reflex dispatched a review whose live pointer read <code>pid: null</code> while its worker ran as a child of the follower. The reflex path passes a launcher and takes the inline branch; &sect;10 routes it through the supervisor. A manual dispatch of the same review 20 s later was refused with 'worktree creation failed', because it raced the reflex for the worktree path. Two reviews briefly ran. <strong>Done when</strong> a sweep-dispatched review's pointer carries the pid of the process that runs it, and a manual dispatch of a review the reflex already launched is refused with the reflex's run id, not a worktree error.</p></div>
+    <div class="r-fu-body"><p>Observed 2026-09-24 at 12:32Z. The follower's review reflex dispatched a review whose live pointer read <code>pid: null</code> while its worker ran as a child of the follower. The reflex path passes a launcher and takes the inline branch; §10 routes it through the supervisor. A manual dispatch of the same review 20 s later was refused with 'worktree creation failed', because it raced the reflex for the worktree path. Two reviews briefly ran. <strong>Done when</strong> a sweep-dispatched review's pointer carries the pid of the process that runs it, and a manual dispatch of a review the reflex already launched is refused with the reflex's run id, not a worktree error.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>

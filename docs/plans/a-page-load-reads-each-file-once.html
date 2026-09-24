@@ -17,14 +17,14 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
-  <meta name="plan-sprint" content="S16">
+  <meta name="plan-sprint" content="S21">
   <meta name="plan-standalone" content="A latency repair of the served surface; no live plan waits on it and it consumes no other plan&#x27;s evidence.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 </head>
@@ -477,7 +477,7 @@
     <div class="r-comment-body"><p>never launched: dispatched at 18:07Z during the login-node storage storm; no stream, manifest or review record was produced; the review is re-dispatched as a new run</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260924T1305-s7-closed" data-who="reckon-ship" data-when="2026-09-24T13:05:00Z">
-    <div class="r-comment-body"><p>Section closed. The implementation is <code>c06b0764</code>, merged at <code>dae29b19</code>; its gate passed 4 of 4, and the discovery regression held at 11 passed at base and head. Independent review scored 83. Two of its findings are record errors: the manifest names the full commit as <code>...05f8e4</code> where the object is <code>c06b0764cdf067005ff0ce0805fe56ef4f05f92a</code>, and the red log's assertion line is 192 where the landed file has 200. The third is a real gap: no test fails if <code>main</code> stops starting the fleet watch, because the suite starts its own. That wiring is what makes the 60 s window safe. The gap is carried by <a href="/reckon/plans/the-page-paints-from-an-index#s2">the-page-paints-from-an-index &sect;2</a>, whose done-when requires every tree's watch to be armed when launched through the served entry point.</p></div>
+    <div class="r-comment-body"><p>Section closed. The implementation is <code>c06b0764</code>, merged at <code>dae29b19</code>; its gate passed 4 of 4, and the discovery regression held at 11 passed at base and head. Independent review scored 83. Two of its findings are record errors: the manifest names the full commit as <code>...05f8e4</code> where the object is <code>c06b0764cdf067005ff0ce0805fe56ef4f05f92a</code>, and the red log's assertion line is 192 where the landed file has 200. The third is a real gap: no test fails if <code>main</code> stops starting the fleet watch, because the suite starts its own. That wiring is what makes the 60 s window safe. The gap is carried by <a href="/reckon/plans/the-page-paints-from-an-index#s2">the-page-paints-from-an-index §2</a>, whose done-when requires every tree's watch to be armed when launched through the served entry point.</p></div>
 </div>
 </section>
 </main>

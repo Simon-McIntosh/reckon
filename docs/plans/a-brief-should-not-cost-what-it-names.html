@@ -16,13 +16,15 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint" content="S18">
+  <meta name="plan-sprint" content="S22">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope,a-window-paces-the-lane">
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -204,34 +206,34 @@
     anyway, because the first illustrated node is exactly the one that would otherwise be refused.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="reference-cost" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What does a mention cost, once it is not charged at file load?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="flat">a flat per-mention constant</button>
-          <button class="r-opt" data-value="capped-head">the file's first N tokens, capped</button>
-          <button class="r-opt" data-value="zero">nothing at all</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="reduction-marker" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How is a reduced brief recorded &mdash; as a flag, or as the diff against the refused attempt?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="flag">a flag plus the two token figures</button>
-          <button class="r-opt" data-value="diff">the diff between the refused and accepted briefs</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reference-cost" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What does a mention cost, once it is not charged at file load?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="flat">a flat per-mention constant</button>
+      <button class="r-opt" data-value="capped-head">the file&#x27;s first N tokens, capped</button>
+      <button class="r-opt" data-value="zero">nothing at all</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="reduction-marker" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How is a reduced brief recorded — as a flag, or as the diff against the refused attempt?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="flag">a flag plus the two token figures</button>
+      <button class="r-opt" data-value="diff">the diff between the refused and accepted briefs</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-bcn-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship a-brief-should-not-cost-what-it-names §2" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Name the dominant term first &mdash; it is most of the value for one line of payload</h4>
-        <div class="r-fu-body">Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held &mdash; check both before scoping.</div>
-        <pre class="r-fu-prompt">/reckon-ship a-brief-should-not-cost-what-it-names §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bcn-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-ship a-brief-should-not-cost-what-it-names §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Name the dominant term first — it is most of the value for one line of payload</h4>
+    <div class="r-fu-body">Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held — check both before scoping.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-brief-should-not-cost-what-it-names §2</pre>
+    </article>
+</section>
 
   </main>
 </body>
