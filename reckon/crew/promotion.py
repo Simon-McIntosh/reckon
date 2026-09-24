@@ -638,6 +638,10 @@ def _preserve_cited_gate_log(
     log. A cited log already inside the run directory is therefore returned
     unchanged — nothing needs copying, and a second copy would only duplicate it.
 
+    A check that cites a digest with no log path has nothing to copy, so it is
+    returned as given rather than dropped: the digest is the citation, and only
+    the path is ever rewritten here.
+
     Preservation is best-effort and changes no verdict. Promotion may run from a
     machine the worker's log never reached, so a cited path that does not resolve
     has no text to contradict the verdict and must not turn a promotion into a
@@ -649,7 +653,7 @@ def _preserve_cited_gate_log(
         return None
     raw = str(gate_check.get("log_path") or "").strip()
     if not raw:
-        return None
+        return dict(gate_check)
     source = Path(raw).expanduser()
     if not source.is_file():
         return dict(gate_check)
