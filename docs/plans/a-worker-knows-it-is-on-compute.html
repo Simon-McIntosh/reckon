@@ -20,12 +20,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Reckon has no host-environment model today; nothing upstream must land first, and the one consumer (worker launch) is sequenced by the trigger in §4 rather than by a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
+<meta name="plan-commits" content="9e695b0c">
+<meta name="plan-impl" content="0.25">
 </head>
 <body>
   <main class="plan-doc">
@@ -142,6 +144,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T204923695738-the-suite-carries-its-own-bounds" data-who="reckon-build" data-when="2026-09-24T21:06:24.652Z">
     <div class="r-comment-body"><p>pytest-timeout and pytest-xdist declared with timeout = 300; -n 4 doccheck header reads timeout: 300.0s from configfile pyproject.toml. Review 77: the /tmp mutation control was vacuous (pytest never read pyproject there) and the diff-stat sentence was false; the positive header evidence stands, correction appended to the evidence record</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260924-bounds-landed" data-who="reckon-build" data-when="2026-09-24T21:50:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260924T204923695738-the-suite-carries-its-own-bounds</code> is promoted, and its gate passed. It was merged at <code>d4c5a54a</code>. <code>uv sync</code> was then run from the main checkout, and the shared <code>.venv</code> now carries pytest-timeout 2.4.0 and pytest-xdist 3.8.0.</p><p>The independent review scored 77/100. It found that the <code>/tmp</code> mutation control was vacuous and that the diff-stat sentence was false. A correction is appended to the evidence record. The positive evidence stands: the in-repository <code>-n 4</code> header reads <code>timeout: 300.0s</code> from <code>pyproject.toml</code> with no override. The suite-repair coordinator was sent the merge sha, so its final bounded run is taken at or after it.</p></div>
 </div>
 </section>
 </main>

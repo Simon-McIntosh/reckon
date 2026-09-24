@@ -104,6 +104,13 @@ plugins: timeout-2.4.0, xdist-3.8.0, anyio-4.13.0
       <p><strong>Scope.</strong> <code>git diff --stat</code> names <code>pyproject.toml</code> and
       <code>uv.lock</code> and nothing else. No test file changed: the suite-repair plan owns the
       tests themselves, and this node supplies the bound they run under.</p>
+
+      <p><strong>Correction after independent review (77/100).</strong> Two statements above do not hold.</p>
+      <ul>
+        <li><strong>The mutation row falsifies nothing.</strong> The throwaway test lives under <code>/tmp</code>, so pytest roots there and never reads <code>pyproject.toml</code>. The reviewer ran the same invocation with the declaration present, and it printed neither a <code>configfile:</code> line nor a <code>timeout:</code> line, then passed in 10.05 s. Deleting the declaration was therefore not what removed the header line.</li>
+        <li><strong>The scope sentence is false of commit <code>9e695b0c</code>.</strong> That commit changes four paths: <code>pyproject.toml</code>, <code>uv.lock</code>, this record and the plan's landing record. The product change is confined to the first two.</li>
+      </ul>
+      <p>What does stand is the <code>-n 4 tests/test_doccheck.py</code> run. It passed no override, yet its header reads <code>configfile: pyproject.toml</code> and <code>timeout: 300.0s</code>. Only the declaration can produce that value. A falsifying control would repeat that in-repository run with the line removed. None was run.</p>
     </section>
   </main>
 </body>
