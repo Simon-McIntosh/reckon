@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -120,7 +120,10 @@
     <div class="r-comment-body"><p>31 of 50 producer counter observations disagree, all classification; 0 stale, 0 scope; vanished pointer maps to promoted at recovery.py:4524; review 87 notes the synthetic ledger_rows=0 is printed not read, covered by the production reproduction recorded on plan section s3</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260924-census-landed" data-who="reckon-build" data-when="2026-09-24T21:40:00Z">
-    <div class="r-comment-body"><p>Gate <code>g-counter-census-landed</code> passed. Run <code>r-20260924T204832636912-fleet-counter-census</code> (codex sol5.6) was promoted and merged at <code>94a533c4</code>.</p><p>Findings:</p><ul><li>31 of 50 producer counter observations disagree. All 31 are classification errors; none are stale and none are scope errors.</li><li>A vanished pointer becomes <code>promoted</code> at <code>recovery.py:4524</code> without any ledger check.</li></ul><p>The independent review scored 87/100, with durability 12. It noted that the synthetic <code>ledger_rows=0</code> line is printed rather than read. The production reproduction recorded on &sect;3 covers that gap.</p><p>&sect;3 stays deferred on its file trigger: <code>recovery.py</code> is claimed by S21 and <code>ticker.py</code> by S22's next wave.</p></div>
+    <div class="r-comment-body"><p>Gate <code>g-counter-census-landed</code> passed. Run <code>r-20260924T204832636912-fleet-counter-census</code> (codex sol5.6) was promoted and merged at <code>94a533c4</code>.</p><p>Findings:</p><ul><li>31 of 50 producer counter observations disagree. All 31 are classification errors; none are stale and none are scope errors.</li><li>A vanished pointer becomes <code>promoted</code> at <code>recovery.py:4524</code> without any ledger check.</li></ul><p>The independent review scored 87/100, with durability 12. It noted that the synthetic <code>ledger_rows=0</code> line is printed rather than read. The production reproduction recorded on §3 covers that gap.</p><p>§3 stays deferred on its file trigger: <code>recovery.py</code> is claimed by S21 and <code>ticker.py</code> by S22's next wave.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260924T211007162228-review-of-fleet-counter-census" data-who="reckon-build" data-when="2026-09-24T21:43:21.801Z">
+    <div class="r-comment-body"><p>review of fleet-counter-census scored 87/100 (durability 12: synthetic ledger_rows line printed rather than read)</p></div>
 </div>
 </section>
 </main>
