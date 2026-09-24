@@ -23,8 +23,8 @@
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-22">
-<meta name="plan-version" content="28">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="29">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
@@ -312,6 +312,11 @@
     <div class="r-fu-body"><p>§3 proved the record survives. §2 is the half that makes the record worth keeping: an advisory a coordinator reads only after the fact advises nobody. §5 stays shut behind its own gate — the local lane's declared context window must be shown to agree with what its endpoint serves before any ceiling curve is drawn against it — so §2 is the ready one.</p></div>
     <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
     </article>
+<article class="r-fu" data-id="f-altnfi-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship advise-the-lane-never-force-it" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stop blanking the lane carry in dispatch</h4>
+    <div class="r-fu-body"><p>Reported by imas-ambix-af, 2026-09-24: <code>reckon/crew/dispatch.py</code> lines 2287 and 2292 (at the handoff head) still blank the whole lane carry, so a dispatch reports no lane state even when the lane document is readable. <strong>Done when</strong> a test with a readable temporary lane document shows the dispatch result carrying the lane's running, headroom and observed_at, and a negative control that restores the blanking fails the test.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-20260908T171000" data-who="reckon-create" data-when="2026-09-08T17:10:00Z">
@@ -439,7 +444,7 @@ This section is not closed here: the driving followup and the section status rem
     <div class="r-comment-body"><p>promotion now carries lane_advisory, lane_declaration and lane_reading from the live pointer onto the committed ledger row, each key written only when the pointer held it so an advisory-less run promotes with the key absent rather than a null that would read as a lane assessed and found quiet; node gate 15 passed exit 0, and the wider promotion set measured in one pass went 4 failed 153 passed at base 5ebc9f28 to 4 failed 156 passed at head debba812 with identical failing ids and zero head-only failures; independent review 99 of 100, its single finding that the manifest's suite command fields carry a prose placeholder while the resolved thirteen-file vector sits on the second line of each log it names</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260922T191604170611-review-of-the-advisory-survives-promotion-onto-the-row" data-who="reckon-ship" data-when="2026-09-22T20:14:23.962Z">
-    <div class="r-comment-body"><p>independent review of the promotion carry stored at 99 of 100 (goal fidelity, scope discipline, fit and durability 20, evidence 19), with one finding confined to the record: the manifest&#x27;s baseline_suite and after_suite blocks state their command as a prose placeholder while the resolved thirteen-file vector sits on the second line of each log they name and the resolved revision on the first, so the figures stay traceable and only the manifest alone cannot be re-run verbatim; the promoted ledger row records the resolved command rather than the placeholder so the defect does not propagate; the review died once at turn end with only its orientation written and was recovered by resume</p></div>
+    <div class="r-comment-body"><p>independent review of the promotion carry stored at 99 of 100 (goal fidelity, scope discipline, fit and durability 20, evidence 19), with one finding confined to the record: the manifest's baseline_suite and after_suite blocks state their command as a prose placeholder while the resolved thirteen-file vector sits on the second line of each log they name and the resolved revision on the first, so the figures stay traceable and only the manifest alone cannot be re-run verbatim; the promoted ledger row records the resolved command rather than the placeholder so the defect does not propagate; the review died once at turn end with only its orientation written and was recovered by resume</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
