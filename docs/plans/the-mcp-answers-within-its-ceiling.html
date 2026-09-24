@@ -86,6 +86,31 @@
     </ul>
     <p><strong>Done when:</strong> tests assert all three behaviours on a synthetic config home with two live runs. The live-view test fails when the projection is removed. That failure is observed and its log is recorded.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="crew-live-honours-fields" data-when="2026-09-24">
+    <p><strong>Outcome — a crew read returns the fields it was asked for.</strong> Commit
+    <code>39dee90a</code> <em>feat(crew): honour requested fields on the live view</em> projects a
+    narrowed <code>live</code> read to the requested fields plus <code>run_id</code>, and widens the
+    accepted field set with <code>log_age_seconds</code>, <code>commits_beyond_base</code> and
+    <<code>manifest_reported_status</code> so <code>runs</code> accepts them
+    from the same classification <code>live</code> computes.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>All three behaviours asserted</strong> on a synthetic config home with two live
+      runs, head <code>39dee90a</code> against base <code>a130260c</code>:
+      <code>crew(view="live", fields=["classification","node"])</code> returns rows whose key set is
+      exactly <code>{run_id, classification, node}</code>; an unknown field is refused naming the
+      accepted set; and a <code>runs</code> read with <code>source="live"</code> returns the three
+      fields equal to <code>classify_pointer</code> for the same pointer, populated from a real git
+      worktree and log file. 3 passed.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> removing the fields
+      projection from the live arm makes the projection test fail, the row key set growing from three
+      to the whole classification.</li>
+      <li><strong>No new lint findings</strong> in the three edited files against base
+      <code>a130260c</code> (21 against 22 at base).</li>
+    </ul>
+    <p>Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s4-crew-read-honours-fields">the landed record</a>.</p>
+    </div>
+
     <h2 id="s5">&sect;5 &mdash; A single-run read answers in two seconds</h2>
     <p><code>crew(view="runs", run_id=&hellip;)</code> hit the 30-second storage-slow guard for a run that is one directory on disk. A lookup by run id should read that run's pointer and its ledger row, and nothing else.</p>
     <p><strong>Done when:</strong></p>

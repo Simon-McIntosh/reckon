@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-mcp-answers-within-its-ceiling-landed">
+  <meta name="plan-title" content="The MCP Answers Within Its Ceiling — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="the-mcp-answers-within-its-ceiling">
+  <title>The MCP Answers Within Its Ceiling — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>The MCP Answers Within Its Ceiling — cumulative execution record</h1>
+    <p>
+      One anchor per landed node: the commit, the gate measure as executed, the tests, and anything
+      negative found on the way. The evergreen plan holds the design; this record holds what
+      happened.
+    </p>
+
+    <h2 id="s4-crew-read-honours-fields">&sect;4 — A crew read returns the fields it was asked for</h2>
+    <p>
+      Commit <code>39dee90a</code> (implementation and test) in the
+      <code>crew-live-honours-fields</code> worktree, base revision <code>a130260c</code>.
+    </p>
+
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/fields_projection.svg"
+           alt="Two panels. Left: a live row returns 48 keys with no fields requested and 3 keys
+                when fields is classification and node. Right: a runs row returns 15 keys by
+                default and 18 when the three coordinator fields are requested.">
+      <figcaption>
+        A narrowed <code>live</code> read returns the requested fields plus <code>run_id</code> — 3
+        keys for a two-field request against the 48 the whole classification carries. The
+        <code>runs</code> read is additive: it always carries its 15 base fields, and the three
+        coordinator fields widen a request to 18.
+      </figcaption>
+    </figure>
+
+    <h3>The defect, reproduced</h3>
+    <p>
+      <code>crew(view="live", fields=[…])</code> accepted the list and ignored it: the live arm
+      called <code>classify_pointer</code> per pointer and returned every field of the
+      classification, so the compact projection the <code>runs</code> view applies was never reached
+      on this path. <code>crew(view="runs")</code> honoured <code>fields</code> but refused the three
+      fields a coordinator checks first, because they were absent from the accepted set.
+    </p>
+
+    <h3>The change</h3>
+    <ul>
+      <li><code>reckon/crew/query.py</code> — <code>commits_beyond_base</code>,
+        <code>log_age_seconds</code> and <code>manifest_reported_status</code> joined
+        <code>OPTIONAL_RUN_FIELDS</code>, so the existing refusal widened to accept them and the
+        compact row carries them from the same classification the live path computes. A new
+        <code>session</code>-aware <code>project_live_rows</code> classifies and, when
+        <code>fields</code> is given, projects each row to the requested fields plus
+        <code>run_id</code>.</li>
+      <li><code>reckon/mcp.py</code> — the <code>live</code> arm routes through
+        <code>project_live_rows</code>, so the requested fields are honoured; the <code>mine</code>
+        marker is computed from the full classification and survives projection.</li>
+    </ul>
+
+    <h3>The gate measures, as executed</h3>
+    <p>
+      <code>tests/test_crew_live_honours_fields.py</code> on a synthetic config home with two live
+      runs, head <code>39dee90a</code> against base <code>a130260c</code>:
+    </p>
+    <ul>
+      <li><strong>Live projection.</strong> <code>crew(view="live", fields=["classification",
+        "node"])</code> returns two rows whose key set is exactly
+        <code>{run_id, classification, node}</code>.</li>
+      <li><strong>Refusal names the accepted set.</strong> <code>fields=["not_a_field"]</code> returns
+        <code>ok: False</code> with a detail naming <code>log_age_seconds</code>,
+        <code>commits_beyond_base</code> and <code>manifest_reported_status</code> among the accepted
+        fields.</li>
+      <li><strong>The three fields are populated from the classification.</strong> A
+        <code>runs</code> read with <code>source="live"</code> returns the three values equal to
+        <code>classify_pointer(row)</code> for the same pointer, with
+        <code>manifest_reported_status == "in-progress"</code>,
+        <code>commits_beyond_base == 1</code> (a real git worktree one commit past its base), and
+        <code>log_age_seconds</code> an int from the run's own log file.</li>
+    </ul>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>remove the fields projection from the live arm.</em> Applied to
+      <code>reckon/mcp.py</code> (the <code>fields=</code> argument dropped from the
+      <code>project_live_rows</code> call) and run over
+      <code>tests/test_crew_live_honours_fields.py::test_live_view_returns_exactly_the_requested_fields</code>;
+      the test fails, the row key set growing from <code>{run_id, classification, node}</code> to the
+      whole classification. The control was then reverted and the tree returned to the committed
+      revision.
+    </p>
+
+    <h3>Findings outside this node's scope</h3>
+    <p>
+      <code>tests/test_crew_runs_scope.py::test_runs_scope_joins_every_configured_project_without_reading_fallback_home</code>
+      fails at this base revision, before this change, at an unrelated site:
+      <code>ledger.append_run</code> refuses to create the ledger because
+      <code>_ledger_ever_tracked</code> returns <code>None</code> for a ledger path under a
+      non-checkout temp directory. Reproduced independently of this change by calling
+      <code>ledger.append_run</code> on a fresh non-git temp tree. The test file itself is
+      unmodified here; the defect names <code>reckon/ledger.py</code>, which another node holds.
+    </p>
+
+  </main>
+</body>
+</html>
