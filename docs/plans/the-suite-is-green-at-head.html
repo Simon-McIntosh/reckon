@@ -408,6 +408,37 @@
          style="max-width:100%">
     </div>
 
+
+    <section id="s2-crew-surface-snapshot-ignores-imported-submodules">
+    <header><h3>crew-surface-snapshot-ignores-imported-submodules &mdash; the surface snapshot made order-free</h3></header>
+    <p><strong>Cause group repaired:</strong> a snapshot read from the environment rather than from its subject. The owned
+    id <code>tests/test_crew_surface.py::test_public_surface_matches_snapshot</code> compared <code>dir(reckon.crew)</code>
+    against its fixture in-process. Importing a submodule binds it onto its parent package, so every sibling test imported
+    earlier in the same pytest process left a name bound on <code>reckon.crew</code> &mdash; here <code>bar</code>,
+    <code>budget_group</code>, <code>directory</code>, <code>pace</code>, <code>query</code>, <code>resumption</code> and
+    <code>window_reading</code> &mdash; and each appeared as an extra item. The snapshot passed run alone and failed after
+    seven sibling files. Class: <em>test isolation</em>, so the snapshot moved to the shipped surface.</p>
+    <p><strong>Repair.</strong> The surface is now read in a fresh interpreter and module-valued <code>reckon.crew</code>
+    submodules are dropped, so the comparison is a property of the facade's exports rather than of collection order.
+    <code>PYTHONPATH</code> names this checkout's root first, so the child resolves the tree under test rather than an
+    installed copy. The fixture also drops the five concern modules the facade's own imports bind onto the package
+    (<code>metering</code>, <code>quota_weight</code>, <code>refusals</code>, <code>review</code>,
+    <code>rollout</code>); they are not exports and the fixture now lists no submodule name.</p>
+    <p><strong>Measure.</strong> At base <code>887b1a05</code> the id fails in the combined process with the seven names
+    above as extra items and passes alone; at head it passes both alone and in the same combined process, so the difference
+    is the change and not the environment. Both logs are in the run directory beside the manifest. The figure shows the
+    two pollution sources and the repair at zero:
+    <a href="/reckon/figures/the-suite-is-green-at-head/surface-order-dependence.png">submodule names counted as surface</a>.
+    No test is skipped, xfailed, deleted or weakened, and <code>reckon/</code> was not touched.</p>
+    <p><strong>Follow-ons.</strong> <code>reckon/crew.py</code> pops a concern module's name only by listing it in
+    <code>_MODULE_EXPORTS</code>, as <code>"ticker": ()</code> does; the five modules above reach the package by the
+    facade's own submodule imports and are absent from that map, so they remain bound on <code>reckon.crew</code> and are
+    excluded only from the snapshot. The deliberate fix is to list those five the same way in
+    <code>reckon/crew.py</code>, which is outside this node's write scope. The pre-existing
+    <code>test_schema.py::test_cross_project_conformance</code> failure over an unresolved imas-ambix engine sha is
+    unchanged and remains the sibling node's follow-on.</p>
+    </section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
