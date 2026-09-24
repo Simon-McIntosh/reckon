@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.4375">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc">
@@ -394,6 +394,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260925T0035-crew-ledger" data-who="reckon-build" data-when="2026-09-24T22:35:00Z">
     <div class="r-comment-body"><p>crew-and-ledger-files-are-green: gate passed on 22 of 23 ids. The coordinator re-ran both files at <code>28e281cc</code>: <code>test_ledger</code> 95 passed, and <code>test_crew</code> 204 passed with 1 failed. That failure is the product defect named by the node, <code>launch-failed</code> missing from the watch attention states in <code>runs.py</code>, which a peer session's fix node carries. My first verification had exposed two host-dependent tests. The in-harness landing-path grant depended on whether pytest's temp root sits under the process temp directory. A redispatch delivery raced a second-resolution attempt clock. Both are now pinned. Independent review scored 93. Merged at <code>a2564179</code>. That merge exposed a defect in the coordinator's conflict resolution: an earlier merge had cut the promotion-guard evidence section mid-table. Both affected sections are restored verbatim from their source commits, and every node section now matches its source.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260924T190048820836-crew-and-ledger-files-are-green" data-who="reckon-build" data-when="2026-09-24T21:32:10.926Z">
+    <div class="r-comment-body"><p>test_crew and test_ledger follow shipped guards; 22 of 23 ids green; two host-dependent tests pinned; launch-failed attention gap is a runs.py product defect carried by a peer node and deselected from the gate; review 93.</p></div>
 </div>
 </section>
 </main>
