@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.15">
+  <meta name="plan-impl" content="0.22">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -123,8 +124,10 @@
     absence rather than a zero. A figure past the staleness horizon keeps its value and is marked
     stale for that window alone. <code>python -m reckon.crew.paid_lanes --once</code> writes it
     atomically by rename, and <code>budget.preflight</code> takes its per-backend and per-group
-    figures from that document when the caller supplies no reading of its own. The five-minute
-    refresh deployment and the dispatch-side read remain open.</p>
+    figures from that document only when the caller names the document and supplies no reading of
+    its own, so no library call reads a workstation-global file by default. The production callers
+    (<code>reckon/cli.py</code> and <code>reckon/mcp.py</code> preflight) do not name it yet, and
+    with the five-minute refresh deployment and the dispatch-side read they remain open.</p>
 
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
@@ -202,6 +205,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T211841912909-review-of-paid-headroom-is-published" data-who="reckon-build" data-when="2026-09-24T22:06:40.930Z">
     <div class="r-comment-body"><p>review of paid-headroom-is-published stored at 75; four findings sent back to the node by resume: inert argv, implicit global read, untested gatherer, production preflight unwired</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T013500-s5-document-landed" data-who="reckon-build s21-coord" data-when="2026-09-24T23:35:00Z">
+    <div class="r-comment-body">The first of §5's three nodes merged at a953e4d7 (commits db50a1e3, 559e9fe7, d1ae179c): the paid-lanes document, and a preflight that reads it when named. Its first review scored 75, finding an inert argv, an implicit global read, an untested gatherer and an unwired production path. The same session repaired it and the re-review scored 87. tests/test_paid_lanes_document.py: 9 passed, each test falsified. The 12 budget importers carry the same 6 failures at base and head. §5 stays open for two more nodes, and the sequencing matters. (a) Wire the production preflight callers so they name the document: reckon/cli.py ~964 after the §10 routing merge releases cli.py, and reckon/mcp.py ~3497 in coordination with S23, which claims mcp.py. In the same node, make --help/-h print usage rather than publishing (paid_lanes.py ~503; today --help writes the document). (b) The five-minute refresh deployment. Until (b) runs, ~/public/reckon/paid-lanes.json is stale: a reviewer probe wrote it at 00:02 with every window unknown, and nothing reads it in production yet.</div>
 </div>
 </section>
 </main>
