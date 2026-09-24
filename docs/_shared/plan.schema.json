@@ -487,6 +487,166 @@
       "title": "ResearchItem",
       "type": "object"
     },
+    "SectionCapabilityRequest": {
+      "additionalProperties": false,
+      "description": "The shared capability vocabulary with required section-level floors.",
+      "properties": {
+        "version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "class": {
+          "default": "general",
+          "enum": [
+            "routine",
+            "general",
+            "orchestrator"
+          ],
+          "title": "Class",
+          "type": "string"
+        },
+        "requirements": {
+          "$ref": "#/$defs/SectionCapabilityRequirements"
+        }
+      },
+      "required": [
+        "requirements"
+      ],
+      "title": "SectionCapabilityRequest",
+      "type": "object"
+    },
+    "SectionCapabilityRequirements": {
+      "additionalProperties": false,
+      "description": "A section explicitly declares reasoning, verification and risk floors.",
+      "properties": {
+        "reasoning": {
+          "enum": [
+            "standard",
+            "deep"
+          ],
+          "minLength": 1,
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "standard",
+            "extended",
+            null
+          ],
+          "title": "Context"
+        },
+        "tool_autonomy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "guided",
+            "autonomous",
+            null
+          ],
+          "title": "Tool Autonomy"
+        },
+        "verification": {
+          "enum": [
+            "standard",
+            "strict"
+          ],
+          "minLength": 1,
+          "title": "Verification",
+          "type": "string"
+        },
+        "risk": {
+          "enum": [
+            "low",
+            "moderate",
+            "elevated",
+            "critical"
+          ],
+          "minLength": 1,
+          "title": "Risk",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reasoning",
+        "verification",
+        "risk"
+      ],
+      "title": "SectionCapabilityRequirements",
+      "type": "object"
+    },
+    "SectionRecord": {
+      "additionalProperties": false,
+      "description": "Typed metadata carried by an h2 or its adjacent data-reckon element.",
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "effort_hours": {
+          "exclusiveMinimum": 0,
+          "multipleOf": 0.25,
+          "title": "Effort Hours",
+          "type": "number"
+        },
+        "capability": {
+          "$ref": "#/$defs/SectionCapabilityRequest"
+        },
+        "attempts": {
+          "description": "Tool-owned launch count",
+          "minimum": 0,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "implementable",
+            "deferred",
+            "done"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "links": {
+          "description": "Plan refs, using [project:]slug[#section]",
+          "items": {
+            "pattern": "^\\s*(?:[A-Za-z0-9][A-Za-z0-9_-]*:)?[A-Za-z0-9][A-Za-z0-9._-]*(?:#[A-Za-z0-9][A-Za-z0-9._-]*)?\\s*$",
+            "type": "string"
+          },
+          "title": "Links",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "effort_hours",
+        "capability",
+        "attempts",
+        "status",
+        "links"
+      ],
+      "title": "SectionRecord",
+      "type": "object"
+    },
     "ResourceIdentity": {
       "description": "Stable identity for one typed HTML resource.",
       "properties": {
@@ -727,6 +887,14 @@
       "description": "DAG-build classification keyed by authored section identity; only implementable entries form the executable denominator",
       "title": "Section Declarations",
       "type": "object"
+    },
+    "sections": {
+      "description": "Opt-in typed records beside the section declaration map",
+      "items": {
+        "$ref": "#/$defs/SectionRecord"
+      },
+      "title": "Sections",
+      "type": "array"
     },
     "archived": {
       "anyOf": [

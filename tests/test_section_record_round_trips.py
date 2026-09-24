@@ -8,7 +8,13 @@ from html import escape
 import pytest
 from jsonschema import Draft202012Validator
 
-from reckon._plan_html import from_html, parse_plan, read_state, write_state
+from reckon._plan_html import (
+    from_html,
+    parse_plan,
+    read_state,
+    structured_section_spans,
+    write_state,
+)
 from reckon._schema import PlanState, gen_json_schema
 
 DECLARATIONS = {
@@ -250,3 +256,82 @@ def test_section_records_survive_canonical_typed_dump():
         {"sections": RECORDS, "section_declarations": DECLARATIONS}
     )
     assert state.canonical_dump()["sections"] == RECORDS
+
+
+def test_heading_carried_record_round_trips_and_preserves_authored_attributes():
+    original = _fixture_html()
+    adjacent = re.search(
+        r'<section data-reckon="section"[^>]*></section>', original
+    ).group()
+    attrs = (
+        adjacent.removeprefix("<section")
+        .removesuffix("></section>")
+        .replace(' data-id="design"', "")
+    )
+    original = original.replace(adjacent + "\n", "", 1).replace(
+        '<h2 id="design">', '<h2 id="design" class="authored"' + attrs + ">", 1
+    )
+    state = read_state(original)
+    assert state["sections"] == RECORDS
+    assert write_state(original, state) == original
+    state["sections"][0]["attempts"] = 1
+    rendered = write_state(original, state)
+    assert read_state(rendered)["sections"][0]["attempts"] == 1
+    assert 'class="authored"' in rendered
+    assert ">The <em>design</em> work</h2>" in rendered
+    assert write_state(rendered, read_state(rendered)) == rendered
+    owned = [rendered[start:end] for start, end in structured_section_spans(rendered)]
+    assert any(fragment.startswith('<h2 id="design"') for fragment in owned)
+
+
+def test_duplicate_record_ids_are_refused():
+    original = _fixture_html()
+    adjacent = re.search(
+        r'<section data-reckon="section"[^>]*></section>', original
+    ).group()
+    original = original.replace('<h2 id="design">', adjacent + '\n<h2 id="design">', 1)
+    with pytest.raises(ValueError, match="duplicate section"):
+        read_state(original)
+
+
+def test_new_record_requires_an_unambiguous_heading():
+    state = {"sections": RECORDS}
+    with pytest.raises(ValueError, match="matching h2"):
+        write_state("<html><head></head><body></body></html>", state)
+
+
+def test_metadata_container_cannot_erase_authored_prose():
+    original = _fixture_html().replace("</section>", "<p>Keep me</p></section>", 1)
+    with pytest.raises(ValueError, match="authored prose"):
+        write_state(original, {"sections": RECORDS})
+
+
+def test_records_remain_optional_when_only_some_headings_declare_them():
+    parsed = read_state(_fixture_html(RECORDS[:1]))
+    assert parsed["sections"] == RECORDS[:1]
+    assert parsed["section_declarations"] == DECLARATIONS
+
+
+def test_removing_records_preserves_headings_and_prose():
+    original = _fixture_html()
+    state = read_state(original)
+    state["sections"] = []
+    assert write_state(original, state) == _fixture_html([])
+
+
+def test_optional_capability_floors_survive_regeneration():
+    original = _fixture_html().replace(
+        ' data-capability-verification="strict"',
+        ' data-capability-context="extended" data-capability-tool-autonomy="guided" data-capability-verification="strict"',
+        1,
+    )
+    state = read_state(original)
+    assert state["sections"][0]["capability"]["requirements"]["context"] == "extended"
+    assert write_state(original, state) == original
+
+
+def test_boolean_attempts_cannot_enter_typed_state():
+    records = deepcopy(RECORDS)
+    records[0]["attempts"] = True
+    with pytest.raises(ValueError, match="attempts"):
+        PlanState.model_validate({"sections": records})
