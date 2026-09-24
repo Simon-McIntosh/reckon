@@ -594,6 +594,28 @@ def _require_gate_log_agrees(
         )
 
 
+def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
+    """The worker's exit record, read verbatim from the run directory.
+
+    A CLI dispatch's supervisor writes ``exit.json`` beside the worker it spawned,
+    and the run directory is released at promotion, so the ledger row is the only
+    record that outlives the run. The row carries this promotion's copy under
+    ``worker_exit`` when the file exists, and carries no such key when it does
+    not: an empty key would read as the supervisor having run and recorded
+    nothing, which is the opposite of a run whose supervisor never wrote a record.
+
+    A file that exists but cannot be read or parsed as a JSON object is treated
+    as absent rather than propagated as a failure: a corrupt file is not
+    promoted into the durable row, and a run whose exit record is damaged still
+    promotes on its gate evidence rather than being refused by an instrument.
+    """
+    try:
+        data = json.loads((run_dir(run_id) / "exit.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return dict(data) if isinstance(data, Mapping) else None
+
+
 _PRESERVED_GATE_LOG_NAME = "gate.log"
 
 
@@ -3910,6 +3932,14 @@ def _complete_locked(
     # resolve on this machine, and a copy that cannot be read or written all
     # leave the check as given, because preservation must never decide the verdict.
     gate_check = _preserve_cited_gate_log(run_id, gate_check)
+    # The worker's own exit record is copied onto the row before the run
+    # directory is released, so the facts a census reads (the terminating signal
+    # and whether the exit landed mid-work either way) outlive the pointer and
+    # the run directory they were first written in. The row's ``exit_status`` is
+    # left as the gate command's status; the worker's exit is a separate fact
+    # under its own key, so a run with no exit record carries no ``worker_exit``
+    # key rather than an empty one.
+    worker_exit = _promoted_worker_exit(run_id)
     # The revision this promotion asserts landed, resolved while the run's tree
     # is still present. A shadow asserts no code, so it records none.
     promoted_revision = "" if shadow else _run_promoted_revision(record, commit_list)
@@ -3962,6 +3992,11 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # The worker's exit record rides the row verbatim, and the key is written
+    # only when the run directory held one: a present-but-empty key would read
+    # as a supervisor that ran and recorded nothing.
+    if worker_exit is not None:
+        run["worker_exit"] = worker_exit
     # The revision the promotion asserts landed rides the row so a later sweep
     # can ask about it without the worktree, which promotion is about to
     # release. A run that asserted no code leaves the key absent rather than
