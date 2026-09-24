@@ -19,12 +19,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="858b83d3,cb8951fe">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -91,10 +93,11 @@
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Each counter disagreement is classified with its figure and its computing code path</h4>
     <p class="r-gate-required-evidence">the-fleet-counters-count-the-fleet#s2</p>
-    </div>
+    <a class="r-gate-evidence" href="/reckon/research/fleet-counters-against-the-fleet">Evidence</a>
+</div>
 </section>
 
     
@@ -115,6 +118,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T204832636912-fleet-counter-census" data-who="reckon-build" data-when="2026-09-24T21:09:30Z">
     <div class="r-comment-body"><p>31 of 50 producer counter observations disagree, all classification; 0 stale, 0 scope; vanished pointer maps to promoted at recovery.py:4524; review 87 notes the synthetic ledger_rows=0 is printed not read, covered by the production reproduction recorded on plan section s3</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260924-census-landed" data-who="reckon-build" data-when="2026-09-24T21:40:00Z">
+    <div class="r-comment-body"><p>Gate <code>g-counter-census-landed</code> passed. Run <code>r-20260924T204832636912-fleet-counter-census</code> (codex sol5.6) was promoted and merged at <code>94a533c4</code>.</p><p>Findings:</p><ul><li>31 of 50 producer counter observations disagree. All 31 are classification errors; none are stale and none are scope errors.</li><li>A vanished pointer becomes <code>promoted</code> at <code>recovery.py:4524</code> without any ledger check.</li></ul><p>The independent review scored 87/100, with durability 12. It noted that the synthetic <code>ledger_rows=0</code> line is printed rather than read. The production reproduction recorded on &sect;3 covers that gap.</p><p>&sect;3 stays deferred on its file trigger: <code>recovery.py</code> is claimed by S21 and <code>ticker.py</code> by S22's next wave.</p></div>
 </div>
 </section>
 </main>
