@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-impl" content="0.14">
 </head>
 <body>
@@ -523,6 +523,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T1030-s5-landed" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>§5 landed</strong> (<code>d026717e</code>, <code>aaa888a5</code>; merged <code>b9514ecf</code>; review 92, re-review 98). The installed FastMCP SDK runs a synchronous tool inside its coroutine on the one event loop (<code>func_metadata.py</code>, <code>call_fn_with_arg_validation</code>), which is why one GPFS-blocked <code>read_plan</code> stopped every later call on 2026-09-23. Every registered tool now runs its unchanged body on a worker thread under a deadline, and answers a typed <code>storage-slow</code> naming the path and the wait. A timed-out write reports whether it landed; the review found that check ran on the loop, and it now runs off the loop under its own bound. Eight cases pass. The wider MCP surface shows the same five failures at base and head, so none were added. <strong>A running MCP server keeps the old code until it restarts</strong>, which is <code>/mcp</code> reconnect in each session. <strong>Follow-on (minor):</strong> nothing asserts the direct-path baseline stat stays off the loop; the shipped registration passes <code>path_hint</code>, so that branch is reached only by direct callers. One of the seven implementable sections has landed.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
+    <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af&#x27;s two gate guards</p></div>
 </div>
 </section>
 </main>
