@@ -874,9 +874,17 @@ def _roster_obstruction(
     """Describe roster content a named commit cannot claim, or None when clean.
 
     A commit names one change, so it can only be made while the roster holds
-    nothing else unrecorded. The comparison is on member rows rather than on
-    dirtiness alone: a roster rewritten with the rows it already held is not a
-    write anyone would be publishing under someone else's subject.
+    nothing else unrecorded by a different author. The comparison is on member
+    rows rather than on dirtiness alone: a roster rewritten with the rows it
+    already held is not a write anyone would be publishing under someone
+    else's subject.
+
+    Content that is no member row at all — the hold history a budget check
+    opens, a completed-run row — is the tool's own bookkeeping, so it obstructs
+    nothing. Refusing on it made a dispatch that had just recorded a hold on its
+    own backend unable to commit the session member it registered next, and left
+    the idle reaper's removal uncommitted, so the registration that followed saw
+    a removed row as another author's pending write.
 
     Reporting the obstruction rather than raising lets a caller that is
     entitled to proceed without a commit, such as the idle reaper whose
@@ -931,7 +939,7 @@ def _roster_obstruction(
     )
     if changed_members:
         return "uncommitted member registration(s): " + ", ".join(changed_members)
-    return f"uncommitted roster content at {relative_path}"
+    return None
 
 
 def _refuse_dirty_roster_commit(
