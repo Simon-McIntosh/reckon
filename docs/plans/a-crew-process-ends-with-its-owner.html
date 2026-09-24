@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -714,6 +714,11 @@
     <h4 class="r-fu-title">Land the producer lease, then make a live producer incremental</h4>
     <div class="r-fu-body"><p><strong>Order.</strong> First §3, the producer lease. It is not landed: its review promoted as not-run at <code>cdc62a25</code>, and <code>tests/test_producer_holds_a_lease.py</code> does not exist. Then §11, the incremental stream reads, stat-gated snapshots, git keyed by head, and the published snapshot. Both edit <code>reckon/crew/recovery.py</code>, so they run in sequence. §4's git scoping touches disjoint files and can run beside either. §11's landing record states the fleet-node <code>pidstat</code> reading of the producer before and after, over a nine-worker wave. The before figure is 60–66% of a core.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §3</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-first-commit-gone" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T19:42:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A live worker reads as gone right after its first commit</h4>
+    <div class="r-fu-body"><p>Reported by suite-green-at-head on 2026-09-24 and recorded here as its owning plan. Three runs had a follower row reading <q>blocked — resume: the worker process is gone with no recorded exit and the worktree carries 1 commit</q>: <code>promotion-tests-meet-the-review-and-checkout-guards</code> (21:16:15 local), <code>promotion-fixtures-initialise-the-ledger</code> (21:19:43) and <code>python-surface-contracts-match</code> (21:19:56). Each came right after the worker's first commit. At that moment <code>crew(view=live)</code> read the process alive with a fresh log. The coordinator had to read the stream and the worktree to rule out a real death. This is the mid-run twin of the launch flicker recorded on a-dispatch-returns-without-its-worker (f-adrwiw-launch-flicker). The follower's transition text and the live classifier disagree about one run's liveness. Done when a run whose recorded pid is alive never emits a process-gone transition, whatever its commit count. A test commits in a stub worker's worktree while the stub stays alive and asserts no blocked-resume row.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

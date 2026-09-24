@@ -18,13 +18,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="72">
+  <meta name="plan-version" content="73">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -677,6 +677,16 @@
 <article class="r-fu" data-id="f-adrwiw-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Reflex pointer records no pid, and dispatch races the reflex</h4>
     <div class="r-fu-body"><p>Observed 2026-09-24 at 12:32Z. The follower's review reflex dispatched a review whose live pointer read <code>pid: null</code> while its worker ran as a child of the follower. The reflex path passes a launcher and takes the inline branch; §10 routes it through the supervisor. A manual dispatch of the same review 20 s later was refused with 'worktree creation failed', because it raced the reflex for the worktree path. Two reviews briefly ran. <strong>Done when</strong> a sweep-dispatched review's pointer carries the pid of the process that runs it, and a manual dispatch of a review the reflex already launched is refused with the reflex's run id, not a worktree error.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-launch-flicker" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T19:40:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A launching run reads as abandoned until its worker spawns</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-24, and corroborated by two sessions. Every CLI dispatch that evening went <code>dispatched → abandoned</code> within one second of dispatch, and <code>abandoned → working</code> 1 to 3 minutes later. That was all nine suite-green-at-head runs (e.g. <code>r-20260924T190110651671-budget-session-and-follower-tests</code>, 19:01:18→19:01:19Z) and <code>r-20260924T193005157362-s21-reuse-map</code> (abandoned 19:30:17Z, working 19:32:42Z). One run, <code>dispatch-tests-declare-a-valid-node</code>, flipped to abandoned twice. The window is the supervisor's pre-spawn tree snapshot, 2 m 31 s over 232 registered worktrees for the scout. During it no stream and no <code>worker.json</code> exist. The follower's transition text read <q>the process is gone without a complete manifest</q>, while <code>crew(view=live)</code> read <code>process_alive=true</code> and <code>crew discard</code> refused because the supervisor pid (925759) was alive. So the transition text and the live classifier disagree about the same run. One coordinator briefly misdiagnosed it as the harness killing a foreground dispatch's supervisor, and nearly redispatched a live node. Done when a run whose recorded supervisor pid is alive and which has no <code>worker.json</code> yet classifies as launching, never abandoned, in both the follower and the live view. A test holds the supervisor in a stubbed snapshot and asserts no abandoned transition is emitted.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-runpy-warning" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T19:40:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The supervisor&#x27;s stderr opens with a runpy warning</h4>
+    <div class="r-fu-body"><p>Every <code>supervisor.stderr.log</code> on 2026-09-24 opens with <code>RuntimeWarning: 'reckon.crew.dispatch' found in sys.modules after import of package 'reckon.crew'</code>. It was the only line in that log for the whole suite-green-at-head wave. It is harmless, but it is the first thing read when diagnosing a dead launch. The cause is launching the supervisor as <code>python -m reckon.crew.dispatch</code> when the package imports that module. Done when the supervisor launches through an entry point whose module is not already imported, and a launched supervisor's stderr log is empty.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>

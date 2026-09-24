@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
@@ -329,6 +329,9 @@ a durable field on the run record so the argv clause becomes checkable.</p>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T190731494764" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>Lead ruling, 2026-09-24: workers are disposable, and the roster add surface is retired as a concurrency tool.</strong> On 2026-09-24 a reckon coordinator on the fleet node registered nine members, <code>suite-green-a</code> to <code>-i</code>, to run nine independent repair nodes. It did so because a no-member dispatch still serialises on one session-derived member (<code>routing.py</code> <code>_session_member_id(worktree_session or session)</code>, <code>dispatch.py</code> near line 3615), and because the guidance told it to. The lead's reading: reusable workers are a dangerous and unnecessary pattern. Every dispatch gets a disposable worker with clear context.</p><p>This widens §4. A dispatch that names no member runs under its own per-run identity. It registers nothing in <code>crew.json</code>, so nothing is committed and nothing is left to reap. <code>crew member add</code> is no longer how concurrency is raised. The guidance that teaches it is rewritten in the same node: the reckon-build SKILL.md section <em>Concurrency — the roster is the whole authority</em>, <code>references/sprint-orchestration.md</code> (the <q>meet the target by registering members</q> line and the <q>register a fresh roster member</q> line for the prior-art scout), <code>references/lane-routing.md</code>, <code>reckon/crew/AGENTS.md</code>'s Roster row, and the <code>member-in-flight</code> remedy text. Clean context is already guaranteed by §2, which is landed. The user-global guidance was updated the same day (dotfiles <code>56607d2</code>). Until §4 lands it says: reuse existing members, and register none.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260924T194200-roster-commit" data-who="reckon-build s21-coord" data-when="2026-09-24T19:42:00Z">
+    <div class="r-comment-body">Evidence for this section, 2026-09-24. A dispatch naming no member registered one and committed it on main unprompted: 8205ddd4 chore(roster): register session-4663928c5a11330b4056, from s21-coord's first dispatch, and 0dc024c4 for another session minutes later. Neither commit was pushed, so main sat ahead 2 of origin, carrying a peer's unpushed docs commit with it. So the rule 'workers are disposable, register none' is broken by the tool, not by coordinators. §4's 'its own member identity, or none' should also mean no crew.json commit on main per dispatch. Separately, suite-green-at-head registered nine members explicitly (suite-green-a to i), one roster commit each, before that rule was written. With 416 members on the roster, `crew member list` is 167 KB and offers no free-member filter, which is the question a coordinator needs it to answer.</div>
 </div>
 </section>
 </main>
