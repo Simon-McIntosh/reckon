@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="47">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -626,12 +626,94 @@
     root-fix set. It recovers history and does not stop a recurrence, so it dispatches with
     general work.</p>
 
+    <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
+    <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
+    whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
+    alive, and that producer is itself expensive. The per-poll cost comes from the design, not
+    from a bug.</p>
+    <p>Measured on 2026-09-24 at about 21:15 on the fleet node (clu-2058, job 1277272). One
+    <code>reckon crew watch --project reckon</code> producer (pid 853019) served one follower and
+    nine clive workers. It held <strong>60&ndash;66% of a core continuously for more than 13
+    minutes</strong>, while the rest of the 28-core node sat 86&ndash;98% idle.</p>
+    <p><strong>The mechanism, read from the code.</strong> <code>watch_ticker</code>
+    (<code>reckon/crew/recovery.py</code>, the loop that serves <code>watch_follow</code> with
+    <code>transitions=True</code>) polls every <code>poll_interval=1.0</code> second. It skips the
+    sleep entirely whenever a poll yields events. On every poll it rebuilds the whole fleet from
+    nothing:</p>
+    <ul>
+      <li><code>list_live</code> re-reads every pointer file;</li>
+      <li><code>_watch_snapshot</code>, called per run, re-reads the manifest;</li>
+      <li><code>observe_log</code> (<code>reckon/_backends.py</code>) re-opens the run's
+      <code>stream.jsonl</code> and <code>parse_events</code> JSON-decodes <em>every line from the
+      start</em>;</li>
+      <li><code>_commits_beyond_base</code> spawns a <code>git rev-list --count</code> in the
+      worktree.</li>
+    </ul>
+    <p>The streams are append-only and 1&ndash;2&nbsp;MB each, so the cost per poll grows with
+    every worker's transcript, and is paid once a second forever. A 10-second py-spy sample
+    splits the time as follows:</p>
+    <ul>
+      <li>51.5% in <code>parse_events &larr; observe_stream &larr; observe_log</code>;</li>
+      <li>26.8% in <code>crew_watch</code>;</li>
+      <li>9.6% in <code>parse_events &larr; crew_watch</code>;</li>
+      <li>4.1% in the dialect's <code>observe</code> fold.</li>
+    </ul>
+    <p>An 8-second strace counted 43,302 <code>read</code>, 4,314 <code>openat</code>, 1,500
+    <code>getdents64</code> and 16 subprocesses. Each <code>git</code> exec first walks about ten
+    EasyBuild <code>PATH</code> entries. On the login node these reads land on GPFS home, which
+    is how a producer turns into storage load for everyone.</p>
+    <p><strong>The fix: state is carried forward, and work is gated on change.</strong></p>
+    <ol>
+      <li><em>Incremental stream reads.</em> The producer keeps a cursor per run holding the
+      stream's inode, byte offset and parsed events so far. Each poll parses only the complete
+      lines appended since the offset; a partial trailing line waits for the next poll. It
+      re-parses from zero only when the inode changes or the size drops below the offset, which
+      means the stream was replaced or truncated. The dialect's <code>observe</code> fold then
+      runs over the cached events. At 4% of the cost it can stay a full fold, and it becomes
+      incremental only if a measurement says so.</li>
+      <li><em>Stat-gated snapshots.</em> A run whose pointer, manifest, stream and exit-record
+      mtimes and sizes are all unchanged reuses its previous snapshot. Only the time-derived
+      fields (quiet seconds and stall) are recomputed, and those come from the stat. A stat is
+      the only storage touch an unchanged run costs.</li>
+      <li><em>Git keyed by head.</em> The commits-beyond-base count is cached against the
+      worktree's resolved HEAD sha, read from <code>.git</code> without a subprocess. It is
+      recomputed only when the head moves. The executable is resolved once per process, not
+      once per exec.</li>
+      <li><em>One reader, many consumers.</em> The producer publishes its folded snapshot, and
+      <code>crew(view="live")</code> and the follower read that, not the streams. That way a
+      coordinator's MCP read never re-parses nine transcripts.</li>
+    </ol>
+    <p>The 1-second base interval stays, because a stat per run per second is cheap. &sect;3's
+    idle back-off still applies when no run is live.</p>
+    <p><strong>Done when</strong> a test drives the producer over nine runs whose streams each
+    grow by 2&nbsp;MB across the test, and asserts four things:</p>
+    <ul>
+      <li>the bytes parsed per poll equal the bytes appended since the last poll. The producer
+      records this as <code>bytes_parsed_last_poll</code> in its registration;</li>
+      <li>a poll over unchanged runs parses zero bytes and spawns no subprocess;</li>
+      <li>a truncated or replaced stream is re-read from zero and observed correctly;</li>
+      <li>the transitions it yields are identical to the full-recompute path over the same
+      sequence of files.</li>
+    </ul>
+    <p><strong>Negative control:</strong> restoring the whole-file parse must turn the first
+    assertion red. On the fleet node, the measure is the producer's CPU over the same nine-worker
+    shape, read with <code>pidstat</code> for 60 s, before and after, stated in the landing
+    record. The write paths are <code>reckon/crew/recovery.py</code>,
+    <code>reckon/_backends.py</code> and the new test. &sect;3's producer lease
+    also edits <code>recovery.py</code>, so the two nodes run in sequence, not in parallel. The
+    lease lands first, because it decides which producers exist to be made cheap.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acpewio-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Make every crew process end with its owner</h4>
     <div class="r-fu-body"><p>§2 (<code>reckon/cli.py</code>), §3 (producer lease), §4 (the three <code>--untracked-files=all</code> call sites and dispatch back-pressure) and §5 (MCP deadlines) touch disjoint files and can run in parallel. §6 (ownership in the environment, and <code>crew census</code>) follows §2 and §3, because it reads the owner they record. §7 is guidance and follows §6, since it names the census. Each section's done-when carries a mutation that must fail its test.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    </article>
+<article class="r-fu" data-id="f-20260924T192222968622" data-status="open" data-written-by="reckon-edit" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the producer lease, then make a live producer incremental</h4>
+    <div class="r-fu-body"><p><strong>Order.</strong> First §3, the producer lease. It is not landed: its review promoted as not-run at <code>cdc62a25</code>, and <code>tests/test_producer_holds_a_lease.py</code> does not exist. Then §11, the incremental stream reads, stat-gated snapshots, git keyed by head, and the published snapshot. Both edit <code>reckon/crew/recovery.py</code>, so they run in sequence. §4's git scoping touches disjoint files and can run beside either. §11's landing record states the fleet-node <code>pidstat</code> reading of the producer before and after, over a nine-worker wave. The before figure is 60–66% of a core.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
