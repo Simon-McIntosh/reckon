@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -61,7 +61,7 @@
       <li>whether <code>/tmp</code> is node-local</li>
     </ul>
     <p>When <code>SLURM_JOB_ID</code> is present but the cgroup does not name the job, the probe reports <code>in_allocation: false</code> with the reason <code>environment-inherited-outside-the-job-cgroup</code>. The module reads files and calls <code>statfs</code> only. It runs no scheduler command, so it costs nothing on the login node.</p>
-    <p><strong>Reuse, not a third reader.</strong> <code>reckon/crew/summary.py</code> already finds the process's own cgroup: <code>SELF_CGROUP_PATH</code>, <code>LOGIN_CGROUP_ROOT</code>, <code>_user_slice_dir</code> and <code>read_login_slice</code>. <code>reckon/crew/placement.py</code> already has <code>occupying_the_reservation</code>, which answers whether the process is inside the held job. <code>host_facts()</code> composes those two rather than parsing <code>/proc/self/cgroup</code> again. <code>placement.py</code> is claimed by S21, so this node reads it but does not edit it. The S21 coordinator pointed out this reuse on 2026-09-24.</p>
+    <p><strong>Reuse, not a third reader.</strong> <code>reckon/crew/summary.py</code> already finds the process's own cgroup: <code>SELF_CGROUP_PATH</code>, <code>LOGIN_CGROUP_ROOT</code>, <code>_user_slice_dir</code> and <code>read_login_slice</code>. <code>reckon/crew/placement.py</code> already has <code>occupying_the_reservation</code>, which answers whether the process is inside the held job. <code>host_facts()</code> composes those two rather than parsing <code>/proc/self/cgroup</code> again. Node-locality and the tmpfs question already have answers: <code>_is_node_local_path</code> and <code>_path_is_tmpfs</code> in <code>reckon/crew/dispatch.py</code>, both read from <code>/proc/self/mountinfo</code>. The probe imports those two rather than adding a <code>statfs</code> answer that could disagree with them. Its tests therefore stub the mountinfo path, where the text above says <code>statfs</code>. <code>placement.py</code> is claimed by S21, so this node reads it but does not edit it. The S21 coordinator pointed out this reuse on 2026-09-24.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>Tests feed fixture cgroup files and a stubbed <code>statfs</code>. They assert the four cases: inside the job cgroup, environment-only, no SLURM at all, and a GPFS home beside an xfs <code>/tmp</code>.</li>
