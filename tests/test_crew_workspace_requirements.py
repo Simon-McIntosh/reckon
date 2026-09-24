@@ -181,31 +181,38 @@ def test_an_unreachable_endpoint_is_refused_naming_the_endpoint(
 
 
 def test_a_node_local_path_is_refused_by_name_with_its_own_sentence(
-    config_home: Path, repository: Path
+    config_home: Path, repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The per-user runtime directory gets its own refusal, not a missing one.
+    """The per-node runtime directory gets its own refusal, not a missing one.
 
-    The path exists on the dispatcher, so a check that only asked whether it
-    exists would admit it and the failure would surface as a worker defect on
-    another node. The sentence must say what is wrong with it.
+    Two spellings, and the refusal must read the same for both. The first is a
+    directory created under this process's own runtime root, so it certainly
+    exists here — the silent case, where a check that only asked whether the
+    path exists would admit it and the failure would surface as a worker defect
+    on another node. The second is spelled under ``/run/user``, the same shape
+    reached on a host where that directory names a different user or nothing at
+    all, so the classification cannot be an existence check on either side.
     """
-    node_local = str(Path("/run/user") / str(os.getuid()))
-    # The path exists on this dispatcher, so a check that only asked whether it
-    # exists would admit it — which is exactly the silent case.
-    assert Path(node_local).is_dir()
-    config = _config(
-        _placement(requirements=[{"name": "crew-state", "path": node_local}])
-    )
+    runtime = tmp_path / "runtime"
+    (runtime / "crew-state").mkdir(parents=True)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    existing = str(runtime / "crew-state")
+    assert Path(existing).is_dir()
+    absent = str(Path("/run/user") / str(os.getuid()) / "crew-state")
 
-    with pytest.raises(crew.CrewError) as refusal:
-        _plan(config, config_home=config_home, repository=repository)
+    for node_local in (existing, absent):
+        config = _config(
+            _placement(requirements=[{"name": "crew-state", "path": node_local}])
+        )
 
-    message = str(refusal.value)
-    assert node_local in message
-    assert "/run/user" in message
-    assert "per-node storage" in message
-    # Its own sentence, distinct from the not-visible refusal.
-    assert "is not visible from there" not in message
+        with pytest.raises(crew.CrewError) as refusal:
+            _plan(config, config_home=config_home, repository=repository)
+
+        message = str(refusal.value)
+        assert node_local in message
+        assert "per-node storage" in message
+        # Its own sentence, distinct from the not-visible refusal.
+        assert "is not visible from there" not in message
 
 
 def test_a_placement_naming_a_wrapper_with_no_query_is_refused(

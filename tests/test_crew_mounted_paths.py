@@ -1,4 +1,16 @@
-"""Hermetic coverage for dispatch writes spanning registered repositories."""
+"""Hermetic coverage for dispatch writes against the project's mount.
+
+A project's registered mount decides both roots: the repository the plan is read
+from and the repository its work is written in are the same one. A dispatch that
+names a different repository is refused before a worktree, pointer or ledger row
+exists, and a write path that lands outside that repository and outside Reckon's
+delivery directories is refused with both the work repository and the delivery
+routes named.
+
+The two temporary repositories below are both mounts, so a refusal that names
+one of them proves the authority set is resolved from the mount rather than from
+whatever repository the caller happened to name.
+"""
 
 from __future__ import annotations
 
@@ -96,6 +108,7 @@ def _node(path: Path) -> crew.TaskNode:
         goal="record one delivery in the repository that owns it",
         plan="remote-plan",
         section="dispatch",
+        spec_level="guided",
         done_when="pytest reports all mounted delivery checks passing",
         write_paths=[str(path)],
         time_budget="20m",
@@ -106,18 +119,11 @@ def test_dispatch_accepts_a_write_in_the_mounted_plan_repository_and_records_aut
     home: Path, repositories: tuple[Path, Path]
 ) -> None:
     work_repo, authority_repo = repositories
+    assert work_repo != authority_repo
     delivery = authority_repo / "delivery" / "result.txt"
 
-    record = crew.dispatch(
-        node=_node(delivery),
-        project="authority-project",
-        repo=work_repo,
-        config=CONFIG,
-        session="mounted-delivery-session",
-        check_budget=False,
-        launcher=lambda *args, **kwargs: 0,
-    )
-
+    # Read the base before the dispatch: the run records the commit it was cut
+    # from, and a dispatch may leave a commit of its own behind.
     plan_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=authority_repo,
@@ -125,6 +131,19 @@ def test_dispatch_accepts_a_write_in_the_mounted_plan_repository_and_records_aut
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+    record = crew.dispatch(
+        node=_node(delivery),
+        project="authority-project",
+        repo=authority_repo,
+        config=CONFIG,
+        session="mounted-delivery-session",
+        check_budget=False,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    # One repository under both roots: the plan is read from the mount and the
+    # work is written there, so the authority names it once.
     assert record["authority"] == {
         "plan": {
             "project": "authority-project",
@@ -134,15 +153,13 @@ def test_dispatch_accepts_a_write_in_the_mounted_plan_repository_and_records_aut
             "base_sha": plan_sha,
         },
         "write": {
-            "projects": ["work-project"],
-            "repository": str(work_repo.resolve()),
+            "projects": ["authority-project"],
+            "repository": str(authority_repo.resolve()),
             "source": "mount",
         },
-        "repositories": sorted(
-            {str(work_repo.resolve()), str(authority_repo.resolve())}
-        ),
+        "repositories": [str(authority_repo.resolve())],
     }
-    assert record["node"]["write_paths"] == [str(delivery)]
+    assert record["node"]["write_paths"][0] == str(delivery)
     assert crew.pointer_path(record["run_id"]).is_file()
     assert crew.runs_dir().is_relative_to(home)
 
@@ -174,19 +191,20 @@ def test_write_in_an_unmounted_repository_names_the_missing_mount(
 def test_write_outside_all_authority_and_delivery_roots_is_refused(
     home: Path, repositories: tuple[Path, Path], tmp_path: Path
 ) -> None:
-    work_repo, _authority_repo = repositories
+    _work_repo, authority_repo = repositories
     outside = tmp_path / "outside" / "result.txt"
 
     with pytest.raises(crew.CrewError) as excinfo:
         crew.plan_dispatch(
             node=_node(outside),
             project="authority-project",
-            repo=work_repo,
+            repo=authority_repo,
             config=CONFIG,
         )
 
     detail = str(excinfo.value)
     assert str(outside) in detail
+    assert str(authority_repo.resolve()) in detail
     assert str(crew.runs_dir()) in detail
     assert str(crew.reports_dir()) in detail
     assert crew.runs_dir().is_relative_to(home)
@@ -198,43 +216,43 @@ def test_non_repository_delivery_roots_remain_valid_for_report_only_nodes(
     repositories: tuple[Path, Path],
     delivery_root,
 ) -> None:
-    work_repo, _authority_repo = repositories
+    _work_repo, authority_repo = repositories
     delivery = delivery_root() / "authority-project" / "verification.json"
 
     resolution = crew.plan_dispatch(
         node=_node(delivery),
         project="authority-project",
-        repo=work_repo,
+        repo=authority_repo,
         config=CONFIG,
     )
 
     assert resolution.validation.ok is True
-    assert resolution.node.write_paths == [str(delivery)]
+    assert resolution.node.write_paths[0] == str(delivery)
     assert delivery.is_relative_to(home)
 
 
 def test_write_authority_needs_a_mount_entry_and_nothing_in_the_repository(
     home: Path, repositories: tuple[Path, Path], tmp_path: Path
 ) -> None:
-    """Registering authority is a config-home fact, not a change to the repo.
+    """Registering a project's mount is a config-home fact, not a repo change.
 
-    `reckon sync` couples two things with very different blast radii: a
-    mounts.json entry in the config home, and reckon's UI scaffolding copied
-    into the repository. For a data-only catalog that is pull-requested to
-    another organisation the second is unacceptable while the first is
-    invisible to it — so a session facing that refusal hand-composed a
-    delegation instead, which is strictly weaker in observability. The entry
-    alone must be enough, and the docs directory it names must not have to
-    exist, or the "config only" route is not one.
+    A mounts.json entry in the config home is written without copying reckon's
+    UI scaffolding into the repository, so a data-only catalog can be registered
+    without a pull request against it. What the entry buys is authority over the
+    project's *own* repository, and nothing more: a repository named as ``--repo``
+    is admitted only when it is the repository the project's mount resolves to.
+    The catalog repository is left byte-identical, which is what the entry was
+    supposed to cost.
     """
-    _work_repo, _authority_repo = repositories  # the fixture registers the mounts
+    _work_repo, authority_repo = repositories  # the fixture registers the mounts
     catalog = tmp_path / "data-only-catalog"
     catalog.mkdir()
     (catalog / "records.csv").write_text("id,value\n1,2\n", encoding="utf-8")
     _commit_repository(catalog, "records.csv")
     delivery = catalog / "records.csv"
 
-    # Before: the refusal, naming both remedies.
+    # Before any catalog entry exists, naming that repository is refused: the
+    # project's mount decides where its work is written.
     with pytest.raises(crew.CrewError) as refusal:
         crew.plan_dispatch(
             node=_node(delivery),
@@ -243,24 +261,26 @@ def test_write_authority_needs_a_mount_entry_and_nothing_in_the_repository(
             config=CONFIG,
         )
     detail = str(refusal.value)
-    assert "outside the resolved mount authority set" in detail
-    assert "reckon sync" in detail
-    assert "hand-compose" in detail
+    assert str(catalog.resolve()) in detail
+    assert str(authority_repo.resolve()) in detail
+    assert "--repo" in detail
 
-    # After: one config-home entry, and the docs directory it names is absent.
+    # A config-home entry registers the catalog as a project of its own and
+    # creates no file in the repository — but it does not give another project
+    # write authority there, because the authority is the project's own mount.
     mounts = json.loads((home / "mounts.json").read_text())
     mounts["catalog-project"] = str(catalog / "docs")
     (home / "mounts.json").write_text(json.dumps(mounts), encoding="utf-8")
     assert not (catalog / "docs").exists(), "nothing was written to the repository"
 
-    resolution = crew.plan_dispatch(
-        node=_node(delivery),
-        project="authority-project",
-        repo=catalog,
-        config=CONFIG,
-    )
-    assert resolution.validation.ok
-    assert resolution.authority["write"]["projects"] == ["catalog-project"]
+    with pytest.raises(crew.CrewError) as still_refused:
+        crew.plan_dispatch(
+            node=_node(delivery),
+            project="authority-project",
+            repo=catalog,
+            config=CONFIG,
+        )
+    assert str(authority_repo.resolve()) in str(still_refused.value)
     assert [path.name for path in catalog.iterdir() if path.name != ".git"] == [
         "records.csv"
     ], "the repository is untouched"

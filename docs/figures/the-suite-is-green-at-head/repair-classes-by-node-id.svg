@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" width="960" height="440" role="img"
+     aria-label="Seventeen failing node ids partitioned by diagnosed cause: seven from the mount guard, seven from a stale launcher stub, one host-dependent fixture, one ledger-initialisation fixture, one product defect carried out of scope.">
+  <style>
+    .t { font-family: system-ui, -apple-system, Segoe UI, sans-serif; fill: #1f2933; }
+    .h { font-size: 19px; font-weight: 600; }
+    .s { font-size: 13px; fill: #52606d; }
+    .l { font-size: 13px; }
+    .n { font-size: 15px; font-weight: 700; fill: #ffffff; }
+    .cell { stroke: #ffffff; stroke-width: 1.5; }
+    .axis { stroke: #cbd2d9; stroke-width: 1; fill: none; }
+    .band { fill: #b23c3c; opacity: 0.07; }
+  </style>
+
+  <text class="t h" x="40" y="38">Seventeen failing node ids, partitioned by diagnosed cause</text>
+  <text class="t s" x="40" y="60">base revision 77c20349 &#183; every repaired id is green at the same product revision: only tests/ changed, so no behaviour changed</text>
+
+  <rect class="band" x="30" y="88" width="900" height="96" rx="6"/>
+
+  <g transform="translate(40,104)">
+    <rect class="cell" x="0"   y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="46"  y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="92"  y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="138" y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="184" y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="230" y="0" width="46" height="46" fill="#2f6fbf"/>
+    <rect class="cell" x="276" y="0" width="46" height="46" fill="#2f6fbf"/>
+
+    <rect class="cell" x="322" y="0" width="46" height="46" fill="#2b8a6b"/>
+    <rect class="cell" x="368" y="0" width="46" height="46" fill="#2b8a6b"/>
+    <rect class="cell" x="414" y="0" width="46" height="46" fill="#2b8a6b"/>
+    <rect class="cell" x="460" y="0" width="46" height="46" fill="#2b8a6b"/>
+    <rect class="cell" x="506" y="0" width="46" height="46" fill="#2b8a6b" opacity="1"/>
+    <rect class="cell" x="552" y="0" width="46" height="46" fill="#2b8a6b"/>
+    <rect class="cell" x="598" y="0" width="46" height="46" fill="#2b8a6b"/>
+
+    <rect class="cell" x="644" y="0" width="46" height="46" fill="#c99700"/>
+    <rect class="cell" x="690" y="0" width="46" height="46" fill="#7b5ea7"/>
+
+    <rect class="cell" x="736" y="0" width="46" height="46" fill="#b23c3c"/>
+    <text class="t n" x="759" y="30" text-anchor="middle">1</text>
+
+    <g class="axis">
+      <path d="M0 59 v-4 M0 55 h322 M322 55 v4"/>
+      <path d="M322 59 v-4 M322 55 h322 M644 55 v4"/>
+      <path d="M644 59 v-4 M644 55 h138 M782 55 v4"/>
+    </g>
+    <text class="t s" x="161" y="78" text-anchor="middle">7 ids &#183; mount guard</text>
+    <text class="t s" x="483" y="78" text-anchor="middle">7 ids &#183; dead-pid launcher stub</text>
+    <text class="t s" x="713" y="78" text-anchor="middle">2 ids &#183; fixtures</text>
+  </g>
+
+  <g transform="translate(40,222)">
+    <rect x="0" y="0"   width="16" height="16" fill="#2f6fbf"/>
+    <text class="t l" x="26" y="13">stale expectation &#8212; <tspan font-weight="600">7 ids</tspan>: a project's repository comes from its mount, so a second repository named on the command line is refused first</text>
+
+    <rect x="0" y="30"  width="16" height="16" fill="#2b8a6b"/>
+    <text class="t l" x="26" y="43">stale fixture &#8212; <tspan font-weight="600">7 ids</tspan>: the launcher stub named a pid that had exited, so the claim was disregarded and the guard under test never fired</text>
+
+    <rect x="0" y="60"  width="16" height="16" fill="#c99700"/>
+    <text class="t l" x="26" y="73">test isolation &#8212; <tspan font-weight="600">1 id</tspan>: the case read this host's per-user runtime directory rather than building one under its own temporary root</text>
+
+    <rect x="0" y="90"  width="16" height="16" fill="#7b5ea7"/>
+    <text class="t l" x="26" y="103">fixture initialisation &#8212; <tspan font-weight="600">1 id</tspan>: a ledger under a directory git cannot describe is refused unless the genuinely new project is declared as such</text>
+
+    <rect x="0" y="120" width="16" height="16" fill="#b23c3c"/>
+    <text class="t l" x="26" y="133">product defect &#8212; <tspan font-weight="600">1 id</tspan>, carried to follow_ons rather than repaired here: a launcher failure escapes dispatch as a host error</text>
+  </g>
+
+  <g transform="translate(40,388)">
+    <line x1="0" y1="0" x2="880" y2="0" class="axis"/>
+    <text class="t s" x="0" y="22">16 of 17 repaired and green at head. The seventeenth names a defect in the dispatch spawn, outside this node's write scope.</text>
+    <text class="t s" x="0" y="40">Negative control: all 17 observed failing at 77c20349, each file run as it stood there.</text>
+  </g>
+</svg>

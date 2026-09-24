@@ -272,6 +272,42 @@
 
     
 
+    <h3 id="landed-dispatch-scope-and-mount-refusals">Dispatch scope and mount refusals &mdash; 16 of 17 ids green</h3>
+    <p>Seventeen ids across six files, plus <code>test_crew_dispatch_arming</code> kept green. Each file was run at the
+    base revision and again at this node's head, in its own process with its own <code>--basetemp</code>. Only
+    <code>tests/</code> differs between the two, so every repaired id passes at the product revision that failed it; both
+    sides pin the product tree to this node's worktree and each log header names the resolved <code>reckon</code> path it
+    imported, so the comparison cannot drift onto another checkout through the shared environment.</p>
+    <figure>
+      <img src="/reckon/figures/the-suite-is-green-at-head/repair-classes-by-node-id.svg"
+           alt="The seventeen owned failing node ids as a row of cells coloured by diagnosed cause, with a legend and the count for each cause.">
+      <figcaption>The seventeen owned ids partitioned by cause: seven from the mount guard, seven from a stale launcher
+      stub, one host-dependent fixture, one ledger-initialisation fixture, and one product defect carried outward.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Class</th><th>Ids</th><th>Cause</th></tr></thead>
+      <tbody>
+        <tr><td>stale expectation</td><td>7</td><td>A project's repository comes from its registered mount, so a second repository named as <code>--repo</code> is refused before the assertion those cases were written for.</td></tr>
+        <tr><td>stale fixture</td><td>7</td><td>The stub launcher named a pid that had exited, so the run's claim was disregarded and the exclusive-claim refusal under test never fired.</td></tr>
+        <tr><td>test isolation</td><td>1</td><td>The case asserted a fact about the host's runtime directory instead of building one under its own temporary root.</td></tr>
+        <tr><td>fixture initialisation</td><td>1</td><td>A ledger path git cannot describe is refused unless the caller declares the project genuinely new.</td></tr>
+        <tr><td>product defect</td><td>1</td><td>A launcher failure escapes dispatch as the host error rather than as a dispatch refusal. Named in this node's <code>follow_ons</code> with file, line and reproduction; not repaired here.</td></tr>
+      </tbody>
+    </table>
+    <p>Two corrections to the research record's reading of this cluster. The figure-topic claim refusals are <em>not</em>
+    the set's likeliest real defect: they fail only because the fixture's launcher stub named a dead pid, and a claim binds
+    only while its holder is disposed as running, so the guard was right to admit. And the spawn-failure id is a genuine
+    defect, unnamed in §2, carried rather than repaired because the spawn sits in <code>reckon/crew/dispatch.py</code>
+    outside this node's write scope.</p>
+    <p>Residual observation for the coordinator: <code>resolve_dispatch_authority</code> still constructs distinct plan and
+    write repositories, while <code>resolve_project_repository</code> now forces the named repository to be the project's
+    mount at both dispatch entry points. The dual-repository branch is live code no dispatch path can reach.</p>
+    <p>One §4 id was renamed rather than repaired away, and the mapping is recorded in
+    <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#dispatch-scope-and-mount-refusals">the cumulative landed record</a>:
+    the exclusive-claim walk now reads <em>every</em> live claim because dispatch grants the plan's figure topic directory
+    as a shared landing path, so the owner declares four paths and not three. The count is asserted from the owner's own
+    record, not a literal.</p>
+
     <section id="s2-landing-skill-spa-and-crew-files" class="node-landing">
       <h3>Skill, SPA and crew files &mdash; <code>rendered-and-skill-contracts-match</code></h3>
       <p>Ten owned ids across eight files, at base
