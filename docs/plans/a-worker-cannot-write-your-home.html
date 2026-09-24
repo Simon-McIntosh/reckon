@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.25">
@@ -168,10 +168,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awcwyh-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-worker-cannot-write-your-home" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcwyh-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship a-worker-cannot-write-your-home" data-resolved-at="2026-09-24T12:55:40+00:00" data-resolved-by="reckon-e5">
     <h4 class="r-fu-title">Wrap the launch plan, then give the harness its own home</h4>
     <div class="r-fu-body"><p>§1 lands in <code>reckon/_backends.py</code>, where every dispatch, resume and redispatch builds its plan. It is proved with a stub command, so it does not depend on §2. §2 must land before the fence is switched on for real workers, because a read-only <code>~/.claude</code> without a per-run harness home breaks the worker's own transcript. §3 makes the set configurable and the fence fail closed. §4 is text.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-worker-cannot-write-your-home</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-awcwyh-002. §1 landed as a capability (ae7be0c5), but no production launch composes the fence: <code>launch_plan(fence=False)</code> is the default at main, and no caller passes True. So §1's measure, that every CLI worker launches inside a fence, is not yet met in the running system, and it becomes true when §2 merges.</p></p>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-worker-cannot-write-your-home §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Fix the unfenced codex home, smoke-test real fenced workers, then merge §2</h4>
+    <div class="r-fu-body"><p><strong>The successor's first S19 step.</strong> §2 is delivered and promoted but deliberately <strong>not merged</strong>, because merging turns the fence on for every worker in every session. It consists of: run <code>r-20260923T133306347157-each-run-owns-its-harness-home</code>, with commits c72c460e, ed6f3f3c and f073da71 (promoted at 296700ae, review 88); and its corrective run <code>r-20260923T165705059110-fenced-launch-neighbour-tests</code>, which repaired four neighbouring tests that pin an exact argv or environment, with commits 7bdadce0 and 27e11161 (review 95). The combined head is 27e11161. <strong>The merge needs, in order:</strong> (1) the review-88 finding fixed. <code>launch_plan</code> sets <code>CODEX_HOME</code> to the run's codex home even for <code>fence=False</code>, while the read-only <code>auth.json</code> bind is composed only when the fence is on, so an unfenced codex launch would lose the operator's login. Set <code>CODEX_HOME</code> only on the path that also binds the login, based on 27e11161, with a test asserting its absence under <code>fence=False</code> and its presence with the bind under <code>fence=True</code>. (2) A real smoke test from that tree before merge: one fenced clive worker completes a one-file node, its transcript lands under <code>&lt;run&gt;/harness</code>, <code>crew resume</code> of that run works, and nothing is added under <code>~/.claude/projects</code> for its worktree; plus one fenced codex worker, with <code>~/.codex/auth.json</code> unchanged. (3) The S20 coordinator told before the merge. Then §3, which also adds the worktree root to the protected set and gates <code>the-boundary-check-reads-two-trees</code> §1.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-cannot-write-your-home §2</pre>
     </article>
 </section>
 
