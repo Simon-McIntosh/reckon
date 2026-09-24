@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,16 +96,32 @@
     follower holds the lock adds one more read-only follower that will never exit. The ten
     nova orphans were 6:21, 5:17, 4:47, 3:42, 3:03, 2:29, 2:19, 1:48, 1:16 and 0:45 hours
     old: one per re-arm.</p>
-    <p>The fix is to check the owner's liveness on every poll, independent of the lock. The
-    owner is the process that armed the follower, captured at start; for a follower that
-    re-executes itself to reload source, it is the original parent carried across the
-    re-exec. A follower whose owner is gone exits within one poll whether or not it holds
-    the lock, and a holder releases the lock as it does today.</p>
+    <p>The fix is to check the owner's liveness on every wait-pass tick, independent of the
+    lock. That is the same cadence at which <code>_check_consumer</code> already runs.
+    <strong>The owner is fixed once, at the follower's first start, and nothing afterwards
+    rewrites it.</strong> It is the pid and start time of the process that armed the follower.
+    It is carried in the follower's own environment across a reload's re-exec, and it is not
+    read from the registration record. The reason is a takeover hole the read-back found. A
+    read-only follower retries the claim on every tick (<code>reckon/cli.py</code>, the
+    takeover of a registration whose holder has gone). <code>acquire()</code> in
+    <code>reckon/crew/runs.py</code> then rewrites the whole record from the claimant's
+    <em>current</em> parent (<code>parent = os.getppid()</code>). If that parent is init,
+    <code>_check_consumer</code> returns before comparing anything, and the orphan becomes a
+    holder that never exits. So <code>acquire()</code> also records the armed owner from the
+    environment rather than <code>os.getppid()</code>, and a recorded owner of pid 1 or below
+    is treated as gone, not as a reason to skip the check. A follower whose owner is gone exits
+    within one tick whether or not it holds the lock, and a holder releases the lock as it does
+    today. This is the owner definition <code>a-follower-outlives-its-monitor</code> &sect;7's
+    holder release reads as well, so there is one definition, not two.</p>
     <p><strong>Done when</strong> a test starts a holder and a read-only follower for one
-    session under a stub parent, kills the stub parent, and observes both exit within one
-    poll interval. It also shows that a follower re-executed for reload still exits when the
-    original parent dies. A mutation that restores the early return for a non-holder must
-    fail the test.</p>
+    session under a stub parent. It kills the stub parent and observes both exit within two
+    ticks. It also shows that a follower re-executed for reload still exits when the original
+    parent dies. A third case lets the holder exit so that an orphaned read-only follower takes
+    over, and asserts the taken-over record still names the original owner, after which the
+    follower exits. A mutation that restores the early return for a non-holder must fail the
+    test, and so must one that makes <code>acquire()</code> record <code>os.getppid()</code>
+    again. The write paths are <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code>
+    and that test.</p>
 
     <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
     <p>Per-project <code>crew watch</code> producers are detached with
@@ -151,8 +167,16 @@
     clean, and it reaps them without force. Integration is necessary but not sufficient. In imas-codex-10's hand reap, 2 of 39 integrated trees held a worker's untracked logs, and a published plan comment cites those logs by name. So the reap first preserves untracked content to a durable location, verifies it by file count, and removes it. Only then does the tree remove without force, because it is now genuinely clean, not because a refusal was overridden. Above a stated ceiling of live unintegrated
     trees, it reports the count in the dispatch output rather than silently adding one
     more.</p>
-    <p><strong>Done when</strong> none of the three call sites passes
-    <code>--untracked-files=all</code> over a whole tree. A test counts the
+    <p><strong>Where the reap puts what it preserves, and how it removes.</strong> Untracked
+    content goes to <code>&lt;config-home&gt;/crew/reaped/&lt;project&gt;/&lt;worktree
+    name&gt;/</code>, keeping its paths relative to the tree root. Before removal, the file count
+    there is asserted equal to the count read from the tree. The existing remover,
+    <code>_remove_worktree</code> in <code>reckon/crew/routing.py</code>, passes
+    <code>--force</code>. The reap uses a non-forced removal instead, so a tree that is not
+    clean after preservation is refused and reported, never removed.</p>
+    <p><strong>Done when</strong> no call site passes <code>--untracked-files=all</code> over
+    any tree other than the run's own worktree. The boundary read of the run's own tree is the
+    single stated exception, and it keeps the untracked read. A test counts the
     <code>git status</code> invocations one dispatch-and-complete cycle makes and asserts
     that each is scoped. A dispatch into a project holding integrated, clean worktrees
     leaves fewer of them than it found, and never removes a dirty or unintegrated one.</p>
@@ -177,8 +201,16 @@
     a read, 60 s for a write). When the deadline passes, it returns a typed
     <code>storage-slow</code> result naming the path it was waiting on and how long it
     waited, so the caller can distinguish a slow filesystem from a missing plan. One blocked
-    read must not block the server: the work runs off the request thread, so a second call
-    to a different project still answers. A write whose deadline passes reports whether it
+    read must not block the server, so a second call to a different project still answers.
+    <strong>The serialization point is the MCP server, not the HTTP one.</strong> The HTTP
+    surface is already a <code>ThreadingHTTPServer</code> (<code>reckon/serve.py</code>). The
+    observed block was in <code>reckon mcp</code>. On 2026-09-23, one session's server sat in
+    GPFS wait (<code>cxiWaitEventWait</code>) inside a <code>read_plan</code>, and every later
+    tool call timed out behind it. That is consistent with the FastMCP server in
+    <code>reckon/mcp.py</code> running a synchronous tool function on its one event loop. The
+    node first confirms that from the installed SDK and records the finding in its manifest.
+    It then moves each tool's filesystem work to a worker thread under the deadline, so the
+    loop stays free. A write whose deadline passes reports whether it
     reached the file, since a timed-out write that did land must not be retried blindly.</p>
     <p><strong>Done when</strong> a test backed by a filesystem stub that blocks on one path
     shows a read of that path returning <code>storage-slow</code> within its deadline, and a
@@ -263,6 +295,16 @@
     must not stop every dispatch on a workstation. The pause field's name and meaning are
     whatever <code>local-lane-admission-control</code> &sect;11 defines. This section reads
     them and does not redefine them.</p>
+    <p><strong>Two review paths, both covered.</strong> The follower's review reflex executes
+    a dispatch through <code>dispatch_review_for_run</code> in
+    <code>reckon/crew/recovery.py</code>. That path holds, and the watch row shows the run as
+    held for review with the pause as its reason. Separately, <code>_review_dispatch_argv</code>
+    in the same module composes a printed review command for a coordinator to run. That
+    printed command holds when it is run, because it goes through dispatch. Its composed text
+    gains no reason of its own. <code>_dispatch_lane_reading</code> in
+    <code>reckon/crew/dispatch.py</code> today documents that no value in the lane document
+    holds a dispatch. Its docstring is corrected to name the declared pause as the one field
+    that does, so the tree and this plan agree.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code>,
     in a temporary <code>RECKON_HOME</code>, points dispatch at a temporary lane document.
     With the pause declared, a <code>--local</code> dispatch and a sweep review dispatch each
