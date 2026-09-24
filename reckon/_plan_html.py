@@ -470,6 +470,15 @@ def read_state(html_text: str) -> dict:
                         (evidence_link.get("href") or "") if evidence_link else ""
                     ),
                     "passed": verdict == "passed",
+                    **{
+                        field: (gate.get(attribute) or "").strip()
+                        for field, attribute in (
+                            ("transition", "data-transition"),
+                            ("gating_plan", "data-gating-plan"),
+                            ("decision", "data-decision"),
+                        )
+                        if gate.has_attr(attribute)
+                    },
                 }
             )
         st["gates"] = gates
@@ -683,6 +692,11 @@ def _render_gates(gates: list) -> str:
     for gate in gates:
         gate = gate or {}
         gated_sections = ",".join(gate.get("gated_sections") or [])
+        transition_attributes = "".join(
+            f' data-{field.replace("_", "-")}="{_esc(gate[field])}"'
+            for field in ("transition", "gating_plan", "decision")
+            if field in gate
+        )
         evidence = (
             f'<a class="r-gate-evidence" href="{_esc(gate.get("evidence"))}">Evidence</a>\n'
             if gate.get("evidence")
@@ -692,6 +706,7 @@ def _render_gates(gates: list) -> str:
             f'<div class="r-gate" data-id="{_esc(gate.get("id"))}"'
             f' data-section="{_esc(gate.get("section"))}"'
             f' data-gated-sections="{_esc(gated_sections)}"'
+            f"{transition_attributes}"
             f' data-status="{_esc(gate.get("status"))}"'
             f' data-verdict="{_esc(gate.get("verdict"))}">\n'
             f'    <h4 class="r-gate-measure">{_esc(gate.get("measure"))}</h4>\n'

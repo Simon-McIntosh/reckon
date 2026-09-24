@@ -198,3 +198,76 @@ def test_closure_gate_does_not_add_followup_requirement():
     plan["followups"] = []
     report = build_roadmap("sample", [plan], [])
     assert report["ready_now"][0]["dispatchable"] is True
+
+
+def test_verdict_and_terminal_write_can_share_one_batch():
+    plan = _plan()
+    _store.apply_ops(
+        plan,
+        [
+            {"op": "pass", "id": "outcome-gate", "evidence": "receipt"},
+            {"op": "set", "path": "status", "value": "done"},
+        ],
+        False,
+    )
+    assert plan["status"] == "done"
+
+
+def test_direct_decision_state_write_cannot_bypass_gate(tmp_path):
+    plan = _plan(_gate(transition="decision-lockable"))
+    plan["decisions"] = {"accept-outcome": {"title": "Accept the outcome?"}}
+    path = tmp_path / "docs/plans/consumer.html"
+    path.parent.mkdir(parents=True)
+    path.write_text(write_state(_store.new_plan_html("sample", "consumer"), plan))
+    before = path.read_bytes()
+    plan["decisions"]["accept-outcome"]["choice"] = "accept"
+    with pytest.raises(_store.OpError, match=r"outcome-gate.*producer#outcome"):
+        _store._write_state("sample", "consumer", plan, 0, root=tmp_path)
+    assert path.read_bytes() == before
+    plan["gates"][0]["verdict"] = "failed"
+    assert _store._write_state("sample", "consumer", plan, 0, root=tmp_path) == 1
+    assert (
+        read_state(path.read_text())["decisions"]["accept-outcome"]["choice"]
+        == "accept"
+    )
+
+
+def test_set_decision_choice_cannot_bypass_gate():
+    plan = _plan(_gate(transition="decision-lockable"))
+    plan["decisions"] = {"accept-outcome": {"title": "Accept the outcome?"}}
+    with pytest.raises(_store.OpError, match=r"outcome-gate.*producer#outcome"):
+        _store.apply_ops(
+            plan,
+            [
+                {
+                    "op": "set",
+                    "path": "decisions.accept-outcome.choice",
+                    "value": "accept",
+                }
+            ],
+            False,
+        )
+
+
+def test_multiple_foreign_outcomes_remain_visible_for_one_decision():
+    plan = _plan(_gate(transition="decision-lockable"))
+    plan["decisions"] = {"accept-outcome": {"title": "Accept the outcome?"}}
+    plan["gates"].append(
+        {
+            **_gate(transition="decision-lockable", ref="foreign:another"),
+            "id": "another-gate",
+        }
+    )
+    report = build_roadmap("sample", [plan], [])
+    gates = report["decision_blockers"][0]["transition_gates"]
+    assert {gate["gating_plan"] for gate in gates} == {
+        "producer#outcome",
+        "foreign:another",
+    }
+
+
+def test_transition_gate_must_name_an_existing_decision():
+    with pytest.raises(ValueError, match="unknown decision"):
+        PlanState.model_validate(
+            _plan(_gate(transition="decision-lockable"))
+        ).validate_for_write()

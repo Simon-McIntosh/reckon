@@ -681,7 +681,10 @@ def _write_state_locked(
         and current_status not in TERMINAL_STATUSES
         and requested_status in TERMINAL_STATUSES
     ):
+        _require_transition_verdict(new_data, "plan-terminal")
         _require_terminal_evidence(project, slug, requested_status, root)
+    if state_type == "plan":
+        _validate_decision_transitions(new_data, cur_state)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
     new_data["modified"] = date.today().isoformat()
     new_data["version"] = cur_version + 1
@@ -1757,6 +1760,8 @@ def _apply_lock(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     key = op.get("key")
     if not key:
         raise OpError("lock op requires a 'key'")
+    if op.get("choice"):
+        _require_transition_verdict(working, "decision-lockable", decision=key)
     decisions = working.setdefault("decisions", {})
     existing = decisions.get(key)
     merged = {
@@ -1792,18 +1797,28 @@ def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
         isinstance(section, str) for section in gated_sections
     ):
         raise OpError("gate op 'gated_sections' must be a list of strings")
-    gates.append(
-        {
-            "id": ident,
-            "section": str(op.get("section", "")),
-            "gated_sections": gated_sections,
-            "status": str(op.get("status", "open")),
-            "measure": measure,
-            "required_evidence": str(op.get("required_evidence", "")),
-            "verdict": "",
-            "evidence": "",
-        }
-    )
+    declared = {
+        "id": ident,
+        "section": str(op.get("section", "")),
+        "gated_sections": gated_sections,
+        "status": str(op.get("status", "open")),
+        "measure": measure,
+        "required_evidence": str(op.get("required_evidence", "")),
+        "verdict": "",
+        "evidence": "",
+        **{
+            field: op[field]
+            for field in ("transition", "gating_plan", "decision")
+            if field in op
+        },
+    }
+    from reckon._schema import Gate
+
+    try:
+        Gate.model_validate(declared).validate_for_write()
+    except ValueError as exc:
+        raise OpError(str(exc)) from exc
+    gates.append(declared)
 
 
 def _gate_requires_evidence(working: dict) -> bool:
@@ -1980,6 +1995,7 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
         return
     requested_status = str(patch.get("status", "")).lower()
     if requested_status in TERMINAL_STATUSES:
+        _require_transition_verdict(state, "plan-terminal")
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
@@ -2007,6 +2023,31 @@ def _require_terminal_evidence(
         f"evidence record {expected}; add "
         f'<meta name="plan-evidence-for" content="{slug}">'
     )
+
+
+def _require_transition_verdict(
+    state: dict[str, Any], transition: str, *, decision: str | None = None
+) -> None:
+    """Refuse a gated transition while its outcome remains unrecorded."""
+    from reckon._schema import pending_transition_gates
+
+    for gate in pending_transition_gates(state.get("gates") or [], transition):
+        if decision is not None and gate.get("decision") != decision:
+            continue
+        raise OpError(
+            f"gate {gate.get('id')!r} awaiting verdict from "
+            f"{gate.get('gating_plan')!r}: {transition} refused"
+        )
+
+
+def _validate_decision_transitions(working: dict, previous: dict) -> None:
+    """Apply the same decision gate to locks and direct state replacements."""
+    decisions = working.get("decisions") or {}
+    before = previous.get("decisions") or {}
+    for key, decision in decisions.items():
+        choice = decision.get("choice")
+        if choice and choice != (before.get(key) or {}).get("choice"):
+            _require_transition_verdict(working, "decision-lockable", decision=key)
 
 
 def _validate_continuation(working: dict, ops: list[dict]) -> None:
@@ -2050,6 +2091,9 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
     """
     if not isinstance(ops, list):
         raise OpError("ops must be a list")
+    from copy import deepcopy
+
+    previous_decisions = deepcopy(working.get("decisions") or {})
     warnings: list[str] = []
     for n, op in enumerate(ops):
         if not isinstance(op, dict):
@@ -2060,6 +2104,14 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
             raise OpError(f"op #{n}: unknown verb {verb!r}")
         handler(working, op, is_index, warnings)
     if not is_index and str(working.get("type", "plan") or "plan") == "plan":
+        if any(
+            op.get("op") == "set"
+            and op.get("path") == "status"
+            and str(op.get("value") or "").strip().lower() in TERMINAL_STATUSES
+            for op in ops
+        ):
+            _require_transition_verdict(working, "plan-terminal")
+        _validate_decision_transitions(working, {"decisions": previous_decisions})
         _validate_continuation(working, ops)
     return warnings
 

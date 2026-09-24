@@ -16,10 +16,12 @@ from typing import Any
 
 from reckon._plan_html import read_state
 from reckon._schema import (
+    GATE_TRANSITIONS,
     GRAPH_HANDLE_GRAMMAR,
     LEGACY_EFFORT_HOURS,
     is_graph_handle,
     parse_plan_ref,
+    pending_transition_gates,
     plan_section_anchors,
     resolve_plan_ref,
     standalone_reason,
@@ -267,8 +269,24 @@ def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
     )
 
 
+def _execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Transition gates hold closure or a choice, leaving execution available."""
+    return [
+        gate
+        for gate in plan.get("gates") or []
+        if isinstance(gate, dict) and gate.get("transition") not in GATE_TRANSITIONS
+    ]
+
+
+def _closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {"kind": "gate", "plan": plan.get("slug", ""), **gate}
+        for gate in pending_transition_gates(plan.get("gates") or [], "plan-terminal")
+    ]
+
+
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
-    gates = [gate for gate in plan.get("gates") or [] if isinstance(gate, dict)]
+    gates = _execution_gates(plan)
     if not gates:
         return True, []
 
@@ -300,6 +318,15 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
         choice = str(decision.get("choice") or decision.get("chosen") or "").strip()
         rationale = str(decision.get("rationale") or "").strip()
         status = "locked" if choice else "deferred" if rationale else "open"
+        transition_gates = [
+            gate
+            for gate in pending_transition_gates(
+                plan.get("gates") or [], "decision-lockable"
+            )
+            if gate.get("decision") == key
+        ]
+        if transition_gates:
+            status = "open"
         rows.append(
             {
                 "kind": "decision",
@@ -309,6 +336,16 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
                 "status": status,
                 "choice": choice,
                 "rationale": rationale,
+                **(
+                    {
+                        "transition": "decision-lockable",
+                        "gate_id": transition_gates[0].get("id", ""),
+                        "gating_plan": transition_gates[0].get("gating_plan", ""),
+                        "transition_gates": transition_gates,
+                    }
+                    if transition_gates
+                    else {}
+                ),
             }
         )
     return rows
@@ -1021,6 +1058,7 @@ def resolve_graph_target(
             schedule_rows[(project, str(row["slug"]))] = row
 
     decision_blockers: list[dict[str, Any]] = []
+    closure_blockers: list[dict[str, Any]] = []
     ready: list[str] = []
     for key in member_keys:
         plan = plans[key]
@@ -1029,6 +1067,7 @@ def resolve_graph_target(
         decisions = _decision_rows(plan)
         open_decisions = [row for row in decisions if row["status"] == "open"]
         decision_blockers.extend(open_decisions)
+        closure_blockers.extend(_closure_blockers(plan))
         dependencies_complete = all(
             _status(plans[dependency]) in COMPLETED_STATUSES
             for dependency in plan_blocking_graph[key]
@@ -1041,7 +1080,7 @@ def resolve_graph_target(
         if (
             dependencies_complete
             and not blockers
-            and not unpassed_gate_blockers(plan.get("gates") or [])
+            and not unpassed_gate_blockers(_execution_gates(plan))
             and not open_decisions
             and _status(plan) in _AUTHORISED_STATUSES
             and _dispatchability(plan)[0]
@@ -1081,7 +1120,8 @@ def resolve_graph_target(
         "average_width": round(total / depth, 3) if depth else 0.0,
         "ready": sorted(ready),
         "decision_blockers": decision_blockers,
-        "ship_ready": not decision_blockers,
+        "closure_blockers": closure_blockers,
+        "ship_ready": not decision_blockers and not closure_blockers,
         "schedule_override": {
             "required": bool(deferred_members),
             "deferred": len(deferred_members),
@@ -1800,7 +1840,7 @@ def _build_roadmap(
             for row in plan.get("blocking") or []
             if isinstance(row, dict) and row.get("kind") == "held"
         ]
-        gate_blockers = unpassed_gate_blockers(plan.get("gates") or [])
+        gate_blockers = unpassed_gate_blockers(_execution_gates(plan))
         decisions = _decision_rows(plan)
         decision_blockers = [
             decision for decision in decisions if decision["status"] == "open"
@@ -1880,6 +1920,7 @@ def _build_roadmap(
             "explicit_blockers": explicit_blockers,
             "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
+            "closure_blockers": _closure_blockers(plan),
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
             "decisions": decisions,
