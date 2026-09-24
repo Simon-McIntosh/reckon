@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
   <meta name="plan-title" content="The Fleet Counters Count The Fleet">
-  <meta name="plan-summary" content="The follower's trailing counters and terminal words agree with the live classification, and a vanished pointer is not reported as promoted.">
+  <meta name="plan-summary" content="The follower&#x27;s trailing counters and terminal words agree with the live classification, and a vanished pointer is not reported as promoted.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
@@ -23,6 +23,8 @@
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -75,36 +77,38 @@
       <li>a synthetic fleet whose run count changes without a row being emitted shows the new count on the next line;</li>
       <li>a refused dispatch never renders <code>promoted</code>.</li>
     </ul>
+    <p><strong>What the census did not sample.</strong> The census read the producer's event file. The S23 coordinator's own follower (<code>--session s23-coord</code>) also showed the row and the counter disagreeing within a single rendered line:</p>
+    <ul>
+      <li>At 23:05:38 local, <code>the-suite-carries-its-own-bounds</code> rendered <code>unpromoted</code> beside <code>3w&middot;0b&middot;0u</code>. The counter reached <code>1u</code> only on the next line, at 23:07:23.</li>
+      <li>At 23:03:50 and 23:06:19 local, <code>blocked</code> rows rendered beside <code>0b</code>.</li>
+      <li>At 23:07:29 local, a reflex-launched review (<code>r-20260924T210658157733-review-of-the-suite-carries-its-own-bounds</code>) rendered <code>promoted</code> 6 s after <code>dispatched</code>. It left no run directory, no review record and no ledger row. This is the <code>recovery.py:4519</code> disappearance path, reproduced in production.</li>
+    </ul>
+    <p>So &sect;3 also asserts that a follower line's trailing counter includes the transition that line reports. Two further consequences follow:</p>
+    <ul>
+      <li>The census's remedy (a supervised pre-launch pointer stays <code>dispatched</code>) overlaps <code>f-adrwiw-launch-flicker</code> on <code>a-dispatch-returns-without-its-worker</code>. That remedy lands there. &sect;3 keeps only the counter and terminal-word changes.</li>
+      <li>A vanished reflex review must be reported as withdrawn. Otherwise the coordinator believes a review exists and waits on it.</li>
+    </ul>
 
     <section data-reckon="gates" id="gates" class="r-gates">
-      <h2><span class="sec">§</span> Evidence gates</h2>
-      <div class="r-gate" data-id="g-counter-census-landed" data-section="s3"
-           data-gated-sections="s3" data-status="open" data-verdict="">
-        <h4 class="r-gate-measure">Each counter disagreement is classified with its figure and its computing code path</h4>
-        <p class="r-gate-required-evidence">the-fleet-counters-count-the-fleet#s2</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-counter-census-landed" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Each counter disagreement is classified with its figure and its computing code path</h4>
+    <p class="r-gate-required-evidence">the-fleet-counters-count-the-fleet#s2</p>
+    </div>
+</section>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-tfcctf-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-24"
-               data-recommends-skill="/reckon-build the-fleet-counters-count-the-fleet §2"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Measure the counters against the fleet</h4>
-        <div class="r-fu-body"><p>&sect;2 is an investigation. &sect;3 waits on its report and on the files it would touch being released.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfcctf-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build the-fleet-counters-count-the-fleet §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure the counters against the fleet</h4>
+    <div class="r-fu-body"><p>§2 is an investigation. §3 waits on its report and on the files it would touch being released.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §2</pre>
+    </article>
+</section>
 
-    <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+    
   </main>
 </body>
 </html>
