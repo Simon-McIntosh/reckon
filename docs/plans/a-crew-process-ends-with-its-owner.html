@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 </head>
 <body>
   <main class="plan-doc">
@@ -149,11 +149,27 @@
     always find it. An idle producer backs off its poll interval instead of spinning. A
     follower arming for a project whose producer has exited starts one, as it does today, so
     the lease costs nothing in availability.</p>
-    <p><strong>Done when</strong> a test shows a producer exiting after its lease lapses
-    with no follower attached, and one staying up while a follower renews. A test also shows
-    <code>crew unwatch</code> stopping a producer whose registration file was deleted under
-    it. On the login node, a producer for a project with no follower for an hour is not
-    running.</p>
+    <p><strong>The lease interval is ten minutes, and it can be set.</strong> The default is
+    600 s. <code>RECKON_PRODUCER_LEASE_SECONDS</code> overrides it, so a test can use a
+    lease of a few seconds. The idle back-off doubles the poll interval on each idle poll, up
+    to a cap of 30 s, and returns to the base interval on the first poll that sees a live
+    run.</p>
+    <p><strong>Done when</strong> <code>tests/test_producer_holds_a_lease.py</code> runs in a
+    temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS</code> set to
+    3. It shows a producer exiting after its lease lapses with no follower attached, and one
+    staying up for three lease intervals while a follower renews. It shows <code>crew
+    unwatch</code> stopping a producer whose registration file was deleted under it. It shows
+    an idle producer's recorded poll interval growing to the 30 s cap. The negative control is
+    executed and logged: with lease expiry removed, the unattended producer is still running
+    after three intervals and the test fails. The login-node check, that a project with no
+    follower for an hour has no producer running, is a post-merge acceptance recorded in
+    &sect;8, not part of this node's gate. <strong>Order and write paths:</strong> the producer
+    spans the <code>crew watch</code> and <code>crew unwatch</code> commands in
+    <code>reckon/cli.py</code>, its loop in <code>reckon/crew/recovery.py</code>, and its
+    spawn in <code>reckon/crew/dispatch.py</code>. So this section runs after &sect;2, which
+    also writes <code>reckon/cli.py</code>, and after
+    <code>a-dispatch-returns-without-its-worker</code> &sect;3, which writes
+    <code>dispatch.py</code>. The write paths are those three modules and that test.</p>
 
     <h2 id="s4">&sect;4 &mdash; Polling reads what changed, never the whole tree</h2>
     <p><code>git status --untracked-files=all</code> is issued from
