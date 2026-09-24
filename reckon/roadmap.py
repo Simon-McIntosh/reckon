@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from reckon._plan_html import read_state
 from reckon._schema import (
     GRAPH_HANDLE_GRAMMAR,
     LEGACY_EFFORT_HOURS,
@@ -76,6 +77,70 @@ def _progress(plan: dict[str, Any]) -> float:
         return max(0.0, min(1.0, float(plan.get("impl", 0.0) or 0.0)))
     except (TypeError, ValueError):
         return 0.0
+
+
+def implementable_sections(declarations: Mapping[str, Any] | None) -> list[str]:
+    """Return the section ids a classification still declares implementable.
+
+    Only an explicit ``done`` reclassification removes declared work, so the
+    answer is drawn from the persisted classification rather than from the
+    section anchors a gate or a comment happens to reference. A plan with no
+    persisted classification declares no section work, so the answer is empty
+    rather than unknown: a plan row reports presence.
+    """
+
+    if not isinstance(declarations, Mapping):
+        return []
+    return sorted(
+        section
+        for raw_section, raw_classification in declarations.items()
+        if (section := str(raw_section or "").strip())
+        and str(raw_classification or "").strip() == "implementable"
+    )
+
+
+def _plan_declarations(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> Mapping[str, Any] | None:
+    """Read a plan's section classification from its own file when the row lacks it.
+
+    A composed inventory row carries ``section_declarations`` already; a
+    discovery row built for the MCP summary does not. Falling back to the plan
+    file keeps one answer for both callers rather than an empty column on the
+    surface a coordinator actually reads. ``docs_dir`` is the checkout the row
+    was inventoried from, matching the wiring scan's rule that one tree's rows
+    are judged against that same tree's declarations.
+    """
+
+    declarations = plan.get("section_declarations")
+    if isinstance(declarations, Mapping):
+        return declarations
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return None
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "no declaration"
+        return None
+    path = getattr(resource, "path", None)
+    if path is None:
+        return None
+
+    def read_declarations() -> dict[str, Any]:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return {}
+        value = read_state(text).get("section_declarations")
+        return dict(value) if isinstance(value, Mapping) else {}
+
+    return memoized("section_declarations", path, read_declarations)
 
 
 def _effort_hours(plan: dict[str, Any]) -> float:
@@ -1821,6 +1886,9 @@ def _build_roadmap(
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,
+            "implementable_sections": implementable_sections(
+                _plan_declarations(plan, docs_dir, project, slug)
+            ),
             "dependency_ready": is_ready,
             "dependency_readiness": readiness,
             "schedule_ready": not is_schedule_deferred,

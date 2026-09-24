@@ -2301,6 +2301,49 @@ def _roadmap_finding_counts(findings: list[dict[str, Any]]) -> dict[str, Any]:
     return {"total": len(findings), "by_severity": by_severity}
 
 
+def _pending_plan_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Project one pending roadmap row into the compact summary shape.
+
+    The row is already computed, so this selects and renames rather than
+    re-deriving: ``impl`` is the row's own progress fraction, the blocking ids
+    are the ids the row already carries, and the section ids come from the
+    row's own declaration projection. Nothing here computes a fact the report
+    did not answer, which is what keeps this summary and the detail view from
+    disagreeing.
+    """
+
+    blocking: set[str] = set()
+    for key in (
+        "explicit_blockers",
+        "held_blockers",
+        "gate_blockers",
+        "decision_blockers",
+    ):
+        for blocker in row.get(key) or []:
+            if isinstance(blocker, Mapping) and (
+                identifier := str(blocker.get("id") or "").strip()
+            ):
+                blocking.add(identifier)
+    for dependency in row.get("depends_on") or []:
+        if not isinstance(dependency, Mapping) or dependency.get("satisfied"):
+            continue
+        reference = str(dependency.get("slug") or dependency.get("ref") or "").strip()
+        if reference:
+            blocking.add(reference)
+    try:
+        impl = round(float(row.get("progress_pct") or 0.0) / 100.0, 3)
+    except (TypeError, ValueError):
+        impl = 0.0
+    return {
+        "slug": str(row.get("slug") or ""),
+        "status": str(row.get("status") or ""),
+        "impl": impl,
+        "ready": bool(row.get("ready")),
+        "blocking": sorted(blocking),
+        "implementable_sections": list(row.get("implementable_sections") or []),
+    }
+
+
 def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
     findings = [
         item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
@@ -2310,7 +2353,7 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
     dependency_ready = len(raw.get("ready_now") or [])
     dependency_blocked = len(raw.get("blocked") or [])
     dependency_deferred = len(raw.get("deferred") or [])
-    return {
+    summary = {
         "project": raw.get("project", ""),
         "completion": {
             key: completion.get(key, 0)
@@ -2346,6 +2389,14 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
         },
         "finding_counts": _roadmap_finding_counts(findings),
     }
+    scope = raw.get("scope")
+    if isinstance(scope, Mapping) and str(scope.get("sprint") or "").strip():
+        summary["pending_plans"] = [
+            _pending_plan_row(row)
+            for row in raw.get("pending_work") or []
+            if isinstance(row, Mapping)
+        ]
+    return summary
 
 
 def roadmap_view(

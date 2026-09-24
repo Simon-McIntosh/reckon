@@ -131,6 +131,77 @@
       unmodified here; the defect names <code>reckon/ledger.py</code>, which another node holds.
     </p>
 
-  </main>
+    <section id="s2-sprint-summary-lists-pending-record">
+
+  <section id="s2-sprint-summary-lists-pending">
+    <h2>&sect;2 &mdash; the summary names its pending plans</h2>
+    <p>The summary projection stays exactly what it was without a sprint scope, and gains a
+    <code>pending_plans</code> list only when the report carries a sprint. Each element is one
+    compact row: <code>slug</code>, <code>status</code>, <code>impl</code> (the plan&rsquo;s
+    implementation fraction), <code>ready</code>, <code>blocking</code> (the sorted ids that hold
+    the plan) and <code>implementable_sections</code> (the section ids still declared
+    implementable). Nothing else is added, and no prose is carried.</p>
+    <p>The row is projected from the <code>pending_work</code> row the report already builds, so the
+    summary does not re-derive readiness or blockers. Two details are worth naming. First,
+    <code>blocking</code> unions the ids of explicit, held, gate and decision blockers with the
+    slugs of unsatisfied <code>depends_on</code> edges, de-duplicated. Second, the MCP path
+    inventories slim rows &mdash; the inventory whitelist drops the plan&rsquo;s
+    <code>section_declarations</code> &mdash; so the section ids are read from the plan file itself
+    when the row carries none, which is the rule the wiring scan already follows.</p>
+  </section>
+
+  <section id="s2-gate">
+    <h2>The gate cases, asserted as tests</h2>
+    <p>All cases live in <code>tests/test_sprint_summary_lists_pending.py</code>. The gate is the
+    node&rsquo;s own file over a synthetic inventory holding one shipped plan, one ready plan and
+    one blocked plan in one sprint.</p>
+    <table>
+      <thead><tr><th>Case</th><th>Assertion</th><th>Test</th></tr></thead>
+      <tbody>
+        <tr><td>Sprint summary lists pending plans</td><td><code>pending_plans</code> holds exactly the two pending slugs, in order, and each row carries exactly the six compact keys</td><td><code>test_summary_lists_the_sprints_pending_plans</code></td></tr>
+        <tr><td>Status, impl and readiness</td><td>the ready plan reports <code>ready is True</code> and no blockers; the blocked plan reports <code>ready is False</code> and its blocking id</td><td><code>test_pending_row_carries_status_impl_and_readiness</code></td></tr>
+        <tr><td>Implementable section ids</td><td>each row lists only the sections still declared implementable, and the blocked plan&rsquo;s row comes from its own declaration, not a section-blocker arm</td><td><code>test_pending_row_carries_implementable_section_ids</code></td></tr>
+        <tr><td>Shipped plan absent</td><td>the shipped slug appears in neither <code>pending_plans</code> nor <code>pending_work</code></td><td><code>test_shipped_plan_is_absent_from_the_pending_rows</code></td></tr>
+        <tr><td>Sections read from the plan file</td><td>a slim row with no declaration still reports the section ids written into the plan HTML</td><td><code>test_section_ids_come_from_the_plan_file_when_the_row_lacks_them</code></td></tr>
+        <tr><td>No sprint &rarr; byte-identical</td><td><code>pending_plans</code> is absent and the serialised summary equals the frozen pre-change literal</td><td><code>test_summary_without_sprint_is_unchanged</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s2-measure">
+    <h2>Measured against a stated base</h2>
+    <p>Base revision <code>a130260c</code>, the worktree head before the change. The product change
+    touches <code>reckon/mcp_views.py</code> and <code>reckon/roadmap.py</code>; the test file is
+    added.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Node gate, <code>tests/test_sprint_summary_lists_pending.py</code></td><td>6 passed, exit 0</td></tr>
+        <tr><td>Existing roadmap suite (<code>test_roadmap*.py</code> plus <code>test_mcp_roadmap</code>), unchanged by the change</td><td>78 passed, exit 0</td></tr>
+        <tr><td><code>roadmap(project="reckon", sprint="S22", view="summary")</code> at head</td><td>8,294 characters, 45 pending rows, under the 20,000-character bound</td></tr>
+        <tr><td>No-sprint summary, base tree vs head tree</td><td>identical serialised output; <code>pending_plans</code> absent from both</td></tr>
+        <tr><td>Ruff, the three staged paths vs base</td><td>adds no findings; formatted to clean</td></tr>
+      </tbody>
+    </table>
+    <p>The parity case is a standalone probe over one fixture run under two trees: the base tree
+    extracted with <code>git archive a130260c</code>, and the head worktree. Both exited 0 and their
+    serialised summaries diff clean &mdash; an identity measured against the pre-change code, not
+    against a literal written by hand.</p>
+  </section>
+
+  <section id="s2-negative-control">
+    <h2>Negative control</h2>
+    <p>The declared mutation &mdash; removing the pending-rows projection from the sprint summary
+    &mdash; was applied at the worktree head and the gate re-run. Five of the six cases failed with
+    <code>KeyError: 'pending_plans'</code> and the no-sprint case passed, which is the shape a real
+    control has: the projection&rsquo;s presence is what the failing cases measure, and the case
+    that asserts the sprint-less path is untouched keeps passing either way.</p>
+    <p>Log: <code>logs/negative-control.log</code> in the node&rsquo;s run directory. The change was
+    then restored, and a grep over the restored file confirms the projection is present.</p>
+  </section>
+
+  <p><em>Coordinator note:</em> the node also produced <code>summary_pending_rows.png</code>. It was removed at merge because it drew tabular rows as an image. The rows and figures are stated in the text above.</p>
+  </section>
+</main>
 </body>
 </html>

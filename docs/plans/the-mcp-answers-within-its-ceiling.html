@@ -70,6 +70,20 @@
       <li>The recorded length of <code>roadmap(project="reckon", sprint="S22", view="summary")</code> at the integrated head is under 20,000 characters.</li>
     </ul>
 
+    <p class="r-landing"><strong>Landed 2026-09-25</strong> at <code>20258e3a</code>, base
+    <code>a130260c</code>. A sprint-scoped summary now carries <code>pending_plans</code>: one
+    compact row per pending plan, with the slug, the status, <code>impl</code>, readiness, the
+    blocking ids and the implementable section ids. The row is projected from the report already
+    and carries no prose. Section ids come from the plan file when the inventory row carries none,
+    because the MCP inventory whitelist drops the plan's declaration &mdash; without that fallback
+    the column would report a false zero for every plan. The no-sprint summary is unchanged, proven
+    byte-for-byte against the base tree, and the shipped plans stay absent because they are already
+    terminal. Measured: the S22 summary is 8,294 characters over 45 pending rows, against the
+    20,000-character bound; the gate is 6 passed and the existing roadmap suite is unchanged at
+    78 passed. Evidence:
+    <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s2-sprint-summary-lists-pending">&sect;2 landed
+    evidence</a>.</p>
+
     <h2 id="s3">&sect;3 &mdash; No read overflows the transport</h2>
     <p>An answer too large for the transport does not arrive at all. The coordinator gets nothing it can act on, and a second call fails the same way. Every MCP read tool (<code>roadmap</code>, <code>read_plan</code>, <code>crew</code>, <code>audit</code>) should measure its serialised answer against a response budget. The budget is configurable, defaulting to 80,000 characters. An answer over the budget comes back bounded, with a <code>truncated</code> block that says what was left out and which arguments would narrow the read (<code>narrow_with</code>), instead of the overflowing whole. An answer within the budget is unchanged.</p>
     <p><strong>Done when:</strong></p>
