@@ -35,6 +35,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -476,8 +477,14 @@ def gather_sources(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Compose and publish the document; ``--once`` writes it a single time."""
-    args = list(argv or ())
+    """Compose and publish the document; ``--once`` writes it a single time.
+
+    ``argv`` defaults to the process's own command line, so invoking the module
+    as ``python -m reckon.crew.paid_lanes --once --path <file>`` publishes where
+    it was asked to rather than to the default location; a caller passing a list
+    supplies the same tokens it would have typed.
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
     path: str | None = None
     project: str | None = None
     root: str | None = None

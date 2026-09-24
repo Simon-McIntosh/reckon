@@ -1462,17 +1462,21 @@ def preflight(
     a group block reading unknown, which is what absence of a signal means.
 
     ``windows`` is the caller's own reading and always wins when given. When it
-    is absent the pace is read from the published headroom document -- through
-    ``document`` directly, or ``document_path``, or the document's default
-    location -- so the per-group figures and the per-backend accounts they are
-    drawn from come from one reconciled record rather than two readers.
+    is absent the pace may be read from the published headroom document, but only
+    when the caller names one -- through ``document`` directly or through
+    ``document_path``. Nothing is read by default: a reader that fell back to a
+    machine-wide location would answer differently on two workstations looking at
+    the same code, and a test calling here would consult the host rather than its
+    fixture. A caller naming neither gets the hold decision and a group block
+    reading unknown, which is what absence of a signal means.
     """
     moment = _now(now)
-    if windows is None:
-        # No caller-injected reading: pace from the published headroom document,
-        # which is the one place every metered account's windows are observed and
-        # reconciled. An absent document reads as no reading, so a host that has
-        # not run the observer yet reports unknown rather than a fabricated zero.
+    if windows is None and (document is not None or document_path is not None):
+        # No caller-injected reading, but the caller named the published headroom
+        # document: pace from the document, which is the one place every metered
+        # account's windows are observed and reconciled. Nothing is read when the
+        # caller names no document, so the pace never depends on a machine-wide
+        # file, and a test calling here consults its own fixture or nothing.
         windows = _published_windows(document, document_path, moment)
     policy_block = policy(config)
     configured = config.get("backends") or {}
