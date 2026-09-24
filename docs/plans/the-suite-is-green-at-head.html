@@ -475,6 +475,40 @@
     unchanged and remains the sibling node's follow-on.</p>
     </section>
 
+
+    <div class="r-note" data-reckon="landed" data-node="a-held-backend-reaches-its-declared-fallback" data-when="2026-09-24">
+      <p><strong>Outcome &mdash; a dispatch whose backend is held reaches its declared
+      fallback lane; the three ids that failed on the provisioning refusal are green.</strong>
+      Commit <code>4bef6acc</code> <em>fix(ledger): stop refusing a roster commit over the tool's
+      own bookkeeping</em>. Cause, named with file and line: the dispatch's budget verdict
+      recorded the hold into <code>docs/state/&lt;project&gt;/crew.json</code> without committing
+      it (<code>reckon/crew/routing.py:210</code>), and the session member provisioned after the
+      fallback resolved (<code>reckon/crew/routing.py:1262</code>) was then refused by
+      <code>_roster_obstruction</code>'s generic branch at <code>reckon/ledger.py:942</code>,
+      which reported uncommitted roster content even though no member row differed, raising at
+      <code>reckon/crew/routing.py:1307</code> with <code>could not provision session
+      member</code>. That comparison is the one its own contract states, so a roster difference
+      that is no member row &mdash; a hold row, a completed-run row &mdash; is the tool's own
+      bookkeeping and obstructs nothing. The same branch also left the idle reaper's committed
+      removal uncommitted whenever a hold was pending.</p>
+      <p><strong>Measured.</strong> Each gate file in its own pytest process with its own
+      <code>--basetemp</code>, base materialised with <code>git archive d4c5a54a</code>:
+      <code>tests/test_budget.py</code> 4 failed / 66 passed at base and 1 failed / 69 passed at
+      head; <code>tests/test_crew_dispatch_arming.py</code> 6 passed both. All three repaired ids
+      failed at base with the identical refusal, so one cause, not three; zero ids moved from
+      pass to fail. The residual failure, <code>test_the_preflight_spawns_no_process</code>, is
+      red at base and at head &mdash; a test-isolation defect in a file this node may not write,
+      named for its owner. Product defect count 1, in <code>reckon/ledger.py</code>; no test was
+      skipped, xfailed, deleted or weakened and no test file was touched. Declared negative
+      control: <em>revert the ledger change and observe the named test fail again with the
+      provisioning refusal</em> &mdash; satisfied by the base run itself, since the change was
+      made after the red was observed. Full record with the refusal chain and the figure:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-held-backend-reaches-its-declared-fallback">landed
+      evidence</a>, figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/held-backend-fallback-base-vs-head.png">held-backend
+      fallback base vs head</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
