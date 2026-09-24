@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="19">
 </head>
 <body>
   <main class="plan-doc">
@@ -143,17 +143,21 @@
     registered watcher" and it could only be stopped by pid. A producer with no consumers is
     pure cost, and one with no registration cannot be managed at all.</p>
     <p>The fix has three parts. Each live follower renews a lease on its project's producer,
-    and a producer whose lease has not been renewed for a stated interval (proposed: ten
-    minutes) exits cleanly. The producer writes its own pid into its registration atomically
+    and a producer whose lease has not been renewed for the lease interval stated below exits
+    cleanly. The producer writes its own pid into its registration atomically
     at start, and rewrites it if the file goes missing, so <code>crew unwatch</code> can
     always find it. An idle producer backs off its poll interval instead of spinning. A
     follower arming for a project whose producer has exited starts one, as it does today, so
     the lease costs nothing in availability.</p>
     <p><strong>The lease interval is ten minutes, and it can be set.</strong> The default is
     600 s. <code>RECKON_PRODUCER_LEASE_SECONDS</code> overrides it, so a test can use a
-    lease of a few seconds. The idle back-off doubles the poll interval on each idle poll, up
-    to a cap of 30 s, and returns to the base interval on the first poll that sees a live
-    run.</p>
+    lease of a few seconds. The idle back-off doubles the poll interval on each idle poll,
+    starting from the producer's existing base interval, up to a cap of 30 s. It returns to
+    the base on the first poll that sees a live run. The producer writes its current interval
+    into its registration as <code>poll_interval_seconds</code>, which is what the test reads.
+    The lease is checked on every wake-up, and no sleep outlasts the lease's remaining time,
+    so a producer exits within one second of its lease lapsing however far its interval has
+    backed off.</p>
     <p><strong>Done when</strong> <code>tests/test_producer_holds_a_lease.py</code> runs in a
     temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS</code> set to
     3. It shows a producer exiting after its lease lapses with no follower attached, and one
@@ -245,10 +249,15 @@
     the manifest. It applies the deadline and the release at that point. Either way the
     done-when's concurrent read decides. A write whose deadline passes reports whether it
     reached the file, since a timed-out write that did land must not be retried blindly.</p>
-    <p><strong>Done when</strong> a test backed by a filesystem stub that blocks on one path
-    shows a read of that path returning <code>storage-slow</code> within its deadline, and a
-    concurrent read of another path answering normally. The write case reports its landed
-    state in both directions.</p>
+    <p><strong>Done when</strong> <code>tests/test_mcp_reads_have_deadlines.py</code>, a new
+    file, is backed by a filesystem stub that blocks on one path. It shows a read of that path
+    returning <code>storage-slow</code> within its deadline, and a concurrent read of another
+    path answering normally. The write case reports its landed state in both directions. The
+    test sets the deadline through a parameter, so it runs in seconds, not at 30 s. The
+    negative control is executed and logged: with the deadline removed, the blocked read does
+    not return within the test's bound, and the concurrent read waits behind it. The write
+    paths are <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code> and that test. A
+    change needed in another module is named in the manifest as a follow-on.</p>
 
     <h2 id="s6">&sect;6 &mdash; An orphan is a process whose owner is dead</h2>
     <p>ppid 1 does not identify an orphan. A worker is reparented to init whenever its
@@ -364,7 +373,7 @@
     <div class="r-comment-body"><p>read-back of a-crew-process-ends-with-its-owner: six findings for the releaser, five material (A3, A19, A23, A38 and the reap's location), applied at e88b83b0</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T065103736235-second-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T07:02:06.205Z">
-    <div class="r-comment-body"><p>second read-back closed A3, A5, A19, A23, A38 and the reap&#x27;s location; R2-R9 applied at 4a58dd97, section 3&#x27;s A6, A8 and A9 at 3831a214</p></div>
+    <div class="r-comment-body"><p>second read-back closed A3, A5, A19, A23, A38 and the reap's location; R2-R9 applied at 4a58dd97, section 3's A6, A8 and A9 at 3831a214</p></div>
 </div>
 </section>
 </main>
