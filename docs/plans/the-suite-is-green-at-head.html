@@ -509,6 +509,56 @@
       fallback base vs head</a>.</p>
     </div>
 
+    <h2 id="s3">&#167;3 &mdash; The suite runs bounded, in parallel, and robust to load</h2>
+    <p>Green is not enough if nobody can afford to measure it. At <code>bafcd4cc</code> a serial
+    <code>pytest tests/</code> reached 14% in 30 minutes, and one test spun forever because nothing bounded a test's
+    run time. The per-file wall-clock sum was about 68 minutes. A peer session has since added
+    <code>pytest-timeout</code> and <code>pytest-xdist</code> with a 300 s default (<code>d4c5a54a</code>), so
+    <code>-n 8</code> now runs, each worker has its own temp root, and no test can hang past the bound. This section
+    covers what that change does not.</p>
+    <p><strong>Load-sensitive ids found during &#167;2.</strong> Each passes alone and fails when several test processes
+    contend on the node:</p>
+    <ul>
+      <li>wall-clock bounds tighter than the mechanism guarantees:
+        <code>test_receipt_after_release::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>
+        (2.87&ndash;3.39 s against a 2.0 s bound);</li>
+      <li>observation counts:
+        <code>test_promotion_reads_the_terminal_record::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>
+        (<code>assert 1 &gt;= 3</code>);</li>
+      <li>real follower subprocesses with 2&ndash;8 s waits: <code>test_follower_checks_its_owner</code> and
+        <code>test_follower_freshness</code>;</li>
+      <li>detached producers: <code>test_crew_dispatch_arming::test_concurrent_dispatches_arm_exactly_one_detached_producer</code>;</li>
+      <li><code>test_crew::test_redispatch_does_not_inherit_a_terminal_delivery</code>;</li>
+      <li><code>test_ledger::test_every_read_view_returns_and_large_defaults_are_compact</code>.</li>
+    </ul>
+    <p><strong>Also carried here:</strong></p>
+    <ul>
+      <li>The public-surface test's child interpreter resolves <code>reckon</code> from its working directory before
+      <code>PYTHONPATH</code>, so it should pin <code>cwd</code> to the repository root.</li>
+      <li>A test under <code>test_execution_fit</code> was seen to leave a real detached <code>crew watch</code> producer
+      running after the suite. It does not reproduce at the repaired head, but nothing asserts that it cannot recur.</li>
+      <li><code>crew verify-gate</code> loses the ledger race to peer writes on every attempt during a busy session, and
+      times out on the <code>test_crew</code> plus <code>test_ledger</code> gate. Integrated verification has therefore
+      been run by hand at the merged head.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Time is attributed</td><td>One <code>--durations=30</code> run under <code>-n 8</code> on the fleet node names the
+        call sites behind the slowest tests, confirming or refuting three candidates: real subprocess dispatch with fixed
+        waits, a real git commit per promotion fixture, and flight resolution per call.</td></tr>
+        <tr><td>Fixed waits removed</td><td>Every fixed sleep or wall-clock wait the durations run names is replaced by a
+        bounded wait on the observed condition.</td></tr>
+        <tr><td>Load-sensitive ids robust</td><td>Each id listed above passes in three consecutive <code>-n 8</code> full-file
+        runs, or is recorded with the contention it measures and why its bound cannot be relaxed.</td></tr>
+        <tr><td>No producer outlives the suite</td><td>A session-scoped check fails the run if any <code>crew watch</code>
+        process started under a test's temporary config home is still alive when the suite ends.</td></tr>
+        <tr><td>Bounded full run</td><td>The full suite finishes under <code>-n 8</code> on the fleet node in a stated wall
+        time. It has zero failures and zero errors at the recorded revision, apart from ids attributed to a named owner
+        outside this plan.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
