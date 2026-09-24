@@ -44,6 +44,10 @@ def _report(record: dict, **overrides: object) -> str:
         "orientation_worktree": record["worktree"],
         "orientation_base_sha": record["base_sha"],
         "orientation_write_paths": json.dumps(record["node"]["write_paths"]),
+        # The orientation write is the worker's first manifest write, so it
+        # carries the status line every manifest needs; without one the body
+        # reads as a report wearing a manifest shape and is refused.
+        "status": "in-progress",
         **overrides,
     }
     return "".join(f"{name}: {value}\n" for name, value in values.items())
@@ -103,14 +107,14 @@ def test_first_observation_blocks_and_names_a_mismatched_field(
 
 
 def test_first_observation_leaves_a_matching_phase_untouched(crew_home: Path) -> None:
-    record = _pointer(crew_home, phase="working")
+    record = _pointer(crew_home, phase="in-progress")
     manifest = Path(record["manifest_path"])
     manifest.parent.mkdir(parents=True)
     manifest.write_text(_report(record))
 
     observed = crew.observe(record["run_id"], config={})
 
-    assert observed["phase"] == "working"
+    assert observed["phase"] == "in-progress"
     assert observed["orientation_check"]["matched"] is True
     assert "detail" not in observed
 

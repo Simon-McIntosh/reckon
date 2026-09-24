@@ -24,6 +24,7 @@ VERDICT done_when: the done_when names tests/test_review_scoring.py and the mani
 VERDICT write_paths: read the manifest; every path in the diff is inside the declared scope.
 VERDICT manifest: read; it names tests/test_review_scoring.py and its result.
 VERDICT diff: read commit by commit against the base; four files changed, all declared.
+CALL_SITES: reckon/crew/review.py:187
 SCORE goal_fidelity: 18
 JUSTIFICATION goal_fidelity: reckon/crew/review.py:81 reads the prompt from disk on every call
 SCORE evidence: 15
@@ -86,6 +87,10 @@ def test_prompt_is_read_from_disk_at_call_time_and_names_every_dimension(
     # exists to make visible.
     for item in review_module.REVIEW_ITEMS:
         assert item in loaded, f"checklist item {item} missing from the prompt"
+        if item == "call_sites":
+            # The sixth item reports on its own CALL_SITES line rather than a
+            # VERDICT line; the dedicated emission is asserted below.
+            continue
         assert f"VERDICT {item}:" in loaded, (
             f"checklist item {item} has no VERDICT emission in the prompt"
         )
@@ -198,7 +203,9 @@ def test_a_verdict_for_an_item_outside_the_schema_is_ignored() -> None:
 
 def test_item_verdicts_alone_do_not_make_a_review_parsed() -> None:
     verdicts_only = "\n".join(
-        line for line in VALID_TEXT.splitlines() if line.startswith("VERDICT ")
+        line
+        for line in VALID_TEXT.splitlines()
+        if line.startswith(("VERDICT ", "CALL_SITES"))
     )
     record = review_module.parse_review(verdicts_only)
     assert record["status"] == "unparsed"
