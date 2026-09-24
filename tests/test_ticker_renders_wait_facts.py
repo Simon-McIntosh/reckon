@@ -150,7 +150,13 @@ def test_the_marker_costs_no_width_and_marker_and_unmarked_rows_align() -> None:
     unmarked = counters.search(pending)
     assert marked and unmarked
     assert marked.start() == unmarked.start()
-    assert never.index("\N{RIGHTWARDS ARROW}") == pending.index("\N{RIGHTWARDS ARROW}")
+    # The marker is one glyph in a cell held at one width on every row, so it
+    # adds a mark without moving a column: the state cell lands on the same
+    # screen position whether the row carries the marker or not.
+    assert never.index("waiting") == pending.index("waiting")
+    assert never.count(ticker_module.UNPROBED_MARKER) == (
+        pending.count(ticker_module.UNPROBED_MARKER) + 1
+    )
 
 
 def test_the_marker_survives_a_clause_with_no_room_for_it() -> None:

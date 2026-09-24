@@ -217,11 +217,26 @@ def test_declared_deviation_is_honoured_when_the_surface_matches_it() -> None:
 
 
 def test_declaration_is_dormant_while_the_surface_still_matches_the_canvas() -> None:
-    report = compare(extract_canvas_values(), read_implementation_values())
+    """A declared deviation is inert wherever the surface holds the canvas
+    value, and live only where the surface is held at the declared value.
 
-    for surface in ("reader_measure_normal", "reader_measure_focus"):
-        assert report.verdicts[surface] == "match"
-        assert report.deviation_states[surface] == "dormant"
+    The declaration names one deliberate value that differs from the canvas.
+    Which surfaces it is in force on is a fact about the surface, not about the
+    declaration, so the verdict and the deviation state are read off the
+    comparison for every declared surface rather than asserted from a list.
+    """
+    canvas = extract_canvas_values()
+    implementation = read_implementation_values()
+    report = compare(canvas, implementation)
+
+    for surface, deviation in DECLARED_DEVIATIONS.items():
+        if implementation[surface] == canvas[surface]:
+            assert report.verdicts[surface] == "match"
+            assert report.deviation_states[surface] == "dormant"
+        else:
+            assert implementation[surface] == deviation.declared
+            assert report.verdicts[surface] == "declared-deviation"
+            assert report.deviation_states[surface] == "active"
 
 
 def test_undeclared_value_drift_fails_with_the_undeclared_kind() -> None:

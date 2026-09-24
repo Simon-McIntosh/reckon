@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head-landed">
+  <meta name="plan-title" content="The Suite Is Green At Head — landed evidence">
+  <meta name="plan-summary" content="Each repair node's per-file before/after, its cause classes, and the ids it attributes to a product or environment defect.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
+  <meta name="plan-artifacts" content="tests/test_skill_contracts.py,tests/test_typed_resources.py,tests/test_provenance.py,tests/test_spa_canvas_fidelity.py,tests/test_ticker_renders_wait_facts.py,tests/test_fleet_counter_coverage.py,docs/figures/the-suite-is-green-at-head/owned-file-failures.png">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="qualified-pass">
+  <meta name="plan-environment" content="reckon project virtual environment on the fleet compute node, one pytest process per file with its own basetemp, each bounded by timeout 600">
+  <meta name="plan-tags" content="suite-repair,crew,verification">
+  <title>The Suite Is Green At Head — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Suite Is Green At Head</h1>
+      <p class="lead">One section per repair node: the ids it owned, the files it moved, and every
+      id it did not move with the cause class that owns it. A node's own gate is met when each of its
+      ids either passes at its head or is named here against a product or environment defect.</p>
+    </header>
+
+    <section id="node-rendered-and-skill-contracts-match">
+      <h2>rendered-and-skill-contracts-match</h2>
+      <p>Ten owned ids across eight files. Six were stale assertions corrected to the shipped
+      behaviour; four are attributed — three to product defects the node may not repair in place and
+      one to a missing capability on the node.</p>
+
+      <h3>How the measurement was taken</h3>
+      <p>Base revision <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>, the node's dispatch base.
+      Only test files changed at the node head, so the tree under test is byte-identical between the
+      two runs and the delta is the test file alone. Each file ran in its own pytest process with its
+      own <code>--basetemp</code> and its own <code>timeout 600</code>, in the foreground on the fleet
+      compute node, the whole run captured to one log directory: <code>head_foreground/</code> and
+      <code>base_foreground/</code> under the node's run directory.</p>
+      <p>A first attempt wrapped each run in <code>srun --partition=all_debug</code>. On the fleet
+      allocation that launches one copy of the step per task rather than one step: a trivial probe
+      printed its marker thirty times, so a single <code>srun</code> ran thirty concurrent copies of
+      the same script over the same paths. The head per-file logs survived it (each wrote with
+      truncation, and every copy ran the identical command) but the control log, written with append,
+      interleaved thirty writers into an unreadable record. Both were superseded by the foreground
+      runs above, which execute the step exactly once.</p>
+
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/owned-file-failures.png"
+             alt="Grouped horizontal bars, one pair per owned test file: failing node ids at the node base (red) and at the node head (green). test_skill_contracts 3 to 2, test_crew_monitor_output 1 to 1 and test_spa_module_scope 1 to 1, and the other five files 1 to 0. The two skill-contract ids are annotated as product defects in the skill file, the monitor id as an order-dependent renderer, and the module-scope id as a missing headless browser.">
+        <figcaption>Failing node ids per owned file, base against head. Source:
+        <code>docs/figures/the-suite-is-green-at-head/owned-file-failures.py</code>.</figcaption>
+      </figure>
+
+      <h3>Zero added</h3>
+      <p>Base: ten failing ids, one per file except <code>test_skill_contracts</code> which carried
+      three. Head: four failing ids. Every id failing at the head was already failing at the base, so
+      no id moved from pass to fail. No test in any owned file was skipped, xfailed, deleted or
+      weakened; each repair moved an assertion onto the behaviour the tree ships.</p>
+      <table>
+        <thead><tr><th>Owned file</th><th>Base</th><th>Head</th><th>Disposition</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_skill_contracts</code></td><td>3</td><td>2</td>
+              <td>1 repaired; 2 skill-file defects</td></tr>
+          <tr><td><code>test_typed_resources</code></td><td>1</td><td>0</td><td>repaired</td></tr>
+          <tr><td><code>test_provenance</code></td><td>1</td><td>0</td><td>repaired</td></tr>
+          <tr><td><code>test_spa_canvas_fidelity</code></td><td>1</td><td>0</td><td>repaired</td></tr>
+          <tr><td><code>test_ticker_renders_wait_facts</code></td><td>1</td><td>0</td><td>repaired</td></tr>
+          <tr><td><code>test_fleet_counter_coverage</code></td><td>1</td><td>0</td><td>repaired</td></tr>
+          <tr><td><code>test_crew_monitor_output</code></td><td>1</td><td>1</td>
+              <td>product defect</td></tr>
+          <tr><td><code>test_spa_module_scope</code></td><td>1</td><td>1</td>
+              <td>environment</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Repaired — stale expectation, assertion moved to the shipped behaviour</h3>
+      <table>
+        <thead><tr><th>Id</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_ship_skill_states_one_monitor_per_session</code></td>
+              <td>The skill's one-monitor rule keeps one follower per session, but the remedy for
+              wider coverage is now naming extra sessions on that one follower
+              (<code>--observe-session</code>, repeated) rather than attaching them to a second
+              monitor. Two fragments asserted the superseded mechanic. The rule itself is asserted
+              verbatim, unchanged.</td></tr>
+          <tr><td><code>test_spa_graph_uses_typed_navigation_identity</code></td>
+              <td>The graph resolves typed artifact identity through <code>_artifactKey</code> and
+              navigates by <code>goTo(...)</code>; the stale fragments named a positional
+              <code>pos[_artifactKey(p)]</code> lookup and a bare-slug <code>onNav</code> that the
+              shipped sources do not contain. The assertions now name the forms the source ships.</td></tr>
+          <tr><td><code>test_spa_sources_keep_typed_facets_and_provenance_direction</code></td>
+              <td>The document facets are declared once as a <code>key</code>/<code>label</code> route
+              pair, and the archive facet is a fallback label rather than a route; the stale form
+              asserted a bare <code>kind: "label"</code>. The home surface's typed badge moved from a
+              project card to the landed row when the home was rewritten into the shell, so the
+              badge is now read where it renders. The negative control was muting a literal the
+              source no longer carries and is re-pointed at the shipped one.</td></tr>
+          <tr><td><code>test_declaration_is_dormant_while_the_surface_still_matches_the_canvas</code></td>
+              <td>The reading measure is held at the declared larger value for the normal surface and
+              at the canvas value for the focus surface, so the declaration is dormant where the
+              surface matches and live where it is held at the declared value. The assertion is now
+              read off the comparison for every declared surface instead of asserting that both are
+              dormant — stronger, not weaker, and true either way the two surfaces are set.</td></tr>
+          <tr><td><code>test_the_marker_costs_no_width_and_marker_and_unmarked_rows_align</code></td>
+              <td>The row layout no longer carries the arrow glyph the assertion used as its column
+              landmark. Alignment is now asserted where the marker actually lives: the state cell
+              lands on the same position in both rows, and the marked row carries exactly one more
+              marker than the unmarked one.</td></tr>
+          <tr><td><code>test_the_blocked_bucket_is_derived_from_the_attention_set</code></td>
+              <td>The emitted-state vocabulary was read from the recovery-class tuple beside the
+              classifier, a second copy of the same fact that had fallen behind it: the classifier
+              emits <code>launch-failed</code>, the tuple omits it, so the derived set did not cover
+              the action set. The vocabulary is now read from the classifier's own assignments, minus
+              the words the reducer claims into another state and the ones reachable only from a
+              reading whose liveness is disproven. Both vocabularies come from the code that holds
+              them, so a new classification moves these tests with it.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Attributed — not repairable by this node</h3>
+      <table>
+        <thead><tr><th>Id</th><th>File and line</th><th>Class and evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code></td>
+              <td><code>skills/reckon-build/SKILL.md</code>; budget constant
+              <code>tests/test_skill_contracts.py:594</code></td>
+              <td><strong>Skill-file defect.</strong> The build skill's own read set exceeds the
+              ceiling it declares. Its own contract says to relocate reference material into
+              <code>references/</code> before raising the ceiling, and relocation is a change to the
+              skill, which this node may not make. Evidence the behaviour and not the assertion is
+              wrong: the measured estimate is over the declared budget while the ceiling has already
+              been raised once under the same protocol.</td></tr>
+          <tr><td><code>test_every_registered_crew_verb_is_documented_or_exempt</code></td>
+              <td><code>skills/reckon-build/SKILL.md</code>;
+              <code>tests/test_skill_contracts.py:1019</code></td>
+              <td><strong>Skill-file defect.</strong> <code>reckon crew check-manifest</code> is a
+              registered verb the build skill never names, and the skill is where the exemption list
+              and the verb documentation live. Evidence: the assertion names the missing verb, and
+              <code>git log -S 'reckon crew check-manifest' -- skills/</code> returns nothing, so the
+              verb has never been documented there rather than having been renamed.</td></tr>
+          <tr><td><code>test_three_followers_receive_each_subsequent_transition_once</code></td>
+              <td><code>reckon/crew/recovery.py:4765</code> and
+              <code>reckon/crew/recovery.py:4827</code>;
+              <code>tests/test_crew_monitor_output.py:26</code></td>
+              <td><strong>Product defect.</strong> <code>format_watch_transition</code> renders
+              through one module-level <code>Ticker</code>, so a row's rendering depends on which
+              rows were rendered before it: the same baseline event renders with an empty age cell
+              alone and with <code>0mu</code> after an unpromoted transition has been rendered. The
+              test asserts that three concurrent followers each receive every subsequent transition
+              once, which the shared renderer cannot satisfy deterministically. Evidence the
+              behaviour rather than the assertion is wrong: the replication below, reproduced on the
+              node as well as in one interpreter. Fixing it means giving each render its own ticker
+              state, a change to <code>reckon/</code>, which this node may not make.</td></tr>
+          <tr><td><code>test_inlined_bundle_renders_from_a_file_url_without_reference_errors</code></td>
+              <td><code>tests/test_spa_module_scope.py:331</code></td>
+              <td><strong>Environment.</strong> The gate requires a supported headless browser and
+              fails when none is installed; <code>installed_browser()</code> returns
+              <code>None</code> and no chromium, chrome or firefox binary resolves on the node. The
+              test names the missing capability in its own failure message, so the behaviour under
+              test is untested here rather than found wrong.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Negative control</h3>
+      <p>Each repaired file was run as it stood at the base revision and each failed with the id the
+      node owns. The log is <code>base_foreground/negative_control.log</code> under the node's run
+      directory; its first line is the declared control string, and it lists each base run's failing
+      ids with its exit status. Eight base ids failed: the three the node attributes to product
+      defects and the five it repaired, which is the control's whole point — the ids were red before
+      the repair and green after it.</p>
+
+      <h3>Reproduction</h3>
+      <pre>base control:  ./foreground_verify.sh    # head run, then base control, foreground
+each file:     PYTHONPATH=$PWD python -m pytest -p no:cacheprovider -q \
+                   --basetemp=&lt;own&gt; tests/&lt;file&gt;.py</pre>
+      <p>The renderer defect reproduces in one interpreter, with no test involved
+      (<code>negative_control_native.log</code>): the identical baseline row renders with an empty age
+      cell when it is the first row, and with <code>0mu</code> once a transition has been rendered
+      before it.</p>
+      <pre>from reckon.crew import recovery
+b = {"node": "baseline-1", "to_state": "working",
+     "observed_at": "2026-08-26T10:00:00Z"}
+t = {"run_id": "r-first", "node": "first-node",
+     "observed_at": "2026-08-26T10:03:00Z", "from_state": "working",
+     "to_state": "complete", "live": 0, "blocked": 0, "unpromoted": 1}
+first = recovery.format_watch_transition(b)   # age cell is empty
+recovery.format_watch_transition(t)
+again = recovery.format_watch_transition(b)   # the same row now carries 0mu
+assert first == again                         # AssertionError: False</pre>
+    </section>
+  </main>
+</body>
+</html>

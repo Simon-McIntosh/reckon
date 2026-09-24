@@ -960,8 +960,8 @@ def test_ship_skill_states_one_monitor_per_session() -> None:
 
     The rule is asserted verbatim so a later rewrite cannot silently drop it: one
     follower per session, a second on the same session is a defect rather than
-    redundancy, and the remedy for wanting more coverage is to attach the
-    additional sessions to the one monitor, never to arm a second follower.
+    redundancy, and the remedy for wanting more coverage is to name the extra
+    sessions on the one follower, never to arm a second follower.
     """
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
@@ -970,8 +970,8 @@ def test_ship_skill_states_one_monitor_per_session() -> None:
     assert "one per session" in ship
     assert "A second follower on the same session is a defect, not redundancy" in ship
     assert "To watch more than your own runs" in ship
-    assert "attach the additional sessions to the one monitor" in ship
-    assert "never arm a second follower" in ship
+    assert "name them on the one follower with" in ship
+    assert "Never arm a second follower" in ship
 
     # The stream mechanics and the flag variants travel beside the rule, so the
     # reader who armed can still reach them from the pointer the skill leaves.
@@ -981,7 +981,10 @@ def test_ship_skill_states_one_monitor_per_session() -> None:
         ).read_text()
     )
     assert "## 15. Monitor and follower stream mechanics" in orchestration
-    assert "The three buckets partition the fleet" in orchestration
+    # The counter carries four buckets — a declared external wait has its own,
+    # so the reference partitions on four rather than three.
+    assert "buckets partition the fleet, not three" in orchestration
+    assert "unpromoted" in orchestration and "queued" in orchestration
     assert "no `--session` at all for the whole" in orchestration
 
 

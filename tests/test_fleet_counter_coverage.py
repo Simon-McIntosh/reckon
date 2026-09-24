@@ -38,14 +38,56 @@ def _emitted_states() -> set[str]:
     classifications reachable through the fallback assignment, and that
     fallback's literal ``"unknown"``. Reading them from the emitter is what
     makes a new state appear in these tests the moment it is added; a list
-    written out here would have to stay in step on its own.
+    written out here would have to stay in step on its own. The classification
+    vocabulary is read out of the classifier itself rather than from the
+    recovery-class tuple beside it, because that tuple is a second copy of the
+    same fact and had already fallen behind the classifier once.
     """
     source = inspect.getsource(recovery._watch_snapshot)
     emitted = set(re.findall(r'state = "([a-z_-]+)"', source))
     emitted |= {"complete", "blocked", "failed"}  # assigned from manifest_status
-    emitted |= set(recovery.RECOVERY_CLASSES)  # classification via the fallback
+    emitted |= _classifications_that_become_a_state()
     emitted |= {"unknown"}  # the fallback's last resort
     return emitted
+
+
+def _classifications_that_become_a_state() -> set[str]:
+    """The classifier's words that reach the state fallback unclaimed.
+
+    The classifier names a classification for every reading, but the reducer
+    consumes most of them into a state of its own; only a word no arm of its
+    own claims falls through as the state. A classification the classifier
+    assigns only to a reading whose liveness is disproven never reaches the
+    fallback either — the reducer's dead-process arm claims it first.
+
+    Both vocabularies are read from the code that holds them, so a
+    classification added on either side moves these tests with it rather than
+    silently escaping them, which is the drift a list written out here would
+    reintroduce.
+    """
+    classifier_lines = inspect.getsource(recovery.classify_pointer).splitlines()
+    reducer = inspect.getsource(recovery._watch_snapshot)
+    claimed = set(re.findall(r'classification == "([a-z_-]+)"', reducer))
+    for group in re.findall(r"classification in \{([^}]*)\}", reducer):
+        claimed |= set(re.findall(r'"([a-z_-]+)"', group))
+
+    unclaimed: set[str] = set()
+    for index, line in enumerate(classifier_lines):
+        literal = re.fullmatch(r'\s*classification = "([a-z_-]+)"', line)
+        if literal is None:
+            continue
+        if "alive is False" in _guarding_condition(classifier_lines, index):
+            continue
+        unclaimed.add(literal.group(1))
+    return unclaimed - claimed
+
+
+def _guarding_condition(lines: list[str], assignment: int) -> str:
+    """The nearest enclosing ``if``/``elif`` condition above an assignment."""
+    for line in reversed(lines[:assignment]):
+        if re.match(r"\s*(if|elif)\b", line):
+            return line
+    return ""
 
 
 def _fleet_of_every_state() -> dict[str, dict[str, str]]:

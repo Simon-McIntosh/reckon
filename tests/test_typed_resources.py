@@ -782,9 +782,12 @@ def test_spa_graph_uses_typed_navigation_identity():
 
     assert "function _artifactKey(artifact)" in graph
     assert "Object.fromEntries(M.inventory.map(p => [_artifactKey(p), p]))" in graph
-    assert "pos[_artifactKey(p)]" in graph
+    # Every graph lookup and navigation resolves the typed artifact identity,
+    # never a bare slug: one slug can name a plan and an archived plan, which
+    # are different artifacts and must not collapse into one node.
+    assert "goTo(_artifactKey(p))" in graph
     assert "key={_artifactKey(p)}" in graph
-    assert 'onNav({ view: "plan", slug: navKey })' in graph
+    assert 'onNav({ view: "plan", slug: _artifactKey(bySlug[node.slug] || node) })' in graph
     assert 'isArchivedArtifact(inv) ? "archive:" : ""' in loader
     assert (
         "Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]))" in loader
