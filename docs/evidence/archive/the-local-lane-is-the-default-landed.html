@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-local-lane-is-the-default-landed">
+  <meta name="plan-title" content="The Local Lane Is The Default — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for the-local-lane-is-the-default. One anchor per material outcome, accumulating as nodes land.">
+  <meta name="plan-evidence-for" content="the-local-lane-is-the-default">
+  <meta name="plan-verifies" content="the-local-lane-is-the-default#s5">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout's environment reached through PYTHONPATH and pytest -p no:cacheprovider; the base revision was extracted read-only with git archive into a scratch directory, so no second checkout, worktree or branch was created">
+  <meta name="plan-commits" content="db50a1e3">
+  <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,tests/test_paid_lanes_document.py,docs/figures/the-local-lane-is-the-default/headroom-document.png">
+  <title>The Local Lane Is The Default — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The Local Lane Is The Default — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/the-local-lane-is-the-default/headroom-document.png" alt="Three accounts and two windows each: clive carries the week at 31% while its five-hour clock resolves no source at all; codex carries 42% and 21% with both windows on pace; claude carries a five-hour clock at 77% whose figure is two hours old and marked stale beside a fresh week at 44%. A third panel marks staleness and absence per window, never per account.">
+    <figcaption>One document, each window resolved on its own: an unresolved five-hour
+    clock beside an observed week, and a stale figure marked stale for that window alone.</figcaption>
+  </figure>
+
+  <section id="paid-headroom-is-published">
+    <h2>&sect;5 — Paid-backend headroom is published as one document pre-flight reads</h2>
+
+    <p><strong>The defect.</strong> A metered account's headroom was read only when someone ran a
+    pre-flight or a dispatch, and it was read from three homes that could each be a day old: a run's
+    committed or live <code>lane_receipt</code>, a session rollout, and the
+    <code>rate_limit_event</code> windows a served stream carried. Two readers recomputed the
+    position independently, and because one reading's windows were taken as a whole, a source that
+    had never carried the five-hour clock blanked the week it had measured &mdash; every field turned
+    <code>unknown</code> at once, which cannot be told apart from a genuinely empty window.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/crew/paid_lanes.py</code> composes one document per
+    account from those same three recorded homes, carrying for each of the five-hour and seven-day
+    windows its utilisation, reset time, burn multiple, projected exhaustion, the source the figure
+    came from and when it was observed. Reconciliation is <strong>per window by recency</strong>: a
+    newer reading speaks only for the windows it actually carried, so a fresh stream reading at 40%
+    holds the five-hour clock while an older receipt still holds the week the stream never reported.
+    The two windows are therefore resolved independently, which is what stops one failed
+    precondition from blanking the other. A window no source resolved is an explicit absence
+    (<code>state: "unknown"</code>, every figure <code>null</code>) and never a <code>0.0</code>,
+    which would read as a measured empty window. A figure whose own observation is older than the
+    staleness horizon keeps its value and is marked <code>stale: true</code> for that window alone.</p>
+
+    <p><code>python -m reckon.crew.paid_lanes --once</code> writes the document atomically through a
+    sibling temporary file and an <code>os.replace</code>, so a reader that opens it mid-refresh
+    sees the previous document or the new one and never a truncated account list whose missing
+    accounts would look like real absences. <code>budget.preflight</code> takes its per-backend and
+    per-group figures from that document when the caller supplies no reading of its own, so both come
+    from one reconciled record rather than two readers; an explicit <code>windows</code> argument
+    still wins where a caller supplies one.</p>
+
+    <table>
+      <caption>What the node asserted, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>A reading is published for each of the three backends, each window carrying its source, its age and derived figures beside the measured utilisation</td><td><code>test_a_reading_is_published_for_each_of_the_three_backends</code></td></tr>
+        <tr><td>Each window names the freshest source that carried <em>it</em>, a newer stream speaking for the five-hour clock while an older receipt holds the week</td><td><code>test_each_window_carries_its_own_source_and_observation</code></td></tr>
+        <tr><td>One failed precondition leaves only that field unknown, and the absence is <code>None</code> rather than <code>0.0</code></td><td><code>test_one_failed_precondition_leaves_only_that_field_unknown</code></td></tr>
+        <tr><td>A too-old field is stale alone, keeping the figure it measured while its fresh sibling is not marked stale</td><td><code>test_a_too_old_field_is_reported_stale_alone</code></td></tr>
+        <tr><td>Pre-flight paces from the document, and the per-account figures equal the per-group figures for each of the three groups</td><td><code>test_preflight_paces_from_the_document_and_the_five_hour_figures_agree</code></td></tr>
+        <tr><td>The command composes and writes the document to the named path, parseable and whole</td><td><code>test_the_command_writes_the_document_to_the_named_path</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p>The node's own gate, run at its head (<code>UV_PROJECT_ENVIRONMENT</code> not needed; the
+    worktree was pointed at the main checkout's interpreter with <code>PYTHONPATH</code> set to the
+    worktree root):</p>
+
+    <pre><code>PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest \
+    -p no:cacheprovider -q tests/test_paid_lanes_document.py
+# 6 passed in 0.53s</code></pre>
+
+    <p><strong>The files that import <code>reckon.budget</code> were run at the base revision and at
+    head, and the failure sets are identical &mdash; zero added.</strong> The base revision
+    (<code>02e2757d</code>) was extracted read-only with <code>git archive</code> into a scratch
+    directory, so the comparison is a genuine base run rather than a recollection of one, and no
+    second checkout or worktree was created.</p>
+
+    <table>
+      <caption>Twelve budget-importing test files, base against head.</caption>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failed</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>02e2757d</code></td><td><strong>6 failed, 185 passed</strong> in 106.03s</td><td>the same six</td></tr>
+        <tr><td>head <code>db50a1e3</code></td><td><strong>6 failed, 185 passed</strong> in 85.50s</td><td>the same six</td></tr>
+      </tbody>
+    </table>
+
+    <p><code>diff</code> of the two <code>^FAILED</code> sets is empty, so the six failures are
+    pre-existing at this base (the known-red baseline the plan records in &sect;10: tests that now
+    need <code>--spec-level</code>, a roster refusing to commit over an uncommitted
+    <code>crew.json</code>, and scope-conflict tests that no longer raise) rather than anything this
+    node introduced. <code>test_files_importing reckon</code> is the selection the brief names; the
+    node's own new file is in that selection.</p>
+
+    <p><strong>Lint by delta.</strong> Five findings at the base copies of the three paths, five at
+    head &mdash; no new finding. The four remaining findings are pre-existing lines in
+    <code>reckon/budget.py</code> that this commit does not touch
+    (<code>UP035</code>, <code>UP017</code>&times;2, <code>FURB162</code>); the two files this node
+    created are clean, and <code>ruff format --check</code> passes on all three.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>make preflight ignore the published
+    document; the per-backend/per-group agreement assertion must fail</em> &mdash; the first line of
+    the red log. It was applied without editing the test: a pytest plugin
+    (<code>-p ignore_paid_document</code> on <code>PYTHONPATH</code>) rebinds
+    <code>budget._published_windows</code>'s reader, <code>paid_lanes.read_document</code>, to
+    answer <code>None</code>. The production path reaches the document through that module attribute
+    precisely so the mutation is one rebinding rather than a source edit, and the test file the node
+    stages is untouched by the control. The pre-flight is then left with no window to pace from, and
+    the agreement assertion fails on its own first account:</p>
+
+    <pre><code>AssertionError: clive
+assert None == 0.1 &plusmn; 1.0e-07
+FAILED tests/test_paid_lanes_document.py::test_preflight_paces_from_the_document_and_the_five_hour_figures_agree
+1 failed, 5 deselected in 0.39s</code></pre>
+
+    <p><strong>Positive control:</strong> the same selection at head is <code>1 passed</code>
+    (above), so the red is the mutation and not the selection. Log:
+    <code>~/.config/reckon/crew/runs/r-20260924T200633890250-paid-headroom-is-published/negative_control.log</code>,
+    alongside <code>test_gate.log</code>, <code>suite_base.log</code> and
+    <code>suite_after.log</code>.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The document was not deployed on a five-minute clock.</strong> The brief places the
+      refresh deployment and the dispatch-side read out of scope; what landed is the composer, the
+      atomic writer and the pre-flight read. Until an observer runs on a timer the document's
+      absence is reported as no reading rather than a fabricated position, which is what
+      <code>read_document</code> returning <code>None</code> means.</li>
+      <li><strong>No state grading.</strong> <em>Open</em>, <em>pace</em> and <em>hold</em> from
+      &sect;6 are not derived here; the document publishes the figures a grader would read
+      (utilisation, burn multiple, projected exhaustion) but assigns no state.</li>
+      <li><strong>The claude path was exercised through the stream reader, not against a live
+      subscription.</strong> The three sources are the ones the pre-flight already read
+      (<code>receipt</code>, <code>rollout</code>, <code>stream</code>), each named as the source it
+      was; no network call is made by this node's tests.</li>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; a merged-head verification is a separately dispatched node's job.</li>
+      <li><strong>Pre-existing plan-labelled identifiers in <code>reckon/budget.py</code> were left
+      in place.</strong> Four occurrences of a bare deliverable identifier sit on lines this commit
+      does not touch, in a file concurrent peers are editing; a rename there would collide and is not
+      this node's focused commit.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

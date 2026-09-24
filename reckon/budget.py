@@ -1400,6 +1400,28 @@ def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[
     return names
 
 
+def _published_windows(
+    document: Mapping[str, Any] | None,
+    document_path: str | Path | None,
+    moment: datetime,
+) -> dict[str, Any]:
+    """Read the published headroom document into one window reading per account.
+
+    The document is the observer's one reconciled record of every metered
+    account, so a caller that names no window source paces to it. Reading is
+    delegated to :mod:`reckon.crew.paid_lanes`, which owns the document's shape;
+    this module reads its own recorded evidence through :func:`recorded_windows`
+    and takes the published document only when nothing was injected, so an
+    explicit reading always wins.
+    """
+    from reckon.crew import paid_lanes
+
+    resolved = document
+    if resolved is None:
+        resolved = paid_lanes.read_document(document_path)
+    return paid_lanes.document_windows(resolved, moment=moment)
+
+
 def preflight(
     project: str,
     config: Mapping[str, Any],
@@ -1414,6 +1436,8 @@ def preflight(
     | None = None,
     windows: Mapping[str, Any] | None = None,
     ready: Iterable[Mapping[str, Any]] = (),
+    document: Mapping[str, Any] | None = None,
+    document_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Decide, per backend, whether a wave may open, and at what pace.
 
@@ -1436,8 +1460,24 @@ def preflight(
     the bar the stated ready set is judged against — see :func:`group_pace`. Both
     are optional, and a wave that names neither still gets the hold decision and
     a group block reading unknown, which is what absence of a signal means.
+
+    ``windows`` is the caller's own reading and always wins when given. When it
+    is absent the pace may be read from the published headroom document, but only
+    when the caller names one -- through ``document`` directly or through
+    ``document_path``. Nothing is read by default: a reader that fell back to a
+    machine-wide location would answer differently on two workstations looking at
+    the same code, and a test calling here would consult the host rather than its
+    fixture. A caller naming neither gets the hold decision and a group block
+    reading unknown, which is what absence of a signal means.
     """
     moment = _now(now)
+    if windows is None and (document is not None or document_path is not None):
+        # No caller-injected reading, but the caller named the published headroom
+        # document: pace from the document, which is the one place every metered
+        # account's windows are observed and reconciled. Nothing is read when the
+        # caller names no document, so the pace never depends on a machine-wide
+        # file, and a test calling here consults its own fixture or nothing.
+        windows = _published_windows(document, document_path, moment)
     policy_block = policy(config)
     configured = config.get("backends") or {}
     if backends is not None:

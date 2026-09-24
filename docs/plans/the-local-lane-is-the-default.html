@@ -114,6 +114,17 @@
     <p><strong>Done when</strong> the document is refreshed at least every 5 minutes, with a
     reading for each of the three backends. Preflight's per-backend and per-group figures come from
     it and agree. A test with one failed precondition shows only that field unknown.</p>
+    <p><strong>Landed (2026-09-24):</strong> <code>reckon/crew/paid_lanes.py</code> composes the
+    document from the three recorded homes the pre-flight already read (a run's lane receipt, a
+    session rollout, and the <code>rate_limit_event</code> windows a served stream carried), naming
+    the source each window's figure came from and when it was observed. Reconciliation is per window
+    by recency rather than per account, so a fresh five-hour clock is kept while an older receipt
+    still holds the week it alone measured, and one window no source resolved is an explicit
+    absence rather than a zero. A figure past the staleness horizon keeps its value and is marked
+    stale for that window alone. <code>python -m reckon.crew.paid_lanes --once</code> writes it
+    atomically by rename, and <code>budget.preflight</code> takes its per-backend and per-group
+    figures from that document when the caller supplies no reading of its own. The five-minute
+    refresh deployment and the dispatch-side read remain open.</p>
 
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
