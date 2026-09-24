@@ -259,6 +259,57 @@
     paths are <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code> and that test. A
     change needed in another module is named in the manifest as a follow-on.</p>
 
+    <div data-reckon="landing" data-node="mcp-reads-have-deadlines">
+      <h3>Landed &mdash; every registered tool now runs off the event loop under a deadline</h3>
+      <p>The hypothesis holds, and it is measured from the installed SDK rather than assumed.
+      The venv runs <code>mcp</code> 1.28.1, whose
+      <code>server/fastmcp/utilities/func_metadata.py</code> ends
+      <code>call_fn_with_arg_validation</code> with <code>if fn_is_async: return await
+      fn(...)</code> / <code>else: return fn(...)</code> &mdash; a synchronous tool body is
+      called <em>inside</em> the coroutine, on the one event loop, with no thread offload. The
+      serialization point is therefore the loop itself, and
+      <code>tests/test_mcp_reads_have_deadlines.py</code> reproduces it against the SDK: a
+      blocking probe registered on a bare <code>FastMCP</code> serialises a second call, so
+      the free call enters only after the blocked one exits.</p>
+      <p>Each tool is registered as an async adapter
+      (<code>_deadline_tool</code>) that runs the unchanged synchronous wrapper on a worker
+      thread under a deadline &mdash; 30&nbsp;s for a read, 60&nbsp;s for a write, overridable
+      through <code>RECKON_MCP_DEADLINE_SECONDS</code>. Passing the deadline abandons the
+      thread rather than cancelling it (a blocked filesystem call cannot be interrupted) and
+      returns a typed <code>storage-slow</code> result naming the path it was on and how long
+      it waited, so a slow filesystem is distinguishable from a missing plan. A write result
+      also carries <code>landed</code>, so a timed-out write that did reach its file is not
+      retried blindly. Signatures are copied with annotations resolved, so the published
+      argument model is unchanged and the synchronous wrappers stay directly callable.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png"
+             alt="Two timelines of one blocked read and one healthy read: before the fix the healthy read cannot enter until the blocked read returns at 4.0 s; after, the blocked read is bounded at its 1.0 s deadline and answered storage-slow while the healthy read answers at 0.20 s.">
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>7 passed, exit 0</td></tr>
+          <tr><td>Blocked read (deadline 0.2&nbsp;s)</td><td><code>storage-slow</code>, <code>waited_seconds</code> &ge; 0.2</td></tr>
+          <tr><td>Concurrent read of another path</td><td>answered in &lt; 0.3&nbsp;s while one was blocked</td></tr>
+          <tr><td>Write that lands after its deadline</td><td><code>landed: true</code>, file present</td></tr>
+          <tr><td>Write that never lands</td><td><code>landed: false</code>, file absent</td></tr>
+          <tr><td>Negative control (deadline and thread removed)</td><td>5 of 7 tests fail</td></tr>
+          <tr><td>MCP surface regression</td><td>279 passed / 5 failed &mdash; identical to the base revision</td></tr>
+        </tbody>
+      </table>
+      <p>The negative control removes the worker thread and its deadline so the body runs inline
+      again: the blocked read no longer returns within the test's bound and the concurrent read
+      waits behind it. It fails <code>test_a_blocked_read_returns_storage_slow_within_its_deadline</code>,
+      <code>test_a_concurrent_read_of_another_path_answers_normally</code>, both write
+      landed-state cases and the end-to-end adapter case, while the two tests that assert the SDK
+      fact and the registration wiring still pass &mdash; the mutation is the deadline, not the
+      wiring. The five regression failures were measured unchanged at the section's base revision
+      (<code>test_mcp_recovery</code> resume session reattach, <code>test_crew_runs_view</code>
+      joins-sources, and three <code>test_edit_plan</code> create cases), so this change adds none.</p>
+      <p>No change outside <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code> and the
+      new test was needed; the deadline is applied at the tool boundary the SDK calls.</p>
+    </div>
+
     <h2 id="s6">&sect;6 &mdash; An orphan is a process whose owner is dead</h2>
     <p>ppid 1 does not identify an orphan. A worker is reparented to init whenever its
     dispatch exits, and so are zellij servers and system services. imas-codex-0d's ppid-1
