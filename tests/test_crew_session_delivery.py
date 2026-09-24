@@ -596,6 +596,7 @@ def test_the_refusal_names_where_the_arming_primitive_is_documented() -> None:
         "proj",
         {
             "arming_line": "reckon crew watch --project proj",
+            "ensure_line": runs.watcher_ensure_line("proj"),
             "attach_line": runs._watch_attach_line("proj", session="mine"),
             "follower": {"delivery": "file"},
         },

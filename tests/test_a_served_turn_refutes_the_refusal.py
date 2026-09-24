@@ -171,10 +171,19 @@ def test_a_future_reset_without_service_keeps_its_reason(
     )
 
     assert verdict["held"] is True
-    assert verdict["reason"] == (
+    # The reason keeps the clause that decided the hold: a future reset does not
+    # by itself mean the lane is serving, and the recorded window reset must not
+    # read as recovery. The resolving action follows it, because the reader who
+    # needs the reason is the reader who has to act on it — the two clauses
+    # together pin the whole string, so neither can be dropped silently.
+    assert verdict["reason"].startswith(
         "backend reports threshold status 'exhausted', which policy counts as "
         "exhausted regardless of utilisation; utilisation 100% with burn "
         "multiple unknown"
+    )
+    assert verdict["reason"].endswith(
+        "Resolve with `reckon crew preflight`, then `reckon crew dispatch`; "
+        "for an existing blocked run, use `reckon crew resume-ready`."
     )
 
 

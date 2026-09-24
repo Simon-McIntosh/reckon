@@ -73,7 +73,40 @@
       </tbody>
     </table>
 
-    
+    <section id="s2-budget-session-follower">
+      <h3>Node: budget, session and follower tests</h3>
+      <p class="landed-summary">Nine owned files, sixteen listed red ids. Thirteen are green: two stale
+      expectations and eleven fixture repairs. Two ids are product defects and are named as follow-ons rather
+      than repaired in place; two follower ids fail only under load. Evidence:
+      <a href="/reckon/evidence/the-suite-is-green-at-head-landed#budget-session-and-follower-tests">landed
+      evidence</a>, figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/budget-session-and-follower-tests.svg">per-file
+      red ids, base vs after</a>.</p>
+      <ul>
+        <li><strong>Stale expectation, ticker geometry</strong> (<code>test_crew_recovery.py</code>,
+        <code>test_backends.py</code>): helpers mirrored a column layout the ticker no longer uses; the
+        assertion was corrected to the emitted geometry.</li>
+        <li><strong>Stale fixture</strong> (<code>test_crew_recovery.py</code>): the promotion fixture built a
+        plain directory, and the guard that refuses promotion outside a git worktree therefore ran against it.
+        The fixture now initialises a real repository.</li>
+        <li><strong>Product defect</strong>
+        <code>test_a_held_backend_with_a_declared_fallback_dispatches_on_it</code>
+        (<code>tests/test_budget.py</code>): the fallback lane is never reached because the dispatch's own
+        uncommitted hold writes dirty the roster file the member-provisioning guard then refuses;
+        <code>CrewError</code> raised at <code>reckon/crew/routing.py:1307</code>.</li>
+        <li><strong>Product defect</strong>
+        <code>test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]</code>
+        (<code>tests/test_a_reexec_keeps_its_children.py</code>): <code>reckon/crew/dispatch.py:4470</code>
+        iterates a decoded carrier without a type test, so a JSON scalar raises
+        <code>TypeError: 'int' object is not iterable</code> against the function's own promise not to raise.</li>
+        <li><strong>Fails only under load</strong> (<code>test_follower_freshness.py</code>,
+        <code>test_follower_checks_its_owner.py</code>): real follower subprocesses with two-to-eight-second
+        wait bounds pass in a quiet serial run and fail under contention; which of them fails moves between
+        runs, so they are recorded rather than retried.</li>
+      </ul>
+    </section>
+
+
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
