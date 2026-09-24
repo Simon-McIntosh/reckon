@@ -246,6 +246,100 @@
     <code>reckon/crew/promotion.py</code> and
     <code>tests/test_dispatch_returns_without_worker.py</code>.</p>
 
+    <h3 id="s3-landed">Landed &mdash; node <code>dispatch-returns-before-the-snapshot</code></h3>
+    <p>
+      The design above is implemented and measured. Dispatch starts a detached per-run
+      supervisor, writes the pointer naming it, and returns; the supervisor takes
+      <code>tree-snapshot.json</code>, spawns the worker into <code>worker.json</code>, waits
+      for it, and writes <code>exit.json</code>. The gate is
+      <code>tests/test_dispatch_returns_without_worker.py</code>. Measured on
+      <code>sirius_debug</code> on 2026-09-24: <strong>4 passed in 150.07 s</strong>, and
+      separately case one alone three times, <strong>1 passed in 36.24 / 36.09 / 35.86 s</strong>.
+      Every run used the project interpreter
+      <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/dispatch_return_bound.png"
+           alt="Left: the boundary snapshot's position before and after the change. Right: seven measured dispatch returns, all under the five-second bound, with the control that puts the scan back inline at 35.9 s.">
+      <figcaption>
+        The scan is unchanged and still costs its 32 seconds; it no longer holds the caller.
+        The right panel is case one's own measure, and the unsupported control beside it.
+      </figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Case</th><th>What it measures</th><th>Measured</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>one</td>
+          <td>dispatch returns with the run id, nothing killed; its own stub writes its
+          five-second bound</td>
+          <td><code>dispatch_process_seconds</code> 1.82 (four-case run) and 1.67&ndash;3.02 over
+          seven calls; <code>dispatch_seconds</code> 1.54. The marker appears at 34.69&ndash;
+          35.35 s, so the scan really did run and really did cost ~32 s</td>
+        </tr>
+        <tr>
+          <td>two</td>
+          <td>SIGKILL to the dispatch process before it returns still leaves the worker's
+          marker</td>
+          <td>the driver is parked by a <code>sitecustomize</code> hook inside
+          <code>subprocess.Popen</code>, so the kill lands in the launch path; the worker
+          survives and writes its marker at 35.18 s</td>
+        </tr>
+        <tr>
+          <td>three</td>
+          <td>SIGKILL to the worker is recorded in the run directory</td>
+          <td><code>exit.json</code> carries the signal name <code>SIGKILL</code> within the
+          ten-second bound</td>
+        </tr>
+        <tr>
+          <td>four</td>
+          <td>a pointer discarded with its run directory is not recreated</td>
+          <td>neither reappears; the worker still ran to completion, which is the case's
+          positive control</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The scan is the supervisor's, and promotion reads it there.</strong>
+      <code>tree-snapshot.json</code> holds 32 trees in case one. The promotion check is
+      read through <code>promotion._repository_tree_boundary_violations</code>, whose scan
+      roots are asserted equal to the snapshot's tree list, so the record it reads is the run
+      directory's and not the pointer's. Promotion falls back to
+      <code>record["repository_tree_snapshot"]</code> only when the file is absent, which is
+      the shape an older run's pointer has.
+    </p>
+    <p>
+      <strong>Dispatch's own pre-return path makes exactly one charged <code>git status</code>
+      call.</strong> The shim charges every <code>status</code> call made before dispatch
+      returns, so the case bounds that path rather than the scan. Across 33 total charged
+      calls for 32 trees, the sole pre-return call is
+      <code>git -C &lt;repo&gt; status --porcelain=v1 --untracked-files=all --
+      docs/state/&lt;project&gt;/crew.json</code>, made by the roster-obstruction check. That
+      is the call the manifest names.
+    </p>
+    <p>
+      <strong>Both declared negative controls were executed and both fail as declared.</strong>
+      Putting the tree snapshot back between the launch and dispatch's return makes case one
+      fail on the five-second bound (<code>assert 35.866654474288225 &lt;= 5.0</code>);
+      removing the supervisor's wait makes case three fail with
+      <code>the exit record names None rather than SIGKILL</code>. Each control is a full copy
+      of the package and the test tree, because <code>tests/</code> is a package and pytest
+      prepends the worktree root to <code>sys.path</code> &mdash; the first attempt at these
+      controls reported two passes for that reason, measuring the unmutated tree. The log is
+      <code>negative-control.log</code> in the run directory.
+    </p>
+    <p>
+      <strong>Correction, recorded at landing.</strong> Case one's guard on the real
+      live-pointer directory first asserted that the directory gained no entry at all. That
+      is a monitor of the workstation rather than of the code, and it failed on
+      <code>r-20260924T065103736235-second-review-of-a-crew-process-ends-with-its-owner.json</code>
+      &mdash; a different node's pointer, written by a concurrent session, while every one of
+      the case's own assertions held. The guard now intersects what appeared with the pointers
+      the case itself wrote in its own home, so a peer's dispatch is not this case's leak and
+      this case's own pointer still is. The predicate was falsified against both populations
+      before the case was re-run; the record is in the same log.
+    </p>
+
     <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
     <p>Once &sect;3 lands, a dispatch is an ordinary short command. Change every instruction that
     says to background a CLI dispatch or to yield after it, so a coordinator runs it in the
