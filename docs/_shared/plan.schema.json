@@ -487,112 +487,6 @@
       "title": "ResearchItem",
       "type": "object"
     },
-    "SectionCapabilityRequest": {
-      "additionalProperties": false,
-      "description": "The shared capability vocabulary with required section-level floors.",
-      "properties": {
-        "version": {
-          "const": "1.0",
-          "default": "1.0",
-          "title": "Version",
-          "type": "string"
-        },
-        "class": {
-          "default": "general",
-          "enum": [
-            "routine",
-            "general",
-            "orchestrator"
-          ],
-          "title": "Class",
-          "type": "string"
-        },
-        "requirements": {
-          "$ref": "#/$defs/SectionCapabilityRequirements"
-        }
-      },
-      "required": [
-        "requirements"
-      ],
-      "title": "SectionCapabilityRequest",
-      "type": "object"
-    },
-    "SectionCapabilityRequirements": {
-      "additionalProperties": false,
-      "description": "A section explicitly declares reasoning, verification and risk floors.",
-      "properties": {
-        "reasoning": {
-          "enum": [
-            "standard",
-            "deep"
-          ],
-          "minLength": 1,
-          "title": "Reasoning",
-          "type": "string"
-        },
-        "context": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "enum": [
-            "standard",
-            "extended",
-            null
-          ],
-          "title": "Context"
-        },
-        "tool_autonomy": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "enum": [
-            "guided",
-            "autonomous",
-            null
-          ],
-          "title": "Tool Autonomy"
-        },
-        "verification": {
-          "enum": [
-            "standard",
-            "strict"
-          ],
-          "minLength": 1,
-          "title": "Verification",
-          "type": "string"
-        },
-        "risk": {
-          "enum": [
-            "low",
-            "moderate",
-            "elevated",
-            "critical"
-          ],
-          "minLength": 1,
-          "title": "Risk",
-          "type": "string"
-        }
-      },
-      "required": [
-        "reasoning",
-        "verification",
-        "risk"
-      ],
-      "title": "SectionCapabilityRequirements",
-      "type": "object"
-    },
     "SectionRecord": {
       "additionalProperties": false,
       "description": "Typed metadata carried by an h2 or its adjacent data-reckon element.",
@@ -609,7 +503,37 @@
           "type": "number"
         },
         "capability": {
-          "$ref": "#/$defs/SectionCapabilityRequest"
+          "$ref": "#/$defs/CapabilityRequest",
+          "allOf": [
+            {
+              "properties": {
+                "requirements": {
+                  "properties": {
+                    "reasoning": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "verification": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "risk": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "reasoning",
+                    "verification",
+                    "risk"
+                  ]
+                }
+              },
+              "required": [
+                "requirements"
+              ]
+            }
+          ]
         },
         "attempts": {
           "description": "Tool-owned launch count",

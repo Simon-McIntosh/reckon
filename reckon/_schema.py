@@ -532,22 +532,6 @@ class CapabilityRequest(BaseModel):
     requirements: CapabilityRequirements = Field(default_factory=CapabilityRequirements)
 
 
-class SectionCapabilityRequirements(CapabilityRequirements):
-    """A section explicitly declares reasoning, verification and risk floors."""
-
-    reasoning: str = Field(min_length=1, json_schema_extra=_enum(REASONING_LEVELS))
-    verification: str = Field(
-        min_length=1, json_schema_extra=_enum(VERIFICATION_LEVELS)
-    )
-    risk: str = Field(min_length=1, json_schema_extra=_enum(RISK_LEVELS))
-
-
-class SectionCapabilityRequest(CapabilityRequest):
-    """The shared capability vocabulary with required section-level floors."""
-
-    requirements: SectionCapabilityRequirements
-
-
 class SectionRecord(BaseModel):
     """Typed metadata carried by an h2 or its adjacent data-reckon element."""
 
@@ -557,7 +541,24 @@ class SectionRecord(BaseModel):
     effort_hours: float = Field(
         gt=0, multiple_of=0.25, allow_inf_nan=False, strict=True
     )
-    capability: SectionCapabilityRequest
+    capability: CapabilityRequest = Field(
+        json_schema_extra={
+            "allOf": [
+                {
+                    "required": ["requirements"],
+                    "properties": {
+                        "requirements": {
+                            "required": ["reasoning", "verification", "risk"],
+                            "properties": {
+                                key: {"type": "string", "minLength": 1}
+                                for key in ("reasoning", "verification", "risk")
+                            },
+                        }
+                    },
+                }
+            ],
+        },
+    )
     attempts: int = Field(ge=0, strict=True, description="Tool-owned launch count")
     status: str = Field(json_schema_extra=_enum(SECTION_DECLARATION_ENUM))
     links: list[str] = Field(
@@ -572,10 +573,13 @@ class SectionRecord(BaseModel):
 
     @field_validator("capability")
     @classmethod
-    def _valid_capability(
-        cls, value: SectionCapabilityRequest
-    ) -> SectionCapabilityRequest:
+    def _valid_capability(cls, value: CapabilityRequest) -> CapabilityRequest:
         errors = validate_capability(value.model_dump(by_alias=True))
+        errors.extend(
+            f"capability.requirements.{key}: required for a section record"
+            for key in ("reasoning", "verification", "risk")
+            if not getattr(value.requirements, key)
+        )
         if errors:
             raise ValueError("; ".join(errors))
         return value

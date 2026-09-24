@@ -335,3 +335,37 @@ def test_boolean_attempts_cannot_enter_typed_state():
     records[0]["attempts"] = True
     with pytest.raises(ValueError, match="attempts"):
         PlanState.model_validate({"sections": records})
+
+
+def test_structural_section_wrappers_without_record_metadata_are_preserved():
+    original = _fixture_html([]).replace(
+        '<h2 id="design">The <em>design</em> work</h2>',
+        '<section id="background" data-reckon="section"><h2 id="design">The <em>design</em> work</h2><p>Authored prose</p></section>',
+    )
+    state = read_state(original)
+    assert state["sections"] == []
+    assert write_state(original, state) == original
+    assert (
+        read_state(write_state(original, {"sections": RECORDS}))["sections"] == RECORDS
+    )
+    assert "<p>Authored prose</p></section>" in write_state(
+        original, {"sections": RECORDS}
+    )
+
+
+def test_partial_record_metadata_still_refuses_missing_effort():
+    original = _fixture_html().replace(' data-effort-hours="0.25"', "", 1)
+    with pytest.raises(ValueError, match="effort_hours"):
+        read_state(original)
+
+
+@pytest.mark.parametrize("field", ["reasoning", "verification", "risk"])
+@pytest.mark.parametrize("value", [None, ""])
+def test_capability_floors_are_required_in_schema_and_typed_state(field, value):
+    records = deepcopy(RECORDS)
+    records[0]["capability"]["requirements"][field] = value
+    with pytest.raises(ValueError, match=field):
+        PlanState.model_validate({"sections": records})
+    assert list(
+        Draft202012Validator(gen_json_schema()).iter_errors({"sections": records})
+    )

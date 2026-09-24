@@ -275,10 +275,30 @@ def _capability_attributes(capability: dict | None) -> str:
 # ── Read ───────────────────────────────────────────────────────────────────
 
 
+def _section_record_elements(soup: BeautifulSoup) -> list:
+    """A structural section wrapper opts in by declaring record metadata."""
+    return [
+        element
+        for element in soup.select('[data-reckon="section"]')
+        if any(
+            key
+            in {
+                "data-id",
+                "data-effort-hours",
+                "data-attempts",
+                "data-status",
+                "data-links",
+            }
+            or key.startswith("data-capability-")
+            for key in element.attrs
+        )
+    ]
+
+
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
     """Validate explicitly opted-in metadata without changing legacy declarations."""
     records = []
-    for element in soup.select('[data-reckon="section"]'):
+    for element in _section_record_elements(soup):
         if element.name == "h2":
             identity = element.get("id", "")
         elif element.name == "section":
@@ -619,7 +639,7 @@ def _splice_section_records(html_text: str, records: list[dict]) -> str:
     spans = dict(parser.spans)
     pending = {record["id"]: record for record in records}
     replacements = []
-    for element in soup.select('[data-reckon="section"]'):
+    for element in _section_record_elements(soup):
         identity = element.get("id") if element.name == "h2" else element.get("data-id")
         start = parser.line_offsets[element.sourceline - 1] + element.sourcepos
         if start not in spans:
