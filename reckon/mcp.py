@@ -26,14 +26,18 @@ SDK note: this file uses the FastMCP pattern from mcp >= 1.0.0:
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import json
+import os
 import shlex
+import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from types import UnionType
-from typing import Annotated, Any, Literal, Union, get_args, get_origin
+from typing import Annotated, Any, Literal, Union, get_args, get_origin, get_type_hints
 
 # ── SDK import ─────────────────────────────────────────────────────────────
 try:
@@ -64,6 +68,7 @@ from reckon import (
 from reckon import (
     ledger as ledger_module,
 )
+from reckon._mcp_tools import StorageSlowResult
 from reckon._schema import (
     PLAN_STANDALONE_META,
     TYPE_ENUM,
@@ -156,6 +161,214 @@ if _HAS_MCP and FastMCP is not None:
     )
 else:
     mcp = None  # type: ignore[assignment]
+
+
+# ── Storage deadlines ──────────────────────────────────────────────────────
+#
+# FastMCP calls a synchronous tool function directly on its one event loop
+# (``mcp.server.fastmcp.utilities.func_metadata``: ``if fn_is_async: return await
+# fn(...)`` else ``return fn(...)``), so a single read blocked on a slow
+# filesystem stalls every later tool call, and a caller cannot tell a slow
+# filesystem from a missing plan. Every registered tool is therefore wrapped as
+# an async adapter that runs its synchronous body on a worker thread under a
+# deadline. A body that outlives its deadline is abandoned rather than
+# cancelled — a blocked filesystem call cannot be interrupted — and reported as
+# a typed ``storage-slow`` result, which leaves the loop free for the next call.
+
+READ_DEADLINE_SECONDS = 30.0
+WRITE_DEADLINE_SECONDS = 60.0
+WRITE_LANDING_GRACE_SECONDS = 0.5
+
+DEADLINE_ENV = "RECKON_MCP_DEADLINE_SECONDS"
+READ_DEADLINE_ENV = "RECKON_MCP_READ_DEADLINE_SECONDS"
+WRITE_DEADLINE_ENV = "RECKON_MCP_WRITE_DEADLINE_SECONDS"
+LANDING_GRACE_ENV = "RECKON_MCP_WRITE_LANDING_GRACE_SECONDS"
+
+
+def _positive_seconds(value: str | None) -> float | None:
+    """Parse an override into a non-negative number of seconds, or None."""
+
+    if value is None or not value.strip():
+        return None
+    try:
+        seconds = float(value)
+    except ValueError:
+        return None
+    return max(0.0, seconds)
+
+
+def _deadline_seconds(kind: str) -> float:
+    """Resolve the deadline for one call, most specific override first."""
+
+    override = _positive_seconds(os.environ.get(DEADLINE_ENV))
+    if override is not None:
+        return override
+    specific = _positive_seconds(
+        os.environ.get(WRITE_DEADLINE_ENV if kind == "write" else READ_DEADLINE_ENV)
+    )
+    if specific is not None:
+        return specific
+    return WRITE_DEADLINE_SECONDS if kind == "write" else READ_DEADLINE_SECONDS
+
+
+def _landing_grace_seconds() -> float:
+    override = _positive_seconds(os.environ.get(LANDING_GRACE_ENV))
+    return WRITE_LANDING_GRACE_SECONDS if override is None else override
+
+
+def _file_fingerprint(path: str | None) -> tuple[int, int] | None:
+    """The identity of one file as (mtime, size), or None when it is absent."""
+
+    if path is None:
+        return None
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return None
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+async def _await_landing(path: str, before: tuple[int, int] | None) -> bool:
+    """Report whether an abandoned write reached its file within a short grace.
+
+    The grace exists because a body can complete just after the deadline: the
+    thread is still running, and reporting ``landed=False`` for a write that
+    actually landed would invite a blind retry that duplicates it.
+    """
+
+    stop = time.monotonic() + _landing_grace_seconds()
+    while True:
+        if _file_fingerprint(path) != before:
+            return True
+        if time.monotonic() >= stop:
+            return False
+        await asyncio.sleep(0.02)
+
+
+async def _run_under_deadline(
+    body: Callable[[], Any],
+    *,
+    kind: str,
+    label: str,
+    path: str | None = None,
+    path_hint: Callable[[], str | None] | None = None,
+    deadline: float | None = None,
+) -> Any:
+    """Run one synchronous storage body on a worker thread under a deadline."""
+
+    limit = _deadline_seconds(kind) if deadline is None else deadline
+    waiting: dict[str, Any] = {"path": str(path) if path is not None else None}
+    if kind == "write" and waiting["path"] is not None:
+        waiting["before"] = _file_fingerprint(waiting["path"])
+    started = time.monotonic()
+
+    def _work() -> Any:
+        if waiting["path"] is None and path_hint is not None:
+            try:
+                resolved = path_hint()
+            except Exception:  # noqa: BLE001 — naming the path must never fail a call
+                resolved = None
+            if resolved is not None:
+                waiting["path"] = str(resolved)
+                if kind == "write":
+                    waiting["before"] = _file_fingerprint(waiting["path"])
+        return body()
+
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(_work), limit)
+    except TimeoutError:
+        waited = time.monotonic() - started
+        landed = None
+        if kind == "write" and waiting["path"] is not None:
+            landed = await _await_landing(waiting["path"], waiting.get("before"))
+        return StorageSlowResult.for_call(
+            kind=kind,
+            label=label,
+            path=waiting["path"],
+            waited=waited,
+            deadline=limit,
+            landed=landed,
+        ).model_dump()
+
+
+def _resolved_signature(function: Callable[..., Any]) -> inspect.Signature:
+    """Copy a signature with its annotations resolved to objects, not strings.
+
+    FastMCP re-introspects the registered callable with ``eval_str=True``. A
+    copied signature carrying PEP 563 strings would be re-evaluated against the
+    adapter's globals; resolving them here keeps the published argument model
+    byte-for-byte the one the synchronous body publishes.
+    """
+
+    hints = get_type_hints(function, include_extras=True)
+    parameters = [
+        parameter.replace(annotation=hints.get(parameter.name, parameter.annotation))
+        for parameter in inspect.signature(function).parameters.values()
+    ]
+    return inspect.Signature(
+        parameters,
+        return_annotation=hints.get("return", inspect.Signature.empty),
+    )
+
+
+def _deadline_tool(
+    body: Callable[..., Any],
+    *,
+    kind: str | Callable[[Mapping[str, Any]], str],
+    label: str | None = None,
+    path_hint: Callable[[Mapping[str, Any]], str | None] | None = None,
+) -> Callable[..., Any]:
+    """Wrap one synchronous tool body as the async entry FastMCP registers."""
+
+    signature = _resolved_signature(body)
+    label = label or body.__name__.removeprefix("_").removesuffix("_tool")
+
+    async def tool(**kwargs: Any) -> Any:
+        resolved_kind = kind(kwargs) if callable(kind) else kind
+        return await _run_under_deadline(
+            lambda: body(**kwargs),
+            kind=resolved_kind,
+            label=label,
+            path_hint=(lambda: path_hint(kwargs)) if path_hint is not None else None,
+        )
+
+    tool.__name__ = body.__name__
+    tool.__qualname__ = body.__qualname__
+    tool.__doc__ = body.__doc__
+    tool.__module__ = body.__module__
+    tool.__signature__ = signature
+    return tool
+
+
+def _plan_path_hint(kwargs: Mapping[str, Any]) -> str | None:
+    """Name the file a plan-shaped call is about to touch, best effort.
+
+    Resolved on the worker thread, so a slow mount is what the deadline bounds
+    rather than something it has to get past first.
+    """
+
+    project = kwargs.get("project")
+    slug = kwargs.get("slug")
+    doc_type = kwargs.get("doc_type")
+    resource = kwargs.get("resource")
+    if isinstance(resource, Mapping):
+        project = project or resource.get("project")
+        slug = slug or resource.get("id")
+        doc_type = doc_type or resource.get("type")
+    if not project or not slug:
+        return None
+    return _written_path(str(project), str(slug), kwargs.get("checkout_path"), doc_type)
+
+
+def _document_path_hint(kwargs: Mapping[str, Any]) -> str | None:
+    path = kwargs.get("path")
+    return str(path) if path else None
+
+
+def _crew_call_kind(kwargs: Mapping[str, Any]) -> str:
+    """A crew recovery action writes; every crew read view does not."""
+
+    return "write" if kwargs.get("action") else "read"
 
 
 def _resource_reference(
@@ -4122,11 +4335,17 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
 # coordinator can answer a provider refusal without shelling out to the CLI.
 
 if mcp is not None:
-    read_plan_tool = mcp.tool(name="read_plan")(_read_plan_tool)
-    edit_plan_tool = mcp.tool(name="edit_plan")(_edit_plan_tool)
-    roadmap_tool = mcp.tool(name="roadmap")(_roadmap_tool)
-    audit_tool = mcp.tool(name="audit")(_audit_tool)
-    crew_tool = mcp.tool(name="crew")(_crew)
+    read_plan_tool = mcp.tool(name="read_plan")(
+        _deadline_tool(_read_plan_tool, kind="read", path_hint=_plan_path_hint)
+    )
+    edit_plan_tool = mcp.tool(name="edit_plan")(
+        _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint)
+    )
+    roadmap_tool = mcp.tool(name="roadmap")(_deadline_tool(_roadmap_tool, kind="read"))
+    audit_tool = mcp.tool(name="audit")(
+        _deadline_tool(_audit_tool, kind="read", path_hint=_document_path_hint)
+    )
+    crew_tool = mcp.tool(name="crew")(_deadline_tool(_crew, kind=_crew_call_kind))
     for tool_name in ("read_plan", "edit_plan", "roadmap", "audit", "crew"):
         _reject_unknown_tool_arguments(tool_name)
 
