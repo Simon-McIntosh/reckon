@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="71">
+  <meta name="plan-version" content="72">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -713,6 +713,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T145608411343" data-who="Simon McIntosh (via imas-ambix-af)" data-when="">
     <div class="r-comment-body"><p><strong>Lead decisions for §10, 2026-09-24.</strong> (1) The <code>spawn</code> verb is <strong>authorised</strong>. (2) The lead questions why the fleet supervisor lives in dotfiles: it should be part of reckon or ambix. The supervisor is placement and launch machinery, and placement, spawn and the reservation record are reckon's, so the proposal is that §10 moves it into reckon (for example <code>reckon fleet supervise</code>, run as the batch step of the allocation reckon's ensure holds). <code>~/.local/state/fleet/record.json</code> would be folded into reckon's placement record, leaving dotfiles with only the thin <code>cx</code> connection client, <code>fleet-attach</code> and <code>fleet-shell</code>. The dotfiles <code>bin/fleet-supervisor</code> (commits 3cfd155 onward) is the working reference: its FIFO protocol, its reload verb, its stripping of inherited ZELLIJ and CLAUDE variables, and its runtime directory under <code>/tmp/&lt;uid&gt;-fleet</code>. Confirm the destination with the lead before moving it.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T150420460935" data-who="Simon McIntosh (via imas-ambix-af)" data-when="">
+    <div class="r-comment-body"><p><strong>Lead decision on where the fleet pieces live, 2026-09-24:</strong> they are persisted when reckon is synced into a project, not by dotfiles. Reckon owns the supervisor (the batch step of its held allocation, carrying the spawn verb) and installs the connection helpers, <code>fleet-attach</code> and <code>fleet-claude</code>, through its sync. dotfiles keeps <code>cx</code> only as the terminal entry point, and <code>cx</code> reads reckon's placement record for the job id. The dotfiles copies from 3cfd155 onward are the reference implementation to move, not the destination.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
