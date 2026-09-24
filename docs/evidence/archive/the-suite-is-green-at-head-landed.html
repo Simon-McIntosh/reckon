@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head-landed">
+  <meta name="plan-title" content="The Suite Is Green At Head — landed evidence">
+  <meta name="plan-summary" content="Cumulative landing record for the nine repair nodes of The Suite Is Green At Head. Each node appends one section; no node rewrites another's.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="24aeb95bde4c9ef139d0c00e7cfbd3025d00c0d5,f50f31c4e13632b4079e8798455843d5392cc645,3acee604e406234ee68b1713cf8406a976fa79fc,3cedb371c4d766023347f7659150f547760afbce">
+  <meta name="plan-artifacts" content="tests/test_crew_mounted_paths.py,tests/test_crew_dispatch_guard.py,tests/test_shared_landing_paths.py,tests/test_crew_workspace_requirements.py,tests/test_crew_runs_scope.py,docs/figures/the-suite-is-green-at-head/repair-classes-by-node-id.svg">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-environment" content="reckon project virtual environment; each owned file in its own pytest process with its own basetemp">
+  <title>The Suite Is Green At Head — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Suite Is Green At Head</h1>
+      <p class="lead">Cumulative record, one section per repair node. Each node appends its own section and changes no other; the coordinator resolves the driving followup once every node has landed.</p>
+    </header>
+
+    <section id="dispatch-scope-and-mount-refusals">
+      <h2>Dispatch scope and mount refusals &mdash; 16 of 17 owned ids green</h2>
+
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/repair-classes-by-node-id.svg"
+             alt="The seventeen owned failing node ids as a row of cells coloured by diagnosed cause, with a legend and the count for each cause.">
+        <figcaption>The seventeen ids this node owned in
+        <a href="/reckon/research/suite-failures-at-head#s4">Suite Failures At Head &mdash; §4</a>, partitioned by the cause
+        each one was diagnosed to. Sixteen are repaired; the seventeenth is a defect outside this node's write scope.</figcaption>
+      </figure>
+
+      <h3>What was measured</h3>
+      <p>Every owned file was run at the base revision
+      <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code> and again at this node's head, each file in its own pytest
+      process with its own <code>--basetemp</code>. The base run reproduced all seventeen §4 ids as failures, and the
+      head run reports sixteen of them passing. No id in the owned files moved from pass to fail: the six
+      <code>test_crew_dispatch_arming</code> ids were green at the base and are green at the head, and every other owned
+      file has the same collected count on both sides, so nothing was skipped, xfailed or deleted.</p>
+      <p>Only <code>tests/</code> differs between the base and this node's head. No product source, skill file or SPA
+      source changed, so each repaired id passes at the same product revision that failed it: the difference measured here
+      is the test, not the behaviour.</p>
+
+      <table>
+        <thead><tr><th>Class</th><th>Ids</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td>stale expectation</td><td>7</td><td>A project's repository comes from its registered mount, so a second repository named as <code>--repo</code> is refused before the assertion that case was written for.</td></tr>
+          <tr><td>stale fixture</td><td>7</td><td>The stub launcher named a fixed pid that had exited, so the run's claim was disregarded and the exclusive-claim refusal under test never fired.</td></tr>
+          <tr><td>test isolation</td><td>1</td><td>The case asserted a fact about this host's per-user runtime directory instead of building one under its own temporary root.</td></tr>
+          <tr><td>fixture initialisation</td><td>1</td><td>A ledger under a directory git cannot describe is refused unless the caller declares the project genuinely new.</td></tr>
+          <tr><td>product defect</td><td>1</td><td>A launcher failure escapes <code>crew.dispatch</code> as the host error rather than as a dispatch refusal. Carried to the coordinator; not repaired here.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>&sect;2's diagnosis, confirmed and extended</h3>
+      <p>The research record's §2 already names the mount guard row (<code>0f9c0e6f</code>) as a stale expectation, and this
+      node confirms it for the seven ids it covers.</p>
+      <p>It also lists the figure-topic scope conflicts as "the likeliest real defect in the set". They are not a defect.
+      The seven claim-refusal ids fail only because the fixture's stub launcher named a pid that had already exited. A
+      write claim binds only while the run that holds it is disposed as running, so a dead pid means no claim, and the
+      guard correctly declines to refuse a conflict that does not exist. The measurement that settles it: the failing and
+      the passing runs are at the same product revision, so the refusal firing once a live pid is stubbed is behaviour the
+      product already had. This is a stale fixture, not a shipped defect, and the plan's "likeliest real defect" is closed
+      without a product change.</p>
+      <p>Two further classes §2 did not name for this cluster are recorded above: the host-dependent node-local case (test
+      isolation) and the spawn failure (a product defect, carried).</p>
+      <p>One residual observation, recorded for the coordinator rather than repaired here:
+      <code>resolve_dispatch_authority</code> (<code>reckon/crew/routing.py</code>) still constructs distinct plan and
+      write repositories, but <code>resolve_project_repository</code> (<code>reckon/crew/dispatch.py</code>, both dispatch
+      entry points) now forces the named repository to be the project's mount, so the dual-repository branch and the
+      config-only cross-repository write route are unreachable from dispatch. The branch is live code that no dispatch
+      path can reach.</p>
+
+      <h3>One id was renamed, not repaired away: the manifest states the mapping in full</h3>
+      <p>§4 names <code>test_the_exclusive_claim_walk_reads_three_live_claims_at_refusal</code>. Dispatch grants a node the
+      plan file, the plan's cumulative evidence record and the plan's figure topic directory as shared landing paths, and
+      the fixture's owner run claims a figure topic of its own, so the walk reads four declared paths and not three. The
+      case is now <code>test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>, and it asserts the count
+      taken from the owner's own record rather than a literal, so a future grant does not have to be re-typed into the
+      test. The same claim still holds: the walk is instrumented and a regression that stops walking a claim fails.</p>
+
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>File</th><th>Base</th><th>Head</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_crew_mounted_paths.py</code></td><td>6 failed</td><td>6 passed</td></tr>
+          <tr><td><code>test_crew_dispatch_guard.py</code></td><td>7 failed, 7 passed</td><td>14 passed</td></tr>
+          <tr><td><code>test_shared_landing_paths.py</code></td><td>1 failed, 3 passed</td><td>4 passed</td></tr>
+          <tr><td><code>test_crew_workspace_requirements.py</code></td><td>1 failed, 11 passed</td><td>12 passed</td></tr>
+          <tr><td><code>test_crew_runs_scope.py</code></td><td>1 failed</td><td>1 passed</td></tr>
+          <tr><td><code>test_crew_dispatch_arming.py</code></td><td>6 passed</td><td>6 passed</td></tr>
+          <tr><td><code>test_refused_dispatch_leaves_no_pointer.py</code></td><td>1 failed, 5 passed</td><td>1 failed, 5 passed</td></tr>
+        </tbody>
+      </table>
+      <p>The negative control is the base-run log named in this node's manifest: its first line states the control, and it
+      records each repaired file run as it stood at the base revision, with the listed ids failing on the recorded error.</p>
+    </section>
+  </main>
+</body>
+</html>
