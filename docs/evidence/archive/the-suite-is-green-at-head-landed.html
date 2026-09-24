@@ -11,9 +11,9 @@
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
   <meta name="plan-recorded-at" content="2026-09-24T20:20:00Z">
   <meta name="plan-verdict" content="node crew-and-ledger-files-are-green: 23 owned ids reproduced red at base, 22 repaired, 1 named as a product defect and left red; test_crew.py 17 to 1 failed, test_ledger.py 6 to 0 failed; added failures 0">
-  <meta name="plan-environment" content="SLURM allocation on compute node 98dci4-clu-2058, Python 3.14, one pytest process per file with its own --basetemp, PYTHONPATH pointed at the worktree and the interpreter taken from the shared repository environment">
-  <meta name="plan-commits" content="14995811">
-  <title>The Suite Is Green At Head &mdash; landed | reckon</title>
+  <meta name="plan-environment" content="SLURM allocation on compute node 98dci4-clu-2058, Python 3.14, one pytest process per file with its own --basetemp outside the process temp directory, PYTHONPATH pointed at the worktree and the interpreter taken from the shared repository environment">
+  <meta name="plan-commits" content="14995811, 601d0239, 000c7881">
+    <title>The Suite Is Green At Head &mdash; landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
@@ -42,7 +42,9 @@
         log <code>/tmp/sg-logs/HEAD-crew.log</code>.
         <code>tests/test_ledger.py</code> &mdash; <strong>95 passed, 0 failed</strong>,
         log <code>/tmp/sg-logs/HEAD-ledger.log</code>. Each file ran in its own pytest process with its own
-        <code>--basetemp</code>.</li>
+        <code>--basetemp</code>. That <code>--basetemp</code> was under the process temp directory, which
+        the correction below shows made one of the two runs agree with itself: it is superseded by the
+        re-measurement at <code>000c7881</code> with a <code>--basetemp</code> outside it.</li>
         <li><strong>Added failures: 0.</strong> Against the base revision no node id in either owned file
         moved from pass to fail. The only id still red is the one named as a product defect below.</li>
         <li><strong>The declared negative control was executed and logged.</strong> Declared mutation,
@@ -109,6 +111,51 @@
       omitted state was introduced without extending the attention vocabulary. The module is shared across
       repair nodes, so this node names the defect rather than repairing it in place, and the coordinator cuts
       a separate node for it. The third panel of the figure shows the two sets and the single difference.</p>
+
+      <h3>Correction &mdash; two repairs were measuring the runner</h3>
+      <p>A coordinator verification at <code>601d0239</code> reported three failures in
+      <code>tests/test_crew.py</code> where this node's own run had reported one. Two were this node's
+      fault: both repairs below encoded the machine rather than the behaviour.</p>
+      <ul>
+        <li><strong>The in-harness directive's scope.</strong>
+        <code>test_an_in_harness_dispatch_returns_a_directive_to_bind</code> asserted the plan's shared
+        landing paths join the declared scope. They do, but only when the worker can write the worktree it
+        is handed, and that judgement is resolved from the sandbox write roots, which include the process
+        temp directory. A throwaway repository under <code>/tmp</code> therefore reads as writable and one
+        outside it does not, so the assertion's outcome followed where pytest's tmp root lived &mdash; and
+        this node's own base and head runs named a <code>--basetemp</code> under it. Measured directly:
+        with the <code>--basetemp</code> under <code>/tmp</code> the directive carried four scope entries;
+        with the same <code>--basetemp</code> under <code>~/.cache</code> it carried one and the test
+        failed, exactly as the coordinator's run found. The judgement is now pinned and both branches are
+        asserted, so the test measures the directive contract rather than the filesystem layout.</li>
+        <li><strong>The redispatch delivery clock.</strong>
+        <code>test_redispatch_does_not_inherit_a_terminal_delivery</code> holds that the previous attempt's
+        terminal delivery is not credited to the next attempt. Manifest freshness compares the file's
+        mtime against a second-resolution attempt start, so a delivery whose mtime lands inside the
+        following attempt's own second is judged to have been written after that attempt began.
+        Demonstrated against the classifier with a delivery stamped one nanosecond into the following
+        attempt's second: freshness returns <strong>True</strong>, where a delivery in an earlier second
+        returns <strong>False</strong>. Each delivery in the test is now back-dated to the attempt that
+        wrote it, which keeps the two attempts ordered however quickly the run proceeds.</li>
+      </ul>
+      <p><strong>Re-measured at the repaired head <code>000c7881</code>, basetemp outside the temp
+      directory.</strong> <code>tests/test_crew.py</code> &mdash; <strong>1 failed, 204 passed</strong>
+      (log <code>/tmp/sg-logs/HEAD2-crew.log</code>); <code>tests/test_ledger.py</code> &mdash;
+      <strong>95 passed</strong> (log <code>/tmp/sg-logs/HEAD2-ledger.log</code>). Both files run together
+      under concurrent load &mdash; <code>tests/test_crew.py</code> 1 failed, 204 passed; the
+      <code>test_ledger.py</code> id named below &mdash; add no node id in either file moving from pass to
+      fail against the base revision.</p>
+      <p>One owned id fails only under concurrent load, and it is an environment failure rather than a
+      defect in the test or the product. <code>test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code>
+      compares a before/after snapshot of this workstation's <em>real</em> live pointer directory, which
+      peer sessions are writing to while it runs; a peer rewriting its own pointer between the snapshots
+      changes an mtime and trips the comparison. Observed diff
+      (<code>/tmp/sg-logs/CONC-ledger.log</code>): <code>.../live/r-20260924T210913887464-manifest-names-the-tree-it-imported.json</code>,
+      <code>1790284165993777932</code> before, <code>1790284177625690000</code> after &mdash; a peer's
+      pointer touched under its own session. No pointer named for this suite's fixtures
+      (<code>node-a</code>, <code>plan-a</code>, <code>proj</code>) exists in that directory, so neither
+      owned file is the writer. The guard is deliberately not hermetic &mdash; it exists to catch exactly
+      such a write &mdash; so it is recorded rather than narrowed.</p>
 
       <h3>Evidence</h3>
       <ul>

@@ -103,6 +103,31 @@
     0 failed, and no node id in either file moved from pass to fail. The declared negative control was
     executed against the base revision and logged. Evidence, figure and log paths:
     <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed">the cumulative evidence record</a>.</p>
+    <p><strong>Correction &mdash; two of those repairs were measuring the runner.</strong> A coordinator
+    verification at <code>601d0239</code> reported the in-harness directive test failing deterministically
+    with a scope of only the declared path, where this node's own run had seen the plan's shared landing
+    paths. The cause is positioning, not behaviour: the landing grant is made only when the worker can
+    write the worktree it is handed, that judgement is resolved from the sandbox write roots, and those
+    roots include the process temp directory. A throwaway repository under <code>/tmp</code> therefore
+    reads as writable and one outside it does not, so the outcome followed where pytest's tmp root lived
+    &mdash; and this node's own base and head runs named a <code>--basetemp</code> under it. The test now
+    pins that judgement and asserts both branches, so it measures the directive contract rather than the
+    runner's filesystem. The redispatch test's assertion was likewise clock-dependent: manifest freshness
+    compares the delivery's mtime against a second-resolution attempt start, so a delivery landing inside
+    the following attempt's second is judged to have been written after it began. Each delivery is now
+    back-dated to the attempt that wrote it. Re-measured at the repaired head <code>000c7881</code> with a
+    <code>--basetemp</code> outside the temp directory: <code>test_crew.py</code> <strong>1 failed, 204
+    passed</strong>, <code>test_ledger.py</code> <strong>95 passed</strong>, the single red id still the
+    named <code>launch-failed</code> defect below. Both files run together under concurrent load add no id
+    in either moving from pass to fail.</p>
+    <p>That concurrent run does surface one owned id,
+    <code>test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code>, and it is an environment
+    failure rather than a defect in the test or the product: the assertion compares a before/after snapshot
+    of this workstation's <em>real</em> live pointer directory, which peer sessions are writing to while it
+    runs. A peer rewriting its own pointer between the two snapshots changes an mtime and trips it. No
+    pointer named for this suite's fixtures exists in that directory, so neither owned file is the writer.
+    The guard is deliberately not hermetic &mdash; it exists to catch exactly such a write &mdash; so it is
+    recorded rather than narrowed, with the mechanism and the log in <code>follow_ons</code>.</p>
     <img src="/reckon/figures/the-suite-is-green-at-head/repair_delta.png"
          alt="Left: failing node ids by owned file at the base revision and at the repaired head, 17 to 1 and 6 to 0. Middle: the 23 ids by the class of repair, 16 assertions moved to shipped behaviour, 6 test-isolation fixtures, 1 product defect left red. Right: the fleet blocked states and whether each wakes a follower, with launch-failed the only one that does not."
          style="max-width:100%">
