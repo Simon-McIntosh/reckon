@@ -2214,12 +2214,14 @@ AGREE: False</code></pre>
     <strong>exactly once</strong> in the composed prompt is what holds the extension to that form, because
     the sentence is the anchor a worker already reads and a second copy is the defect that keeps the two
     contracts from being one. Wording reuse is a measurable property, not a style preference: this reader
-    found four reviewers report the same mis-shaped record four times, which is what a rule that exists in
-    two places produces. The composed prompt measures <strong>10,363 characters before and 10,915
-    after</strong>, so the change is 552 characters against a prompt whose variable portion already carries
-    every fence and contract; the declared invariant boundary is unchanged at <strong>1,311</strong>, so none
-    of the new text reaches the shared opening every worker receives, and the case asserting the boundary
-    shared by three differently-shaped nodes is untouched.</p>
+    found four reviewers report the same mis-shaped record four times, and the composed prompt grows by
+    <strong>546 characters</strong> &mdash; the same 546 at the same base and head revisions across three
+    differently-sized sample nodes, because the added text is fixed. On the sample node the new test
+    composes, it reads <strong>10,664 before and 11,210 after</strong>; that pair is a property of the
+    sample, so the shape-independent growth is the figure the record rests on, and both prompts are written
+    out and diffed at the added lines as a receipt. The declared invariant boundary is unchanged at
+    <strong>1,311</strong>, so none of the new text reaches the shared opening every worker receives, and
+    the case asserting the boundary shared by three differently-shaped nodes is untouched.</p>
 
     <h3>Falsified before trusting it</h3>
     <p>The declared mutation deletes the new module-path and working-directory template lines from
@@ -2256,7 +2258,9 @@ AGREE: False</code></pre>
     <code>logs/cohort-head-committed.log</code> (each naming the revision, the tree and the command on its
     header lines, with the resolved module printed before the run), and
     <code>logs/negative-control-red.log</code> (the declared mutation on its first line, the six failures,
-    and the restore). No figure accompanies this record: the change is template text, and a before-and-after
+    and the restore), plus <code>logs/prompt-size.log</code> and <code>logs/prompt-size.diff</code> for the
+    growth figure, with the measuring script and the two written-out prompts under <code>measure/</code>.
+    No figure accompanies this record: the change is template text, and a before-and-after
     of two sentences is quoted rather than drawn.</p>
   </section>
   </main>
