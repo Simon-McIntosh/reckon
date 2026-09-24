@@ -438,6 +438,68 @@
       is about; that is a property of the lane, not a defect of the repair.
     </p>
 
+    <h2 id="s7">&sect;7 &mdash; A promoted row carries the worker's exit record</h2>
+    <p>
+      The run directory is released at promotion and the live pointer is deleted with it, so the
+      run directory's <code>exit.json</code> is the worker's exit record and it has exactly one
+      place left to live: the committed ledger row. <code>complete</code> in
+      <code>reckon/crew/promotion.py</code> reads the file once, before the release, and copies
+      the parsed object verbatim onto the row under <code>worker_exit</code>.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/worker_exit_promotion_flow.png"
+           alt="The supervisor writes the run directory; at promotion its exit.json is read and copied verbatim onto the committed ledger row as worker_exit, while the gate's own exit_status stays on the gate check. A run with no exit.json gets no worker_exit key.">
+      <figcaption>
+        The exit record crosses from the transient run directory to the committed row. The gate
+        command's status is a separate fact carried on the row's <code>gate_check</code> and is
+        never written by this path; the worker's status is never promoted into it.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>Three boundary decisions, and what each rules out.</strong> The key is written only
+      when a record was actually read, so a run with no <code>exit.json</code> carries no
+      <code>worker_exit</code> key rather than an empty object &mdash; an empty object would read
+      as a supervisor that ran and recorded nothing, which is a different fact from a supervisor
+      that wrote no record. The row's <code>gate_check.exit_status</code> is left untouched: it is
+      the gate command's status, and the worker's exit signal must not overwrite it. And a file
+      that exists but cannot be read, or does not parse as a JSON object, is treated as absent,
+      so a corrupt record produces no key rather than a promotion failure about the record.
+    </p>
+    <table>
+      <thead>
+        <tr><th>case</th><th>row after promotion</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>exit.json</code> present</td>
+          <td><code>worker_exit == {"signal_name": "SIGKILL", "ended_during": "working"}</code>, and <code>gate_check.exit_status == 0</code></td>
+        </tr>
+        <tr>
+          <td><code>exit.json</code> absent</td>
+          <td><code>"worker_exit" not in row</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Both declared negative controls reproduce.</strong> Removing the copy fails case 1
+      at <code>assert None == {'signal_name': 'SIGKILL', ...}</code>. Writing an empty
+      <code>worker_exit</code> when the file is absent fails case 2 at
+      <code>assert 'worker_exit' not in {...}</code>. Each control failed the case it names and
+      left the other passing. The mutated source was reverted byte-identically afterwards
+      (<code>git diff --quiet</code> exit 0). Log at
+      <code>negative_controls.log</code>, first line the declared string.
+    </p>
+    <p>
+      <strong>The measure that could have failed, and did not.</strong> The new file has no base
+      counterpart, so the file set under measure is the 24 existing test modules that import
+      <code>reckon.crew.promotion</code>. That set reports 30 failed and 246 passed at base
+      <code>02e2757d</code> (287.01 s) and 30 failed and 246 passed at the change
+      <code>2a33d2db</code> (291.82 s). The two failure sets are identical by name, so the change
+      adds zero failures; every one of the 30 is pre-existing at base and lies in peer-scoped
+      files. Judge by the delta, not the absolute count: the base is red and the change adds
+      nothing to it.
+    </p>
+
   </main>
 </body>
 </html>
