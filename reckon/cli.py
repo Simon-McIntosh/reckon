@@ -1714,7 +1714,13 @@ class _FollowerReloader:
     """Replace a stale follower only at a complete stream-record boundary."""
 
     def __init__(
-        self, project: str, registration, *, stream=None, deadline: float | None = None
+        self,
+        project: str,
+        registration,
+        *,
+        stream=None,
+        deadline: float | None = None,
+        owner: tuple[int, str] | None = None,
     ) -> None:
         from reckon.crew import runs
 
@@ -1725,6 +1731,11 @@ class _FollowerReloader:
         # the environment ``os.execve`` passes: it never enters this image's
         # ``os.environ``, so no child started here inherits it.
         self.deadline = deadline
+        # The process that armed this follower, fixed before the reload. It is
+        # carried to the replacement beside the deadline, so the replacement
+        # keeps the owner the original arming had rather than adopting whatever
+        # process replaced the image.
+        self.owner = owner
         self.code_stamp = runs.follower_code_stamp()
         self.import_root = _import_root(runs)
         self.checked_at: float | None = None
@@ -1773,6 +1784,10 @@ class _FollowerReloader:
         exec_environment = dict(os.environ)
         if self.deadline is not None:
             exec_environment[_FOLLOWER_LIFETIME_ENV] = repr(self.deadline)
+        if self.owner is not None:
+            exec_environment[runs._FOLLOWER_OWNER_ENV] = runs._format_follower_owner(
+                self.owner
+            )
         try:
             os.execve(  # noqa: S606 - replacement preserves descriptors and stdout
                 sys.executable,
@@ -1953,31 +1968,35 @@ def _follow_watch_lines(
     def _check_consumer() -> None:
         """End this arming when the process it reports to has gone.
 
-        The follower delivers to the session that armed it, recorded at
-        registration as the recorded parent. Once that process is gone the
-        lines reach nobody, so holding the registration only denies the
-        session its next follower: the orphan keeps the advisory lock, and
-        every dispatch from the session is refused ``watcher-required`` until
-        someone kills it by hand. A re-parent to init, or to a subreaper,
-        shows up as ``os.getppid()`` no longer naming the recorded parent; the
-        recorded start time tells that parent apart from an unrelated process
-        that has since reused its pid. Nothing is printed on this path: it is
-        the one path whose whole point is that no reader is left.
+        The follower delivers to the session that armed it, and that owner is
+        fixed once, at the follower's first start, as a pid plus the kernel
+        start time that tells it apart from an unrelated process reusing the
+        pid. It is read from the owner identity rather than from
+        ``os.getppid()``, because once the arming session dies the parent names
+        init or a subreaper; and rather than from the registration record,
+        because a second follower that takes the registration over rewrites
+        that record from its own parent, so a record read back here could name
+        the wrong process. The owner having gone means the lines reach nobody,
+        so holding the registration only denies the session its next follower:
+        the orphan keeps the advisory lock, and every dispatch from the session
+        is refused ``watcher-required`` until someone kills it by hand.
+
+        This runs on every wait pass, whether or not the follower holds the
+        registration: a read-only follower holds no lock and still outlives its
+        owner, and it is the read-only ones that accumulate, one per re-arm. An
+        owner of pid 1 or below has already been re-parented to init or a
+        subreaper, so it is gone rather than a reason to skip the check. Nothing
+        is printed on this path: it is the one path whose whole point is that no
+        reader is left.
         """
         nonlocal consumer_gone
-        if consumer_gone or registration is None or not registration.held:
+        if consumer_gone:
             return
-        record = registration.record or {}
-        try:
-            parent_pid = int(record.get("parent_pid") or 0)
-        except (TypeError, ValueError):
-            return
-        if parent_pid <= 1:
-            return
-        if os.getppid() != parent_pid:
+        owner_pid, owner_start = runs.follower_owner()
+        if owner_pid <= 1 or runs.process_alive(owner_pid) is not True:
             consumer_gone = True
             return
-        if runs._process_start_time(parent_pid) != record.get("parent_start_time"):
+        if owner_start and runs._process_start_time(owner_pid) != owner_start:
             consumer_gone = True
 
     def _check_lifetime() -> None:
@@ -2349,8 +2368,16 @@ def crew_follow(
     # end.
     _adopt_launched_workers_from_reexec()
 
+    # Fix the process this follower reports to, once, before anything claims a
+    # registration. A registration taken over later records this owner rather
+    # than whatever process happens to be the parent by then, and the reloader
+    # carries the same value to a replacement image.
+    owner = runs_module.follower_owner()
+
     def stream_events(registration):
-        reloader = _FollowerReloader(project, registration, deadline=deadline_epoch)
+        reloader = _FollowerReloader(
+            project, registration, deadline=deadline_epoch, owner=owner
+        )
 
         def poll(checkpoint) -> None:
             """Take over a registration whose holder has gone, while streaming.
