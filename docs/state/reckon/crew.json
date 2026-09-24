@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T23:58:03",
+  "updated": "2026-09-25T00:03:43",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -349598,6 +349598,294 @@
           "reason": null,
           "finding": null
         }
+      },
+      {
+        "run_id": "r-20260924T200440940179-server-listens-before-it-watches",
+        "plan": "the-page-paints-from-an-index",
+        "section": "\u00a72",
+        "node": "server-listens-before-it-watches",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 791,
+                "cached_input_tokens": 293727,
+                "input_tokens": 294520,
+                "output_tokens": 2774,
+                "reasoning_output_tokens": 2124,
+                "total_tokens": 297294,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "tests/test_server_listens_before_it_watches.py starts the served entry point over three temporary mounted projects with _ProjectChangeWatch construction patched to take 5 s per tree, and asserts /_projects/mounts.json answers 200 within 2 s of launch and every tree's watch is armed within 20 s. The declared negative control is executed and its log recorded: with the watch built before serve_forever, the 2 s assertion fails. The test files that import reckon.serve show zero added failures against the base revision.",
+          "estimated_hours": null,
+          "goal": "The served entry point binds and answers before the fleet change watch is armed",
+          "id": "server-listens-before-it-watches",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T20:04:41Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 1,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 14,
+            "mean_context": 104000,
+            "observed_at": "2026-09-24T20:04:40Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200440940179-server-listens-before-it-watches/manifest.md",
+          "negative_control": "build the fleet change watch before serve_forever; the 2 s mounts.json assertion must fail",
+          "plan": "the-page-paints-from-an-index",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/serve.py",
+            "tests/test_server_listens_before_it_watches.py",
+            "docs/evidence/archive/the-page-paints-from-an-index-landed.html",
+            "docs/figures/the-page-paints-from-an-index",
+            "docs/plans/the-page-paints-from-an-index.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "page-load-shell",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T20:04:48Z",
+        "completed_at": "2026-09-24T20:36:47.526Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1838,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1919,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+        "commits": [
+          "caa09a7c54ac24ffdf0123ed91a51e8b7297af14",
+          "fb655659ba67c353e89e581dea6421febec2a88f"
+        ],
+        "changed_lines": {
+          "added": 465,
+          "removed": 13,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_server_listens_before_it_watches.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200440940179-server-listens-before-it-watches/green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200440940179-server-listens-before-it-watches/manifest.md",
+        "scope_changed": false,
+        "session_id": "3be4ca10-7972-46af-a853-942678fc235e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9711716,
+            "input_tokens_cumulative": 9711716,
+            "output_tokens": 51896,
+            "output_tokens_cumulative": 51896,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T20:36:47.526Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9711716,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1849.155,
+          "generated_tokens": 51896,
+          "generation_seconds": 1647.027,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.2,
+          "machine_seconds": 202.128,
+          "peak_input_tokens": 154630,
+          "tokens_per_second": 31.51,
+          "wall_tokens_per_second": 28.06
+        },
+        "follow_on_paths": [
+          "tests/test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity",
+          "tests/test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction",
+          "serve.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/server-listens-before-it-watches",
+          "session_id": "3be4ca10-7972-46af-a853-942678fc235e",
+          "session_source": "stream",
+          "retained_at": "2026-09-24T20:36:47.526Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T20:36:47Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T20:05:55Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T200440940179-server-listens-before-it-watches",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 7609,
+          "worker_pid": 1046561
+        },
+        "promoted_revision": "fb655659ba67c353e89e581dea6421febec2a88f",
+        "plan_impl_at_dispatch": 0.0,
+        "impl_move": {
+          "plan": "the-page-paints-from-an-index",
+          "at_dispatch": 0.0,
+          "at_complete": 0.14,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_server_listens_before_it_watches.py"
+          ],
+          "declaration": "build the fleet change watch before serve_forever; the 2 s mounts.json assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200440940179-server-listens-before-it-watches/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200440940179-server-listens-before-it-watches/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T21:04:41.361849+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T20:04:41Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 1,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 14,
+          "mean_context": 104000,
+          "observed_at": "2026-09-24T20:04:40Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 88.0,
+        "orientation_input_tokens": 1934595.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -349910,6 +350198,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2509
+    "_version": 2510
   }
 }

@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-impl" content="0.14">
 </head>
 <body>
@@ -230,6 +230,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260925T000500-s2-landed" data-who="reckon-build s21-coord" data-when="2026-09-24T22:05:00Z">
     <div class="r-comment-body">Gate passed and merged at ad7eef98 (commits caa09a7c, fb655659). tests/test_server_listens_before_it_watches.py: 3 passed, and the declared negative control (arming every tree before the port binds) fails 2 of them. The 12 server-importing test files show 188 passed and the same 2 pre-existing failures at base and at head. Review 91. Two findings, both carried forward. (1) The evidence link in the landing record above points at /reckon/plans/…-landed, which does not resolve; the record is served at /reckon/evidence/archive/the-page-paints-from-an-index-landed.html, and the link is corrected in this beat. (2) _FleetChangeWatch.armed_roots has no caller at head, although this plan and the evidence describe it as reporting coverage. §3, the next serve.py node, either consumes it for index readiness or removes it. Also open: close() joins the reader thread for 2 s while one tree can take longer to arm. The lock closes any watch built after close, but the thread can outlive close() by one tree's arming time.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260924T200440940179-server-listens-before-it-watches" data-who="reckon-build" data-when="2026-09-24T20:36:47.526Z">
+    <div class="r-comment-body"><p>the served entry point binds before its fleet change watch arms; mounts.json answers within 2 s at 5 s per tree; negative control fails 2 of 3; server importers same 2 failures at base and head; review 91</p></div>
 </div>
 </section>
 </main>
