@@ -345,6 +345,68 @@ sections.0.effort_hours
     worker leaves the driving followup, plan and section statuses, implementation fraction,
     version and modified date unchanged; the coordinator owns integration and closure.</p>
   </section>
+
+  <section id="cohort-at-merged-head">
+    <h2>The cohort gate re-run at the merged head of main</h2>
+    <p><strong>Measured 2026-09-25, read-only.</strong> This node writes no code. It re-runs the
+    cohort gate at the merged head of <code>origin/main</code> and compares the resulting
+    failure set with the one already recorded for the section-record change, so a reader can
+    tell a failure that change introduced from one that predates it. The measurement changes no
+    repository file; its artifacts are a log, a delta and the id lists under
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/section-record-at-merged-head/</code>.</p>
+    <p><strong>What ran.</strong> The exact 71-file pytest list in the recorded selected-gate
+    command, at a detached checkout of <code>origin/main</code>
+    (<code>8fd6de7c5eb316ded76ecaff837df388496173a9</code>, created with
+    <code>git worktree add --detach</code>), with <code>-n 8</code>, <code>--timeout=45</code>
+    and per-worker basetemps under <code>/tmp</code> (xdist created <code>popen-gw0</code>
+    through <code>popen-gw7</code>). <code>PYTHONPATH</code> named the checkout and the log's
+    preflight line records the module actually imported &mdash;
+    <code>/tmp/section-record-cohort-at-merged-head/reckon/__init__.py</code> &mdash; so the run
+    provably carried the merged head's source rather than the shared environment's editable
+    install, a resolution that has silently served another tree in this repository before.</p>
+    <table>
+      <thead><tr><th>Revision</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Added failures</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>c590aaaa</code> (the recorded set)</td><td>2475</td><td>25</td><td>3</td><td>baseline</td></tr>
+        <tr><td>merged head <code>8fd6de7c</code></td><td>2534</td><td>7</td><td>3</td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Added failures: zero.</strong> No failure id present at the head is absent from
+    the recorded base set, so neither the section-record change nor the merges that followed it
+    adds a failure to attribute to a candidate commit; the attribution map is empty. The report
+    ends on the same line, <code>added failures: 0</code>.</p>
+    <p><strong>The seven retained ids</strong> are pre-existing at both revisions and unchanged in
+    identity: two <code>test_capability.py</code> capability-migration cases
+    (<code>[followups-item0]</code>, <code>[sprints.current.items-item1]</code>), three
+    <code>test_crew_recovery.py</code> cases (the resumed-run line, the two-cell legacy line, the
+    refusal remedy), one <code>test_receipt_after_release.py</code> case (a writer that never
+    stops), and one cross-project conformance case citing external evidence
+    (<code>imas-ambix:dsv41-flash-four-card-throughput-landed</code>). They remain follow-ons for
+    their owners.</p>
+    <p><strong>Eighteen recorded ids no longer fail, and they are repaired rather than renamed.</strong>
+    Collection at the merged head still collects all 18 ids, so each is the same test passing
+    rather than one that moved, and the ids are not silently replaced by differently-named
+    cases. The commits touching their surfaces between base and head, which are candidates for
+    the repair rather than proof of it &mdash; <code>bc89b5fd</code> (promotion guards met by the
+    fixtures that predated them: <code>test_crew_promotion</code>,
+    <code>test_promotion_beat_carries_fleet_state</code>,
+    <code>test_promotion_reads_the_terminal_record</code>,
+    <code>test_receipt_after_release</code>), <code>f3015a58</code>
+    (<code>test_routing_evidence_fields</code>) and <code>b4bef72b</code> (stale assertions moved
+    onto shipped behaviour: <code>test_provenance</code>, <code>test_typed_resources</code>). The
+    per-id classification is in <code>removed-classified.txt</code>.</p>
+    <p><strong>The instrument is shown to see failures.</strong> The same invocation shape
+    reported 25 failures at the base and reports 7 and exit 1 at the head, over the same file
+    list, with the imported module printed; the head ids are read from the run's own
+    <code>FAILED</code> summary lines rather than inferred, so an empty added set is a reading,
+    not an absence of evidence.</p>
+    <p><strong>No figure accompanies this record:</strong> the measured relation is a set
+    difference of two id lists, which the figure rule's own carve-out leaves to a table. The
+    full lists are in <code>delta.md</code> beside the sorted
+    <code>base-ids-sorted.txt</code> and <code>head-ids-sorted.txt</code>, and the gate log with
+    its header (revision, tree, command, imported module path) is
+    <code>cohort-at-head.log</code> &mdash; see <code>cohort-at-head.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>
