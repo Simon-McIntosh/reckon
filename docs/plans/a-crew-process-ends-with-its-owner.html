@@ -288,12 +288,14 @@
       <table>
         <thead><tr><th>Measure</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>7 passed, exit 0 (<code>744deae5</code>)</td></tr>
+          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>8 passed, exit 0 (<code>fe554df8</code>)</td></tr>
           <tr><td>Blocked read (deadline 0.2&nbsp;s)</td><td><code>storage-slow</code>, <code>waited_seconds</code> &ge; 0.2</td></tr>
           <tr><td>Concurrent read of another path</td><td>entered and answered in &lt; 0.3&nbsp;s while one was blocked</td></tr>
           <tr><td>Write that lands after its deadline</td><td><code>landed: true</code>, file present</td></tr>
           <tr><td>Write that never lands</td><td><code>landed: false</code>, file absent</td></tr>
-          <tr><td>Negative control (deadline and thread removed)</td><td>5 of 7 tests fail</td></tr>
+          <tr><td>Write whose landing stat also blocks</td><td>concurrent read entered and answered; <code>landed: null</code> &mdash; unknown, not false</td></tr>
+          <tr><td>Negative control (deadline and thread removed)</td><td>6 of 8 tests fail</td></tr>
+          <tr><td>Negative control (landing stat back on the loop)</td><td>the stalled-landing case alone fails; the other 7 pass</td></tr>
           <tr><td>MCP surface regression</td><td>243 passed / 5 failed over the ten pre-existing surface test files &mdash; identical to the base revision (<code>a695d425</code>)</td></tr>
         </tbody>
       </table>
@@ -301,8 +303,9 @@
       again: the blocked read no longer returns within the test's bound and the concurrent read
       waits behind it. It fails <code>test_a_blocked_read_returns_storage_slow_within_its_deadline</code>,
       <code>test_a_concurrent_read_of_another_path_answers_normally</code>, both write
-      landed-state cases and the end-to-end adapter case, while the two tests that assert the SDK
-      fact and the registration wiring still pass &mdash; the mutation is the deadline, not the
+      landed-state cases, the stalled-landing case and the end-to-end adapter case, while the
+      two tests that assert the SDK fact and the registration wiring still pass &mdash; the
+      mutation is the deadline, not the
       wiring. The concurrency case asserts the healthy body's <em>entry</em> time, not only
       that it finished inside the deadline: an elapsed-time bound alone is satisfied by a
       serialised loop, because under the defect the healthy call runs to completion immediately
@@ -310,6 +313,19 @@
       the mutated run fails on that assertion instead of passing vacuously. The five regression failures were measured unchanged at the section's base revision
       (<code>test_mcp_recovery</code> resume session reattach, <code>test_crew_runs_view</code>
       joins-sources, and three <code>test_edit_plan</code> create cases), so this change adds none.</p>
+      <p>A review of the landed fix found the same defect one layer down, and it was repaired
+      before merge. The write's landing check fingerprinted the file with <code>os.stat</code>
+      from inside the coroutine; that stat targets the same mount that had just stalled the
+      write, so it is unbounded for the same reason the write was, and an
+      <code>edit_plan</code> timeout there held the loop while the concurrent call waited
+      behind it. Commit <code>aaa888a5</code> moves the landing poll and the baseline stat it
+      compares against onto the same worker thread, gives the check its own deadline just
+      above its grace, and reports <code>landed: null</code> past that &mdash; unknown, not
+      false &mdash; so a caller does not read "did not land" and resubmit a write that may
+      have succeeded. The case for it stalls the write and then stalls the landing stat: the
+      concurrent read still enters and answers, and the landing state comes back unknown.
+      With the stat put back on the loop that case alone fails, on the entry-time assertion
+      &mdash; 3.20&nbsp;s behind &mdash; while the other seven pass.</p>
       <p>No change outside <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code> and the
       new test was needed; the deadline is applied at the tool boundary the SDK calls.</p>
     </div>
