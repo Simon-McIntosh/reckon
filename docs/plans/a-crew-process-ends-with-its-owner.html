@@ -159,18 +159,41 @@
       another. Both halves are asserted: the registration still names the holder when the read-only
       follower goes, and the holder leaves on its own owner's death.</p>
       <p><strong>Measured.</strong> Read-only follower, owner's death to gone: 0.811, 0.839,
-      0.905&nbsp;s; holder: 0.185, 0.242, 0.185&nbsp;s, against the gate's five-second bound. The gate
-      over both files: <strong>6 passed in 26.3&nbsp;s</strong>. Both declared mutations fail it
-      against this commit's source, each reverted with the file verified byte-identical afterwards:
-      the restored early return alone leaves the read-only follower running 5.0&nbsp;s after its
-      owner was killed (1 failed, 3 passed), and <code>acquire()</code> recording
-      <code>os.getppid()</code> alone fails the takeover record (1 failed, 3 passed); together, 2
-      failed, 2 passed. Two controls guard the window: a live owner leaves the follower running and
-      still the holder past the same five seconds, and the reload case confirms the image replacement
-      from the replacement's own command line rather than inferring it. Section 7's landed test
-      stays green in the same invocation. Full record:
+      0.905&nbsp;s; holder: 0.185, 0.242, 0.185&nbsp;s, against the gate's two-second bound. The gate
+      over both files: <strong>7 passed in 26.8&nbsp;s</strong> at load average 3.9. All three
+      declared mutations fail it against this commit's source, each reverted with the file verified
+      byte-identical afterwards: the restored early return alone leaves the read-only follower
+      running past the bound (1 failed, 6 passed); <code>acquire()</code> recording
+      <code>os.getppid()</code> alone fails the takeover record (1 failed, 6 passed); and deleting
+      the reloader's carry alone fails the re-parented reload case while the earlier reload case
+      stays green (1 failed, 6 passed). The two declared together give 2 failed, 5 passed. Two
+      controls guard the window: a live owner leaves the follower running and still the holder past
+      the same two seconds, and the reload case confirms the image replacement from the
+      replacement's own command line rather than inferring it. Section 7's landed test stays green in
+      the same invocation. Full record:
       docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html#s2-read-only-follower-checks-its-owner,
       figure docs/figures/a-crew-process-ends-with-its-owner/owner_check_independent_of_the_lock.png.</p>
+      <p><strong>The exit bound is derived from the measurement, not chosen to be comfortable.</strong>
+      Review found the first version's five-second bound too weak: the wait pass polls every
+      0.1&nbsp;s, so five seconds admits fifty passes, and a regression that asked about the owner
+      once every fifty passes would satisfy it while leaving a follower alive nearly five seconds
+      after its owner died. Two seconds is 2.2&times; the slowest read-only sample &mdash; room for
+      interpreter teardown and node jitter, about twenty passes rather than fifty &mdash; and the
+      same two seconds is what the live-owner control has to survive for the window to mean
+      anything.</p>
+      <p><strong>The reload case could not see the owner carry, so it has its own case.</strong>
+      Review measured the gap: <code>execve</code> does not change a process's parent, so a
+      replacement reading <code>os.getppid()</code> reads the owner while the owner is alive and the
+      reload case passes with the carry deleted. The carry is the reason a replacement does not
+      adopt whatever process stands above it, so the new case reads the owner where the parent is
+      not the owner: a subreaper process is started above the arming stub, the follower is held
+      still, the stub is killed, the follower is adopted by the live subreaper &mdash; asserted from
+      the process table &mdash; and only then is its source stamp advanced and the follower resumed,
+      so the replacement resolves its owner after the re-parent. From the carried owner it is the
+      dead stub and the replacement leaves; from <code>os.getppid()</code> it is the live subreaper
+      and it never would. Measured 1.193, 1.220 and 1.240&nbsp;s from the replacement becoming live
+      to the process leaving, bounded at three seconds because that window carries the replacement's
+      own import cost.</p>
     </div>
 
     <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
