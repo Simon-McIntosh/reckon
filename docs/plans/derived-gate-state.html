@@ -21,8 +21,8 @@
   <title>Derived Gate State | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="41">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="42">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
@@ -515,6 +515,9 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085039220332" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17 for the single open sweep-complete gate. The prior host-permission claim and its frozen counts were overtaken; the continuation now requires a fresh census and the missing gate-amendment path.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T050731349444" data-who="imas-ambix-af" data-when="">
+    <div class="r-comment-body"><p><strong>A gate that names its sections still blocks the whole plan in the readiness display.</strong> This was observed 2026-09-24 on imas-codex <code>host-dashboard-covers-every-agent-process</code>, which carries one gate, <code>g-hdcea-1</code>, with <code>gated_sections: ["s4"]</code> and <code>required_evidence: reckon:a-crew-process-ends-with-its-owner#s6</code>. <code>roadmap(imas-codex, sprint=S15, view=detail)</code> reports <code>effective_status: blocked</code>, <code>dependency_ready: false</code>, <code>readiness: blocked</code> and an empty <code>ready_now</code>, with that gate as the only blocker, although §2, §3, §5 and §6 are ungated. f-dgs-008 records the unscoped case (<code>gated_sections: []</code>). This is the scoped case, and it behaves the same way. Per reckon-e5, <code>crew dispatch</code> of an ungated section is not refused, so this is the display half. That half matters, because it is what reckon-create's wiring guidance steers authors by: a correct section gate reproduces the premature whole-plan blocking the skill tells authors to avoid by preferring gates to depends_on.</p></div>
 </div>
 </section>
 </main>
