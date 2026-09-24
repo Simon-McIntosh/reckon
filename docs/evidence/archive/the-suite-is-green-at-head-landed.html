@@ -248,6 +248,82 @@
       <code>test_schema</code> 1 failed / 1558 passed, the one failure being the follow-on above.
       Logs: <code>.pytest-logs/head/</code>. Delta against base: 17 repaired, zero added.</p>
     </section>
+  <section id="node-crew-surface-snapshot-ignores-imported-submodules">
+      <h2>crew-surface-snapshot-ignores-imported-submodules &mdash; the facade surface
+      snapshot made order-free</h2>
+
+      <p>One owned id, <code>tests/test_crew_surface.py::test_public_surface_matches_snapshot</code>,
+      red at base <code>887b1a05</code>. It compared <code>dir(reckon.crew)</code> against
+      <code>tests/fixtures/crew-public-surface.txt</code> in-process. Importing a submodule
+      binds it onto its parent package, so each sibling test imported earlier in the same
+      pytest process left a name bound on <code>reckon.crew</code>, and every such name
+      appeared as an extra item in the snapshot's actual set. Run alone it passed; after the
+      seven sibling files it failed with <code>bar</code>, <code>budget_group</code>,
+      <code>directory</code>, <code>pace</code>, <code>query</code>, <code>resumption</code>
+      and <code>window_reading</code> as extras. Class: <strong>test isolation</strong>. The
+      shipped behaviour is correct, so the snapshot moved to the shipped surface.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/surface-order-dependence.png"
+      alt="Bar chart of submodule names counted as surface beyond the fixture under four
+      measurement conditions: run alone in-process 0; after seven sibling files in-process 7;
+      fresh interpreter with raw dir(crew) 5; fresh interpreter with crew submodules dropped,
+      the repair, 0. The 7 are peer-imported submodules and the 5 are facade-imported
+      submodules."></p>
+
+      <h3>Repair</h3>
+      <p>The surface is read in a fresh interpreter, where no sibling has imported into it, and
+      module-valued <code>reckon.crew</code> submodules are dropped from the result, so the
+      snapshot is a property of the facade's exports rather than of collection order.
+      <code>PYTHONPATH</code> names this checkout's root first so the child resolves the tree
+      under test rather than an installed copy. The fixture also drops the five concern modules
+      the facade's own imports bind onto the package &mdash; <code>metering</code>,
+      <code>quota_weight</code>, <code>refusals</code>, <code>review</code>,
+      <code>rollout</code> &mdash; which are not exports; the fixture now lists no submodule
+      name. No test is skipped, xfailed, deleted or weakened.</p>
+
+      <h3>Verification</h3>
+      <p>At head, with <code>PYTHONPATH</code> naming the worktree and the shared environment's
+      interpreter:</p>
+      <table>
+        <thead><tr><th>Run</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>id alone</td><td>2 passed</td><td><code>logs/alone-green.log</code></td></tr>
+          <tr><td>id after the seven sibling files, one process</td><td>surface id PASSED;
+          1 failed, 1690 passed, the one failure the pre-existing
+          <code>test_schema.py::test_cross_project_conformance</code> id</td>
+          <td><code>logs/combined-green.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The combined log lists
+      <code>tests/test_crew_surface.py::test_public_surface_matches_snapshot PASSED</code>
+      at the point the sibling files have already run. The logs sit in the run directory
+      <code>~/.config/reckon/crew/runs/r-20260924T210345922011-crew-surface-snapshot-ignores-imported-submodules/logs/</code>,
+      and each log's first line names its revision, tree and command.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared: <em>restore the <code>dir(crew)</code> comparison and observe the
+      combined-process run fail with submodule names as extra items</em>. Applied by running the
+      pre-repair test body &mdash; <code>dir(crew)</code> read in-process &mdash; in one pytest
+      process after the same seven sibling files. It fails with
+      <code>Extra items in the left set</code>, and the extras enumerated in-process under the
+      same conditions are twelve crew submodules: <code>bar</code>, <code>budget_group</code>,
+      <code>directory</code>, <code>metering</code>, <code>pace</code>, <code>query</code>,
+      <code>quota_weight</code>, <code>refusals</code>, <code>resumption</code>,
+      <code>review</code>, <code>rollout</code>, <code>window_reading</code>. The red log, its
+      first line repeating the declared string, is
+      <code>logs/negative-control-red.log</code> in the same run directory.</p>
+
+      <h3>Follow-on</h3>
+      <p><strong>Product defect, outside this node's write scope.</strong>
+      <code>reckon/crew.py</code> pops a concern module's name only by listing it in
+      <code>_MODULE_EXPORTS</code>, as <code>"ticker": ()</code> does. <code>metering</code>,
+      <code>quota_weight</code>, <code>refusals</code>, <code>review</code> and
+      <code>rollout</code> reach the package through the facade's own submodule imports and are
+      absent from that map, so they stay bound on <code>reckon.crew</code>; this node excludes
+      them from the snapshot but does not unmake the binding. The deliberate fix is to list
+      those five in <code>reckon/crew.py</code> the way <code>ticker</code> is listed.</p>
+    </section>
+
   </main>
 </body>
 </html>
