@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
-from reckon.crew.node import normalize_section
+from reckon.crew.node import CrewError, normalize_section
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.resumption import resolve_session
 from reckon.crew.routing import mounted_repository_projects
-from reckon.crew.runs import crew_home, list_live
+from reckon.crew.runs import crew_home, list_live, read_pointer
 
 DEFAULT_RUN_FIELDS = (
     "run_id",
@@ -325,9 +325,11 @@ def _matches(
     member: str | None,
     classification: str | None,
     resumable: bool | None,
+    run_id: str | None = None,
 ) -> bool:
     """Apply every runs-view filter to one normalized row."""
     string_filters = {
+        "run_id": run_id,
         "node": node,
         "plan": plan,
         "session_id": session,
@@ -346,6 +348,25 @@ def _matches(
     return resumable is None or row.get("resumable") is resumable
 
 
+def _live_records_for_run(
+    run_id: str, project: str, *, scope: str
+) -> list[dict[str, Any]]:
+    """Read one run's live pointer without walking every other pointer.
+
+    A single-run read must not pay for the fleet, so this reads the one pointer
+    file and nothing else. An absent, malformed or foreign-project pointer each
+    read as no live record rather than raising: the ledger arm may still answer
+    for a run that was already promoted and released its pointer.
+    """
+    try:
+        record = read_pointer(run_id)
+    except (CrewError, OSError, ValueError):
+        return []
+    if scope == "project" and str(record.get("project") or "") != project:
+        return []
+    return [record]
+
+
 def runs_view(
     project: str,
     *,
@@ -355,6 +376,7 @@ def runs_view(
     node: str | None = None,
     plan: str | None = None,
     section: str | None = None,
+    run_id: str | None = None,
     session: str | None = None,
     member: str | None = None,
     classification: str | None = None,
@@ -363,7 +385,15 @@ def runs_view(
     fields: Iterable[str] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Return compact live and committed run rows, newest first."""
+    """Return compact live and committed run rows, newest first.
+
+    ``run_id`` selects one run by identity. Identity is known before the read,
+    so it narrows the read rather than filtering its result: the live arm reads
+    that run's single pointer through :func:`read_pointer` instead of walking
+    every pointer in the fleet, and the ledger arm keeps only that run's row
+    before any compact row is built. The answer is the same rows the identity
+    filter would have kept, without paying for the fleet to read one run.
+    """
     selected_source = str(source or "all").strip().lower()
     if selected_source not in RUN_SOURCES:
         raise RunQueryError(
@@ -374,6 +404,9 @@ def runs_view(
         raise RunQueryError(
             f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
         )
+    selected_run_id = str(run_id or "").strip()
+    if run_id is not None and not selected_run_id:
+        raise RunQueryError("runs run_id must be a non-empty run identifier")
     if resumable is not None and not isinstance(resumable, bool):
         raise RunQueryError("resumable must be true, false or omitted")
     if not isinstance(newest_per_node, bool):
@@ -390,13 +423,18 @@ def runs_view(
     mounted_projects = _mounted_projects() if selected_scope == "workstation" else {}
     rows: list[dict[str, Any]] = []
     if selected_source in {"all", "live"}:
-        live_records = list_live()
-        if selected_scope == "project":
-            live_records = [
-                record
-                for record in live_records
-                if str(record.get("project") or "") == project
-            ]
+        if selected_run_id:
+            live_records = _live_records_for_run(
+                selected_run_id, project, scope=selected_scope
+            )
+        else:
+            live_records = list_live()
+            if selected_scope == "project":
+                live_records = [
+                    record
+                    for record in live_records
+                    if str(record.get("project") or "") == project
+                ]
         for record in live_records:
             row_project = str(record.get("project") or "")
             repository = _record_repository(record, mounted_projects)
@@ -424,6 +462,13 @@ def runs_view(
         )
         for row_project, repository in ledger_projects:
             ledger_root = str(repository) if repository is not None else None
+            ledger_rows = ledger.runs(row_project, ledger_root)
+            if selected_run_id:
+                ledger_rows = [
+                    record
+                    for record in ledger_rows
+                    if str(record.get("run_id") or "") == selected_run_id
+                ]
             rows.extend(
                 _compact_row(
                     record,
@@ -433,7 +478,7 @@ def runs_view(
                     repository=repository,
                     selected_fields=row_fields,
                 )
-                for record in ledger.runs(row_project, ledger_root)
+                for record in ledger_rows
             )
 
     rows = [
@@ -448,6 +493,7 @@ def runs_view(
             member=member,
             classification=classification,
             resumable=resumable,
+            run_id=selected_run_id or None,
         )
     ]
     rows.sort(key=lambda row: str(row.get("run_id") or ""), reverse=True)
