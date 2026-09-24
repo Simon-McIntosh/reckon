@@ -141,6 +141,13 @@ def test_a_concurrent_read_of_another_path_answers_normally(tmp_path, monkeypatc
     release = threading.Event()
 
     async def scenario():
+        blocked_at = time.monotonic()
+
+        def quick_body() -> str:
+            entered.append(time.monotonic() - blocked_at)
+            return quick.read_text(encoding="utf-8")
+
+        entered: list[float] = []
         blocked = asyncio.create_task(
             mcp_module._run_under_deadline(
                 _blocking_reader(slow, release),
@@ -152,20 +159,23 @@ def test_a_concurrent_read_of_another_path_answers_normally(tmp_path, monkeypatc
         await asyncio.sleep(0.05)
         started = time.monotonic()
         answered = await mcp_module._run_under_deadline(
-            lambda: quick.read_text(encoding="utf-8"),
-            kind="read",
-            label="read_plan",
-            path=str(quick),
+            quick_body, kind="read", label="read_plan", path=str(quick)
         )
         elapsed = time.monotonic() - started
         timed_out = await blocked
         release.set()
-        return answered, elapsed, timed_out
+        return answered, elapsed, timed_out, entered
 
-    answered, elapsed, timed_out = asyncio.run(scenario())
+    answered, elapsed, timed_out, entered = asyncio.run(scenario())
 
     assert answered == "quick-content"
     assert elapsed < 0.3, "the healthy path must not wait behind the blocked one"
+    # The healthy read must enter while the blocked one is still in flight, not
+    # merely finish quickly once it has. Under the defect the loop is held for
+    # the whole blocked read, so the healthy call enters only after it returns.
+    assert entered and entered[0] < 0.3, (
+        f"the healthy read entered at {entered} s, behind the blocked read"
+    )
     assert timed_out["error"] == STORAGE_SLOW
 
 
