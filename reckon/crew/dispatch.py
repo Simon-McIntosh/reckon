@@ -4,6 +4,7 @@ import argparse
 import ast
 import ctypes
 import dataclasses
+import errno
 import fcntl
 import json
 import os
@@ -109,6 +110,7 @@ from reckon.crew.runs import (
     scheduler_job_state,
     scheduler_kill_class,
     project_watch_visibility,
+    watch_lock_path,
     watch_state,
     watch_stream_path,
 )
@@ -747,8 +749,43 @@ def _watch_executable() -> str:
     )
 
 
-def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
-    """Start a detached supervisor that remains the watcher's live parent."""
+def _watch_producer_argv(project: str, supervisor: str) -> list[str]:
+    return [
+        sys.executable,
+        "-c",
+        supervisor,
+        _watch_executable(),
+        "crew",
+        "watch",
+        "--project",
+        project,
+    ]
+
+
+@dataclasses.dataclass
+class _SpawnedHandle:
+    """The handle a fleet-delegated launch returns in place of a Popen.
+
+    ``_ensure_watch_producer`` polls a producer handle to notice a producer
+    that died before it took its seat. A spawn the batch step made cannot be
+    polled from here — it is not this process's child — so the handle reports
+    ``poll()`` as None and liveness is decided, as it always is, by the
+    process-backed seat the producer registers when it starts.
+    """
+
+    pid: int
+
+    def poll(self) -> None:
+        return None
+
+
+def _start_watch_producer(project: str) -> Any:
+    """Start a detached supervisor that remains the watcher's live parent.
+
+    On the fleet node the detached child is reaped with the session step that
+    made it, so the producer is spawned through the same FIFO a worker is, by
+    the allocation's batch step.
+    """
     _refuse_arming_under_a_throwaway_home(project)
     supervisor = (
         "import subprocess, sys; "
@@ -756,17 +793,28 @@ def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
         "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); "
         "raise SystemExit(producer.wait())"
     )
+    argv = _watch_producer_argv(project, supervisor)
+    fleet = _read_fleet_record()
+    if (
+        _fleet_spawn_enabled()
+        and fleet is not None
+        and _runs_inside_fleet_allocation(fleet)
+    ):
+        runtime_dir = _fleet_runtime_dir(fleet)
+        if runtime_dir is not None:
+            directory = watch_lock_path(project).parent
+            directory.mkdir(parents=True, exist_ok=True)
+            spec_path = directory / "producer.json"
+            _write_json(spec_path, {"project": project, "argv": argv})
+            pid = _spawn_through_fleet(
+                runtime_dir,
+                f"watch-{_watch_request_slug(project)}",
+                spec_path,
+                directory / FLEET_SPAWN_ACK_NAME,
+            )
+            return _SpawnedHandle(pid=pid)
     return subprocess.Popen(
-        [
-            sys.executable,
-            "-c",
-            supervisor,
-            _watch_executable(),
-            "crew",
-            "watch",
-            "--project",
-            project,
-        ],
+        argv,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -4049,7 +4097,7 @@ def dispatch(
                         stderr_path=stderr_path,
                     ),
                 )
-                spawned_pid = _start_supervisor(spec_path, directory)
+                spawned_pid = _start_supervisor(spec_path, directory, run_id)
             else:
                 # A caller-supplied launcher is a test seam that stands in for
                 # the supervisor: it spawns synchronously and the boundary
@@ -4867,6 +4915,10 @@ def _supervisor_spec(
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
+        # The argv the fleet's batch step runs verbatim when it is asked to
+        # spawn this run, carried in the spec so the batch step stays free of
+        # any knowledge of reckon's module layout.
+        "argv": _supervisor_argv(spec_path=run_directory / SUPERVISOR_SPEC_NAME),
         "plan": {
             "argv": list(plan.argv),
             "cwd": plan.cwd,
@@ -4877,15 +4929,15 @@ def _supervisor_spec(
     }
 
 
-def _start_supervisor(spec_path: Path, run_directory: Path) -> int:
-    """Start the per-run supervisor in its own session and return its pid.
+def _supervisor_argv(*, spec_path: Path) -> list[str]:
+    """The argv that starts the per-run supervisor for one spec path.
 
-    A session of its own is what makes the pointer's pid a process group that
-    ``crew stop`` can signal: the worker is spawned inside this group, so one
-    group signal reaches it, while a signal to the dispatch process alone — how
-    a host expiring a background shell ends it — cannot.
+    Kept in one place because the same vector is both forked here and written
+    into the spec for the fleet's batch step to run verbatim, and the two must
+    agree or a fleet spawn would start something other than what this process
+    would have forked.
     """
-    argv = [
+    return [
         sys.executable,
         "-m",
         "reckon.crew.dispatch",
@@ -4893,6 +4945,229 @@ def _start_supervisor(spec_path: Path, run_directory: Path) -> int:
         "--spec",
         str(spec_path),
     ]
+
+
+# ── Launching through the fleet's batch step ────────────────────────────────
+#
+# On the SLURM fleet node every session runs as a step of one allocation, and a
+# ``setsid``-detached child is reaped when its step ends — so a supervisor
+# forked by a session dies with the session and takes its worker with it. The
+# only process tree that outlives every step is the allocation's batch step,
+# which reads one request per line from a FIFO in the runtime directory the
+# fleet record publishes. When this process runs inside that allocation, the
+# spawn is therefore delegated to the batch step through the FIFO rather than
+# forked here, and the pid the batch step acknowledges is recorded on the run
+# exactly as a forked supervisor's pid would be.
+FLEET_RECORD_PATH_ENV = "RECKON_FLEET_RECORD"
+FLEET_SPAWN_ENV = "RECKON_FLEET_SPAWN"
+FLEET_FIFO_NAME = "requests"
+FLEET_SPAWN_ACK_NAME = "spawned.json"
+FLEET_SPAWN_ACK_BOUND_SECONDS = 10.0
+FLEET_REQUEST_POLL_SECONDS = 0.02
+
+
+def _fleet_record_path() -> Path:
+    """Where the fleet record that publishes the batch step's location lives."""
+    override = os.environ.get(FLEET_RECORD_PATH_ENV, "").strip()
+    if override:
+        return Path(override)
+    state_home = os.environ.get("XDG_STATE_HOME", "").strip()
+    base = Path(state_home) if state_home else Path.home() / ".local" / "state"
+    return base / "fleet" / "record.json"
+
+
+def _read_fleet_record() -> dict[str, Any] | None:
+    """The published fleet record, or None when none is readable."""
+    try:
+        payload = json.loads(_fleet_record_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return payload if isinstance(payload, Mapping) else None
+
+
+def _fleet_spawn_enabled() -> bool:
+    """Whether a launch may be delegated to the fleet's batch step.
+
+    The lane is opt-in rather than inferred from the record alone. The batch
+    step's ``spawn`` verb and this half land separately, and this workstation's
+    fleet node publishes a record for every session running on it — so keying
+    on the record would route every dispatch on the node into a FIFO whose
+    reader may not yet know the verb, turning an ordinary dispatch into a
+    ten-second refusal. The allocation that carries the verb enables the lane;
+    everywhere else, and in every test that does not opt in, launches fork as
+    they always have.
+    """
+    return os.environ.get(FLEET_SPAWN_ENV, "").strip().lower() in {
+        "on",
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _runs_inside_fleet_allocation(record: Mapping[str, Any]) -> bool:
+    """Whether this process runs inside the allocation the record names.
+
+    Two local proofs, either sufficient: the runtime directory the record
+    publishes is the one this process was given, which only the allocation
+    itself sets, or the job id matches this process's SLURM job. Anything else
+    — no record, a stale record, a session on the login node — is a dispatch
+    that forks as it always has.
+    """
+    runtime = str(record.get("runtime_dir") or "").strip()
+    if runtime and os.environ.get("XDG_RUNTIME_DIR", "").strip() == runtime:
+        return True
+    job_id = str(record.get("job_id") or "").strip()
+    return bool(job_id) and os.environ.get("SLURM_JOB_ID", "").strip() == job_id
+
+
+def _fleet_runtime_dir(record: Mapping[str, Any]) -> Path | None:
+    runtime = str(record.get("runtime_dir") or "").strip()
+    return Path(runtime) if runtime else None
+
+
+def _watch_request_slug(project: str) -> str:
+    """A request id for a project's producer, free of the line's separator.
+
+    The spawn request is one line of space-separated fields, so a project name
+    that carries a space would otherwise split the id and shift the spec path
+    into the wrong field.
+    """
+    return re.sub(r"\s+", "-", project.strip()) or "project"
+
+
+def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
+    """Write one request line to the batch step's FIFO within the deadline.
+
+    The FIFO is opened non-blocking because opening a FIFO for writing blocks
+    until a reader holds the other end, and a dispatch that hung there would
+    hang for as long as the batch step was down rather than refusing at its
+    bound. No reader within the deadline is a refusal, not a wait.
+    """
+    while True:
+        try:
+            descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+        except OSError as exc:
+            if exc.errno == errno.ENXIO and time.monotonic() < deadline:
+                time.sleep(FLEET_REQUEST_POLL_SECONDS)
+                continue
+            raise CrewError(
+                f"the fleet's request FIFO {fifo} could not be written: {exc}"
+            ) from exc
+        try:
+            os.write(descriptor, line)
+        except OSError as exc:
+            raise CrewError(
+                f"the fleet's request FIFO {fifo} refused the spawn request: {exc}"
+            ) from exc
+        finally:
+            os.close(descriptor)
+        return
+
+
+def _read_spawn_ack(ack_path: Path) -> int | None:
+    """The pid the batch step acknowledged, or None while none is written."""
+    try:
+        payload = json.loads(ack_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    try:
+        pid = int(payload.get("pid"))
+    except (TypeError, ValueError):
+        return None
+    return pid if pid > 1 else None
+
+
+def _spawn_through_fleet(
+    runtime_dir: Path, request_id: str, spec_path: Path, ack_path: Path
+) -> int:
+    """Ask the batch step to start one spec and return the acknowledged pid.
+
+    One line of three space-separated fields — the word ``spawn``, the run id
+    and the spec path — is written to the runtime directory's FIFO, and the
+    batch step answers by writing the started pid to the run directory. A
+    stale acknowledgement is removed first so a previous attempt's file can
+    never stand in for this one's.
+    """
+    deadline = time.monotonic() + FLEET_SPAWN_ACK_BOUND_SECONDS
+    ack_path.unlink(missing_ok=True)
+    line = f"spawn {request_id} {spec_path}\n".encode()
+    _write_fleet_request(runtime_dir / FLEET_FIFO_NAME, line, deadline)
+    while time.monotonic() < deadline:
+        pid = _read_spawn_ack(ack_path)
+        if pid is not None:
+            return pid
+        time.sleep(FLEET_REQUEST_POLL_SECONDS)
+    raise CrewError(
+        f"the fleet's batch step did not acknowledge the spawn of {request_id} "
+        f"within {FLEET_SPAWN_ACK_BOUND_SECONDS:g}s"
+    )
+
+
+def supervised_launch(
+    plan: _backends.LaunchPlan,
+    *,
+    run_directory: Path,
+    repo_root: Path,
+    worktree: Path,
+    log_path: Path,
+    stderr_path: Path,
+    prompt_path: Path,
+) -> int:
+    """Start a run's supervisor for an already-built plan and return its pid.
+
+    A resumption and a review dispatch reach the supervisor through here rather
+    than through an in-process ``_spawn`` call: a worker started inline is a
+    child of whoever is sweeping, so on the fleet it dies with that step, and
+    off it the run's exit is never recorded because nothing waits on it. The
+    spec is written before the supervisor is asked for, in the same order the
+    dispatch path writes it, so a fleet spawn always finds its stderr path on
+    disk.
+    """
+    spec_path = run_directory / SUPERVISOR_SPEC_NAME
+    _write_json(
+        spec_path,
+        _supervisor_spec(
+            run_id=run_directory.name,
+            run_directory=run_directory,
+            repo_root=repo_root,
+            worktree=worktree,
+            plan=plan,
+            prompt_path=prompt_path,
+            log_path=log_path,
+            stderr_path=stderr_path,
+        ),
+    )
+    return _start_supervisor(spec_path, run_directory, run_directory.name)
+
+
+def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
+    """Start the per-run supervisor and return the pid that runs it.
+
+    Off the fleet this forks the supervisor in a session of its own — what
+    makes the pointer's pid a process group ``crew stop`` can signal, since the
+    worker is spawned inside that group. On the fleet node the fork would be
+    reaped with the session step that made it, so the same argv is handed to
+    the allocation's batch step instead and the caller waits, bounded, for the
+    pid the step acknowledges.
+    """
+    fleet = _read_fleet_record()
+    if (
+        _fleet_spawn_enabled()
+        and fleet is not None
+        and _runs_inside_fleet_allocation(fleet)
+    ):
+        runtime_dir = _fleet_runtime_dir(fleet)
+        if runtime_dir is not None:
+            return _spawn_through_fleet(
+                runtime_dir,
+                run_id,
+                spec_path,
+                run_directory / FLEET_SPAWN_ACK_NAME,
+            )
+    argv = _supervisor_argv(spec_path=spec_path)
     with open(run_directory / "supervisor.stderr.log", "ab") as errors:
         process = subprocess.Popen(
             argv,

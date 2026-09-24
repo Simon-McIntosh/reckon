@@ -55,7 +55,6 @@ from reckon.crew.dispatch import (
     BudgetHold,
     _actionable_budget_hold,
     _backend_settings,
-    _spawn,
     project_mount_repository,
     record_resumption,
     resolve_project_repository,
@@ -655,10 +654,16 @@ def _resume(
     record: Mapping[str, Any],
     *,
     config: Mapping[str, Any] | None,
-    launcher: Callable[..., int],
+    launcher: Callable[..., int] | None = None,
     advice: str = CONTINUE_ADVICE,
 ) -> dict[str, Any]:
-    """Launch one resumption exactly the way a hand-typed resume does."""
+    """Launch one resumption exactly the way a hand-typed resume does.
+
+    With no launcher the resumption goes through the run's supervisor, exactly
+    as a dispatch does, so its worker is not a child of whoever swept and its
+    exit is recorded. A caller-supplied launcher is the in-process seam a test
+    uses to stand in for that supervisor.
+    """
     # The repository a resume continues in is the project's mount, exactly as
     # for the dispatch that created the run. A run recorded in a different
     # repository is refused here, naming both roots, rather than resumed into a
@@ -689,9 +694,23 @@ def _resume(
     stderr_path = directory / f"resume-{turn}.stderr.log"
     attempt_started_at = _utc_now()
     manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
-    pid = launcher(
-        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-    )
+    if launcher is None:
+        from reckon.crew.dispatch import supervised_launch
+
+        worktree = Path(str(record.get("worktree") or ""))
+        pid = supervised_launch(
+            plan,
+            run_directory=directory,
+            repo_root=Path(str(record.get("repo") or directory)),
+            worktree=worktree if str(worktree) else directory,
+            log_path=log_path,
+            stderr_path=stderr_path,
+            prompt_path=advice_path,
+        )
+    else:
+        pid = launcher(
+            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+        )
     record_resumption(
         run_id,
         pid=pid,
@@ -1005,7 +1024,7 @@ def sweep(
     writer of the same file without a process lookup. A caller that declares
     nothing is recorded as ``other``.
     """
-    launch = _spawn if launcher is None else launcher
+    launch = launcher
     test_condition = _run_condition_probe if condition_test is None else condition_test
     policy_block = budget_module.policy(config)
     resumed: list[dict[str, Any]] = []
