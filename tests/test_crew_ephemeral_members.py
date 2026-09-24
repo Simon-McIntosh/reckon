@@ -77,6 +77,7 @@ def _node(node_id: str, manifest: Path) -> crew.TaskNode:
         goal="record one isolated launch",
         plan="dispatch",
         section="concurrency",
+        spec_level="exact",
         done_when="launch record count equals 2 and member refusal count equals 0",
         write_paths=[f"records/{node_id}.json"],
         time_budget="20m",
@@ -129,6 +130,19 @@ def test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session(
     assert observed["phase"] == "complete"
     assert observed["session_capture"]["captured"] is True
 
+    owner = next(
+        entry
+        for entry in ledger.members("proj", root=repository)
+        if entry["id"] == first["member"]
+    )
+    assert captured_session in owner["sessions"].values()
+    assert set(owner["session_owners"].values()) == {"left-coordinator"}
+
+    # A later dispatch from the same coordinator reuses its private member, but
+    # the session a run continues is keyed to the task it belongs to, so a
+    # different node of that member starts a fresh conversation and the record
+    # names that as the reason it carries no session id.
     resumed = launch("followup-node", "left-coordinator")
     assert resumed["member"] == first["member"]
-    assert resumed["session_id"] == captured_session
+    assert resumed["session_id"] is None
+    assert resumed["session_id_absent"]["point"] == "dispatch-no-same-task-session"

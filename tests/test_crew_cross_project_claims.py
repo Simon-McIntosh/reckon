@@ -94,6 +94,7 @@ def _node(project: str, path: str, *, node_id: str = "candidate") -> crew.TaskNo
         goal="record one repository claim result",
         plan=f"{project}-plan",
         section="dispatch",
+        spec_level="exact",
         done_when="pytest reports all repository claim checks passing",
         write_paths=[path],
         time_budget="20m",

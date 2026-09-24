@@ -208,6 +208,7 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
         goal="record watcher state for one dispatch",
         plan="fixture",
         section="guard",
+        spec_level="exact",
         done_when="pytest reports one passing watcher guard case",
         write_paths=[f"src/{name}.py"],
         time_budget="20m",
