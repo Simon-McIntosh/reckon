@@ -438,6 +438,87 @@
       is about; that is a property of the lane, not a defect of the repair.
     </p>
 
+    <h2 id="s10">&sect;10 &mdash; The fleet's batch step, carried in reckon</h2>
+    <p>
+      Node <code>the-fleet-supervisor-lives-in-reckon</code>. Landed
+      <code>reckon/crew/fleet_supervisor.py</code> and
+      <code>tests/test_fleet_supervisor.py</code>. The module runs as
+      <code>python -m reckon.crew.fleet_supervisor</code> and implements dotfiles'
+      <code>bin/fleet-supervisor</code> protocol &mdash; the <code>session</code> and
+      <code>reload</code> verbs, the private node-local runtime directory, the stripping of
+      the inherited <code>ZELLIJ</code>, <code>CX_</code> and <code>CLAUDE</code> variable
+      families, and the <code>spawn</code> verb §10 of the plan specifies: a three-field
+      request line names a run id and an absolute spec path, and the spec's
+      <code>argv</code> is run verbatim as the batch step's own detached child, acknowledged
+      in <code>&lt;run-dir&gt;/spawned.json</code> with the child's pid and start time.
+    </p>
+    <p>
+      <strong>Why the batch step lives in reckon at all.</strong> The verb carries no reckon
+      knowledge, because the spec carries the argv &mdash; that is the plan's own constraint
+      and it holds here. The reader is a different matter: it is long-lived, it owns the
+      runtime directory every fleet process resolves through, and it is the process a fix
+      must reach without a new allocation. In the repository it can be driven by pytest over
+      a real FIFO in a temporary runtime tree, so what is asserted is what a request line
+      does to the machine rather than what a function returns. Two environment overrides
+      exist for that (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>); the
+      real state directory is asserted untouched afterwards.
+    </p>
+    <table>
+      <thead><tr><th>Measure</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>gate, four cases</td><td><code>4 passed in 3.42s</code></td></tr>
+        <tr><td>spawn acknowledgement</td><td><code>spawned.json</code> = <code>{pid, started_at}</code>; pid asserted live with <code>os.kill(pid, 0)</code></td></tr>
+        <tr><td>the child's argv actually ran</td><td>the stub's marker file exists, written before it sleeps</td></tr>
+        <tr><td>detachment</td><td><code>start_new_session=True</code>, so the child leads its own session and group</td></tr>
+        <tr><td>malformed line</td><td><code>unknown request: spawn r-only-a-run-id</code> logged; a valid line after it still produced an acknowledgement, and the reader was still polling</td></tr>
+        <tr><td>session line, zellij stubbed</td><td>stub argv holds <code>attach --create-background --create demo</code>, no <code>--layout</code>; a listed <code>EXITED</code> server does not count as running</td></tr>
+        <tr><td>reload line</td><td>recorded exec argv is <code>[&lt;interpreter&gt;, -m, reckon.crew.fleet_supervisor]</code> &mdash; no arguments, so the replacement re-enters the loop</td></tr>
+        <tr><td>a spawned child's environment</td><td><code>RECKON_CONTROL_MARKER</code> present; <code>ZELLIJ_SESSION_NAME</code>, <code>ZELLIJ_PANE_ID</code>, <code>CX_SESSION</code>, <code>CX_BACKGROUND</code>, <code>CLAUDE_CODE_CHILD_SESSION</code> all absent</td></tr>
+        <tr><td>declared negative control</td><td>write line in the overlay: 0 (the worktree: 1) &mdash; <code>1 failed, 3 deselected in 20.78s</code></td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet_request_loop.png"
+           alt="Left: the reader's life in five steps, from stripping the inherited variables through the verbs a request line can name. Right: the spawn handshake, from the arriving line through reading the spec, starting the detached child, writing spawned.json and reading on.">
+      <figcaption>
+        The acknowledgement a dispatcher waits for is the last step of the handshake, so it is
+        only ever written for a child that exists.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>The measure that could have failed.</strong> The declared control reads
+      <code>skip writing spawned.json in the spawn verb; the pid assertion must fail</code>,
+      and it fails exactly there: the case reports no
+      <code>&lt;run-dir&gt;/spawned.json</code>, so the pid the verb acknowledged cannot be
+      read and no pid assertion is satisfiable. The control copies the package
+      <em>and</em> the test tree, because <code>tests/</code> is a package and pytest
+      prepends its root to <code>sys.path</code> &mdash; a mutated package alone would be
+      shadowed by the worktree's own tree and the control would fail for the wrong reason.
+      Driver at
+      <code>~/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-control.sh</code>;
+      log beside it; the module and the test are at revision <code>770abccf</code>.
+    </p>
+    <p>
+      <strong>An artifact this control exposed, recorded because it nearly read as a
+      defect.</strong> The first run's traceback named the test file at the <em>worktree</em>
+      path while the control was supposedly measuring its overlay. The cause was the copy:
+      <code>__pycache__</code> travelled with it, and a byte-compiled file carries the source
+      filename it was compiled from, so the module was loaded from the overlay while
+      displaying the worktree's path. The measured tree was never in doubt and was confirmed
+      by a collection hook printing the resolved test and package paths; the fix is to exclude
+      the caches from the copy, which the driver now does and the log now shows. A reader who
+      trusted the traceback would have concluded the control was inert.
+    </p>
+    <p>
+      <strong>What this node does not take.</strong> dotfiles'
+      <code>bin/fleet-supervisor</code> is unmodified and so is every caller. Writing the
+      <code>spawn</code> line &mdash; <code>_start_supervisor</code> choosing the FIFO over a
+      fork when a live fleet record names this node, waiting bounded for the acknowledgement,
+      and recording the pid, with the <code>crew watch</code> producer and the resumption
+      paths taking the same route &mdash; is the sibling node's work. This node delivers the
+      batch step that work dispatches into.
+    </p>
+
   </main>
 </body>
 </html>

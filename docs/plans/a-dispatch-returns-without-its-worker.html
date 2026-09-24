@@ -667,6 +667,79 @@
     placement record naming the old sleeping allocation 1276262, and the <code>salloc
     --no-shell</code> re-hold with no batch step. This section does not take them.</p>
 
+    <h3 id="s10-landed">Landed &mdash; node <code>the-fleet-supervisor-lives-in-reckon</code>, the batch step carried in reckon</h3>
+    <p>Node <code>the-fleet-supervisor-lives-in-reckon</code> landed
+    <code>reckon/crew/fleet_supervisor.py</code>, which runs as
+    <code>python -m reckon.crew.fleet_supervisor</code> and implements the protocol of
+    dotfiles' <code>bin/fleet-supervisor</code> &mdash; the <code>session</code> and
+    <code>reload</code> verbs, the private node-local runtime directory, the stripping of
+    the inherited <code>ZELLIJ</code>, <code>CX_</code> and <code>CLAUDE</code> variable
+    families &mdash; and adds the <code>spawn</code> verb this section specifies: a line of
+    three space-separated fields names a run id and a supervisor spec path, and the spec's
+    <code>argv</code> is run verbatim as the batch step's own detached child, acknowledged by
+    writing <code>spawned.json</code> with its pid and start time into the spec's run
+    directory. It landed with <code>tests/test_fleet_supervisor.py</code>, four cases driving
+    the reader over a FIFO in a temporary runtime directory.</p>
+    <p><strong>Why the batch step is carried here and not only in dotfiles.</strong> The verb
+    stays free of reckon knowledge because the spec carries the argv, exactly as
+    <code>&sect;10</code> requires &mdash; but the reader is long-lived, it owns the runtime
+    directory every fleet process resolves through, and it is the process a fix must reach
+    without a new allocation. Carrying it in reckon makes its protocol observable by pytest
+    against a temporary runtime tree rather than only by hand on a live allocation: the cases
+    assert what a request line does to the machine, not what a function returns. Two
+    environment overrides exist for that reason
+    (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>), so the suite never writes
+    the machine's own fleet state, and the record directory is asserted untouched.</p>
+    <p><strong>What a request line does.</strong> The reader strips the inherited session
+    variables before it does anything else, so nothing it starts believes it is already inside
+    a zellij or an agent session; makes a mode-0700 private runtime directory and points
+    <code>XDG_RUNTIME_DIR</code>, <code>ZELLIJ_SOCKET_DIR</code> and <code>TMPDIR</code> at
+    it; publishes <code>record.json</code> naming the job, node and runtime directory; and
+    reads from a FIFO it opens read-write, so a read between requests blocks rather than
+    seeing end-of-file. A <code>session</code> line starts a zellij server through a fresh copy
+    of the module unless one is already running (an <code>EXITED</code> listing does not count
+    as running); a <code>reload</code> line re-executes the module in place with no arguments,
+    so the replacement re-enters the loop; and a <code>spawn</code> line runs the spec's argv
+    as a child that leads its own session and process group, so one group signal reaches the
+    worker beneath it while the end of a session step cannot. <code>spawned.json</code> is
+    written only after the child exists, so a reader that finds it is reading the pid of a
+    process that was started rather than an intention to start one. A line the reader cannot
+    act on &mdash; a spawn without its spec path, an unknown verb &mdash; and a spawn the
+    machine refuses are logged and the loop reads the next line; exited children are reaped
+    between requests so a reader whose whole life is a read loop holds no dead process slot.</p>
+    <p><strong>The measure that could have failed.</strong> The four cases are a spawn whose
+    child writes a marker and stays alive, so the recorded pid is asserted live rather than
+    merely numeric; a malformed line followed by a valid one, so "ignored" means the reader
+    survived it rather than that something was printed while the loop stopped; a session start
+    and a reload, with zellij stubbed so no real session is touched and the reload driven
+    through a recorded exec so it cannot replace the test process; and a spawned child's
+    environment, where a control marker is shown present in the same reading that the five
+    stripped names are shown absent from, since a child that recorded nothing would otherwise
+    read as clean. The declared negative control was executed and logged: with the
+    <code>spawned.json</code> write dropped from the spawn verb, the pid assertion fails on an
+    acknowledgement that was never written, and the run measures a full copy of the package
+    <em>and</em> the test tree &mdash; both, because <code>tests/</code> is a package and
+    pytest prepends its root &mdash; printing the resolved paths of the modules it measured so
+    a pass for the wrong reason is visible rather than assumed.</p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet_request_loop.png"
+           alt="Left: the reader's life in five steps, from stripping the inherited variables through the verbs a request line can name. Right: the spawn handshake, from the arriving line through reading the spec, starting the detached child, writing spawned.json and reading on.">
+      <figcaption>
+        The reader's life and the spawn handshake. The acknowledgement a dispatcher waits for
+        is the last step of the handshake, so it is only ever written for a child that exists.
+      </figcaption>
+    </figure>
+    <p><strong>What this node does not take.</strong> dotfiles'
+    <code>bin/fleet-supervisor</code> is unmodified, and so is every caller. Writing the
+    <code>spawn</code> line to the FIFO is not this work: the dispatch-side routing &mdash;
+    <code>_start_supervisor</code> choosing the FIFO over a fork when a live fleet record names
+    this node, waiting bounded for <code>spawned.json</code>, and recording that pid, along
+    with the <code>crew watch</code> producer and the resumption paths that take it &mdash;
+    is the sibling node's, so &sect;10's reckon half is not complete. This node delivers the
+    batch step that half dispatches into.</p>
+    <p>The mechanism, the four cases and the negative control are recorded in
+    <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
