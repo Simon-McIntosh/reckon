@@ -42,7 +42,8 @@ still emitted. Plain ``model_dump()`` would inject every default and balloon
 Lenient read vs strict write (locked decision: reject-write-warn-doctor)
 -----------------------------------------------------------------------
 :func:`reckon._plan_html.from_html` is **lenient** — it coerces/normalises and
-never raises, so every existing plan validates on read. The enum-valued scalars
+retains read defaults for legacy plans. Opt-in section records are validated on
+read as well as write. The enum-valued scalars
 are typed as ``str`` (not ``Literal``) precisely so an off-enum value from an
 old plan does not raise; the canonical enums travel into the JSON Schema via
 ``json_schema_extra``. Validation of enum membership and required-on-write
@@ -531,6 +532,76 @@ class CapabilityRequest(BaseModel):
     requirements: CapabilityRequirements = Field(default_factory=CapabilityRequirements)
 
 
+class SectionRecord(BaseModel):
+    """Typed metadata carried by an h2 or its adjacent data-reckon element."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=_RESOURCE_SEGMENT_RE.pattern)
+    effort_hours: float = Field(
+        gt=0, multiple_of=0.25, allow_inf_nan=False, strict=True
+    )
+    capability: CapabilityRequest = Field(
+        json_schema_extra={
+            "allOf": [
+                {
+                    "required": ["requirements"],
+                    "properties": {
+                        "requirements": {
+                            "required": ["reasoning", "verification", "risk"],
+                            "properties": {
+                                key: {"type": "string", "minLength": 1}
+                                for key in ("reasoning", "verification", "risk")
+                            },
+                        }
+                    },
+                }
+            ],
+        },
+    )
+    attempts: int = Field(ge=0, strict=True, description="Tool-owned launch count")
+    status: str = Field(json_schema_extra=_enum(SECTION_DECLARATION_ENUM))
+    links: list[str] = Field(
+        description="Plan refs, using [project:]slug[#section]",
+        json_schema_extra={
+            "items": {
+                "type": "string",
+                "pattern": rf"^\s*(?:{_PROJECT_SEGMENT}:)?{_REF_SEGMENT}(?:#{_REF_SEGMENT})?\s*$",
+            }
+        },
+    )
+
+    @field_validator("capability")
+    @classmethod
+    def _valid_capability(cls, value: CapabilityRequest) -> CapabilityRequest:
+        errors = validate_capability(value.model_dump(by_alias=True))
+        errors.extend(
+            f"capability.requirements.{key}: required for a section record"
+            for key in ("reasoning", "verification", "risk")
+            if not getattr(value.requirements, key)
+        )
+        if errors:
+            raise ValueError("; ".join(errors))
+        return value
+
+    @field_validator("status")
+    @classmethod
+    def _valid_status(cls, value: str) -> str:
+        if value not in SECTION_DECLARATION_ENUM:
+            raise ValueError(f"status must be one of {SECTION_DECLARATION_ENUM}")
+        return value
+
+    @field_validator("links")
+    @classmethod
+    def _valid_links(cls, value: list[str]) -> list[str]:
+        for ref in value:
+            if parse_plan_ref(ref) is None:
+                raise ValueError(
+                    f"links: malformed plan ref {ref!r}; expected [project:]slug[#section]"
+                )
+        return value
+
+
 class Followup(BaseModel):
     """A followup (``.r-fu`` element). ``status`` mirrors read_state's value;
     write_state re-derives ``data-status`` from ``resolved_at`` on render.
@@ -732,6 +803,10 @@ class PlanState(BaseModel):
             }
         },
     )
+    sections: list[SectionRecord] = Field(
+        default_factory=list,
+        description="Opt-in typed records beside the section declaration map",
+    )
 
     # ── Visibility flags ──
     archived: str | None = None  # "1" hides from default inventory
@@ -827,6 +902,21 @@ class PlanState(BaseModel):
     def _norm_tags(cls, v: Any) -> Any:
         return _normalise_tags(v)
 
+    @model_validator(mode="after")
+    def _consistent_section_records(self) -> PlanState:
+        seen: set[str] = set()
+        for section in self.sections:
+            if section.id in seen:
+                raise ValueError(f"sections.id: duplicate section {section.id!r}")
+            seen.add(section.id)
+            declaration = self.section_declarations.get(section.id)
+            if declaration is not None and section.status != declaration:
+                raise ValueError(
+                    f"sections[{section.id!r}].status: {section.status!r} disagrees "
+                    f"with section declaration {declaration!r}"
+                )
+        return self
+
     # ── Dependency scope views (derived, never stored) ──
     def local_depends_on(self) -> list[str]:
         """The depends_on refs that resolve inside this plan's own project."""
@@ -883,6 +973,7 @@ class PlanState(BaseModel):
                 "blocks",
                 "impl",
                 "section_declarations",
+                "sections",
                 "standalone",
             ):
                 data.pop(field, None)
@@ -984,6 +1075,7 @@ class PlanState(BaseModel):
                 "depends_on": ([],),
                 "blocks": ([],),
                 "section_declarations": ({},),
+                "sections": ([],),
                 "standalone": ("", None),
             }
             for field, allowed in neutral.items():

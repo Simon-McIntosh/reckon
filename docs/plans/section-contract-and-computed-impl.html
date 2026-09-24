@@ -85,6 +85,21 @@
     is byte-stable, and the nova plans authored on 2026-09-19 with hand-written contract tables parse into it once
     their tables are converted.</p>
 
+    <p><strong>Typed-record implementation landed locally, 2026-09-24.</strong>
+    Commits <code>2d5357fc4521a76e9ecd86b6a3d4c2c80fbf8aa6</code> (contract tests) and
+    <code>739dc8c65bd01881b6c6014d88bba24e14fd2176</code> (implementation) add the six-field
+    <code>sections</code> list to parsed state and raw reads, strict validation for opted-in
+    records, and regeneration on an <code>h2</code> or its adjacent metadata element.
+    The published JSON Schema is regenerated from <code>PlanState</code>. All 35 focused
+    cases pass; the declared mutation fails when the writer cannot reconstruct metadata
+    from parsed state. The wider gate and retained failures are recorded in the
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#typed-section-records">typed-section evidence</a>.
+    This delivers the schema and round-trip mechanism; conversion of nova's hand-written
+    tables remains a follow-on, and the coordinator owns section closure. Compatibility
+    repair <code>8cba99030e92b11135972422932a0eed5db61f56</code> preserves existing bare
+    structural section wrappers and reuses the shared capability schema within the
+    existing response-size bound.</p>
+
     <h2 id="s2">§2 — Positive control: a section without its contract is refused at the write boundary</h2>
     <p>The lead asked for positive control, meaning the rule is enforced where the write happens, not audited
     afterwards. <code>edit_plan</code> gains an <code>append</code> target <code>sections</code> (id, title, body

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="390" viewBox="0 0 1120 390" role="img" aria-labelledby="title description">
+  <title id="title">Typed section records survive a state round trip</title>
+  <desc id="description">An h2 or an adjacent metadata element parses to a validated record. The writer splices metadata back into the original HTML while preserving authored prose. Reconstructing from a document without records detects a missing writer branch.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#476582"/></marker>
+    <marker id="red-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#ac3434"/></marker>
+  </defs>
+  <rect width="1120" height="390" rx="12" fill="#f4f7fb"/>
+  <g font-family="sans-serif" fill="#17324d">
+    <text x="32" y="39" font-size="23" font-weight="700">One typed record, preserved through a state write</text>
+    <rect x="32" y="76" width="290" height="138" rx="10" fill="#fff" stroke="#92a7bb"/>
+    <text x="51" y="107" font-size="19" font-weight="700">Semantic HTML</text>
+    <text x="51" y="137" font-size="16">h2 + record metadata</text>
+    <text x="51" y="164" font-size="16">declarations remain alongside</text>
+    <text x="51" y="191" font-size="16">authored prose stays intact</text>
+    <rect x="410" y="76" width="294" height="138" rx="10" fill="#e4f0fc" stroke="#5482ad"/>
+    <text x="429" y="107" font-size="19" font-weight="700">Validated section record</text>
+    <text x="429" y="137" font-size="16">id · effort_hours · capability</text>
+    <text x="429" y="164" font-size="16">attempts · status · links</text>
+    <text x="429" y="191" font-size="16">shared by typed and raw reads</text>
+    <rect x="792" y="76" width="296" height="138" rx="10" fill="#e7f4ec" stroke="#5b9270"/>
+    <text x="811" y="107" font-size="19" font-weight="700">Regenerated HTML</text>
+    <text x="811" y="137" font-size="16">metadata source spans replaced</text>
+    <text x="811" y="164" font-size="16">same records on the next parse</text>
+    <text x="811" y="191" font-size="16">byte-stable canonical round trip</text>
+    <text x="337" y="121" font-size="15">parse</text>
+    <text x="716" y="121" font-size="15">write</text>
+    <path d="M322 143 H398" fill="none" stroke="#476582" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M704 143 H780" fill="none" stroke="#476582" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="32" y="274" width="510" height="85" rx="10" fill="#fff" stroke="#92a7bb"/>
+    <text x="51" y="306" font-size="18" font-weight="700">Refusal control</text>
+    <text x="51" y="334" font-size="16">off-enum risk or effort 0.3 → parse names the invalid field</text>
+    <rect x="586" y="274" width="502" height="85" rx="10" fill="#fff0f0" stroke="#ac3434"/>
+    <text x="605" y="306" font-size="18" font-weight="700">Mutation control</text>
+    <text x="605" y="334" font-size="16">remove writer branch → reconstruction assertion fails</text>
+    <path d="M557 214 V239 H288 V262" fill="none" stroke="#476582" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M940 214 V262" fill="none" stroke="#ac3434" stroke-width="2" marker-end="url(#red-arrow)"/>
+  </g>
+</svg>

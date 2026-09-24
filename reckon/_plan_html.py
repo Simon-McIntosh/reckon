@@ -10,6 +10,8 @@ reckon server reads and writes directly. There is NO embedded JSON blob.
     <section data-reckon="decisions">, with visible <button class="r-opt"
     data-value=…> options, a data-choice attribute (the locked answer, an
     option value OR free text), and a free-form .r-dec-rat rationale.
+  - Typed section records live on h2 elements or adjacent
+    ``<section data-reckon="section" data-id=...>`` elements.
   - Gates / followups / questions / comments are matching
     <section data-reckon=…> blocks of semantic elements.
 
@@ -29,7 +31,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from reckon._schema import LEGACY_EFFORT_HOURS
+from reckon._schema import LEGACY_EFFORT_HOURS, PlanState
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
@@ -38,7 +40,7 @@ from reckon.tags import normalise_tag
 
 
 class _StructuredSectionSpanParser(HTMLParser):
-    """Locate exact source spans owned by ``section[data-reckon]``."""
+    """Locate owned section spans and section-heading attribute spans."""
 
     def __init__(self, source: str) -> None:
         super().__init__(convert_charrefs=False)
@@ -47,12 +49,21 @@ class _StructuredSectionSpanParser(HTMLParser):
         self.line_offsets.extend(match.end() for match in re.finditer(r"\n", source))
         self.section_stack: list[tuple[bool, int]] = []
         self.spans: list[tuple[int, int]] = []
+        self.headings: list[tuple[str, int, int, int]] = []
+        self.heading_start: tuple[str, int, int] | None = None
 
     def _offset(self) -> int:
         line, column = self.getpos()
         return self.line_offsets[line - 1] + column
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "h2":
+            start = self._offset()
+            end = start + len(self.get_starttag_text())
+            values = dict(attrs)
+            self.heading_start = (values.get("id") or "", start, end)
+            if values.get("data-reckon") == "section":
+                self.spans.append((start, end))
         if tag == "section":
             protected = any(name == "data-reckon" for name, _value in attrs)
             self.section_stack.append((protected, self._offset()))
@@ -64,6 +75,10 @@ class _StructuredSectionSpanParser(HTMLParser):
         self.spans.append((start, start + len(self.get_starttag_text())))
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "h2" and self.heading_start is not None:
+            end = self.source.find(">", self._offset()) + 1
+            self.headings.append((*self.heading_start, end))
+            self.heading_start = None
         if tag != "section" or not self.section_stack:
             return
         protected, start = self.section_stack.pop()
@@ -260,6 +275,77 @@ def _capability_attributes(capability: dict | None) -> str:
 # ── Read ───────────────────────────────────────────────────────────────────
 
 
+def _section_record_elements(soup: BeautifulSoup) -> list:
+    """A structural section wrapper opts in by declaring record metadata."""
+    return [
+        element
+        for element in soup.select('[data-reckon="section"]')
+        if any(
+            key
+            in {
+                "data-id",
+                "data-effort-hours",
+                "data-attempts",
+                "data-status",
+                "data-links",
+            }
+            or key.startswith("data-capability-")
+            for key in element.attrs
+        )
+    ]
+
+
+def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
+    """Validate explicitly opted-in metadata without changing legacy declarations."""
+    records = []
+    for element in _section_record_elements(soup):
+        if element.name == "h2":
+            identity = element.get("id", "")
+        elif element.name == "section":
+            identity = element.get("data-id", "")
+            neighbors = [element.find_previous_sibling(), element.find_next_sibling()]
+            if not any(
+                neighbor is not None
+                and neighbor.name == "h2"
+                and neighbor.get("id") == identity
+                for neighbor in neighbors
+            ):
+                raise ValueError(
+                    f"sections[{identity!r}].id: record must be adjacent to its h2"
+                )
+            if element.find(True) is not None or element.get_text(strip=True):
+                raise ValueError(
+                    f"sections[{identity!r}]: record metadata must not contain authored prose"
+                )
+        else:
+            raise ValueError(
+                "sections: data-reckon=section requires an h2 or adjacent section element"
+            )
+        attrs = {str(key): str(value) for key, value in element.attrs.items()}
+        record: dict = {
+            "id": identity,
+            "capability": _capability_from_values(attrs, prefix="data-capability-"),
+            "status": attrs.get("data-status"),
+            "links": [
+                ref.strip()
+                for ref in attrs.get("data-links", "").split(",")
+                if ref.strip()
+            ],
+        }
+        for field, convert in (("effort_hours", float), ("attempts", int)):
+            value = attrs.get(f"data-{field.replace('_', '-')}")
+            try:
+                record[field] = convert(value)
+            except (TypeError, ValueError):
+                record[field] = value
+        records.append(record)
+    if not records:
+        return []
+    return PlanState.model_validate(
+        {"sections": records, "section_declarations": declarations}
+    ).canonical_dump()["sections"]
+
+
 def read_state(html_text: str) -> dict:
     """Parse a plan's semantic HTML into the canonical state dict."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -301,6 +387,7 @@ def read_state(html_text: str) -> dict:
                 "section_declarations: plan-section-declarations must be a JSON "
                 "object mapping section identities to classifications"
             )
+    st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
     capability = _capability_from_values(
         meta_values,
         prefix="plan-capability-",
@@ -510,6 +597,83 @@ def read_state(html_text: str) -> dict:
 
 
 # ── Render ───────────────────────────────────────────────────────────────--
+
+
+def _section_record_attributes(record: dict) -> str:
+    return (
+        f' data-effort-hours="{_esc(record["effort_hours"])}"'
+        + _capability_attributes(record["capability"])
+        + f' data-attempts="{record["attempts"]}"'
+        + f' data-status="{_esc(record["status"])}"'
+        + f' data-links="{_esc(",".join(record["links"]))}"'
+    )
+
+
+def _render_section_record(record: dict) -> str:
+    return (
+        f'<section data-reckon="section" data-id="{_esc(record["id"])}"'
+        + _section_record_attributes(record)
+        + "></section>"
+    )
+
+
+_SECTION_RECORD_ATTRIBUTE_RE = re.compile(
+    r"\s+data-(?:reckon|effort-hours|attempts|status|links|capability-(?:"
+    r"version|class|reasoning|context|tool-autonomy|verification|risk))"
+    r"(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))?(?=\s|>)",
+    re.IGNORECASE,
+)
+
+
+def _splice_section_records(html_text: str, records: list[dict]) -> str:
+    """Regenerate only record spans, preserving heading text and authored prose."""
+    if not records and not re.search(
+        r"""data-reckon\s*=\s*["']section["']""", html_text
+    ):
+        return html_text
+    parser = _StructuredSectionSpanParser(html_text)
+    parser.feed(html_text)
+    parser.close()
+    soup = BeautifulSoup(html_text, "html.parser")
+    _read_section_records(soup, {})
+    spans = dict(parser.spans)
+    pending = {record["id"]: record for record in records}
+    replacements = []
+    for element in _section_record_elements(soup):
+        identity = element.get("id") if element.name == "h2" else element.get("data-id")
+        start = parser.line_offsets[element.sourceline - 1] + element.sourcepos
+        if start not in spans:
+            raise ValueError(
+                f"sections[{identity!r}]: record has no complete source span"
+            )
+        end = spans[start]
+        record = pending.pop(identity, None)
+        if element.name == "h2":
+            opening = _SECTION_RECORD_ATTRIBUTE_RE.sub("", html_text[start:end])
+            rendered = (
+                opening[:-1]
+                + ' data-reckon="section"'
+                + _section_record_attributes(record)
+                + ">"
+                if record is not None
+                else opening
+            )
+        else:
+            rendered = _render_section_record(record) if record is not None else ""
+            if not rendered and html_text[end : end + 1] == "\n":
+                end += 1
+        replacements.append((start, end, rendered))
+    for identity, record in pending.items():
+        headings = [heading for heading in parser.headings if heading[0] == identity]
+        if len(headings) != 1:
+            raise ValueError(
+                f"sections[{identity!r}].id: expected exactly one matching h2"
+            )
+        end = headings[0][3]
+        replacements.append((end, end, "\n" + _render_section_record(record)))
+    for start, end, rendered in sorted(replacements, reverse=True):
+        html_text = html_text[:start] + rendered + html_text[end:]
+    return html_text
 
 
 def _render_gates(gates: list) -> str:
@@ -851,6 +1015,7 @@ def write_state(html_text: str, state: dict) -> str:
     if artifact_type != "plan":
         for meta_name in _PLAN_ONLY_METAS:
             out = _remove_meta(out, meta_name)
+        out = _splice_section_records(out, [])
     for f in _SCALARS:
         if f in state and state[f] is not None:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", state[f])
@@ -896,6 +1061,14 @@ def write_state(html_text: str, state: dict) -> str:
             "plan-section-declarations",
             json.dumps(declarations, ensure_ascii=True, separators=(",", ":")),
         )
+    if artifact_type == "plan" and "sections" in state:
+        sections = PlanState.model_validate(
+            {
+                "sections": state["sections"],
+                "section_declarations": state.get("section_declarations", {}),
+            }
+        ).canonical_dump()["sections"]
+        out = _splice_section_records(out, sections)
     for sid in SECTION_IDS:
         if sid in state:
             _reject_emptying_unparsed_section(out, sid, state[sid])
@@ -911,21 +1084,19 @@ def write_state(html_text: str, state: dict) -> str:
 # from_html / validate_for_write.
 
 
-def from_html(html_text: str) -> "PlanState":  # noqa: F821  (forward ref)
+def from_html(html_text: str) -> PlanState:
     """Parse HTML into a typed :class:`reckon._schema.PlanState` — LENIENT.
 
     Equivalent to ``PlanState.model_validate(read_state(html_text))`` with the
     schema's lenient coercion (roi med→mid, type doc→research, derived statuses,
-    unknown attrs dropped). NEVER raises on a real plan — every existing plan
-    validates on read; required-on-write fields carry read defaults. Use
+    unknown attrs dropped). Legacy scalar fields retain read defaults. Explicit
+    typed section records validate on read and refuse invalid metadata. Use
     :meth:`PlanState.validate_for_write` for the strict write path.
     """
-    from reckon._schema import PlanState
-
     return PlanState.model_validate(read_state(html_text))
 
 
-def to_html(html_text: str, state: "PlanState") -> str:  # noqa: F821
+def to_html(html_text: str, state: PlanState) -> str:
     """Render a typed :class:`PlanState` back into HTML.
 
     Equivalent to ``write_state(html_text, state.canonical_dump())``. The

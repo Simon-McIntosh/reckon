@@ -246,6 +246,105 @@ None</code></pre>
     <code>test_edit_plan.py</code> failures, which predate this node and are recorded as
     follow-ons rather than repaired here; the added-failure set is empty.</p>
   </section>
+
+  <section id="typed-section-records">
+    <h2>&sect;1 &mdash; Typed section records and byte-stable regeneration</h2>
+    <p><strong>Local implementation, 2026-09-24.</strong> The section parser and typed
+    model expose a <code>sections</code> list alongside <code>section_declarations</code>.
+    Every opted-in record carries <code>id</code>, <code>effort_hours</code>,
+    <code>capability</code>, <code>attempts</code>, <code>status</code> and
+    <code>links</code>. The raw resource read exposes the same records. Positive
+    quarter-hour effort, non-negative integer attempts, the existing capability enums,
+    declaration-compatible status and the existing plan-reference grammar are checked
+    before a record is returned.</p>
+    <p>Commits: <code>2d5357fc4521a76e9ecd86b6a3d4c2c80fbf8aa6</code> introduces the
+    contract tests; <code>739dc8c65bd01881b6c6014d88bba24e14fd2176</code> implements the
+    parser, model and writer; <code>8cba99030e92b11135972422932a0eed5db61f56</code> preserves
+    legacy structural wrappers and shares the capability schema. Source paths are
+    <code>reckon/_plan_html.py</code>, <code>reckon/_schema.py</code>,
+    <code>docs/_shared/plan.schema.json</code> and
+    <code>tests/test_section_record_round_trips.py</code>. The JSON Schema is generated
+    by the repository's <code>write_json_schema()</code> function.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/round-trip.svg"
+           alt="Semantic HTML parses to a validated six-field record, which the writer regenerates without changing authored prose. Invalid metadata is refused, and removing regeneration breaks reconstruction.">
+      <figcaption>The reconstruction assertion distinguishes a working writer from one
+      that merely leaves existing markup untouched.</figcaption>
+    </figure>
+    <h3>The three-record fixture</h3>
+    <table>
+      <thead><tr><th>id</th><th>effort_hours</th><th>capability: class / reasoning / verification / risk</th><th>attempts</th><th>status</th><th>links</th></tr></thead>
+      <tbody>
+        <tr><td>design</td><td>0.25</td><td>general / standard / strict / low</td><td>0</td><td>done</td><td>inputs, other:reference#method</td></tr>
+        <tr><td>implementation</td><td>2.5</td><td>orchestrator / deep / strict / elevated</td><td>2</td><td>implementable</td><td>design#result</td></tr>
+        <tr><td>evaluation</td><td>1.0</td><td>general / standard / standard / moderate</td><td>1</td><td>deferred</td><td>empty list</td></tr>
+      </tbody>
+    </table>
+    <p>Records may live on the heading or in an adjacent
+    <code>&lt;section data-reckon="section" data-id="design" ...&gt;&lt;/section&gt;</code>.
+    Bare structural wrappers with no record metadata retain their authored contents and
+    return no record. A partial record still opts in and is refused when required fields
+    are missing. Source-span replacement preserves heading text, attributes outside the
+    record contract and prose; the section-declarations map remains independent and
+    unchanged. A status disagreement with an existing declaration is refused.</p>
+    <h3>Reproduction and controls</h3>
+    <p>At base <code>c590aaaade26b590739c61e873ef7581746cf36c</code>, the initial 19 cases
+    all failed: the three-record parse raised <code>KeyError: 'sections'</code>, and invalid
+    risk and effort inputs produced <code>DID NOT RAISE &lt;class 'ValueError'&gt;</code>.
+    After implementation, the actual refusal receipts name the fields:</p>
+    <pre><code>sections.0.capability
+  capability.requirements.risk: 'impossible' not in ['low', 'moderate', 'elevated', 'critical']
+sections.0.effort_hours
+  Input should be a multiple of 0.25; input_value=0.3</code></pre>
+    <p>The 35 focused cases cover both carriers, all six fields, byte identity,
+    reconstruction, field updates, partial conversion, legacy containers, metadata removal,
+    required capability floors, invalid values, typed dumps, the generated schema and the
+    raw read. Three additional compatibility checks pass for existing plan round trips,
+    live-plan reads and the schema response's existing 24 KiB bound. The capability field
+    references the shared definition with required section floors instead of publishing
+    duplicate capability definitions.</p>
+    <p><strong>Declared mutation, executed at the committed implementation head.</strong>
+    Removing exactly the sections regeneration branch from <code>write_state</code>
+    makes <code>test_section_record_round_trip_is_byte_stable</code> fail at
+    <code>assert reconstructed == rendered</code>. The existing-markup round trip passes
+    first, so the failed assertion specifically observes absent regeneration. The mutation
+    is applied to the parsed module in an isolated test process; the committed source is
+    unchanged. The red log begins with the declared mutation verbatim.</p>
+    <h3>Selected gate and retained limits</h3>
+    <table>
+      <thead><tr><th>Revision</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Added failures</th></tr></thead>
+      <tbody>
+        <tr><td>base c590aaaade26b590739c61e873ef7581746cf36c</td><td>2475</td><td>25</td><td>3</td><td>baseline</td></tr>
+        <tr><td>implementation 8cba99030e92b11135972422932a0eed5db61f56</td><td>2511</td><td>25</td><td>3</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Gate passes by delta:</strong> the same 25 failure IDs remain and no new
+    failures were added. The 35 new contract cases all pass. The selected gate also
+    collects mounted-document conformance cases, so its population can change while peer
+    documents land; the final run collected one additional passing case beyond the 35
+    new tests. The retained failures are in capability migration, crew promotion/recovery,
+    receipt/routing records, two SPA source contracts and one existing external evidence
+    citation. They remain visible in <code>failure-delta.json</code> and are follow-ons
+    for their owners. They were neither disabled nor repaired in this node.</p>
+    <p>All runs used the shared root virtualenv, <code>PYTHONPATH</code> naming this
+    worktree, <code>TMPDIR=/tmp</code>, a unique pytest basetemp and a 45-second per-test
+    bound on the existing compute allocation <code>1277272</code>. Selection is the 70
+    existing test files importing either changed module or reading the published schema,
+    plus the new section-record test file at the implementation head.</p>
+    <p>Logs and the complete selected-file and failure-ID lists are retained under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211306627533-section-is-a-typed-record/</code>:
+    <code>gate-targets.json</code>, <code>baseline.log</code>, <code>reproduction.log</code>,
+    <code>after.log</code>, <code>compatibility.log</code>, <code>after-compatible.log</code>,
+    <code>negative-control-compatible.log</code>, <code>parse-refusals.json</code> and
+    <code>lint-delta.json</code>. The intermediate broader gate is preserved: it exposed
+    the bare-wrapper compatibility problem and the schema-size bound, both repaired in
+    the committed implementation.</p>
+    <p><strong>Remaining work.</strong> Conversion of nova's hand-written section tables
+    is a follow-on outside this node. The write-boundary append/refusal, computed impl,
+    attempt ownership and routing changes remain with their respective sections. This
+    worker leaves the driving followup, plan and section statuses, implementation fraction,
+    version and modified date unchanged; the coordinator owns integration and closure.</p>
+  </section>
 </main>
 </body>
 </html>
