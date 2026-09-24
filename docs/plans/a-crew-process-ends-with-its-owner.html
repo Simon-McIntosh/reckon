@@ -22,6 +22,8 @@
   <title>A crew process ends with its owner | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -154,6 +156,16 @@
     <code>git status</code> invocations one dispatch-and-complete cycle makes and asserts
     that each is scoped. A dispatch into a project holding integrated, clean worktrees
     leaves fewer of them than it found, and never removes a dirty or unintegrated one.</p>
+    <p><strong>One read keeps its untracked files.</strong> The boundary check of a run's own
+    worktree still reads untracked files across that whole tree, not only under its declared
+    paths. A file a worker creates outside its declared paths is exactly the out-of-fence write
+    the check exists to catch, and scoping it away would pass the violation silently. What
+    this section removes is the untracked walk over every other registered tree. A case plants
+    an untracked file outside the declared paths in the run's own worktree and asserts the
+    boundary check still reports it. <strong>Order:</strong> this section lands after
+    <code>a-dispatch-returns-without-its-worker</code> &sect;3 and after S19's
+    <code>the-boundary-check-reads-two-trees</code> &sect;1, which reduces the set of trees
+    read. This section's invocation count is then measured on that reduced set.</p>
 
     <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>
     <p>The MCP server is the interface and stays the interface. What failed was that its
@@ -195,6 +207,14 @@
     lists zero reckon processes whose owner is dead. A test plants one owned and one
     ownerless stub, plus a stub whose argv contains the session id but whose environment
     does not, and the census lists exactly the ownerless one and never its own shell.</p>
+    <p><strong>A swept pointer is completed, never discarded.</strong> This rule is
+    imas-codex-10's. Any automated sweep of stale live pointers, the census's
+    <code>--apply</code> included, completes each one with a failure classification, for
+    example <code>--gate failed --failure-classification infrastructure-failure</code> with a
+    <code>--no-commit</code> reason naming the sweep. It never uses <code>crew discard</code>.
+    Both free the member, but only completion leaves a ledger row, so a discarded run
+    disappears from every later count of what failed and why. A case sweeps one stale pointer
+    and asserts that a ledger row exists for it, carrying the classification.</p>
 
     <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2>
     <p>Guidance cannot replace &sect;2&ndash;&sect;6, but three failures were instruction
@@ -224,13 +244,41 @@
     <p>&sect;2&ndash;&sect;7 have each met their own done-when. On a working day with the
     fleet running, the login node census lists no reckon process whose owner is dead, no
     producer without a lease, and no polling call that walks a whole tree. The evidence
-    record cites the census output, not a statement that it was clean.</p>
+    record cites the census output, not a statement that it was clean. &sect;9 is part of
+    this closure too.</p>
+
+    <h2 id="s9">&sect;9 &mdash; A dispatch holds while the lane is paused</h2>
+    <p>During the engine relaunch of 2026-09-23 to 24, the local lane was paused by a message to
+    every session, and holding relied on each coordinator reading it. A follower's automatic
+    review sweep reads no messages, so it dispatches anyway. nova-cc's sweep did exactly that
+    and had to be stopped by hand. imas-ambix's <code>local-lane-admission-control</code> &sect;11
+    makes the router enforce a pause declared in <code>~/public/imas-ambix/lane.json</code>. This
+    section is reckon's half: a pause declared there is a fact dispatch reads, not a message it
+    must be told.</p>
+    <p>A dispatch to a backend served by a paused lane is held, not refused, and so is a
+    follower sweep's review dispatch. No pointer and no worktree are created. The result says
+    the lane is paused and names the document and field that say so, and the sweep shows the
+    run as held for review with that reason. A lane document that is absent or unreadable is
+    reported as unknown and does not hold. Only a declared pause holds, because a missing file
+    must not stop every dispatch on a workstation. The pause field's name and meaning are
+    whatever <code>local-lane-admission-control</code> &sect;11 defines. This section reads
+    them and does not redefine them.</p>
+    <p><strong>Done when</strong> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code>,
+    in a temporary <code>RECKON_HOME</code>, points dispatch at a temporary lane document.
+    With the pause declared, a <code>--local</code> dispatch and a sweep review dispatch each
+    create no pointer and no worktree, and each result names the pause. With the document
+    absent, the same dispatch proceeds. The negative control is executed and logged: with the
+    pause check removed, the paused dispatch creates a pointer and the test fails. The write
+    paths are <code>reckon/crew/dispatch.py</code>, the module that holds the sweep's review
+    dispatch, which the node names in its manifest before editing, and that test. It runs after
+    <code>a-dispatch-returns-without-its-worker</code> &sect;3, which also writes
+    <code>dispatch.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acpewio-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Make every crew process end with its owner</h4>
-    <div class="r-fu-body"><p>&sect;2 (<code>reckon/cli.py</code>), &sect;3 (producer lease), &sect;4 (the three <code>--untracked-files=all</code> call sites and dispatch back-pressure) and &sect;5 (MCP deadlines) touch disjoint files and can run in parallel. &sect;6 (ownership in the environment, and <code>crew census</code>) follows &sect;2 and &sect;3, because it reads the owner they record. &sect;7 is guidance and follows &sect;6, since it names the census. Each section's done-when carries a mutation that must fail its test.</p></div>
+    <div class="r-fu-body"><p>§2 (<code>reckon/cli.py</code>), §3 (producer lease), §4 (the three <code>--untracked-files=all</code> call sites and dispatch back-pressure) and §5 (MCP deadlines) touch disjoint files and can run in parallel. §6 (ownership in the environment, and <code>crew census</code>) follows §2 and §3, because it reads the owner they record. §7 is guidance and follows §6, since it names the census. Each section's done-when carries a mutation that must fail its test.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-crew-process-ends-with-its-owner</pre>
     </article>
 </section>
