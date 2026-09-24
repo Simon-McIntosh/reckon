@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="23">
 </head>
 <body>
   <main class="plan-doc">
@@ -334,11 +334,35 @@
     result says the lane is paused and names the document and field that say so. The sweep
     shows the run as <code>waiting on the lane pause</code>, a state with no pointer. It is
     deliberately not called held, because <em>held</em> already names a live run that has a
-    pointer. A lane document that is absent or unreadable is
-    reported as unknown and does not hold. Only a declared pause holds, because a missing file
-    must not stop every dispatch on a workstation. The pause field's name and meaning are
-    whatever <code>local-lane-admission-control</code> &sect;11 defines. This section reads
-    them and does not redefine them.</p>
+    pointer.</p>
+    <p><strong>The contract, from imas-ambix <code>local-lane-admission-control</code> &sect;11</strong>
+    (merged at imas-ambix <code>bc8fd549</code>, in <code>imas_ambix/agent/router.py</code>). The
+    authority is the gate file <code>/home/ITER/mcintos/public/imas-ambix/router-gate.json</code>,
+    a JSON object. Its <code>paused</code> is a JSON boolean, and its optional
+    <code>reason</code> is a string. The router re-reads it about once a second.
+    <code>imas-ambix agent pause --reason X</code> writes <code>paused: true</code> with the
+    reason, and <code>agent resume</code> writes <code>paused: false</code>.
+    <code>lane.json</code> publishes the same fact as
+    <code>router_generation_gate.paused</code> and <code>.reason</code>. But it can be stale when
+    the router is down, and it carries no <code>paused</code> key at all until the router is
+    restarted onto the pause code. So dispatch reads the gate file, not <code>lane.json</code>.
+    The rule is:</p>
+    <ul>
+      <li>gate file present and <code>paused</code> is <code>true</code>: the dispatch waits on
+      the lane pause, and the result carries the file's <code>reason</code>;</li>
+      <li><code>paused</code> is <code>false</code> or absent: the dispatch proceeds;</li>
+      <li>gate file absent: the dispatch proceeds and reports the pause state as unpublished. A
+      host with no router has no gate file, and a missing file must not stop every dispatch on
+      it;</li>
+      <li>gate file present but unreadable, not a JSON object, or with a non-boolean
+      <code>paused</code>: the dispatch waits, and the result names the file and the defect.
+      A gate that exists but cannot be read is a pause nobody can confirm has ended.</li>
+    </ul>
+    <p>Only dispatches bound for the local lane read the gate, meaning the backend
+    <code>--local</code> resolves to (the flight config's <code>local_backend</code>). Metered
+    lanes are not paused by it. The gate file's path is resolved from the flight config
+    rather than written into reckon, which carries no project name. The node adds the key and
+    names it in its manifest.</p>
     <p><strong>Two review paths, both covered.</strong> The follower's review reflex executes
     a dispatch through <code>dispatch_review_for_run</code> in
     <code>reckon/crew/recovery.py</code>. That path does not launch, and the watch row shows the
@@ -350,13 +374,18 @@
     holds a dispatch. Its docstring is corrected to name the declared pause as the one field
     that does, so the tree and this plan agree.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code>,
-    in a temporary <code>RECKON_HOME</code>, points dispatch at a temporary lane document.
-    With the pause declared, a <code>--local</code> dispatch and a sweep review dispatch each
-    create no pointer and no worktree, and each result names the pause. With the document
-    absent, the same dispatch proceeds. The negative control is executed and logged: with the
-    pause check removed, the paused dispatch creates a pointer and the test fails. The write
-    paths are <code>reckon/crew/dispatch.py</code>, the module that holds the sweep's review
-    dispatch, which the node names in its manifest before editing, and that test. It runs after
+    in a temporary <code>RECKON_HOME</code>, points the flight config's gate key at a temporary
+    gate file and drives all four rows of the rule. With <code>paused: true</code>, a
+    <code>--local</code> dispatch and a sweep review dispatch each create no pointer and no
+    worktree, and each result carries the reason. With <code>paused: false</code>, and with the
+    file absent, the same dispatch proceeds, and the absent case reports the state as
+    unpublished. With a present file whose <code>paused</code> is the string
+    <code>"true"</code>, the dispatch waits and names the defect. A metered-backend dispatch
+    proceeds while the gate says paused. The negative control is executed and logged: with the
+    gate check removed, the paused dispatch creates a pointer and the test fails. The write
+    paths are <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/recovery.py</code> (the
+    review reflex), the flight-config schema file that declares backend keys, which the node
+    names in its manifest before editing, and that test. It runs after
     <code>a-dispatch-returns-without-its-worker</code> &sect;3, which also writes
     <code>dispatch.py</code>.</p>
 
