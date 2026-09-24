@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="75">
+  <meta name="plan-version" content="76">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -687,6 +687,11 @@
 <article class="r-fu" data-id="f-adrwiw-runpy-warning" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T19:40:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The supervisor&#x27;s stderr opens with a runpy warning</h4>
     <div class="r-fu-body"><p>Every <code>supervisor.stderr.log</code> on 2026-09-24 opens with <code>RuntimeWarning: 'reckon.crew.dispatch' found in sys.modules after import of package 'reckon.crew'</code>. It was the only line in that log for the whole suite-green-at-head wave. It is harmless, but it is the first thing read when diagnosing a dead launch. The cause is launching the supervisor as <code>python -m reckon.crew.dispatch</code> when the package imports that module. Done when the supervisor launches through an entry point whose module is not already imported, and a launched supervisor's stderr log is empty.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-in-progress-unreadable" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">An in-progress manifest reads as unreadable on the ticker</h4>
+    <div class="r-fu-body"><p>A worker's early orientation manifest carries <code>status: in-progress</code>. The follower renders that run as <code>unreadable</code> with a <q>repair: the manifest at …</q> remedy, which looks like a delivery defect when it is a healthy checkpoint. Observed on <code>r-20260924T190042181732-delivery-tests-read-the-scoring-state</code> at 21:02:30 and 21:02:52 (local), 1:44 into the run. It sits beside <code>f-adrwiw-launch-flicker</code>: both are live states the display misclassifies within the first minutes of a run.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>

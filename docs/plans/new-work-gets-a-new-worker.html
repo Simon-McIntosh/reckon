@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
@@ -269,6 +269,11 @@ a durable field on the run record so the argv clause becomes checkable.</p>
     <h4 class="r-fu-title">Move sessions off the roster, then lift the stopgap</h4>
     <div class="r-fu-body"><p><strong>Next, in order.</strong> (1) §3: dispatch and observe stop writing session fields onto roster members, and the session lives on the run record. This also carries the cross-harness defect recorded here: a run redispatched to another harness and then resumed breaks, because the resume composes the first harness's session. Done when §3's falsifier passes at the merged head and a redispatched-then-resumed run launches with the new harness's own session. (2) §4: a dispatch that names no member no longer serialises on one session-derived member. (3) §7: <code>session_reuse</code> returns to true only after §2 and §3 pass at the merged head. Done when the first re-review of a reviewed run composes its prior review session and the first new node composes none, both read from the launched argv. §6's after-figure needs at least 50 dispatches after §3. §4 of <code>the-ledger-is-one-file-per-run</code> waits on this §3.</p></div>
     <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker §3</pre>
+    </article>
+<article class="r-fu" data-id="f-nwgnw-member-friction" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build new-work-gets-a-new-worker §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A named member needs --repo, and a finished review can hold the session member</h4>
+    <div class="r-fu-body"><p>Two frictions measured in the suite-green-at-head wave on 2026-09-24, both in §4's territory. (1) <code>crew dispatch --member suite-green-a</code> refused with <q>crew member 'suite-green-a' cannot be resolved without a repository</q> even when run from the registered checkout, until <code>--repo</code> was passed. (2) The review reflex dispatched <code>r-20260924T193024923376-review-of-promotion-fixtures-initialise-the-ledger</code>, which stored its verdict, but its worker process (pid 926718) stayed alive for about 30 minutes afterwards. While alive it held the auto-derived session member <code>session-cce238a4d3342b916934</code>, so every no-member review dispatch from the same session was refused <code>member-in-flight</code>. The reviews serialised behind a finished run until it was promoted by hand.</p></div>
+    <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker §4</pre>
     </article>
 </section>
 

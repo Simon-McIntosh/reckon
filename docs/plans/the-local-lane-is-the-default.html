@@ -23,6 +23,8 @@
   <title>The local lane is the default | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -172,7 +174,12 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tllitd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Backends and models, then headroom, then the follower</h4>
-    <div class="r-fu-body"><p>&sect;2 (the flight schema with backends and member models, plus <code>--model</code>) comes first, because &sect;3 and &sect;4 are expressed in its vocabulary. &sect;5 (the headroom observer) is independent and can run in parallel; &sect;6 follows it. &sect;7 is independent. &sect;8 waits on <code>a-dispatch-returns-without-its-worker</code> &sect;10. &sect;9's slimming follows &sect;2 to &sect;4, so the core describes the settled rules. Dispatch on the local lane; escalate to codex only for &sect;2's schema migration if the local attempt stalls, and state why.</p></div>
+    <div class="r-fu-body"><p>§2 (the flight schema with backends and member models, plus <code>--model</code>) comes first, because §3 and §4 are expressed in its vocabulary. §5 (the headroom observer) is independent and can run in parallel; §6 follows it. §7 is independent. §8 waits on <code>a-dispatch-returns-without-its-worker</code> §10. §9's slimming follows §2 to §4, so the core describes the settled rules. Dispatch on the local lane; escalate to codex only for §2's schema migration if the local attempt stalls, and state why.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default</pre>
+    </article>
+<article class="r-fu" data-id="f-tllitd-worker-turn-endings" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build the-local-lane-is-the-default" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Local-lane workers end turns early and lose backgrounded work</h4>
+    <div class="r-fu-body"><p>Measured across nine dsv4.1-flash/high implement runs in the suite-green-at-head wave on 2026-09-24. Each cost a resume:</p><ul><li><strong>Text-only turn endings.</strong> Four runs ended a turn on a narration line with work unfinished: two on their first turn after 6 turns (<q>Let me read it</q>), one after committing but before writing its manifest, and one after a root-cause line. <code>stop_reason: end_turn</code>, no error.</li><li><strong>Backgrounded work dies with the turn.</strong> One worker backgrounded a pytest run and ended its turn. The harness killed the task and nothing was committed.</li><li><strong>srun inside the fleet allocation.</strong> A worker already on the compute node wrapped its tests in <code>srun</code>, which launched one copy per task (30), so 30 writers interleaved in one log.</li><li><strong>Hallucinated write path.</strong> One orientation manifest listed <code>tests/test_crew_EDIT_PLACEHOLDER.py</code>, a path not in its grant.</li></ul><p>Each was recovered by <code>crew resume --advice</code> naming the fix: foreground only, no srun, keep calling tools until the manifest is written. That text belongs in the worker contract for this lane rather than in per-run advice.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default</pre>
     </article>
 </section>
