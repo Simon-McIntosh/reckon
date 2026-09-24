@@ -63,6 +63,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_serializer,
     model_validator,
 )
 
@@ -709,11 +710,7 @@ def pending_transition_gates(
 
 
 class Gate(BaseModel):
-    """An evidence gate (``.r-gate`` element).
-
-    ``passed`` is a read-only projection of ``verdict``. The renderer ignores
-    it, so semantic HTML carries only the authoritative verdict.
-    """
+    """An evidence or transition gate; passed derives from verdict."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -729,6 +726,15 @@ class Gate(BaseModel):
     verdict: str = ""
     evidence: str = ""
     passed: bool = Field(False, json_schema_extra={"readOnly": True})
+
+    @model_serializer(mode="wrap")
+    def _serialize_authored_transition(self, handler: Any) -> dict[str, Any]:
+        """Keep unauthored transition fields absent on legacy gate records."""
+        data = handler(self)
+        for field in ("transition", "gating_plan", "decision"):
+            if field not in self.model_fields_set:
+                data.pop(field, None)
+        return data
 
     def validate_for_write(self) -> Gate:
         """Validate transition wiring without changing lenient legacy reads."""
