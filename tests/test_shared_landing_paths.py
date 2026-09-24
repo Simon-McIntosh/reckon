@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -120,6 +121,17 @@ def _node(
     )
 
 
+def _live_launcher(*_args, **_kwargs) -> int:
+    """Stand in for the supervisor as a process that is running.
+
+    The launcher seam replaces the supervisor, and the supervisor is a live
+    process. A write claim is judged by the disposition of the run's recorded
+    process, so a stub naming a pid that has exited leaves the owner's claim
+    admitted past, and the exclusive-claim refusal under test never fires.
+    """
+    return os.getpid()
+
+
 def _dispatch(
     config_home: Path,
     repo: Path,
@@ -135,7 +147,7 @@ def _dispatch(
             repo=repo,
             config=CONFIG,
             session=session,
-            launcher=lambda *args, **kwargs: 4242,
+            launcher=_live_launcher,
         )
 
 

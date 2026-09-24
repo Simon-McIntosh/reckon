@@ -124,6 +124,18 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
     )
 
 
+def _live_launcher(*_args, **_kwargs) -> int:
+    """Stand in for the supervisor as a process that is running.
+
+    The launcher seam replaces the supervisor, and the supervisor is a live
+    process. A write claim is judged by the disposition of the run's recorded
+    process, so a stub naming a pid that has exited leaves every owner's claim
+    disregarded — an admitted second writer where the guard under test is the
+    refusal of one.
+    """
+    return os.getpid()
+
+
 def _dispatch(
     config_home: Path,
     repo: Path,
@@ -149,7 +161,7 @@ def _dispatch(
             repo=repo,
             config=CONFIG,
             session=session,
-            launcher=lambda *args, **kwargs: 4242,
+            launcher=_live_launcher,
             watch_required=True,
             watch_override=watch_override,
         )
@@ -337,23 +349,29 @@ def test_member_lookup_uses_project_mount_from_another_repository(
     record = crew.dispatch(
         node=node,
         project="sample",
-        repo=Path.cwd(),
+        repo=plan_repo,
         config=CONFIG,
         session="mounted-member-session",
         member="worker-a",
-        launcher=lambda *args, **kwargs: 4242,
+        launcher=_live_launcher,
     )
 
     assert record["member"] == "worker-a"
-    assert record["repo"] == str(work_repo.resolve())
+    # The working directory is another registered repository's, and neither it
+    # nor `--repo` decides: the project's mount does.
+    assert Path.cwd() == work_repo
+    assert record["repo"] == str(plan_repo.resolve())
     assert record["authority"]["plan"]["repository"] == str(plan_repo.resolve())
     # The node's own delivery path plus the shared landing paths dispatch grants
-    # the fixture plan, still declared relative to the repository that owns it.
+    # the fixture plan — its file, its cumulative evidence record and the plan's
+    # figure topic directory — still declared relative to the repository that
+    # owns it.
     assert sorted(record["node"]["write_paths"]) == sorted(
         [
             str(report),
             "docs/plans/fixture.html",
             "docs/evidence/archive/fixture-landed.html",
+            "docs/figures/fixture",
         ]
     )
 
@@ -506,15 +524,17 @@ def test_disjoint_figure_topics_are_both_admitted(
         assert "docs/figures/alpha" in declared or "docs/figures/beta" in declared
 
 
-def test_the_exclusive_claim_walk_reads_three_live_claims_at_refusal(
+def test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal(
     isolated_project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The refusal walk reads exactly the owner's three live claims.
+    """The refusal walk reads every path the owner's run declared.
 
-    One owner run declares three paths — the plan file, its cumulative evidence
-    record, and the claimed figure topic directory — and the walk iterates all
-    three before refusing. The digit is asserted by instrumenting the walk, so a
-    future regression that stops walking a claim changes the count and fails.
+    One owner run declares its claimed figure topic directory, and dispatch
+    grants it three shared landing paths — the plan file, its cumulative evidence
+    record, and the plan's own figure topic directory — so the walk iterates four
+    before refusing. The count is taken from the owner's own record rather than a
+    literal, and the walk is instrumented, so a regression that stops walking a
+    claim fails here without the expectation having to be re-typed.
     """
     config_home, repo = isolated_project
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -547,7 +567,7 @@ def test_the_exclusive_claim_walk_reads_three_live_claims_at_refusal(
     with pytest.raises(crew.ScopeConflict):
         _dispatch(config_home, repo, "digit-second", write_paths=["docs/figures/digit"])
 
-    assert claims_walked["count"] == 3
+    assert claims_walked["count"] == len(owner["node"]["write_paths"])
     assert (
         crew.read_pointer(owner["run_id"])["node"]["write_paths"]
         == owner["node"]["write_paths"]
