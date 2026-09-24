@@ -185,6 +185,106 @@ EXIT=0</pre>
       the decisive lines are reproduced above rather than linked. Verifying the merged result
       belongs to a separately dispatched test node.</p>
     </section>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; A nested launch is refused where it would fan out</h2>
+
+      <p><strong>What landed.</strong> <code>reckon/nested_launch.py</code> holds
+      the decision, and <code>reckon/host_shims/srun</code>,
+      <code>reckon/host_shims/sbatch</code> and
+      <code>reckon/host_shims/salloc</code> are thin executables that call it.
+      <code>main()</code> reads <code>reckon.host.host_facts().in_allocation</code>.
+      Inside the allocation it refuses with exit status <strong>97</strong>
+      unless the caller sets <code>RECKON_ALLOW_NESTED_LAUNCH</code> or the argv
+      is an <code>srun</code> carrying <code>--overlap</code> together with an
+      explicit <code>--jobid</code> or a single task. Every other path
+      <code>os.execv</code>s the real binary with the argv unchanged, found on
+      <code>PATH</code> with the shim's own directory removed by resolved path,
+      so the shim never execs itself. The refusal names the job, the node and
+      the override, says the command should run directly, and states outright
+      that the command line is not rewritten.</p>
+
+      <p>The shims derive the tool name from their own basename, so the three
+      files are byte-identical. Each shim resolves a Python 3.12+ interpreter
+      itself — the repo's <code>.venv</code> first, then an explicit 3.12, then
+      <code>python3</code> — because the host's bare <code>python3</code> is
+      3.11.5 and cannot parse the package (<code>type X = …</code> in
+      <code>reckon/crew/quota_weight.py</code>).</p>
+
+      <p><strong>Evidence — the gate.</strong> The node's gate is
+      <code>tests/test_nested_launch.py</code>, run in the worktree against the
+      shared root environment:</p>
+
+      <pre><code>revision: 4ff4228baf09113d40e81e30b8dbe1aa725acfbd
+command: PYTHONPATH=&lt;worktree&gt; &lt;main-checkout&gt;/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_nested_launch.py
+..........                                                               [100%]
+10 passed in 5.00s
+EXIT=0</code></pre>
+
+      <p>Every case drives the real shim executables, with the fixture host
+      facts injected through a temporary <code>sitecustomize</code> the test
+      writes into <code>tmp_path</code> and puts first on the fixture
+      <code>PYTHONPATH</code>. That seam replaces
+      <code>reckon.nested_launch.host_facts</code> with a fixture
+      <code>HostFacts</code>, so <strong>no test reads the real
+      <code>/proc</code></strong> — which matters here, because this suite runs
+      inside the allocation (the real <code>in_allocation</code> is
+      <code>true</code>), so a case asserting <q>outside the allocation</q>
+      against the real answer would fail. A fake real binary records its
+      resolved path and its argv one per line into a record file, which is how
+      the exec paths are told from the refusal path and how a case proves the
+      shim directory was dropped from the lookup rather than re-exec'd.</p>
+
+      <p><strong>Evidence — the negative control.</strong> The declared
+      mutation is <q>remove the in-allocation check so plain srun always
+      execs</q>. It is applied by
+      <code>docs/figures/a-worker-knows-it-is-on-compute/nested_launch_mutation_check.py</code>,
+      which loads the mutant beside the run; nothing here edits the reviewed
+      module or test. The node's own refusal test is then run against the
+      mutant and observed to fail, its log's first line repeating the
+      declaration verbatim:</p>
+
+      <pre><code>remove the in-allocation check so plain srun always execs
+...
+    def test_plain_srun_inside_the_allocation_is_refused(tmp_path: Path) -&gt; None:
+        fixture = make_fixture(tmp_path)
+        result = run_shim("srun", ["true"], launch_env(fixture, inside=True))
+&gt;       assert result.returncode == REFUSAL_STATUS, result.stderr
+E       AssertionError:
+E       assert 0 == 97
+E        +  where 0 = CompletedProcess(args=['.../reckon/host_shims/srun', 'true'], returncode=0, stdout='', stderr='').returncode
+FAILED tests/test_nested_launch.py::test_plain_srun_inside_the_allocation_is_refused
+1 failed in 0.91s
+the refusal test failed under the mutation, as declared (pytest exit 1)</code></pre>
+
+      <p>The failure is the right one: with the gate gone the plain
+      <code>srun</code> execs the fake instead of refusing, so the assertion
+      sees <code>returncode 0</code> where it requires 97. The gate log and the
+      negative-control log are ignored by the repository's <code>*.log</code>
+      rule, which is why their decisive lines are reproduced above rather than
+      linked.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-worker-knows-it-is-on-compute/nested-launch-decision-flow.png"
+             alt="The nested-launch decision order: in_allocation first, then the override, then the explicit-single-step srun form; a no at any branch reaches refuse exit 97, and the in_allocation yes and the two explicit-single-step arms reach exec. The in_allocation gate is the one the declared mutation removes.">
+        <figcaption>The order the shim decides in. The blue gate is the one the
+        declared mutation removes; every path that is not a refusal converges
+        on exec with the argv unchanged.</figcaption>
+      </figure>
+
+      <p><strong>Scope.</strong> The product commit changes
+      <code>reckon/nested_launch.py</code>, the three files under
+      <code>reckon/host_shims/</code> and <code>tests/test_nested_launch.py</code>.
+      The two runner scripts and the figure under
+      <code>docs/figures/a-worker-knows-it-is-on-compute/</code> are the
+      record-side artifacts, committed beside them.
+      <code>reckon/host.py</code> is read, not edited — it belongs to the
+      sibling node that landed &sect;2. Nothing outside
+      <code>reckon/nested_launch.py</code>, <code>reckon/host_shims/</code> and
+      <code>tests/test_nested_launch.py</code> changes in product code.
+      Verifying the merged result belongs to a separately dispatched test
+      node.</p>
+    </section>
   </main>
 </body>
 </html>

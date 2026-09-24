@@ -130,6 +130,39 @@
       <li>Inside the allocation, <code>srun --overlap --jobid=&lt;id&gt; true</code> and <code>srun --overlap -n 1 true</code> each invoke the fake with identical argv, while plain <code>srun true</code> is refused.</li>
     </ul>
 
+    <h3>Landing record</h3>
+    <p><code>reckon/nested_launch.py</code> holds the decision;
+    <code>reckon/host_shims/{srun,sbatch,salloc}</code> are the thin executables
+    that call it. <code>main()</code> reads
+    <code>reckon.host.host_facts().in_allocation</code>; inside the job it
+    refuses with status 97 unless <code>RECKON_ALLOW_NESTED_LAUNCH</code> is set
+    or the argv is an <code>srun</code> carrying <code>--overlap</code> with an
+    explicit <code>--jobid</code> or a single task, and every other path
+    <code>os.execv</code>s the real binary with the argv unchanged, found on
+    <code>PATH</code> with the shim's own directory removed. The refusal names
+    the job, the node and the override, and never rewrites the command line.
+    The shims resolve a Python 3.12+ interpreter themselves — the repo's
+    <code>.venv</code> first — because a bare <code>python3</code> on this host
+    is 3.11 and cannot parse the package.</p>
+    <p><code>tests/test_nested_launch.py</code> injects fixture host facts
+    through a temporary <code>sitecustomize</code>, so no case reads the real
+    <code>/proc</code> — the case that matters, because this suite runs inside
+    an allocation where the real answer is <code>true</code>. Ten cases pass
+    (<code>10 passed in 5.00s</code>), driving the declared shim executables
+    against a fake real binary that records its argv. The declared mutation —
+    remove the in-allocation check so plain srun always execs — is applied and
+    the node's own refusal test is run against the mutant; it fails, and that
+    red log is recorded.</p>
+    <figure>
+      <img src="/reckon/figures/a-worker-knows-it-is-on-compute/nested-launch-decision-flow.png"
+           alt="The nested-launch decision order: in_allocation first, then the override, then the explicit-single-step srun form; a no at any branch reaches refuse exit 97, and the in_allocation yes and the two explicit-single-step arms reach exec. The in_allocation gate is the one the declared mutation removes.">
+      <figcaption>The order the shim decides in. The blue gate is the one the
+      declared mutation removes; every path that is not a refusal converges on
+      exec with the argv unchanged.</figcaption>
+    </figure>
+    <p>Full record:
+    <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s3">&sect;3 landed evidence</a>.</p>
+
     <h2 id="s4">&sect;4 &mdash; Workers receive the shim and the facts</h2>
     <p>Dispatch should prepend <code>reckon/host_shims</code> to every worker's <code>PATH</code> when the dispatching process is inside an allocation. The worker contract should state the host facts in one line: the node, the job, that <code>/tmp</code> is node-local, and that logs a later reader needs belong on GPFS. This way the rule reaches every backend, not only the local lane.</p>
     <p><strong>Trigger:</strong> this section is deferred until no live run claims <code>reckon/crew/dispatch.py</code> or <code>reckon/crew/prompts.py</code>. Today the S21 coordinator claims the first, and the S22 coordinator's next wave claims the second. The contract wording is shared with followup <code>f-tllitd-worker-turn-endings</code> on <code>the-local-lane-is-the-default</code>, and is landed with its owner rather than beside it.</p>
