@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="61">
+  <meta name="plan-version" content="62">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.29">
+<meta name="plan-impl" content="0.38">
 </head>
 <body>
   <main class="plan-doc">
@@ -643,6 +643,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T0455-released-after-five-readbacks" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>§3, §4, §6, §8 and §9 are released.</strong> The fifth read-back (run r-20260923T180053449666) closed M4, M9, M10 and R35. It left only minor readings in §3, §4, §6 and §9, and one minor–material reading in §8 (2R-4), settled at v56–v57: only the roster bound retires, and the partition-core and login-memory bounds stay, with a case that proves it. <strong>§3 does not scope the snapshot.</strong> It moves the dispatch-time scan off dispatch's return path, but the scan still covers every registered worktree. On 2026-09-23 that was 312 trees at about 30 s each under degraded storage, and the same walk runs in promotion's re-snapshot and in <code>crew follow</code>. Scoping belongs to S19 (reckon-e5). It lands on top of §3's merge and covers every call site of routing.py's <code>_tree_state</code>. Dispatch of §3 waits for the local lane's RESUME.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T1005-s3-landed" data-who="" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>§3 landed</strong> (<code>c8f0b545</code>, <code>d9a1e13e</code>; merged <code>3ad8b13c</code>; review 83, re-review 93). A CLI dispatch now returns once a per-run supervisor is running. The supervisor takes the tree snapshot, spawns the worker, and writes <code>tree-snapshot.json</code>, <code>worker.json</code> and <code>exit.json</code> to the run directory, never the pointer. The first review found the snapshot taken only on the CLI lane, which disabled promotion's stray-edit refusal for in-harness dispatches. The repair takes it inline there, with a fifth case and control D. Five cases passed on <code>sirius_debug</code>, and all three negative controls failed as declared. <strong>Follow-on:</strong> <code>dispatch_awaiting_reviews</code> and <code>_resume</code> in <code>reckon/crew/resumption.py</code> pass a launcher. So sweep-dispatched reviews and resumptions take the inline test-seam branch, keep the post-launch scan and write no <code>exit.json</code>; routing them through the supervisor is the remaining gap. Three of eight sections have landed: §2, §3 and §5.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
