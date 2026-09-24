@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -258,6 +258,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925-budget-landed" data-who="reckon-build" data-when="2026-09-24T23:56:00Z">
     <div class="r-comment-body"><p>Run <code>r-20260924T230840339264-mcp-reads-fit-a-response-budget</code> (codex sol5.6) was merged at <code>6a77e928</code>. The independent review scored 96/100 with no findings.</p><p><code>roadmap</code>, <code>read_plan</code>, <code>crew</code> and <code>audit</code> now bound their serialised answer to <code>RECKON_MCP_RESPONSE_CEILING</code> (default 80,000 characters). An over-budget answer comes back as a typed <code>response_over_budget</code> receipt that gives the omitted counts and tool-specific <code>narrow_with</code> arguments. The real S22 roadmap detail (307,123 characters) now returns a 322-character receipt.</p><p>The node also removed the I001 finding: <code>reckon/mcp.py</code> went from 19 lint findings to 18. The resident MCP server must be restarted and reconnected before any session sees the budget.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260924T230840339264-mcp-reads-fit-a-response-budget" data-who="reckon-build" data-when="2026-09-24T23:26:00Z">
+    <div class="r-comment-body"><p>roadmap, read_plan, crew and audit bound answers to RECKON_MCP_RESPONSE_CEILING (default 80000); over-budget returns a typed receipt with omitted counts and tool-specific narrow_with; real S22 detail 307123 chars becomes a 322-char receipt; I001 removed; 80 tests; review 96</p></div>
 </div>
 </section>
   </main>

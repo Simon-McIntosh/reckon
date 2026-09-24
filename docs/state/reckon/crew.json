@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:56:06",
+  "updated": "2026-09-25T01:56:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -362953,6 +362953,349 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T230840339264-mcp-reads-fit-a-response-budget",
+        "plan": "the-mcp-answers-within-its-ceiling",
+        "section": "\u00a73",
+        "node": "mcp-reads-fit-a-response-budget",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 402,
+                "cached_input_tokens": 440481,
+                "input_tokens": 440885,
+                "output_tokens": 1891,
+                "reasoning_output_tokens": 360,
+                "total_tokens": 442776,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "a new reckon/mcp_budget.py bounds a serialised answer to a character budget (default 80000, overridable by RECKON_MCP_RESPONSE_CEILING) and returns an over-budget answer as a bounded payload carrying truncated with omitted counts and a non-empty narrow_with list of arguments, following the paginate and audit_view idiom (reuse map Node A2 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s23-reuse-map/reuse-map.md: paginate mcp_views.py:1455, audit_view mcp_views.py:2217, _deadline_tool mcp.py:360, STORAGE_SLOW _mcp_tools.py:9); reckon/mcp.py applies it to roadmap, read_plan, crew and audit; tests/test_mcp_response_budget.py sizes synthetic fixtures over the budget for roadmap detail, crew scopes and crew live and asserts each serialised answer is within the budget with non-empty truncated.narrow_with, and asserts an under-budget fixture returns exactly its pre-change answer; the declared mutation (the budget check removed) is applied and the over-budget tests observed to fail with the log recorded; the recorded length of roadmap(project='reckon', sprint='S22', view='detail') at the worktree head is within 80000; the I001 import-order finding at reckon/mcp.py:51 is resolved and ruff --output-format=concise on reckon/mcp.py reports fewer findings than at base",
+          "estimated_hours": null,
+          "goal": "bound every MCP read tool's serialised answer by a configurable response budget",
+          "id": "mcp-reads-fit-a-response-budget",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-24T23:08:41Z",
+            "read_at": "2026-09-24T23:08:42Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 1.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230840339264-mcp-reads-fit-a-response-budget/manifest.md",
+          "negative_control": "remove the budget check so over-budget answers pass through whole",
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp_budget.py",
+            "reckon/mcp.py",
+            "tests/test_mcp_response_budget.py",
+            "docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html",
+            "docs/figures/the-mcp-answers-within-its-ceiling",
+            "docs/plans/the-mcp-answers-within-its-ceiling.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-24T23:09:00Z",
+        "completed_at": "2026-09-24T23:26:00Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1020,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1020,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "03b04d4f39409603b3fd4d90d8556d0aad8fdfe3",
+        "commits": [
+          "9e02b5f6b4bbe7ae8b5d676b08717fcaac8023bb",
+          "2122207b41dd83873384c07aa41b026167961e55"
+        ],
+        "changed_lines": {
+          "added": 489,
+          "removed": 8,
+          "files": 6
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_mcp_response_budget.py tests/test_mcp_reads_have_deadlines.py tests/test_mcp_roadmap.py tests/test_mcp_views.py tests/test_mcp_audit.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230840339264-mcp-reads-fit-a-response-budget/logs/final-focused-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230840339264-mcp-reads-fit-a-response-budget/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d5af-20dd-7a82-8261-72a3021556f7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8306816,
+            "cached_input_tokens_cumulative": 8306816,
+            "input_tokens": 8478125,
+            "input_tokens_cumulative": 8478125,
+            "output_tokens": 38007,
+            "output_tokens_cumulative": 38007,
+            "reasoning_output_tokens": 11459,
+            "reasoning_output_tokens_cumulative": 11459
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-24T23:26:00Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 2.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-24T23:26:00Z"
+            }
+          ],
+          "notional_cost_usd": 34.6726,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3108,
+              "budget_seconds": 2100,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 5208,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1393,
+              "log_fresh": false,
+              "manifest_commits": [
+                "bf1725d6",
+                "2700bda6",
+                "a4bbb242",
+                "f2810b50"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "06c13e8eab18db0a43a8c47a8df8d8687c70d64d7c00c618cd701bf2728a448f",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211828681310-host-facts-probe/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-worker-knows-it-is-on-compute --section '\u00a72' --role review --spec-level exact --node review-of-host-facts-probe --goal 'attach an independent review to run r-20260924T211828681310-host-facts-probe' --done-when 'the review for r-20260924T211828681310-host-facts-probe stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211828681310-host-facts-probe.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211828681310-host-facts-probe.at-f2810b50f59ca3d1840ac6a8bd5981aaa6d208fd.json --time-budget 35m --session s23-coord --allow-unreconciled-runs --backend clive",
+              "node": "host-facts-probe",
+              "phase": "starting",
+              "plan": "a-worker-knows-it-is-on-compute",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T211828681310-host-facts-probe",
+              "session": "s23-coord",
+              "terminal_age_seconds": 1518,
+              "terminal_at": "2026-09-24T22:43:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/host-facts-probe"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 8306816,
+          "cumulative_input_tokens": 8478125,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 49466,
+          "generation_seconds": 826.107,
+          "machine_seconds": 115.072,
+          "tokens_per_second": 59.88
+        },
+        "follow_on_paths": [
+          "restart/reconnect"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/mcp-reads-fit-a-response-budget",
+          "session_id": "01a0d5af-20dd-7a82-8261-72a3021556f7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T23:26:00Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T23:26:01Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-24T23:10:19Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T230840339264-mcp-reads-fit-a-response-budget",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 304,
+          "worker_pid": 1674317
+        },
+        "promoted_revision": "2122207b41dd83873384c07aa41b026167961e55",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "at_dispatch": 0.33,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_mcp_response_budget.py"
+          ],
+          "declaration": "remove the budget check so over-budget answers pass through whole",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230840339264-mcp-reads-fit-a-response-budget/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230840339264-mcp-reads-fit-a-response-budget/logs/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 0.2240165938217646,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "no projected exhaustion is available for 'codex'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+          "horizon_ends_at": "2026-09-24T23:58:42.258610+00:00",
+          "horizon_seconds": 3000,
+          "metered": true,
+          "observed_at": "2026-09-24T23:08:41Z",
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": "2026-10-01T15:38:44Z",
+          "seconds_until_reset": 577802,
+          "state": "quiet",
+          "utilisation_pct": 1.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-24T23:08:41Z",
+          "read_at": "2026-09-24T23:08:42Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 1.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 112.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -363265,6 +363608,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2565
+    "_version": 2566
   }
 }
