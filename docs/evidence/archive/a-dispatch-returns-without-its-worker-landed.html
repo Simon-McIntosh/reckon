@@ -9,7 +9,7 @@
   <meta name="plan-title" content="A Dispatch Returns Without Its Worker &mdash; landed record">
   <meta name="plan-summary" content="Cumulative execution evidence for the dispatch-lifetime measurement: what the dispatch process holds, and whether its worker survives the dispatch process being killed.">
   <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
-  <meta name="plan-verifies" content="a-dispatch-returns-without-its-worker#s2">
+  <meta name="plan-verifies" content="a-dispatch-returns-without-its-worker#s2, a-dispatch-returns-without-its-worker#s10">
   <title>A Dispatch Returns Without Its Worker &mdash; landed record | reckon</title>
 <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -436,6 +436,103 @@
       existed, because the baseline must follow dispatch's last repository write and no
       supervisor exists to take it later. Only the spawned lane gets the fast return this plan
       is about; that is a property of the lane, not a defect of the repair.
+    </p>
+
+    <h2 id="s10">&sect;10 &mdash; The launch leaves through the allocation's batch step</h2>
+    <p>
+      The reckon half of the fleet launch. Node
+      <code>launches-route-through-the-fleet-fifo</code>, worktree
+      <code>.reckon-worktrees/reckon-c8f839407e49/s21-coord/launches-route-through-the-fleet-fifo</code>,
+      commits <code>7ae4787a</code> (the lane) and <code>ab9da177</code> (the resumption seam
+      and the gate). &sect;10 of the plan carries the reading; this is the evidence behind it.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet_launch_path.png"
+           alt="Left: a dispatch forks a setsid child, which is reaped with the session step. Right: the launch writes one spawn line to the batch step, which starts the supervisor as its own child, so the worker outlives the step. Below: the gate's five measured outcomes.">
+      <figcaption>
+        A launch on the fleet node changes parent rather than shape: one request line to the
+        batch step's FIFO, and the supervisor started from the argv the spec carries under
+        <code>argv</code>.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>The gate.</strong> <code>tests/test_dispatch_spawns_through_the_fleet.py</code>,
+      <strong>6 passed in 4.31 s</strong>, log at
+      <code>~/.cache/reckon-fleet-launch/gate-new.log</code>. It stands a stub batch step over
+      a temporary runtime directory and a real FIFO, and measures: one
+      <code>spawn &lt;run id&gt; &lt;spec path&gt;</code> line whose request id is the run's
+      own, with <code>supervisor.json</code> holding <code>argv</code> ending in its own path,
+      and the acknowledged pid on the pointer; a dispatch with no fleet record forking, the
+      fork confirmed by intercepting <code>Popen</code> rather than by an absent failure; the
+      lane staying off until the batch step opts in; an unacknowledged request refusing in
+      under 1 s of a bound monkeypatched to 1. A dispatch that never acknowledges leaves no
+      live pointer and no worktree, the worktree being a real <code>git worktree</code>
+      precisely so its removal is provable; a <code>crew watch</code> producer start writing
+      <code>spawn watch-&lt;project&gt; &lt;&hellip;/producer.json&gt;</code>; and a review
+      dispatch and a resumption each writing their own <code>supervisor.json</code> under
+      their own run directory. Every run used
+      <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>.
+    </p>
+    <p>
+      <strong>The declared negative control, executed.</strong> The red log's first line is the
+      declared string, <code>bypass the FIFO branch in _start_supervisor; the
+      acknowledged-pid assertion must fail</code>, and the control then reports:
+    </p>
+    <pre>spawn-line assertion: FAIL (0 line(s) on the FIFO)
+acknowledged-pid assertion: FAIL (pointer pid 1383654 vs acknowledged pid 1383618)
+bypass detected by the gate: True</pre>
+    <p>
+      The bypass forks the supervisor's argv directly, as <code>_start_supervisor</code> did
+      before the delegation existed, and reuses the committed gate's own fixture, stub reader
+      and dispatch helper so the control exercises the shipped harness rather than a second
+      copy of it. The two pids differ, which is the assertion that matters: the pointer's pid
+      is a process the dispatcher forked, not the one the batch step owns. Log at
+      <code>~/.cache/reckon-fleet-launch/negative-control.log</code>; driver at
+      <code>~/.cache/reckon-fleet-launch/negative_control.py</code>.
+    </p>
+    <p>
+      <strong>The delta.</strong> The forty-five test files importing
+      <code>reckon/crew/dispatch.py</code> or <code>reckon/crew/resumption.py</code>, run at
+      HEAD <code>ab9da177</code> and at the base revision <code>02e2757d</code> in a second
+      worktree:
+    </p>
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>02e2757d</code> (base)</td>
+            <td>26 failed, 662 passed, 1 skipped in 269.05 s</td></tr>
+        <tr><td><code>ab9da177</code> (HEAD)</td>
+            <td>26 failed, 668 passed, 1 skipped in 264.94 s</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The failure sets are <strong>identical</strong> &mdash; zero added, zero fixed. The six
+      extra passes are this node's own cases, which the base run cannot collect. Logs at
+      <code>~/.cache/reckon-fleet-launch/delta-head-2.log</code> and
+      <code>delta-base.log</code>.
+    </p>
+    <p>
+      <strong>The failure this node caused, and its repair.</strong> The first attempt removed
+      an unused <code>_spawn</code> import from <code>resumption.py</code>; the first delta run
+      then carried exactly one added failure,
+      <code>test_mcp_recovery.py::test_sweep_dry_run_reports_what_it_would_resume</code>
+      (<code>AttributeError: &hellip; has no attribute '_spawn'</code>). It was the only site
+      patching that name, and the repaired delta is the identical-sets run above. The repair
+      keeps a module-level <code>_spawn</code> that <code>_resume</code> really calls and that
+      reads the run's repository and worktree from its live pointer, so it keeps the
+      four-argument shape its callers use; a name kept only to satisfy a patcher would report
+      a guard that no longer guards, because the patch would land on a name nothing reaches.
+    </p>
+    <p>
+      <strong>What the lane does not cover.</strong> The batch step's <code>spawn</code> verb
+      lives in dotfiles and is not landed, so the lane is opted into with
+      <code>RECKON_FLEET_SPAWN</code> rather than triggered by the fleet record alone. That
+      asymmetry is deliberate: this workstation publishes a record for every session on the
+      node, and a record-only trigger would route every dispatch on it &mdash; peer sessions
+      and tests included &mdash; into a FIFO whose reader may not know the verb, refusing each
+      after 10 s. With the flag unset a dispatch forks exactly as before, which is its own
+      case in the gate. The worker-survives-<code>scancel</code> proof on the node itself, and
+      the dotfiles change, are the other half's to run.
     </p>
 
   </main>
