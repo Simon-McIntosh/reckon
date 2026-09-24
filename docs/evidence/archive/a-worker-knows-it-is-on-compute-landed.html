@@ -105,6 +105,79 @@ plugins: timeout-2.4.0, xdist-3.8.0, anyio-4.13.0
       <code>uv.lock</code> and nothing else. No test file changed: the suite-repair plan owns the
       tests themselves, and this node supplies the bound they run under.</p>
     </section>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; The probe answers "am I inside the allocation"</h2>
+      <p><code>reckon/host.py</code> exposes <code>host_facts()</code>; <code>tests/test_host_facts.py</code>
+      is its gate. Both live at <code>bf1725d6</code>. Every reading below was taken in the
+      worktree named in its own log, with <code>PYTHONPATH=$PWD</code> so the probe under test is
+      this tree's <code>reckon/host.py</code> and not the main checkout's.</p>
+
+      <p><strong>Gate</strong> &mdash; fixture cgroup and mount tables, the mount predicate stubbed:</p>
+      <pre>revision: bf1725d6b28abc072f516b9b5342d6b13b0005c1
+command: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest \
+  -p no:cacheprovider -q tests/test_host_facts.py
+.........                                                                [100%]
+9 passed in 0.30s
+EXIT=0</pre>
+      <p>Four of the nine are the section's own: inside the job cgroup reads <code>true</code>;
+      the environment-inherited shell (<code>SLURM_JOB_ID</code> set, cgroup in
+      <code>user.slice</code>) reads <code>false</code> with the reason
+      <code>environment-inherited-outside-the-job-cgroup</code>; no SLURM at all reads
+      <code>false</code>; and a GPFS home beside an xfs <code>/tmp</code> reads
+      <code>tmp_filesystem: xfs</code>, <code>home_filesystem: gpfs</code>,
+      <code>tmp_is_node_local: true</code>. No case reads the real <code>/proc</code>: the cgroup
+      line, the cgroup tree and the mount table are all passed in, and
+      <code>reckon.crew.dispatch._path_is_tmpfs</code> is patched from the same fixture.</p>
+
+      <p><strong>Declared mutation</strong> &mdash; <code>replace the cgroup check with a SLURM_JOB_ID
+      environment check</code>:</p>
+      <pre>replace the cgroup check with a SLURM_JOB_ID environment check
+revision, command and probe module under test: as above; probe module under test is this
+  worktree's reckon/host.py, and the mutant is loaded from outside the package
+mutated in_allocation: True
+AssertionError: the environment-only case reads inside the allocation under the mutated
+probe, so the cgroup check is what makes it false
+EXIT=1</pre>
+      <p>The mutation is applied in memory to the probe's source; the reviewed test file is never
+      edited. The environment-only case is asserted <code>false</code> under the real module and
+      reads <code>true</code> under the mutant, so the cgroup line — not the environment — is what
+      the answer rests on. The first line of that log is the declaration verbatim, and the runner
+      refuses to continue if the test file's declaration differs from it.</p>
+
+      <p><strong>Recorded call in this job</strong> &mdash; job 1277272, node 1277272's cgroup,
+      against the real <code>/proc</code>:</p>
+      <pre>job env: SLURM_JOB_ID=1277272 SLURMD_NODENAME=98dci4-clu-2058
+in_allocation: True
+reason: ''
+in_allocation: True &lt;- file: /proc/self/cgroup; reckon.crew.summary._user_slice_dir over
+                          the process's own cgroup line
+job_id: '1277272' &lt;- environment: SLURM_JOB_ID
+step_id: None &lt;- environment: SLURM_STEP_ID
+node: '98dci4-clu-2058' &lt;- environment: SLURMD_NODENAME
+tmp_filesystem: 'xfs' &lt;- mount table: /proc/self/mountinfo
+home_filesystem: 'gpfs' &lt;- mount table: /proc/self/mountinfo
+tmp_is_node_local: True &lt;- reckon.crew.dispatch._is_node_local_path/_path_is_tmpfs, with
+                           the mount type from mount table: /proc/self/mountinfo
+EXIT=0</pre>
+      <p><code>step_id</code> is <code>None</code> because a batch allocation sets no step variable;
+      the fact is reported with its source rather than omitted, which is the point of carrying a
+      source beside every value. <code>/tmp</code> reading <code>xfs</code> and node-local is the
+      direction worth noting: the tree's predicate answers for memory-backed and per-user runtime
+      paths, and a block-backed local scratch is node-local for a different reason — the mount's
+      own type is not shared. The probe widens the tree's answer with that type rather than
+      narrowing it, and the module docstring states the direction so a later reader can see which
+      way the two can diverge.</p>
+
+      <p><strong>Scope.</strong> The commit touches <code>reckon/host.py</code>,
+      <code>tests/test_host_facts.py</code> and the two runner scripts under
+      <code>docs/figures/a-worker-knows-it-is-on-compute/</code>.
+      <code>reckon/crew/summary.py</code> and <code>reckon/crew/dispatch.py</code> are read, not
+      edited; <code>reckon/crew/placement.py</code> belongs to another node and is untouched. The runner scripts are
+      committed; their logs are ignored by the repository's <code>*.log</code> rule, which is why
+      the decisive lines are reproduced above rather than linked. Verifying the merged result
+      belongs to a separately dispatched test node.</p>
+    </section>
   </main>
 </body>
 </html>
