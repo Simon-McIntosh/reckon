@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T00:34:25",
+  "updated": "2026-09-25T00:37:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -352136,6 +352136,297 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T213114910754-review-of-settle-the-consumer-verbs-readings",
+        "plan": "consumers-read-reckon-through-verbs",
+        "section": "\u00a72",
+        "node": "review-of-settle-the-consumer-verbs-readings",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1512,
+                "cached_input_tokens": 335121,
+                "input_tokens": 336635,
+                "output_tokens": 688,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 337323,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "the review for r-20260924T211605418631-settle-the-consumer-verbs-readings stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260924T211605418631-settle-the-consumer-verbs-readings",
+          "id": "review-of-settle-the-consumer-verbs-readings",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T21:31:15Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 19,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 6,
+            "mean_context": 74286,
+            "observed_at": "2026-09-24T21:30:56Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T213114910754-review-of-settle-the-consumer-verbs-readings/manifest.md",
+          "negative_control": "",
+          "plan": "consumers-read-reckon-through-verbs",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211605418631-settle-the-consumer-verbs-readings.json",
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211605418631-settle-the-consumer-verbs-readings.at-1007ac44cd2e54812197c7f095a012b1bbf2bfc7.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T21:31:26Z",
+        "completed_at": "2026-09-24T22:36:19.239Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3800,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3893,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "90936cdb0671a765143d47ce90e7e0d0b5e21a16",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T213114910754-review-of-settle-the-consumer-verbs-readings/manifest.md",
+        "scope_changed": false,
+        "session_id": "c50f59c4-6d59-4904-9eec-384be056a89e",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T22:36:19.239Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1741,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1372,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 no repository path changed; this is an investigation node",
+                "no repository change; the deliverable and its instrument are files under the fence"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "04255e7b1f7c7fc5fdd45549c58a320291c44dabbbb27a5f648810db386f53bb",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T203913190997-s22-reuse-map/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan section-contract-and-computed-impl --section '\u00a71' --role review --spec-level exact --node review-of-s22-reuse-map --goal 'attach an independent review to run r-20260924T203913190997-s22-reuse-map' --done-when 'the review for r-20260924T203913190997-s22-reuse-map stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T203913190997-s22-reuse-map.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T203913190997-s22-reuse-map.at-2fabeb9637ffd460582933a6da5e5cd9297d5a44.json --time-budget 40m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "s22-reuse-map",
+              "phase": "starting",
+              "plan": "section-contract-and-computed-impl",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T203913190997-s22-reuse-map",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1417,
+              "terminal_at": "2026-09-24T21:07:42Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/s22-reuse-map"
+            }
+          ]
+        },
+        "review": null,
+        "follow_on_paths": [
+          "docs/evidence/archive/consumers-read-reckon-through-verbs-landed.html:13):",
+          "tests/test_schema.py:781);",
+          "docs/plans"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/review-of-settle-the-consumer-verbs-readings",
+          "session_id": "c50f59c4-6d59-4904-9eec-384be056a89e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T22:36:19.239Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 143,
+          "exited_at": "2026-09-24T22:36:33Z",
+          "last_record_type": "system",
+          "launched_at": "2026-09-24T21:32:42Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T213114910754-review-of-settle-the-consumer-verbs-readings",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 12951,
+          "worker_pid": 1374595
+        },
+        "promoted_revision": "90936cdb0671a765143d47ce90e7e0d0b5e21a16",
+        "plan_impl_at_dispatch": 0.0,
+        "impl_move": {
+          "plan": "consumers-read-reckon-through-verbs",
+          "at_dispatch": 0.0,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:review"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T22:16:15.161472+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T21:31:15Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 19,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 6,
+          "mean_context": 74286,
+          "observed_at": "2026-09-24T21:30:56Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 96.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -352448,6 +352739,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2517
+    "_version": 2518
   }
 }
