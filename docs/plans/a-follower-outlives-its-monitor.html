@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="47">
+  <meta name="plan-version" content="48">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -641,6 +641,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260923T153447467251-review-of-lifetime-deadline-reaches-only-the-reload" data-who="reckon-ship" data-when="2026-09-23T17:07:28.175Z">
     <div class="r-comment-body"><p>review of lifetime-deadline-reaches-only-the-reload scored 87; its disarmed-test findings (os.execve bypassing two os.execv interceptions) and the misattributed gate figure are being repaired by resuming the node; not merged until that gate is logged</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260923T140417252297-lifetime-deadline-reaches-only-the-reload" data-who="reckon-ship" data-when="2026-09-23T17:18:20.694Z">
+    <div class="r-comment-body"><p>a follower&#x27;s lifetime deadline reaches only its replacement image (a3dadfa0); review 87 found two tests disarmed by os.execve, repaired on resume (b32af75e) and re-reviewed at 91; four affected files 2 failed 24 passed at head vs 3 failed 22 passed at base, both head failures pre-existing; merged f4d06be2; manifest hand-repaired to name all four commits and the four-file logs, as-delivered copy kept</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260923T115049769604-test-watchers-are-reaped" data-who="reckon-ship" data-when="2026-09-23T13:49:26.558Z">
     <div class="r-comment-body"><p>a test session reaps its watch producers by pid from their records (7c5f69b9, merged f891f2ed); review 80 found it removed watch_producers_under while tests/test_watch_arming_isolation.py still imports it, so one test fails on main with ImportError — corrective node arming-isolation-reads-the-watcher-records dispatched on §10</p></div>
