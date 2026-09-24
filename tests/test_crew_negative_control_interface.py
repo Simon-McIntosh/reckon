@@ -176,11 +176,13 @@ def test_the_emitted_manifest_template_names_the_negative_control_log() -> None:
         for line in prompt.splitlines()
         if line.strip().startswith("negative_control_log:")
     ).strip()
-    # The gloss distinguishes the red log of the declared mutation from any
-    # other failing log, which is what promotion matches against.
-    assert "red log" in gloss
-    assert "declared" in gloss
-    assert "mutation" in gloss
+    # The gloss must make the discrimination promotion applies: this log is the
+    # one the declared mutation produced, and a log that failed for anything
+    # else is refused. Pinning the wording of that discrimination rather than a
+    # nickname for the artifact is what keeps it legible from the contract.
+    assert "declared mutation" in gloss
+    assert "failed for any other reason" in gloss
+    assert "refusal" in gloss or "refused" in gloss
 
 
 def test_the_template_places_the_log_field_beside_the_other_test_fields() -> None:

@@ -52,6 +52,13 @@ def test_live_stream_supersedes_a_terminal_manifest_until_delivery_is_rewritten(
         "project": "proj",
         "pid": os.getpid(),
         "phase": "working",
+        # The early-delivery arm belongs to a resumed attempt: it owns evidence
+        # newer than the baseline captured when the run resumed, so its
+        # completion is read before the process exits. A first attempt's live
+        # terminal word is a report, not an outcome, so the fixture models the
+        # continuation the rule is written for.
+        "attempt": 2,
+        "attempt_kind": "resume",
         "manifest_path": str(manifest),
         "manifest_baseline_mtime_ns": 0,
         "log_path": str(stream),
@@ -61,10 +68,20 @@ def test_live_stream_supersedes_a_terminal_manifest_until_delivery_is_rewritten(
     crew._write_json(crew.pointer_path(run_id), record)
 
     sleeps = 0
+    # A watcher that never reports the delivery would poll forever, so the
+    # sleeper bounds itself: the rewrite lands on the first poll and a watcher
+    # still asking after the last one has failed to read a manifest that is
+    # already on disk, which is a failure rather than a hang.
+    delivery_attempts = 5
 
     def deliver_current_attempt(_seconds: float) -> None:
         nonlocal sleeps
         sleeps += 1
+        if sleeps > delivery_attempts:
+            pytest.fail(
+                "the delivered manifest was never reported terminal: the "
+                "watcher was still polling after the rewrite"
+            )
         manifest.write_text(_manifest("complete"))
         delivered = stream_time + 1_000_000
         os.utime(manifest, ns=(delivered, delivered))

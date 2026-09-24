@@ -335,10 +335,14 @@ def test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion(
     )
 
     with pytest.raises(crew.CrewError, match="verifier may read"):
+        # The write-scope boundary is the contract under test; this fixture
+        # carries no review record, so the promotion states why it lands
+        # without one and the refusal measured here is the scope one.
         crew.complete(
             run_id,
             gate="passed",
             commits=[commit],
+            review_waiver="the verifier write-scope boundary is under test",
             root=repository,
         )
 

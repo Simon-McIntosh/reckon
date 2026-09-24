@@ -14,7 +14,9 @@ FIRST_DISPATCH_NS = 1_788_874_500_000_000_000
 MANIFEST_NS = 1_788_874_593_998_173_197
 RESUME_START_NS = MANIFEST_NS + 1_000_000_000
 TERMINAL_CLASSIFICATIONS = {
-    "complete": "completed_unpromoted",
+    # A delivered completion whose independent review is not on disk yet reads
+    # as scoring, not as an unpromoted completion.
+    "complete": "scoring",
     "blocked": "blocked",
     "failed": "failed",
 }
@@ -68,6 +70,15 @@ def pointer_factory(tmp_path: Path):
             "log_path": str(tmp_path / f"{run_id}.jsonl"),
             "stderr_path": str(tmp_path / f"{run_id}.stderr.log"),
             "worktree": str(worktree),
+            # Only a run a launcher spawned can be resumed by the sweep, and the
+            # launcher rebuilds the lane it must judge from the record's own
+            # harness ground truth. Both are what a real dispatched attempt
+            # records, and neither is the freshness rule under test here, so the
+            # fixture carries them rather than reaching the sweep through a
+            # refusal about something else.
+            "launch": "cli",
+            "command": "fixture-harness",
+            "argv": ["fixture-harness"],
             "backend": "fixture-lane",
             "session_id": "fixture-session",
             "node": {
@@ -113,7 +124,7 @@ def test_a_resume_reads_a_manifest_equal_to_its_recorded_baseline(
 
     assert row["manifest_present"] is True
     assert row["manifest_status"] == "complete"
-    assert row["classification"] == "completed_unpromoted"
+    assert row["classification"] == "scoring"
 
 
 def test_a_manifest_from_before_the_run_is_not_a_current_outcome(
@@ -133,7 +144,7 @@ def test_a_manifest_from_before_the_run_is_not_a_current_outcome(
     assert row["manifest_file_present"] is True
     assert row["manifest_present"] is False
     assert row["manifest_status"] is None
-    assert row["classification"] != "completed_unpromoted"
+    assert row["classification"] != "scoring"
 
 
 @pytest.mark.parametrize(("status", "classification"), TERMINAL_CLASSIFICATIONS.items())

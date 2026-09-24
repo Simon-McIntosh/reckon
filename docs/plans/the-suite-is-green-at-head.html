@@ -115,6 +115,31 @@
     negative control are in the <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#promotion-fixtures-initialise-the-ledger">landed evidence record.</a></p>
     </section>
 
+    <div class="r-note" data-reckon="landed" data-node="delivery-tests-read-the-scoring-state" data-when="2026-09-24">
+      <p><strong>Outcome &mdash; the sixteen listed delivery-test ids are green at head; every one read a state
+      the classifier no longer emits.</strong> Commit <code>4e813fec</code> <em>test(crew): read delivered runs as
+      scoring and meet the review gate</em>. The nine files were exported as they stood at the base revision
+      <code>77c20349</code> and run there first: fifteen ids FAILED and <code>test_crew_attempt_accounting</code>
+      never returned under a 60&nbsp;s bound, which is the listed sixteen. Each was then run at head, one pytest
+      process per file with its own <code>--basetemp</code>: 69 passed, exit 0, and no id moved from pass to fail.</p>
+      <p><strong>Cause, by class.</strong> Seven ids were a stale assertion: a delivered run with no independent
+      review stored now classifies <code>scoring</code> rather than the unpromoted completion they named, and the
+      watcher column follows the reducer. Seven were a stale promotion fixture: each exists to exercise the
+      negative-control or write-scope contract, and the review gate refuses before that subject is reached unless
+      the fixture states why the run lands without a review &mdash; the declaration the CLI takes as
+      <code>--waive-unreviewed-promotion</code>. One fixture omitted the record fields the launcher rebuilds a lane
+      from, so the resume sweep reached a refusal about the record. One was test isolation: a watcher sleeper that
+      never bounded its loop, while the watcher no longer reads a live writer's <code>complete</code> as terminal;
+      it now models the resumed attempt the early-delivery arm is written for and fails rather than looping.</p>
+      <p><strong>Product defects 0, environment failures 0</strong>, so this node raises no follow-on. No test was
+      skipped, xfailed, deleted or weakened, and <code>reckon/</code> was not touched.</p>
+      <p>Declared negative control: <em>run each repaired file as it stood at the base revision and observe its
+      listed ids fail with the recorded error</em> &mdash; the red run's own log, first line verbatim, is this
+      run's <code>negative_control_log</code>. Full record with the per-id cause table and the figure:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed">The Suite Is Green At Head &mdash; landed
+      evidence</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

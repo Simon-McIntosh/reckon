@@ -29,6 +29,13 @@ from reckon.crew.runs import _write_json, pointer_path
 PROJECT = "proj"
 PLAN = "plan-a"
 
+# Every promotion below exists to exercise the negative-control contract, and a
+# run whose write paths reach a test file also owes an independent review. The
+# fixtures carry no review record and no review is the contract under test, so
+# each promotion states the reason it lands without one — the same declaration
+# the CLI takes as `--waive-unreviewed-promotion`.
+REVIEW_WAIVER = "the negative-control contract is the subject under test"
+
 DISPATCH_CONFIG = {
     "default_backend": "alpha",
     "backends": {
@@ -258,7 +265,13 @@ def test_promotion_refuses_a_passing_gate_without_the_declared_red_log(
     )
 
     with pytest.raises(crew.CrewError) as refusal:
-        _promote(repository, run_id, gate="passed", outcome="the guard landed")
+        _promote(
+            repository,
+            run_id,
+            gate="passed",
+            outcome="the guard landed",
+            review_waiver=REVIEW_WAIVER,
+        )
 
     message = str(refusal.value)
     assert "removing the guard turns the fixture red" in message
@@ -284,7 +297,13 @@ def test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation(
     )
 
     with pytest.raises(crew.CrewError) as refusal:
-        _promote(repository, run_id, gate="passed", outcome="the guard landed")
+        _promote(
+            repository,
+            run_id,
+            gate="passed",
+            outcome="the guard landed",
+            review_waiver=REVIEW_WAIVER,
+        )
 
     assert "removing the guard turns the fixture red" in str(refusal.value)
 
@@ -309,7 +328,13 @@ def test_promotion_admits_a_red_log_that_names_the_declared_mutation(
         manifest_path=manifest,
     )
 
-    promoted = _promote(repository, run_id, gate="passed", outcome="the guard landed")
+    promoted = _promote(
+        repository,
+        run_id,
+        gate="passed",
+        outcome="the guard landed",
+        review_waiver=REVIEW_WAIVER,
+    )
 
     assert promoted["negative_control"]["verdict"] == "matched"
     assert promoted["negative_control"]["declaration"] == mutation
@@ -334,7 +359,13 @@ def test_a_none_declaration_is_recorded_rather_than_refused(
         manifest_path=manifest,
     )
 
-    promoted = _promote(repository, run_id, gate="passed", outcome="the guard landed")
+    promoted = _promote(
+        repository,
+        run_id,
+        gate="passed",
+        outcome="the guard landed",
+        review_waiver=REVIEW_WAIVER,
+    )
 
     assert promoted["negative_control"]["verdict"] == "none-recorded"
     assert promoted["negative_control"]["reason"] == reason
@@ -355,7 +386,13 @@ def test_a_none_declaration_without_a_reason_is_refused(
     )
 
     with pytest.raises(crew.CrewError) as refusal:
-        _promote(repository, run_id, gate="passed", outcome="the guard landed")
+        _promote(
+            repository,
+            run_id,
+            gate="passed",
+            outcome="the guard landed",
+            review_waiver=REVIEW_WAIVER,
+        )
 
     assert "none" in str(refusal.value)
 
@@ -374,7 +411,13 @@ def test_a_node_writing_no_test_path_is_exempt(
         manifest_path=manifest,
     )
 
-    promoted = _promote(repository, run_id, gate="passed", outcome="source only")
+    promoted = _promote(
+        repository,
+        run_id,
+        gate="passed",
+        outcome="source only",
+        review_waiver=REVIEW_WAIVER,
+    )
 
     assert promoted["negative_control"]["verdict"] == "exempt"
     assert promoted["negative_control"]["reason"] == "node-writes-no-test-path"

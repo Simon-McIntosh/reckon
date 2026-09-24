@@ -76,9 +76,9 @@ def test_terminal_manifest_survives_an_alive_process_and_a_newer_log(
 
     record["process_alive"] = False
     dead = recovery.classify_pointer(record, now_seconds=now + 1)
-    assert dead["classification"] == (
-        "completed_unpromoted" if status == "complete" else "failed"
-    )
+    # A delivered completion with no independent review attached is not
+    # promotable, so a dead process reads it as scoring.
+    assert dead["classification"] == ("scoring" if status == "complete" else "failed")
     assert dead["manifest_status"] == status
 
 
@@ -163,10 +163,12 @@ def test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances(
 
     row = recovery.classify_pointer(record, now_seconds=now)
 
-    assert row["classification"] == "completed_unpromoted"
+    assert row["classification"] == "scoring"
 
+    # The fleet column keeps its own word for the same fact: a completed run that
+    # has not been promoted.
     snapshot = recovery._watch_snapshot(record, moment=now, stall_seconds=600)
-    assert snapshot["state"] == "complete"
+    assert snapshot["state"] == "completed_unpromoted"
 
 
 def test_dispatched_with_no_manifest_and_a_dead_process_resolves_to_abandoned(
