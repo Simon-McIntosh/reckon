@@ -581,13 +581,23 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
             "sess",
             "--repo",
             str(repo),
+            "--negative-control",
+            "none: the dry run prepares no worktree and executes no check",
             "--dry-run",
         ],
     )
 
     payload = json.loads(result.output)
     assert result.exit_code == 0
-    assert payload["write_paths"] == write_paths
+    # The declared paths stand, and the plan's shared landing paths — the
+    # cumulative evidence record, the figure topic and the plan file — are
+    # reported with them so the dry run shows the scope the run will hold.
+    assert payload["write_paths"] == [
+        *write_paths,
+        "docs/evidence/archive/plan-a-landed.html",
+        "docs/figures/plan-a",
+        "docs/plans/plan-a.html",
+    ]
     assert payload["node"]["spec_level"] == "guided"
     _assert_no_dispatch_artifacts(repo)
 
@@ -1288,15 +1298,9 @@ def test_dispatch_resolves_a_plan_from_another_mounted_repository(
     mounts["authority-project"] = str(remote_plan_repo / "docs")
     (home / "mounts.json").write_text(json.dumps(mounts))
 
-    record = crew.dispatch(
-        node=_node(plan="remote-plan"),
-        project="authority-project",
-        repo=repo,
-        config=CONFIG,
-        session="cross-repository-session",
-        launcher=lambda *args, **kwargs: 0,
-    )
-
+    # Read before the dispatch: the run's roster registration commits into the
+    # plan repository, so HEAD there moves past the revision the authority
+    # records as its base.
     plan_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=remote_plan_repo,
@@ -1304,9 +1308,18 @@ def test_dispatch_resolves_a_plan_from_another_mounted_repository(
         capture_output=True,
         text=True,
     ).stdout.strip()
+    record = crew.dispatch(
+        node=_node(plan="remote-plan"),
+        project="authority-project",
+        repo=remote_plan_repo,
+        config=CONFIG,
+        session="cross-repository-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
     assert crew.pointer_path(record["run_id"]).is_file()
     assert Path(record["worktree"]).is_dir()
-    assert record["repo"] == str(repo.resolve())
+    assert record["repo"] == str(remote_plan_repo.resolve())
     assert record["authority"] == {
         "plan": {
             "project": "authority-project",
@@ -1316,11 +1329,14 @@ def test_dispatch_resolves_a_plan_from_another_mounted_repository(
             "base_sha": plan_sha,
         },
         "write": {
-            "projects": ["proj"],
-            "repository": str(repo.resolve()),
+            "projects": ["authority-project"],
+            "repository": str(remote_plan_repo.resolve()),
             "source": "mount",
         },
-        "repositories": sorted({str(remote_plan_repo.resolve()), str(repo.resolve())}),
+        # The project's mount decides where its work is written, so the
+        # repository the caller named is the mount itself and the authority
+        # set is that one repository.
+        "repositories": [str(remote_plan_repo.resolve())],
     }
 
 
@@ -1356,7 +1372,7 @@ def test_dispatch_refuses_a_write_outside_the_mounted_authority_set(
         crew.dispatch(
             node=_node(plan="remote-plan", write_paths=[str(outside)]),
             project="authority-project",
-            repo=repo,
+            repo=remote_plan_repo,
             config=CONFIG,
             session="cross-repository-session",
             launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
@@ -1384,7 +1400,15 @@ def test_non_repository_delivery_directories_are_valid_exclusive_scopes(
     )
 
     assert resolution.validation.ok is True
-    assert resolution.node.write_paths == [str(delivery)]
+    # The declared delivery scope stands, and the plan's shared landing paths
+    # — the cumulative evidence record, the figure topic and the plan file —
+    # are appended so every node can land its own record.
+    assert resolution.node.write_paths == [
+        str(delivery),
+        "docs/evidence/archive/plan-a-landed.html",
+        "docs/figures/plan-a",
+        "docs/plans/plan-a.html",
+    ]
 
 
 def test_write_path_outside_repository_and_delivery_directories_is_refused(
@@ -2552,7 +2576,10 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
         return process.pid
 
     def fail_pointer_write(path, payload):
-        if path == crew.pointer_path(run_id):
+        # Dispatch publishes the pointer twice before starting the supervisor
+        # and once again once the pid is known; the failure this studies is the
+        # post-spawn write, so the earlier ones pass through.
+        if path == crew.pointer_path(run_id) and payload.get("pid") is not None:
             raise OSError("forced pointer write failure")
         return original_write(path, payload)
 
@@ -2606,7 +2633,13 @@ def test_an_in_harness_dispatch_returns_a_directive_to_bind(home, repo) -> None:
     directive = record["directive"]
     assert Path(directive["worktree"]).is_dir()
     assert directive["fences"]["delivery"] == record["manifest_path"]
-    assert directive["fences"]["scope"] == ["reckon/_backends.py"]
+    # The declared scope plus the plan's shared landing paths.
+    assert directive["fences"]["scope"] == [
+        "reckon/_backends.py",
+        "docs/evidence/archive/plan-a-landed.html",
+        "docs/figures/plan-a",
+        "docs/plans/plan-a.html",
+    ]
     assert directive["fences"]["time"] == "20m"
     assert "reckon crew attach" in directive["attach_with"]
 
@@ -2725,6 +2758,13 @@ def _dispatched(
     return record
 
 
+def _set_pointer_pid(run_id: str, pid: int) -> None:
+    """Record a pid on the run's pointer, so a test can choose its liveness."""
+    pointer = json.loads(crew.pointer_path(run_id).read_text())
+    pointer["pid"] = pid
+    crew._write_json(crew.pointer_path(run_id), pointer)
+
+
 def test_dispatch_snapshots_suite_arming_command(home, repo) -> None:
     armed_config = {**CONFIG, "gates": {"suite_command": "pytest -q"}}
 
@@ -2802,8 +2842,11 @@ def test_member_session_is_reused_when_the_resolved_model_matches(home, repo) ->
     Path(first["log_path"]).write_text((FIXTURES / "codex-turn.jsonl").read_text())
     crew.observe(first["run_id"])
 
+    # The session belongs to the task, not to the member: the same plan and
+    # node id reach the prior run's session, and the resolved model decides
+    # whether it is continued.
     second = crew.dispatch(
-        node=_node(id="node-b", write_paths=["reckon/session.py"]),
+        node=_node(write_paths=["reckon/session.py"]),
         project="proj",
         repo=repo,
         config=CONFIG,
@@ -2899,11 +2942,17 @@ def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> 
         session="sess",
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: 0,
     )
-    Path(record["log_path"]).write_text((FIXTURES / "claude-turn.jsonl").read_text())
+    # Only the unified windows carry a metered position, so the headroom the
+    # observer records is the binding one of the stream's newest window event:
+    # this fixture's last event reports five_hour at 0.66 against seven_day at
+    # 0.47, and the larger utilisation is the one that gates the request.
+    Path(record["log_path"]).write_text(
+        (FIXTURES / "claude-worked-turn.jsonl").read_text()
+    )
     observed = crew.observe(record["run_id"])
     assert observed["budget"]["headroom"] == "known"
-    assert observed["budget"]["utilisation_pct"] == pytest.approx(1.02)
-    assert observed["budget"]["resets_at"] == "2026-09-01T00:00:00Z"
+    assert observed["budget"]["utilisation_pct"] == pytest.approx(66.0)
+    assert observed["budget"]["resets_at"] == "2026-08-26T13:40:00Z"
 
 
 def test_observe_sees_the_manifest_that_is_the_real_delivery(
@@ -3048,12 +3097,18 @@ def test_live_view_rechecks_a_killed_worker_without_observation(home, repo) -> N
 
 
 def test_permission_denied_process_is_not_owned(monkeypatch) -> None:
+    """A pid this user cannot signal is a peer's, and that is proof of life."""
+
     def deny_signal(pid, sig):
         raise PermissionError("not owned")
 
     monkeypatch.setattr(crew.os, "kill", deny_signal)
 
-    assert crew.process_alive(12345) is False
+    # A zero-signal PermissionError means the pid exists under another owner —
+    # the ordinary condition for a peer fleet's worker on a shared
+    # workstation. Reading it as death would classify a live run as abandoned
+    # and its action would advise duplicating that worker.
+    assert crew.process_alive(12345) is True
 
 
 def test_a_dead_process_with_no_terminal_event_is_an_orphan(home, repo) -> None:
@@ -3261,7 +3316,13 @@ def test_promoted_run_leaves_the_drain_by_losing_its_pointer(home, repo) -> None
     _deliver_manifest(record, "complete", commits="HEAD")
     assert crew.drain("proj")["unreconciled_runs"] == 1
 
-    promoted = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])
+    promoted = crew.complete(
+        record["run_id"],
+        gate="passed",
+        commits=["HEAD"],
+        review_waiver="this node measures the drain's pointer bookkeeping; the "
+        "review lifecycle has its own coverage",
+    )
 
     assert promoted["pointer_removed"] is True
     assert crew.drain("proj")["live_pointers"] == 0
@@ -3270,6 +3331,10 @@ def test_promoted_run_leaves_the_drain_by_losing_its_pointer(home, repo) -> None
 
 def test_terminal_phase_without_a_manifest_is_abandoned(home, repo) -> None:
     record = _dispatched(home, repo, "codex-turn.jsonl")
+    # Abandonment requires positive proof of death, so the run is given a pid
+    # no process table holds. A stored terminal phase on its own is the last
+    # writer's label, and a live worker must never be read as abandoned.
+    _set_pointer_pid(record["run_id"], 999999999)
     observed = crew.observe(record["run_id"])
 
     row = crew.classify_pointer(observed)
@@ -3387,6 +3452,9 @@ def test_no_reader_promotes_a_run_without_commit_or_manifest(home, repo) -> None
     from reckon import mcp
 
     record = _dispatched(home, repo, "codex-turn.jsonl")
+    # Abandonment is only read once the process table has proved the worker
+    # gone; a pid no table holds is that proof, and a live run stays running.
+    _set_pointer_pid(record["run_id"], 999999999)
     observed = crew.observe(record["run_id"])
     observed["commits"] = []
     crew._write_json(crew.pointer_path(record["run_id"]), observed)
@@ -3882,6 +3950,27 @@ def test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallb
     data, version = ledger.load("proj", repo)
     data["runs"][0].pop("time_budget")
     ledger.write("proj", data, version, repo)
+    # Registering a session member commits the state file, and refuses while
+    # the file holds content the caller has not committed; the rewritten ledger
+    # is committed here so the dispatch is not the one to carry it.
+    subprocess.run(
+        ["git", "add", "docs/state/proj/crew.json"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "git",
+            "commit",
+            "-q",
+            "-m",
+            "test: drop the recorded budget\n\nFixture state.",
+        ],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     shadow = dispatch_shadow(
         primary["run_id"],
@@ -4355,7 +4444,13 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
     # Cite what the manifest recorded: a passing gate that leaves the run's own
     # commits uncited is refused, because that is how a node's work ends up
     # surviving only as long as its worktree.
-    crew.complete(first["run_id"], gate="passed", commits=["HEAD"])
+    crew.complete(
+        first["run_id"],
+        gate="passed",
+        commits=["HEAD"],
+        review_waiver="this node measures what a redispatch inherits; the "
+        "review lifecycle has its own coverage",
+    )
 
     second = crew.dispatch(
         node=_node(manifest_path=str(manifest)),
