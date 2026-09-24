@@ -38,6 +38,9 @@ def _write_pointer(
 
 
 def _write_ledger(project: str, repository: Path, *, run_id: str, node: str) -> None:
+    # The fixture repositories are not checkouts, so git cannot say whether a
+    # ledger path was ever recorded and the conservative refusal stands. These
+    # projects are genuinely new, which is the stated case for initialising.
     ledger.append_run(
         project,
         ledger.build_record(
@@ -48,6 +51,7 @@ def _write_ledger(project: str, repository: Path, *, run_id: str, node: str) -> 
             session_id=f"session-{project}",
         ),
         root=repository,
+        allow_create=True,
     )
 
 
