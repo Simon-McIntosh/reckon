@@ -816,6 +816,45 @@
     measured tree) with the sorted id sets beside it. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-cohort-delta-at-the-merged-head">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-25 &mdash; a scratch-tree measurement is asked to name
+    the tree it imported.</strong> The template asked every gate log for a revision header and asked nothing
+    that identified the module a scratch-tree run actually imported, so the counts in a base-arm log could
+    corroborate the test file the run collected and not the module under test: a copy importing stale
+    bytecode leaves the failure-id sets looking identical, which is exactly what the review of the previous
+    node could not rule out. The <code>test_logs</code> gloss now extends the sentence it already carried
+    rather than adding a second contract beside it &mdash; a gate or base-arm measurement run in a scratch
+    tree also names on its header lines the absolute path of the module under test as imported
+    (<code>module.__file__</code>) and the resolved working directory the run resolved from. The same two
+    facts are offered as <code>measurement_module</code> and <code>measurement_cwd</code> keys beside
+    <code>test_logs</code>, which is what lets a reader who never opens the log see which tree served each
+    arm. The request is scoped to a scratch-tree run rather than demanded of every log, because for a
+    single-tree measurement the two facts carry no information, and a fact that is asked for where it says
+    nothing is a rule read as noise and then skipped.</p>
+
+    <p><strong>Proven by seven cases that enter through <code>compose_prompt</code>, and the cohort adds no
+    failure id.</strong> The log side is asserted to ask for the module path and for the working directory,
+    to name the scratch-tree scope, and to keep the existing revision/tree/command sentence appearing exactly
+    once &mdash; extending the sentence is the change, so a second copy of it must not appear. The manifest
+    side is asserted to offer each key with its fact and to place both beside <code>test_logs</code> and
+    before <code>negative_control_log</code>. The sixteen-file prompts-and-negative-control cohort is
+    <strong>2 failed, 184 passed</strong> at the head <code>0fa5ddf9</code> against <strong>2 failed, 177
+    passed</strong> at base <code>c590aaaa</code>: the two failing ids are identical and both sit in
+    <code>tests/test_role_write_scope.py</code>, present at base and outside this node's declared scope,
+    while the seven added passes are exactly this change's seven new cases. The composed prompt measures
+    <strong>10,363 characters before and 10,915 after</strong>, and the declared invariant boundary is
+    unchanged at 1,311, so none of the new text reaches the shared opening every worker receives.</p>
+
+    <p><strong>Falsified before trusting it.</strong> The declared mutation deletes the new module-path and
+    working-directory template lines from <code>reckon/crew/prompts.py</code> &mdash; the extended gloss
+    reverts and both keys go. Applied, the file reddens <strong>6 failed, 1 passed</strong>: the survivor is
+    the case requiring the revision/tree/command sentence to appear exactly once, which the deletion leaves
+    true because nothing was added beside it. The mutation is the red log's first line verbatim, and
+    <code>reckon/crew/prompts.py</code> was restored afterwards with an empty <code>git diff</code> and the
+    file re-run <strong>7 passed</strong> at the same revision. No figure accompanies this record: the change
+    is template text, and a before-and-after of two sentences is quoted rather than drawn. This gate measures
+    only this node's own change; the merged head is a separately dispatched node's measurement. Full record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#a-measurement-names-the-tree-it-imported">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
