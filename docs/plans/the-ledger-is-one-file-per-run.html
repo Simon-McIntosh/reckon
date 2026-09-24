@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -228,14 +228,14 @@
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="integrated-gate-recording" data-choice="" data-by="" data-when="" data-leaning="per-file-serialiser">
+<div class="r-dec" data-key="integrated-gate-recording" data-choice="per-file-serialiser" data-by="reckon-build s22-coord" data-when="2026-09-24T23:22:06+00:00">
     <p class="r-dec-q">How should an integrated gate re-run persist after run rows leave crew.json?</p>
     <p class="r-dec-ctx">The current function loads the aggregate ledger, patches the matching run, writes the aggregate document, imports the ledger into the index, and commits the ledger path. Code evidence favors preserving the committed report with a per-file route.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="per-file-serialiser">Per-file write through the one serialiser — add targeted run-file read/write and retain the committed report.</button>
+      <button class="r-opt chosen" data-value="per-file-serialiser">Per-file write through the one serialiser — add targeted run-file read/write and retain the committed report.</button>
       <button class="r-opt" data-value="retire-in-place-update">Retire the in-place update — remove the load/patch/write/index-import/commit flow and give up the durable per-run report.</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The integrated-gate report is the only durable record of whether a promoted run&#x27;s gate still holds at the merged head, and verify-gate exists to write it. Retiring the in-place update would delete that evidence to save one targeted read and write, which the one serialiser already makes cheap. Locked by the S22 coordinator on the code evidence the revision recorded.</p>
     </div>
 </section>
 </main>
