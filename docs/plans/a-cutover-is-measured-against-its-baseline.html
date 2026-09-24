@@ -122,55 +122,77 @@
     them otherwise. Followers and dispatch loops move with their parent session, because a
     placed parent places its children. Sessions move last, in one operation.</p>
     <figure>
-      <svg viewBox="0 0 760 200" role="img" aria-label="Session topology after the cutover" style="max-width:100%;font-family:system-ui,sans-serif;font-size:13px">
-        <rect x="10" y="20" width="250" height="160" fill="#fff" stroke="#333" stroke-width="1"/>
-        <text x="20" y="42" fill="#111">login node 98dci4-srv-1006</text>
-        <rect x="30" y="60" width="210" height="40" fill="#fff" stroke="#333" stroke-width="1"/>
-        <text x="135" y="85" text-anchor="middle" fill="#111">zellij server and panes</text>
-        <text x="30" y="130" fill="#111">editors, git, interactive shells</text>
-        <text x="30" y="160" fill="#555">/run/user: zellij socket stays here</text>
-        <rect x="420" y="20" width="330" height="160" fill="#fff" stroke="#333" stroke-width="1"/>
-        <text x="430" y="42" fill="#111">allocation ambix-fleet on 98dci4-clu-2002 (rigel)</text>
-        <text x="440" y="75" fill="#111">claude sessions (one step per pane)</text>
-        <text x="440" y="100" fill="#111">followers and dispatch loops</text>
-        <text x="440" y="125" fill="#111">per-project producers</text>
-        <text x="440" y="150" fill="#111">workers, as steps in the reservation</text>
-        <text x="440" y="172" fill="#555">/run/user: cc-socks for every placed session</text>
-        <line x1="240" y1="80" x2="420" y2="75" stroke="#333"/>
-        <text x="330" y="68" text-anchor="middle" fill="#111">srun --overlap --pty</text>
+      <svg viewBox="0 0 760 230" role="img" aria-label="Session topology after the cutover" style="max-width:100%;font-family:system-ui,sans-serif;font-size:13px">
+        <rect x="10" y="20" width="230" height="190" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="20" y="42" fill="#111">any login node</text>
+        <rect x="25" y="60" width="200" height="44" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="125" y="80" text-anchor="middle" fill="#111">srun --overlap --pty</text>
+        <text x="125" y="96" text-anchor="middle" fill="#111">zellij attach fleet</text>
+        <text x="25" y="130" fill="#555">a viewer only: losing it, or the</text>
+        <text x="25" y="146" fill="#555">whole login node, drops the view</text>
+        <text x="25" y="162" fill="#555">and nothing else</text>
+        <rect x="360" y="20" width="390" height="190" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="370" y="42" fill="#111">fleet allocation (rigel, unlimited), batch step</text>
+        <text x="380" y="68" fill="#111">zellij server, started by the batch script</text>
+        <text x="395" y="92" fill="#111">tab per repo &#8594; pane &#8594; srun --overlap --pty claude</text>
+        <text x="410" y="112" fill="#555">one step per session; its end reaps what it started</text>
+        <text x="380" y="140" fill="#111">producers: one step each, under their lease</text>
+        <text x="380" y="164" fill="#111">workers: their own steps, as today</text>
+        <text x="380" y="192" fill="#555">runtime dir /tmp/&lt;uid&gt;-rt: sockets for every session</text>
+        <line x1="225" y1="82" x2="360" y2="68" stroke="#333"/>
       </svg>
-      <figcaption>Each zellij pane on the login node runs its claude session as an
-      <code>srun --overlap --pty --jobid=&lt;fleet&gt;</code> step in the allocation. If the
-      allocation ends, each pane's step exits and leaves a prompt in a live zellij session,
-      rather than taking days of session state with it.</figcaption>
+      <figcaption>The zellij server runs in the allocation's batch step, the only place that
+      outlives every login node. Login nodes only attach to it. Each session runs as its own
+      step launched from inside its pane, so SLURM reaps whatever a session leaves behind when
+      it ends.</figcaption>
     </figure>
-    <p><strong>Three constraints on the session move</strong>, each measured or checked
-    rather than assumed:</p>
+    <p><strong>Why this topology, from probes of the allocation on 2026-09-24</strong>
+    (imas-ambix research note <code>login-node-storage-contention</code> &sect;8):</p>
     <ul>
-      <li><strong>zellij stays on the login node.</strong> <code>/run/user/&lt;uid&gt;</code>
-      is node-local, so a zellij server started inside the allocation would be invisible from
-      the login node, and an ended allocation would take the server with it.</li>
-      <li><strong>The sessions move in one operation.</strong> Cross-session messaging uses
-      node-local sockets under <code>/run/user/&lt;uid&gt;/cc-socks</code>. A half-migrated
-      fleet splits into two islands that cannot message each other, and a send to an
+      <li><strong>A step dies with its client.</strong> Killing the login-side client of an
+      <code>srun --overlap --jobid</code> step ended the step within seconds. A session started
+      as <code>srun --pty claude</code> from a login terminal therefore lives only as long as that
+      terminal and that login node. So no session's step may have its client on a login node.</li>
+      <li><strong>Only the batch step outlives every login node.</strong> The zellij server is
+      started by the allocation's batch script, and it owns the sessions' terminals. Login nodes
+      attach viewers with <code>srun --overlap --pty --jobid=&lt;fleet&gt; zellij attach
+      fleet</code>, from any node, detaching and reattaching freely.</li>
+      <li><strong>A step reaps everything under it, detached or not.</strong> A
+      <code>setsid nohup</code> process was gone once its step ended. Each pane therefore launches
+      its session as <code>srun --overlap --pty --jobid=&lt;fleet&gt; claude &hellip;</code>, whose
+      client lives in the pane on the compute node. When a session ends, every follower, shell and
+      search it started is removed with it, which is cleanup by construction.</li>
+      <li><strong>The node has no <code>/run/user/&lt;uid&gt;</code>, and a step cannot create
+      one</strong>, while <code>XDG_RUNTIME_DIR</code> is inherited pointing at it. The launcher
+      creates a private runtime directory on the node's local <code>/tmp</code> (mode 700), points
+      <code>XDG_RUNTIME_DIR</code> and zellij's socket directory at it, and every placed session
+      shares it. Cross-session sockets are node-local, so the sessions move in one operation: a
+      half-migrated fleet splits into two groups that cannot message each other, and a send to an
       unreachable peer looks like any other send.</li>
-      <li><strong>The launcher unsets the compute node's <code>uv</code> function.</strong>
-      There the login shell defines <code>uv</code> as a function that injects its own
-      <code>--no-sync</code>, so an explicit one becomes a duplicate and uv exits 2 (measured
-      2026-09-07). The launcher runs <code>unset -f uv</code> and calls <code>command
-      uv</code>, so no user has to remember it.</li>
+      <li><strong>ssh to the node lands in <code>user.slice</code>, outside the job</strong>, and so
+      escapes both the allocation's limits and its cleanup. It is never the route in.</li>
+      <li><strong>The launcher unsets the compute node's <code>uv</code> function</strong>, which
+      injects its own <code>--no-sync</code> so an explicit one makes uv exit 2 (measured
+      2026-09-07), by running <code>unset -f uv</code> and calling <code>command uv</code>.</li>
+      <li><strong>The allocation is re-created, not reused.</strong> The present allocation's batch
+      script only sleeps, and a batch step cannot be given new processes. The re-hold path that
+      <code>the-fleet-shares-one-allocation</code> uses must create the batch script that starts
+      the zellij server, so an allocation lost and re-held comes back with its server. A lost
+      allocation stops every session. Transcripts are on GPFS, so each session resumes with
+      <code>claude --resume</code>, and the tab layout is a versioned layout file.</li>
     </ul>
     <p><strong>Done when</strong>, in this order:</p>
     <ol>
-      <li><code>srun --overlap --pty --jobid=&lt;fleet&gt;</code> from a zellij pane runs an
-      interactive claude session with a working TTY. This is untested here, so it goes first:
-      if <code>--pty</code> and <code>--overlap</code> do not compose, the session half stops
-      at this step.</li>
-      <li>The producer of every active project runs as a step in the reservation, proven by
-      its job id, and none remains on the login node.</li>
-      <li>The sessions move in one operation. A cross-session message between two placed
-      sessions is delivered, and the login node shows no remaining claude session of the
-      fleet.</li>
+      <li>In a test allocation, the batch script starts a zellij server. A viewer attaches from
+      a login node through a pty step and detaches, its login-side client is killed, and on
+      reattach the pane's process is still running.</li>
+      <li>A session launched in a pane as its own step keeps its socket under the launcher's
+      runtime directory, and two such sessions exchange a cross-session message.</li>
+      <li>Ending a session's step removes a detached child the session had started.</li>
+      <li>The producer of every active project runs as a step under its lease in the
+      reservation, proven by its job id, and none remains on the login node.</li>
+      <li>The sessions move in one operation, and the login node's census shows no fleet
+      claude session, follower, producer or dispatch loop.</li>
       <li>A placed session runs <code>uv run --no-sync</code> successfully through the
       launcher.</li>
     </ol>
@@ -192,7 +214,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Place the fleet, measure the throttled fraction, and show the re-hold</h4>
-    <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it. Move every background crew process in the order §4 sets: first prove <code>srun --overlap --pty</code> composes from a zellij pane; then move producers, proven by job id, with none left on the login node; then move all sessions in one operation, with a cross-session message delivered between two placed sessions; and a placed session runs <code>uv run --no-sync</code> through the launcher. Claim login-node relief only, not reduced GPFS pressure.</p></div>
+    <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it. Move every background crew process in the order §4 sets: first prove that a zellij server started by the allocation's batch script survives the loss of its login-side viewer, that a session run as its own step from a pane gets a working runtime directory and cross-session messaging, and that ending that step reaps a detached child; then move producers under their lease, proven by job id, with none left on the login node; then move all sessions in one operation, with the login node's census showing none of the fleet left; and a placed session runs <code>uv run --no-sync</code> through the launcher. Claim login-node relief only, not reduced GPFS pressure.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-cutover-is-measured-against-its-baseline</pre>
     </article>
 </section>
