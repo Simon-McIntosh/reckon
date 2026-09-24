@@ -73,7 +73,46 @@
       </tbody>
     </table>
 
-    
+    <section id="s2-promotion-fixtures-initialise-the-ledger">
+    <header><h3>promotion-fixtures-initialise-the-ledger &mdash; eleven files, 53 failing ids repaired</h3></header>
+    <p><strong>Cause group repaired:</strong> an absent ledger is refused (&sect;2's first cluster, 54 ids at head).
+    <code>ledger.append_run</code> refuses to create a ledger that is absent when git cannot answer whether the path
+    was ever tracked, and these fixtures promoted into plain temporary directories that are not checkouts. The shipped
+    behaviour is intended, so <strong>the fixtures moved to it</strong>: each project ledger is initialised with
+    <code>ledger.write(project, {"members": [], "runs": [], "holds": []}, 0, root=root)</code> before any run is appended.
+    Class: <em>stale expectation</em>. <code>test_store_concurrency</code> is the exception &mdash; its subject is the
+    creation race from an absent ledger and its two assertions run from version 1, so its append declares
+    <code>allow_create=True</code> rather than initialising first.</p>
+    <p><strong>One further cause, confined to one file:</strong>
+    <code>test_a_served_run_is_not_silence::test_exhaustion_without_a_later_completion_keeps_its_reason</code> asserted the
+    refusal reason by equality. Commit <code>e68a84a7</code> routed the budget refusal through
+    <code>reckon/crew/refusals.py</code>, which appends the resolving crew action, so the reason now carries a remedy
+    sentence after the cause. The test asserts the cause remains present in the reason. Class: <em>stale expectation</em>.</p>
+    <p><strong>Measure.</strong> Each of the eleven files ran in its own pytest process with its own <code>--basetemp</code>
+    on compute node <code>98dci4-clu-2058</code> (fleet job <code>1277272</code>). At base <code>77c20349</code> the eleven
+    files carried 53 failing or erroring node ids; at the head of this change all eleven pass with zero failures and zero
+    errors. No test is skipped, xfailed, deleted or weakened.</p>
+    <table>
+      <thead><tr><th>File</th><th>Base passed / failed</th><th>Head passed / failed</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_a_served_run_is_not_silence</code></td><td>0 / 9</td><td>9 / 0</td></tr>
+        <tr><td><code>test_capabilities</code></td><td>7 / 27</td><td>34 / 0</td></tr>
+        <tr><td><code>test_crew_recover</code></td><td>17 / 1</td><td>18 / 0</td></tr>
+        <tr><td><code>test_crew_run_identity</code></td><td>6 / 1</td><td>7 / 0</td></tr>
+        <tr><td><code>test_crew_runs_view</code></td><td>19 / 1</td><td>20 / 0</td></tr>
+        <tr><td><code>test_dry_run_predicts_the_launcher</code></td><td>5 / 2</td><td>7 / 0</td></tr>
+        <tr><td><code>test_evidence_from_report</code></td><td>1 / 3</td><td>4 / 0</td></tr>
+        <tr><td><code>test_evidence_synthesis</code></td><td>0 / 5 (fixture errors)</td><td>5 / 0</td></tr>
+        <tr><td><code>test_failure_classification</code></td><td>11 / 1</td><td>12 / 0</td></tr>
+        <tr><td><code>test_serve_finished_runs</code></td><td>0 / 1</td><td>1 / 0</td></tr>
+        <tr><td><code>test_store_concurrency</code></td><td>0 / 2</td><td>2 / 0</td></tr>
+      </tbody>
+    </table>
+    <p>Because each file's base <code>(passed + failed)</code> equals its head <code>passed</code>, no node id moved from
+    pass to fail and no test was lost. Commit <code>7ff63a7d</code>. Red-at-base log:
+    <code>logs/77c20349-red-at-base.log</code>; head logs <code>logs/after-aggregate.log</code>. Full tables and the
+    negative control are in the <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#promotion-fixtures-initialise-the-ledger">landed evidence record.</a></p>
+    </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
