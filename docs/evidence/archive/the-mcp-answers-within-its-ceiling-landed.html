@@ -202,6 +202,55 @@
 
   <p><em>Coordinator note:</em> the node also produced <code>summary_pending_rows.png</code>. It was removed at merge because it drew tabular rows as an image. The rows and figures are stated in the text above.</p>
   </section>
+
+  <section id="s3-response-budget">
+    <h2>&sect;3 &mdash; every MCP read fits its configured response budget</h2>
+    <p>Commit <code>9e02b5f6</code>, based on <code>03b04d4f</code>, adds
+    <code>reckon/mcp_budget.py</code> and applies it once at the registered read boundary in
+    <code>reckon/mcp.py</code>. The boundary runs after the storage deadline, so it measures the
+    exact value the transport would receive: a normal answer or the existing typed
+    <code>storage-slow</code> receipt. It runs only when the resolved crew call kind is
+    <code>read</code>, leaving recovery writes unchanged.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/response-budget-flow.svg"
+           alt="Flow from an MCP read through the deadline and response budget, preserving answers that fit and replacing oversized answers with bounded truncation receipts.">
+      <figcaption>One post-read boundary covers roadmap, read-plan, crew and audit without duplicating their derivations.</figcaption>
+    </figure>
+
+    <h3>The defect, reproduced before repair</h3>
+    <p>A 1,000-character override was applied to registered-tool calls backed by synthetic large
+    fixtures. The tools ignored it because no response-size boundary existed. Roadmap detail
+    returned 11,883 characters, crew scopes 8,398, crew live 28,383, read-plan 13,150 and audit
+    13,150. All five ceiling assertions failed; the under-budget identity control passed. The
+    reproduction is in <code>logs/pre-repair-gate.log</code> beside the run manifest.</p>
+
+    <h3>The bounded answer</h3>
+    <p><code>RECKON_MCP_RESPONSE_CEILING</code> configures the character ceiling and defaults to
+    80,000. The measure is deterministic compact JSON with Unicode characters counted as
+    characters rather than bytes. An answer at or below the ceiling is returned as the same object.
+    An oversized answer becomes a typed <code>response_over_budget</code> receipt whose
+    <code>truncated</code> block carries the ceiling, original length, omitted mapping/field/list/item
+    and scalar counts, and non-empty structured <code>narrow_with</code> arguments. The receipt is
+    itself measured; compact and minimal fallbacks keep even the smallest supported ceiling
+    bounded.</p>
+
+    <h3>Gate and negative control</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Focused MCP gate</td><td>80 passed in 9.66 s</td></tr>
+        <tr><td>Declared mutation: remove the common budget call</td><td>5 oversized cases failed; 3 controls passed</td></tr>
+        <tr><td>Real <code>roadmap(project="reckon", sprint="S22", view="detail")</code></td><td>307,123 original characters; 322-character receipt; ceiling 80,000</td></tr>
+        <tr><td><code>reckon/mcp.py</code> lint delta</td><td>18 findings at head, 19 at base; inherited <code>I001</code> removed</td></tr>
+        <tr><td>New module and test lint</td><td>0 findings</td></tr>
+      </tbody>
+    </table>
+    <p>The negative-control log begins with the declared mutation verbatim and is recorded at
+    <code>logs/negative-control.log</code> beside the run manifest. The real-project measurement is
+    in <code>logs/real-s22-roadmap-measurement.log</code>; it imports
+    <code>reckon/mcp.py</code> from this exact worktree and records its resolved working directory.</p>
+  </section>
 </main>
 </body>
 </html>
