@@ -288,13 +288,13 @@
       <table>
         <thead><tr><th>Measure</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>7 passed, exit 0</td></tr>
+          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>7 passed, exit 0 (<code>744deae5</code>)</td></tr>
           <tr><td>Blocked read (deadline 0.2&nbsp;s)</td><td><code>storage-slow</code>, <code>waited_seconds</code> &ge; 0.2</td></tr>
-          <tr><td>Concurrent read of another path</td><td>answered in &lt; 0.3&nbsp;s while one was blocked</td></tr>
+          <tr><td>Concurrent read of another path</td><td>entered and answered in &lt; 0.3&nbsp;s while one was blocked</td></tr>
           <tr><td>Write that lands after its deadline</td><td><code>landed: true</code>, file present</td></tr>
           <tr><td>Write that never lands</td><td><code>landed: false</code>, file absent</td></tr>
           <tr><td>Negative control (deadline and thread removed)</td><td>5 of 7 tests fail</td></tr>
-          <tr><td>MCP surface regression</td><td>279 passed / 5 failed &mdash; identical to the base revision</td></tr>
+          <tr><td>MCP surface regression</td><td>243 passed / 5 failed over the ten pre-existing surface test files &mdash; identical to the base revision (<code>a695d425</code>)</td></tr>
         </tbody>
       </table>
       <p>The negative control removes the worker thread and its deadline so the body runs inline
@@ -303,7 +303,11 @@
       <code>test_a_concurrent_read_of_another_path_answers_normally</code>, both write
       landed-state cases and the end-to-end adapter case, while the two tests that assert the SDK
       fact and the registration wiring still pass &mdash; the mutation is the deadline, not the
-      wiring. The five regression failures were measured unchanged at the section's base revision
+      wiring. The concurrency case asserts the healthy body's <em>entry</em> time, not only
+      that it finished inside the deadline: an elapsed-time bound alone is satisfied by a
+      serialised loop, because under the defect the healthy call runs to completion immediately
+      after the blocked one. With the entry time required to precede the blocked read's release,
+      the mutated run fails on that assertion instead of passing vacuously. The five regression failures were measured unchanged at the section's base revision
       (<code>test_mcp_recovery</code> resume session reattach, <code>test_crew_runs_view</code>
       joins-sources, and three <code>test_edit_plan</code> create cases), so this change adds none.</p>
       <p>No change outside <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code> and the

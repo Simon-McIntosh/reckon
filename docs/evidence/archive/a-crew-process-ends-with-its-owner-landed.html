@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Each section's landing record, with the measure that decided it.">
   <meta name="plan-evidence-for" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-verifies" content="a-crew-process-ends-with-its-owner#s5">
-  <meta name="plan-commits" content="d026717e">
+  <meta name="plan-commits" content="d026717e,744deae5">
   <meta name="plan-artifacts" content="reckon/mcp.py,reckon/_mcp_tools.py,tests/test_mcp_reads_have_deadlines.py,docs/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
@@ -50,12 +50,12 @@
         <tbody>
           <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>7 passed, exit 0 (<code>d026717e</code>)</td></tr>
           <tr><td>Blocked read, deadline 0.2&nbsp;s</td><td><code>storage-slow</code>, <code>waited_seconds</code> &ge; 0.2, <code>path</code> named</td></tr>
-          <tr><td>Concurrent read of another path</td><td>answered in &lt; 0.3&nbsp;s while the first was blocked</td></tr>
+          <tr><td>Concurrent read of another path</td><td>entered and answered in &lt; 0.3&nbsp;s while the first was blocked</td></tr>
           <tr><td>Write landing after its deadline</td><td><code>landed: true</code>; file present</td></tr>
           <tr><td>Write never landing</td><td><code>landed: false</code>; file absent</td></tr>
           <tr><td>Negative control: deadline and thread removed</td><td>5 of 7 tests fail (red log recorded)</td></tr>
           <tr><td>SDK fact, measured against a bare <code>FastMCP</code></td><td>a blocked sync tool serialises a second call</td></tr>
-          <tr><td>MCP surface regression vs base revision</td><td>279 passed / 5 failed, identical at base</td></tr>
+          <tr><td>MCP surface regression vs base revision</td><td>243 passed / 5 failed over the ten pre-existing surface test files &mdash; identical at base (<code>a695d425</code>, base-source overlay)</td></tr>
         </tbody>
       </table>
       <p>No change outside the three declared write paths was required, and none was made; the
