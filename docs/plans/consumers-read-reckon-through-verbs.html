@@ -16,7 +16,7 @@
 <meta name="plan-modified" content="2026-09-24">
 <meta name="plan-informs" content="a-crew-process-ends-with-its-owner,the-fleet-shares-one-allocation">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="8">
 </head>
 <body>
 <main class="plan-doc">
@@ -46,7 +46,7 @@
     <p>Two coordinator surveys corroborate it. reckon-e5's
     <code>s19-internals-consumers-survey</code> (report under
     <code>crew/reports/reckon/ship-s19-20260922/</code>) found that
-    <code>skills/reckon-ship/scripts/worktree_fleet.py</code> re-implements pointer
+    <code>skills/reckon-build/scripts/worktree_fleet.py</code> re-implements pointer
     classification and worktree layout; that the reckon-sync fallback writes
     <code>mounts.json</code> and the state symlink from the shell; and that the recovery recipe
     in <code>AGENTS.md</code> opens a live pointer's JSON for its <code>worktree</code>.
@@ -57,71 +57,98 @@
     <code>docs/state/reckon/crew.json</code>. That dirties the shared checkout, and every other
     session's <code>member add</code> is refused until someone commits it: 5 times in one day.
     imas-codex has its own inventory in
-    <code>docs/evidence/imas-codex-replan/shared-infrastructure-coupling.md</code>.</p>
+    <code>docs/evidence/imas-codex-replan/shared-infrastructure-coupling.md</code>.
+    <strong>Order.</strong> §1 remains the fixed evidence input; §2 begins after it and does not
+    re-measure this census.</p>
 
     <h2 id="s2">&sect;2 &mdash; One verb prints where reckon keeps things</h2>
     <p><code>reckon crew path --kind config-home|reports|runs|live|reviews [--project P] [--run R]</code>
-    prints the resolved absolute path. It reuses <code>_config_home()</code>'s precedence
-    (<code>RECKON_HOME</code>, then <code>~/.config/reckon</code>) rather than inventing one, and
-    with <code>--run</code> it prints that run's directory. <strong>Done when</strong>
-    <code>tests/test_crew_path_prints_the_resolved_home.py</code> shows, under a temporary
-    <code>RECKON_HOME</code>, each kind printing a path under it, and with it unset, a path under
-    <code>~/.config/reckon</code>. The negative control is executed and logged: a verb that
-    hardcodes the default ignores <code>RECKON_HOME</code> and fails. The write paths are
-    <code>reckon/cli.py</code> and that test.</p>
+    prints one newline-terminated absolute path, never a JSON envelope. It calls
+    <code>_config_home()</code> unchanged: <code>RECKON_HOME</code>, then an existing
+    <code>~/.config/reckon</code>, then the legacy <code>~/docs-server</code>. The
+    <code>config-home</code> kind takes neither selector; <code>reports</code> takes only an
+    optional <code>--project</code>; <code>runs</code> and <code>live</code> take only an optional
+    <code>--run</code>; and <code>reviews</code> requires <code>--project</code> and permits
+    <code>--run</code>. <strong>Done when</strong>
+    <code>tests/test_crew_path_prints_the_resolved_home.py</code> creates each candidate under a
+    synthetic home and proves all three precedence branches plus every selector rule; its
+    executed, logged negative control hardcodes the default and therefore fails the
+    <code>RECKON_HOME</code> branch. The write paths are <code>reckon/cli.py</code> and that test.
+    <strong>Order.</strong> §2 lands first.</p>
 
     <h2 id="s3">&sect;3 &mdash; Lane, run and claim facts come from verbs, not files</h2>
-    <p>Three read-only verbs, each printing JSON whose field names are declared once:</p>
-    <ul>
-      <li><code>reckon crew lanes</code> prints the fields <code>lane_document.py</code> already
-      parses, the same payload as the MCP <code>view="lanes"</code>.</li>
-      <li><code>reckon crew list --run R --field worktree|pid|phase|base_sha</code> prints one
-      pointer fact, so no recipe opens pointer JSON.</li>
-      <li><code>reckon crew claims [--path P]</code> prints which live run holds a write path,
-      read from each pointer's <code>node.write_paths</code>.</li>
-    </ul>
-    <p><strong>Done when</strong> tests cover each verb against temporary fixtures, and
-    <code>skills/reckon-ship/scripts/worktree_fleet.py</code> uses <code>crew list</code> and
-    <code>crew claims</code> in place of its own pointer classification. Its diff removes the
-    duplicated classifier. The write paths are <code>reckon/cli.py</code>,
-    <code>reckon/crew/lane_document.py</code>, that script and the tests.</p>
+    <p>Three read-only verbs replace direct file reads. <code>reckon crew lanes</code> prints JSON
+    from <code>read_lane_document_file()</code>: <code>headroom</code>, <code>running</code>,
+    <code>waiting</code>, <code>concurrent_requests</code>, <code>mean_context</code>,
+    <code>kv_occupancy</code>, <code>state</code>, <code>observed_at</code>, freshness and
+    unknown-field readings; it is expressly distinct from the endpoint/quota payload of MCP
+    <code>view="lanes"</code>. <code>reckon crew list --run R --field
+    worktree|pid|phase|base_sha</code> reads those four named pointer fields and prints the
+    selected scalar with a newline, while ordinary <code>crew list</code> remains its JSON
+    envelope. <code>reckon crew claims [--path P]</code> prints the complete JSON claim inventory
+    when the filter is omitted and the matching claims when it is supplied, deriving every
+    claim from <code>node.write_paths</code>. <strong>Done when</strong> temporary-pointer and
+    temporary-lane fixtures cover every verb and scalar rule, and
+    <code>skills/reckon-build/scripts/worktree_fleet.py</code> calls <code>crew list</code> and
+    <code>crew claims</code> with no local pointer-classification fallback; its fixture behaviour
+    stays unchanged. §3 owns its CLI fields, <code>reckon/crew/lane_document.py</code>, that
+    script and its focused tests. <strong>Order.</strong> §3 starts after §2 and finishes before
+    §4.</p>
 
     <h2 id="s4">&sect;4 &mdash; Hand recipes become verbs</h2>
-    <p>Two coordinator recipes repeat daily and are error-prone.
-    <code>reckon crew repair-manifest --run R --set field=value</code> keeps
-    <code>manifest.md.asdelivered</code>, writes the field in its canonical shape, and runs
-    <code>check-manifest</code> afterwards. It replaces hand edits whose appends ran onto the
-    previous line on 2026-09-24. The reckon-sync fallback's writes of <code>mounts.json</code>
-    and the state symlink move behind <code>reckon sync --write</code>, which prints what it
-    wrote. <strong>Done when</strong> each verb has a test whose negative control reproduces the
-    hand-recipe defect, and <code>~/.agents/AGENTS.md</code> and the skills cite the verbs in
-    place of the recipes. The write paths are <code>reckon/cli.py</code>, the sync module the
-    node names, the skill files the node names, and the tests.</p>
+    <p>Two coordinator recipes become explicit verbs with distinct red controls.
+    <code>reckon crew repair-manifest --run R --set field=value</code> retains
+    <code>manifest.md.asdelivered</code>, applies the canonical field shape to a candidate copy,
+    runs <code>check-manifest</code>, and atomically replaces the manifest only when that check
+    passes; a failed check exits non-zero and leaves the live manifest unchanged. Its negative
+    control reproduces the prior-line append defect. <code>reckon sync --write</code> is the
+    explicit fallback-repair path for <code>mounts.json</code> and the state symlink: without
+    <code>--write</code>, that fallback reports proposed changes and touches neither location;
+    its negative control proves an unguarded fallback write is refused. The in-repository
+    skills cite these verbs. Replacement of the recipe in <code>~/.agents/AGENTS.md</code> is
+    deferred to the open <code>global-guidance-authority</code> decision, because that file is
+    user-global rather than a node-owned repository path. §4 owns <code>reckon/cli.py</code>,
+    the sync implementation, the named in-repository skills, and their tests.
+    <strong>Order.</strong> §4 starts after §3; its global-guidance edit waits for that decision.</p>
 
     <h2 id="s5">&sect;5 &mdash; Session captures leave the committed roster</h2>
-    <p><code>crew observe</code> and dispatch write session captures into
-    <code>docs/state/&lt;project&gt;/crew.json</code>, a committed file. So every observation
-    dirties the shared checkout, and peers' roster writes refuse until someone commits it.
-    Captures move to <code>&lt;config-home&gt;/crew/sessions/&lt;project&gt;/&lt;member&gt;.json</code>.
-    The committed roster keeps only member identity and role. <code>new-work-gets-a-new-worker</code>
-    &sect;3 moves the session onto the run record, and this section and that one must agree.
-    Whichever lands second reads the first. <strong>Done when</strong> a test observes a run in a
-    temporary repository and home, and asserts that the committed roster file's bytes are
-    unchanged and the capture is under the config home. The write paths are the observe and
-    dispatch capture sites, which the node names, and that test.</p>
+    <p><code>crew observe</code> and dispatch must leave
+    <code>docs/state/&lt;project&gt;/crew.json</code> byte-identical: a captured worker session is
+    one per run on that run's live pointer and ledger row, never a
+    <code>&lt;member&gt;.json</code> file and never a roster member field. The committed roster
+    retains only the member identity and role needed to select that member; session identity,
+    model, ownership and history belong to the run. The capture-record design in
+    <code>new-work-gets-a-new-worker</code> §3 is authoritative, while §5 owns removing the
+    residual observe/dispatch writes and its non-mutation test. <strong>Done when</strong> a test
+    observes a run in a temporary repository and home, proves the roster bytes unchanged, and
+    finds the capture on that exact run record. The explicit write paths are
+    <code>reckon/cli.py</code>, <code>reckon/crew/dispatch.py</code>, and the focused test.
+    <strong>Order.</strong> §5 starts only after <code>new-work-gets-a-new-worker</code> §3 and
+    follows §4.</p>
 
     <h2 id="s6">&sect;6 &mdash; The CLI's JSON outputs are a declared contract</h2>
-    <p>The JSON that <code>crew dispatch</code>, <code>crew complete</code>, <code>crew list</code>
-    and the verbs above print is declared in one schema, versioned beside the flight config's
-    LinkML. A consumer can then validate what it parses, and a change to a field is a schema
-    change reviewers can see. The refusal classes consumers need are part of it. Preflight
-    refusals launch nothing, while post-launch refusals always carry the run id they created;
-    imas-codex measured a caller retrying against its own phantom run. <strong>Done when</strong>
-    a test validates each command's output against the schema over its existing fixtures, and a
-    refusal after launch carries <code>run_id</code> and <code>launched: true</code>. The
-    negative control is executed and logged: removing <code>run_id</code> from a post-launch
-    refusal fails validation. The write paths are the schema file, the commands' result
-    builders, which the node names, and the tests.</p>
+    <p>A new result LinkML schema beside <code>reckon/schema/flight.yaml</code>, rather than inside
+    that flight-configuration schema, declares the JSON envelopes of <code>crew dispatch</code>,
+    <code>crew complete</code>, ordinary <code>crew list</code>, <code>crew lanes</code> and
+    <code>crew claims</code>; the scalar output of <code>crew path</code> and
+    <code>crew list --field</code> is explicitly outside the JSON contract. It defines exactly
+    two consumer-facing refusal envelopes: a preflight refusal has <code>launched: false</code>
+    and no <code>run_id</code>, while a post-launch refusal has <code>launched: true</code> and
+    its <code>run_id</code>. The open <code>post-launch-refusal-baseline</code> decision determines
+    whether the latter field is declared from current behaviour or added by this section.
+    Existing fixtures cover the three existing commands; new fixtures are created by the owning
+    §2–§4 sections and are consumed here without rewriting their focused tests. §6 owns the
+    aggregate schema-validation test and may not rename earlier sections' result fields or
+    modify their result builders except to add the contract-required envelope.
+    <strong>Done when</strong> every declared JSON command validates, a post-launch refusal
+    validates with <code>run_id</code> and <code>launched: true</code>, and the executed, logged
+    negative control deleting <code>run_id</code> fails validation. <strong>Order.</strong> §6
+    lands last, after §2–§5.</p>
+    <figure>
+      <img src="/reckon/figures/consumers-read-reckon-through-verbs/implementation-order.svg"
+           alt="Sections 2 through 6 land in sequence, while section 5 waits for new-work-gets-a-new-worker section 3.">
+      <figcaption>Delivery order keeps each CLI surface and its field names owned once; the external capture contract gates §5.</figcaption>
+    </figure>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crrtv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build consumers-read-reckon-through-verbs §2" data-resolved-at="" data-resolved-by="">
@@ -134,6 +161,65 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T204049937011-read-back-of-consumers-read-reckon-through-verbs" data-who="reckon-build" data-when="2026-09-24T21:11:31.442Z">
     <div class="r-comment-body"><p>read-back of consumers-read-reckon-through-verbs at 790d5c57: 17 load-bearing two-reading sentences and 5 load-bearing forks; the plan needs revision before §2 to §6 are cut</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-20260924-reading-settlement" data-who="reckon-build" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>Reading-settlement record.</strong> The quoted text below is the revision that removes each two-reading sentence; the two named decision keys remain deliberately open.</p>
+<ul>
+<li><code>S1</code>: “It calls <code>_config_home()</code> unchanged: <code>RECKON_HOME</code>, then an existing <code>~/.config/reckon</code>, then the legacy <code>~/docs-server</code>.”</li>
+<li><code>S2</code>: “<code>crew path</code> prints one newline-terminated absolute path, never a JSON envelope.”</li>
+<li><code>S3</code>: “<code>config-home</code> takes neither selector; <code>reports</code> takes only <code>--project</code>; <code>runs</code> and <code>live</code> take only <code>--run</code>; <code>reviews</code> requires <code>--project</code> and permits <code>--run</code>.”</li>
+<li><code>S4</code>: “The write paths are <code>reckon/cli.py</code> and that test.”</li>
+<li><code>S5</code>: “<code>crew lanes</code> prints the <code>read_lane_document_file()</code> reading and is expressly distinct from MCP <code>view="lanes"</code>.”</li>
+<li><code>S6</code>: “<code>crew list --field</code> prints the selected scalar with a newline, while ordinary <code>crew list</code> remains its JSON envelope.”</li>
+<li><code>S7</code>: “<code>crew claims</code> prints the complete JSON inventory without <code>--path</code> and matching claims with it.”</li>
+<li><code>S8</code>: “<code>skills/reckon-build/scripts/worktree_fleet.py</code> calls the verbs.”</li>
+<li><code>S9</code>: “The script has no local pointer-classification fallback and its fixture behaviour stays unchanged.”</li>
+<li><code>S10</code>: “<code>reckon sync --write</code> is the explicit fallback-repair path; without it, that fallback reports proposed changes and touches neither location.”</li>
+<li><code>S11</code>: open decision <code>global-guidance-authority</code>.</li>
+<li><code>S12</code>: “The two verbs have distinct red controls: prior-line append and unguarded fallback write.”</li>
+<li><code>S13</code>: “A failed manifest check exits non-zero and leaves the live manifest unchanged.”</li>
+<li><code>S14</code>: “A captured worker session is one per run on that run’s live pointer and ledger row.”</li>
+<li><code>S15</code>: “The roster retains only member identity and role; session fields belong to the run.”</li>
+<li><code>S16</code>: “The test proves the roster bytes unchanged and finds the capture on that exact run record.”</li>
+<li><code>S17</code>: “The explicit write paths are <code>reckon/cli.py</code>, <code>reckon/crew/dispatch.py</code>, and the focused test.”</li>
+<li><code>S18</code>: “A new result LinkML schema sits beside, rather than inside, <code>reckon/schema/flight.yaml</code>.”</li>
+<li><code>S19</code>: “The schema defines exactly two consumer-facing refusal envelopes: preflight and post-launch.”</li>
+<li><code>S20</code>: “Existing fixtures cover existing commands; new verb fixtures are created by §2–§4 and consumed here.”</li>
+<li><code>F1</code>: “§2 lands first; §3 follows it; §4 follows §3.”</li>
+<li><code>F2</code>: “§2 owns its focused path test; §6 consumes its output after §2 lands.”</li>
+<li><code>F3</code>: “§2–§4 own result fields; §6 owns aggregate validation and may not rename them.”</li>
+<li><code>F4</code>: “<code>new-work-gets-a-new-worker</code> §3 owns run-record capture; §5 starts after it and removes residual roster writes.”</li>
+<li><code>F5</code>: “§5 owns capture emission removal; §6 lands afterwards and only adds the contract-required envelope.”</li>
+<li><code>S21</code>: open decision <code>post-launch-refusal-baseline</code>.</li>
+</ul></div>
+</div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="session-capture-owner" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">The run-record capture contract from new-work-gets-a-new-worker §3 is available before §5 removes residual roster writes.</h4>
+    <p class="r-gate-required-evidence">reckon:new-work-gets-a-new-worker#s3</p>
+    </div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="global-guidance-authority" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Who may replace the recipe in ~/.agents/AGENTS.md?</p>
+    <p class="r-dec-ctx">That user-global instruction file lies outside this repository, cannot be delivered through the worktree commit, and changes every agent session on the workstation.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="lead-authorized-global-edit">Lead authorizes a separate global-guidance edit</button>
+      <button class="r-opt" data-value="leave-global-guidance-unchanged">Keep the global guidance unchanged</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="post-launch-refusal-baseline" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the current post-launch refusal payload already contain run_id?</p>
+    <p class="r-dec-ctx">The read-back could not reproduce the current post-launch refusal envelope. The answer decides whether §6 only declares the field or adds it before schema validation.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="declare-existing-field">Declare the field already emitted</button>
+      <button class="r-opt" data-value="add-missing-field">Add the missing post-launch field</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 </main>
 </body>
