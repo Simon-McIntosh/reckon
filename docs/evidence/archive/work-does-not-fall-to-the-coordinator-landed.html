@@ -2178,6 +2178,96 @@ AGREE: False</code></pre>
     <code>logs/head-ids-sorted.txt</code> and
     <code>logs/base-ids-sorted.txt</code> beside it.</p>
   </section>
+
+  <section id="a-measurement-names-the-tree-it-imported">
+    <h2>&sect;11 &mdash; A scratch-tree measurement is asked to name the tree it imported</h2>
+    <p><strong>The template now asks a measurement for the two facts that make it self-standing.</strong>
+    A base-arm log run in a scratch copy named a revision in its header while its body held no module path
+    and no working directory, so which tree served the module under test was the header's claim about a copy
+    whose construction was not in the record. Counts cannot close that gap: the shared cases pass under
+    either revision, and a copy importing stale bytecode leaves the failure-id sets looking identical. The
+    <code>test_logs</code> gloss extends the sentence it already carried &mdash; a gate or base-arm
+    measurement run in a scratch tree also names on its header lines the absolute path of the module under
+    test as imported (<code>module.__file__</code>) and the resolved working directory the run resolved from
+    &mdash; and the same two facts are offered as <code>measurement_module</code> and
+    <code>measurement_cwd</code> keys beside <code>test_logs</code>, so a reader who never opens the log
+    still sees which tree served each arm. The request is scoped to a scratch-tree run rather than demanded
+    of every log, so a single-tree measurement is not asked for a fact it does not carry.</p>
+
+    <h3>Gate delta</h3>
+    <p>Every file under <code>tests/</code> that imports <code>reckon.crew.prompts</code>, sixteen files
+    including this change's new one, run whole against a stated base. The head arm was re-run once the
+    documents landed &mdash; a docs-only difference above the code change &mdash; so the cited head log is
+    the later <code>b5354d1e</code> with the same two failures and 184 passes, and the earlier head log at
+    the code change itself is kept beside it.</p>
+
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>c590aaaa</code></td><td>2 failed, 177 passed, <code>EXIT=1</code></td><td>two, both in <code>tests/test_role_write_scope.py</code></td></tr>
+        <tr><td>head <code>0fa5ddf9</code></td><td>2 failed, 184 passed, <code>EXIT=1</code></td><td>the same two, sorted sets diff clean</td></tr>
+        <tr><td><strong>added</strong></td><td colspan="2"><strong>none</strong> &mdash; the seven added passes are this change's seven new cases in <code>tests/test_manifest_template_names_the_tree.py</code>, and the two failures are present at base and outside this node's declared scope</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What the emitted contract now says</h3>
+    <p>The two requests ride the existing sentence rather than a second contract beside it. The sentence
+    <em>A gate log's first line names the revision it ran at, the tree, and the command</em> is unchanged as a
+    prefix and now continues into the scratch-tree request; the case that requires it to appear
+    <strong>exactly once</strong> in the composed prompt is what holds the extension to that form, because
+    the sentence is the anchor a worker already reads and a second copy is the defect that keeps the two
+    contracts from being one. Wording reuse is a measurable property, not a style preference: this reader
+    found four reviewers report the same mis-shaped record four times, and the composed prompt grows by
+    <strong>546 characters</strong> &mdash; the same 546 at the same base and head revisions across three
+    differently-sized sample nodes, because the added text is fixed. On the sample node the new test
+    composes, it reads <strong>10,664 before and 11,210 after</strong>; that pair is a property of the
+    sample, so the shape-independent growth is the figure the record rests on, and both prompts are written
+    out and diffed at the added lines as a receipt. The declared invariant boundary is unchanged at
+    <strong>1,311</strong>, so none of the new text reaches the shared opening every worker receives, and
+    the case asserting the boundary shared by three differently-shaped nodes is untouched.</p>
+
+    <h3>Falsified before trusting it</h3>
+    <p>The declared mutation deletes the new module-path and working-directory template lines from
+    <code>reckon/crew/prompts.py</code>: the extended gloss reverts to the sentence it grew from and both keys
+    go with it. Applied, the new file reddens <strong>6 failed, 1 passed</strong>. The survivor is named here
+    because a red set is only evidence for the cases it contains: it is
+    <code>test_the_revision_header_sentence_survives_exactly_once</code>, which the deletion leaves true
+    because the deletion added nothing to duplicate &mdash; the mutation removes a contract and cannot break
+    the assertion that requires the sentry to be single. The red log's first line repeats the declared
+    mutation verbatim, and after it the log records the removal, the six failing cases, and the restore.
+    <code>reckon/crew/prompts.py</code> was restored from a copy taken before the mutation, verified by an
+    empty <code>git diff</code> at that path and by both keys being present again, and the file was re-run
+    <strong>7 passed</strong> at the same revision.</p>
+
+    <h3>Instrument checks</h3>
+    <p>Three checks rather than one, because a green suite shows nothing about which tree served it. The
+    resolved module was printed at the measured tree
+    (<code>reckon.crew.prompts.__file__</code> under this worktree, not the main checkout) before the cohort
+    ran, so the cohort's pass counts are known to have been produced by this change rather than by a
+    neighbouring checkout's copy; the two failing ids were read from the same <code>FAILED &hellip;</code>
+    summary shape at both revisions and compared as sorted sets rather than counts; and the mutation was
+    reverted rather than left to rot in the log, so the revision cited above is the revision the restored
+    re-run measures. Lint and format are judged by delta as well: <code>reckon/crew/prompts.py</code> reports the same
+    two findings under the same invocation at the base revision and at the head, the new test file reports
+    none, and both changed paths are already formatted &mdash; so the change adds nothing to either
+    obligation, and neither was met by rewriting a file this node did not touch.</p>
+
+    <p>Changed paths: <code>reckon/crew/prompts.py</code>,
+    <code>tests/test_manifest_template_names_the_tree.py</code>,
+    <code>docs/plans/work-does-not-fall-to-the-coordinator.html</code>,
+    <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code>. Measured revision
+    <code>0fa5ddf9</code>; stated base <code>c590aaaa</code>. Receipts:
+    <code>~/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/</code>
+    &mdash; <code>logs/cohort-base.log</code> and
+    <code>logs/cohort-head-final.log</code> (each naming the revision, the tree and the command on its header
+    lines, and the head log additionally printing the resolved module path and working directory before the
+    run, which the base log cannot because the template that asks for them is this change), and
+    <code>logs/negative-control-red.log</code> (the declared mutation on its first line, the six failures,
+    and the restore), plus <code>logs/prompt-size.log</code> and <code>logs/prompt-size.diff</code> for the
+    growth figure, with the measuring script and the two written-out prompts under <code>measure/</code>.
+    No figure accompanies this record: the change is template text, and a before-and-after
+    of two sentences is quoted rather than drawn.</p>
+  </section>
   </main>
 </body>
 </html>
