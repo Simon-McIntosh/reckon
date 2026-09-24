@@ -1,0 +1,39 @@
+set CODEX_HOME unconditionally; the fence=False absence assertion must fail
+# scratch copy of the worktree at 27e11161 + node change, with `adopts_harness_home = True` in reckon/_backends.py
+# tree=/tmp/mut-codex-home
+# cmd=PYTHONPATH=$MUT pytest -p no:cacheprovider -q tests/test_each_run_owns_its_harness_home.py::test_an_unfenced_codex_launch_keeps_the_operators_home
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_an_unfenced_codex_launch_keeps_the_operators_home ____________
+
+tmp_path = PosixPath('/tmp/pt-mut/test_an_unfenced_codex_launch_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fa2b7f83360>
+
+    @requires_bwrap
+    def test_an_unfenced_codex_launch_keeps_the_operators_home(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No fence means no home to answer, so the operator's own is kept.
+    
+        The run's codex home exists to survive the fence, which seals the
+        operator's ``~/.codex`` read-only and exposes the login into the run. With
+        no fence there is neither a seal to answer nor a login bound in, so a
+        CODEX_HOME pointed at an empty run home would displace the operator's login
+        with nothing. The unfenced launch therefore sets no CODEX_HOME and seeds no
+        home, while the fenced launch beside it does both.
+        """
+        fixture = Fixture(tmp_path)
+        fixture.isolate(monkeypatch)
+        # The run directory is live for both launches, so the absence below is the
+        # fence's doing rather than a manifest directory that names no run.
+        assert fixture.manifest.parent.is_dir()
+    
+        unfenced = fixture.plan(dialect="codex", fence=False)
+>       assert "CODEX_HOME" not in unfenced.environment
+E       AssertionError: assert 'CODEX_HOME' not in {'CODEX_HOME': '/tmp/pt-mut/test_an_unfenced_codex_launch_0/home/.config/reckon/crew/runs/r1/codex-home'}
+E        +  where {'CODEX_HOME': '/tmp/pt-mut/test_an_unfenced_codex_launch_0/home/.config/reckon/crew/runs/r1/codex-home'} = LaunchPlan(backend='stub', dialect='codex', argv=['/tmp/pt-mut/test_an_unfenced_codex_launch_0/stub.py', 'exec', '--js...n_unfenced_codex_launch_0/home/.config/reckon/crew/runs/r1/codex-home'}, final_message_path=None, resumed_session=None).environment
+
+/tmp/mut-codex-home/tests/test_each_run_owns_its_harness_home.py:476: AssertionError
+=========================== short test summary info ============================
+FAILED ../../../../../../../../tmp/mut-codex-home/tests/test_each_run_owns_its_harness_home.py::test_an_unfenced_codex_launch_keeps_the_operators_home
+1 failed in 0.17s

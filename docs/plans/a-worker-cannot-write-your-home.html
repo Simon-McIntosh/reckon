@@ -215,6 +215,33 @@
         completed and resumed with nothing added under <code>~/.claude/projects</code> — is
         still owed and is untouched by this node.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260924T2025-unfenced-codex-home" data-who="node unfenced-codex-keeps-its-login" data-when="2026-09-24T20:24:55+00:00">
+        <div class="r-comment-body"><p><strong>An unfenced codex launch keeps the operator's
+        home.</strong> <code>launch_plan</code> adopted the run's codex home on both the
+        fenced and the unfenced path, but that home is a fence artefact: the fence seals the
+        operator's <code>~/.codex</code> read-only and binds the login into the run's own
+        home, so unfenced there is neither a seal to answer nor a login in the new
+        <code>CODEX_HOME</code> &mdash; an empty run home displacing the operator's login
+        with nothing. The codex home is now adopted only where the fence composes it; the
+        claude-shaped harness still adopts its transcript home either way, because only the
+        codex home answers the fence.</p>
+
+        <p><strong>Measure.</strong>
+        <code>tests/test_each_run_owns_its_harness_home.py</code> gains
+        <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code>: an unfenced
+        codex launch sets no <code>CODEX_HOME</code>, seeds no home and composes no fence,
+        while the fenced launch beside it sets <code>CODEX_HOME=&lt;run&gt;/codex-home</code>
+        and carries the read-only <code>auth.json</code> bind. The declared negative
+        control &mdash; <em>set CODEX_HOME unconditionally; the fence=False absence assertion
+        must fail</em> &mdash; applied in a scratch copy, fails on exactly that entry, so
+        the absence is load-bearing. Gate over the launch-plan files: base
+        <code>27e11161</code> <code>26 passed</code>, head <code>27 passed</code>, zero
+        failures added; lint over the two touched paths unchanged
+        (<code>_backends.py</code> 8&nbsp;&rarr;&nbsp;8) and both already formatted. Commit
+        <code>d31707b5</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2</code>.</p></div>
+      </div>
     </section>
 
     <section id="s3" data-reckon="section">

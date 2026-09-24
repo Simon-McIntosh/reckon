@@ -254,6 +254,62 @@ E         {'CODEX_HOME': '&hellip;/runs/r-&hellip;-node-a/codex-home'}</pre>
     the launcher no longer produces. Log:
     <code>docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt</code>,
     whose first line is the declared mutation verbatim.</p>
+
+    <h3>Node: unfenced-codex-keeps-its-login &mdash; an unfenced launch keeps the operator's home</h3>
+    <p><strong>What changed.</strong> <code>launch_plan</code> adopted the run's codex home
+    on both paths, so an unfenced codex launch was handed
+    <code>CODEX_HOME=&lt;run&gt;/codex-home</code> &mdash; a directory that exists to answer
+    the fence, and therefore holds no login, because the operator's
+    <code>~/.codex/auth.json</code> is bound into it only when the fence composes. The run
+    home displaced the operator's login with nothing. The codex home is now adopted only
+    where the fence composes it, so an unfenced launch keeps the operator's own home. The
+    claude-shaped harness is unchanged: its home is a transcript home the harness needs
+    whichever way the worker was launched, and only the codex home is a fence artefact.</p>
+
+    <table>
+      <thead>
+        <tr><th>launch</th><th><code>CODEX_HOME</code></th><th>login</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>codex, fenced</td>
+          <td><code>&lt;run&gt;/codex-home</code>, seeded</td>
+          <td>bound read-only into the run home</td>
+        </tr>
+        <tr>
+          <td>codex, unfenced</td>
+          <td>not set &mdash; the operator's own home is kept</td>
+          <td>the operator's, unaltered</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>No figure accompanies this record: the change is the two-row branch above, which is
+    a table rather than a picture, and the homes themselves are already drawn by
+    <code>/reckon/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg</code>.</p>
+
+    <h3>Gate</h3>
+    <p>Base <code>27e11161</code> and the node head (this change, uncommitted at the time of
+    the run) over the launch-plan files &mdash;
+    <code>tests/test_each_run_owns_its_harness_home.py</code>,
+    <code>tests/test_launch_plan_fences_the_home.py</code>,
+    <code>tests/test_launch_plan_attaches_images.py</code>,
+    <code>tests/test_backend_environment.py</code> and
+    <code>tests/test_backend_sandbox_delivery.py</code>. Base <code>26 passed</code>, head
+    <code>27 passed</code>; the extra test is this node's, and <strong>no failure is
+    added</strong>. Lint over the two touched paths is unchanged
+    (<code>_backends.py</code> 8&nbsp;&rarr; 8) and <code>ruff format --check</code> reports
+    both already formatted. Run in place on the fleet allocation.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared mutation: <em>set CODEX_HOME unconditionally; the fence=False absence
+    assertion must fail</em>. Applied in a scratch copy of the tree
+    (<code>adopts_harness_home = True</code>), the new assertion fails on exactly the entry
+    the change removes:</p>
+    <pre>E       AssertionError: assert 'CODEX_HOME' not in {'CODEX_HOME': '&hellip;/runs/r1/codex-home'}</pre>
+    <p>So the absence is load-bearing rather than incidental: once the guard is removed the
+    launch really does invent the variable unfenced. The log the manifest names is
+    <code>logs/negative-control-codex-home-unconditional.red.log</code>.</p>
   </section>
 </main>
 </body>
