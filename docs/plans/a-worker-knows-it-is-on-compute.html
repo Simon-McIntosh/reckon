@@ -112,7 +112,22 @@
       <li><code>git diff --stat</code> names only <code>pyproject.toml</code> and <code>uv.lock</code>.</li>
     </ul>
 
-    
+    <h3>Landing record</h3>
+    <p>The suite now declares its own bound: <code>pyproject.toml</code> adds
+    <code>pytest-timeout</code> and <code>pytest-xdist</code> to the <code>dev</code> group and a
+    <code>[tool.pytest.ini_options]</code> section whose sole key is <code>timeout = 300</code>;
+    <code>uv.lock</code> is regenerated beside it with <code>uv lock</code>. Three observations
+    show the declaration load-bearing rather than decorative. A throwaway test sleeping 10 s
+    outside <code>tests/</code> fails under <code>-o timeout=2</code> with
+    <q>Timeout (&gt;2.0s) from pytest-timeout</q>; <code>pytest -n 4 tests/test_doccheck.py</code>
+    passes 25 cases in 2.00 s with a printed header of <code>configfile: pyproject.toml</code> and
+    <code>timeout: 300.0s</code> — the only reading that comes from the file rather than from a
+    flag; and deleting that line removes the header's <code>timeout:</code> entry while the same
+    10 s sleep passes unbounded, so the middle row's value is the declaration's and not the
+    plugin's mere presence. No test file is touched, as the section requires; verifying the
+    merged result belongs to a separately dispatched test node.
+    Full record:
+    <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s5">&sect;5 landed evidence</a>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
