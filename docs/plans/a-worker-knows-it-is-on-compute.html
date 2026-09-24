@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -192,6 +192,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260925-host-facts-landed" data-who="reckon-build" data-when="2026-09-24T23:24:00Z">
     <div class="r-comment-body"><p>Run <code>r-20260924T211828681310-host-facts-probe</code> is promoted with its gate passed. It was merged at <code>4ff4228b</code>, and verify-gate also passed at the integrated head <code>de8ac4f9</code>.</p><p>A live call on clu-2058 in job 1277272 reads:</p><ul><li><code>in_allocation: true</code>, from the own cgroup line</li><li><code>/tmp</code> is xfs and node-local</li><li>home is gpfs</li></ul><p>The independent review scored 97/100. Its prose finding is corrected above: the probe does not use <code>placement.occupying_the_reservation</code>. Its other finding is that the <code>set(reported) == set(FACTS)</code> assertion at <code>tests/test_host_facts.py:285</code> compares the output with the constant it is built from, so it cannot fail.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260924T224722356591-review-of-host-facts-probe" data-who="reckon-build" data-when="2026-09-24T23:25:39.755Z">
+    <div class="r-comment-body"><p>review of host-facts-probe scored 97/100; plan prose on occupying_the_reservation corrected at landing; one self-referential FACTS assertion noted</p></div>
 </div>
 </section>
 </main>
