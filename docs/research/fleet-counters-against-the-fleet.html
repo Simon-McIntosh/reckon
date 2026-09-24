@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="fleet-counters-against-the-fleet">
+  <meta name="plan-title" content="Fleet Counters Against The Fleet">
+  <meta name="plan-summary" content="Fifty counter observations isolate classification flicker, not stale recomputation or scope, as the measured disagreement">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-source" content="reckon durable watch stream and run artifacts">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-24">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>Fleet Counters Against The Fleet | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input &middot; follower truth</p>
+      <h1>Fleet counters against the fleet</h1>
+      <p class="lead">Thirty-one of fifty trailing counter observations disagreed with the reconstructed live fleet. Every disagreement was a classification error: pending or live work was counted as blocked after a transient <code>abandoned</code> or <code>unreadable</code> reading. None was a stale recomputation or a scope mismatch.</p>
+    </header>
+
+    <section id="finding">
+      <h2>Finding</h2>
+      <table>
+        <thead><tr><th>Outcome</th><th>Observations</th><th>Fraction of all observations</th><th>Fraction of disagreements</th></tr></thead>
+        <tbody>
+          <tr><td>Classification disagreement</td><td>31 / 50</td><td>62%</td><td>100%</td></tr>
+          <tr><td>Stale counter</td><td>0 / 50</td><td>0%</td><td>0%</td></tr>
+          <tr><td>Scope mismatch</td><td>0 / 50</td><td>0%</td><td>0%</td></tr>
+          <tr><td>Agreement</td><td>19 / 50</td><td>38%</td><td>not a disagreement</td></tr>
+        </tbody>
+      </table>
+      <p>All fifty emitted triples still summed to the number of live pointers. The counter did not lose a run; it moved runs between <code>working</code> and <code>blocked</code> according to an incorrect transient classification. The largest displacement was nine runs: observation 29 emitted <code>0w&middot;10b&middot;1u</code> against <code>9w&middot;1b&middot;1u</code>. The unpromoted count agreed in all fifty observations.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/counter-census.svg" alt="Line plot comparing emitted and reconstructed working and blocked counts across fifty observations">
+        <figcaption>The repeated saw-tooth is not fleet churn. Nine dispatched runs remained in the working bucket while the producer repeatedly called them abandoned or unreadable; the readings converge by observation 46. The last three moves are genuine interrupted exits and both readings move together.</figcaption>
+      </figure>
+    </section>
+
+    <section id="method">
+      <h2>Method and provenance</h2>
+      <p>The census freezes lines 5357&ndash;5406 of <code>/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events</code>, from <code>2026-09-24T19:00:33Z</code> through <code>2026-09-24T19:19:56Z</code>. The exact fifty-line slice has SHA-256 <code>21f69c8743f9a4591d50360c790a157ab2e24d0f6c1ed6ed97ae764da9112781</code>. The active watcher record says it started at <code>2026-09-24T19:00:32Z</code> with Reckon <code>0.2.1.dev2236</code>. The source revision at that instant was <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>; the relevant counter and transition files are byte-identical at this worktree's base, <code>93b4db8220b920a40429d0b86964b4d0eb76c41c</code>.</p>
+      <p>The reconstruction begins with the two baseline pointers the watcher found: one blocked and one complete-but-unpromoted. Each later arrival is <code>dispatched</code>, which the counter vocabulary itself places in <code>working</code>. A transient <code>abandoned</code> or <code>unreadable</code> reading is rejected when the same run subsequently reaches <code>working</code> without a new run identity and its run directory contains the worker receipt and later stream activity. The nine worker receipts record launches from <code>19:01:56Z</code> through <code>19:02:43Z</code>; therefore the earlier one-second disappearances describe a pre-launch observation gap, not nine dead jobs. By contrast, observations 48&ndash;50 are accepted as blocked because each event names a vanished worker, a surviving resumable session, and a commit beyond the dispatch base.</p>
+      <p>Each disagreement is then assigned exactly one cause:</p>
+      <ul>
+        <li><strong>stale</strong> if a bucket-moving fleet change occurred but the emitted triple did not move;</li>
+        <li><strong>scope</strong> if the emitted triple matched the event owner's session subset rather than the project fleet;</li>
+        <li><strong>classification</strong> if the triple faithfully partitioned all live pointers but one or more pointers occupied the wrong bucket.</li>
+      </ul>
+      <p>The two zero results have positive controls. For staleness, observation 48 moves a genuine interruption from <code>working</code> to <code>blocked</code> and the emitted triple moves from <code>9w&middot;1b&middot;1u</code> to <code>8w&middot;2b&middot;1u</code>. For scope, observation 46 has project truth <code>9w&middot;1b&middot;1u</code> and session truth <code>9w&middot;0b&middot;0u</code>; the emitted project triple matches the former, so the comparison can see a population difference and did not silently collapse the two scopes. Observation 6 is the classification positive control: the emitted <code>0w&middot;2b&middot;1u</code> differs from reconstructed <code>1w&middot;1b&middot;1u</code> by exactly one phantom abandonment.</p>
+    </section>
+
+    <section id="census">
+      <h2>Fifty observations</h2>
+      <p><code>&Delta;</code> is emitted minus reconstructed in working / blocked / unpromoted order. A dash in the class column means the readings agree; every disagreement is explicitly classed.</p>
+      <table>
+        <thead><tr><th>#</th><th>UTC</th><th>Source</th><th>Node</th><th>Transition</th><th>Emitted</th><th>Reconstructed</th><th>&Delta; w/b/u</th><th>Disagreement class</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>19:00:33</code></td><td><code>L5357</code></td><td><code>read-back-of-the-control-gate-section</code></td><td><code>&empty;&rarr;stalled</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>2</td><td><code>19:00:33</code></td><td><code>L5358</code></td><td><code>second-read-back-of-the-control-gate-section</code></td><td><code>&empty;&rarr;complete</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>3</td><td><code>19:00:34</code></td><td><code>L5359</code></td><td><code>read-back-of-the-control-gate-section</code></td><td><code>stalled&rarr;abandoned</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>0w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>4</td><td><code>19:00:36</code></td><td><code>L5360</code></td><td><code>promotion-fixtures-initialise-the-ledger</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;1b&middot;1u</code></td><td><code>1w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>5</td><td><code>19:00:36</code></td><td><code>L5361</code></td><td><code>promotion-fixtures-initialise-the-ledger</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;1b&middot;1u</code></td><td><code>1w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>6</td><td><code>19:00:37</code></td><td><code>L5362</code></td><td><code>promotion-fixtures-initialise-the-ledger</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;2b&middot;1u</code></td><td><code>1w&middot;1b&middot;1u</code></td><td><code>-1/+1/+0</code></td><td>classification</td></tr>
+          <tr><td>7</td><td><code>19:00:41</code></td><td><code>L5363</code></td><td><code>promotion-tests-meet-the-review-and-checkout-guards</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;2b&middot;1u</code></td><td><code>2w&middot;1b&middot;1u</code></td><td><code>-1/+1/+0</code></td><td>classification</td></tr>
+          <tr><td>8</td><td><code>19:00:42</code></td><td><code>L5364</code></td><td><code>promotion-tests-meet-the-review-and-checkout-guards</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;3b&middot;1u</code></td><td><code>2w&middot;1b&middot;1u</code></td><td><code>-2/+2/+0</code></td><td>classification</td></tr>
+          <tr><td>9</td><td><code>19:00:43</code></td><td><code>L5365</code></td><td><code>promotion-tests-meet-the-review-and-checkout-guards</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>2w&middot;1b&middot;1u</code></td><td><code>2w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>10</td><td><code>19:00:49</code></td><td><code>L5366</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;3b&middot;1u</code></td><td><code>3w&middot;1b&middot;1u</code></td><td><code>-2/+2/+0</code></td><td>classification</td></tr>
+          <tr><td>11</td><td><code>19:00:49</code></td><td><code>L5367</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;4b&middot;1u</code></td><td><code>3w&middot;1b&middot;1u</code></td><td><code>-3/+3/+0</code></td><td>classification</td></tr>
+          <tr><td>12</td><td><code>19:00:50</code></td><td><code>L5368</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>3w&middot;1b&middot;1u</code></td><td><code>3w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>13</td><td><code>19:00:56</code></td><td><code>L5369</code></td><td><code>crew-and-ledger-files-are-green</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;4b&middot;1u</code></td><td><code>4w&middot;1b&middot;1u</code></td><td><code>-3/+3/+0</code></td><td>classification</td></tr>
+          <tr><td>14</td><td><code>19:00:57</code></td><td><code>L5370</code></td><td><code>crew-and-ledger-files-are-green</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;5b&middot;1u</code></td><td><code>4w&middot;1b&middot;1u</code></td><td><code>-4/+4/+0</code></td><td>classification</td></tr>
+          <tr><td>15</td><td><code>19:00:58</code></td><td><code>L5371</code></td><td><code>crew-and-ledger-files-are-green</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>4w&middot;1b&middot;1u</code></td><td><code>4w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>16</td><td><code>19:01:03</code></td><td><code>L5372</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;5b&middot;1u</code></td><td><code>5w&middot;1b&middot;1u</code></td><td><code>-4/+4/+0</code></td><td>classification</td></tr>
+          <tr><td>17</td><td><code>19:01:04</code></td><td><code>L5373</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;6b&middot;1u</code></td><td><code>5w&middot;1b&middot;1u</code></td><td><code>-5/+5/+0</code></td><td>classification</td></tr>
+          <tr><td>18</td><td><code>19:01:05</code></td><td><code>L5374</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>5w&middot;1b&middot;1u</code></td><td><code>5w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>19</td><td><code>19:01:11</code></td><td><code>L5375</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;6b&middot;1u</code></td><td><code>6w&middot;1b&middot;1u</code></td><td><code>-5/+5/+0</code></td><td>classification</td></tr>
+          <tr><td>20</td><td><code>19:01:12</code></td><td><code>L5376</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;7b&middot;1u</code></td><td><code>6w&middot;1b&middot;1u</code></td><td><code>-6/+6/+0</code></td><td>classification</td></tr>
+          <tr><td>21</td><td><code>19:01:13</code></td><td><code>L5377</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>6w&middot;1b&middot;1u</code></td><td><code>6w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>22</td><td><code>19:01:18</code></td><td><code>L5378</code></td><td><code>budget-session-and-follower-tests</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;7b&middot;1u</code></td><td><code>7w&middot;1b&middot;1u</code></td><td><code>-6/+6/+0</code></td><td>classification</td></tr>
+          <tr><td>23</td><td><code>19:01:19</code></td><td><code>L5379</code></td><td><code>budget-session-and-follower-tests</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;8b&middot;1u</code></td><td><code>7w&middot;1b&middot;1u</code></td><td><code>-7/+7/+0</code></td><td>classification</td></tr>
+          <tr><td>24</td><td><code>19:01:20</code></td><td><code>L5380</code></td><td><code>budget-session-and-follower-tests</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>7w&middot;1b&middot;1u</code></td><td><code>7w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>25</td><td><code>19:01:28</code></td><td><code>L5381</code></td><td><code>python-surface-contracts-match</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;8b&middot;1u</code></td><td><code>8w&middot;1b&middot;1u</code></td><td><code>-7/+7/+0</code></td><td>classification</td></tr>
+          <tr><td>26</td><td><code>19:01:28</code></td><td><code>L5382</code></td><td><code>python-surface-contracts-match</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>8w&middot;1b&middot;1u</code></td><td><code>8w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>27</td><td><code>19:01:29</code></td><td><code>L5383</code></td><td><code>python-surface-contracts-match</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;9b&middot;1u</code></td><td><code>8w&middot;1b&middot;1u</code></td><td><code>-8/+8/+0</code></td><td>classification</td></tr>
+          <tr><td>28</td><td><code>19:01:36</code></td><td><code>L5384</code></td><td><code>rendered-and-skill-contracts-match</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>1w&middot;9b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-8/+8/+0</code></td><td>classification</td></tr>
+          <tr><td>29</td><td><code>19:01:37</code></td><td><code>L5385</code></td><td><code>rendered-and-skill-contracts-match</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>0w&middot;10b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-9/+9/+0</code></td><td>classification</td></tr>
+          <tr><td>30</td><td><code>19:01:39</code></td><td><code>L5386</code></td><td><code>rendered-and-skill-contracts-match</code></td><td><code>&empty;&rarr;dispatched</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>31</td><td><code>19:02:27</code></td><td><code>L5387</code></td><td><code>promotion-tests-meet-the-review-and-checkout-guards</code></td><td><code>abandoned&rarr;working</code></td><td><code>1w&middot;9b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-8/+8/+0</code></td><td>classification</td></tr>
+          <tr><td>32</td><td><code>19:02:30</code></td><td><code>L5388</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>abandoned&rarr;unreadable</code></td><td><code>1w&middot;9b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-8/+8/+0</code></td><td>classification</td></tr>
+          <tr><td>33</td><td><code>19:02:36</code></td><td><code>L5389</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>8w&middot;2b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-1/+1/+0</code></td><td>classification</td></tr>
+          <tr><td>34</td><td><code>19:02:36</code></td><td><code>L5390</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>unreadable&rarr;working</code></td><td><code>2w&middot;8b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-7/+7/+0</code></td><td>classification</td></tr>
+          <tr><td>35</td><td><code>19:02:41</code></td><td><code>L5391</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>dispatched&rarr;abandoned</code></td><td><code>7w&middot;3b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-2/+2/+0</code></td><td>classification</td></tr>
+          <tr><td>36</td><td><code>19:02:52</code></td><td><code>L5392</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>working&rarr;unreadable</code></td><td><code>1w&middot;9b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-8/+8/+0</code></td><td>classification</td></tr>
+          <tr><td>37</td><td><code>19:02:56</code></td><td><code>L5393</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>abandoned&rarr;working</code></td><td><code>8w&middot;2b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-1/+1/+0</code></td><td>classification</td></tr>
+          <tr><td>38</td><td><code>19:02:58</code></td><td><code>L5394</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>abandoned&rarr;working</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>39</td><td><code>19:03:07</code></td><td><code>L5395</code></td><td><code>crew-and-ledger-files-are-green</code></td><td><code>abandoned&rarr;working</code></td><td><code>2w&middot;8b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-7/+7/+0</code></td><td>classification</td></tr>
+          <tr><td>40</td><td><code>19:03:09</code></td><td><code>L5396</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>unreadable&rarr;working</code></td><td><code>3w&middot;7b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-6/+6/+0</code></td><td>classification</td></tr>
+          <tr><td>41</td><td><code>19:03:19</code></td><td><code>L5397</code></td><td><code>promotion-fixtures-initialise-the-ledger</code></td><td><code>abandoned&rarr;working</code></td><td><code>4w&middot;6b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-5/+5/+0</code></td><td>classification</td></tr>
+          <tr><td>42</td><td><code>19:03:45</code></td><td><code>L5398</code></td><td><code>budget-session-and-follower-tests</code></td><td><code>abandoned&rarr;working</code></td><td><code>5w&middot;5b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-4/+4/+0</code></td><td>classification</td></tr>
+          <tr><td>43</td><td><code>19:03:48</code></td><td><code>L5399</code></td><td><code>dispatch-scope-and-mount-refusals</code></td><td><code>abandoned&rarr;working</code></td><td><code>6w&middot;4b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-3/+3/+0</code></td><td>classification</td></tr>
+          <tr><td>44</td><td><code>19:04:00</code></td><td><code>L5400</code></td><td><code>python-surface-contracts-match</code></td><td><code>abandoned&rarr;working</code></td><td><code>7w&middot;3b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-2/+2/+0</code></td><td>classification</td></tr>
+          <tr><td>45</td><td><code>19:04:07</code></td><td><code>L5401</code></td><td><code>rendered-and-skill-contracts-match</code></td><td><code>abandoned&rarr;working</code></td><td><code>8w&middot;2b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>-1/+1/+0</code></td><td>classification</td></tr>
+          <tr><td>46</td><td><code>19:04:34</code></td><td><code>L5402</code></td><td><code>dispatch-tests-declare-a-valid-node</code></td><td><code>abandoned&rarr;working</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>47</td><td><code>19:10:42</code></td><td><code>L5403</code></td><td><code>delivery-tests-read-the-scoring-state</code></td><td><code>dispatched&rarr;working</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>9w&middot;1b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>48</td><td><code>19:16:15</code></td><td><code>L5404</code></td><td><code>promotion-tests-meet-the-review-and-checkout-guards</code></td><td><code>working&rarr;blocked</code></td><td><code>8w&middot;2b&middot;1u</code></td><td><code>8w&middot;2b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>49</td><td><code>19:19:43</code></td><td><code>L5405</code></td><td><code>promotion-fixtures-initialise-the-ledger</code></td><td><code>working&rarr;blocked</code></td><td><code>7w&middot;3b&middot;1u</code></td><td><code>7w&middot;3b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+          <tr><td>50</td><td><code>19:19:56</code></td><td><code>L5406</code></td><td><code>python-surface-contracts-match</code></td><td><code>working&rarr;blocked</code></td><td><code>6w&middot;4b&middot;1u</code></td><td><code>6w&middot;4b&middot;1u</code></td><td><code>+0/+0/+0</code></td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="code-path">
+      <h2>Counter and recompute path</h2>
+      <p>At revision <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>, <code>reckon/crew/recovery.py:4404-4413</code> declares the three bucket vocabularies and <code>reckon/crew/recovery.py:4416-4458</code> implements <code>_fleet_counts</code>. The per-transition fold is <code>fleet_transitions</code> at <code>reckon/crew/recovery.py:4493-4558</code>; it mutates one run and recomputes the counts after that mutation, so a line describes the fleet at that line rather than the end of a batch.</p>
+      <p>The durable producer is triggered by every project-scoped <code>list_live</code> at <code>reckon/crew/runs.py:438-454</code>. It reduces every pointer and calls the same transition fold at <code>reckon/crew/runs.py:1072-1122</code>. Producer acquisition performs an initial publish at <code>reckon/crew/runs.py:1405-1411</code>. A follower attachment independently rebuilds the current baseline at <code>reckon/crew/runs.py:1125-1156</code>. The blocking watch loop polls pointers and recomputes at <code>reckon/crew/recovery.py:4880-4924</code>.</p>
+      <p>The disappearance word has no receipt gate. In <code>fleet_transitions</code>, <code>reckon/crew/recovery.py:4519-4524</code> maps every run present in <code>known</code> and absent from <code>current</code> directly to <code>promoted</code>. It does not query the run ledger or a refusal record before choosing that terminal word.</p>
+    </section>
+
+    <section id="refused-reproduction">
+      <h2>Refused dispatch still renders as promoted</h2>
+      <p>The previously recorded defect still reproduces. The command below creates an isolated <code>RECKON_HOME</code> beneath the assigned figure tree, writes a live pointer whose process is provably alive, observes <code>dispatched</code>, removes the pointer to model a dispatch refusal before worker creation, asserts that the synthetic ledger has zero rows, and passes the before/after fleet through the production transition and formatter functions.</p>
+      <details>
+        <summary>Reproduction command</summary>
+        <pre><code>PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python - &lt;&lt;'PY'
+import json, os, tempfile, time
+from pathlib import Path
+with tempfile.TemporaryDirectory(prefix='refused-dispatch-', dir='docs/figures') as tmp:
+    home = Path(tmp) / 'config'
+    os.environ['RECKON_HOME'] = str(home)
+    from reckon.crew import runs
+    from reckon.crew.recovery import (_fleet_counts, _watch_snapshot,
+        _watch_transition, fleet_transitions, format_watch_transition)
+    run_id = 'r-synthetic-refused'
+    pointer = runs.pointer_path(run_id)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    record = {'run_id': run_id, 'project': 'synthetic',
+        'session': 'synthetic-session',
+        'node': {'id': 'refused-dispatch', 'plan': 'synthetic',
+                 'role': 'investigate'},
+        'phase': 'starting', 'created_at': '2026-09-24T20:41:00Z',
+        'pid': os.getpid(),
+        'pid_start_time': runs._process_start_time(os.getpid()),
+        'log_path': str(home / 'crew' / 'runs' / run_id / 'stream.jsonl')}
+    pointer.write_text(json.dumps(record), encoding='utf-8')
+    snapshot = _watch_snapshot(record, moment=time.time(), stall_seconds=900)
+    known = {run_id: snapshot}
+    arrived = _watch_transition('synthetic', kind='transition',
+        snapshot=snapshot, previous=None, current='dispatched',
+        counts=_fleet_counts(known), spend_runs=[], rate_statuses={})
+    print(format_watch_transition(arrived))
+    pointer.unlink()
+    print('synthetic_refusal=pointer withdrawn before worker creation; ledger_rows=0')
+    departed, remaining = fleet_transitions(known, {})
+    for snap, previous, current, counts in departed:
+        event = _watch_transition('synthetic', kind='transition', snapshot=snap,
+            previous=previous, current=current, counts=counts,
+            spend_runs=[], rate_statuses={})
+        print(format_watch_transition(event))
+    print('remaining=' + str(len(remaining)))
+PY</code></pre>
+      </details>
+      <pre><code>23:02:15  investigate    refused-dispatch                        dispatched                    1w&middot; 0b&middot; 0u            &ndash;
+synthetic_refusal=pointer withdrawn before worker creation; ledger_rows=0
+23:02:16  investigate    refused-dispatch                        promoted                      0w&middot; 0b&middot; 0u       &ndash;    &ndash;
+remaining=0</code></pre>
+      <p>The result is a direct reproduction, not an inference from silence: the first line proves the instrument saw the pointer, the stimulus states both pointer withdrawal and zero ledger rows, and the next production-rendered line says <code>promoted</code>. Repair belongs to the deferred implementation section after the report is integrated.</p>
+    </section>
+
+    <section id="limitations">
+      <h2>Limits and implementation input</h2>
+      <p>This is a fifty-observation slice of one project watcher, not an estimate of a long-run failure rate. It was selected because it contains the lead's reported rapid launch wave and retains the worker receipts needed to distinguish pending launches from dead workers. The zero stale and scope fractions apply to this slice only. They do not show those failure modes are impossible.</p>
+      <p>The implementation gate should target the classifier boundary, not the arithmetic: keep a newly written pointer in <code>dispatched</code> while its supervised launch is still pending, and do not turn disappearance into <code>promoted</code> without a ledger receipt. The counter already partitions the states it is given and already recomputes on bucket-moving transitions.</p>
+    </section>
+  </main>
+</body>
+</html>
