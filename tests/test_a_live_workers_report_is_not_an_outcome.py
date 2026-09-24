@@ -113,7 +113,7 @@ def test_an_unprovable_pid_leaves_the_failed_word_classification_unchanged(
     ("status", "dead_classification"),
     [
         ("blocked", "blocked"),
-        ("complete", "completed_unpromoted"),
+        ("complete", "scoring"),
     ],
 )
 def test_every_terminal_word_defers_under_a_live_writer(

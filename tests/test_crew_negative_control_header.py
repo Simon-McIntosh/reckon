@@ -27,6 +27,7 @@ from reckon import crew
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from tests.test_crew_declared_negative_control import (
+    REVIEW_WAIVER,
     _promote,
     _write_manifest,
     _write_pointer,
@@ -106,7 +107,13 @@ def test_the_refusal_states_the_first_line_requirement(
     )
 
     with pytest.raises(crew.CrewError) as refusal:
-        _promote(repository, run_id, gate="passed", outcome="the guard landed")
+        _promote(
+            repository,
+            run_id,
+            gate="passed",
+            outcome="the guard landed",
+            review_waiver=REVIEW_WAIVER,
+        )
 
     message = str(refusal.value)
     # The detail that was already there survives: which declaration, which log.

@@ -220,7 +220,10 @@ def test_a_rewrite_that_changes_the_status_word_emits_exactly_one_transition(
 
     assert len(events) == 1
     snapshot, previous, state, counts = events[0]
-    assert (previous, state) == ("failed", "complete")
+    # The completion state is the fleet column's word for a delivered run that
+    # has not been promoted, which is what a complete manifest with no review
+    # attached reads as.
+    assert (previous, state) == ("failed", "completed_unpromoted")
     emitted = _emitted(snapshot, previous, state, counts)
     assert emitted["event"] == "transition"
     # The state change carries no rewrite-only facts: the report's content is
