@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T01:27:23",
+  "updated": "2026-09-25T01:27:29",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -359425,6 +359425,301 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T211233454588-manifest-names-the-tree-it-imported",
+        "plan": "work-does-not-fall-to-the-coordinator",
+        "section": "\u00a711",
+        "node": "manifest-names-the-tree-it-imported",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 336,
+                "cached_input_tokens": 301733,
+                "input_tokens": 302071,
+                "output_tokens": 1725,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 303796,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "compose_prompt in reckon/crew/prompts.py emits, in the MANIFEST template block beside test_logs, a request that every gate or base-arm log record on its header lines the absolute path of the module under test as imported (module.__file__) and the resolved working directory, plus manifest keys naming them for any scratch-tree measurement; the wording reuses the existing revision-header sentence rather than adding a second contract. New tests/test_manifest_template_names_the_tree.py composes a prompt for a sample node and asserts both requests appear, and that the existing revision/tree/command sentence still appears exactly once. The declared negative control is executed and logged: removing the new template line makes the new test fail. Every existing test that imports reckon.crew.prompts (grep tests/ for it) passes at your head, judged by delta against the base revision, including any prompt-size bound; state the prompt's size before and after in characters.",
+          "estimated_hours": null,
+          "goal": "The worker manifest template asks for the module path a measurement imported and the directory it resolved from",
+          "id": "manifest-names-the-tree-it-imported",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T21:12:34Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 11,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 82857,
+            "observed_at": "2026-09-24T21:12:23Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/manifest.md",
+          "negative_control": "delete the new module-path and working-directory template line from reckon/crew/prompts.py; tests/test_manifest_template_names_the_tree.py must fail",
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_manifest_template_names_the_tree.py",
+            "docs/plans/work-does-not-fall-to-the-coordinator.html",
+            "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html",
+            "docs/figures/work-does-not-fall-to-the-coordinator"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "gate-log-names-its-tree",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T21:12:46Z",
+        "completed_at": "2026-09-24T22:54:06.897Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6003,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6080,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "c590aaaade26b590739c61e873ef7581746cf36c",
+        "commits": [
+          "0fa5ddf999d56bf33416a1540c2c1ccd2d5e49ce",
+          "5b5c6c6454d20a64a793120fdaf7889da1a2a898",
+          "b5354d1e085e3d33bff48353c79280845c5363c0",
+          "69677a2add2a520c8c6fdd1f3157795b9e84f899"
+        ],
+        "changed_lines": {
+          "added": 266,
+          "removed": 1,
+          "files": 4
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/manifest-names-the-tree-it-imported /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_negative_control_header.py tests/test_crew_negative_control_interface.py tests/test_crew_peer_client_reach.py tests/test_crew_prompts.py tests/test_crew_test_role.py tests/test_gate_log_names_its_tree.py tests/test_manifest_template_names_the_tree.py tests/test_negative_control_log_is_a_path.py tests/test_prompt_carries_the_declaration.py tests/test_prompt_prefix_identity.py tests/test_role_write_scope.py tests/test_skill_contract_parity.py tests/test_the_prompt_carries_the_contract.py tests/test_the_prompt_carries_the_evidence_contract.py tests/test_wait_marker_is_not_a_stub.py tests/test_worker_prompt_contract.py \u2014 2 failed, 184 passed, EXIT=1, run at revision b5354d1e where reckon/crew/prompts.py is byte-identical to the change revision 0fa5ddf9 (git diff empty); the base arm PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/manifest-names-the-tree-it-imported /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_negative_control_header.py tests/test_crew_negative_control_interface.py tests/test_crew_peer_client_reach.py tests/test_crew_prompts.py tests/test_crew_test_role.py tests/test_gate_log_names_its_tree.py tests/test_negative_control_log_is_a_path.py tests/test_prompt_carries_the_declaration.py tests/test_prompt_prefix_identity.py tests/test_role_write_scope.py tests/test_skill_contract_parity.py tests/test_the_prompt_carries_the_contract.py tests/test_the_prompt_carries_the_evidence_contract.py tests/test_wait_marker_is_not_a_stub.py tests/test_worker_prompt_contract.py \u2014 2 failed, 177 passed, EXIT=1 at c590aaaa, with the two failing ids identical at both revisions and the seven added passes being this change's seven new cases.",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/logs/cohort-head-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/manifest.md",
+        "scope_changed": false,
+        "session_id": "08e35f6c-eade-4e9a-b889-64e28a1bd2e1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8140126,
+            "input_tokens_cumulative": 8140126,
+            "output_tokens": 55428,
+            "output_tokens_cumulative": 55428,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T22:54:06.897Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14961806,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3180.916,
+          "generated_tokens": 108831,
+          "generation_seconds": 3145.308,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 35.608,
+          "peak_input_tokens": 165598,
+          "tokens_per_second": 34.6,
+          "wall_tokens_per_second": 34.21
+        },
+        "follow_on_paths": [
+          "tests/test_role_write_scope.py::test_a_test_run_that_slipped_through_is_still_refused_at_promotion",
+          "tests/test_role_write_scope.py::test_promoting_a_run_that_wrote_both_landing_paths_is_accepted",
+          "reckon/crew/reports.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/manifest-names-the-tree-it-imported",
+          "session_id": "08e35f6c-eade-4e9a-b889-64e28a1bd2e1",
+          "session_source": "stream",
+          "retained_at": "2026-09-24T22:54:06.897Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T21:52:44Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T21:13:57Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T211233454588-manifest-names-the-tree-it-imported",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 9281,
+          "worker_pid": 1288491
+        },
+        "promoted_revision": "69677a2add2a520c8c6fdd1f3157795b9e84f899",
+        "plan_impl_at_dispatch": 1.0,
+        "impl_move": {
+          "plan": "work-does-not-fall-to-the-coordinator",
+          "at_dispatch": 1.0,
+          "at_complete": 1.0,
+          "verdict": "waived",
+          "reason": "the plan's impl is already 1.0; \u00a711 stays implementable until measurement_module and measurement_cwd are declared in the reports.py allowlist"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_manifest_template_names_the_tree.py"
+          ],
+          "declaration": "delete the new module-path and working-directory template line from reckon/crew/prompts.py; tests/test_manifest_template_names_the_tree.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/logs/negative-control-red.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211233454588-manifest-names-the-tree-it-imported/logs/negative-control-red.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T21:57:34.322312+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T21:12:34Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 11,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 82857,
+          "observed_at": "2026-09-24T21:12:23Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 70.0,
+        "orientation_input_tokens": 2501044.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -359737,6 +360032,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2551
+    "_version": 2552
   }
 }
