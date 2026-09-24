@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -208,6 +208,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260925T013500-s5-document-landed" data-who="reckon-build s21-coord" data-when="2026-09-24T23:35:00Z">
     <div class="r-comment-body">The first of §5's three nodes merged at a953e4d7 (commits db50a1e3, 559e9fe7, d1ae179c): the paid-lanes document, and a preflight that reads it when named. Its first review scored 75, finding an inert argv, an implicit global read, an untested gatherer and an unwired production path. The same session repaired it and the re-review scored 87. tests/test_paid_lanes_document.py: 9 passed, each test falsified. The 12 budget importers carry the same 6 failures at base and head. §5 stays open for two more nodes, and the sequencing matters. (a) Wire the production preflight callers so they name the document: reckon/cli.py ~964 after the §10 routing merge releases cli.py, and reckon/mcp.py ~3497 in coordination with S23, which claims mcp.py. In the same node, make --help/-h print usage rather than publishing (paid_lanes.py ~503; today --help writes the document). (b) The five-minute refresh deployment. Until (b) runs, ~/public/reckon/paid-lanes.json is stale: a reviewer probe wrote it at 00:02 with every window unknown, and nothing reads it in production yet.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260924T200633890250-paid-headroom-is-published" data-who="reckon-build" data-when="2026-09-24T22:27:51.441Z">
+    <div class="r-comment-body"><p>paid-lanes document composed from existing readers and published atomically; preflight reads it when named; 9 tests each falsified; budget importers same 6 failures; re-review 87 after one repair round; production callers not yet wired</p></div>
 </div>
 </section>
 </main>
