@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="70">
+  <meta name="plan-version" content="71">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -710,6 +710,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260924T1100-supervisor-dies-with-a-slurm-step" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>The landed supervisor does not survive a per-session SLURM step.</strong> This was measured by imas-ambix-af on 2026-09-24, ahead of moving the session fleet off the login node into the SLURM fleet allocation. Each session will run as its own step, and a <code>setsid</code>-detached child died with its step. §3's supervisor detaches with <code>start_new_session=True</code>, and so does the worker beneath it. On a login node that keeps them alive past dispatch's exit. Inside a session's step, both are reaped when the session ends, so a coordinator ending its turn would take every worker it dispatched with it. The worker's launch therefore has to leave the session's step: through a fleet supervisor running in the batch step, or through another path that does not keep the <code>srun</code> client in the session's step. This is a new section, not a revision of §3. §3's contract, dispatch returning once a supervisor is running, still holds; what changes is where that supervisor lives. The write-up is in imas-ambix's <code>slurm-hosted-agent-fleet</code>. Nothing dispatches on it until the fleet move lands and the lead's hold is lifted.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T145608411343" data-who="Simon McIntosh (via imas-ambix-af)" data-when="">
+    <div class="r-comment-body"><p><strong>Lead decisions for §10, 2026-09-24.</strong> (1) The <code>spawn</code> verb is <strong>authorised</strong>. (2) The lead questions why the fleet supervisor lives in dotfiles: it should be part of reckon or ambix. The supervisor is placement and launch machinery, and placement, spawn and the reservation record are reckon's, so the proposal is that §10 moves it into reckon (for example <code>reckon fleet supervise</code>, run as the batch step of the allocation reckon's ensure holds). <code>~/.local/state/fleet/record.json</code> would be folded into reckon's placement record, leaving dotfiles with only the thin <code>cx</code> connection client, <code>fleet-attach</code> and <code>fleet-shell</code>. The dotfiles <code>bin/fleet-supervisor</code> (commits 3cfd155 onward) is the working reference: its FIFO protocol, its reload verb, its stripping of inherited ZELLIJ and CLAUDE variables, and its runtime directory under <code>/tmp/&lt;uid&gt;-fleet</code>. Confirm the destination with the lead before moving it.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
