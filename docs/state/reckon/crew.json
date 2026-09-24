@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T22:43:09",
+  "updated": "2026-09-24T22:58:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -344782,6 +344782,296 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T190119026582-python-surface-contracts-match",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a72",
+        "node": "python-surface-contracts-match",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1142,
+                "cached_input_tokens": 241186,
+                "input_tokens": 242330,
+                "output_tokens": 418,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 242748,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "Every node id listed for this node in Suite Failures At Head section 4 either passes, or is named in follow_ons as a product defect or environment failure with its node id, file and line, and the evidence that the behaviour rather than the assertion is wrong; passing is measured by running each owned file in its own pytest process with its own --basetemp on this compute node, and no node id in the owned files moves from pass to fail against the base. The manifest states, for every repaired id, its cause and its class: stale expectation, product defect, test isolation or environment. For each repaired file the pre-repair version was run at base and observed failing with its recorded error, and that red log path is recorded. No test is skipped, xfailed, deleted or weakened to pass.",
+          "estimated_hours": null,
+          "goal": "The red test files owned by node python-surface-contracts-match pass at head",
+          "id": "python-surface-contracts-match",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T19:01:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 22,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'headroom' or 'mean_context'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": "2026-09-24T19:00:57Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190119026582-python-surface-contracts-match/manifest.md",
+          "negative_control": "run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_schema.py",
+            "tests/test_crew_surface.py",
+            "tests/test_crew_help_names_its_state.py",
+            "tests/test_north_star_write.py",
+            "tests/test_edit_plan.py",
+            "tests/test_review_scoring.py",
+            "tests/test_doctor.py",
+            "tests/test_crew_orientation.py",
+            "docs/_shared/plan.schema.json",
+            "tests/fixtures/crew-public-surface.txt",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "suite-green-h",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T19:01:26Z",
+        "completed_at": "2026-09-24T19:39:27.235Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2209,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2281,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "77c20349aa33b7ddda106d6b3a35fa62f9549fa5",
+        "commits": [
+          "66a118f167ba87a2882208265a4b2c053b981145"
+        ],
+        "changed_lines": {
+          "added": 146,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py tests/test_crew_surface.py tests/test_crew_help_names_its_state.py tests/test_north_star_write.py tests/test_edit_plan.py tests/test_review_scoring.py tests/test_doctor.py tests/test_crew_orientation.py --deselect tests/test_schema.py::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed]",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190119026582-python-surface-contracts-match/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190119026582-python-surface-contracts-match/manifest.md",
+        "scope_changed": false,
+        "session_id": "5f7e10b6-80db-4e7e-81ae-7dfebc9ae701",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 18101721,
+            "input_tokens_cumulative": 18101721,
+            "output_tokens": 63409,
+            "output_tokens_cumulative": 63409,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T19:39:27.235Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 15,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18268642,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2211.925,
+          "generated_tokens": 73665,
+          "generation_seconds": 1810.662,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 401.263,
+          "peak_input_tokens": 165621,
+          "tokens_per_second": 40.68,
+          "wall_tokens_per_second": 33.3
+        },
+        "follow_on_paths": [
+          "tests/test_schema.py::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed",
+          "tests/test_schema.py:790",
+          "imas-ambix/docs/evidence/archive/dsv41-flash-four-card-throughput-landed.html:40"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest process",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/python-surface-contracts-match",
+          "session_id": "5f7e10b6-80db-4e7e-81ae-7dfebc9ae701",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T19:39:27.235Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "promoted_revision": "66a118f167ba87a2882208265a4b2c053b981145",
+        "plan_impl_at_dispatch": 0.1,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.1,
+          "at_complete": 0.31,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/fixtures/crew-public-surface.txt",
+            "tests/test_crew_help_names_its_state.py",
+            "tests/test_crew_orientation.py",
+            "tests/test_crew_surface.py",
+            "tests/test_doctor.py",
+            "tests/test_edit_plan.py",
+            "tests/test_north_star_write.py",
+            "tests/test_review_scoring.py",
+            "tests/test_schema.py"
+          ],
+          "declaration": "run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190119026582-python-surface-contracts-match/logs/negative-control-base-revision.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190119026582-python-surface-contracts-match/logs/negative-control-base-revision.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T20:01:19.700312+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T19:01:19Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 22,
+          "binding_observed": "unknown",
+          "detail": "lane document carries no numeric 'headroom' or 'mean_context'",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": "2026-09-24T19:00:57Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 154.0,
+        "orientation_input_tokens": 7886134.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -345094,6 +345384,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2479
+    "_version": 2480
   }
 }
