@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="14">
 </head>
 <body>
   <main class="plan-doc">
@@ -100,8 +100,13 @@
     lock. That is the same cadence at which <code>_check_consumer</code> already runs.
     <strong>The owner is fixed once, at the follower's first start, and nothing afterwards
     rewrites it.</strong> It is the pid and start time of the process that armed the follower.
-    It is carried in the follower's own environment across a reload's re-exec, and it is not
-    read from the registration record. The reason is a takeover hole the read-back found. A
+    It travels in a dedicated environment variable, <code>RECKON_FOLLOWER_OWNER</code>, set once
+    when the follower is armed and passed unchanged across a reload's re-exec. It is not read
+    from the registration record. It is not stored inside
+    <code>RECKON_FOLLOWER_REGISTRATION</code> either, because <code>_adopt_inherited</code>
+    removes that variable at adoption and <code>acquire()</code> rewrites the record it
+    carries, so an owner kept there would be lost at exactly the adoption this fix must
+    survive. The reason is a takeover hole the read-back found. A
     read-only follower retries the claim on every tick (<code>reckon/cli.py</code>, the
     takeover of a registration whose holder has gone). <code>acquire()</code> in
     <code>reckon/crew/runs.py</code> then rewrites the whole record from the claimant's
@@ -110,18 +115,24 @@
     holder that never exits. So <code>acquire()</code> also records the armed owner from the
     environment rather than <code>os.getppid()</code>, and a recorded owner of pid 1 or below
     is treated as gone, not as a reason to skip the check. A follower whose owner is gone exits
-    within one tick whether or not it holds the lock, and a holder releases the lock as it does
-    today. This is the owner definition <code>a-follower-outlives-its-monitor</code> &sect;7's
-    holder release reads as well, so there is one definition, not two.</p>
-    <p><strong>Done when</strong> a test starts a holder and a read-only follower for one
-    session under a stub parent. It kills the stub parent and observes both exit within two
-    ticks. It also shows that a follower re-executed for reload still exits when the original
-    parent dies. A third case lets the holder exit so that an orphaned read-only follower takes
-    over, and asserts the taken-over record still names the original owner, after which the
-    follower exits. A mutation that restores the early return for a non-holder must fail the
-    test, and so must one that makes <code>acquire()</code> record <code>os.getppid()</code>
-    again. The write paths are <code>reckon/cli.py</code>, <code>reckon/crew/runs.py</code>
-    and that test.</p>
+    on the next tick after the owner dies, whether or not it holds the lock, and a holder
+    releases the lock as it does today. <code>a-follower-outlives-its-monitor</code> &sect;7's
+    holder release currently reads the recorded parent. Because this section edits the same
+    function, <code>_check_consumer</code>, that release reads this owner once this section
+    lands, leaving one definition rather than two. This is a live change to a landed
+    mechanism, so &sect;7's test stays in this section's gate.</p>
+    <p><strong>Done when</strong> <code>tests/test_follower_checks_its_owner.py</code>, a new
+    file, covers three cases under a stub parent that stands for the owner. First, a holder and
+    a read-only follower for one session both exit on the tick after the stub parent is killed;
+    the assertion allows one tick of scheduling slack and no more. Second, a follower
+    re-executed for reload still exits after the original parent dies. Third, the owner stays
+    alive while the holder exits and a read-only follower takes over the registration. The test
+    asserts the taken-over record still names the original owner. It then kills the owner and
+    asserts the follower exits on the next tick. <code>tests/test_orphaned_follower_releases.py</code>,
+    &sect;7's landed test, still passes. A mutation that restores the early return for a
+    non-holder must fail the new test, and so must one that makes <code>acquire()</code> record
+    <code>os.getppid()</code> again. The write paths are <code>reckon/cli.py</code>,
+    <code>reckon/crew/runs.py</code> and <code>tests/test_follower_checks_its_owner.py</code>.</p>
 
     <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
     <p>Per-project <code>crew watch</code> producers are detached with
@@ -174,9 +185,10 @@
     <code>_remove_worktree</code> in <code>reckon/crew/routing.py</code>, passes
     <code>--force</code>. The reap uses a non-forced removal instead, so a tree that is not
     clean after preservation is refused and reported, never removed.</p>
-    <p><strong>Done when</strong> no call site passes <code>--untracked-files=all</code> over
-    any tree other than the run's own worktree. The boundary read of the run's own tree is the
-    single stated exception, and it keeps the untracked read. A test counts the
+    <p><strong>Done when</strong> exactly one call site passes
+    <code>--untracked-files=all</code>: the boundary read of the run's own worktree, which
+    keeps the untracked read. No other call site passes it over any tree, the run's own
+    included. A test counts the
     <code>git status</code> invocations one dispatch-and-complete cycle makes and asserts
     that each is scoped. A dispatch into a project holding integrated, clean worktrees
     leaves fewer of them than it found, and never removes a dirty or unintegrated one.</p>
@@ -209,8 +221,13 @@
     tool call timed out behind it. That is consistent with the FastMCP server in
     <code>reckon/mcp.py</code> running a synchronous tool function on its one event loop. The
     node first confirms that from the installed SDK and records the finding in its manifest.
-    It then moves each tool's filesystem work to a worker thread under the deadline, so the
-    loop stays free. A write whose deadline passes reports whether it
+    If it holds, the node moves each tool's filesystem work to a worker thread under the
+    deadline, so the loop stays free. If the SDK already runs synchronous tools off the loop,
+    the hypothesis is wrong, and the node does not move anything on its strength. It reproduces
+    the block with the section's blocking filesystem stub instead. It names the point where the
+    second call actually waited, whether a lock, a shared client or the loop, and records it in
+    the manifest. It applies the deadline and the release at that point. Either way the
+    done-when's concurrent read decides. A write whose deadline passes reports whether it
     reached the file, since a timed-out write that did land must not be retried blindly.</p>
     <p><strong>Done when</strong> a test backed by a filesystem stub that blocks on one path
     shows a read of that path returning <code>storage-slow</code> within its deadline, and a
@@ -287,18 +304,20 @@
     makes the router enforce a pause declared in <code>~/public/imas-ambix/lane.json</code>. This
     section is reckon's half: a pause declared there is a fact dispatch reads, not a message it
     must be told.</p>
-    <p>A dispatch to a backend served by a paused lane is held, not refused, and so is a
-    follower sweep's review dispatch. No pointer and no worktree are created. The result says
-    the lane is paused and names the document and field that say so, and the sweep shows the
-    run as held for review with that reason. A lane document that is absent or unreadable is
+    <p>A dispatch to a backend served by a paused lane is not launched and not refused, and
+    neither is a follower sweep's review dispatch. No pointer and no worktree are created. The
+    result says the lane is paused and names the document and field that say so. The sweep
+    shows the run as <code>waiting on the lane pause</code>, a state with no pointer. It is
+    deliberately not called held, because <em>held</em> already names a live run that has a
+    pointer. A lane document that is absent or unreadable is
     reported as unknown and does not hold. Only a declared pause holds, because a missing file
     must not stop every dispatch on a workstation. The pause field's name and meaning are
     whatever <code>local-lane-admission-control</code> &sect;11 defines. This section reads
     them and does not redefine them.</p>
     <p><strong>Two review paths, both covered.</strong> The follower's review reflex executes
     a dispatch through <code>dispatch_review_for_run</code> in
-    <code>reckon/crew/recovery.py</code>. That path holds, and the watch row shows the run as
-    held for review with the pause as its reason. Separately, <code>_review_dispatch_argv</code>
+    <code>reckon/crew/recovery.py</code>. That path does not launch, and the watch row shows the
+    run as <code>waiting on the lane pause</code>. Separately, <code>_review_dispatch_argv</code>
     in the same module composes a printed review command for a coordinator to run. That
     printed command holds when it is run, because it goes through dispatch. Its composed text
     gains no reason of its own. <code>_dispatch_lane_reading</code> in
@@ -326,7 +345,7 @@
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T062557423973-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T06:45:20.039Z">
-    <div class="r-comment-body"><p>read-back of a-crew-process-ends-with-its-owner: six findings for the releaser, five material (A3, A19, A23, A38 and the reap&#x27;s location), applied at e88b83b0</p></div>
+    <div class="r-comment-body"><p>read-back of a-crew-process-ends-with-its-owner: six findings for the releaser, five material (A3, A19, A23, A38 and the reap's location), applied at e88b83b0</p></div>
 </div>
 </section>
 </main>
