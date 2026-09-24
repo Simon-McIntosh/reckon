@@ -16,7 +16,7 @@ import subprocess
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -2620,7 +2620,39 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
     _assert_no_dispatch_artifacts(repo)
 
 
-def test_an_in_harness_dispatch_returns_a_directive_to_bind(home, repo) -> None:
+@pytest.mark.parametrize(
+    ("may_write_worktree", "expected_scope"),
+    [
+        (False, ["reckon/_backends.py"]),
+        (
+            True,
+            [
+                "reckon/_backends.py",
+                "docs/evidence/archive/plan-a-landed.html",
+                "docs/figures/plan-a",
+                "docs/plans/plan-a.html",
+            ],
+        ),
+    ],
+    ids=["worktree-not-writable", "worktree-writable"],
+)
+def test_an_in_harness_dispatch_returns_a_directive_to_bind(
+    home, repo, monkeypatch, may_write_worktree, expected_scope
+) -> None:
+    # The plan's shared landing paths join the declared scope only when the
+    # worker can write the worktree it is handed, because a read-only role is
+    # never granted a landing deliverable it cannot commit. That judgement is
+    # resolved from the sandbox write roots, which include the process temp
+    # directory, so a throwaway repository under that directory reads as
+    # writable and one outside it does not: the outcome would otherwise depend
+    # on where pytest's tmp root happens to live. Pin the judgement so this
+    # measures the directive contract rather than the runner's filesystem.
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(
+        dispatch_module,
+        "_can_write_worktree",
+        lambda *args, **kwargs: may_write_worktree,
+    )
     record = crew.dispatch(
         node=_node(role="inline"),
         project="proj",
@@ -2633,13 +2665,7 @@ def test_an_in_harness_dispatch_returns_a_directive_to_bind(home, repo) -> None:
     directive = record["directive"]
     assert Path(directive["worktree"]).is_dir()
     assert directive["fences"]["delivery"] == record["manifest_path"]
-    # The declared scope plus the plan's shared landing paths.
-    assert directive["fences"]["scope"] == [
-        "reckon/_backends.py",
-        "docs/evidence/archive/plan-a-landed.html",
-        "docs/figures/plan-a",
-        "docs/plans/plan-a.html",
-    ]
+    assert directive["fences"]["scope"] == expected_scope
     assert directive["fences"]["time"] == "20m"
     assert "reckon crew attach" in directive["attach_with"]
 
@@ -3150,6 +3176,22 @@ def _deliver_manifest(record: dict, status: str, **fields: str) -> None:
     lines = ["node: node-a", f"status: {status}"]
     lines.extend(f"{key}: {value}" for key, value in fields.items())
     Path(record["manifest_path"]).write_text("\n".join(lines) + "\n")
+
+
+def _predate_delivery(manifest: Path, dispatched_at: str) -> None:
+    """Back-date a delivery to the attempt that wrote it.
+
+    Manifest freshness compares the file's mtime against a second-resolution
+    attempt start, so a delivery whose mtime lands inside the following
+    attempt's own second is judged to have been written after that attempt
+    began. Stamping the delivery at the first attempt's own start keeps the two
+    attempts ordered however quickly the run proceeds.
+    """
+    moment = datetime.fromisoformat(dispatched_at)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    stamp = int(moment.timestamp()) * 1_000_000_000
+    os.utime(manifest, ns=(stamp, stamp))
 
 
 def test_run_drain_counts_live_pointers_without_a_valid_disposition(home) -> None:
@@ -4441,6 +4483,7 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
         launcher=lambda *args, **kwargs: 0,
     )
     _deliver_manifest(first, "complete", commits="HEAD")
+    _predate_delivery(manifest, first["created_at"])
     # Cite what the manifest recorded: a passing gate that leaves the run's own
     # commits uncited is refused, because that is how a node's work ends up
     # surviving only as long as its worktree.
