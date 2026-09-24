@@ -290,14 +290,17 @@ def test_a_stalled_landing_stat_still_lets_a_concurrent_read_answer(
     answered, result, entered = asyncio.run(scenario())
 
     assert answered == "quick-content"
+    # Asserted before anything else so a run against a landing check that blocks
+    # the loop fails here, on the property this case exists to measure, rather
+    # than on a downstream consequence of the same defect.
+    assert entered and entered[0] < 1.0, (
+        f"the healthy read entered at {entered} s, behind the stalled landing stat"
+    )
+    assert len(seen) > 1, "the landing stat must have been attempted"
     assert result["error"] == STORAGE_SLOW
     assert result["kind"] == "write"
     assert result["landed"] is None, (
         "an unanswerable landing stat is unknown, not false"
-    )
-    assert len(seen) > 1, "the landing stat must have been attempted"
-    assert entered and entered[0] < 1.0, (
-        f"the healthy read entered at {entered} s, behind the stalled landing stat"
     )
 
 
