@@ -33,6 +33,7 @@ CODEX = {"launch": "cli", "command": "codex"}
 def _repository(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     (root / "docs" / "state" / "proj").mkdir(parents=True)
+    ledger.write("proj", {"members": [], "runs": [], "holds": []}, 0, root=root)
     return root
 
 

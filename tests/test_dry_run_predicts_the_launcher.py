@@ -74,8 +74,13 @@ def _make_live(tmp_path: Path, run_id: str) -> None:
 
 def _record_exhausted(record: dict) -> None:
     """A completed run whose report holds its lane at a spent quota."""
+    project = str(record["project"])
+    if not ledger.ledger_path(project, record["repo"]).exists():
+        ledger.write(
+            project, {"members": [], "runs": [], "holds": []}, 0, root=record["repo"]
+        )
     ledger.append_run(
-        str(record["project"]),
+        project,
         ledger.build_record(
             run_id="r-20260917T000000000000-exhausted",
             plan="plan-a",

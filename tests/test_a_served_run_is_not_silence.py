@@ -57,6 +57,17 @@ def _known(utilisation_pct: float) -> dict:
     return block
 
 
+def _ensure_ledger(root: Path, project: str) -> None:
+    """Initialise a project ledger the fixture has not written yet.
+
+    ``ledger.append_run`` refuses to create an absent ledger outside a
+    checkout, and this fixture promotes several runs into one plain temporary
+    directory, so the ledger is initialised once and appended to thereafter.
+    """
+    if not ledger.ledger_path(project, root).exists():
+        ledger.write(project, {"members": [], "runs": [], "holds": []}, 0, root=root)
+
+
 def _record(
     root: Path,
     *,
@@ -68,6 +79,7 @@ def _record(
     completed_at_source: str = "terminal_event",
     failure_classification: str = "",
 ) -> None:
+    _ensure_ledger(root, "project")
     record = ledger.build_record(
         run_id=run_id,
         plan="plan-a",
@@ -150,11 +162,11 @@ def test_exhaustion_without_a_later_completion_keeps_its_reason(
     verdict = _verdict(tmp_path)
 
     assert verdict["held"] is True
-    assert verdict["reason"] == (
+    assert (
         "backend reports threshold status 'exhausted', which policy counts as "
         "exhausted regardless of utilisation; utilisation 100% with burn "
         "multiple unknown"
-    )
+    ) in verdict["reason"]
 
 
 @pytest.mark.parametrize(

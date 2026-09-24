@@ -24,6 +24,7 @@ def _project(tmp_path: Path, name: str = "project") -> Path:
     root = tmp_path / name
     (root / "docs" / "plans").mkdir(parents=True)
     (root / "docs" / "state" / name).mkdir(parents=True)
+    ledger.write(name, {"members": [], "runs": [], "holds": []}, 0, root=root)
     return root
 
 
