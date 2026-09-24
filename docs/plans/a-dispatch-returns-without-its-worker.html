@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="55">
+  <meta name="plan-modified" content="2026-09-24">
+  <meta name="plan-version" content="58">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -430,7 +430,12 @@
     anywhere in Reckon. The lead's position, relayed the same day, is that the cap is artificial:
     a session may hold its runs as long as it needs them. Engine load is bounded by the router's
     admission gate, which answers 529 with <code>Retry-After</code> past its wait bound.</p>
-    <p>Dispatch stops enforcing <code>max_concurrent_runs</code>. The key stays readable in flight
+    <p><strong>Only the roster bound retires.</strong>
+    <code>_refuse_over_concurrency_ceiling</code> in <code>reckon/crew/dispatch.py</code> refuses on
+    whichever of three bounds binds: the roster (<code>max_concurrent_runs</code>), the placement's
+    admitted partition cores, and the login memory slice. This section removes the first. The
+    partition-core and login-memory bounds protect real resources, and they stay enforced unchanged.
+    Dispatch stops enforcing <code>max_concurrent_runs</code>. The key stays readable in flight
     config, so existing host files remain valid, but it is ignored, exactly as backend
     <code>concurrency</code> keys already are. The summary that reports it, in
     <code>reckon/crew/summary.py</code>, says it is retired rather than presenting it as a bound. A
@@ -439,7 +444,9 @@
     <p><strong>Done when</strong> <code>tests/test_backend_carries_no_worker_cap.py</code> declares
     <code>max_concurrent_runs: 2</code> for a stub backend in a temporary <code>RECKON_HOME</code> and
     flight layer, writes three non-terminal pointers claiming it, and asserts that a fourth dispatch
-    of that backend succeeds. It also asserts that the summary's entry for the key reads retired. The
+    of that backend succeeds. It also asserts that the summary's entry for the key reads retired. A
+    second case drives a placement whose admitted partition cores are exhausted and asserts that the
+    dispatch is still refused on that bound, so only the roster bound was removed. The
     negative control is executed and logged: with the enforcement restored, the fourth dispatch is
     refused. Existing tests that assert the refusal are updated to assert its absence, with the
     delta stated. <code>reckon/crew/dispatch.py</code> carries a ruff format backlog at
@@ -509,6 +516,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T1515-second-readback-applied" data-who="" data-when="2026-09-23">
     <div class="r-comment-body"><p>Second read-back (run r-20260923T131057549188, 28 two-reading sentences) applied at v30–v38. <strong>R45</strong>: dispatch returns once the supervisor runs and the pointer names it; the snapshot delays the worker, never dispatch. <strong>R47</strong>: the supervisor never writes the pointer; the pointer's pid is the supervisor's, and <code>tree-snapshot.json</code>, <code>worker.json</code> and <code>exit.json</code> live in the run directory, which the supervisor never creates. <code>crew stop</code> reaches the worker through the supervisor's process group unchanged. <strong>R46</strong>: the first case puts a one-second <code>git status</code> shim on <code>PATH</code>, so a 30-worktree scan costs at least 30 s. <strong>R54</strong>: the scout note and <code>worker-backends.md</code> are §4 targets, and both are in its write paths. <strong>R56</strong>: the leftover worktree after a discard is now §9. <strong>R58/R37/R38</strong>: §6 answers the member question from the run's records, drives the reproduced path at both revisions, and covers every <code>ok: false</code> dispatch result, live and dry-run, with <code>reckon/cli.py</code> added to its write paths. <strong>R44</strong> (cross-plan): when <code>exit.json</code> exists it is the collected fact and wins; worker-death-is-recorded's <code>interrupted</code> label applies only to a run with no exit record.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T0455-released-after-five-readbacks" data-who="" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>§3, §4, §6, §8 and §9 are released.</strong> The fifth read-back (run r-20260923T180053449666) closed M4, M9, M10 and R35. It left only minor readings in §3, §4, §6 and §9, and one minor–material reading in §8 (2R-4), settled at v56–v57: only the roster bound retires, and the partition-core and login-memory bounds stay, with a case that proves it. <strong>§3 does not scope the snapshot.</strong> It moves the dispatch-time scan off dispatch's return path, but the scan still covers every registered worktree. On 2026-09-23 that was 312 trees at about 30 s each under degraded storage, and the same walk runs in promotion's re-snapshot and in <code>crew follow</code>. Scoping belongs to S19 (reckon-e5). It lands on top of §3's merge and covers every call site of routing.py's <code>_tree_state</code>. Dispatch of §3 waits for the local lane's RESUME.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>

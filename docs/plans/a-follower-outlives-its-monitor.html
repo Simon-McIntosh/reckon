@@ -17,8 +17,8 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-23">
-  <meta name="plan-version" content="46">
+  <meta name="plan-modified" content="2026-09-24">
+  <meta name="plan-version" content="47">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -566,6 +566,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260923T1605-s7-s10-landed" data-who="" data-when="2026-09-23">
     <div class="r-comment-body"><p>Seven of nine sections are landed; §4 (replay) and §9 (stream-parse cache) remain. <strong>§10</strong>: <code>test-watchers-are-reaped</code> promoted (<code>7c5f69b9</code>, merged <code>f891f2ed</code>, review 80). Its review found that the change removed <code>watch_producers_under</code> from <code>tests/conftest.py</code> while <code>tests/test_watch_arming_isolation.py</code> still imports it, so one test fails on main with ImportError. Corrective node <code>arming-isolation-reads-the-watcher-records</code> is running. <strong>§7</strong>: the orphan-release test now proves that a follower whose consumer is still reading keeps running past the release window, and the figure script is ruff-clean (<code>bc72dfca</code>, <code>ce74b88a</code>, merged <code>208fa22b</code>, review 91). <strong>§8</strong>: the reload node is promoted. The node scoping the carried deadline to the replacement image (<code>a3dadfa0</code>) awaits its review, and it reports that each replacement image's setup time adds to the deadline's end, a follow-on for <code>reckon/cli.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T0500-lifetime-cannot-bound-a-poll" data-who="" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>The lifetime does not bound a poll that never returns.</strong> Measured by imas-codex-0d at 23:27 on 2026-09-23 under degraded storage. Two <code>crew follow --lifetime 29m</code> processes, for page-load-20260923 and one started through <code>python -c</code>, ran 3 h 36 m and 2 h 07 m. Both sat inside the full-tree <code>git status --untracked-files=all</code> walk that <code>_tree_state</code> runs over every registered worktree. The deadline is checked between polls, and a poll inside a walk over 312 trees at about 30 s each lasts hours. So §3's bound held for the check, not for the process. Two remedies compose. S19's snapshot scoping (reckon-e5) removes the walk from <code>crew follow</code>. And the deadline must also bound a poll: a poll that outlives the remaining lifetime is abandoned and the follower ends. The second is a follow-on for <code>reckon/cli.py</code>, alongside the replacement-image setup overshoot recorded at §8. Separately, when a monitor expires the host can leave its follower running with ppid 1. imas-ambix-af's interim rule is one follower per session, stopping the old one by pid before re-arming.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>
