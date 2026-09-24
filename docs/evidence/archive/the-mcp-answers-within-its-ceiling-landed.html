@@ -131,7 +131,110 @@
       unmodified here; the defect names <code>reckon/ledger.py</code>, which another node holds.
     </p>
 
-    <section id="s2-sprint-summary-lists-pending-record">
+    <h2 id="s5-a-single-run-read-answers-in-two-seconds">&sect;5 — A single-run read answers in two seconds</h2>
+    <p>
+      Commit <code>c8eab419</code> in the <code>crew-runs-reads-one-run</code> worktree, base
+      revision <code>6e7afb6e</code>. <code>runs_view</code> accepts a <code>run_id</code> that
+      narrows the read rather than filtering its result: the live arm reads one pointer through
+      <code>read_pointer</code> instead of walking every pointer in the fleet, and the ledger arm
+      keeps only the selected row before any compact row is built. <code>run_id</code> also joins
+      the row filters, so the answer is what an in-memory identity filter would have kept.
+    </p>
+
+    <h3>The slow call, reproduced and its cause named</h3>
+    <p>
+      The call is <code>crew(view="runs", run_id=…)</code>. Before the change the run id never
+      reached <code>runs_view</code>, so the read was the full walk. Measured against this host's
+      <code>reckon</code> ledger at the base revision, with <code>io.open</code> counted:
+    </p>
+    <table>
+      <thead><tr><th>Path</th><th>Ledger rows</th><th>Files opened</th><th>Elapsed</th></tr></thead>
+      <tbody>
+        <tr><td>full walk (base behaviour for this call at base, and for any read without a run id)</td><td>1,603</td><td>1,895</td><td>214.3 s</td></tr>
+        <tr><td>run-id read</td><td>1,603</td><td>2</td><td>0.28 s</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The cause is not a slow file. The walk materialises every ledger row as a compact row
+      (<code>_compact_row</code>, <code>reckon/crew/query.py</code>), and each row calls
+      <code>resolve_session</code>, which re-loads the whole ledger to look for that row's session
+      id — one ledger open per row. The 1,895 opens against 1,603 rows are the ledger reopened once
+      per row plus the pointers and the initial read; the read never returns within the 30-second
+      storage-slow guard, which is the reported symptom.
+    </p>
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/single-run-read-cost.png"
+           alt="Two log-scale bar panels: files opened and elapsed seconds for the full walk (1895 files, 214.3 s) against the run-id read (2 files, 0.28 s)."
+           width="760">
+      <figcaption>
+        The same one-run read against the host ledger, before and after: files opened and elapsed
+        time, both log scale.
+      </figcaption>
+    </figure>
+
+    <h3>The change</h3>
+    <ul>
+      <li><code>reckon/crew/query.py</code> — <code>runs_view</code> gained <code>run_id</code>,
+        validated as a non-empty identifier when supplied. The live arm routes through a new
+        <code>_live_records_for_run</code>, which reads that run's one pointer via
+        <code>read_pointer</code> and reports an absent, malformed or foreign-project pointer as no
+        live record (the ledger arm may still answer for a promoted run). The ledger arm filters the
+        selected row before building any compact row. <code>run_id</code> joins the
+        <code>_matches</code> string filters, so the short-circuit cannot change which rows are
+        returned.</li>
+      <li><code>reckon/mcp.py</code> is not changed by this node (<code>run_id</code> is already on
+        the <code>crew</code> tool; forwarding it to <code>runs_view</code> is a separate node's
+        write).</li>
+    </ul>
+
+    <h3>The gate measure, as executed</h3>
+    <p>
+      <code>tests/test_crew_runs_by_run_id.py</code> on a synthetic ledger of 2,000 rows, head
+      <code>c8eab419</code> against base <code>6e7afb6e</code>. Four tests, all passing:
+    </p>
+    <ul>
+      <li><strong>The row is exact.</strong> <code>runs_view(project, run_id=X)</code> returns
+        exactly one row, whose <code>run_id</code> is <code>X</code>, out of 2,000 ledger rows.</li>
+      <li><strong>The file count is fixed and small.</strong> Patching <code>io.open</code>,
+        the run-id read opens <strong>2</strong> files (declared ceiling <code>MAX_OPEN_FILES = 4</code>,
+        measured 2: one ledger read and one from the selected row's own session resolution). A
+        positive control first shows the instrument counts: the same ledger walks to
+        <code>2,001</code> opens without a run id, so a small count is a measurement rather than an
+        absence.</li>
+      <li><strong>One of two live pointers is selected.</strong> With two live pointers written,
+        <code>runs_view(source="live", run_id="r-bbb")</code> returns only <code>r-bbb</code>.</li>
+      <li><strong>An absent run id is empty, not an error.</strong> <code>r-bbb</code>'s sibling
+        <code>r-absent</code> returns <code>count: 0</code>.</li>
+      <li><strong>The recorded timing, under 2 s.</strong>
+        <code>runs_view(project="reckon", run_id="r-20260924T204759725667-s23-reuse-map")</code> at
+        the worktree head returns exactly that row in <strong>0.2808 s</strong>, opening 2 files.
+        The module under test resolved to
+        <code>…/crew-runs-reads-one-run/reckon/crew/query.py</code> and the run resolved from that
+        worktree. Log beside the run.</li>
+    </ul>
+
+    <h3>Negative control, as declared and executed</h3>
+    <p>
+      Declared: <em>remove the run_id short-circuit so the full walk runs.</em> Applied to
+      <code>reckon/crew/query.py</code> (both short-circuit branches disabled, the selection filter
+      left in place, so the answer stays correct while the read no longer narrows) and run over the
+      file-count test. It fails at the ceiling assertion with <code>{'n': 2001}</code> against
+      <code>2001 &lt;= 4</code> — the full walk over the 2,000-row ledger. The control was then
+      reverted from a clean copy and the tree returned to the committed revision.
+    </p>
+
+    <h3>Findings outside this node's scope</h3>
+    <p>
+      Four tests fail at this base revision, before this change, at sites this node does not write,
+      each reproduced with the base <code>query.py</code> restored:
+      <code>tests/test_crew_runs_scope.py::test_runs_scope_joins_every_configured_project_without_reading_fallback_home</code>
+      at <code>reckon/ledger.py</code> (<code>append_run</code> refusing to create a non-checkout
+      ledger), and three in <code>tests/test_crew_recovery.py</code> at the ticker row renderer
+      (<code>reckon/crew/ticker.py</code>). Delta against base for this node's files: 0 added
+      failures.
+    </p>
+
+  <section id="s2-sprint-summary-lists-pending-record">
 
   <section id="s2-sprint-summary-lists-pending">
     <h2>&sect;2 &mdash; the summary names its pending plans</h2>

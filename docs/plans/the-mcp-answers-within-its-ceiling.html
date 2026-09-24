@@ -140,6 +140,37 @@
       <li>A recorded timing of the same call against this host's reckon project, at the integrated head, is under 2 s.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="crew-runs-reads-one-run" data-when="2026-09-25">
+    <p><strong>Outcome — a single-run read answers in two seconds.</strong> Commit
+    <code>c8eab419</code> <em>feat(crew): narrow a runs read to one run by run id</em> gives
+    <code>runs_view</code> a <code>run_id</code> that narrows the read rather than filtering its
+    result: the live arm reads one pointer through <code>read_pointer</code> instead of walking the
+    fleet, and the ledger arm keeps the selected row before any compact row is built.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>The slow call reproduced and its cause named.</strong> Against this host's
+      <code>reckon</code> ledger (1,603 rows), the base full walk opened <strong>1,895</strong> files
+      and took <strong>214.3 s</strong>; the cause is <code>_compact_row</code> calling
+      <code>resolve_session</code> per row, which re-loads the whole ledger once per row.</li>
+      <li><strong>The run-id path opens 2 files</strong> (declared ceiling 4) with a positive control
+      showing the same ledger walks to 2,001 opens, so a small count is measured rather than absent.
+      4 tests pass in <code>tests/test_crew_runs_by_run_id.py</code> over a synthetic 2,000-row
+      ledger.</li>
+      <li><strong>The recorded timing is 0.2808 s</strong> for
+      <code>runs_view(project="reckon", run_id="r-20260924T204759725667-s23-reuse-map")</code> at the
+      worktree head, under 2 s.</li>
+      <li><strong>The declared mutation fails the file-count test:</strong> removing the run-id
+      short-circuit reports <code>{'n': 2001}</code> against <code>2001 &lt;= 4</code>.</li>
+    </ul>
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/single-run-read-cost.png"
+           alt="Log-scale bars: the full walk opens 1895 files in 214.3 s; the run-id read opens 2 files in 0.28 s."
+           width="620">
+      <figcaption>Files opened and elapsed time, before and after, both log scale.</figcaption>
+    </figure>
+    <p>Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s5-a-single-run-read-answers-in-two-seconds">the landed record</a>.</p>
+    </div>
+
     <h2 id="s6">&sect;6 &mdash; A plan can be read one section at a time</h2>
     <p>Reading a single section today means pulling the whole plan or parsing HTML in bash. <code>read_plan(view="section", section="s3")</code> should return that section's heading, its plain text, its HTML, its declaration and the comments anchored to it. Discovery search should match the plans whose body text contains the query, not only sprint rows.</p>
     <p><strong>Done when:</strong></p>
