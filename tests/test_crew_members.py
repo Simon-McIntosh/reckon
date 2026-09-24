@@ -1,11 +1,12 @@
-"""A session id set through `member add` is reusable by a later dispatch.
+"""A session id set through `member add` is a roster entry, not a session offer.
 
 `member add` has no `--model` flag, so a session it records carries no
-configuration of its own. These tests exercise both entry points a
-coordinator actually uses — `ledger.register_member` (what `crew member add`
-calls) and `crew.dispatch` (what consumes the roster) — never
-`_session_for_configuration` alone, since a helper-level assertion is exactly
-how the defect this covers stayed invisible.
+configuration of its own, and dispatch resolves the session a task continues
+from the run records of that task rather than from the roster. These tests
+exercise both entry points a coordinator actually uses — `ledger.register_member`
+(what `crew member add` calls) and `crew.dispatch` (what consumes the roster) —
+never a private helper alone, since a helper-level assertion is exactly how the
+defect this covers stayed invisible.
 """
 
 from __future__ import annotations
@@ -109,6 +110,7 @@ def _node(home: Path, sequence: int) -> crew.TaskNode:
         goal="verify a bare member-add session resolves against the harness default",
         plan="plan-a",
         section="session-routing",
+        spec_level="exact",
         done_when=("pytest tests/test_crew_members.py reports every case passing"),
         write_paths=[f"reckon/member_{sequence}.py"],
         time_budget="20m",
@@ -145,10 +147,11 @@ def _complete_stream(record: Mapping[str, object], session_id: str) -> None:
     assert observed["session_id"] == session_id
 
 
-def test_bare_session_from_member_add_resumes_and_then_records_its_configuration(
+def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it(
     home: Path, repo: Path
 ) -> None:
-    """The command example in the fix's own done-when: no model, no capture."""
+    """A roster session proves nothing about a task: the first dispatch starts
+    fresh, and completing its stream records the configuration it ran under."""
     entry = ledger.register_member(
         "proj", "worker-a", harness="alpha", session_id=BARE_SESSION, root=repo
     )
@@ -157,15 +160,16 @@ def test_bare_session_from_member_add_resumes_and_then_records_its_configuration
 
     dispatched = _dispatch(home, repo, 1)
 
-    assert dispatched["session_id"] == BARE_SESSION
-    assert dispatched["argv"][dispatched["argv"].index("resume") + 1] == BARE_SESSION
+    assert dispatched["session_id"] is None
+    assert "resume" not in dispatched["argv"]
 
-    _complete_stream(dispatched, BARE_SESSION)
+    captured = "019ff509-8a60-7723-94fd-65942a6d8faa"
+    _complete_stream(dispatched, captured)
 
     member = ledger.member("proj", "worker-a", repo)
     assert member is not None
-    assert member["session_model"] == "some-model"
-    assert member["sessions"] == {_configuration_key(MEDIUM_AGENT): BARE_SESSION}
+    assert member["sessions"] == {_configuration_key(MEDIUM_AGENT): captured}
+    assert member["session_id"] == BARE_SESSION
 
 
 def test_bare_session_ignored_when_the_dispatched_model_moves_off_the_harness_default(

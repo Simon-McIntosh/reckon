@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -343,6 +343,68 @@ Error: a passing gate requires the check that produced it;
       <code>test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code> in
       <code>tests/test_gate_evidence.py</code>, and it is carried in the node's
       <code>follow_ons</code> for a separate node.</p>
+    </section>
+      <p class="plan-summary">This cumulative record holds the evidence for the suite-repair plan. Each repair node appends its own section as it lands: the red files it owned, the cause group behind them, the ids it repaired, and the negative control that shows the repaired assertions can still fail. The question the record answers is deliberately narrow — not "does the suite pass" but "was each red file red for the cause the repair names, and does the repaired assertion still bind".</p>
+    </header>
+
+    <section id="nine-crew-test-files">
+      <h2>The nine crew test files: 25 recorded ids red at base, 57 tests green at the repaired head</h2>
+
+      <p><strong>Scope.</strong> Nine test files owned by one repair node, carrying 25 of the failing node ids recorded for the plan's repair partition. One pytest process per file, each with its own <code>--basetemp</code>, never the whole suite in one process.</p>
+
+      <p><strong>Revisions.</strong> Base <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>; the repair is <code>de851cfa</code>, which changes the nine test files and no product source, and the gate below was read at head <code>1220888e17a1be853cb2d81e89814c69eb3e84e6</code>. Because the source tree is untouched, a reading at the repaired head differs from base only through the test files — which is what makes the comparison below a statement about the repairs rather than about the fleet.</p>
+
+      <p><strong>Cause.</strong> Every id was red for the same cause group: an assertion that had been passing only because a guard was open. The guards whose closures the files had not absorbed are the now-required declaration of a specification level, the required negative-control declaration on a node that writes a test path, a lane-declaration refusal that is now gated on the backend being metered rather than on the caller's silence, session reuse keyed to the task rather than to the member, and the grant of the shared landing paths to every node's write scope. The repairs move the assertion in all nine files and move no behaviour; the one file that compares two dry runs field by field now masks the lane advisory's wall-clock stamps, which differ between invocations of the same dispatch.</p>
+
+      <p><strong>Result at the repaired head — 57 passed, 0 failed.</strong>
+      <code>test_a_brief_points_rather_than_quotes</code> 13,
+      <code>test_crew_cross_project_claims</code> 10,
+      <code>test_crew_dryrun</code> 4,
+      <code>test_crew_ephemeral_members</code> 1,
+      <code>test_crew_members</code> 3,
+      <code>test_crew_routes</code> 13,
+      <code>test_crew_watch_visibility</code> 5,
+      <code>test_dispatch_lane_disagreement</code> 7,
+      <code>test_execution_fit</code> 1. Exit status <code>0</code> for every file's process. One log per
+      file, <code>head-gate-&lt;module&gt;.log</code>, each headed by the revision it ran at, the tree
+      and the command, with a tally in <code>head-gate-exits.txt</code>, all in the node's run
+      directory.</p>
+
+      <p><strong>An instrument failure on the first attempt, recorded because it looked like a code
+      failure.</strong> The first run of this gate reported 10 failures across five files. They were
+      produced by the driver, not the tests: it passed the child a <code>PATH</code> of
+      <code>/usr/bin:/bin</code>, and the dispatch path resolves a backend's executable against the
+      PATH a launch would search, so five files died in <code>resolve_launch_executable</code> on a
+      <code>codex</code> that was not on that truncated PATH. The driver was corrected to inherit the
+      environment and the gate was re-run, which is the reading above. The failing logs were
+      overwritten; the correction is stated here because "10 failures, then 0" without the reason is
+      the shape of a reading quietly made to pass.</p>
+
+      <p><strong>Negative control — 25 of 25 recorded ids failed, none passed.</strong> Each file was run as it stood at the base revision, selecting only the recorded ids, from a copy of the base content placed under a synthetic root so that the tree's own provenance never enters the reading. The first line of the control log states the control being run. All 25 ids failed with their recorded errors, so none of the repaired assertions is a test that would have passed at base anyway — each is one that can still fail. Each file's red run is its own log,
+      <code>negctl-&lt;module&gt;.log</code>, carrying the recorded failing ids and their errors; the
+      run's transcript is <code>negative-control.log</code> in the node's run directory, whose first
+      line reads <em>run each repaired file as it stood at the base revision and observe its listed
+      ids fail with the recorded error</em>. That log's first line and every red log's node ids are
+      the check that this control tested the ids it claims to: each id was selected
+      explicitly as <code>file::id</code> and the tally is 25 of the 25 selected, so every selector
+      resolved to a real test and produced the failure the record predicted. A selector naming an id
+      the base file no longer carried would have collected nothing for it and left the tally short,
+      and pytest would have exited <code>4</code> on the unresolvable id rather than counting it.</p>
+
+      <p><strong>Two ids renamed to the rule they assert.</strong>
+      <code>test_bare_session_from_member_add_resumes_and_then_records_its_configuration</code> and
+      <code>test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session</code> claimed the
+      member-keyed session reuse that task-keyed reuse replaced. The first is now
+      <code>test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code>; the
+      second keeps its name and asserts the member reuse, the roster capture keyed to the run's agent
+      configuration and its owning coordinator, and the named absence
+      (<code>dispatch-no-same-task-session</code>) recorded on a follow-up node of that member. The
+      recorded id is written beside its replacement here because the rename removes it from the tree.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/recorded-ids-and-repaired-files.png"
+      alt="Horizontal bars per owned test file: red bars are the recorded failing ids at base, green bars are the tests passing at the repaired head. Twenty-five red ids in total; fifty-seven tests green at head."></p>
+
+      <p><strong>Not evidence for.</strong> This section does not claim the suite is green at head. Eight further repair nodes own the remaining red files, and the plan's §2 measure "Green at the integrated head" is answered by one full-suite run at the merged head after every node lands — which no node's own file-local reading can stand in for.</p>
     </section>
   </main>
 </body>

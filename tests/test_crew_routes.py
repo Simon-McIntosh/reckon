@@ -377,6 +377,10 @@ def _context_node(*, node_id: str = "context-reader") -> crew.TaskNode:
         ),
         write_paths=["tests/large_context.py"],
         time_budget="8m",
+        negative_control=(
+            "none: the write path is a measurement fixture the run never authors, "
+            "so there is no assertion to induce a failure in"
+        ),
     )
 
 
@@ -475,6 +479,11 @@ def test_context_refusal_is_exit_five_before_worktree_creation(
         ),
         "--write-path",
         "tests/large_context.py",
+        "--negative-control",
+        (
+            "none: the write path is a measurement fixture the run never authors, "
+            "so there is no assertion to induce a failure in"
+        ),
         "--session",
         "session",
         "--repo",
@@ -540,7 +549,10 @@ def test_fitting_and_unbounded_backends_dispatch_without_context_refusal(
     assert context_fit["estimated_tokens"] < context_fit["window_tokens"] == 492_288
     assert context_fit["shortfall_tokens"] == 0
     assert context_fit["inputs"]["repository_files"]["write_paths"]
-    assert record["node"]["write_paths"] == ["tests/large_context.py"]
+    write_paths = record["node"]["write_paths"]
+    assert "tests/large_context.py" in write_paths
+    assert "docs/evidence/archive/visible-work-landed.html" in write_paths
+    assert "docs/figures/visible-work" in write_paths
     assert record["agent"]["usable_input_window"] == 492_288
 
     unbounded = {

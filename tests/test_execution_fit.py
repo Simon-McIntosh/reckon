@@ -86,6 +86,8 @@ def _dispatch_arguments(
         "execution",
         "--role",
         role,
+        "--spec-level",
+        "exact",
         "--node",
         node_id,
         "--goal",
@@ -93,7 +95,7 @@ def _dispatch_arguments(
         "--done-when",
         "running a test suite reports 42 passed and 0 failures",
         "--write-path",
-        f"records/{node_id}.json",
+        str(manifest),
         "--time-budget",
         "20m",
         "--manifest",
@@ -115,7 +117,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
             node_id="refused-node",
             role="review",
             repository=repository,
-            manifest=isolated_home / "refused.md",
+            manifest=isolated_home / "crew" / "runs" / "refused.md",
             session="refused-session",
         ),
     )
@@ -132,7 +134,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
             node_id="capable-node",
             role="test",
             repository=repository,
-            manifest=isolated_home / "capable.md",
+            manifest=isolated_home / "crew" / "runs" / "capable.md",
             session="capable-session",
         ),
     )
@@ -151,7 +153,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
         node_id="override-node",
         role="review",
         repository=repository,
-        manifest=isolated_home / "override.md",
+        manifest=isolated_home / "crew" / "runs" / "override.md",
         session="override-session",
     )
     override_args.append("--allow-execution-mismatch")

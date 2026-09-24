@@ -155,6 +155,28 @@ def _overlap_reports(payload: dict) -> list[str]:
     ]
 
 
+def _without_clock_stamps(value):
+    """Mask wall-clock stamps so two dry runs compare on their content alone.
+
+    Each invocation reads the lane at its own moment, so a field whose value is a
+    timestamp legitimately differs between two runs of the same dispatch. Masking
+    those keeps the comparison about everything the brief controls rather than
+    about when it happened to be composed.
+    """
+    if isinstance(value, dict):
+        return {
+            key: (
+                "<clock>"
+                if key.endswith("_at")
+                else _without_clock_stamps(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_without_clock_stamps(item) for item in value]
+    return value
+
+
 @pytest.mark.parametrize(
     "overlap_length",
     range(
@@ -286,4 +308,4 @@ def test_a_report_changes_no_other_dry_run_field(
 
     assert _overlap_reports(reported) == ["done-when reproduces fixture prose"]
     reported["warnings"] = []
-    assert reported == quiet
+    assert _without_clock_stamps(reported) == _without_clock_stamps(quiet)
