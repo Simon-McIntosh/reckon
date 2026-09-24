@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A crew process ends with its owner">
+  <meta name="plan-summary" content="Followers, producers, loops and searches outlived their sessions and loaded GPFS; every crew process must know its owner, end with it, and be countable.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S20">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="a-cutover-is-measured-against-its-baseline,a-follower-outlives-its-monitor">
+  <title>A crew process ends with its owner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What loaded the storage, and why it is reckon's to fix</h2>
+    <p>On the night of 2026-09-23 to 24 the login node <code>98dci4-srv-1006</code> reported
+    a load average of 143 while <code>vmstat</code> read 95&ndash;98% idle. The load was
+    processes in uninterruptible wait on the GPFS client (<code>cxiWaitEventWait</code>), and
+    a single <code>stat</code> on a file in home took up to 8.5 s. The evidence, the
+    per-session attribution and the recovery are recorded in imas-ambix's research note
+    <code>login-node-storage-contention</code> (&sect;1, &sect;3, &sect;6 and &sect;7). This
+    plan carries the part that belongs to reckon.</p>
+    <p>Most of the waiting processes were crew processes that no live session owned: ten
+    followers for one nova session from 2026-09-16, three imas-efit followers, six
+    per-project producers between 21 hours and 3.5 days old, <code>crew dispatch</code> and
+    <code>crew complete</code> loops running full-tree <code>git status</code> walks, and a
+    nova wave script still dispatching seven hours after its session stopped. Two unbounded
+    searches ran as well: a <code>bfs</code> over <code>/work/projects/imas_gpu</code> for
+    13 h 50 min, and a <code>find /</code> over every GPFS mount for 10 h 49 min. As the crew
+    processes and the first search were stopped, load fell from 143 to 15 and <code>stat</code>
+    from 8.5 s to under 0.02 s. The <code>find /</code> was still running through that
+    recovery, so it was not sufficient on its own. The causes cannot now be apportioned
+    against each other, and each is stated here as contributing, not as the cause. The
+    design defects in this plan stand either way, because each is a process that outlived
+    the attention that started it.</p>
+    <p>The filesystem's weakness is known and accepted. A healthy GPFS <code>stat</code> costs
+    about 250 &micro;s against 3 &micro;s on local disk, and every read of a file another node
+    has changed needs a token round trip. What made it fail was the shape of the workload:
+    processes nobody was watching, polling shared state and walking whole trees. Every one of
+    them was started by a session that later ended, and none of them noticed. That is a
+    property reckon can give its processes, which is what this plan does.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 250" role="img" aria-label="Crew process ownership and where the owner check is missing" style="max-width:100%;font-family:system-ui,sans-serif;font-size:13px">
+        <rect x="10" y="95" width="150" height="46" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="85" y="115" text-anchor="middle" fill="#111">coordinator session</text>
+        <text x="85" y="132" text-anchor="middle" fill="#111">(the owner)</text>
+        <rect x="250" y="12" width="200" height="40" fill="#fff" stroke="#333" stroke-width="1"/>
+        <text x="350" y="37" text-anchor="middle" fill="#111">follower, registration holder</text>
+        <rect x="250" y="72" width="200" height="40" fill="#fff" stroke="#b00" stroke-width="1.5"/>
+        <text x="350" y="97" text-anchor="middle" fill="#111">follower, read-only</text>
+        <rect x="250" y="132" width="200" height="40" fill="#fff" stroke="#b00" stroke-width="1.5"/>
+        <text x="350" y="157" text-anchor="middle" fill="#111">dispatch / complete / wave loop</text>
+        <rect x="250" y="192" width="200" height="40" fill="#fff" stroke="#b00" stroke-width="1.5"/>
+        <text x="350" y="217" text-anchor="middle" fill="#111">backgrounded search</text>
+        <rect x="560" y="72" width="190" height="40" fill="#fff" stroke="#b00" stroke-width="1.5"/>
+        <text x="655" y="97" text-anchor="middle" fill="#111">per-project producer</text>
+        <line x1="160" y1="110" x2="250" y2="32" stroke="#333"/>
+        <line x1="160" y1="115" x2="250" y2="92" stroke="#333"/>
+        <line x1="160" y1="122" x2="250" y2="152" stroke="#333"/>
+        <line x1="160" y1="130" x2="250" y2="212" stroke="#333"/>
+        <line x1="450" y1="32" x2="560" y2="88" stroke="#333" stroke-dasharray="4 3"/>
+        <line x1="450" y1="92" x2="560" y2="92" stroke="#333" stroke-dasharray="4 3"/>
+        <text x="505" y="130" text-anchor="middle" fill="#111">feeds</text>
+        <text x="470" y="30" fill="#111">checks owner</text>
+        <text x="470" y="245" fill="#b00">red: nothing checks the owner</text>
+      </svg>
+      <figcaption>Of the processes a session starts, only the follower that holds the
+      session's registration checks whether its owner is alive. Every red box runs until it
+      is killed, and the producer has no owner at all.</figcaption>
+    </figure>
+
+    <h2 id="s2">&sect;2 &mdash; A follower that never held the registration never checks its owner</h2>
+    <p>In <code>reckon/cli.py</code>, <code>_check_consumer</code> (around line 1953) returns
+    at once when <code>registration is None or not registration.held</code>. Only after that
+    return does it compare <code>os.getppid()</code> against the recorded parent. So a
+    follower that streams read-only, because another follower holds the session's lock, never
+    checks its consumer at all. <code>a-follower-outlives-its-monitor</code> &sect;7 addresses
+    the holder's half of this, by making a holder whose consumer is gone release the lock.
+    No plan yet covers the read-only half. Each Monitor expiry that is re-armed while an older
+    follower holds the lock adds one more read-only follower that will never exit. The ten
+    nova orphans were 6:21, 5:17, 4:47, 3:42, 3:03, 2:29, 2:19, 1:48, 1:16 and 0:45 hours
+    old: one per re-arm.</p>
+    <p>The fix is to check the owner's liveness on every poll, independent of the lock. The
+    owner is the process that armed the follower, captured at start; for a follower that
+    re-executes itself to reload source, it is the original parent carried across the
+    re-exec. A follower whose owner is gone exits within one poll whether or not it holds
+    the lock, and a holder releases the lock as it does today.</p>
+    <p><strong>Done when</strong> a test starts a holder and a read-only follower for one
+    session under a stub parent, kills the stub parent, and observes both exit within one
+    poll interval. It also shows that a follower re-executed for reload still exits when the
+    original parent dies. A mutation that restores the early return for a non-holder must
+    fail the test.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
+    <p>Per-project <code>crew watch</code> producers are detached with
+    <code>start_new_session=True</code> and ppid 1 by design, and nothing ends them. On the
+    night they were 21 h to 3.5 days old. The imas-codex producer used 21% of a core for
+    three days with no run to watch, and the reckon producer 37%. The <code>sample</code>
+    project's producer had lost its registration, so <code>crew unwatch</code> answered "no
+    registered watcher" and it could only be stopped by pid. A producer with no consumers is
+    pure cost, and one with no registration cannot be managed at all.</p>
+    <p>The fix has three parts. Each live follower renews a lease on its project's producer,
+    and a producer whose lease has not been renewed for a stated interval (proposed: ten
+    minutes) exits cleanly. The producer writes its own pid into its registration atomically
+    at start, and rewrites it if the file goes missing, so <code>crew unwatch</code> can
+    always find it. An idle producer backs off its poll interval instead of spinning. A
+    follower arming for a project whose producer has exited starts one, as it does today, so
+    the lease costs nothing in availability.</p>
+    <p><strong>Done when</strong> a test shows a producer exiting after its lease lapses
+    with no follower attached, and one staying up while a follower renews. A test also shows
+    <code>crew unwatch</code> stopping a producer whose registration file was deleted under
+    it. On the login node, a producer for a project with no follower for an hour is not
+    running.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Polling reads what changed, never the whole tree</h2>
+    <p><code>git status --untracked-files=all</code> is issued from
+    <code>reckon/crew/dispatch.py:5524</code>, <code>reckon/crew/routing.py:355</code> and
+    <code>reckon/ledger.py:895</code>. Inside loops that live for hours, it becomes a full
+    filesystem crawl every few seconds, and on GPFS each crawl lands on every other client.
+    During the event, one <code>git status --porcelain</code> took 64 s. Dispatch also
+    snapshots the worktree after launch, and over more than 300 retained trees that held one
+    S20 dispatch for 3 h (reported by reckon-c4). <code>a-dispatch-returns-without-its-worker</code>
+    &sect;3 removes the hold from the dispatch's own lifetime. This section removes the walk
+    itself.</p>
+    <p>imas-codex-10 measured the other half: of 68 worktrees registered on imas-codex,
+    39 were integrated, 28 had landed, one was a superseded draft, and about none were doing
+    anything. Nothing in the crew surface prices a retained tree: it is free to create and
+    free to hold, and its cost lands later in some other session's git. A faster walk only
+    moves the wall to a larger count.</p>
+    <p>The fix: every polling call site asks git only for what it needs. That is tracked
+    changes with <code>-uno</code>, or a status scoped to the node's declared write paths
+    where untracked files matter, since the declared paths are the only place a worker may
+    legitimately create one. Dispatch also applies back-pressure. Before it creates a
+    worktree, it counts the project's retained worktrees whose heads are integrated and
+    clean, and it reaps them without force. Above a stated ceiling of live unintegrated
+    trees, it reports the count in the dispatch output rather than silently adding one
+    more.</p>
+    <p><strong>Done when</strong> none of the three call sites passes
+    <code>--untracked-files=all</code> over a whole tree. A test counts the
+    <code>git status</code> invocations one dispatch-and-complete cycle makes and asserts
+    that each is scoped. A dispatch into a project holding integrated, clean worktrees
+    leaves fewer of them than it found, and never removes a dirty or unintegrated one.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>
+    <p>The MCP server is the interface and stays the interface. What failed was that its
+    reads had no bound. One <code>read_plan</code> held imas-ambix-af's server blocked on
+    GPFS for over 30 minutes, and imas-ambix-b6 measured 1806 s for a single read before the
+    harness gave up. A tool that blocks for half an hour on a slow filesystem is not
+    degraded; it is absent, and it looks exactly like one that is working.</p>
+    <p>The fix: every tool call runs its filesystem work under a deadline (proposed: 30 s for
+    a read, 60 s for a write). When the deadline passes, it returns a typed
+    <code>storage-slow</code> result naming the path it was waiting on and how long it
+    waited, so the caller can distinguish a slow filesystem from a missing plan. One blocked
+    read must not block the server: the work runs off the request thread, so a second call
+    to a different project still answers. A write whose deadline passes reports whether it
+    reached the file, since a timed-out write that did land must not be retried blindly.</p>
+    <p><strong>Done when</strong> a test backed by a filesystem stub that blocks on one path
+    shows a read of that path returning <code>storage-slow</code> within its deadline, and a
+    concurrent read of another path answering normally. The write case reports its landed
+    state in both directions.</p>
+
+    <h2 id="s6">&sect;6 &mdash; An orphan is a process whose owner is dead</h2>
+    <p>ppid 1 does not identify an orphan. A worker is reparented to init whenever its
+    dispatch exits, and so are zellij servers and system services. imas-codex-0d's ppid-1
+    list this morning had 16 processes, none of them orphans. Selecting by the crew session
+    id in <code>ps</code> output is closer, but a <code>grep</code> for it matches the shell
+    running the check: its <code>bash -c</code> argv holds the whole script source, so
+    bracketing the pattern is not enough when the same phrase appears in an echo or a
+    comment. imas-ambix-f6 and imas-codex-0d each measured such a self-match. Every one of
+    these selectors reads as authoritative and is wrong in some case.</p>
+    <p>The fix is to make ownership a recorded fact rather than an inference. Every process
+    reckon starts carries its owner in its environment: the crew session id and the owning
+    session's pid. That covers followers, producers, dispatch and complete loops, workers and
+    their review nodes. <code>reckon crew census</code> reads that from
+    <code>/proc/&lt;pid&gt;/environ</code>, which an argv grep cannot fake. It excludes its
+    own ancestry by pid and lists every process whose owner is gone, with age, state,
+    wait channel and working directory. With <code>--apply</code> it stops exactly the pids
+    it listed, printing each one, and reports what it spared and why. Producers are owned by
+    their lease (&sect;3), not by a session.</p>
+    <p><strong>Done when</strong> the census, run on the login node after a working day,
+    lists zero reckon processes whose owner is dead. A test plants one owned and one
+    ownerless stub, plus a stub whose argv contains the session id but whose environment
+    does not, and the census lists exactly the ownerless one and never its own shell.</p>
+
+    <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2>
+    <p>Guidance cannot replace &sect;2&ndash;&sect;6, but three failures were instruction
+    failures, and they recur until the skills name them. The reckon-ship skill and the
+    Claude Code harness reference gain the following:</p>
+    <ul>
+      <li>One follower per session, stopped before it is re-armed, and a session-end step
+      that runs <code>reckon crew census</code> for its own session.</li>
+      <li>No backgrounded dispatch loop or wave script. A wave is a sequence of dispatch
+      calls in the coordinator's own turns, so it ends when the session does. A nova
+      <code>wave7.sh</code> kept dispatching for seven hours after its session stopped.</li>
+      <li>A search names its subtree or absolute path and is bounded on the producer side,
+      with <code>timeout</code> or <code>-maxdepth</code>. <code>| head</code> is not a
+      bound: it limits the output, and a search that finds nothing is exactly the one that
+      then walks the whole tree. That is how <code>find / -name wall.h5 | head</code> ran for
+      10 h 49 min. A brief names the absolute data path rather than describing the file,
+      since a described file is what sends a worker searching.</li>
+    </ul>
+    <p>A backgrounded tool call is silent from its two-minute boundary until it dies, so its
+    owner has usually moved on. The harness offers no heartbeat for that. The host dashboard
+    in imas-codex's <code>host-dashboard-covers-every-agent-process</code> carries it instead,
+    as a per-session list of long-running background processes.</p>
+    <p><strong>Done when</strong> the three rules above are in the reckon-ship skill and the
+    Claude Code harness reference, each beside the measurement that motivates it.</p>
+
+    <h2 id="s8">&sect;8 &mdash; Done when, for the plan</h2>
+    <p>&sect;2&ndash;&sect;7 have each met their own done-when. On a working day with the
+    fleet running, the login node census lists no reckon process whose owner is dead, no
+    producer without a lease, and no polling call that walks a whole tree. The evidence
+    record cites the census output, not a statement that it was clean.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-acpewio-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make every crew process end with its owner</h4>
+    <div class="r-fu-body"><p>&sect;2 (<code>reckon/cli.py</code>), &sect;3 (producer lease), &sect;4 (the three <code>--untracked-files=all</code> call sites and dispatch back-pressure) and &sect;5 (MCP deadlines) touch disjoint files and can run in parallel. &sect;6 (ownership in the environment, and <code>crew census</code>) follows &sect;2 and &sect;3, because it reads the owner they record. &sect;7 is guidance and follows &sect;6, since it names the census. Each section's done-when carries a mutation that must fail its test.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-crew-process-ends-with-its-owner</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
