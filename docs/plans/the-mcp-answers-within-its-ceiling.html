@@ -19,14 +19,14 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The MCP Answers Within Its Ceiling | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="7">
-<meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="8">
+<meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -254,7 +254,10 @@
     <div class="r-comment-body"><p>review of crew-live-honours-fields scored 93/100; one added I001 import-order finding at mcp.py:51, and the record names head d5773b49 where its log names 215821ed (code-identical)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925-fields-landed" data-who="reckon-build" data-when="2026-09-24T23:09:00Z">
-    <div class="r-comment-body"><p>Run <code>r-20260924T211810703600-crew-live-honours-fields</code> is promoted with its gate passed. It was merged at <code>025c699e</code>, and verify-gate also passed at the integrated head <code>1bbe7e23</code>.</p><p>The coordinator rejected the first head. It validated live fields against the compact runs vocabulary, so <code>phase</code> was refused and <code>mine</code> was dropped. The same session repaired it at <code>d5773b49</code>.</p><p>The independent review scored 93/100. It found one import-order lint finding (I001) added at <code>reckon/mcp.py:51</code>. The fix is folded into the next mcp.py node, the &sect;3 response budget.</p><p>&sect;7's gate passes on the S22 section records. &sect;6 and &sect;7 are sequenced after S22's dependency-edge-semantics &sect;4, which writes <code>reckon/_plan_html.py</code> next.</p></div>
+    <div class="r-comment-body"><p>Run <code>r-20260924T211810703600-crew-live-honours-fields</code> is promoted with its gate passed. It was merged at <code>025c699e</code>, and verify-gate also passed at the integrated head <code>1bbe7e23</code>.</p><p>The coordinator rejected the first head. It validated live fields against the compact runs vocabulary, so <code>phase</code> was refused and <code>mine</code> was dropped. The same session repaired it at <code>d5773b49</code>.</p><p>The independent review scored 93/100. It found one import-order lint finding (I001) added at <code>reckon/mcp.py:51</code>. The fix is folded into the next mcp.py node, the §3 response budget.</p><p>§7's gate passes on the S22 section records. §6 and §7 are sequenced after S22's dependency-edge-semantics §4, which writes <code>reckon/_plan_html.py</code> next.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260925-budget-landed" data-who="reckon-build" data-when="2026-09-24T23:56:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260924T230840339264-mcp-reads-fit-a-response-budget</code> (codex sol5.6) was merged at <code>6a77e928</code>. The independent review scored 96/100 with no findings.</p><p><code>roadmap</code>, <code>read_plan</code>, <code>crew</code> and <code>audit</code> now bound their serialised answer to <code>RECKON_MCP_RESPONSE_CEILING</code> (default 80,000 characters). An over-budget answer comes back as a typed <code>response_over_budget</code> receipt that gives the omitted counts and tool-specific <code>narrow_with</code> arguments. The real S22 roadmap detail (307,123 characters) now returns a 322-character receipt.</p><p>The node also removed the I001 finding: <code>reckon/mcp.py</code> went from 19 lint findings to 18. The resident MCP server must be restarted and reconnected before any session sees the budget.</p></div>
 </div>
 </section>
   </main>
