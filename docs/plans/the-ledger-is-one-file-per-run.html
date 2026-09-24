@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -146,19 +146,23 @@
       whose resolved <code>crew.json</code> exists and holds a <code>runs</code> key, including an empty
       list, which yields zero files and the key's removal. Projects with no <code>crew.json</code>, or
       no <code>runs</code> key, are reported as skipped. Before writing anything for a project, the split
-      checks every run file already present against the serialiser's output for its row. If any
-      differs, that project's whole split stops: no file is written, the <code>runs</code> key stays,
-      no commit is made, and the report names each differing file. Other projects proceed. For each project it writes every row of that list to <code>runs/&lt;run_id&gt;.json</code>
-      through the one serialiser, keeping the row's fields exactly as they are, <code>store_write</code>
-      included. It then removes the <code>runs</code> key from <code>crew.json</code> and leaves
-      <code>members</code> and <code>holds</code> in place for §4. Each project is its own commit with
-      nothing else in it, including a project whose empty list yields only the key's removal.</p>
-      <p><strong>Falsifier.</strong> For every migrated project, the row count before equals the file
-      count after. Each file's bytes equal the serialiser's output for its source row. A second run
-      writes nothing and makes no commit. A dry run writes nothing. It prints, per project, the row count and how many rows have no file yet. It also
-      prints how many rows already have a file identical to the serialiser's output for the row, and
-      how many already have a file that differs, which the real run would refuse. On a first dry run
-      the last two are zero.</p>
+      checks every run file already present for a row in that project's <code>runs</code> list against the
+      serialiser's output for that row; a file whose id is absent from the list is a §1-window promotion,
+      is left untouched, and does not enter the check. If any checked file differs, that project's whole
+      split stops: no file is written, the <code>runs</code> key stays, no commit is made, and the report
+      names each differing file. Other projects proceed. For each project it writes every row of that list to
+      <code>runs/&lt;run_id&gt;.json</code> through the one serialiser, keeping the row's fields exactly as they
+      are, <code>store_write</code> included. It then removes the <code>runs</code> key from
+      <code>crew.json</code> and leaves <code>members</code> and <code>holds</code> in place for §4. Each
+      project is its own commit with nothing else in it, including a project whose empty list yields only the
+      key's removal.</p>
+      <p><strong>Falsifier.</strong> For every migrated project, the row count before equals the count of
+      files the split wrote for list rows, excluding any §1-window promotion file it left untouched. Each
+      file's bytes equal the serialiser's output for its source row. A second run writes nothing and makes no
+      commit. A dry run writes nothing. It prints, per project, the row count and how many rows have no file
+      yet. It also prints how many rows already have a file identical to the serialiser's output for the row,
+      and how many already have a file that differs, which the real run would refuse. On a first dry run the
+      last two are zero.</p>
     </section>
 
     <section id="s4" data-reckon="section">
@@ -218,6 +222,21 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T204039001397-fourth-read-back-of-the-ledger" data-who="reckon-build" data-when="2026-09-24T23:07:44.914Z">
     <div class="r-comment-body"><p>fourth read-back of the-ledger-is-one-file-per-run at 790d5c57: 2 load-bearing two-reading sentences (§5 L-1, L-2, one root in §3) and one blocking omission (the integrated-gate re-record writer has no route once crew.json is gone)</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-ledger-readings-settled" data-who="settle-the-ledger-readings" data-when="2026-09-25">
+    <div class="r-comment-body"><p><strong>Fourth read-back settlements.</strong> L-1 is replaced by “Before writing anything for a project, the split checks every run file already present for a row in that project’s <code>runs</code> list against the serialiser’s output for that row; a file whose id is absent from the list is a §1-window promotion, is left untouched, and does not enter the check.” L-2 is replaced by “For every migrated project, the row count before equals the count of files the split wrote for list rows, excluding any §1-window promotion file it left untouched.” The integrated-gate re-record omission is decision <code>integrated-gate-recording</code>; its data-backed leaning is <code>per-file-serialiser</code>.</p></div>
+</div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="integrated-gate-recording" data-choice="" data-by="" data-when="" data-leaning="per-file-serialiser">
+    <p class="r-dec-q">How should an integrated gate re-run persist after run rows leave crew.json?</p>
+    <p class="r-dec-ctx">The current function loads the aggregate ledger, patches the matching run, writes the aggregate document, imports the ledger into the index, and commits the ledger path. Code evidence favors preserving the committed report with a per-file route.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="per-file-serialiser">Per-file write through the one serialiser — add targeted run-file read/write and retain the committed report.</button>
+      <button class="r-opt" data-value="retire-in-place-update">Retire the in-place update — remove the load/patch/write/index-import/commit flow and give up the durable per-run report.</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 </main>
 </body>
