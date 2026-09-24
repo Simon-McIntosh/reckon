@@ -22,6 +22,7 @@ def finished_run_server(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     config_home.mkdir()
     state_root.mkdir()
     mounts_file.write_text(json.dumps({"reckon": str(docs)}), encoding="utf-8")
+    ledger.write("reckon", {"members": [], "runs": [], "holds": []}, 0, root=repository)
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
     monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts_file)

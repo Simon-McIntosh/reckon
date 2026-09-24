@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head-landed">
+  <meta name="plan-title" content="The Suite Is Green At Head — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence: the eleven files owned by promotion-fixtures-initialise-the-ledger carried 53 failing node ids at base 77c20349 and pass with zero failures and zero errors at their head, with no node id moved pass to fail and no test lost.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="7ff63a7d">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="pass">
+  <title>The Suite Is Green At Head — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>The Suite Is Green At Head — landed evidence</h1>
+      <p class="plan-summary">One cumulative record per plan (§2's repair partition). Each node appends its own section; this anchor carries the delta measure, the per-id classification and the negative control.</p>
+    </header>
+
+    <section id="promotion-fixtures-initialise-the-ledger">
+      <h2>promotion-fixtures-initialise-the-ledger — 11 files, 53 failing ids repaired</h2>
+
+      <p><strong>Cause group.</strong> §2's first cluster — <em>an absent ledger is refused</em> —
+      accounts for all 53 ids except one. <code>ledger.append_run</code> refuses to create a
+      ledger that is absent when git cannot answer whether the path was ever tracked
+      (<code>reckon/ledger.py:1855-1866</code>, closed by <code>89a574d2</code>). These fixtures
+      promoted into plain temporary directories that are not checkouts, so git returned no answer
+      and the refusal stood. The shipped behaviour is intended: the fixtures move to it by
+      initialising each project ledger with
+      <code>ledger.write(project, {"members": [], "runs": [], "holds": []}, 0, root=root)</code>
+      before any run is appended. <strong>Class: stale expectation.</strong></p>
+
+      <p><strong>The one exception.</strong> <code>test_store_concurrency</code> (2 ids) states its
+      subject as the concurrent promotion of two writers landing <em>consecutive versions</em>, and
+      both of its assertions run from version 1 (<code>sorted(...) == [1, 2]</code>,
+      <code>== list(range(1, racers + 1))</code>). Initialising first would move those to
+      <code>[2, 3]</code>, so this fixture instead declares <code>allow_create=True</code> on its
+      appends — the new-project branch the guard itself documents. <strong>Class: stale
+      expectation.</strong></p>
+
+      <p><strong>The one further cause.</strong>
+      <code>test_a_served_run_is_not_silence::test_exhaustion_without_a_later_completion_keeps_its_reason</code>
+      asserted the budget refusal reason by exact equality. Commit <code>e68a84a7</code> routed that
+      family through <code>reckon/crew/refusals.py</code>, whose <code>format_refusal</code> appends
+      <q>Resolve with <code>reckon crew preflight</code>, then <code>reckon crew dispatch</code>; for
+      an existing blocked run, use <code>reckon crew resume-ready</code>.</q> after the cause. The
+      test now asserts the cause remains present in the reason, matching the substring style its
+      sibling assertions already use. The cause text itself is unchanged and still asserted verbatim.
+      <strong>Class: stale expectation.</strong></p>
+
+      <h3>Per-file delta, base <code>77c20349</code> to head <code>7ff63a7d</code></h3>
+      <table>
+        <thead><tr><th>File</th><th>Base passed / failed</th><th>Head passed / failed</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_a_served_run_is_not_silence</code></td><td>0 / 9</td><td>9 / 0</td></tr>
+          <tr><td><code>test_capabilities</code></td><td>7 / 27 fail</td><td>34 / 0</td></tr>
+          <tr><td><code>test_crew_recover</code></td><td>17 / 1 fail</td><td>18 / 0</td></tr>
+          <tr><td><code>test_crew_run_identity</code></td><td>6 / 1 fail</td><td>7 / 0</td></tr>
+          <tr><td><code>test_crew_runs_view</code></td><td>19 / 1 fail</td><td>20 / 0</td></tr>
+          <tr><td><code>test_dry_run_predicts_the_launcher</code></td><td>5 / 2 fail</td><td>7 / 0</td></tr>
+          <tr><td><code>test_evidence_from_report</code></td><td>1 / 3 fail</td><td>4 / 0</td></tr>
+          <tr><td><code>test_evidence_synthesis</code></td><td>0 / 5 fixture errors</td><td>5 / 0</td></tr>
+          <tr><td><code>test_failure_classification</code></td><td>11 / 1 fail</td><td>12 / 0</td></tr>
+          <tr><td><code>test_serve_finished_runs</code></td><td>0 / 1 fail</td><td>1 / 0</td></tr>
+          <tr><td><code>test_store_concurrency</code></td><td>0 / 2 fail</td><td>2 / 0</td></tr>
+          <tr><th>Total</th><th>66 passed / 53 failed or errored</th><th>119 passed / 0</th></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Zero added.</strong> For every file the base <code>(passed + failed)</code> equals the
+      head <code>passed</code> — <code>test_evidence_synthesis</code> included, whose five base errors
+      are fixture errors from the same refusal and collect as five node ids at head. No node id moved
+      from pass to fail, and no test was skipped, xfailed, deleted or weakened.</p>
+
+      <p><strong>Method.</strong> Each file ran in its own pytest process with its own
+      <code>--basetemp</code>, on compute node <code>98dci4-clu-2058</code> inside fleet allocation
+      <code>1277272</code>, never the whole suite in one process, per §2's rule. Command:
+      <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rfE
+      --basetemp=&lt;per-file&gt; --no-header tests/&lt;file&gt;.py</code>. Lint on the eleven changed
+      paths: 6 findings at base, 6 at head — zero added.</p>
+
+      <p><strong>Negative control.</strong> The eleven files were run as they stood at base
+      <code>77c20349</code> before any repair, and every listed id failed with the recorded ledger
+      refusal or the reason-equality assertion. That red log is
+      <code>logs/77c20349-red-at-base.log</code>, whose first line repeats the declared mutation
+      verbatim; the head logs are the <code>after-*.log</code> set beside it.</p>
+    </section>
+  </main>
+</body>
+</html>

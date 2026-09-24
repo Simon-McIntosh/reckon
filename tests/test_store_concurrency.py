@@ -44,7 +44,9 @@ def _simultaneous_appends(
     ]
     with ThreadPoolExecutor(max_workers=count) as pool:
         futures = [
-            pool.submit(ledger.append_run, PROJECT, record, root=root)
+            pool.submit(
+                ledger.append_run, PROJECT, record, root=root, allow_create=True
+            )
             for record in records
         ]
     results = [future.result(timeout=10) for future in futures]

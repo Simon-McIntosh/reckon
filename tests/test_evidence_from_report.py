@@ -66,6 +66,7 @@ def _repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "repo"
     docs = root / "docs"
     (docs / "state" / PROJECT).mkdir(parents=True, exist_ok=True)
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
     _write_plan(docs)
     return root
 

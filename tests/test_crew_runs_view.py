@@ -34,6 +34,7 @@ DEFAULT_FIELDS = {
 def repository(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
     return root
 
 

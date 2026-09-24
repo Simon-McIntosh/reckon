@@ -694,6 +694,7 @@ def test_a_promoted_run_still_answers_from_its_ledger_row(
     run_id = "r-20260904T032000000000-node-a"
     repo = tmp_path / "repo"
     repo.mkdir(parents=True, exist_ok=True)
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=repo)
     row = ledger.build_record(
         run_id=run_id,
         plan="plan-a",
