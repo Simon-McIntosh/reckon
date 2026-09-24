@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -181,6 +181,11 @@
     <h4 class="r-fu-title">Local-lane workers end turns early and lose backgrounded work</h4>
     <div class="r-fu-body"><p>Measured across nine dsv4.1-flash/high implement runs in the suite-green-at-head wave on 2026-09-24. Each cost a resume:</p><ul><li><strong>Text-only turn endings.</strong> Four runs ended a turn on a narration line with work unfinished: two on their first turn after 6 turns (<q>Let me read it</q>), one after committing but before writing its manifest, and one after a root-cause line. <code>stop_reason: end_turn</code>, no error.</li><li><strong>Backgrounded work dies with the turn.</strong> One worker backgrounded a pytest run and ended its turn. The harness killed the task and nothing was committed.</li><li><strong>srun inside the fleet allocation.</strong> A worker already on the compute node wrapped its tests in <code>srun</code>, which launched one copy per task (30), so 30 writers interleaved in one log.</li><li><strong>Hallucinated write path.</strong> One orientation manifest listed <code>tests/test_crew_EDIT_PLACEHOLDER.py</code>, a path not in its grant.</li></ul><p>Each was recovered by <code>crew resume --advice</code> naming the fix: foreground only, no srun, keep calling tools until the manifest is written. That text belongs in the worker contract for this lane rather than in per-run advice.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default</pre>
+    </article>
+<article class="r-fu" data-id="f-tllitd-skill-contract-ids" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Two suite ids wait on the build skill&#x27;s slimming</h4>
+    <div class="r-fu-body"><p>Two ids in <code>tests/test_skill_contracts.py</code> are red because of <code>skills/reckon-build/SKILL.md</code>, not because of the test. They were attributed by the suite-repair node <code>rendered-and-skill-contracts-match</code>, and the attribution is recorded in <code>the-suite-is-green-at-head</code> §2. <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> fails because the skill is about 18,670 estimated tokens against its 17,000 ceiling (asserted near line 594). <code>test_every_registered_crew_verb_is_documented_or_exempt</code> fails because <code>reckon crew check-manifest</code> is a registered verb the skill never names (asserted near line 1019). §9's slimming is the natural place for both. The first needs reference material moved into <code>references/</code>. The second needs one line naming the verb or an exemption entry. Both tests should go green when §9 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
