@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="78">
+  <meta name="plan-version" content="79">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -796,6 +796,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260924T215300-s7-landed" data-who="reckon-build s21-coord" data-when="2026-09-24T21:53:00Z">
     <div class="r-comment-body">Gate passed and merged at 13c2cf55 (commits 2a33d2db, be77daad). tests/test_promotion_keeps_the_worker_exit.py: 2 passed, and both declared negative controls were executed, each failing only the case it names. The promotion-importing files show the same 30 pre-existing failures at base 02e2757d and at head. Review 95. One finding is still open: the new docstring (promotion.py ~601), the evidence anchor and the landing comment above say the run directory is released at promotion, but promotion releases only the pointer and the worktree, and the run directory lives until crew gc (promotion.py ~636). A wording correction is queued as its own node after the gate-log-digest fix, which writes the same file. §7 is closed; the executable denominator is §2–§10 without §1, which is 9 sections with 4 done.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260924T200504498202-promotion-keeps-the-worker-exit" data-who="reckon-build" data-when="2026-09-24T20:38:49.702Z">
+    <div class="r-comment-body"><p>a promoted row carries exit.json verbatim under worker_exit, no key when absent; both negative controls fail as declared; promotion importers same 30 failures at base and head; review 95, docstring overstates run-dir release</p></div>
 </div>
 </section>
 </main>
