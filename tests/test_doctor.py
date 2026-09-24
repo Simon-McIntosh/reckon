@@ -1,6 +1,7 @@
 """Tests for reckon doctor and reckon install-skills commands."""
 
 import json
+import os
 
 from click.testing import CliRunner
 
@@ -69,13 +70,24 @@ class TestDoctor:
         return home
 
     def _run_doctor(self, tmp_path, **kwargs):
-        """Run reckon doctor with a fake HOME."""
+        """Run reckon doctor with a fake HOME.
+
+        The configuration home resolves from RECKON_HOME ahead of the
+        ~/docs-server fallback, so the fake home is named there too: a run
+        that read it from the ambient environment would inspect the real home
+        the rest of the suite shares rather than the fixture's tree.
+        """
         home = self._make_env(tmp_path, **kwargs)
         runner = CliRunner()
 
         import unittest.mock as mock
 
-        with mock.patch("pathlib.Path.home", return_value=home):
+        with (
+            mock.patch("pathlib.Path.home", return_value=home),
+            mock.patch.dict(
+                os.environ, {"RECKON_HOME": str(home / "docs-server")}
+            ),
+        ):
             result = runner.invoke(main, ["doctor"])
         return result
 

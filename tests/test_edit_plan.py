@@ -1440,6 +1440,7 @@ def test_create_new_plan(setup):
         [
             {"op": "set", "path": "title", "value": "Brand New"},
             {"op": "set", "path": "status", "value": "active"},
+            {"op": "set", "path": "standalone", "value": "a scratch plan wired to nothing"},
         ],
         expected_version=0,
         create=True,
@@ -1616,7 +1617,22 @@ def test_create_missing_required_rejected_and_no_orphan(setup):
         expected_version=0,
         create=True,
     )
-    assert r2["ok"] is True
+    # A retry that is still unwired is refused by the wiring guard, which is a
+    # different refusal from the schema error above: the point here is that the
+    # earlier failure left nothing behind to trip an "already exists" refusal.
+    assert r2["ok"] is False
+    assert r2["error"] == "unwired_plan"
+    r3 = mcp_module._edit_plan(
+        project,
+        "new-plan",
+        [
+            {"op": "set", "path": "title", "value": "New Plan"},
+            {"op": "set", "path": "standalone", "value": "a scratch plan wired to nothing"},
+        ],
+        expected_version=0,
+        create=True,
+    )
+    assert r3["ok"] is True
     assert (docs_dir / "plans" / "new-plan.html").exists()
 
 
@@ -2037,6 +2053,7 @@ def test_edit_plan_create_in_worktree(setup, worktree):
         [
             {"op": "set", "path": "title", "value": "Brand New"},
             {"op": "set", "path": "status", "value": "active"},
+            {"op": "set", "path": "standalone", "value": "a scratch plan wired to nothing"},
         ],
         expected_version=0,
         create=True,
