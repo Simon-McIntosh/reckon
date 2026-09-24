@@ -74,6 +74,43 @@
     executed and logged: with the watch built before <code>serve_forever</code>, the 2 s
     assertion fails. The write paths are <code>reckon/serve.py</code> and that test.</p>
 
+    <div class="r-note" data-reckon="landed" data-node="server-listens-before-it-watches" data-when="2026-09-24">
+    <p><strong>Outcome — the port answers before the watch is armed.</strong> Commit
+    <code>caa09a7c</code> <em>fix(serve): bind the port before arming the fleet change watch</em>
+    moves the <code>ThreadingHTTPServer</code> construction ahead of
+    <code>start_fleet_change_watch</code> in <code>main</code>, so the socket binds and listens
+    first. <code>_FleetChangeWatch</code> now arms one tree at a time on its reader thread
+    (<code>_arm_every_tree</code>), registering each watch as its walk completes, and exposes
+    <code>armed_roots</code>. <code>start</code> sets <code>running</code> before launching the
+    thread so the arming loop's stop check cannot run ahead of it, and a lock guards the
+    registry so a concurrent <code>close</code> cannot leave an fd registered after teardown.
+    The unarmed-window behaviour is unchanged: a tree is covered by the discovery reuse window
+    until its watch is armed.</p>
+    <h3>Measured</h3>
+    <ul>
+      <li><strong>Added failures 0</strong> across twelve server-importing test files run with the
+      change (188 passed, 5 skipped, 2 failed). The two failures —
+      <code>test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity</code> and
+      <code>test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction</code>
+      — reproduce identically with <code>reckon/serve.py</code> restored from base, so they are
+      pre-existing on the integrated tree and belong to a concurrent node's scope.</li>
+      <li><strong>The gate, at <code>caa09a7c</code>:</strong>
+      <code>tests/test_server_listens_before_it_watches.py</code> starts the served entry point
+      over three temporary mounts with watch construction patched to take 5 s per tree. It
+      asserts <code>/_projects/mounts.json</code> answers 200 within 2 s of launch, that the port
+      answers while a tree is still unarmed, and that every tree is armed within 20 s — 3 passed
+      in 21 s.</li>
+      <li><strong>The declared negative control is executed and logged:</strong> with
+      <code>_FleetChangeWatch.start</code> mutated to arm every tree on the calling thread before
+      the reader thread starts (the watch built before <code>serve_forever</code>, as
+      <code>main</code> had it), the 2 s assertion fails with
+      <code>mounts.json did not answer 200 within 2 s of launch</code> (2 failed, 1 passed in
+      57 s). Mutation reverted; three cases pass at <code>caa09a7c</code>.</li>
+    </ul>
+    <p>Figure: <code>/reckon/figures/the-page-paints-from-an-index/startup-bind-and-arm.svg</code>.
+    Evidence anchor: <a href="/reckon/plans/the-page-paints-from-an-index-landed#server-listens-before-it-watches">the-page-paints-from-an-index-landed.html#server-listens-before-it-watches</a>.</p>
+    </div>
+
     <h2 id="s3">&sect;3 &mdash; A metadata index survives a restart and answers in milliseconds</h2>
     <p>The server keeps one metadata index per mounted project on disk, under the configuration
     home's cache directory. Each row carries the fields a list needs: slug, href, type, title,
