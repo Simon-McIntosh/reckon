@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="39">
 <meta name="plan-impl" content="0.29">
 </head>
 <body>
@@ -237,6 +237,16 @@
     also writes <code>reckon/cli.py</code>, and after
     <code>a-dispatch-returns-without-its-worker</code> &sect;3, which writes
     <code>dispatch.py</code>. The write paths are those three modules and that test.</p>
+    <p><strong>Two items settle before release</strong> (read-back
+    <code>review-of-the-producer-lease</code>, 2026-09-24). <em>M2:</em> a reader has no way to
+    see a lease renewal happen. The follower writes <code>lease_renewed_at</code> (UTC) into the
+    producer's registration on each renewal, and the test reads that field, as it reads
+    <code>poll_interval_seconds</code>. <em>M8:</em> the write paths also need
+    <code>reckon/crew/runs.py</code>, where registrations are written, and the ordering clause
+    names both files this section shares with &sect;2, <code>reckon/cli.py</code> and
+    <code>reckon/crew/runs.py</code>. On the fleet, the producer launch also takes
+    <code>a-dispatch-returns-without-its-worker</code> &sect;10's spawn path, so this section
+    runs after that one.</p>
 
     <h2 id="s4">&sect;4 &mdash; Polling reads what changed, never the whole tree</h2>
     <p><code>git status --untracked-files=all</code> is issued from
@@ -558,6 +568,63 @@
     its manifest before editing it, and that test. The whole section, not only its test, runs
     after <code>a-dispatch-returns-without-its-worker</code> &sect;3, which also writes
     <code>dispatch.py</code> and has landed.</p>
+    <p><strong>Not yet released.</strong> The second read-back of this section's rewrite
+    (<code>f4291476</code>) ended at a context compaction before it wrote a report, and was
+    completed as an infrastructure failure. So this section's rewrite has never been read back.
+    Run that read-back before dispatch.</p>
+
+    <h2 id="s10">&sect;10 &mdash; A run can always be reconciled from what survives</h2>
+    <p>On 2026-09-23 and 24, runs across four repositories reached states that no command could
+    reconcile. Discarding one is irreversible, and never-discard was the only guard left. Five
+    cases were measured:</p>
+    <ul>
+      <li><strong>A discarded run.</strong> <code>crew complete</code> refuses a run with no live
+      pointer. <code>crew repair-completion</code> repairs only rows that already exist. Yet
+      <code>crew/runs/&lt;run&gt;/</code> keeps <code>prompt.txt</code>, <code>stderr.log</code>
+      and <code>stream.jsonl</code>. imas-ambix has six discarded llac runs from 2026-09-23 on
+      disk, which repair-completion lists none of.</li>
+      <li><strong>A written row with a live pointer.</strong> A run whose ledger row and landing
+      comment are written can still classify as unreconciled. <code>complete</code> then refuses
+      it ("ledger row already written; landing comment already contains a different
+      narrative"). reckon-e4 held one and imas-ambix-f6 holds two.</li>
+      <li><strong>A stale run with no worktree.</strong> imas-codex-0d's run has landed commits,
+      <code>5ac5e0fa6</code> and <code>923daf733</code>. <code>complete</code> refuses it on a
+      stray-write check naming 85 paths, none of them the run's: its worktree is gone and its
+      base is seven days old, so the check compares today's main against a week of everyone's
+      work. The only remedy, one <code>--accept-path</code> per path, would write 85 false
+      claims. That is recorded in imas-codex as f-srr-stale-run-cannot-be-reconciled
+      (<code>31c5a102d</code>).</li>
+      <li><strong>Gate evidence the manifest already names.</strong> Promotion requires
+      <code>--gate-command</code>, <code>--gate-exit-status</code>, <code>--gate-log-path</code>
+      and <code>--commit</code> by hand, even when the manifest states all of them. It also
+      refuses repo-relative log paths. Coordinators repointed manifests by hand repeatedly.</li>
+      <li><strong>A promotion walking every tree.</strong> <code>crew complete</code>'s boundary
+      check walked every retained worktree with <code>--untracked-files=all</code>, which took
+      3 h 07 m under degraded storage (&sect;4 owns the walk).</li>
+    </ul>
+    <p><strong>The fix.</strong> <code>crew complete</code> becomes an idempotent reconcile, with
+    four behaviours:</p>
+    <ul>
+      <li>A run with no live pointer is completed from its run directory, reconstructing
+      measurements from the surviving stream as repair-completion already does. The
+      classification and outcome are given by hand. It never writes a ledger row by hand.</li>
+      <li>A run whose row already exists has its pointer retired, and the refusal is not
+      repeated.</li>
+      <li>A boundary check with no surviving worktree, or a base older than a stated bound, says
+      it has no referent and asks for one acknowledgement, not one per path.</li>
+      <li>Gate command, exit status, log path and commits default to what the manifest states,
+      with absolute paths resolved under the run directory.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_a_run_can_always_be_reconciled.py</code>, in a
+    temporary <code>RECKON_HOME</code>, covers four cases. A run with only its run directory
+    left promotes to a ledger row carrying the given classification. A run with a row and a
+    live pointer ends with the pointer gone and exactly one row. A run whose worktree is gone
+    promotes with one no-referent acknowledgement. A passing run whose manifest names its gate
+    promotes with no gate flags. The negative control is executed and logged: with the
+    no-pointer path removed, the first case is refused and the test fails. The write path is
+    <code>reckon/crew/promotion.py</code>, plus that test. This section is not in the
+    root-fix set. It recovers history and does not stop a recurrence, so it dispatches with
+    general work.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -603,6 +670,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260924T083708303668-second-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:49:07.564Z">
+    <div class="r-comment-body"><p>second read-back of section 9 at f4291476 produced no report (turn ended at compaction); section 9 is not released and its read-back must be re-run before dispatch</p></div>
 </div>
 </section>
 </main>
