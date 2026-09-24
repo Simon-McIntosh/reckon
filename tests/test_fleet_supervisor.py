@@ -11,9 +11,11 @@ known-present value.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -166,6 +168,29 @@ def _wait_for_spawned(run_directory: Path) -> dict:
     )
 
 
+def _fleet_state_snapshot(directory: Path) -> dict:
+    """Everything a write into a state directory would move.
+
+    The machine's own fleet state belongs to a live batch step: the suite reads
+    it and never writes it, so this reading is taken on both sides of a case and
+    compared. Absence is a value here — a directory that does not exist and one
+    holding a record are different readings, so a writer cannot make the two
+    ends of a comparison agree by deleting what it wrote.
+    """
+    if not directory.exists():
+        return {"exists": False}
+    entries = sorted(directory.iterdir())
+    record = directory / fleet_supervisor.RECORD_NAME
+    return {
+        "exists": True,
+        "listing": [entry.name for entry in entries],
+        "mtimes": {entry.name: entry.stat().st_mtime_ns for entry in entries},
+        "record_sha256": (
+            hashlib.sha256(record.read_bytes()).hexdigest() if record.exists() else None
+        ),
+    }
+
+
 def test_a_spawn_line_runs_the_stub_and_records_its_live_pid(reader, tmp_path) -> None:
     """A spawn line runs the spec's argv and acknowledges a live pid.
 
@@ -175,6 +200,8 @@ def test_a_spawn_line_runs_the_stub_and_records_its_live_pid(reader, tmp_path) -
     """
     run_directory = tmp_path / "run"
     marker = tmp_path / "stub-ran"
+    real_state = fleet_supervisor.state_directory({})
+    state_before = _fleet_state_snapshot(real_state)
     stub = tmp_path / "stub.py"
     stub.write_text(LIVE_CHILD, encoding="utf-8")
     spec = _write_spec(run_directory, [sys.executable, str(stub), str(marker)])
@@ -202,6 +229,39 @@ def test_a_spawn_line_runs_the_stub_and_records_its_live_pid(reader, tmp_path) -
     record = json.loads((reader.state / "record.json").read_text())
     assert record["runtime_dir"] == str(reader.runtime)
     assert record["node"], record
+
+    # The machine's own fleet state is a live batch step's, so the suite reads
+    # it and never writes it: the state override is what keeps this run from
+    # publishing a fake fleet into the directory every reader resolves. Byte
+    # identical — listing, mtimes and the record's digest, not merely "no new
+    # files" — so a rewrite of the existing record is caught too.
+    assert _fleet_state_snapshot(real_state) == state_before, (
+        f"the machine's fleet state at {real_state} changed while the spawn "
+        "case ran, so the case wrote there instead of into its own state"
+    )
+    # The collector is shown to read a record where one exists. The same call
+    # against the temporary state directory the reader just wrote must report a
+    # digest, or an unchanged real directory would read the same as an unread
+    # one and the equality above would say nothing.
+    written = _fleet_state_snapshot(reader.state)
+    assert written["record_sha256"] is not None, written
+
+
+def test_the_readers_runtime_directory_is_not_world_readable(reader) -> None:
+    """The private runtime directory is created mode 0700, not left to umask.
+
+    It holds zellij's sockets and the agent harness's cross-session sockets
+    both, so a directory the submitting shell's umask left at 0755 would expose
+    every one of them to anyone who can walk to the node's /tmp. The reader
+    creates the directory before it creates the FIFO, so the FIFO's arrival
+    shows the directory exists and its mode can be read.
+    """
+    reader.start()
+    mode = stat.S_IMODE(os.stat(reader.runtime).st_mode)
+    assert mode == 0o700, (
+        f"the runtime directory was created mode {oct(mode)}, so the sockets it "
+        "holds are reachable by anyone who can walk to it"
+    )
 
 
 def test_a_spawn_line_missing_its_spec_path_is_logged_and_ignored(

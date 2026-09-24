@@ -460,13 +460,27 @@
       must reach without a new allocation. In the repository it can be driven by pytest over
       a real FIFO in a temporary runtime tree, so what is asserted is what a request line
       does to the machine rather than what a function returns. Two environment overrides
-      exist for that (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>); the
-      real state directory is asserted untouched afterwards.
+      exist for that (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>), and the
+      suite's distance from the machine's own fleet state is asserted, not intended: the spawn
+      case reads the directory the module resolves when no override is set
+      (<code>~/.local/state/fleet</code>) on both sides of the case and requires the two
+      readings identical &mdash; listing, mtimes and the <code>record.json</code> digest alike,
+      so a rewrite we missed cannot hide behind an unchanged file name &mdash; and it reads
+      that directory without ever writing it. The collector is shown, in the same case, to
+      report a digest for the temporary state directory the reader <em>did</em> write, so an
+      unchanged real directory cannot pass by reading nothing at all. On this machine the real
+      directory exists and holds a live record: its <code>record.json</code> mtime after every
+      run of the suite and both controls is still 2026-09-24&nbsp;14:35, from before the suite
+      ever ran.
     </p>
     <table>
       <thead><tr><th>Measure</th><th>Value</th></tr></thead>
       <tbody>
-        <tr><td>gate, four cases</td><td><code>4 passed in 3.42s</code></td></tr>
+        <tr><td>gate, five cases</td><td><code>5 passed</code> &mdash; the log names the revision, the tree and the command and carries the run's own timing</td></tr>
+        <tr><td>the machine's own fleet state</td><td>identical across the spawn case: listing, mtimes and <code>record.json</code> sha256 (<code>ed3f63b5&hellip;</code> before and after)</td></tr>
+        <tr><td>the reader's runtime directory</td><td>mode <code>0o700</code>, set by <code>os.chmod</code> rather than left to the submitting umask</td></tr>
+        <tr><td>control, state override dropped</td><td><code>1 failed</code> at the byte-identity assertion: <code>{'exists': True, &hellip;} == {'exists': False}</code></td></tr>
+        <tr><td>control, runtime <code>chmod</code> dropped</td><td><code>1 failed</code> under <code>umask 000</code>: created mode <code>0o777</code>, not <code>0o700</code></td></tr>
         <tr><td>spawn acknowledgement</td><td><code>spawned.json</code> = <code>{pid, started_at}</code>; pid asserted live with <code>os.kill(pid, 0)</code></td></tr>
         <tr><td>the child's argv actually ran</td><td>the stub's marker file exists, written before it sleeps</td></tr>
         <tr><td>detachment</td><td><code>start_new_session=True</code>, so the child leads its own session and group</td></tr>
@@ -474,7 +488,7 @@
         <tr><td>session line, zellij stubbed</td><td>stub argv holds <code>attach --create-background --create demo</code>, no <code>--layout</code>; a listed <code>EXITED</code> server does not count as running</td></tr>
         <tr><td>reload line</td><td>recorded exec argv is <code>[&lt;interpreter&gt;, -m, reckon.crew.fleet_supervisor]</code> &mdash; no arguments, so the replacement re-enters the loop</td></tr>
         <tr><td>a spawned child's environment</td><td><code>RECKON_CONTROL_MARKER</code> present; <code>ZELLIJ_SESSION_NAME</code>, <code>ZELLIJ_PANE_ID</code>, <code>CX_SESSION</code>, <code>CX_BACKGROUND</code>, <code>CLAUDE_CODE_CHILD_SESSION</code> all absent</td></tr>
-        <tr><td>declared negative control</td><td>write line in the overlay: 0 (the worktree: 1) &mdash; <code>1 failed, 3 deselected in 20.78s</code></td></tr>
+        <tr><td>declared negative control</td><td>write line in the overlay: 0 (the worktree: 1) &mdash; <code>1 failed, 4 deselected in 20.87s</code></td></tr>
       </tbody>
     </table>
     <figure>
@@ -497,6 +511,28 @@
       Driver at
       <code>~/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/logs/negative-control.sh</code>;
       log beside it; the module and the test are at revision <code>770abccf</code>.
+    </p>
+    <p>
+      <strong>The two controls added with the assertions behind the untouched-state and
+      runtime-mode claims.</strong> Driver
+      <code>&hellip;/logs/negative-controls-assertions.sh</code>, log
+      <code>&hellip;/logs/negative-controls-assertions.log</code>. Dropping the state override
+      makes the reader publish into the directory the module resolves by default, and the
+      byte-identity assertion fails on precisely that: <code>{'exists': True,
+      &hellip;'record_sha256': '466451e3&hellip;'} == {'exists': False}</code>. One detail of
+      that control is load-bearing and is stated in the driver: the fixture's state directory
+      is pointed at the default one as part of the same act, because otherwise the case fails
+      earlier, on the pre-existing assertion that reads the record the reader left, and the
+      comparison under control is never reached &mdash; a control that looks red while
+      measuring something else. The control also redirects <code>HOME</code> into its overlay,
+      so the directory it makes the reader write is its own and the machine's real fleet state
+      is untouched by the control as much as by the suite. Dropping the runtime directory's
+      <code>0o700</code> <code>chmod</code> and running the mode case under <code>umask
+      000</code>, so the outcome does not depend on the umask of whoever runs the control,
+      leaves the directory created <code>0o777</code> and the assertion fails on the mode it
+      reports (<code>assert 511 == 448</code>). Both controls copy the package <em>and</em> the
+      test tree, exclude the byte-compiled caches, and print the resolved paths of the modules
+      they measured &mdash; the cache exclusion is what the next paragraph is about.
     </p>
     <p>
       <strong>An artifact this control exposed, recorded because it nearly read as a

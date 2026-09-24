@@ -678,7 +678,7 @@
     three space-separated fields names a run id and a supervisor spec path, and the spec's
     <code>argv</code> is run verbatim as the batch step's own detached child, acknowledged by
     writing <code>spawned.json</code> with its pid and start time into the spec's run
-    directory. It landed with <code>tests/test_fleet_supervisor.py</code>, four cases driving
+    directory. It landed with <code>tests/test_fleet_supervisor.py</code>, five cases driving
     the reader over a FIFO in a temporary runtime directory.</p>
     <p><strong>Why the batch step is carried here and not only in dotfiles.</strong> The verb
     stays free of reckon knowledge because the spec carries the argv, exactly as
@@ -688,8 +688,19 @@
     against a temporary runtime tree rather than only by hand on a live allocation: the cases
     assert what a request line does to the machine, not what a function returns. Two
     environment overrides exist for that reason
-    (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>), so the suite never writes
-    the machine's own fleet state, and the record directory is asserted untouched.</p>
+    (<code>FLEET_RUNTIME_DIR</code>, <code>FLEET_STATE_DIR</code>), and the suite's distance
+    from the machine's own fleet state is asserted rather than intended. The spawn case reads
+    the directory the module resolves when no override is set,
+    <code>~/.local/state/fleet</code>, on both sides of the case and requires the two readings
+    identical &mdash; listing, mtimes and the <code>record.json</code> digest alike, so a
+    rewrite of an existing record is caught and not only a new file &mdash; and it reads that
+    directory without ever writing it. The same collector is shown in the same case to report
+    a digest for the temporary state directory the reader did write, so an unchanged real
+    directory cannot pass by reading nothing at all. A case of its own covers the other claim
+    the module makes about the private runtime directory: that it is created mode 0700,
+    because it holds zellij's sockets and the agent harness's cross-session sockets both, and
+    a directory left to the umask would hand them to anyone who can walk to the node's
+    <code>/tmp</code>.</p>
     <p><strong>What a request line does.</strong> The reader strips the inherited session
     variables before it does anything else, so nothing it starts believes it is already inside
     a zellij or an agent session; makes a mode-0700 private runtime directory and points
@@ -707,20 +718,30 @@
     act on &mdash; a spawn without its spec path, an unknown verb &mdash; and a spawn the
     machine refuses are logged and the loop reads the next line; exited children are reaped
     between requests so a reader whose whole life is a read loop holds no dead process slot.</p>
-    <p><strong>The measure that could have failed.</strong> The four cases are a spawn whose
+    <p><strong>The measure that could have failed.</strong> The five cases are a spawn whose
     child writes a marker and stays alive, so the recorded pid is asserted live rather than
-    merely numeric; a malformed line followed by a valid one, so "ignored" means the reader
+    merely numeric, with the two readings that must not move and the runtime directory's mode
+    in the same case; a malformed line followed by a valid one, so "ignored" means the reader
     survived it rather than that something was printed while the loop stopped; a session start
     and a reload, with zellij stubbed so no real session is touched and the reload driven
     through a recorded exec so it cannot replace the test process; and a spawned child's
     environment, where a control marker is shown present in the same reading that the five
     stripped names are shown absent from, since a child that recorded nothing would otherwise
-    read as clean. The declared negative control was executed and logged: with the
-    <code>spawned.json</code> write dropped from the spawn verb, the pid assertion fails on an
-    acknowledgement that was never written, and the run measures a full copy of the package
-    <em>and</em> the test tree &mdash; both, because <code>tests/</code> is a package and
-    pytest prepends its root &mdash; printing the resolved paths of the modules it measured so
-    a pass for the wrong reason is visible rather than assumed.</p>
+    read as clean. <strong>One declared control per claim, and none of them inert.</strong>
+    With the <code>spawned.json</code> write dropped from the spawn verb, the pid assertion
+    fails on an acknowledgement that was never written. With the state override dropped, the
+    reader publishes where the override would have kept it and the byte-identity assertion
+    fails on a directory that went from absent to holding a record &mdash; that control also
+    points the fixture's state directory at the default one, without which the case would fail
+    earlier on the reading of the record it left and measure nothing about the assertion under
+    test. With the runtime directory's <code>chmod</code> dropped and the run made under
+    <code>umask 000</code>, so the result owes nothing to the caller's umask, the directory
+    appears as <code>0o777</code> and the mode assertion fails on the mode it reports. Each
+    control measures a full copy of the package <em>and</em> the test tree &mdash; both, because
+    <code>tests/</code> is a package and pytest prepends its root &mdash; printing the resolved
+    paths of the modules it measured, so a pass for the wrong reason is visible rather than
+    assumed. The state control redirects <code>HOME</code> into its overlay, which is also what
+    keeps the control from publishing a fake fleet into the machine's real state directory.</p>
     <figure>
       <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet_request_loop.png"
            alt="Left: the reader's life in five steps, from stripping the inherited variables through the verbs a request line can name. Right: the spawn handshake, from the arriving line through reading the spec, starting the detached child, writing spawned.json and reading on.">
@@ -737,7 +758,7 @@
     with the <code>crew watch</code> producer and the resumption paths that take it &mdash;
     is the sibling node's, so &sect;10's reckon half is not complete. This node delivers the
     batch step that half dispatches into.</p>
-    <p>The mechanism, the four cases and the negative control are recorded in
+    <p>The mechanism, the five cases and the controls are recorded in
     <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
