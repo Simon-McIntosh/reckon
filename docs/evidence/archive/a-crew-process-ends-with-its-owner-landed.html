@@ -9,13 +9,13 @@
   <meta name="plan-title" content="A Crew Process Ends With Its Owner — landed evidence">
   <meta name="plan-summary" content="Each section's landing record, with the measure that decided it.">
   <meta name="plan-evidence-for" content="a-crew-process-ends-with-its-owner">
-  <meta name="plan-verifies" content="a-crew-process-ends-with-its-owner#s5">
-  <meta name="plan-commits" content="d026717e,cd75efe0,744deae5,aeeb8bac,aaa888a5,fe554df8">
-  <meta name="plan-artifacts" content="reckon/mcp.py,reckon/_mcp_tools.py,tests/test_mcp_reads_have_deadlines.py,docs/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png">
+  <meta name="plan-verifies" content="a-crew-process-ends-with-its-owner#s5,a-crew-process-ends-with-its-owner#s2">
+  <meta name="plan-commits" content="d026717e,cd75efe0,744deae5,aeeb8bac,aaa888a5,fe554df8,42a1fa78,796583a4,a33dfd8a,2a98b781,886a9ce3">
+  <meta name="plan-artifacts" content="reckon/mcp.py,reckon/_mcp_tools.py,tests/test_mcp_reads_have_deadlines.py,docs/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png,reckon/cli.py,reckon/crew/runs.py,tests/test_follower_checks_its_owner.py,docs/figures/a-crew-process-ends-with-its-owner/owner_check_independent_of_the_lock.png">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
-  <meta name="plan-environment" content="reckon project virtual environment, mcp 1.28.1">
-  <meta name="plan-tags" content="mcp,deadlines,storage,verification">
+  <meta name="plan-environment" content="reckon project virtual environment on the login node (Python 3.14, mcp 1.28.1), real subprocesses under a temporary RECKON_HOME">
+  <meta name="plan-tags" content="mcp,deadlines,storage,followers,ownership,verification">
   <title>A Crew Process Ends With Its Owner — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -73,6 +73,154 @@
       <p>No change outside the three declared write paths was required, and none was made; the
       deadline is applied at the tool boundary the SDK calls, so the synchronous wrappers stay
       directly callable and the published argument model is unchanged.</p>
+    </section>
+    <section id="s2-read-only-follower-checks-its-owner">
+      <h2>&sect;2 &mdash; A follower that never held the registration checks its owner</h2>
+      <p><strong>Outcome &mdash; the owner check runs on every wait pass, holding the lock or
+      not.</strong> <code>_check_consumer</code> in <code>reckon/cli.py</code> no longer returns
+      before it compares the owner, so a read-only follower ends on the tick after its own owner
+      dies. The owner is resolved once, at the follower's first start, by
+      <code>runs.follower_owner()</code>: from <code>RECKON_FOLLOWER_OWNER</code> when an armer
+      stamped one, from <code>os.getppid()</code> exactly once otherwise, and held from that read
+      onward so a later re-parent cannot move it. <code>_FollowerRegistration.acquire()</code> in
+      <code>reckon/crew/runs.py</code> writes that owner into the record instead of
+      <code>os.getppid()</code>, and a recorded owner of pid 1 or below is treated as gone rather
+      than as a reason to skip &mdash; which closes the takeover hole where a read-only follower
+      inherits a released registration while orphaned and becomes an immortal holder naming init.
+      A reloaded image is handed the same owner through the environment its <code>execve</code>
+      receives.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/owner_check_independent_of_the_lock.png"
+             alt="Left: measured seconds from the owner's death to the follower leaving, three samples each for a read-only follower (0.81 to 0.91 s) and for the holder (0.19 to 0.24 s), against the gate's two-second bound. Right: the wait-pass decision. The holder reaches the owner question and leaves. The read-only follower under the early return reaches a registration it does not hold and returns before the owner is ever asked about, on every tick.">
+        <figcaption>The check on a mechanism axis, beside what the early return skipped. Left:
+        measured on this login node, one sample set per row, from the owner's death to the follower
+        leaving the process table. Right: the decision the two followers take on each wait pass. The
+        fix removes the branch that stood in front of the owner question.</figcaption>
+      </figure>
+
+      <h3>What was measured</h3>
+      <table>
+        <thead><tr><th>Quantity</th><th>Value</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>Read-only follower, owner's death &rarr; gone</td><td>0.811, 0.839, 0.905 s</td><td>three samples, real <code>crew follow</code> subprocesses, process table sampled every 5 ms</td></tr>
+          <tr><td>Holder, owner's death &rarr; gone</td><td>0.185, 0.242, 0.185 s</td><td>same, from its own owner's kill</td></tr>
+          <tr><td>Registration still named the holder after the read-only follower left</td><td>true, all three samples</td><td><code>follower_state</code> read between the two kills</td></tr>
+          <tr><td>Replacement image live &rarr; gone, over a dead carried owner</td><td>1.193, 1.220, 1.240 s</td><td>three runs of the re-parented case, the replacement's launcher seen on its command line before the clock starts</td></tr>
+          <tr><td>The gate over both files</td><td>7 passed in 26.8 s</td><td>five tests in <code>tests/test_follower_checks_its_owner.py</code> and <code>tests/test_orphaned_follower_releases.py</code>, one invocation at load average 3.9</td></tr>
+        </tbody>
+      </table>
+      <p>Both followers leave well inside the gate's two-second bound, and the registration the
+      read-only follower never held still names the holder when it goes: it left by checking its
+      owner, not by taking a registration nothing had released.</p>
+
+      <h3>How the bound is derived</h3>
+      <p>The exit bound is not a round number chosen to be comfortable. The wait pass polls every
+      0.1 s, so a five-second bound admits fifty passes, and a regression that asked about the owner
+      once every fifty passes would satisfy it while leaving a follower alive for nearly five
+      seconds after its owner died. Two seconds is 2.2× the slowest of the read-only samples above
+      — enough for interpreter teardown and the jitter of a loaded node, and about twenty passes
+      rather than fifty. The live-owner control is what makes the window meaningful: it requires a
+      follower whose owner is alive to still be running and still the holder at the end of the same
+      two seconds, so the bound separates a follower that checked its owner from one that did not.
+      The re-parented case is bounded separately, from the replacement image becoming live, because
+      that window carries the replacement's own import cost: three seconds against samples of
+      1.193, 1.220 and 1.240 s, at 2.4× the slowest.</p>
+
+      <h3>How the read-only case is set up, and why</h3>
+      <p>The done-when's first case asks for a holder and a read-only follower armed by one stub
+      parent, both leaving on the tick after that parent is killed. Written that way the case cannot
+      show the defect: when the one owner dies, the holder leaves and frees the registration, and the
+      read-only follower then leaves by <em>taking that registration over</em> in the same tick it
+      acquires it &mdash; with the early return restored it still leaves, so the mutation passes. The
+      mask is exactly the scheduling slack the done-when says the assertion may not allow.</p>
+      <p>The orphan's real condition is a read-only follower whose <em>own</em> owner is gone while an
+      older follower still holds the registration &mdash; one re-armed Monitor behind another, which
+      is how the ten nova orphans accumulated. The case therefore arms two stubs, one per follower,
+      and kills the read-only follower's owner first while the holder's owner stays alive. The
+      read-only follower cannot leave by takeover, so the only thing that can end it is the check the
+      early return skipped. The holder's own half is then measured by killing its owner. Both halves
+      of the path are asserted, and the deviation from the single-stub form is what makes the
+      declared mutation fail.</p>
+
+      <h3>Why the owner carry needs its own case</h3>
+      <p>The reload is easy to mistake for coverage of the carry. It is not: <code>execve</code>
+      does not change a process's parent, so when the reload happens while the owner is alive, a
+      replacement that read <code>os.getppid()</code> would read the owner and the case would pass
+      with the carry deleted. That was measured here &mdash; removing the two carry lines leaves the
+      reload case green (log <code>negative-control-mutation3.log</code>, which runs it alongside the
+      failing case).</p>
+      <p>The carry is therefore read where the parent is not the owner. A subreaper process is
+      started above the arming stub (<code>prctl(PR_SET_CHILD_SUBREAPER)</code> via
+      <code>ctypes</code>), the follower is held still with <code>SIGSTOP</code>, and the stub is
+      killed. The follower is now adopted by a live process rather than init &mdash; asserted from
+      the process table, not assumed &mdash; and it has not yet looked at anything. Its source stamp
+      is then advanced, the follower is resumed, and on its first pass it replaces its image. The
+      replacement resolves the process it reports to: from <code>os.getppid()</code> that is the
+      live subreaper and it runs on forever; from the carried <code>RECKON_FOLLOWER_OWNER</code> it
+      is the dead stub and it leaves. The replacement is observed on its own command line, so a run
+      in which no reload happened cannot pass by measuring the first image, and the clock for its
+      exit starts only once it is live.</p>
+
+      <h3>Negative control</h3>
+      <p>Declared as: <em>restore the early return in <code>_check_consumer</code> for a non-holder;
+      and make <code>acquire()</code> record <code>os.getppid()</code> again</em>. Executed in four
+      runs against this node's final source, each reverted afterwards with the file verified
+      byte-identical to its pre-mutation copy:</p>
+      <ul>
+        <li><strong>Mutation 1 alone</strong> (the early return restored): 1 failed, 6 passed.
+        <code>test_a_read_only_follower_leaves_when_its_own_owner_dies</code> fails on exactly the
+        mechanism: <em>the follower was still running 2.0 s after its owner was killed, so it did not
+        check its owner</em>.</li>
+        <li><strong>Mutation 2 alone</strong> (<code>acquire()</code> records
+        <code>os.getppid()</code>): 1 failed, 6 passed.
+        <code>test_a_takeover_records_the_armed_owner_not_the_claimants_parent</code> fails on the
+        record naming the claimant's parent instead of the armed owner.</li>
+        <li><strong>Mutation 3 alone</strong> (the reloader's two carry lines deleted): 1 failed,
+        6 passed &mdash; and the failing case is
+        <code>test_a_reload_under_a_live_subreaper_keeps_the_dead_owner</code>, while
+        <code>test_a_reloaded_follower_still_leaves_when_the_original_owner_dies</code> passes. Its
+        failure message carries the evidence: the replacement's command line shows the launcher that
+        the armed argv does not have, and the process was still running three seconds after that, so
+        the owner it resolved was alive.</li>
+        <li><strong>Both declared mutations together:</strong> 2 failed, 5 passed, the two tests the
+        declaration names. The red log's first line repeats the declared string verbatim.</li>
+      </ul>
+      <p>Two controls guard the window rather than the mutation.
+      <code>test_a_follower_whose_owner_still_arms_it_keeps_reading</code> leaves the owner alive and
+      requires the follower to still be running and still the holder past the same two seconds, so
+      the bound separates a follower that checked from one that did not.
+      <code>test_a_reloaded_follower_still_leaves_when_the_original_owner_dies</code> confirms the
+      image replacement from the replacement's own command line &mdash; the launcher it inserts its
+      import root with is absent from the armed argv &mdash; so a run in which no reload happened
+      cannot pass by measuring the first image alone. Every test also asserts the real follower
+      directory for the probe project is absent before and after, so a temporary home did not leak
+      into live state.</p>
+
+      <h3>Human-readable estimation</h3>
+      <p>Regression risk of the change itself is low: it removes a branch and changes where an
+      identity is read from. The risk it carries is the identity, and that is what the second and
+      third declared mutations probe. A reviewer should read <code>follower_owner()</code>'s
+      resolve-once semantics and <code>acquire()</code>'s write of it together, because a change to
+      either that made the value follow the current parent would be caught only by the takeover
+      case; and the reloader's carry separately, because the reload case alone cannot see it. The
+      two failure shapes are different and both are covered: a follower that keeps running under a
+      dead owner (mutations 1 and 3) and a record that names the wrong process (mutation 2).
+      Confidence in the landed behaviour is high: six latency samples across three cases, all three
+      mutations fatal to the gate, and &sect;7's landed test green in the same invocation.</p>
+
+      <h3>Artifacts</h3>
+      <ul>
+        <li><code>reckon/cli.py</code> &mdash; the owner check on every wait pass, and the owner
+        carried to a replacement image.</li>
+        <li><code>reckon/crew/runs.py</code> &mdash; <code>follower_owner()</code>, its resolve-once
+        cache, the environment encoding, and <code>acquire()</code>'s record of the armed owner.</li>
+        <li><code>tests/test_follower_checks_its_owner.py</code> &mdash; the gate, five tests. The
+        re-parented reload case starts its own subreaper process and drives the follower through it.</li>
+        <li><code>docs/figures/a-crew-process-ends-with-its-owner/owner_check_independent_of_the_lock.py</code>
+        &mdash; the figure source; its drawn bound is the same two seconds the gate asserts, and its
+        label is interpolated from that constant rather than written into the text.</li>
+      </ul>
     </section>
   </main>
 </body>

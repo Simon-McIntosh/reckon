@@ -1498,14 +1498,14 @@ class _FollowerRegistration:
         except BlockingIOError:
             self.blocked_by = _read_watch_record(handle)
             return False
-        parent = os.getppid()
+        owner_pid, owner_start = follower_owner()
         self.record = {
             "project": self.project,
             "session": self.session,
             "pid": os.getpid(),
             "pid_start_time": _process_start_time(os.getpid()),
-            "parent_pid": parent,
-            "parent_start_time": _process_start_time(parent),
+            "parent_pid": owner_pid,
+            "parent_start_time": owner_start,
             "delivery": self.delivery,
             "scope": self.scope,
             "started_at": _utc_now(),
@@ -1607,6 +1607,76 @@ _REGISTRATION_SETTLE_SECONDS = 0.25
 
 FOLLOWER_FRESHNESS_SECONDS = 1.0
 _FOLLOWER_REGISTRATION_ENV = "RECKON_FOLLOWER_REGISTRATION"
+
+# The process that armed a follower, as pid plus kernel start time, is fixed
+# once by the follower's first image and never re-derived afterwards. It cannot
+# live in the registration record: a second follower that takes a registration
+# over rewrites that record from the claimant's own parent, and a read-only
+# follower has no record to read. It cannot be re-derived from ``os.getppid()``
+# on each pass either, because once the arming session dies that names init or a
+# subreaper — the very state the follower must recognise. The value is carried
+# in this variable, supplied by whoever arms the follower and re-supplied to a
+# reloaded image through the environment its re-exec receives.
+_FOLLOWER_OWNER_ENV = "RECKON_FOLLOWER_OWNER"
+
+
+class _FollowerOwnerCache:
+    """The process that owns this image, resolved at the first read and kept.
+
+    Held here rather than in ``os.environ`` so a follower started in-process —
+    a reader driving the command under test, say — does not hand its own
+    environment to a follower it goes on to start.
+    """
+
+    resolved: tuple[int, str] | None = None
+
+    def resolve(self) -> tuple[int, str]:
+        if self.resolved is not None:
+            return self.resolved
+        recorded = _parse_follower_owner(os.environ.get(_FOLLOWER_OWNER_ENV))
+        if recorded is None:
+            pid = os.getppid()
+            recorded = (pid, _process_start_time(pid) or "")
+        self.resolved = recorded
+        return recorded
+
+
+_RESOLVED_FOLLOWER_OWNER = _FollowerOwnerCache()
+
+
+def _parse_follower_owner(raw: Any) -> tuple[int, str] | None:
+    """Read an owner identity from its environment encoding, or None."""
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    try:
+        pid = int(payload.get("pid") or 0)
+    except (TypeError, ValueError):
+        return None
+    return pid, str(payload.get("start_time") or "")
+
+
+def _format_follower_owner(owner: tuple[int, str]) -> str:
+    """Encode an owner identity for the environment a re-exec carries."""
+    return json.dumps({"pid": int(owner[0]), "start_time": str(owner[1])})
+
+
+def follower_owner() -> tuple[int, str]:
+    """The pid and start time of the process that armed this follower.
+
+    Read from the environment when an armer supplied one, from the previous
+    resolution otherwise, and computed from ``os.getppid()`` exactly once when
+    neither exists. A process that arms a follower without stamping an owner —
+    a test harness, say — is therefore treated as that follower's owner without
+    any extra cooperation, and the value is fixed from that first read onward so
+    a later re-parent cannot move it.
+    """
+    return _RESOLVED_FOLLOWER_OWNER.resolve()
 
 
 def _follower_liveness(path: Path) -> dict[str, Any]:
