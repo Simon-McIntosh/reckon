@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Reckon has no host-environment model today; nothing upstream must land first, and the one consumer (worker launch) is sequenced by the trigger in §4 rather than by a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Worker Knows It Is On Compute | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="8">
-<meta name="plan-commits" content="9e695b0c">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="10">
+<meta name="plan-commits" content="9e695b0c,bf1725d6,2700bda6,a4bbb242,f2810b50">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -63,7 +63,7 @@
       <li>whether <code>/tmp</code> is node-local</li>
     </ul>
     <p>When <code>SLURM_JOB_ID</code> is present but the cgroup does not name the job, the probe reports <code>in_allocation: false</code> with the reason <code>environment-inherited-outside-the-job-cgroup</code>. The module reads files and calls <code>statfs</code> only. It runs no scheduler command, so it costs nothing on the login node.</p>
-    <p><strong>Reuse, not a third reader.</strong> <code>reckon/crew/summary.py</code> already finds the process's own cgroup: <code>SELF_CGROUP_PATH</code>, <code>LOGIN_CGROUP_ROOT</code>, <code>_user_slice_dir</code> and <code>read_login_slice</code>. <code>reckon/crew/placement.py</code> already has <code>occupying_the_reservation</code>, which answers whether the process is inside the held job. <code>host_facts()</code> composes those two rather than parsing <code>/proc/self/cgroup</code> again. Node-locality and the tmpfs question already have answers: <code>_is_node_local_path</code> and <code>_path_is_tmpfs</code> in <code>reckon/crew/dispatch.py</code>, both read from <code>/proc/self/mountinfo</code>. The probe imports those two rather than adding a <code>statfs</code> answer that could disagree with them. Its tests therefore stub the mountinfo path, where the text above says <code>statfs</code>. <code>placement.py</code> is claimed by S21, so this node reads it but does not edit it. The S21 coordinator pointed out this reuse on 2026-09-24.</p>
+    <p><strong>Reuse, not a third reader.</strong> <code>reckon/crew/summary.py</code> already finds the process's own cgroup: <code>SELF_CGROUP_PATH</code>, <code>LOGIN_CGROUP_ROOT</code>, <code>_user_slice_dir</code> and <code>read_login_slice</code>. <code>host_facts()</code> composes those readers rather than parsing <code>/proc/self/cgroup</code> again. <em>Corrected at landing:</em> <code>placement.occupying_the_reservation</code> (<code>reckon/crew/placement.py:314</code>) filters live dispatch pointers by project. It does not say whether this process is inside the held job, so the probe does not use it. The job test is whether the process's own cgroup line names <code>job_&lt;id&gt;</code>. Node-locality and the tmpfs question already have answers: <code>_is_node_local_path</code> and <code>_path_is_tmpfs</code> in <code>reckon/crew/dispatch.py</code>, both read from <code>/proc/self/mountinfo</code>. The probe imports those two rather than adding a <code>statfs</code> answer that could disagree with them. Its tests therefore stub the mountinfo path, where the text above says <code>statfs</code>. <code>placement.py</code> is claimed by S21, so this node reads it but does not edit it. The S21 coordinator pointed out this reuse on 2026-09-24.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>Tests feed fixture cgroup files and a stubbed <code>statfs</code>. They assert the four cases: inside the job cgroup, environment-only, no SLURM at all, and a GPFS home beside an xfs <code>/tmp</code>.</li>
@@ -189,6 +189,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T211828681310-host-facts-probe" data-who="reckon-build" data-when="2026-09-24T22:45:33.977Z">
     <div class="r-comment-body"><p>reckon/host.py host_facts() reads in_allocation from the own cgroup line via summary.py readers; env-only reads false; live call on clu-2058 job 1277272 reads in_allocation true, /tmp xfs node-local, home gpfs; 9 tests, mutation observed; review 97</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925-host-facts-landed" data-who="reckon-build" data-when="2026-09-24T23:24:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260924T211828681310-host-facts-probe</code> is promoted with its gate passed. It was merged at <code>4ff4228b</code>, and verify-gate also passed at the integrated head <code>de8ac4f9</code>.</p><p>A live call on clu-2058 in job 1277272 reads:</p><ul><li><code>in_allocation: true</code>, from the own cgroup line</li><li><code>/tmp</code> is xfs and node-local</li><li>home is gpfs</li></ul><p>The independent review scored 97/100. Its prose finding is corrected above: the probe does not use <code>placement.occupying_the_reservation</code>. Its other finding is that the <code>set(reported) == set(FACTS)</code> assertion at <code>tests/test_host_facts.py:285</code> compares the output with the constant it is built from, so it cannot fail.</p></div>
 </div>
 </section>
 </main>
