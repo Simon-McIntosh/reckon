@@ -23,56 +23,41 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-24">
-<meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="1">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.1">
+<meta name="plan-version" content="3">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+<meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 </head>
 <body>
   <main class="plan-doc">
 
-    <h2 id="s1">&#167;1 &mdash; Inventory the failures at head and name each root cause</h2>
-    <p>The earlier plan <a href="/reckon/suite-failures-have-an-owner">Every Suite Failure Has An Owner</a>
-    cleared the fourteen standing failures it inventoried at <code>dc52c8d</code> and closed at impl 1.0.
-    Since then the repository has taken many landings, and there is no current reading of the suite at
-    head. A failure set is a property of a revision, not of the repository, so this section starts by
-    measuring rather than by assuming the earlier inventory still holds.</p>
-    <p>This section is diagnosis only. It changes no source or test file. Its deliverable is the
-    research record <code>docs/research/suite-failures-at-head.html</code> (<code>reckon-type=research</code>,
-    <code>plan-informs=the-suite-is-green-at-head</code>), which later sections cite as their input.</p>
-    <p><strong>Where it runs.</strong> The whole suite is heavy work and runs on SLURM compute, never on
-    the login node. A worker already running inside the fleet allocation (<code>SLURM_JOB_ID</code> set,
-    host not a login node) runs it in place; otherwise it submits to partition <code>all_debug</code> with
-    <code>--time</code> at most <code>00:59:00</code>. Either way <code>TMPDIR=/tmp</code>, one log per run,
-    and the record names the host and job id the run used. The earlier plan measured that
-    <code>tests/test_crew.py</code> completes in about 30 s on a compute node and stalls only on the login
-    node, so a stall on compute is itself a finding to record. If the suite cannot finish in one
-    one-hour job, split it by test file across jobs and name the split.</p>
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr><td>Inventory at a recorded revision</td><td>The record names the revision measured, the exact
-        command and partition used, the total pass, fail, error and skip counts, and every failing or erroring
-        node id. Each run's log path is recorded.</td></tr>
-        <tr><td>Grouped by cause, with evidence</td><td>Every failing node id is assigned to exactly one
-        cause group. Each group states its root cause in one sentence and cites the evidence for it: a
-        traceback line, the commit that changed the behaviour or the assertion, or a reproduction command.</td></tr>
-        <tr><td>Stale assertion distinguished from defect</td><td>Each group is classified as one of
-        <em>stale expectation</em> (the behaviour changed on purpose and the test did not), <em>product
-        defect</em> (the code is wrong), <em>test isolation</em> (the test reads or writes state outside the
-        repository, depends on order, or depends on today's date), or <em>environment</em> (fails only
-        because of the host). The record says which, and why. The earlier plan's locked decision still governs:
-        when behaviour changed deliberately, the test moves to the shipped behaviour.</td></tr>
-        <tr><td>Repair scope per group</td><td>For each group, the record names the files a repair would write
-        and whether any two groups' repairs would touch the same file, so &#167;2 can be cut into
-        non-overlapping nodes.</td></tr>
-      </tbody>
-    </table>
+    <section id="s1" class="section-landed">
+    <header><span class="badge badge-shipped">&#10003; landed 2026-09-24</span>
+    <h2>&#167;1 &mdash; Inventory the failures at head and name each root cause</h2></header>
+    <p class="landed-summary">Measured at <code>bafcd4cc</code> on fleet job <code>1277272</code>, one pytest process per file
+    because a serial run reached only 14% in 30 min. Result: 70 of 406 files red, 208 failing node ids plus one hang
+    (<code>test_crew_attempt_accounting</code>) and two failures that appear only under load. Six causes
+    covering about 120 ids are confirmed as stale expectations after deliberate guard commits. The remaining ids are each
+    assigned to exactly one repair node, which diagnoses them. Full record:
+    <a href="/reckon/research/suite-failures-at-head">Suite Failures At Head</a>.</p>
+    </section>
 
     <h2 id="s2">&#167;2 &mdash; Repair each cause group</h2>
-    <p>One node per cause group identified in &#167;1, each cut to exclusive write paths from the
-    &#167;1 record's repair-scope column. This section's nodes are authored once &#167;1 has landed: the
-    cause groups are not known until then, and cutting nodes before the diagnosis would repeat the
-    mistake the earlier plan warned about, which is repairing several failures under one assumed cause.</p>
+    <p>The nine repair nodes, and the red test files each one owns, are listed in
+    <a href="/reckon/research/suite-failures-at-head#s3">Suite Failures At Head &#167;3</a>. No test file
+    appears under two nodes. Every failing node id with its first error is in that record's &#167;4. Cause
+    groups confirmed from the code and history are in its &#167;2. Most are guards closed deliberately
+    (<code>89a574d2</code>, <code>2986f5d1</code>, <code>ddd16eba</code>, <code>d5811b20</code>,
+    <code>0f9c0e6f</code>) without updating the tests that had been passing only because the guard was open.</p>
+    <p><strong>What a node may write.</strong> A node writes only the test files it owns, plus a snapshot or
+    generated artifact that one of its failing tests compares against, when that artifact is regenerated with
+    the repository's own generator and not edited by hand. A node that finds a product defect in
+    <code>reckon/</code>, a skill file, or an SPA source does not repair it in place, because several nodes reach the
+    same modules. It names the defect in <code>follow_ons</code> with the failing node id, the file and line, and the
+    evidence that the behaviour and not the assertion is wrong. The coordinator then cuts a separate node for it.</p>
+    <p><strong>Where tests run.</strong> Run tests per file on compute as in &#167;1, each file with its own
+    <code>--basetemp</code>, never the whole suite in one process. A test that fails only under load is recorded
+    as such, never retried until it passes.</p>
     <p>No node disables, skips, xfails or deletes a failing test. Each repair either corrects a stale
     assertion to the shipped behaviour, with the cause named, or fixes the product defect the test found.</p>
     <table>
@@ -92,10 +77,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-sgh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Measure the suite at head and diagnose every failure</h4>
     <div class="r-fu-body"><p>Start with §1. §2's nodes are cut from its record.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §1</pre>
+    <p class="r-fu-outcome">§1 landed: 208 failing ids plus one hang at bafcd4cc, recorded in Suite Failures At Head with a nine-node repair partition.</p>
+    </article>
+<article class="r-fu" data-id="f-sgh-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-24" data-recommends-skill="/reckon-build the-suite-is-green-at-head §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair every failing file through the nine §2 nodes</h4>
+    <div class="r-fu-body"><p>One node per row of the research record's repair partition; product defects surface as separate nodes.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     </article>
 </section>
   </main>
