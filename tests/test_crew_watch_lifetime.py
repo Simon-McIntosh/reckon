@@ -50,14 +50,14 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def repo(tmp_path: Path, home: Path) -> Path:
     """Create the smallest repository accepted by the dispatch boundary."""
     root = tmp_path / "repo"
-    scripts = root / "skills" / "reckon-ship" / "scripts"
+    scripts = root / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     plans = root / "docs" / "plans"
     plans.mkdir(parents=True)
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

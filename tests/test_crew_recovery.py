@@ -2695,16 +2695,16 @@ def test_token_budget_set_in_flight_config_reaches_the_run_record_via_dispatch(
     verdict survives as the default.
     """
     root = tmp_path / "repo"
-    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (root / "docs" / "plans").mkdir(parents=True)
     fleet_source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         fleet_source.read_text()
     )
     (root / "docs" / "plans" / "plan-a.html").write_text(

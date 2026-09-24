@@ -7,7 +7,7 @@ description: >-
   can run now / immediate roadmap / critical path / open paths / true blockers /
   sprint resolution order / portfolio roadmap / is this dependency wired
   correctly / /reckon-roadmap". Read-only; use reckon-edit or reckon-sprint to
-  repair findings and reckon-ship to execute them.
+  repair findings and reckon-build to execute them.
 allowed-tools: Read Bash(*) Grep mcp__reckon___roadmap mcp__reckon___read_plan mcp__reckon___audit
 ---
 
@@ -142,5 +142,5 @@ qualified and remain blockers until their owning project completes them.
 
 - Relationship, prose, status, or relocation repair → `reckon-edit`.
 - Sprint membership, ordering, milestone, or blocker repair → `reckon-sprint`.
-- Execute ready plans or a sprint → `reckon-ship`.
+- Execute ready plans or a sprint → `reckon-build`.
 - Schema/lifecycle audit after graph repair → `reckon-status --review`.

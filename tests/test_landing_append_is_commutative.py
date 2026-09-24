@@ -59,7 +59,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _comment(ident: str) -> dict:
     return {
         "id": ident,
-        "who": "reckon-ship",
+        "who": "reckon-build",
         "when": "2026-09-18T00:00:00Z",
         "body": f"<p>{ident}</p>",
     }

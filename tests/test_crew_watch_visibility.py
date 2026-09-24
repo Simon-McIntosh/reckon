@@ -163,14 +163,14 @@ def isolated_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     """A mountable repo + config for dispatching through the real guard."""
     config_home = _setup_runs_home(tmp_path, monkeypatch)
     repo = tmp_path / "repo"
-    scripts = repo / "skills" / "reckon-ship" / "scripts"
+    scripts = repo / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

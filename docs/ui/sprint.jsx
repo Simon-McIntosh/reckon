@@ -196,7 +196,7 @@ function readyLaneRows(readySet, sprints, inventory) {
         effectiveStatus,
         stateLabel: readyLaneState(plan),
         landed,
-        invocation: `/reckon-ship ${row.slug}${invocationSection ? ` ${invocationSection}` : ""}`,
+        invocation: `/reckon-build ${row.slug}${invocationSection ? ` ${invocationSection}` : ""}`,
       };
     });
   }).sort((left, right) => Number(left.landed) - Number(right.landed));
@@ -226,7 +226,7 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
 
   const copyShipLine = async () => {
     if (openDecisions > 0) return;
-    await navigator.clipboard?.writeText(`/reckon-ship ${sprint.id}`);
+    await navigator.clipboard?.writeText(`/reckon-build ${sprint.id}`);
     if (window.flashSaved) window.flashSaved("ship line copied");
   };
 
@@ -240,10 +240,10 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
           type="button"
           className="r-sprint-ship"
           disabled={openDecisions > 0}
-          title={openDecisions ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `Copy /reckon-ship ${sprint.id}`}
+          title={openDecisions ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `Copy /reckon-build ${sprint.id}`}
           onClick={copyShipLine}
         >
-          {openDecisions > 0 ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `/reckon-ship ${sprint.id}`}
+          {openDecisions > 0 ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `/reckon-build ${sprint.id}`}
         </button>
       </header>
       <div className="r-sprint-detail-stats">

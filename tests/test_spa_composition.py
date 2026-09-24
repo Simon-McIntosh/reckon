@@ -350,14 +350,14 @@ def test_ready_lane_rows_keep_section_handles_causes_and_landed_tail() -> None:
     assert len(rows) == 3
     assert [row["section"] for row in rows[:2]] == ["s1", "s3"]
     assert rows[0]["whyNow"] == "It unlocks the consumer."
-    assert rows[0]["invocation"] == "/reckon-ship partly-open §1"
+    assert rows[0]["invocation"] == "/reckon-build partly-open §1"
     assert rows[0]["ready"] is True
-    assert rows[1]["invocation"] == "/reckon-ship partly-open §3"
+    assert rows[1]["invocation"] == "/reckon-build partly-open §3"
     assert rows[1]["ready"] is False
     assert rows[1]["causeClasses"] == ["dependency"]
     assert rows[2]["landed"] is True
     assert rows[2]["whyNow"] == "Keep closure visible."
-    assert rows[2]["invocation"] == "/reckon-ship finished-measure"
+    assert rows[2]["invocation"] == "/reckon-build finished-measure"
 
 
 def test_browser_harness_reports_an_absent_binary_as_a_clean_skip(

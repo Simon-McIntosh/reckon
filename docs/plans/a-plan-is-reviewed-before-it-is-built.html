@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="A plan is reviewed before it is built">
+  <meta name="plan-summary" content="Every plan create and edit gets an advisory rubber-duck review via the reckon surface; before a build, a prior-art and depth review favours deep modules.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-impl" content="0.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="an-orchestrator-is-bound-by-its-inbox,the-local-lane-is-the-default">
+  <title>A plan is reviewed before it is built | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; Why every plan needs a second reader</h2>
+    <p>The 2026-09-24 re-plan measured what nobody had re-read. imas-codex's
+    <code>sn-catalog-audit-instrument</code> had 13 reviewed and merged nodes and read as nearly
+    done. Measured against real call sites it stood at 0.56: 11 of 25 features were shallow, and
+    one computed its findings on every review for no template to read. imas-ambix closed a plan
+    as shipped whose criterion had never been met. Reckon's own consumers turned out to hardcode
+    1,537 lines of <code>~/.config/reckon</code> paths. In every case the author was competent and
+    the plan read well, but nothing checked the plan against the code or against a rubric before
+    work was built on it. Code gets an independent review before promotion; plans get none.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A rubber-duck review of every plan create and edit</h2>
+    <p>Every plan create, and every edit that changes prose, done-whens, relationships or
+    sections, queues one review of the settled version. Edits are debounced, so a burst of edits
+    gets one review, and a pure metadata change such as an impl bump is skipped. Hand edits are
+    caught at commit as well as through the MCP write path. The review is read-only, runs on the
+    local lane, and checks a fixed rubric:</p>
+    <ul>
+      <li>the plan is wired: its depends-on, informs and gates are present and correct;</li>
+      <li>each done-when is measurable, with a declared negative control;</li>
+      <li>each node has a single goal;</li>
+      <li>evidence and gate logs sit on durable paths, never in a session scratchpad;</li>
+      <li>claims are cited, and every file, section or commit an anchor names resolves;</li>
+      <li>naming carries no plan labels or ticket numbers into code.</li>
+    </ul>
+    <p><strong>It is advisory, a rubber duck, not a gate.</strong> The authoring agent acts on each
+    finding or declines it with a one-line reason, and both are recorded. The loop is visible in the
+    reckon web surface next to the plan, and reaches the author as one follower line. Nothing
+    blocks.</p>
+    <p><strong>Done when</strong> a plan create and a prose edit each produce one review record
+    within the debounce window. A burst of five edits produces one review, and an impl-only edit
+    produces none. The web surface shows the review's state (pending, ready, acted on, declined)
+    next to the plan version it reviewed. The author's action or declining reason is stored with
+    each finding.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A prior-art and depth review before a plan is built</h2>
+    <p>Before a plan's first implementation node is released, a second review searches the
+    codebases for existing machinery the plan could reuse. That extends the build skill's
+    reuse-map rule, which a coordinator currently remembers to apply, into a review that runs
+    without being remembered. The review then judges the design for depth. The preference, stated
+    as the rubric, is <strong>deep modules behind small interfaces over a spread of shallow
+    wrappers</strong>. A new module must hide substantial behaviour behind an interface smaller
+    than what it hides. A plan that adds a thin layer over existing machinery must say why that
+    machinery cannot be extended. A duplicate of shared infrastructure, such as placement, path
+    resolution, scheduler queries or state readers, is a finding naming the owner to extend.
+    Today's evidence for why this matters: imas-ambix carried three duplicated placement paths, and
+    the thin-interface audit found consumers parsing reckon's CLI prose in 151 places.</p>
+    <p><strong>Done when</strong> a plan whose design duplicates an existing mechanism receives a
+    finding naming that mechanism and its file. A plan that extends a deep module passes clean.
+    The finding reaches the author through the same loop as &sect;2.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="declined-finding-recurrence" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When an author declines a finding, is that final, or does a finding declined across several plans surface to the lead?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="final">Declined is final</button>
+      <button class="r-opt" data-value="surface-recurrence">A finding declined in three or more plans surfaces to the lead</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="review-storage" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where do plan reviews live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="plan-comments">As plan comments, which are simple and already rendered</button>
+      <button class="r-opt" data-value="review-store">In a review store that can be queried across plans and projects</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apirbiib-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Settle the two decisions, then build the review loop</h4>
+    <div class="r-fu-body"><p>The storage decision gates &sect;2's record shape; settle it with the lead first. &sect;2 is the loop (trigger, debounce, rubric, record, surface). &sect;3 reuses the loop with its own rubric. The vision review of figures is deliberately out of scope for now, at the lead's word.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-reviewed-before-it-is-built</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

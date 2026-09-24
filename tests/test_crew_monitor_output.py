@@ -157,7 +157,7 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     wrong primitive has to be named in order to be excluded.
     """
     reference = Path(
-        "skills/reckon-ship/references/orchestrator-harness/claude-code.md"
+        "skills/reckon-build/references/orchestrator-harness/claude-code.md"
     ).read_text()
     section = reference.split("## Arming the fleet watch after dispatch", 1)[1].split(
         "## Resuming a held wave without a human", 1

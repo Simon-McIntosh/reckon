@@ -7,7 +7,7 @@ description: >-
   Trigger verbs:
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
   create an explainer / author a doc / invoke reckon-create with a slug". For editing an
-  existing plan use reckon-edit; for executing plan work use reckon-ship.
+  existing plan use reckon-edit; for executing plan work use reckon-build.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap
 ---
 
@@ -47,7 +47,7 @@ most-missed trigger. A finished plan is a record: appending a followup to it hid
 because `roadmap` excludes completed plans from `pending_work` and every open path. If you
 are about to write a followup onto a plan at `impl` 1.0, or to reopen a `shipped` plan to
 hang one more node on it, the correct move is usually a NEW plan linked to an advancing
-sprint. Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+sprint. Canonical rule: `reckon-build` SKILL.md §7a-bis.
 
 Trigger on any of:
 - "create a plan for X" / "new plan: Y" / "draft a plan" / "start a plan called Z"
@@ -56,7 +56,7 @@ Trigger on any of:
 - the user names a plan or doc that does not yet exist in `docs/`
 
 If the plan already exists → hand off to `reckon-edit`.
-If the user wants to execute work in a plan → hand off to `reckon-ship`.
+If the user wants to execute work in a plan → hand off to `reckon-build`.
 
 **Guard:** if `docs/_shared/` does not exist in the target repo, stop immediately
 and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
@@ -408,8 +408,8 @@ edit_plan(
       "written_at": "2026-05-29",
       "title": "Implement plasma decoder fine-tune §1 — data prep",
       "body": "Initial authoring complete. Next: run data curation pipeline and validate.",
-      "recommends_skill": "/reckon-ship plasma-decoder-finetune §1",
-      "prompt": "/reckon-ship plasma-decoder-finetune §1"
+      "recommends_skill": "/reckon-build plasma-decoder-finetune §1",
+      "prompt": "/reckon-build plasma-decoder-finetune §1"
     }}
   ],
   expected_version=0,
@@ -540,7 +540,7 @@ Only author fields that a view downstream consumes:
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
 | `plan-read` | `1` marks a research/doc reviewed |
-| `plan-impl` | Set by `reckon-ship` (shipped/total) on each landing — **not** server-computed; unset = 0%. |
+| `plan-impl` | Set by `reckon-build` (shipped/total) on each landing — **not** server-computed; unset = 0%. |
 | `plan-version` | **Server-owned** concurrency counter. Never author. |
 | `plan-modified` | Staleness detection; server-stamped on write. Never author. |
 
@@ -575,7 +575,7 @@ Only author fields that a view downstream consumes:
 | `plan-read` | (empty) | `1` to mark reviewed |
 
 **Do NOT author** (server-owned): `plan-version`, `plan-modified`. (`plan-impl`
-starts at 0 and is advanced by `reckon-ship` as sections ship — not
+starts at 0 and is advanced by `reckon-build` as sections ship — not
 server-computed.)
 
 `plan-status` is authored on lifecycle transitions (draft → active → shipped).
@@ -588,7 +588,7 @@ Set it to `draft` on initial scaffolding; update it as the plan progresses.
 Every followup's `<pre class="r-fu-prompt">` contains exactly one line:
 
 ```
-/reckon-ship <slug> [§N]
+/reckon-build <slug> [§N]
 ```
 
 The plan owns all semantic guidance. Do not duplicate context, decisions,
@@ -651,7 +651,7 @@ Report:
 
 - `reckon-sync/SKILL.md` — runs first; owns mounts, symlinks, `_shared/`.
 - `reckon-edit/SKILL.md` — modify an existing plan.
-- `reckon-ship/SKILL.md` — execute the work a plan describes.
+- `reckon-build/SKILL.md` — execute the work a plan describes.
 - `reckon-status/SKILL.md` — read-only inspection.
 - `reckon-roadmap/SKILL.md` — allocation preflight, graph validation, and ready work.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (all element shapes, schema contract, endpoints).

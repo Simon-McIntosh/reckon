@@ -18,7 +18,7 @@ def reference() -> str:
     """The effort-routing reference, read verbatim from the repo."""
     return normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "effort-routing.md"
+            ROOT / "skills" / "reckon-build" / "references" / "effort-routing.md"
         ).read_text()
     )
 

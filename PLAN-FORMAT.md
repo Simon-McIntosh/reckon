@@ -99,7 +99,7 @@ may write `doc` for clarity; the parser handles it.
 | `plan-informs` | author | comma-separated slugs | research docs only |
 | `plan-archived` | author | `1` | hides plan from default inventory; use when retiring a plan without deleting it |
 | `plan-read` | author | `1` | marks a research/doc as reviewed; no effect on plans |
-| `plan-impl` | set by `reckon-ship` | `0.0`–`1.0` | progress fraction; `reckon-ship` sets it (shipped sections / total) on each landing. **Not** auto-computed by the server — leaving it unset keeps a plan at 0%. |
+| `plan-impl` | set by `reckon-build` | `0.0`–`1.0` | progress fraction; `reckon-build` sets it (shipped sections / total) on each landing. **Not** auto-computed by the server — leaving it unset keeps a plan at 0%. |
 | `plan-version` | **server-owned** | integer | optimistic-concurrency counter; never author |
 | `plan-modified` | **server-owned** | `YYYY-MM-DD` | server-stamped on each write |
 
@@ -155,7 +155,7 @@ Resolution is the server's job, so plan files stay portable:
 - `doccheck` stays corpus-local by design: it validates local refs against the
   project corpus and passes qualified refs through to the server-side audit.
 
-Dependency gating (reckon-ship) treats an unshipped external prerequisite
+Dependency gating (reckon-build) treats an unshipped external prerequisite
 exactly like an unshipped local one — the `deps` rows carry the status either
 way; only the resolution path differs.
 
@@ -193,7 +193,7 @@ wiring faults before execution.
   <meta name="plan-summary" content="one-line synopsis">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="upstream-plan">
-  <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-ship per landing (shipped/total). -->
+  <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-build per landing (shipped/total). -->
   <title>Human Title | <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -224,7 +224,7 @@ wiring faults before execution.
                data-capability-version="1.0" data-capability-class="general"
                data-capability-verification="strict"
                data-written-by="smc" data-written-at="2026-05-27"
-               data-recommends-skill="/reckon-ship slug"
+               data-recommends-skill="/reckon-build slug"
                data-resolved-at="" data-resolved-by="">
         <h4 class="r-fu-title">…</h4>
         <div class="r-fu-body">…</div>

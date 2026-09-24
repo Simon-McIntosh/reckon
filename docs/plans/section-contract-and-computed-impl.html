@@ -242,21 +242,21 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-scci-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship section-contract-and-computed-impl §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §1" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h4>
     <div class="r-fu-body"><p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §1</pre>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §1</pre>
     </article>
-<article class="r-fu" data-id="f-scci-wiring-refusal-findings" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:35:00Z" data-recommends-skill="/reckon-ship section-contract-and-computed-impl §7" data-resolved-at="2026-09-19T13:26:00+00:00" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-wiring-refusal-findings" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:35:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="2026-09-19T13:26:00+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the four review findings on the wiring refusal and register standalone on the write path</h4>
     <div class="r-fu-body">(1) Read the standalone declaration from the inventoried checkout, not the registered mount, in reckon/roadmap.py near line 337, with a test on a worktree-scoped roadmap; (2) add a roadmap test for a plan that declares standalone; (3) make the create skill name the state-mode op that the boundary accepts, or accept the meta tag at the boundary too, and register standalone in reckon/_plan_html.py scalars and the reckon/_store.py write-path allow-list so the generic text route can set it; (4) state the plans-scoped population definition in the evidence record and the audit message.</div>
-    <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §7</pre>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
     <p class="r-fu-outcome">All four review findings closed at 2b04c779, 35d2953b, 604026a6 and 44231f4b (merged 24611028): the wiring scan reads a plan standalone declaration from the inventoried checkout rather than the registered mount, the write path registers the declaration as plan state, the create skill states the wiring population, and both are pinned by tests with zero added failures at the committed head. Two remainders opened below.</p>
     </article>
-<article class="r-fu" data-id="f-scci-thread-docs-dir-through-callers" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-ship section-contract-and-computed-impl §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-thread-docs-dir-through-callers" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Thread the inventoried checkout through every production caller of build_roadmap</h4>
     <div class="r-fu-body">Recorded by the findings node: reckon/mcp.py, reckon/serve.py and reckon/flight.py call build_roadmap without docs_dir, so on those surfaces the wiring scan still falls back to the registered mount and a worktree-scoped roadmap judges one tree's plans against another tree's declarations. Pass each caller's checkout path through, and pin one caller with a test that inventories a worktree carrying a declaration the mount lacks. The audit-message half of the fourth finding lives in reckon/_schema.py and reckon/cli.py and lands in the same node.</div>
-    <pre class="r-fu-prompt">/reckon-ship section-contract-and-computed-impl §7</pre>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

@@ -32,11 +32,11 @@ LEAKAGE_EXEMPT = {
 
 
 def test_ship_skill_supports_plan_sprint_and_graph_targets() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
-    assert "/reckon-ship S1" in ship
-    assert "/reckon-ship <project>:S1" in ship
-    assert "/reckon-ship graph:<handle>" in ship
-    assert "/reckon-ship <handle>" in ship
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    assert "/reckon-build S1" in ship
+    assert "/reckon-build <project>:S1" in ship
+    assert "/reckon-build graph:<handle>" in ship
+    assert "/reckon-build <handle>" in ship
     assert "plan:<slug>" in ship
     assert "sprint:<id>" in ship
     assert 'roadmap(project="graph:<handle>", view="raw")' in ship
@@ -47,9 +47,9 @@ def test_ship_skill_supports_plan_sprint_and_graph_targets() -> None:
 
 
 def test_ship_routing_is_prompt_owned_and_worktree_first() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text().lower()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text().lower()
     reference = normalized(
-        (ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md")
+        (ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md")
         .read_text()
         .lower()
     )
@@ -95,9 +95,9 @@ def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
 def test_followup_handoffs_are_single_line_plan_invocations() -> None:
     edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text().lower()
     create = (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text().lower()
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text().lower()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text().lower()
     for text in (edit, create, ship):
-        assert "/reckon-ship <slug> [§n]" in text
+        assert "/reckon-build <slug> [§n]" in text
     assert "is exactly one line" in edit
     assert "contains exactly one line" in create
     assert "is one line" in ship
@@ -107,7 +107,7 @@ def test_followup_handoffs_are_single_line_plan_invocations() -> None:
 def test_sprint_skill_hands_execution_to_ship() -> None:
     sprint = normalized((ROOT / "skills" / "reckon-sprint" / "SKILL.md").read_text())
     assert "This skill never dispatches workers" in sprint
-    assert "/reckon-ship S1" in sprint
+    assert "/reckon-build S1" in sprint
 
 
 def test_skills_use_progressive_reads_by_intent() -> None:
@@ -115,9 +115,9 @@ def test_skills_use_progressive_reads_by_intent() -> None:
     status = (skill_root / "reckon-status" / "SKILL.md").read_text()
     edit = (skill_root / "reckon-edit" / "SKILL.md").read_text()
     sprint = (skill_root / "reckon-sprint" / "SKILL.md").read_text()
-    ship = (skill_root / "reckon-ship" / "SKILL.md").read_text()
+    ship = (skill_root / "reckon-build" / "SKILL.md").read_text()
     orchestration = (
-        skill_root / "reckon-ship" / "references" / "sprint-orchestration.md"
+        skill_root / "reckon-build" / "references" / "sprint-orchestration.md"
     ).read_text()
 
     assert 'view="summary"' in status
@@ -137,7 +137,7 @@ def test_roadmap_skill_owns_dependency_analysis() -> None:
     roadmap = normalized((skill_root / "reckon-roadmap" / "SKILL.md").read_text())
     status = normalized((skill_root / "reckon-status" / "SKILL.md").read_text())
     sprint = normalized((skill_root / "reckon-sprint" / "SKILL.md").read_text())
-    ship = normalized((skill_root / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((skill_root / "reckon-build" / "SKILL.md").read_text())
 
     assert 'roadmap(project="*")' in roadmap
     assert "Lifecycle completion" in roadmap
@@ -212,7 +212,7 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
 
 def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
     """One instruction for every backend, and one branch on launch kind."""
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     assert "reckon crew dispatch" in ship
     assert "reckon crew attach" in ship
     assert "reckon crew observe" in ship
@@ -221,7 +221,7 @@ def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
 
 
 def test_ship_skill_routes_local_requests_through_the_declared_flag() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
 
     assert ship.count("`--local`") == 3
     assert "local_backend" in ship
@@ -237,7 +237,7 @@ def test_ship_skill_presents_the_local_lane_as_a_routing_choice() -> None:
     to presenting local as only an obeyable flag. The request-phrase contract
     is asserted again here so it survives a rewrite that only touches one side.
     """
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     norm = normalized(ship)
 
     # Presented as a routing choice, not only a flag.
@@ -266,7 +266,7 @@ def test_ship_skill_presents_the_local_lane_as_a_routing_choice() -> None:
 
 
 def test_ship_skill_owns_the_pre_dispatch_checklist() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     for prop in (
         "Single goal",
         "Fully specified",
@@ -283,7 +283,7 @@ def test_ship_skill_owns_the_pre_dispatch_checklist() -> None:
 def test_ship_skill_authors_the_gate_fence_rule_alone() -> None:
     """Two plans claiming one rule is how a worker rewrites a peer's text."""
     skill_root = ROOT / "skills"
-    ship = normalized((skill_root / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((skill_root / "reckon-build" / "SKILL.md").read_text())
     assert "Authored here and nowhere else" in ship
     assert (
         "refuse to dispatch work behind the gate until its measure has produced" in ship
@@ -291,14 +291,14 @@ def test_ship_skill_authors_the_gate_fence_rule_alone() -> None:
     others = [
         path
         for path in skill_root.rglob("SKILL.md")
-        if path.parent.name != "reckon-ship"
+        if path.parent.name != "reckon-build"
     ]
     for path in others:
         assert "gate fence" not in path.read_text().lower(), path
 
 
 def test_ship_gate_fence_reads_computed_state() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     assert "computed gate state" in ship
     assert "`read_plan` and `roadmap`" in ship
     assert "returned `blocking` and `gate_blockers`" in ship
@@ -310,7 +310,7 @@ def test_ship_gate_fence_reads_computed_state() -> None:
 
 
 def test_ship_skill_carries_the_four_axis_summary_reflex() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     for axis in ("WHAT", "WHY", "HOW", "WHEN"):
         assert f"\n{axis}   " in ship
     assert "`WHY` axis carries that gate's evidence" in ship
@@ -321,7 +321,7 @@ def test_ship_skill_carries_the_four_axis_summary_reflex() -> None:
 
 def test_worker_protocol_owns_the_backend_independent_contract() -> None:
     protocol = (
-        ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+        ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
     ).read_text()
     assert "NEEDS-HELP:" in protocol
     for field in ("tried:", "options:", "leaning:", "cost-if-wrong:"):
@@ -374,10 +374,10 @@ def test_worker_protocol_property_table_tracks_the_node_authority() -> None:
     tuple grows this test fails and forces the references to move with it.
     """
     protocol = (
-        ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+        ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
     ).read_text()
     orchestration = (
-        ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
     ).read_text()
 
     # Section 1 only: the rows between the "## 1." heading and the next "## "
@@ -426,7 +426,7 @@ def test_worker_protocol_property_table_tracks_the_node_authority() -> None:
 def test_worker_backends_reference_stays_about_mechanics() -> None:
     """The ownership test for the maintainer note, asserted rather than trusted."""
     backends = (
-        ROOT / "skills" / "reckon-ship" / "references" / "worker-backends.md"
+        ROOT / "skills" / "reckon-build" / "references" / "worker-backends.md"
     ).read_text()
     assert "Not agent-facing" in backends
     assert "Ownership test" in backends
@@ -454,7 +454,7 @@ HOST_CAPABILITIES = (
 
 
 def _harness_reference_dir():
-    return ROOT / "skills" / "reckon-ship" / "references" / "orchestrator-harness"
+    return ROOT / "skills" / "reckon-build" / "references" / "orchestrator-harness"
 
 
 def test_harness_local_primitives_appear_only_in_the_host_references() -> None:
@@ -485,7 +485,7 @@ def test_every_host_reference_records_all_four_capabilities() -> None:
 
 
 def test_ship_skill_authors_the_budget_fence_alone() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     assert "Authored here and nowhere else" in ship
     assert "reckon crew preflight" in ship
     assert "Unknown never holds" in ship
@@ -493,17 +493,17 @@ def test_ship_skill_authors_the_budget_fence_alone() -> None:
     others = [
         path
         for path in (ROOT / "skills").rglob("SKILL.md")
-        if path.parent.name != "reckon-ship"
+        if path.parent.name != "reckon-build"
     ]
     for path in others:
         assert "budget fence" not in path.read_text().lower(), path
 
 
 def test_continuation_closes_at_three_altitudes_in_the_skills() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     orchestration = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
     assert "THREE altitudes" in ship
@@ -512,10 +512,10 @@ def test_continuation_closes_at_three_altitudes_in_the_skills() -> None:
 
 
 def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -530,10 +530,10 @@ def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
 
 
 def test_ship_refills_members_without_crossing_unverified_dependencies() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -548,7 +548,7 @@ def test_ship_refills_members_without_crossing_unverified_dependencies() -> None
 
 
 def test_ship_has_one_advisory_fleet_size_table() -> None:
-    root = ROOT / "skills" / "reckon-ship"
+    root = ROOT / "skills" / "reckon-build"
     texts = {path: path.read_text() for path in root.rglob("*.md")}
     tables = [path for path, text in texts.items() if "| Items | Strategy |" in text]
 
@@ -561,7 +561,7 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
     assert "single advisory fleet-size table in `../SKILL.md`" in normalized(reference)
 
 
-# reckon-ship SKILL.md is loaded in full at the start of every session, so its size
+# reckon-build SKILL.md is loaded in full at the start of every session, so its size
 # is a per-run cost rather than a one-off. The budget exists to force reference
 # material into references/, which is read only when hand-composing.
 #
@@ -592,7 +592,7 @@ FIXED_READ_SET_TOKEN_BUDGET = 17_000
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
-    root = ROOT / "skills" / "reckon-ship"
+    root = ROOT / "skills" / "reckon-build"
     ship = (root / "SKILL.md").read_text()
     references = [
         (root / "references" / "sprint-orchestration.md").read_text(),
@@ -603,7 +603,7 @@ def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
     assert "only when hand-composing" in ship
     estimated_tokens = (len(ship.split()) * 4 + 2) // 3
     assert estimated_tokens < FIXED_READ_SET_TOKEN_BUDGET, (
-        f"reckon-ship SKILL.md is {estimated_tokens} estimated tokens against a "
+        f"reckon-build SKILL.md is {estimated_tokens} estimated tokens against a "
         f"{FIXED_READ_SET_TOKEN_BUDGET} budget. This file is loaded in full every "
         "session, so growth costs every run. The fix is to move REFERENCE material "
         "into references/ (read conditionally), not to shave sentences off a rule "
@@ -618,7 +618,7 @@ def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
 
 
 def test_ship_advances_implementation_for_every_node_landing() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "count of completed executable nodes" in ship
     assert "count of total executable nodes" in ship
@@ -627,7 +627,7 @@ def test_ship_advances_implementation_for_every_node_landing() -> None:
 
 
 def test_ship_persists_the_dag_build_section_classification() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "Persist that DAG-build classification before dispatch" in ship
     assert "`section_declarations`" in ship
@@ -636,7 +636,7 @@ def test_ship_persists_the_dag_build_section_classification() -> None:
 
 
 def test_ship_reclassifies_a_collapsed_section_as_done() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "reclassify its `section_declarations` entry to `done`" in ship
     assert "records a landed node, not completion" in ship
@@ -644,10 +644,10 @@ def test_ship_reclassifies_a_collapsed_section_as_done() -> None:
 
 
 def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -660,10 +660,10 @@ def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
 
 
 def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -681,10 +681,10 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
 
 
 def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -697,10 +697,10 @@ def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
 
 
 def test_ship_retriages_followups_after_every_landing_until_dry() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -712,10 +712,10 @@ def test_ship_retriages_followups_after_every_landing_until_dry() -> None:
 
 
 def test_ship_enumerates_the_only_open_followup_exemptions() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -731,10 +731,10 @@ def test_ship_enumerates_the_only_open_followup_exemptions() -> None:
 
 
 def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -746,7 +746,7 @@ def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
 def test_worker_protocol_defines_typed_suite_observations() -> None:
     protocol = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+            ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
         ).read_text()
     )
 
@@ -768,10 +768,10 @@ def test_worker_protocol_defines_typed_suite_observations() -> None:
 
 
 def test_terminal_status_waits_for_the_followup_drain() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -782,10 +782,10 @@ def test_terminal_status_waits_for_the_followup_drain() -> None:
 
 
 def test_exempt_open_followup_records_its_claim() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -835,14 +835,14 @@ def _command_at(path: tuple[str, ...]):
 
 
 def test_ship_crew_views_match_the_typed_mcp_surface() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     documented = set(re.findall(r'crew\(project, view="([a-z]+)"\)', ship))
     annotation = CrewArgs.model_fields["view"].annotation
     assert documented == set(get_args(annotation))
 
 
 def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     assert "`scope-conflict` | 7" in ship
     assert "`watcher-required` | 8" in ship
     assert "Peer scopes come from live pointers" in ship
@@ -963,7 +963,7 @@ def test_ship_skill_states_one_monitor_per_session() -> None:
     redundancy, and the remedy for wanting more coverage is to attach the
     additional sessions to the one monitor, never to arm a second follower.
     """
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "Exactly one monitor per session" in ship
     assert "A session arms and attaches exactly ONE monitor" in ship
@@ -977,7 +977,7 @@ def test_ship_skill_states_one_monitor_per_session() -> None:
     # reader who armed can still reach them from the pointer the skill leaves.
     orchestration = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
     assert "## 15. Monitor and follower stream mechanics" in orchestration
@@ -994,7 +994,7 @@ def test_ship_dispatch_section_names_the_session_attach() -> None:
     fleet. The prohibition on arming a second watch travels in the payload, so
     the affordance replacing it has to travel beside it.
     """
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     attach_line = _watch_attach_line("<project>")
 
     assert "attach_line" in ship, "the payload field the caller must arm is unnamed"
@@ -1017,7 +1017,7 @@ def test_ship_dispatch_section_names_the_session_attach() -> None:
 
 
 def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     for path in _registered_leaf_paths(main):
         if path[0] != "crew":
             continue
@@ -1029,10 +1029,10 @@ def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
 
 
 def test_closure_ledger_carries_both_drain_counts() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -1043,7 +1043,7 @@ def test_closure_ledger_carries_both_drain_counts() -> None:
 
 
 def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
-    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     documented = {
         name: int(code)
         for name, code in re.findall(r"\| `([a-z-]+)` \| ([0-9]) \|", ship)
@@ -1072,7 +1072,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
 
 def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     ship = normalized(
-        (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+        (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     ).lower()
     crew_sources = [
         ROOT / "reckon" / "crew.py",
@@ -1081,7 +1081,7 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     crew_source = "\n".join(path.read_text() for path in crew_sources)
     reference = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+            ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md"
         ).read_text()
     )
 
@@ -1110,10 +1110,10 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
 
 
 def test_ship_run_lifecycle_guidance_matches_launch_ownership() -> None:
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     protocol = normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+            ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
         ).read_text()
     )
     assert "non-terminal live pointer" in ship
@@ -1133,7 +1133,7 @@ def test_the_plan_is_named_as_the_only_passing_surface() -> None:
     is a second store nothing can verify — but the exit-4 row said only "commit
     the plan" without saying why that is right, which reads as friction.
     """
-    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "The plan is the passing surface" in ship
     assert "record, commit, dispatch, in that order" in ship

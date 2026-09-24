@@ -29,11 +29,11 @@ Resolve the invocation before reading implementation files:
 
 | Invocation | Meaning |
 |---|---|
-| `/reckon-ship S1` | Sprint `S1` in the current repository project |
-| `/reckon-ship nova:S1` | Sprint `S1` in project `nova` |
-| `/reckon-ship sprint:S1` | Explicit sprint in the current project |
-| `/reckon-ship plan:solver-hardening` | Explicit plan |
-| `/reckon-ship solver-hardening` | Plan slug |
+| `/reckon-build S1` | Sprint `S1` in the current repository project |
+| `/reckon-build nova:S1` | Sprint `S1` in project `nova` |
+| `/reckon-build sprint:S1` | Explicit sprint in the current project |
+| `/reckon-build plan:solver-hardening` | Explicit plan |
+| `/reckon-build solver-hardening` | Plan slug |
 
 Derive the current project from the repository and `docs-project` metadata.
 Read `read_plan(project, view="summary")`; match sprint ids exactly. Then read
@@ -274,7 +274,7 @@ coordinator into the implementation owner.
 Create one detached worktree per delegated node:
 
 ```bash
-python skills/reckon-ship/scripts/worktree_fleet.py create \
+python skills/reckon-build/scripts/worktree_fleet.py create \
   --repo <repo-root> --session <opaque-session-id> \
   --worker <opaque-worker-id> --base <primary-branch>
 ```
@@ -608,7 +608,7 @@ After all executable nodes:
 After each worker commit is integrated, and always before ending the session:
 
 ```bash
-python skills/reckon-ship/scripts/worktree_fleet.py cleanup-session \
+python skills/reckon-build/scripts/worktree_fleet.py cleanup-session \
   --repo <repo-root> --session <opaque-session-id> \
   --integrated-into <primary-branch>
 ```

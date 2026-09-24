@@ -70,7 +70,7 @@ Commands, verified with `--help`: `reckon crew observe`, `reckon crew resume
 --advice`, `reckon crew resume-ready`, `reckon crew complete`, `reckon crew
 recover` (a different capability — it classifies abandoned live pointers and
 repairs the record only, it does not resume or promote). Full operational
-detail: `~/.claude/skills/reckon-ship/references/outage-recovery.md`.
+detail: `~/.claude/skills/reckon-build/references/outage-recovery.md`.
 
 ### Editing this package: cross-cutting gates
 
@@ -109,7 +109,7 @@ In a crew-managed repository, investigation and review fan-out is `reckon crew d
 
 ### Fleet sizing
 
-The single advisory sizing table lives in `skills/reckon-ship/SKILL.md`. The
+The single advisory sizing table lives in `skills/reckon-build/SKILL.md`. The
 coordinator fills available slots with independent ready nodes and refills each
 slot after its predecessor is verified; dependent work never builds on
 unverified output.

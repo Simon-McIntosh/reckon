@@ -165,15 +165,15 @@ def home(tmp_path, monkeypatch):
 def repo(tmp_path):
     """A throwaway git repository with a docs tree and the fleet script."""
     root = tmp_path / "repo"
-    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         source.read_text()
     )
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)

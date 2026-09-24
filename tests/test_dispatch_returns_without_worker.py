@@ -284,9 +284,9 @@ def _build_repository(repo: Path, worktree_root: Path) -> None:
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
     # Dispatch reads the fleet script out of the repository it dispatches, so
     # the throwaway repository carries the same copy the real one does.
-    fleet = PACKAGE_ROOT / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    fleet = PACKAGE_ROOT / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
     if fleet.is_file():
-        destination = repo / "skills" / "reckon-ship" / "scripts"
+        destination = repo / "skills" / "reckon-build" / "scripts"
         destination.mkdir(parents=True)
         shutil.copy(fleet, destination / "worktree_fleet.py")
     for arguments in (

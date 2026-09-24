@@ -11,16 +11,16 @@
 
 ## Verification and orchestration discipline
 
-Two `reckon-ship` references own the coordinator-side verification and
+Two `reckon-build` references own the coordinator-side verification and
 orchestration reflexes as mechanical rules, each stating the failure it
 prevents. Pointers below, one per rule; the references hold the full text.
 
 - Verification — the untrust checks and proving a change landed:
-  `skills/reckon-ship/references/worker-verification.md`
+  `skills/reckon-build/references/worker-verification.md`
   - a manifest field is not evidence — resolve the worktree head first
   - prove a landing by a marker the change introduced, never by one removed
 - Orchestration — the coordinator contract for measures, briefs, and runs:
-  `skills/reckon-ship/references/sprint-orchestration.md`
+  `skills/reckon-build/references/sprint-orchestration.md`
   - a prove-by-test measure fences the test as a deliverable before dispatch
   - a two-population measure names which direction is the defect
   - a comparison measure is tested against its worst input, not its expected one
@@ -218,7 +218,7 @@ writeback, content parity, fleet safety).
 |---|---|---|
 | Create a brand-new plan | `reckon-create` | `/reckon-create <slug>` |
 | Edit an existing plan, lock a decision, record an outcome, write a followup | `reckon-edit` | `/reckon-edit <slug>` |
-| Implement the work a plan describes; record outcomes; followup with §05 invocation | `reckon-ship` | `/reckon-ship <slug> [section]` |
+| Implement the work a plan describes; record outcomes; followup with §05 invocation | `reckon-build` | `/reckon-build <slug> [section]` |
 | Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Pending work, true blockers, critical/open paths, and DAG wiring | `reckon-roadmap` | `/reckon-roadmap` |
@@ -236,7 +236,7 @@ them is cheap.
 plans-infra in dotfiles + ambix without updating the plan's state
 to reflect that it shipped. The plan-system told a different story
 than the codebase. RCA: the coordinator authored a custom sub-agent
-dispatch prompt instead of routing through `/reckon-ship` (which has
+dispatch prompt instead of routing through `/reckon-build` (which has
 the followup-write requirement baked in), AND failed to write a
 closing followup on the parent plan when work completed.
 
@@ -287,7 +287,7 @@ Concretely:
    When all workers land, the **coordinator MUST resolve the driving followup
    and write the next one-line invocation** before marking the task shipped.
 
-4. **Eat-the-dog-food check.** Before marking any reckon-ship work
+4. **Eat-the-dog-food check.** Before marking any reckon-build work
    "done" in chat, verify the plan-system itself reflects the work:
    - `GET /plan/<project>/<slug>` → `status` matches reality
    - The driving followup is resolved (`data-status="resolved"` on its `<article class="r-fu">`)

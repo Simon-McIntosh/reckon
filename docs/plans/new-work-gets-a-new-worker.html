@@ -259,16 +259,16 @@ a durable field on the run record so the argv clause becomes checkable.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-nwgnw-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-ship new-work-gets-a-new-worker" data-resolved-at="2026-09-24T12:52:28+00:00" data-resolved-by="reckon-e5">
+<article class="r-fu" data-id="f-nwgnw-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build new-work-gets-a-new-worker" data-resolved-at="2026-09-24T12:52:28+00:00" data-resolved-by="reckon-e5">
     <h4 class="r-fu-title">Map the sites, then make the dispatch decision task-keyed</h4>
     <div class="r-fu-body"><p>§1's reuse map comes first and names the tests that assert on each site. §2 is the fix that matters and it touches <code>reckon/crew/dispatch.py</code>, so it follows worker-death step 4, which holds that file until it promotes. §3 and §4 follow §2. §5 is guidance text and can run beside §2. §6 can start at once for its before figure. §7 is a config beat for the coordinator after §2 and §3 pass at the merged head.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship new-work-gets-a-new-worker</pre>
+    <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker</pre>
     <p class="r-fu-outcome"><p>Done. §1 mapped the sites and §2 made the dispatch decision task-keyed (<code>_task_session_resolution</code> in <code>reckon/crew/dispatch.py</code>). §5's guidance and §6's before-figure landed. The stopgap is still in force: <code>session_reuse: false</code> on every backend in <code>docs/state/reckon/flight.yaml</code> and in the host layer at <code>~/Code/dotfiles/reckon/flight.yaml</code>, which is symlinked to <code>~/.config/reckon/flight.yaml</code>.</p></p>
     </article>
-<article class="r-fu" data-id="f-nwgnw-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship new-work-gets-a-new-worker §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-nwgnw-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-build new-work-gets-a-new-worker §3" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Move sessions off the roster, then lift the stopgap</h4>
     <div class="r-fu-body"><p><strong>Next, in order.</strong> (1) §3: dispatch and observe stop writing session fields onto roster members, and the session lives on the run record. This also carries the cross-harness defect recorded here: a run redispatched to another harness and then resumed breaks, because the resume composes the first harness's session. Done when §3's falsifier passes at the merged head and a redispatched-then-resumed run launches with the new harness's own session. (2) §4: a dispatch that names no member no longer serialises on one session-derived member. (3) §7: <code>session_reuse</code> returns to true only after §2 and §3 pass at the merged head. Done when the first re-review of a reviewed run composes its prior review session and the first new node composes none, both read from the launched argv. §6's after-figure needs at least 50 dispatches after §3. §4 of <code>the-ledger-is-one-file-per-run</code> waits on this §3.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship new-work-gets-a-new-worker §3</pre>
+    <pre class="r-fu-prompt">/reckon-build new-work-gets-a-new-worker §3</pre>
     </article>
 </section>
 

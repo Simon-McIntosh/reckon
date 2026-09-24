@@ -56,14 +56,14 @@ def _config(bin_dir: Path) -> dict:
 
 def _make_checkout(root: Path, slug: str) -> Path:
     """One git repository carrying a plan and the fleet script it dispatches with."""
-    scripts = root / "skills" / "reckon-ship" / "scripts"
+    scripts = root / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     plans = root / "docs" / "plans"
     plans.mkdir(parents=True)
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

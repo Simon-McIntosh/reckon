@@ -333,12 +333,12 @@ DISPATCH_CONFIG = {
 
 
 def _provision_fleet_script(repository: Path) -> None:
-    scripts = repository / "skills" / "reckon-ship" / "scripts"
+    scripts = repository / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

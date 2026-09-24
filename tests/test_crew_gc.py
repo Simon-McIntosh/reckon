@@ -17,7 +17,7 @@ from reckon.crew import routing
 SCRIPT = (
     Path(__file__).parents[1]
     / "skills"
-    / "reckon-ship"
+    / "reckon-build"
     / "scripts"
     / "worktree_fleet.py"
 )

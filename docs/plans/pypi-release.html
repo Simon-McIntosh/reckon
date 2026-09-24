@@ -92,10 +92,10 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-pypi-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:pypi-release" data-resolved-at="2026-08-24T10:10:37+00:00" data-resolved-by="">
+<article class="r-fu" data-id="f-pypi-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-build reckon:pypi-release" data-resolved-at="2026-08-24T10:10:37+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the four packaging gaps and publish through trusted publishing</h4>
     <div class="r-fu-body"><p>Add <code>[project.urls]</code> and real classifiers, register the PyPI trusted publisher, and add a tag-triggered release workflow that checks out with <code>fetch-depth: 0</code> so <code>hatch-vcs</code> can see the tag. TestPyPI first. The acceptance that matters is not an import test but running <code>reckon build</code> from the installed wheel on a scratch project with no checkout present, which proves the distribution actually ships its UI assets.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship reckon:pypi-release</pre>
+    <pre class="r-fu-prompt">/reckon-build reckon:pypi-release</pre>
     <p class="r-fu-outcome">done — no followup. reckon-plans 0.2.0 is published and verified against the real index. All four packaging gaps closed (commit dff9e38: 4 project URLs, 7 classifiers); trusted publishing landed with no stored credential (6616c6d) plus a rehearsal trigger that cannot reach PyPI (026c8cd); the version an installed wheel reports was repaired (b9732eb) after the scout found the plan's stated acceptance could never have passed; and untagged builds no longer carry an index-rejected local segment (8b66c23). Acceptance run against the published artifact: fresh environment outside the repository, reckon --version printed exactly 'reckon, version 0.2.0', reckon build emitted 25 files with the git lookup confirming no checkout present. Full suite 1991 passed / 0 failed / 0 errors. What comes next is owned by other live plans that already carry their own followups — project-onboarding and sprint-scope-and-surface both depended on this and are surfaced by roadmap.</p>
     </article>
 </section>

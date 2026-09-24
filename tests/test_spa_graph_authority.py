@@ -389,7 +389,7 @@ def test_the_detail_draws_one_card_per_closure_member_at_both_widths() -> None:
         )
         assert measured["indexRowCount"] == len(state["endpoints"])
         assert {node["title"] for node in measured["nodeCards"]} == expected_titles
-        assert measured["shipControl"] == "/reckon-ship graph:sprint-federation"
+        assert measured["shipControl"] == "/reckon-build graph:sprint-federation"
         assert measured["needsHandle"] == ""
         assert measured["canvas"]["width"] > 0
 
@@ -448,7 +448,7 @@ def test_graph_handle_derives_membership_authority_and_ship_hold() -> None:
     view = result["view"]
     assert view["named"] is True
     assert view["handle"] == "release"
-    assert view["shipLine"] == "/reckon-ship graph:release"
+    assert view["shipLine"] == "/reckon-build graph:release"
     assert {member["slug"] for member in view["members"]} == {
         "source",
         "middle",
@@ -539,7 +539,7 @@ def test_an_unnamed_endpoint_derives_the_same_closure_as_a_named_one() -> None:
 
     # The only difference is the ship target.
     assert unnamed["shipLine"] is None
-    assert named["shipLine"] == "/reckon-ship graph:release"
+    assert named["shipLine"] == "/reckon-build graph:release"
 
 
 def test_the_ship_control_is_replaced_by_the_missing_precondition_chip() -> None:
@@ -550,7 +550,7 @@ def test_the_ship_control_is_replaced_by_the_missing_precondition_chip() -> None
     assert "needs plan-graph-handle" in source
     assert 'title="Author a graph handle on this plan' in source
     assert "view.named ? (" in source
-    assert "/reckon-ship graph:${handle}" in source
+    assert "/reckon-build graph:${handle}" in source
 
 
 def test_index_rows_list_named_endpoints_before_unnamed() -> None:

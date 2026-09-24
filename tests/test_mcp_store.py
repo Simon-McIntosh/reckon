@@ -461,7 +461,7 @@ def test_append_followup(setup):
         "body": "Do something",
         "written_by": "smc",
         "written_at": "2026-05-26",
-        "prompt": "/reckon-ship plan-h §2",
+        "prompt": "/reckon-build plan-h §2",
         "status": "open",
     }
     new_version = _store_module.append_to_list(
@@ -479,7 +479,7 @@ def test_append_followup(setup):
         "body": "x",
         "written_by": "smc",
         "written_at": "2026-05-26",
-        "prompt": "/reckon-ship plan-h §3",
+        "prompt": "/reckon-build plan-h §3",
         "status": "open",
     }
     _store_module.append_to_list(
@@ -501,7 +501,7 @@ def test_append_followup_rejects_prompt_wall(setup):
         "prompt": "Project: proj\nDone-when: x",
         "status": "open",
     }
-    with pytest.raises(_store_module.OpError, match="one /reckon-ship"):
+    with pytest.raises(_store_module.OpError, match="one /reckon-build"):
         _store_module.append_to_list(
             project, "plan-h", "followups", followup, expected_version=0
         )

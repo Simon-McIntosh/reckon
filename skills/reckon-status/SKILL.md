@@ -234,7 +234,7 @@ When reviewing a project after a migration wave, add three short passes:
 - plan-alpha / f-001: "Implement alias layer" (written 3d ago)
 
 ### Suggested next action
-> Run `/reckon-ship plan-alpha §3` — 3 items implementable, S2 in progress
+> Run `/reckon-build plan-alpha §3` — 3 items implementable, S2 in progress
 ```
 
 For ≤ 2 plans, skip the table; give one paragraph per plan.
@@ -245,7 +245,7 @@ For ≤ 2 plans, skip the table; give one paragraph per plan.
 
 - `reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive) via `edit_plan`.
 - `reckon-create/SKILL.md` — create new plans.
-- `reckon-ship/SKILL.md` — execute plan work.
+- `reckon-build/SKILL.md` — execute plan work.
 - `reckon-roadmap/SKILL.md` — pending work, true blockers, sprint order, and critical paths.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, discovery, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema.

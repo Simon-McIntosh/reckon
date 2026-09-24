@@ -212,16 +212,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-arcstf-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-review-can-see-the-figure §1" data-resolved-at="2026-09-23T01:43:53+00:00" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-review-can-see-the-figure §1" data-resolved-at="2026-09-23T01:43:53+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Declare the modality before building anything that routes on it</h4>
     <div class="r-fu-body"><p>Start at §1. The slot on <code>BackendConfig</code> is small and it is the only thing standing between a figure reviewer and a silent wrong verdict, because without it the profile falls through to <code>default_backend</code>. Remember the config is LinkML-generated: edit the schema and regenerate, never patch the generated yaml. Then §2, then the §3 evaluation with its known-bad inputs, and only then enable the profile in §4.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-review-can-see-the-figure §1</pre>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §1</pre>
     <p class="r-fu-outcome">§1 landed: BackendConfig declares input_modalities, and select_profile_backend refuses a figure profile on a lane without image input by name, never falling through to default_backend. 93 flight tests pass, the fall-through mutation turns both refusal tests red, and the review scored 77. It has no caller and no lane declares image yet; §2 adds the codex declaration once the dialect forwards -i, and §4 adds the caller.</p>
     </article>
-<article class="r-fu" data-id="f-arcstf-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23T03:45:00+02:00" data-recommends-skill="/reckon-ship a-review-can-see-the-figure §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23T03:45:00+02:00" data-recommends-skill="/reckon-build a-review-can-see-the-figure §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Thread the figure through the codex dialect, then declare image on the lanes that receive it</h4>
     <div class="r-fu-body"><p>§1 landed the slot and the refusal. §2 makes the codex dialect emit one <code>-i</code> per declared figure and raise rather than drop images on a dialect that cannot carry them. It then declares <code>input_modalities: [text, image]</code> on the codex lanes that receive the attachment, because the schema forbids declaring a modality the lane does not deliver.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-review-can-see-the-figure §2</pre>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §2</pre>
     </article>
 </section>
 

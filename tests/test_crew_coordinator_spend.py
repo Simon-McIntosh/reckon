@@ -34,12 +34,12 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, P
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     root = tmp_path / "repo"
-    scripts = root / "skills" / "reckon-ship" / "scripts"
+    scripts = root / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

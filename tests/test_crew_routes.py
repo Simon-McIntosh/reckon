@@ -106,7 +106,7 @@ def context_dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pa
 
     repo = tmp_path / "repo"
     plans = repo / "docs" / "plans"
-    fleet_scripts = repo / "skills" / "reckon-ship" / "scripts"
+    fleet_scripts = repo / "skills" / "reckon-build" / "scripts"
     target = repo / "tests" / "large_context.py"
     plans.mkdir(parents=True)
     fleet_scripts.mkdir(parents=True)
@@ -120,7 +120,7 @@ def context_dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pa
         encoding="utf-8",
     )
     target.write_text("#" * 100_000 + "\n", encoding="utf-8")
-    source = ROOT / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    source = ROOT / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
     (fleet_scripts / "worktree_fleet.py").write_text(
         source.read_text(encoding="utf-8"), encoding="utf-8"
     )

@@ -71,7 +71,7 @@ def _write_plan(
                 "followups": [
                     {
                         "id": "next-action",
-                        "prompt": f"/reckon-ship {slug}",
+                        "prompt": f"/reckon-build {slug}",
                     }
                 ],
                 "version": 0,

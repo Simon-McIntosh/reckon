@@ -1201,7 +1201,7 @@ _DOS_DONTS = {
     "do": [
         "read_plan first to get the current version; pass it as expected_version.",
         "use edit_plan with an ops list — one call may carry several ops applied in order.",
-        "give every followup one /reckon-ship invocation line; store guidance in the plan.",
+        "give every followup one /reckon-build invocation line; store guidance in the plan.",
         "slug='index' is a composed compatibility read; edit named project resources with doc_type.",
         "use canonical artifact types plan, research, or evidence; doc reads as research.",
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
@@ -1224,7 +1224,7 @@ _DOS_DONTS = {
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
     "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, or followups.<id>.prompt; one top-level field on a selected sprint/milestone/blocker/project resource; or review scalars and the whole priority list. impl clamps to 0..1 and is plan-only.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-ship invocation line.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-build invocation line.",
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status is derived from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
@@ -1989,7 +1989,7 @@ def _append_followup(
     """Append a followup record to data.followups.
 
     The followup dict must include: id, written_by, written_at, title, body, prompt.
-    The prompt field is one ``/reckon-ship`` invocation line; the plan owns all
+    The prompt field is one ``/reckon-build`` invocation line; the plan owns all
     semantic guidance.
     """
     required = {"id", "written_by", "written_at", "title", "body", "prompt"}

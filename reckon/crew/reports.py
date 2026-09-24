@@ -1150,7 +1150,7 @@ def followup_ops_from_manifest(
     *,
     slug: str,
     section: str = "",
-    written_by: str = "reckon-ship",
+    written_by: str = "reckon-build",
     now: str | None = None,
 ) -> list[dict[str, Any]]:
     """Turn a manifest's candidate follow-ons into plan followup append ops.
@@ -1167,7 +1167,7 @@ def followup_ops_from_manifest(
     except ManifestParseError:
         return []
     stamp = now or _utc_now()
-    invocation = f"/reckon-ship {slug}" + (f" {section}" if section else "")
+    invocation = f"/reckon-build {slug}" + (f" {section}" if section else "")
     ops: list[dict[str, Any]] = []
     for index, candidate in enumerate(manifest["follow_ons"], start=1):
         ops.append(

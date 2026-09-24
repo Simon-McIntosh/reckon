@@ -335,7 +335,7 @@ EOF
 
 <!-- authored lifecycle state -->
 <meta name="plan-status"   content="draft">
-<!-- advanced by reckon-ship -->
+<!-- advanced by reckon-build -->
 <meta name="plan-impl"     content="0.0">
 <!-- server-written — do NOT author these -->
 <meta name="plan-version"  content="1">

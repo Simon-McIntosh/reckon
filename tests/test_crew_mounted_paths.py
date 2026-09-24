@@ -48,16 +48,16 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture()
 def repositories(tmp_path: Path, home: Path) -> tuple[Path, Path]:
     work_repo = tmp_path / "work-repository"
-    (work_repo / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (work_repo / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (work_repo / "docs").mkdir()
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (work_repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (work_repo / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         source.read_text(encoding="utf-8"), encoding="utf-8"
     )
     (work_repo / "seed.txt").write_text("seed\n", encoding="utf-8")

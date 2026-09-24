@@ -128,7 +128,7 @@ function ReaderChrome({
     ? window.ReckonShell.plans.dependencyConeLabel(dependencyCone)
     : "";
   const standalone = dependencyLabel === "standalone";
-  const copyValue = kind === "plan" ? `/reckon-ship ${item.slug}` : item.slug;
+  const copyValue = kind === "plan" ? `/reckon-build ${item.slug}` : item.slug;
   const copy = () => {
     navigator.clipboard?.writeText(copyValue);
     window.flashSaved?.("reader source copied");

@@ -26,7 +26,7 @@ CREW_AGENTS = ROOT / "reckon" / "crew" / "AGENTS.md"
 HARNESS = (
     ROOT
     / "skills"
-    / "reckon-ship"
+    / "reckon-build"
     / "references"
     / "orchestrator-harness"
     / "claude-code.md"

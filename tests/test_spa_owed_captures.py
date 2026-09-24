@@ -405,7 +405,7 @@ def generate_captures(output_root: Path = CAPTURE_ROOT) -> dict[str, object]:
                 .map(element => element.textContent.trim());
               return {
                 signal: lanes.length > 0 && handles.length === lanes.length
-                  && handles.every(handle => handle.startsWith('/reckon-ship ')),
+                  && handles.every(handle => handle.startsWith('/reckon-build ')),
                 laneCount: lanes.length,
                 handleCount: handles.length,
                 handles,

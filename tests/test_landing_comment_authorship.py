@@ -111,7 +111,7 @@ def _record(
         section="§2",
         run_id=run_id,
         narrative=narrative,
-        author="reckon-ship",
+        author="reckon-build",
         when="2026-09-17T10:00:00Z",
         root=repository,
         worker_tree=worker_tree,
@@ -155,7 +155,7 @@ def test_coordinator_written_comment_names_the_coordinator(
 
     plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     comment = plan["comments"]["s2"][0]
-    assert comment["who"] == "reckon-ship"
+    assert comment["who"] == "reckon-build"
     assert comment["who"] != "worker-a"
 
 

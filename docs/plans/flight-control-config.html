@@ -141,16 +141,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-fcc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship flight-control-config" data-resolved-at="2026-08-12T07:59:37+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-fcc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-build flight-control-config" data-resolved-at="2026-08-12T07:59:37+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Build the flight-control config surface</h4>
     <div class="r-fu-body"><p>Author the LinkML model, generate and commit the Pydantic and JSON-Schema artifacts, implement four-layer deep-merge resolution with per-key provenance, add backend availability probing, and ship <code>reckon flight</code> as a JSON-first agent primitive. Bank each evidence gate before closing.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship flight-control-config</pre>
+    <pre class="r-fu-prompt">/reckon-build flight-control-config</pre>
     <p class="r-fu-outcome">§2 and §3 landed — commit 98257f4. LinkML source plus both generated artifacts committed and round-trip verified byte-identically; four-layer deep merge with per-key provenance (36 keys attributed across all four layers); malformed layers raise naming file, key path and constraint with no fallback; PATH and declared-auth_check availability probing; `reckon flight` emits single-line sorted JSON, byte-identical across runs, exit 0 valid / 1 invalid. All seven declared gates produced evidence and passed. 1,495 tests pass, 35 new. Host config recorded in the evidence rather than committed.</p>
     </article>
-<article class="r-fu" data-id="f-fcc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-fcc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-build uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Route worker dispatch through the resolved flight config</h4>
     <div class="r-fu-body"><p>The flight surface now resolves and reports routing, but nothing consumes it yet. Uniform worker dispatch is unblocked and is what turns a resolved backend, role overlay, sandbox and concurrency into an actual dispatched worker. Note that role overlays currently resolve as data only — collapsing a role onto its backend is dispatch's job, not the config's.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    <pre class="r-fu-prompt">/reckon-build uniform-worker-dispatch</pre>
     </article>
 </section>
 

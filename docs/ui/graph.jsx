@@ -106,7 +106,7 @@ function _graphEndpointView(endpoint, members, hopCount, fallbackProject) {
     // The ship skill takes a closure by handle. Without one there is no
     // resolvable target, and an unresolvable string in a copy control is worse
     // than no control, because being paste-ready is its whole value.
-    shipLine: handle ? `/reckon-ship graph:${handle}` : null,
+    shipLine: handle ? `/reckon-build graph:${handle}` : null,
     members,
     repositories: Object.entries(repositoryCounts)
       .sort(([left], [right]) => left.localeCompare(right))
@@ -185,7 +185,7 @@ function _roadmapEndpointRows(endpoints) {
       title: endpoint.title || endpoint.slug,
       named: Boolean(handle),
       handle: handle || "unnamed",
-      shipLine: handle ? `/reckon-ship graph:${handle}` : null,
+      shipLine: handle ? `/reckon-build graph:${handle}` : null,
       members: endpoint.members || [],
       repositories: endpoint.repositories || [],
       shipped,

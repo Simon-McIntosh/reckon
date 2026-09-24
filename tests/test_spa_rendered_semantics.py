@@ -89,11 +89,11 @@ PLAN_HTML = """<!doctype html>
     <h2><span class="sec">§</span> Followups</h2>
     <article class="r-fu" data-id="next" data-status="open"
              data-written-by="tester" data-written-at="2026-08-25"
-             data-recommends-skill="/reckon-ship rendered-contract"
+             data-recommends-skill="/reckon-build rendered-contract"
              data-resolved-at="" data-resolved-by="">
       <h4 class="r-fu-title">Continue the rendered contract</h4>
       <div class="r-fu-body">Keep the semantic output observable.</div>
-      <pre class="r-fu-prompt">/reckon-ship rendered-contract</pre>
+      <pre class="r-fu-prompt">/reckon-build rendered-contract</pre>
     </article>
   </section>
 </main>

@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 
-PROTOCOL = ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+PROTOCOL = ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
 RECOVERY = ROOT / "reckon" / "crew" / "recovery.py"
 
 # The fields a declared external wait must name, plus the one the parser treats

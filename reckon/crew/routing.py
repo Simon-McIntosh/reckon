@@ -859,7 +859,7 @@ def _fleet_script() -> Path:
     package_dir = Path(__file__).resolve().parent.parent
     candidates = (package_dir.parent / "skills", package_dir / "_skills")
     for candidate in candidates:
-        script = candidate / "reckon-ship" / "scripts" / "worktree_fleet.py"
+        script = candidate / "reckon-build" / "scripts" / "worktree_fleet.py"
         if script.is_file():
             return script
     searched = ", ".join(str(path) for path in candidates)
@@ -1156,7 +1156,7 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
             f"repository {work_repo} is outside the resolved mount authority set. "
             "Either register its project with `reckon sync` before dispatching "
             "writes, or — when carrying Reckon's scaffolding there is "
-            "inappropriate — hand-compose the delegation per reckon-ship "
+            "inappropriate — hand-compose the delegation per reckon-build "
             "references/sprint-orchestration.md §6, which keeps the worktree, "
             "write fence, manifest and ledger record that a bare subagent has "
             "none of"

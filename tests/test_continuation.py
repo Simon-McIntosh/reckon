@@ -51,9 +51,9 @@ def _followup(ident: str, *, status: str = "open", outcome: str = "") -> dict:
         "id": ident,
         "title": f"work {ident}",
         "body": "why",
-        "written_by": "reckon-ship",
+        "written_by": "reckon-build",
         "written_at": "2026-08-12",
-        "prompt": "/reckon-ship plan-a §2",
+        "prompt": "/reckon-build plan-a §2",
     }
     if status == "resolved":
         item.update(
@@ -105,7 +105,7 @@ def test_a_landing_with_no_continuation_is_refused(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "§2 landed — commit 1a2b3c4",
             },
         ],
@@ -114,7 +114,7 @@ def test_a_landing_with_no_continuation_is_refused(setup) -> None:
 
     assert result["ok"] is False
     assert result["error"] == "op_error"
-    assert "/reckon-ship <slug> [§N]" in result["detail"]
+    assert "/reckon-build <slug> [§N]" in result["detail"]
     # Refused writes nothing: the plan is untouched at its old version.
     data, version = _store_module.read_plan(project, "plan-a")
     assert version == 0
@@ -133,7 +133,7 @@ def test_a_landing_that_appends_the_next_invocation_is_accepted(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "§2 landed — commit 1a2b3c4; 28 tests green",
             },
             {
@@ -144,9 +144,9 @@ def test_a_landing_that_appends_the_next_invocation_is_accepted(setup) -> None:
                     "status": "open",
                     "title": "land §3",
                     "body": "next",
-                    "written_by": "reckon-ship",
+                    "written_by": "reckon-build",
                     "written_at": "2026-08-12",
-                    "prompt": "/reckon-ship plan-a §3",
+                    "prompt": "/reckon-build plan-a §3",
                 },
             },
         ],
@@ -179,7 +179,7 @@ def test_a_landing_may_instead_record_that_the_chain_closes(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "all sections landed — done, no followup",
             },
         ],
@@ -226,7 +226,7 @@ def test_an_open_followup_elsewhere_carries_the_chain(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "§2 landed — 12 tests green",
             }
         ],
@@ -272,7 +272,7 @@ def test_the_http_patch_path_enforces_the_same_rule() -> None:
     landed = {"type": "plan", "status": "shipped", "followups": []}
     with pytest.raises(_store_module.OpError) as excinfo:
         _store_module.validate_landing_patch(landed, {"status": "shipped"})
-    assert "/reckon-ship <slug> [§N]" in str(excinfo.value)
+    assert "/reckon-build <slug> [§N]" in str(excinfo.value)
 
     carried = {"type": "plan", "status": "shipped", "followups": [_followup("f1")]}
     _store_module.validate_landing_patch(carried, {"status": "shipped"})
@@ -321,7 +321,7 @@ def test_mid_run_resolve_agrees_across_ops_and_http_patch(setup) -> None:
         "op": "resolve",
         "target": "followups",
         "id": "driver",
-        "by": "reckon-ship",
+        "by": "reckon-build",
         "outcome": "the dispatched section landed with 4 tests passing",
     }
     ops_result = mcp_module._edit_plan(project, "ops-plan", [resolve], 0)
@@ -375,7 +375,7 @@ def test_full_implementation_does_not_carry_its_own_continuation(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "the final section landed with 4 tests passing",
             }
         ],
@@ -520,7 +520,7 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
                 "op": "resolve",
                 "target": "followups",
                 "id": "f1",
-                "by": "reckon-ship",
+                "by": "reckon-build",
                 "outcome": "§2 landed — commit 1a2b3c4; 28 tests green",
             },
             *ops,
@@ -532,7 +532,7 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
     data, _ = _store_module.read_plan(project, "plan-a")
     carried = [f for f in data["followups"] if f["status"] == "open"]
     assert len(carried) == 1
-    assert carried[0]["prompt"] == "/reckon-ship plan-a §3"
+    assert carried[0]["prompt"] == "/reckon-build plan-a §3"
     assert "fenced out of its write scope" in carried[0]["body"]
 
     # Sprint altitude: what closing this sprint would let us start.

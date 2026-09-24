@@ -1209,10 +1209,10 @@ def _validate_new_followup_prompt(value: Any) -> str:
     if (
         prompt != prompt.strip()
         or len(prompt.splitlines()) != 1
-        or not prompt.startswith("/reckon-ship ")
+        or not prompt.startswith("/reckon-build ")
     ):
         raise OpError(
-            "followup prompt must be one /reckon-ship invocation line; "
+            "followup prompt must be one /reckon-build invocation line; "
             "store guidance in the plan"
         )
     return prompt
@@ -1928,7 +1928,7 @@ def _chain_closed(text: Any) -> bool:
 
 CONTINUATION_REQUIRED = (
     "plan landing leaves no continuation: append a followup whose prompt is "
-    "the next '/reckon-ship <slug> [§N]' invocation, or resolve with an "
+    "the next '/reckon-build <slug> [§N]' invocation, or resolve with an "
     "outcome recording that the chain closes (e.g. 'done — no followup')"
 )
 

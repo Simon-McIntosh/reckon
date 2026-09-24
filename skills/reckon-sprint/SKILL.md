@@ -7,7 +7,7 @@ description: >-
   sprint / close sprint / rebalance sprint / move item to sprint / plan the
   roadmap / add milestone / add blocker / /reckon-sprint". For editing a single
   plan's text or followups use reckon-edit; execute a plan slug or whole sprint
-  with reckon-ship; use reckon-status for read-only
+  with reckon-build; use reckon-status for read-only
   inspection.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
@@ -23,7 +23,7 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 - Propose a sprint → use `roadmap` ready/open paths, validate ownership and wiring, then write.
 
 Full detail below. Sprint state is a typed resource, not a plan. This
-skill never dispatches workers; `/reckon-ship S1` executes the sprint.
+skill never dispatches workers; `/reckon-build S1` executes the sprint.
 
 ## Fan-out boundary
 
@@ -356,10 +356,10 @@ action has been executed.
 After a sprint is defined or started, surface the executable handle:
 
 ```text
-/reckon-ship S1
+/reckon-build S1
 ```
 
-Use `/reckon-ship <project>:S1` outside the project's canonical checkout.
+Use `/reckon-build <project>:S1` outside the project's canonical checkout.
 The ship skill reads the sprint plans, transitive dependencies, research and
 prior evidence; assigns ready nodes to capability-appropriate workers; uses
 detached worktrees by default; integrates results; writes evidence and state;
@@ -408,7 +408,7 @@ work in it, in a stale `planned` sprint, or in a completed one. Work discovered 
 closed sprint belongs to the advancing sprint. Same rule one level down: work discovered
 against a COMPLETED PLAN needs a new plan, not a followup on the finished one — a followup
 there is excluded from `roadmap`'s `pending_work` and is hidden rather than tracked.
-Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+Canonical rule: `reckon-build` SKILL.md §7a-bis.
 
 - Do not close a sprint while `roadmap(project, sprint=<id>)` returns ready or
   in-progress work. Execute it or record a genuine external/human blocker.
@@ -422,7 +422,7 @@ Canonical rule: `reckon-ship` SKILL.md §7a-bis.
 ## Cross-references
 
 - `reckon-edit` — edit a single plan's prose, decisions, followups (+ the full `edit_plan` op reference and worktree `checkout_path` detail).
-- `reckon-ship` — execute the work a plan describes.
+- `reckon-build` — execute the work a plan describes.
 - `reckon-status` — read-only plan and audit inspection.
 - `reckon-roadmap` — executable order, progress, blockers, and wiring health.
 - `reckon-create` — scaffold a new plan.

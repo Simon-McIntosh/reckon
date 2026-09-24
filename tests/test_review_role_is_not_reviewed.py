@@ -63,12 +63,12 @@ def isolated_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     repo = tmp_path / "repo"
-    scripts = repo / "skills" / "reckon-ship" / "scripts"
+    scripts = repo / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

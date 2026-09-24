@@ -314,7 +314,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rso-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §1" data-resolved-at="2026-06-23T12:49:49+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-rso-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-build reckon-skill-overhaul §1" data-resolved-at="2026-06-23T12:49:49+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">§1 rename + §2 systemic fixes, then §3 structural</h4>
     <div class="r-fu-body">Execute §1 (rename reckon-ship→reckon-implement, full sweep, keep prefix) and §2 (systemic fixes) first — concrete, decision-free, high-value. Then §3 structural redesigns, honouring the sprint-extraction + dep-order-home decisions. Commit reckon repo and imas-codex separately; verify with reckon doctor.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -353,7 +353,7 @@ Done-when
   4. uv run pytest (reckon) clean if tests exist; followups written + this resolved.</pre>
     <p class="r-fu-outcome">§1 rename + §2 core systemic fixes landed. reckon: plan 49f76f3, rename 0d666aa (1092 tests pass), §2 a397bd1 (MCP allowed-tools + impl-truth + dependency gate). imas-codex: 5ff2b82d (recommends_skill migration, 9 plans). Symlinks re-pointed in ~/.claude + ~/.agents; ~/.agents/AGENTS.md routing table updated. Remaining (queued in f-rso-002): §2 fast-path recipes + §05 template dedup; §3 structural (status DAG, sync wrapper, sprint).</p>
     </article>
-<article class="r-fu" data-id="f-rso-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §3" data-resolved-at="2026-06-23T15:44:41+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-rso-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-06-23" data-recommends-skill="/reckon-build reckon-skill-overhaul §3" data-resolved-at="2026-06-23T15:44:41+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Finish §2 (fast-path + §05 dedup) and §3 structural redesigns</h4>
     <div class="r-fu-body">§1 + §2-core landed. Remaining §2: add a 4-6 line fast-path recipe atop each of the five skills; de-dupe the three divergent §05 templates to one canonical copy + fix the reckon-edit example that violates its own 'don't re-list decisions' rule. §3 structural: reckon-status leads with the dependency DAG/ready-set + calls the audit MCP tool; reckon-sync shrinks to a thin wrapper over reckon sync/install-skills/doctor; sprint management per the sprint-extraction decision (LOCK it first — new reckon-sprint skill vs delimited section).</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -390,7 +390,7 @@ Done-when
 <article class="r-fu" data-id="f-rso-04" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Extract reference material from the ship skill instead of raising its bound again</h4>
     <div class="r-fu-body"><p>The ship skill's fixed read-set bound has moved twice in four days while the remedy its own note prescribes has not been exercised. Measured 2026-08-25: 11,631 tokens against a 12,000 bound on 08-21; the bound raised to 14,000 on 08-24; raised to 14,400 on 08-25 with 54 tokens of headroom at the time; 14,314 now, 86 remaining. That is +2,683 tokens (+23%) on the file with the ceiling raised twice to stay ahead of it.</p><p>Each raise was individually justified and recorded as the constant requires, and each added a rule worth stating — the aggregate is the problem, not any one edit. A ceiling that moves whenever it binds is tracking the file rather than constraining it, and this file is the fixed read-set of <em>every</em> orchestration turn, so its size is a per-dispatch cost. The constant's own note names the intended remedy: move REFERENCE material into <code>references/</code>, read conditionally, rather than shaving rules worth keeping. Between 08-21 and now the file gained rules while the reference split held roughly still, so each raise substituted for the extraction.</p><p>Do the extraction pass at the next binding edit rather than a third raise, and decide it deliberately — not at the moment a good sentence is ninety tokens too long. Candidates are the passages that read as explanation rather than as a rule an orchestrator applies mid-turn. Observed and quantified by a peer orchestration session.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship reckon-skill-overhaul</pre>
+    <pre class="r-fu-prompt">/reckon-build reckon-skill-overhaul</pre>
     </article>
 </section>
 

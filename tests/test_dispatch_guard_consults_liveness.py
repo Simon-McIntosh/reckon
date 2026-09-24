@@ -39,16 +39,16 @@ def dispatch_context(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     repo = tmp_path / "repo"
-    (repo / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (repo / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (repo / "docs" / "plans").mkdir(parents=True)
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (repo / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         fleet_script.read_text(encoding="utf-8"), encoding="utf-8"
     )
     (repo / "docs" / "plans" / "fixture.html").write_text(

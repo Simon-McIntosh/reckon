@@ -55,14 +55,14 @@ def dispatched_run(tmp_path: Path, monkeypatch) -> tuple[Path, dict]:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
     repo = tmp_path / "repo"
-    scripts = repo / "skills" / "reckon-ship" / "scripts"
+    scripts = repo / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
     source_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

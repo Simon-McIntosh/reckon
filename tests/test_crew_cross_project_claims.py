@@ -46,17 +46,17 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
 
 
 def _repository(root: Path, projects: tuple[str, ...]) -> Path:
-    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (root / "docs" / "plans").mkdir(parents=True)
     (root / "package").mkdir()
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         fleet_script.read_text(encoding="utf-8"), encoding="utf-8"
     )
     for project in projects:

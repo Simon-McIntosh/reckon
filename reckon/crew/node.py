@@ -423,7 +423,7 @@ class WatcherRequired(CrewError):
                 "D13",
                 f"session {session!r} would not hear this run finish: {cause}. "
                 f"Arm `{attach}` with the harness primitive that reports each line "
-                "as it is written -- named for this host in reckon-ship "
+                "as it is written -- named for this host in reckon-build "
                 "references/orchestrator-harness/<harness>.md -- then dispatch "
                 "again. A copied-but-wrongly-armed line is the common case: the "
                 "command is right and its lines still end where nothing reads "

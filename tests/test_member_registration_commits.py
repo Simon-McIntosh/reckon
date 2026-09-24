@@ -208,9 +208,9 @@ def test_a_failed_registration_commit_is_surfaced(tmp_path: Path) -> None:
 
 def _dispatch_repository(tmp_path: Path) -> Path:
     repository = tmp_path / "checkout"
-    scripts = repository / "skills" / "reckon-ship" / "scripts"
+    scripts = repository / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
-    source = Path(__file__).parents[1] / "skills" / "reckon-ship" / "scripts"
+    source = Path(__file__).parents[1] / "skills" / "reckon-build" / "scripts"
     fleet = scripts / "worktree_fleet.py"
     fleet.write_text(
         (source / "worktree_fleet.py").read_text(encoding="utf-8"), encoding="utf-8"

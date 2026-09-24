@@ -539,15 +539,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Keep the follower attached across the host&#x27;s expiry</h4>
     <div class="r-fu-body"><p>§2, §3 and §6 are independent. §4 shares <code>reckon/cli.py</code> with §3 and runs after it. §5 waits on the measurement plan's staleness census.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-follower-outlives-its-monitor</pre>
+    <pre class="r-fu-prompt">/reckon-build a-follower-outlives-its-monitor</pre>
     </article>
-<article class="r-fu" data-id="f-afoim-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afoim-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Bound the follower lifetime against a long poll, and fix three follow-ons</h4>
     <div class="r-fu-body"><p>From S20, 2026-09-23 to 24, four items for <code>reckon/cli.py</code>, one node. (1) The lifetime is checked only between polls, so a poll inside a multi-hour worktree walk ran a 29 m follower for 3 h 36 m (comment <code>c-20260924T0500-lifetime-cannot-bound-a-poll</code>). (2) A replacement image re-anchors the carried deadline at its own start: measured 7.49 s against a 6.0 s grant, and 8.61 s in one case, past the reload test's 8.0 s bound. (3) <code>RECKON_FOLLOWER_CHECKPOINT</code> and <code>RECKON_WATCH_ARMING</code> are still written into <code>os.environ</code> at arming and inherited by every child, the defect the deadline had. (4) Dispatch's preflight reports its follower conditions one at a time: watcher absent, then 'a file-redirected follower is refused', then <code>session_attached: False</code> with delivering_sessions naming another session. imas-codex-10 lost about 25 minutes to that. <strong>Done when</strong> tests show four things. A follower whose poll is stubbed to block past its lifetime ends within one second of the deadline. A reloaded follower ends within the original grant plus one poll. No child of an armed follower carries the checkpoint or arming variables. A dispatch refused on follower conditions names all of them in one result, together with the one required follower command.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-follower-outlives-its-monitor</pre>
+    <pre class="r-fu-prompt">/reckon-build a-follower-outlives-its-monitor</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

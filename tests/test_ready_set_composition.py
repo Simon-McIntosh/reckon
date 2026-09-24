@@ -37,7 +37,7 @@ def _plan(
         f'{gate}</section><section data-reckon="followups">'
         '<article class="r-fu" data-id="next" data-status="open">'
         '<h4 class="r-fu-title">Continue</h4><div class="r-fu-body"></div>'
-        '<pre class="r-fu-prompt">/reckon-ship work</pre>'
+        '<pre class="r-fu-prompt">/reckon-build work</pre>'
         "</article></section></main></body></html>"
     )
 

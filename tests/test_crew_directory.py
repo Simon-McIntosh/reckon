@@ -275,7 +275,7 @@ def test_a_sessionless_pointer_is_visible_but_is_not_a_coordinator(
 
 def test_ship_guidance_makes_cross_repository_findings_collaborative() -> None:
     skill = (
-        Path(__file__).parents[1] / "skills" / "reckon-ship" / "SKILL.md"
+        Path(__file__).parents[1] / "skills" / "reckon-build" / "SKILL.md"
     ).read_text()
     prose = " ".join(skill.split())
 

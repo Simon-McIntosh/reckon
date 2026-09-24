@@ -669,15 +669,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-ship a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Measure, detach, then correct the skill</h4>
     <div class="r-fu-body"><p>Three nodes in order. The detach node waits on the measurement because the holding code path is not yet known.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-dispatch-returns-without-its-worker</pre>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
-<article class="r-fu" data-id="f-adrwiw-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Reflex pointer records no pid, and dispatch races the reflex</h4>
     <div class="r-fu-body"><p>Observed 2026-09-24 at 12:32Z. The follower's review reflex dispatched a review whose live pointer read <code>pid: null</code> while its worker ran as a child of the follower. The reflex path passes a launcher and takes the inline branch; §10 routes it through the supervisor. A manual dispatch of the same review 20 s later was refused with 'worktree creation failed', because it raced the reflex for the worktree path. Two reviews briefly ran. <strong>Done when</strong> a sweep-dispatched review's pointer carries the pid of the process that runs it, and a manual dispatch of a review the reflex already launched is refused with the reflex's run id, not a worktree error.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-dispatch-returns-without-its-worker</pre>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

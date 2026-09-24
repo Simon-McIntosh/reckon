@@ -148,7 +148,7 @@ lifecycle fields. <strong>Never</strong> author these as markdown.</p>
 <h3 id="s4-fu">A followup (with the §05 dispatch prompt)</h3>
 <pre><code>&lt;article class="r-fu" data-id="f-2026-05-27a" data-status="open"
          data-tier="sonnet" data-written-by="NAME" data-written-at="YYYY-MM-DD"
-         data-recommends-skill="/reckon-ship SLUG --section 3"&gt;
+         data-recommends-skill="/reckon-build SLUG --section 3"&gt;
   &lt;h4 class="r-fu-title"&gt;Imperative one-liner&lt;/h4&gt;
   &lt;div class="r-fu-body"&gt;2–3 sentences: why queued now, what landed before.&lt;/div&gt;
   &lt;pre class="r-fu-prompt"&gt;Project: …
@@ -308,7 +308,7 @@ Done-when
      (templates + dos/don&#x27;ts + the reasoning table from §3).
   3. This followup resolved; followup written for the CI round-trip test.</pre>
     </article>
-<article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
+<article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-build reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
     <div class="r-fu-body">Guard against the symmetry bugs: assert render(parse(html))==html and parse(render(state))==state across decisions, followups (incl. resolved), questions, meta scalars. Seed it with the three 2026-05-27 regressions.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -331,10 +331,10 @@ Done-when
   2. imas-ambix M0–M3/PS milestones repopulated as a test case.
   3. This followup resolved.</pre>
     </article>
-<article class="r-fu" data-id="f-apa-section-guard-pair" data-status="resolved" data-written-by="agent/opus" data-written-at="2026-09-05" data-recommends-skill="/reckon-ship agent-plan-authoring" data-resolved-at="2026-09-05T18:52:00+00:00" data-resolved-by="agent/opus">
+<article class="r-fu" data-id="f-apa-section-guard-pair" data-status="resolved" data-written-by="agent/opus" data-written-at="2026-09-05" data-recommends-skill="/reckon-build agent-plan-authoring" data-resolved-at="2026-09-05T18:52:00+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">The unrecognised-section guard pair is complete: the write refuses, the read warns</h4>
     <div class="r-fu-body">§3 fixes the canonical spelling of every data-reckon section (div.r-dec[data-key], article.r-fu[data-id], …). Nothing enforced it: a section authored in another spelling parsed as an empty collection, indistinguishable from 'nothing was authored', and the next structured write spliced that emptiness over the authored content. Both halves now exist and share one mechanism — _authored_child_count and _SECTION_RECOGNISED_SPELLING serve the write refusal and the read warning alike, so the two surfaces cannot drift apart.</div>
-    <pre class="r-fu-prompt">/reckon-ship agent-plan-authoring §3</pre>
+    <pre class="r-fu-prompt">/reckon-build agent-plan-authoring §3</pre>
     <p class="r-fu-outcome">WRITE: 1c4ae4c — UnparsedSectionWriteError refuses a rewrite that would empty a section holding unrecognised authored children, naming the section, the count and the expected spelling. READ: d587c38 — read_plan carries the same fact as a warning in the compatibility_warnings channel it already returns, so a caller taking a plan's version before an edit sees the hazard before spending a write instead of meeting it as a refusal. Gate 11 passed exit 0 (tests/test_plan_read_warns_unparsed.py, 11 tests added); two suite gates over the same 15-file set byte-identical to base 7351b63 (4 and 3 failures, all pre-existing, none added). Verified independently at the merged head against the shape that exposes the defect rather than the one that hosts it: an article.r-decision[data-id] plan warns naming the section, the count and the canonical spelling; empty and absent sections stay silent; all six SECTION_IDS are covered, not decisions alone; the parsed value is unchanged. The over-warning check is the one that mattered, as it was for the refusal — 88 real docs carrying data-reckon sections scanned, zero warnings and zero raises, because a warning on every legitimate plan would be noise indistinguishable from the silence it replaced. Four nova plans holding sixteen exposed decisions can now be converted deliberately.</p>
     </article>
 </section>

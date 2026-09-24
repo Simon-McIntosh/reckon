@@ -10,7 +10,7 @@ from pathlib import Path
 SCRIPT = (
     Path(__file__).parents[1]
     / "skills"
-    / "reckon-ship"
+    / "reckon-build"
     / "scripts"
     / "worktree_fleet.py"
 )

@@ -64,13 +64,13 @@ def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     root = tmp_path / "repo"
     plans = root / "docs" / "plans"
-    fleet_scripts = root / "skills" / "reckon-ship" / "scripts"
+    fleet_scripts = root / "skills" / "reckon-build" / "scripts"
     plans.mkdir(parents=True)
     fleet_scripts.mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

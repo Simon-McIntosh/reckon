@@ -7,7 +7,7 @@ description: >-
   record / add to / revise / lock decision / resolve decisions / queue followup /
   archive / retire the plan / invoke reckon-edit with a slug". For new plans use
   reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
-  executing work use reckon-ship; for read-only inspection use reckon-status.
+  executing work use reckon-build; for read-only inspection use reckon-status.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
 
@@ -47,7 +47,7 @@ the write path appropriate to the edit. Validate the result with
 | `/reckon-edit <slug>` | detect from args or ask |
 
 If the plan doesn't exist → hand off to `reckon-create`.
-If the user wants to execute the work → hand off to `reckon-ship`.
+If the user wants to execute the work → hand off to `reckon-build`.
 If the intent is sprint / milestone / roadmap state → hand off to `reckon-sprint`.
 
 ## The model — the plan HTML is the document AND the store
@@ -92,7 +92,7 @@ nowhere anyone looks to decide what to do next. Work discovered against a comple
 gets a NEW plan (`reckon-create`) linked to an advancing sprint. The one legitimate
 followup on a completed plan is a POINTER whose body names the plan that carries the work.
 Test it: after writing, does `roadmap(project)` list the work in `pending_work`? If not you
-hid it. Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
 
 5. **Every followup MUST carry a non-empty `<pre class="r-fu-prompt">` block.** A followup
    without a prompt is rejected at write time. See §05 invocation below.
@@ -271,8 +271,8 @@ edit_plan(
       "written_at": "2026-05-29",
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
-      "recommends_skill": "/reckon-ship plasma-decoder-finetune §2",
-      "prompt": "/reckon-ship plasma-decoder-finetune §2"
+      "recommends_skill": "/reckon-build plasma-decoder-finetune §2",
+      "prompt": "/reckon-build plasma-decoder-finetune §2"
     }}
   ],
   expected_version=5
@@ -453,9 +453,9 @@ Minimum followup item shape:
   "written_at":       "YYYY-MM-DD HH:MM",
   "title":            "<imperative short title>",
   "body":             "<2–3 sentences of context>",
-  "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
+  "recommends_skill": "/reckon-build <slug> [section] | /reckon-edit <slug> | null",
   "capability":       {"version": "1.0", "class": "routine | general | orchestrator", "requirements": {}},
-  "prompt":           "/reckon-ship <slug> [§N]"
+  "prompt":           "/reckon-build <slug> [§N]"
 }
 ```
 
@@ -477,7 +477,7 @@ paste-ready invocation so a fresh session starts seamlessly:
 **Next up** — paste into a fresh session:
 
 ```
-/reckon-ship <slug> §<N>
+/reckon-build <slug> §<N>
 ```
 ````
 
@@ -508,7 +508,7 @@ prose edit. Agents may also append comments via `edit_plan` append op to `target
 Every followup `prompt` is exactly one line:
 
 ```
-/reckon-ship <slug> [§N]
+/reckon-build <slug> [§N]
 ```
 
 The live plan owns context, decisions, inputs, constraints, and done-when
@@ -569,7 +569,7 @@ plans; otherwise archive them too.
 
 - `reckon-create` — scaffold a new plan.
 - `reckon-sprint` — sprint / milestone / roadmap state (the project index).
-- `reckon-ship` — execute the work a plan describes.
+- `reckon-build` — execute the work a plan describes.
 - `reckon-status` — read-only inspection.
 - `reckon-roadmap` — dependency, sprint-order, blocker, and allocation validation.
 - `reckon-sync` — register a project mount and seed shared assets.

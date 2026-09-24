@@ -1,15 +1,15 @@
 ---
-name: reckon-ship
+name: reckon-build
 description: >-
   Execute a complete Reckon plan, or coordinate an entire sprint, without doing
   implementation inline. Resolves a plan slug with an optional section,
-  `/reckon-ship S1`, a project-qualified sprint id, a bare graph handle, and
+  `/reckon-build S1`, a project-qualified sprint id, a bare graph handle, and
   `graph:<handle>`. All targets are strictly
   coordinator-only, a one-node plan included: build the execution DAG, delegate
   every implementation, investigation, test, pipeline, and repair node through
   isolated worktrees by default, audit and integrate worker commits, record
   outcomes continuously, and clean up worktrees. Trigger verbs: "implement /
-  execute / ship / land / deliver the sprint / run the sprint / /reckon-ship".
+  execute / ship / land / deliver the sprint / run the sprint / /reckon-build".
   Requests to use local workers, local agents, or local dispatch add `--local`
   to every dispatch, selecting the backend named by `local_backend`.
   For editing plan text use reckon-edit; for defining or rebalancing sprint
@@ -17,25 +17,25 @@ description: >-
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon__read_plan mcp__reckon__edit_plan mcp__reckon__roadmap mcp__reckon__audit mcp__reckon__crew
 ---
 
-# reckon-ship — execute a complete plan or sprint and record outcomes
+# reckon-build — execute a complete plan or sprint and record outcomes
 
 ## Critical behaviour: resolve the target, then finish its executable scope
 
 There are three execution targets:
 
-- **Single-plan target:** `/reckon-ship <slug>` delivers the entire plan;
-  `/reckon-ship <slug> §N` delivers only the named section.
-- **Sprint target:** `/reckon-ship S1` executes the current project's sprint;
-  `/reckon-ship <project>:S1` selects a project explicitly. It reads every
+- **Single-plan target:** `/reckon-build <slug>` delivers the entire plan;
+  `/reckon-build <slug> §N` delivers only the named section.
+- **Sprint target:** `/reckon-build S1` executes the current project's sprint;
+  `/reckon-build <project>:S1` selects a project explicitly. It reads every
   sprint plan, transitive dependencies, linked research, and prior evidence,
   then coordinates a rolling queue of ready nodes. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
-- **Graph target:** `/reckon-ship <handle>` resolves the one endpoint plan
+- **Graph target:** `/reckon-build <handle>` resolves the one endpoint plan
   carrying that handle and executes its complete transitive dependency closure
   across registered project mounts. Handles match
   `[A-Za-z0-9][A-Za-z0-9._-]*`. Only the handle is authored on the endpoint;
   membership, shipped-of-total, critical path, and average width are
-  derived live. `/reckon-ship graph:<handle>` is the unambiguous long form.
+  derived live. `/reckon-build graph:<handle>` is the unambiguous long form.
 
 On a single-plan target without a section, you MUST:
 1. Read the complete plan HTML and classify every section
@@ -134,14 +134,14 @@ Full detail below.
 ## When to invoke
 
 - "implement / execute / ship X" / "land items from X" / "do the work in X plan"
-- `/reckon-ship <slug>` — implements the WHOLE PLAN
-- `/reckon-ship <slug> [§N]` — implements only the named section
-- `/reckon-ship S1` — executes sprint `S1` in the current project
-- `/reckon-ship <project>:S1` — executes a sprint in an explicit project
-- `/reckon-ship <handle>` — executes the derived cross-project closure when a
+- `/reckon-build <slug>` — implements the WHOLE PLAN
+- `/reckon-build <slug> [§N]` — implements only the named section
+- `/reckon-build S1` — executes sprint `S1` in the current project
+- `/reckon-build <project>:S1` — executes a sprint in an explicit project
+- `/reckon-build <handle>` — executes the derived cross-project closure when a
   live endpoint uniquely claims the token as its graph handle
-- `/reckon-ship graph:<handle>` — the unambiguous long form for that closure
-- Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
+- `/reckon-build graph:<handle>` — the unambiguous long form for that closure
+- Reading a §05 followup whose `recommends_skill` is `/reckon-build`
 - "use local workers / use local agents / dispatch locally" — these are routing
   instructions that add `--local` to every `reckon crew dispatch`. The flag
   selects the backend named by `local_backend` and refuses when it is unset.
@@ -216,10 +216,10 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
    **Trust `pending_work` rather than recounting.** A sprint's `completed` figure
    counts membership from the project index and can differ from a plan-metadata
    count; `pending_work` is the set that governs dispatch.
-2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
-3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Whole graph by default.** `/reckon-ship <handle>` or its unambiguous long
-   form `/reckon-ship graph:<handle>` means every member
+2. **Full plan by default.** `/reckon-build <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
+3. **Whole sprint by default.** `/reckon-build S1` means every executable item in the sprint plus actionable same-project prerequisites.
+4. **Whole graph by default.** `/reckon-build <handle>` or its unambiguous long
+   form `/reckon-build graph:<handle>` means every member
    returned by the live derived closure, including dependencies in other mounted
    repositories. A missing handle or an open non-deferred decision is a refusal.
    Shipping explicitly overrides the schedule window: report
@@ -310,7 +310,7 @@ returns a computed `deps` list resolving every ref (`scope`, `found`,
 `status`, `impl`); gate on that instead of assuming a bare slug is local. An
 unshipped external prerequisite is a hard stop like any other, but its work
 belongs to the OTHER project's checkout — never implement it in this one;
-surface it as `/reckon-ship <project>:<slug>`.
+surface it as `/reckon-build <project>:<slug>`.
 
 Before applying this stop, inspect `roadmap.wiring_findings`. A research or
 evidence artifact in `depends_on` belongs in `informs`; a plan that only
@@ -333,7 +333,7 @@ For a plan-mode stop, ask for explicit user authorization:
 The plan '<slug>' depends on '<prereq-slug>' which is currently status='<status>'.
 
 To proceed, one of the following is needed:
-  A) Implement '<prereq-slug>' first: run /reckon-ship <prereq-slug>
+  A) Implement '<prereq-slug>' first: run /reckon-build <prereq-slug>
   B) Manually mark '<prereq-slug>' as done if it is already complete
   C) Override the dependency (confirm you want to proceed without it)
 
@@ -1241,7 +1241,7 @@ edit_plan(
     {"op": "set", "path": "artifacts",
      "value": <existing_artifacts_with_node_artifacts_appended_once>},
     {"op": "append", "target": "comments", "section": "<section-id>",
-     "item": {"id": "c-<timestamp>", "who": "reckon-ship",
+     "item": {"id": "c-<timestamp>", "who": "reckon-build",
               "when": "<iso-now>",
               "body": "gate <gate-name> <verdict>; section <closure-state>"}}
   ],
@@ -1498,8 +1498,8 @@ fenced, paste-ready prompt so switching to a fresh session is seamless:
 **Next up** — paste into a fresh session:
 
 ```
-/reckon-ship <slug> §<N>
-/reckon-ship <project>:<sprint-id>
+/reckon-build <slug> §<N>
+/reckon-build <project>:<sprint-id>
 ```
 ````
 
@@ -1531,7 +1531,7 @@ Rules:
 Every stored followup prompt and user-facing handoff is one line:
 
 ```
-/reckon-ship <slug> [§N]
+/reckon-build <slug> [§N]
 ```
 
 The live plan owns all semantic guidance. Internal worker dispatches reference

@@ -23,7 +23,7 @@ def reference() -> str:
     """The worker-backends reference, read verbatim from the repository."""
     return normalized(
         (
-            ROOT / "skills" / "reckon-ship" / "references" / "worker-backends.md"
+            ROOT / "skills" / "reckon-build" / "references" / "worker-backends.md"
         ).read_text()
     )
 

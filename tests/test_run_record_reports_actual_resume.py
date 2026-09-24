@@ -85,16 +85,16 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture()
 def repo(tmp_path: Path, home: Path) -> Path:
     root = tmp_path / "repo"
-    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (root / "docs" / "plans").mkdir(parents=True)
     fleet_script = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         fleet_script.read_text()
     )
     (root / "docs" / "plans" / "plan-a.html").write_text(

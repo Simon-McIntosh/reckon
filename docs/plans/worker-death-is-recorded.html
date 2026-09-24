@@ -362,13 +362,13 @@
           first executable step is §5.1 — the launcher holds the exit code and signal at
           the moment a worker ends and currently discards both, so recording them is the
           smallest change that makes every later step possible.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship worker-death-is-recorded §5</pre>
+    <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
     <p class="r-fu-outcome"><p>The write half landed through <code>a-dispatch-returns-without-its-worker</code> §3 (merged 3ad8b13c): the per-run supervisor writes <code>&lt;run_dir&gt;/exit.json</code> (<code>EXIT_RECORD_NAME</code>, <code>_supervisor_exit_record</code> in <code>reckon/crew/dispatch.py</code>). The read half has not landed. As of 2026-09-24 no code in <code>recovery.py</code>, <code>runs.py</code>, <code>promotion.py</code> or <code>routing.py</code> reads it. Carried by f-wdr-002.</p></p>
     </article>
-<article class="r-fu" data-id="f-wdr-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-ship worker-death-is-recorded §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wdr-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Classify a dead worker from its exit record</h4>
     <div class="r-fu-body"><p><strong>Next.</strong> (1) Recovery's classification reads <code>exit.json</code> when present. A recorded signal, exit code, <code>stream_records_seen</code> of 0 (a launch failure) or a normal exit decides the state, and a run is inferred dead from a missing pid only when no exit record exists. Done when a test drives <code>crew observe</code> over three run directories, one with an exit record carrying a signal, one with exit code 0 and one with <code>stream_records_seen</code> 0, and each classifies as its record says; the negative control, making recovery ignore the file, reverts all three to the pid-inference verdict. (2) A redispatch refreshes the live pointer it replaces, since a stale pointer from the first attempt was measured surviving it. (3) A failed resume keeps the session id it was resuming, since it was measured erasing it. The death-shape correlation in <code>a-review-dies-where-nobody-is-looking</code> §1 depends on (1).</p></div>
-    <pre class="r-fu-prompt">/reckon-ship worker-death-is-recorded §5</pre>
+    <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
     </article>
 </section>
 

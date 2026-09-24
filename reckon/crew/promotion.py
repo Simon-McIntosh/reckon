@@ -64,7 +64,7 @@ from reckon.crew.runs import (
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
 
-_COORDINATOR_LANDING_AUTHOR = "reckon-ship"
+_COORDINATOR_LANDING_AUTHOR = "reckon-build"
 
 
 def scoped_diff_stat(

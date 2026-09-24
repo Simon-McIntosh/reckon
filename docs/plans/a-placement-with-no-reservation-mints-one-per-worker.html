@@ -137,7 +137,7 @@
 <article class="r-fu" data-id="f-pnr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Hold the shared reservation when none is readable, then place into it</h4>
     <div class="r-fu-body"><p>Replace the fallback that prefixes a bare <code>srun</code> with a call that holds the shared reservation, publishes it to the host-global record, and places the worker into it as a step. <code>ensure_reservation</code> already probes liveness and returns <code>already-held</code>; what is missing is the call from placement resolution. <strong>This cannot land alone:</strong> against today's per-project keying the record it publishes is read by no other project, so it pairs with the keying retirement in <em>the fleet shares one allocation</em>. Serialise the hold across processes, not merely within one, and decide on the liveness probe rather than on the absence of a record. Replace <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>, asserting exactly one allocation request across two dispatches against a recording scheduler.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-placement-with-no-reservation-mints-one-per-worker</pre>
+    <pre class="r-fu-prompt">/reckon-build a-placement-with-no-reservation-mints-one-per-worker</pre>
     </article>
 </section>
 

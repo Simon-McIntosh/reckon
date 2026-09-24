@@ -34,9 +34,9 @@ from reckon.crew.prompts import (
 ROOT = Path(__file__).resolve().parents[1]
 
 SKILL_FILES = (
-    ROOT / "skills" / "reckon-ship" / "SKILL.md",
-    ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md",
-    ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md",
+    ROOT / "skills" / "reckon-build" / "SKILL.md",
+    ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md",
+    ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md",
 )
 
 # The four phrasings this plan retires from the ship skills. The done-when
@@ -65,7 +65,7 @@ def _prompt() -> str:
             section="",
             role="implement",
             done_when="each skill file keeps the prompt's landing clauses verbatim",
-            write_paths=["skills/reckon-ship/"],
+            write_paths=["skills/reckon-build/"],
             time_budget="20m",
         ),
         project="reckon",
@@ -126,8 +126,8 @@ def _narrowed_prohibition() -> str:
 # exactly the files that state the sentence, so a prompt rewording that is not
 # mirrored into either one fails on the next run.
 LIMIT_SKILL_FILES = (
-    ROOT / "skills" / "reckon-ship" / "SKILL.md",
-    ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md",
+    ROOT / "skills" / "reckon-build" / "SKILL.md",
+    ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md",
 )
 
 

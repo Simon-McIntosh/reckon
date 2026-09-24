@@ -53,14 +53,14 @@ def home(tmp_path, monkeypatch):
 def repo(tmp_path, home):
     """Build the smallest committed repository a refused dispatch can inspect."""
     root = tmp_path / "repo"
-    scripts = root / "skills" / "reckon-ship" / "scripts"
+    scripts = root / "skills" / "reckon-build" / "scripts"
     plans = root / "docs" / "plans"
     scripts.mkdir(parents=True)
     plans.mkdir(parents=True)
     source_root = Path(__file__).parents[1]
     (scripts / "worktree_fleet.py").write_text(
         (
-            source_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+            source_root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
         ).read_text()
     )
     (plans / "delivery.html").write_text(

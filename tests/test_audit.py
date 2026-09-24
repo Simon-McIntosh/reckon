@@ -151,8 +151,8 @@ def test_audit_reports_followup_to_foreign_terminal_plan(tmp_path, monkeypatch):
             "followups": [
                 _open_followup(
                     "f1",
-                    recommends_skill="/reckon-ship proj-b:foreign-terminal",
-                    prompt="/reckon-ship proj-b:foreign-terminal",
+                    recommends_skill="/reckon-build proj-b:foreign-terminal",
+                    prompt="/reckon-build proj-b:foreign-terminal",
                 )
             ],
         },
@@ -204,7 +204,7 @@ def test_audit_silent_for_followup_to_live_foreign_plan(tmp_path, monkeypatch):
             "status": "active",
             "impl": 0.5,
             "followups": [
-                _open_followup("f1", recommends_skill="/reckon-ship proj-b:live-plan")
+                _open_followup("f1", recommends_skill="/reckon-build proj-b:live-plan")
             ],
         },
     )
@@ -246,7 +246,7 @@ def test_audit_reports_unmounted_foreign_target_distinctly(tmp_path, monkeypatch
             "status": "active",
             "impl": 0.5,
             "followups": [
-                _open_followup("f1", recommends_skill="/reckon-ship proj-c:elsewhere")
+                _open_followup("f1", recommends_skill="/reckon-build proj-c:elsewhere")
             ],
         },
     )
@@ -293,7 +293,7 @@ def test_audit_followup_finding_count_over_registered_mounts(tmp_path, monkeypat
                 "followups": [
                     _open_followup(
                         f"f-{holder_slug}",
-                        recommends_skill=f"/reckon-ship {target_project}:terminator",
+                        recommends_skill=f"/reckon-build {target_project}:terminator",
                     )
                 ],
             },
@@ -333,12 +333,12 @@ def test_audit_ignores_local_and_resolved_followup_refs(tmp_path, monkeypatch):
             "impl": 0.5,
             "followups": [
                 # Local ref (no project qualifier) — never foreign.
-                _open_followup("local", recommends_skill="/reckon-ship a-local-plan"),
+                _open_followup("local", recommends_skill="/reckon-build a-local-plan"),
                 # Resolved followup naming a foreign terminal plan — not pending.
                 {
                     **_open_followup(
                         "resolved",
-                        recommends_skill="/reckon-ship proj-b:foreign-terminal",
+                        recommends_skill="/reckon-build proj-b:foreign-terminal",
                     ),
                     "resolved_at": "2026-09-01T00:00:00+00:00",
                     "resolved_by": "agent",
@@ -346,7 +346,7 @@ def test_audit_ignores_local_and_resolved_followup_refs(tmp_path, monkeypatch):
                 },
                 # Same-project-qualified ref — reads as local, not foreign.
                 _open_followup(
-                    "self-qualified", recommends_skill="/reckon-ship proj-a:holder"
+                    "self-qualified", recommends_skill="/reckon-build proj-a:holder"
                 ),
             ],
         },

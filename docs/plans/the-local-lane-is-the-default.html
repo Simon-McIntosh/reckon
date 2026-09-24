@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-local-lane-is-the-default">
+  <meta name="plan-title" content="The local lane is the default">
+  <meta name="plan-summary" content="Route by backend and model; local by default; escalation paced by published paid headroom; no silent fallback; one follower per session.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-impl" content="0.15">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="crew-effort-routing,a-lane-can-say-where-it-stands,a-window-paces-the-lane,advise-the-lane-never-force-it,a-follower-outlives-its-monitor,a-dispatch-returns-without-its-worker,reckon-skill-overhaul">
+  <title>The local lane is the default | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What the orchestrators reported</h2>
+    <p>On 2026-09-24 five coordinators re-planned their repositories in parallel. Lane choice was
+    the least reliable part of the build skill, and every report pointed at it:</p>
+    <table>
+      <thead><tr><th>Observation</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>An unnamed dispatch resolved to codex while the local lane had room, which is why the lead made the local-lane rule binding in <code>~/.agents/AGENTS.md</code>. The build skill still says only that a coordinator <em>may</em> choose the local lane.</td><td>flight <code>default_backend: codex</code>; skill &sect;3c</td></tr>
+        <tr><td>The review sweep fell back to a claude lane after one failed local review, taking the next backend in alphabetical order. Two reviews ran on sonnet-5.</td><td>imas-efit; <code>reckon/crew/recovery.py</code> <code>_review_lane_candidates</code></td></tr>
+        <tr><td>A codex hold opened at 15:28:04Z from a first reading already at 100%, and closed 79 s later when the window reset. Nothing warned beforehand, because headroom is read only when a preflight or dispatch happens.</td><td>preflight, this session</td></tr>
+        <tr><td>Two readings of one account disagreed: 100% per backend (read that minute) against 84% for the group (a weekly clock read 28 hours earlier). The claude lanes carry no reading at all.</td><td>preflight <code>groups[]</code></td></tr>
+        <tr><td><code>crew dispatch</code> reports <code>headroom: unknown</code> while <code>lane.json</code> reads healthy, because one failed precondition blanks all eight fields.</td><td><code>~/.agents/AGENTS.md</code>; <code>dispatch.py</code> 2287, 2292</td></tr>
+        <tr><td>Followers dropped and were re-armed repeatedly: the host kills every Monitor at 30 minutes.</td><td>every coordinator</td></tr>
+        <tr><td>The local lane took over an hour per node for nova, which argues for pacing escalation rather than forbidding it.</td><td>nova-08</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">&sect;2 &mdash; Route by backend and model, not by per-model lane</h2>
+    <p><strong>The lead's routing model.</strong> A <em>backend</em> is a provider:
+    <code>clive</code> (Claude Code against the locally served model), <code>codex</code>, and
+    <code>claude</code>. A dispatch names a backend, a model, both, or neither:</p>
+    <ul>
+      <li><strong>Neither:</strong> the default backend (<code>clive</code>) is used, and crew picks
+      the model and effort from the task.</li>
+      <li><strong>A backend:</strong> crew picks the member model within it from the task, as
+      <code>crew-effort-routing</code> already does for effort.</li>
+      <li><strong>A model:</strong> it implies its backend. A model named without a version
+      resolves to the latest version implemented in the flight config.</li>
+      <li><strong>Both:</strong> they must agree, or the dispatch refuses.</li>
+    </ul>
+    <p>Today the flight config has per-model entries (<code>codex</code> = gpt-5.6-sol,
+    <code>codex-luna</code>, <code>codex-terra</code>, <code>codex-astra</code>,
+    <code>codex-spark</code>, <code>claude</code> = sonnet-5, <code>claude-opus</code>,
+    <code>claude-haiku</code>), and <code>crew dispatch</code> has <code>--backend</code> but no
+    <code>--model</code>. The change collapses them into three backends, each listing its models,
+    and adds <code>--model</code>. The selection logic lives in crew and never in a skill, so a
+    skill carries no lane or model table. An orchestrator names a backend, or a model only when
+    the lead has explicitly asked for one.</p>
+    <p><strong>Landed as an interim:</strong> <code>default_backend: clive</code> in the host
+    flight layer (dotfiles <code>fe1d648</code>).</p>
+    <p><strong>Done when</strong> the flight schema declares backends with member models, and
+    <code>crew dispatch</code> accepts <code>--model</code>, including an unversioned model
+    resolving to the latest implemented version. Tests show: neither named resolves to the
+    default backend with a task-chosen model; a named model implies its backend; a disagreeing
+    pair refuses. The per-model entries are gone from the shipped and host flight layers, with a
+    migration note for other hosts.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Escalation is named, paced, and claude needs permission</h2>
+    <p>The local lane is the default. An orchestrator may escalate a genuinely hard node by naming
+    a paid backend, and states why in the dispatch. It paces escalations by the paid backends'
+    published headroom (&sect;5): it escalates when the backend reads <em>open</em>, holds back
+    when it reads <em>pace</em>, and does not escalate when it reads <em>hold</em>.
+    <strong>The claude backend requires the lead's explicit permission</strong>, because it is the
+    account the orchestrators themselves run on. Dispatch to it refuses unless the call carries
+    the permission as a quoted reason (for example <code>--permission "&lt;the lead's
+    words&gt;"</code>), which is recorded on the run.</p>
+    <p><strong>Done when</strong> a claude dispatch without a permission reason refuses, and one
+    with it records the reason. A paid-backend dispatch records the escalation reason. The build
+    skill's lane section is reduced to these rules and points at crew for everything else.</p>
+
+    <h2 id="s4">&sect;4 &mdash; No silent fallback</h2>
+    <p>A review whose local attempt failed falls back to the next backend in an explicit, ordered
+    <code>review_fallback</code> list, which is <code>clive</code> then <code>codex</code> on this
+    host. It never walks the configured backends alphabetically, and it never reaches claude. With
+    every candidate spent, the review waits for its lane. The same rule applies to producers and
+    resumptions.</p>
+    <p><strong>Landed as an interim:</strong> <code>review_excluded_backends</code> lists the four
+    claude-family entries (dotfiles <code>fe1d648</code>), so the alphabetical walk can no longer
+    reach them.</p>
+    <p><strong>Done when</strong> <code>_review_lane_candidates</code> reads an ordered fallback
+    list and has no alphabetical tail. A test with a failed local review lands on codex, and with
+    codex held the review waits rather than moving.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Paid-backend headroom is observed continuously and published</h2>
+    <p>Headroom for a paid backend is read only when someone runs preflight or dispatch, from
+    sources that can disagree and can be a day old. The fix mirrors what the local lane already
+    has in <code>lane.json</code>. A small observer publishes one document per account, for
+    example <code>~/public/reckon/paid-lanes.json</code>. It carries each window (five-hour and
+    seven-day): utilisation, reset time, burn multiple, projected exhaustion, the source, and an
+    <code>observed_at</code>. It reconciles its sources by recency and reports which one it
+    used. Preflight and dispatch read that document. A value too old is reported as stale for that
+    field alone, and one missing precondition no longer turns every field to <code>unknown</code>.
+    The claude backend is read from the <code>rate_limit_event</code> records its own streams
+    already carry.</p>
+    <p><strong>Done when</strong> the document is refreshed at least every 5 minutes, with a
+    reading for each of the three backends. Preflight's per-backend and per-group figures come from
+    it and agree. A test with one failed precondition shows only that field unknown.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
+    <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
+    <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or
+    utilisation passes a warning level; and <em>hold</em>, at the ceiling. A change of state is
+    pushed to every follower as one line, so an orchestrator learns of it between dispatches, not
+    at the refusal.</p>
+    <p><strong>Done when</strong> replaying the 2026-09-24 codex readings produces a pace warning
+    before the hold, and the follower line is emitted on the change of state.</p>
+
+    <h2 id="s7">&sect;7 &mdash; One follower for the whole session</h2>
+    <p>The host kills every Monitor at 30 minutes, so a follower armed that way is dropped and
+    re-armed all session. It is the host's limit, not reckon's, but reckon can stop depending on
+    it. <code>crew follow --until-actionable</code> exits on the first transition that needs the
+    orchestrator, printing it. The harness's background-task primitive carries no time limit and
+    wakes the session when the command exits. So one follower then waits across the whole session,
+    wakes it only for work, and is re-armed only after a real event. The owner check that landed
+    today (<code>74c1c5fe</code>) means a follower whose session has gone exits instead of
+    orphaning.</p>
+    <p><strong>Done when</strong> a session keeps one follower for more than two hours with no
+    re-arm except after an actionable event. The harness reference for Claude Code documents the
+    form, and a feedback item asks the host for a Monitor with no time limit.</p>
+
+    <h2 id="s8">&sect;8 &mdash; A session's end does not kill its workers</h2>
+    <p>On the fleet, a Claude session running as its own SLURM step takes its workers down when it
+    ends, because each worker's <code>srun</code> client sits in that step. That hazard is what the
+    guidance "do not end the session while a worker runs" was guarding against. It was fixed
+    structurally today: <code>fleet-claude</code> now runs Claude under the allocation's batch step
+    by default (dotfiles <code>eff9275</code>), where a detached worker outlives its session. The
+    per-session step, which makes a session's end reap everything it started, returns as the
+    default (<code>FLEET_SESSION_STEPS=1</code>) once
+    <code>a-dispatch-returns-without-its-worker</code> &sect;10 launches workers through the fleet
+    supervisor. That section is what retires the interim.</p>
+    <p><strong>Done when</strong> &sect;10 has landed and <code>FLEET_SESSION_STEPS</code>
+    defaults to 1, and a worker dispatched from a session survives that session's step ending.</p>
+
+    <h2 id="s9">&sect;9 &mdash; reckon-build is a tailorable core</h2>
+    <p><strong>Landed:</strong> <code>reckon-ship</code> is renamed <code>reckon-build</code>, with
+    no alias kept. Every live followup's invocation line across the five mounted repositories now
+    names <code>/reckon-build</code>, and the write boundary accepts only that name. <code>reckon-skill-overhaul</code> records an earlier, temporary rename that was later restored. This one is the lead's decision of 2026-09-24 and is not to be reverted. The skill is
+    1,581 lines with about 1,100 more in references. The next step is a short core holding the
+    invariants (coordinator-only, the dispatch contract, review before promotion, one follower),
+    plus a per-project overlay (for example <code>docs/state/&lt;project&gt;/build.md</code>) for
+    that project's gates and compute placement. The core carries no lane or model table (&sect;2).
+    Handoffs then need nothing but the <code>/reckon-build &lt;target&gt;</code> line.</p>
+    <p><strong>Done when</strong> the core is under 400 lines, an overlay mechanism is read at
+    build time with one project using it, and the reference files hold the detail the core
+    points to.</p>
+
+    <h2 id="s10">&sect;10 &mdash; Known red baseline</h2>
+    <p>At <code>2c0ffa90</code>, the 77 test files the rename touched show 77 failures that pre-date
+    it: tests that now need <code>--spec-level</code>, a roster that refuses to commit over an
+    uncommitted <code>crew.json</code>, and scope-conflict tests that no longer raise. The rename
+    added none after its fix-ups. Judge this plan's nodes by delta against that set, not by an
+    absolute green.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tllitd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Backends and models, then headroom, then the follower</h4>
+    <div class="r-fu-body"><p>&sect;2 (the flight schema with backends and member models, plus <code>--model</code>) comes first, because &sect;3 and &sect;4 are expressed in its vocabulary. &sect;5 (the headroom observer) is independent and can run in parallel; &sect;6 follows it. &sect;7 is independent. &sect;8 waits on <code>a-dispatch-returns-without-its-worker</code> &sect;10. &sect;9's slimming follows &sect;2 to &sect;4, so the core describes the settled rules. Dispatch on the local lane; escalate to codex only for &sect;2's schema migration if the local attempt stalls, and state why.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

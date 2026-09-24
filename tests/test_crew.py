@@ -65,16 +65,16 @@ def home(tmp_path, monkeypatch):
 def repo(tmp_path, home):
     """A throwaway git repository carrying the worktree fleet script."""
     root = tmp_path / "repo"
-    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (root / "docs" / "plans").mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )
-    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+    (root / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py").write_text(
         source.read_text()
     )
     (root / "docs" / "plans" / "plan-a.html").write_text(
@@ -365,7 +365,7 @@ def test_worker_protocol_states_scope_exclusivity_is_not_sufficiency() -> None:
     protocol = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "references"
         / "worker-protocol.md"
     ).read_text()
@@ -1530,13 +1530,13 @@ def test_lane_planner_groups_a_connected_three_node_scope_graph(home, repo) -> N
         },
         {
             "id": "watch",
-            "write_paths": ["reckon/crew.py", "skills/reckon-ship/SKILL.md"],
+            "write_paths": ["reckon/crew.py", "skills/reckon-build/SKILL.md"],
         },
         {
             "id": "drain",
             "write_paths": [
                 "reckon/cli.py",
-                "skills/reckon-ship/SKILL.md",
+                "skills/reckon-build/SKILL.md",
                 "tests/test_crew.py",
             ],
         },
@@ -2465,7 +2465,7 @@ def test_dispatch_into_a_repository_carrying_no_vendored_script_succeeds(
     repository named separately from the named plan could never be dispatched
     into until somebody hand-provisioned it.
     """
-    script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    script = repo / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
     script.unlink()
 
     record = crew.dispatch(
@@ -4631,7 +4631,7 @@ def test_a_workers_candidate_follow_on_becomes_a_plan_followup() -> None:
     for op in ops:
         assert op["op"] == "append"
         assert op["target"] == "followups"
-        assert op["item"]["prompt"] == "/reckon-ship plan-a §3"
+        assert op["item"]["prompt"] == "/reckon-build plan-a §3"
         assert op["item"]["status"] == "open"
         assert op["item"]["title"]
     assert {op["item"]["id"] for op in ops} == {op["item"]["id"] for op in ops}

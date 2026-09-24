@@ -36,14 +36,14 @@ def _repository(tmp_path: Path, monkeypatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(home))
 
     repo = tmp_path / "repo"
-    scripts = repo / "skills" / "reckon-ship" / "scripts"
+    scripts = repo / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
-        / "reckon-ship"
+        / "reckon-build"
         / "scripts"
         / "worktree_fleet.py"
     )

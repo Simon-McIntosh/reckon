@@ -78,10 +78,10 @@ def _render_plan(slug: str, *, relations: bool) -> str:
                 "status": "open",
                 "written_by": "owner",
                 "written_at": "2026-08-24",
-                "recommends_skill": "/reckon-ship sample",
+                "recommends_skill": "/reckon-build sample",
                 "title": "Preserve fields",
                 "body": "Compare the exact values.",
-                "prompt": "/reckon-ship sample",
+                "prompt": "/reckon-build sample",
             }
         ],
         "comments": {
