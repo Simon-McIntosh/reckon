@@ -174,8 +174,12 @@ def test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger(
     assert beat["live_runs"] == len(fleet)
     assert beat["unreconciled_runs"] == len(fleet)
     assert beat["occupied_lanes"] == len({backend for _run, backend, _status in fleet})
-    assert beat["actionable_runs"] == 1
-    assert beat["actionable_classifications"] == ["blocked"]
+    # Two of the three want a coordinator: the blocked run must be repaired,
+    # and the delivered one is unfinished business until an independent review
+    # is stored for it, which the fleet reading reports as scoring rather than
+    # as a delivery nobody has to touch. The run still working is neither.
+    assert beat["actionable_runs"] == 2
+    assert beat["actionable_classifications"] == ["blocked", "scoring"]
     assert "fleet_state" not in result["record"]
     assert "fleet_state" not in stored
     assert stored == result["record"]

@@ -1198,31 +1198,6 @@ def test_promotion_audits_only_its_own_worktree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    worktree = _linked_worktree(repository, tmp_path, "promoted")
-    for index in range(20):
-        peer = tmp_path / "worktrees" / f"peer-{index}"
-        subprocess.run(
-            ["git", "worktree", "add", "--detach", str(peer), "HEAD"],
-            cwd=repository,
-            check=True,
-            capture_output=True,
-        )
-    registered = [
-        line
-        for line in _git(repository, "worktree", "list", "--porcelain").splitlines()
-        if line.startswith("worktree ")
-    ]
-    assert len(registered) >= 22
-
-    run_id = "r-20260903T110500000000-promoted"
-    _blocked_pointer(
-        repository,
-        run_id,
-        manifest=tmp_path / "manifests" / f"{run_id}.md",
-        session_id="session-promoted",
-        status="complete",
-        worktree=worktree,
-    )
     real_run = subprocess.run
     git_invocations: list[tuple[str, ...]] = []
 
@@ -1231,19 +1206,60 @@ def test_promotion_audits_only_its_own_worktree(
             git_invocations.append(tuple(str(part) for part in command))
         return real_run(command, *args, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", counting_run)
-    promoted = crew.complete(
-        run_id,
-        gate="passed",
-        outcome="the node delivered its result",
-        root=repository,
-    )
+    def promote(target: str, tree: Path) -> dict:
+        _stored_review(target, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20))
+        _blocked_pointer(
+            repository,
+            target,
+            manifest=tmp_path / "manifests" / f"{target}.md",
+            session_id="session-promoted",
+            status="complete",
+            worktree=tree,
+        )
+        git_invocations.clear()
+        return crew.complete(
+            target,
+            gate="passed",
+            outcome="the node delivered its result",
+            root=repository,
+        )
 
-    # Three bounded git calls belong to the landing itself (commitability
-    # probe, explicit add of the two stores, and the single commit) and are
-    # constant no matter how many peer worktrees exist; the audit must not
-    # enumerate them regardless.
-    assert len(git_invocations) <= 9
+    # The landing path makes whatever fixed git calls it needs, so the count is
+    # not a literal. What this measures is that the count does not move with the
+    # peer population: promotion audits its own worktree, never the ones beside
+    # it. Whether the checkout ever tracked the ledger is answered through git
+    # the first time the ledger is absent, so the first landing carries probes
+    # no later one repeats — take that landing before measuring, so the
+    # comparison below is between two warm landings.
+    promote(
+        "r-20260903T110200000000-warmup",
+        _linked_worktree(repository, tmp_path, "warmup"),
+    )
+    lone_worktree = _linked_worktree(repository, tmp_path, "lone")
+    monkeypatch.setattr(subprocess, "run", counting_run)
+    promote("r-20260903T110400000000-lone", lone_worktree)
+    calls_alone = len(git_invocations)
+
+    for index in range(20):
+        peer = tmp_path / "worktrees" / f"peer-{index}"
+        subprocess.run(
+            ["git", "worktree", "add", "--detach", str(peer), "HEAD"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+    worktree = _linked_worktree(repository, tmp_path, "promoted")
+    registered = [
+        line
+        for line in _git(repository, "worktree", "list", "--porcelain").splitlines()
+        if line.startswith("worktree ")
+    ]
+    assert len(registered) >= 22
+
+    run_id = "r-20260903T110500000000-promoted"
+    promoted = promote(run_id, worktree)
+
+    assert len(git_invocations) == calls_alone
     assert promoted["release"]["worktree_released"] is False
     rows = promoted["release"]["worktree_audit"]["worktrees"]
     assert [row["path"] for row in rows] == [str(worktree.resolve())]
