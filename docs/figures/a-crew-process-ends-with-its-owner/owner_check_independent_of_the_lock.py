@@ -2,7 +2,7 @@
 
 Left panel: measured seconds from the owner's death to the follower leaving the
 process table, three samples each for a read-only follower and for the holder of
-the session's registration, against the gate's five-second bound.
+the session's registration, against the gate's two-second bound.
 
 Right panel: the wait-pass decision the two followers take. The holder always
 reached the owner check; the read-only follower returned before it, because the
@@ -23,7 +23,10 @@ import matplotlib.pyplot as plt
 # stays alive, and the process table is sampled until the follower is gone.
 READ_ONLY_SAMPLES = [0.811, 0.839, 0.905]
 HOLDER_SAMPLES = [0.185, 0.242, 0.185]
-GATE_BOUND_SECONDS = 5.0
+# The bound the gate asserts, from the slowest sample: 2.2x it. The wait pass
+# polls every 0.1 s, so a bound that left fifty passes would let a regression
+# asking about the owner once every fifty passes through.
+GATE_BOUND_SECONDS = 2.0
 
 FIXED = "#1f77b4"
 MUTATED = "#c44e52"
@@ -58,14 +61,14 @@ def left_panel(ax) -> None:
         ax.text(-0.12, y, label, va="center", ha="right", fontsize=10, color=INK)
     ax.axvline(GATE_BOUND_SECONDS, color=MUTED_INK, linestyle="--", linewidth=1.2)
     ax.text(
-        GATE_BOUND_SECONDS - 0.06,
-        1.55,
-        "gate bound 5.0 s",
-        ha="right",
+        GATE_BOUND_SECONDS + 0.07,
+        1.62,
+        f"gate bound {GATE_BOUND_SECONDS:.1f} s",
+        ha="left",
         fontsize=9,
         color=MUTED_INK,
     )
-    ax.set_xlim(-2.6, 6.2)
+    ax.set_xlim(-2.6, 3.4)
     ax.set_ylim(-0.6, 1.9)
     ax.set_yticks([])
     ax.set_xlabel("seconds from the owner's death to the follower leaving")
