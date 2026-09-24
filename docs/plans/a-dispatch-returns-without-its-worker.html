@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="63">
+  <meta name="plan-version" content="64">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -679,6 +679,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T062138025947-dispatch-returns-before-the-snapshot" data-who="reckon-ship" data-when="2026-09-24T07:43:04.026Z">
     <div class="r-comment-body"><p>a CLI dispatch returns once a per-run supervisor runs; the supervisor snapshots, spawns and records worker.json, exit.json and tree-snapshot.json in the run directory, never the pointer; in-harness dispatch snapshots inline (repair after review 83); five cases 5 passed on sirius_debug, three negative controls fail as declared; re-review 93; merged 3ad8b13c</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260924T074343189752-rereview-of-dispatch-returns-before-the-snapshot" data-who="reckon-ship" data-when="2026-09-24T08:01:14.532Z">
+    <div class="r-comment-body"><p>re-review of dispatch-returns-before-the-snapshot at 5ea86403 scored 93 with no findings; merged 3ad8b13c</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T131048752851-refusal-leaves-no-trace" data-who="reckon-ship" data-when="2026-09-23T14:39:02.322Z">
     <div class="r-comment-body"><p>every refusal after worktree creation begins is shown to leave no pointer, worktree or watch row; two paths that did were repaired (merged 4248cbaf); review 94: the record counts the watcher-required refusal as in the tested set although it raises before worktree creation, the evidence table has three pre-pointer rows not four, and the gate log header names the base revision; correction appended to the landed record, gate re-verified at merged main</p></div>
