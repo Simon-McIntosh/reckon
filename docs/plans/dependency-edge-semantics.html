@@ -167,6 +167,20 @@
       foreign plan's outcome appears in the roadmap's decision blockers with its gating plan
       named.</p>
 
+    <aside id="closure-gates-scope-hold">
+      <p><strong>Worker checkpoint, 2026-09-25:</strong> the closure-gate defect reproduces
+      at base <code>c924a2446aca0078438a59ea05a18b1ae3978072</code>. Every terminal-status
+      write succeeds without a verdict; the seven refusal cases report
+      <code>DID NOT RAISE OpError</code>. An open closure gate also removes the plan from
+      <code>ready_now</code>, and a decision blocker does not name its foreign outcome.</p>
+      <p>Implementation is held for a scope extension: adding transition fields to the
+      typed gate model requires regenerating <code>docs/_shared/plan.schema.json</code>,
+      which is outside this worker's assigned paths. The existing schema-equality test
+      requires that artifact. Regression assertions and the reproduction are preserved;
+      no implementation or section closure is claimed. See the
+      <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#closure-gates-scope-hold">reproduction and scope hold</a>.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout

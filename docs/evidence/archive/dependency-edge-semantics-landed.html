@@ -118,6 +118,52 @@
     The finding object and the MCP surface carry the target; making the CLI present it belongs
     to the surface that owns <code>cli.py</code>.</p>
 
+    <section id="closure-gates-scope-hold">
+      <h2>Closure transition: reproduced defect, implementation held</h2>
+      <p>Base revision <code>c924a2446aca0078438a59ea05a18b1ae3978072</code>, observed in
+      the assigned detached worktree on 2026-09-25. The worktree's plan and the mounted
+      live plan had identical SHA-256 digests when read. The locked decision remains
+      <code>one-edge-with-transition</code>.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/transition-gates.svg"
+             alt="Intended behavior: execution remains ready; terminal writes wait for a recorded verdict, and decision gates permit an explicit choice afterward.">
+        <figcaption>Required behavior, not an implementation claim: the outcome gates
+        a transition while execution stays ready. Recording an outcome does not choose
+        a decision or bypass other closure checks.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Probe at base</th><th>Observed result</th></tr></thead>
+        <tbody>
+          <tr><td>Seven terminal statuses through the locked store write</td><td>All seven refusal assertions fail with <code>DID NOT RAISE OpError</code>; the writes were accepted.</td></tr>
+          <tr><td>Open closure gate in roadmap</td><td>The consumer is absent from <code>ready_now</code>.</td></tr>
+          <tr><td>Foreign-outcome decision blocker</td><td><code>gating_plan</code> is absent.</td></tr>
+          <tr><td>Round-trip transition edge</td><td>Transition fields are not preserved.</td></tr>
+          <tr><td>Positive controls</td><td>Ordinary gate blocks execution; writes with recorded passed and failed outcomes reach disk.</td></tr>
+        </tbody>
+      </table>
+      <p>The first valid reproduction reports <strong>19 failed, 3 passed</strong> in
+      <code>tests/test_closure_gates.py</code>. An earlier instrument draft called the
+      wrong store symbol; that log is retained separately and is not evidence of the
+      defect. The corrected reproduction calls <code>_store._write_state</code> and
+      supplies a valid evidence artifact and continuation so those guards cannot mask
+      the missing transition refusal.</p>
+      <p>The completed importer baseline covers 86 existing test files:
+      <strong>2,747 passed, 3 skipped, 8 failed</strong> in 334.88 seconds, using the
+      root project environment on the existing compute allocation with four pytest
+      workers and separate temporary roots. Failure IDs are retained in the worker
+      manifest and <code>baseline.log</code>. They concern recovery rendering,
+      cross-project schema conformance, capability validation, receipt folding, and
+      a ledger-read timeout. Source implementation is unchanged, so no head-arm
+      implementation measurement is claimed.</p>
+      <p><strong>Scope blocker:</strong> <code>docs/_shared/plan.schema.json</code> is
+      generated from <code>reckon/_schema.py</code> and checked for exact equality by
+      <code>tests/test_schema.py::test_committed_schema_matches_generated</code>.
+      It is not in this node's exclusive write scope. Requested next action: extend
+      the scope by that file, then resume implementation and execute the declared
+      refusal-branch mutation. The mutation has not run because the branch does not
+      yet exist. No terminal plan status or driving followup was changed.</p>
+    </section>
+
   </main>
 </body>
 </html>
