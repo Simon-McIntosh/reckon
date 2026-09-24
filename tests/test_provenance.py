@@ -64,10 +64,24 @@ def _assert_spa_typed_facets_and_provenance(
         "evidence": "Evidence",
         "archive": "Archive",
     }
-    assert all(f'{kind}: "{label}"' in authored for kind, label in facet_labels.items())
+    # The document facets are declared once, as a key/label pair, so the
+    # reader's tab text and the artifact key it selects are the same fact.
+    assert all(
+        f'key: "{kind}", label: "{label}"' in authored
+        for kind, label in facet_labels.items()
+        if kind != "archive"
+    )
+    # The archive facet is not a document route: it is the display name for an
+    # archived artifact reached through a document facet, so it is declared as
+    # a fallback label rather than a route entry.
+    assert '{ archive: "Archive" }' in authored
     assert "evidence_for" in plan and "verifies" in plan
     assert "research → plan → evidence" in graph
-    assert "p.type" in home and ".slice(0, 40)" in home
+    # The home surface keeps the artifact type on every landed row: the panel
+    # that carries a delivery names what kind of artifact it is, defaulting to a
+    # plan when none is recorded. The project card that used to carry this badge
+    # was rewritten into the shell, so the badge is read where the delivery is.
+    assert 'item.type || "plan"' in home
 
 
 @pytest.fixture()
@@ -321,7 +335,7 @@ def test_spa_sources_keep_typed_facets_and_provenance_direction():
     home = (root / "docs/ui/home.jsx").read_text(encoding="utf-8")
     _assert_spa_typed_facets_and_provenance(authored, plan, graph, home)
 
-    muted_facets = authored.replace('research: "Research"', 'research: ""', 1)
+    muted_facets = authored.replace('label: "Research"', 'label: ""', 1)
     assert muted_facets != authored
     with pytest.raises(AssertionError):
         _assert_spa_typed_facets_and_provenance(muted_facets, plan, graph, home)

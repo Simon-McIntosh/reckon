@@ -272,6 +272,82 @@
 
     
 
+    <section id="s2-landing-skill-spa-and-crew-files" class="node-landing">
+      <h3>Skill, SPA and crew files &mdash; <code>rendered-and-skill-contracts-match</code></h3>
+      <p>Ten owned ids across eight files, at base
+      <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>. Six are repaired by moving a stale assertion
+      onto the shipped behaviour; four are attributed, three to a product defect and one to a missing
+      capability. Nothing moved from pass to fail. One pytest process per file, each with its own
+      <code>--basetemp</code> and its own <code>timeout 600</code>, run in the foreground on the fleet
+      compute node; logs are <code>head_foreground/</code> and <code>base_foreground/</code> under the
+      node's run directory, and the base control's first line is its declared string.</p>
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/owned-file-failures.png"
+             alt="Failing node ids per owned file, base against head. Six files fall to zero; three keep one or two, annotated as skill-file, product, and environment causes.">
+        <figcaption>Failing ids per owned file, base against head.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Owned file</th><th>Base</th><th>Head</th><th>Cause class and what moved</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_skill_contracts</code></td><td>3</td><td>2</td>
+            <td>One stale assertion corrected: the one-monitor rule keeps one follower per session, and
+            wider coverage is met by naming extra sessions on that one follower
+            (<code>--observe-session</code>, repeated) rather than by a second monitor. The other two are
+            skill-file defects, below.</td></tr>
+          <tr><td><code>test_typed_resources</code></td><td>1</td><td>0</td>
+            <td>Stale assertion: the graph resolves typed artifact identity through
+            <code>_artifactKey</code> and navigates by <code>goTo(...)</code>; the test named a positional
+            lookup and a bare-slug form the source does not carry.</td></tr>
+          <tr><td><code>test_provenance</code></td><td>1</td><td>0</td>
+            <td>Stale assertion: the document facets are a <code>key</code>/<code>label</code> pair and the
+            archive facet is a fallback label rather than a route; the typed badge is read on the landed row
+            where the home renders it.</td></tr>
+          <tr><td><code>test_spa_canvas_fidelity</code></td><td>1</td><td>0</td>
+            <td>Stale assertion: the reading measure is held at the canvas value on the focus surface and at
+            the declared larger value on the normal one, so the declaration is dormant on one and live on
+            the other. Read off the comparison for every declared surface, which is stronger than the
+            both-dormant form it replaces.</td></tr>
+          <tr><td><code>test_ticker_renders_wait_facts</code></td><td>1</td><td>0</td>
+            <td>Stale assertion: the arrow glyph it used as a column landmark is gone from the row layout,
+            so alignment is asserted where the marker lives &mdash; the state cell's position in both rows,
+            and the marked row carrying exactly one more marker than the unmarked one.</td></tr>
+          <tr><td><code>test_fleet_counter_coverage</code></td><td>1</td><td>0</td>
+            <td>Stale assertion: the emitted-state vocabulary was read from a recovery-class tuple that had
+            fallen behind the classifier &mdash; it omits <code>launch-failed</code>. Now read from the
+            classifier's own assignments, minus the words the reducer claims into another state and the ones
+            reachable only from a reading whose liveness is disproven.</td></tr>
+          <tr><td><code>test_crew_monitor_output</code></td><td>1</td><td>1</td>
+            <td><strong>Product defect</strong>, named in follow_ons: <code>reckon/crew/recovery.py:4765</code>
+            renders every transition through one module-level ticker, so a row's text depends on which rows
+            were rendered before it.</td></tr>
+          <tr><td><code>test_spa_module_scope</code></td><td>1</td><td>1</td>
+            <td><strong>Environment</strong>, named in follow_ons: no supported headless browser is installed
+            on the node, so the module-scope gate cannot run.</td></tr>
+        </tbody>
+      </table>
+      <h4>Attributed ids</h4>
+      <ul>
+        <li><code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> &mdash; skill-file
+        defect: <code>tests/test_skill_contracts.py:594</code> asserts the declared ceiling and
+        <code>skills/reckon-build/SKILL.md</code> is over it, while that skill's own protocol is to relocate
+        reference material before raising the ceiling.</li>
+        <li><code>test_every_registered_crew_verb_is_documented_or_exempt</code> &mdash; skill-file defect:
+        <code>reckon crew check-manifest</code> is a registered verb and never named in
+        <code>skills/reckon-build/SKILL.md</code>, which is where its exemption list lives.</li>
+        <li><code>test_three_followers_receive_each_subsequent_transition_once</code> &mdash; product defect,
+        <code>reckon/crew/recovery.py:4765</code> and <code>:4827</code>: the identical baseline row renders
+        with an empty age cell as the first row and with <code>0mu</code> once a transition precedes it, so
+        the renderer is order- and thread-dependent.</li>
+        <li><code>test_inlined_bundle_renders_from_a_file_url_without_reference_errors</code> &mdash;
+        environment: <code>installed_browser()</code> is <code>None</code>.</li>
+      </ul>
+      <p><strong>Zero added.</strong> The head's failing ids are <code>test_skill_contracts</code> 2,
+      <code>test_crew_monitor_output</code> 1 and <code>test_spa_module_scope</code> 1, and every one of them
+      was already failing at the base. Full record, with the per-file counts, the base control's log path and
+      the native reproduction of the renderer defect:
+      <a href="/reckon/evidence/the-suite-is-green-at-head-landed">landed evidence</a>.</p>
+    </section>
+
     <div class="r-note" data-reckon="landed" data-node="crew-and-ledger-files-are-green" data-when="2026-09-24">
     <p><strong>Outcome &mdash; the crew and ledger files are green but for one named defect.</strong>
     The node owned <code>tests/test_crew.py</code> and <code>tests/test_ledger.py</code>, carrying 23 of the
