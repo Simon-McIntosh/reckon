@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.61">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -612,7 +612,10 @@
     <div class="r-comment-body"><p>a-held-backend-reaches-its-declared-fallback: gate passed. This is a product fix in <code>reckon/ledger.py</code>, not a test change. <code>_roster_obstruction</code> treated the tool's own bookkeeping (hold history, completed-run rows) as another author's uncommitted write. A dispatch that had just recorded a hold on its own backend therefore could not commit the session member it registered next, and never reached its declared fallback. Non-member roster content no longer obstructs a member commit. <code>test_a_held_backend_with_a_declared_fallback_dispatches_on_it</code> is red at base and green at head. Independent review scored 92 with no findings, including on the loosened guard. Merged at <code>261f3580</code>. At the merged head, the roster-touching files (<code>test_ledger</code>, <code>test_budget</code>, <code>test_crew_dispatch_arming</code>, <code>test_crew_members</code>, <code>test_crew_ephemeral_members</code>, <code>test_store_concurrency</code>) give 175 passed and 2 failed under <code>-n 4</code>. One failure is <code>test_the_preflight_spawns_no_process</code>, fixed in the budget-session node, which is not yet merged. The other, <code>test_every_read_view_returns_and_large_defaults_are_compact</code>, passes alone before and after this merge, so it is load-sensitive.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T210642076994-a-held-backend-reaches-its-declared-fallback" data-who="reckon-build" data-when="2026-09-24T21:37:00.996Z">
-    <div class="r-comment-body"><p>ledger.py no longer refuses a roster commit over the tool&#x27;s own bookkeeping, so a held backend reaches its declared fallback; review 92.</p></div>
+    <div class="r-comment-body"><p>ledger.py no longer refuses a roster commit over the tool's own bookkeeping, so a held backend reaches its declared fallback; review 92.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260924T225047380141-redispatch-delivery-test-is-deterministic" data-who="reckon-build" data-when="2026-09-24T23:33:28.136Z">
+    <div class="r-comment-body"><p>The redispatch delivery test passes 20 of 20 solo at fa20b4e8 and 3 of 3 whole-file under -n 4; the coordinator&#x27;s single solo failure came under concurrent load, so the test is load-sensitive rather than defective and moves to section 3; no repair made, docs-only record commit f5a8ef23 not merged.</p></div>
 </div>
 </section>
 </main>
