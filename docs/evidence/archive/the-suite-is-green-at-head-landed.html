@@ -28,7 +28,7 @@
 
       <p><strong>Scope.</strong> Nine test files owned by one repair node, carrying 25 of the failing node ids recorded for the plan's repair partition. One pytest process per file, each with its own <code>--basetemp</code>, never the whole suite in one process.</p>
 
-      <p><strong>Revisions.</strong> Base <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>; the repair is <code>de851cfa</code>, which changes the nine test files and no product source. Because the source tree is untouched, a reading at the repaired head differs from base only through the test files — which is what makes the comparison below a statement about the repairs rather than about the fleet.</p>
+      <p><strong>Revisions.</strong> Base <code>77c20349aa33b7ddda106d6b3a35fa62f9549fa5</code>; the repair is <code>de851cfa</code>, which changes the nine test files and no product source, and the gate below was read at head <code>1220888e17a1be853cb2d81e89814c69eb3e84e6</code>. Because the source tree is untouched, a reading at the repaired head differs from base only through the test files — which is what makes the comparison below a statement about the repairs rather than about the fleet.</p>
 
       <p><strong>Cause.</strong> Every id was red for the same cause group: an assertion that had been passing only because a guard was open. The guards whose closures the files had not absorbed are the now-required declaration of a specification level, the required negative-control declaration on a node that writes a test path, a lane-declaration refusal that is now gated on the backend being metered rather than on the caller's silence, session reuse keyed to the task rather than to the member, and the grant of the shared landing paths to every node's write scope. The repairs move the assertion in all nine files and move no behaviour; the one file that compares two dry runs field by field now masks the lane advisory's wall-clock stamps, which differ between invocations of the same dispatch.</p>
 
@@ -41,9 +41,31 @@
       <code>test_crew_routes</code> 13,
       <code>test_crew_watch_visibility</code> 5,
       <code>test_dispatch_lane_disagreement</code> 7,
-      <code>test_execution_fit</code> 1. Exit status <code>0</code> for every file's process.</p>
+      <code>test_execution_fit</code> 1. Exit status <code>0</code> for every file's process. One log per
+      file, <code>head-gate-&lt;module&gt;.log</code>, each headed by the revision it ran at, the tree
+      and the command, with a tally in <code>head-gate-exits.txt</code>, all in the node's run
+      directory.</p>
 
-      <p><strong>Negative control — 25 of 25 recorded ids failed, none passed.</strong> Each file was run as it stood at the base revision, selecting only the recorded ids, from a copy of the base content placed under a synthetic root so that the tree's own provenance never enters the reading. The first line of the control log states the control being run. All 25 ids failed with their recorded errors, so none of the repaired assertions is a test that would have passed at base anyway — each is one that can still fail. Full transcript: <code>negative-control.log</code> in the node's run directory, whose first line reads <em>run each repaired file as it stood at the base revision and observe its listed ids fail with the recorded error</em>.</p>
+      <p><strong>An instrument failure on the first attempt, recorded because it looked like a code
+      failure.</strong> The first run of this gate reported 10 failures across five files. They were
+      produced by the driver, not the tests: it passed the child a <code>PATH</code> of
+      <code>/usr/bin:/bin</code>, and the dispatch path resolves a backend's executable against the
+      PATH a launch would search, so five files died in <code>resolve_launch_executable</code> on a
+      <code>codex</code> that was not on that truncated PATH. The driver was corrected to inherit the
+      environment and the gate was re-run, which is the reading above. The failing logs were
+      overwritten; the correction is stated here because "10 failures, then 0" without the reason is
+      the shape of a reading quietly made to pass.</p>
+
+      <p><strong>Negative control — 25 of 25 recorded ids failed, none passed.</strong> Each file was run as it stood at the base revision, selecting only the recorded ids, from a copy of the base content placed under a synthetic root so that the tree's own provenance never enters the reading. The first line of the control log states the control being run. All 25 ids failed with their recorded errors, so none of the repaired assertions is a test that would have passed at base anyway — each is one that can still fail. Each file's red run is its own log,
+      <code>negctl-&lt;module&gt;.log</code>, carrying the recorded failing ids and their errors; the
+      run's transcript is <code>negative-control.log</code> in the node's run directory, whose first
+      line reads <em>run each repaired file as it stood at the base revision and observe its listed
+      ids fail with the recorded error</em>. That log's first line and every red log's node ids are
+      the check that this control tested the ids it claims to: each id was selected
+      explicitly as <code>file::id</code> and the tally is 25 of the 25 selected, so every selector
+      resolved to a real test and produced the failure the record predicted. A selector naming an id
+      the base file no longer carried would have collected nothing for it and left the tally short,
+      and pytest would have exited <code>4</code> on the unresolvable id rather than counting it.</p>
 
       <p><strong>Two ids renamed to the rule they assert.</strong>
       <code>test_bare_session_from_member_add_resumes_and_then_records_its_configuration</code> and
