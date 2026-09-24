@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-counters-count-the-fleet">
+  <meta name="plan-title" content="The Fleet Counters Count The Fleet">
+  <meta name="plan-summary" content="The follower's trailing counters and terminal words agree with the live classification, and a vanished pointer is not reported as promoted.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-sprint" content="S23">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <title>The Fleet Counters Count The Fleet | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; follower truth</p>
+      <h1>The fleet counters count the fleet</h1>
+      <p class="lead">Every coordinator on the compute node on 2026-09-24 reached the same conclusion. Before acting on any alarming follower row, check <code>ps -p</code> on the worker pid and the stream's mtime. The lead also reported something more basic: the trailing counters do not move with the number of jobs actually running.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What the follower said that was not true</h2>
+    <table>
+      <thead><tr><th>Symptom</th><th>Evidence</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td>The <code>N working &middot; N blocked &middot; N unpromoted</code> counters do not track the number of runs actually working.</td><td>Lead report. The size and cause are unmeasured; &sect;2 measures them.</td><td>Here</td></tr>
+        <tr><td>A refused dispatch shows as <code>dispatched</code>, then <code>promoted</code> one second later, with a 0w&middot;0b&middot;0u tally. No run directory survives and no ledger row exists.</td><td>imas-ambix session <code>ambix-fleet-view</code>, two refusals at 22:41 and 22:42 local</td><td>&sect;3 here, for the word "promoted". <code>a-dispatch-returns-without-its-worker</code> (S21) owns making the refusal leave no pointer at all.</td></tr>
+        <tr><td>Every dispatch reads <code>dispatched&rarr;abandoned</code> within about 1 s of launch, and 10&ndash;11 s when the pre-spawn walk is slow.</td><td><code>f-adrwiw-launch-flicker</code>; <code>r-20260924T203913190997-s22-reuse-map</code>, whose supervisor pid 1142906 was alive</td><td><code>a-dispatch-returns-without-its-worker</code> (S21)</td></tr>
+        <tr><td>Just after a worker's first commit, the row reads "blocked &mdash; the worker process is gone &hellip; carries 1 commit" while the worker is alive.</td><td><code>f-acpewio-first-commit-gone</code>; 5 of 6 S21 wave-1 runs, 6 of 9 suite runs</td><td><code>a-crew-process-ends-with-its-owner</code> (S21)</td></tr>
+        <tr><td>A re-armed follower replays one fresh-looking row per live run.</td><td>6&ndash;9 rows per re-arm, in two sessions</td><td><code>a-follower-outlives-its-monitor</code> &sect;4 (S22)</td></tr>
+        <tr><td>The stored phase lags the manifest: <code>working</code> or <code>starting</code> while the manifest says <code>complete</code>.</td><td>Three runs read at 22:28 by the imas-ambix session</td><td><code>crew-observability-truth</code> (S22)</td></tr>
+        <tr><td>The trailing counts are project-wide while the rows are session-scoped.</td><td>Documented in <code>reckon-build</code></td><td><code>a-follower-keeps-your-work-in-view</code> (S22)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">&sect;2 &mdash; Measure the counters against the fleet</h2>
+    <p>This is an investigation. Its deliverable is <code>docs/research/fleet-counters-against-the-fleet.html</code>. It pairs each counter line the producer and follower emitted on 2026-09-24 for project <code>reckon</code> with the live classification at the same instant, reconstructed from run pointers, manifests, stream mtimes and <code>worker.json</code> pids. It then classifies every disagreement as one of three kinds:</p>
+    <ul>
+      <li><strong>stale</strong>: the counter was not recomputed when the fleet changed;</li>
+      <li><strong>scope</strong>: the counter covers a different set of runs than the rows do;</li>
+      <li><strong>classification</strong>: the counter faithfully counts a wrong state, such as a phantom abandoned run.</li>
+    </ul>
+    <p>It names the function that computes the counter and the events that trigger a recompute. It also reproduces the refused-dispatch <code>promoted</code> row in a synthetic config home, and names the code path that turns a vanished pointer into that word.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The report tabulates at least 50 counter observations with their disagreement class and the figure behind it.</li>
+      <li>It states the fraction of observations that disagree, per class.</li>
+      <li>It cites the counter's computing function and recompute trigger by file and line at a named revision.</li>
+      <li>The <code>promoted</code> reproduction is recorded as a command with its output.</li>
+      <li>No product file changes.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; Counters and terminal words follow the classification</h2>
+    <p>The counter should be recomputed from the same classification the rows use, whenever any run's classification changes. A pointer that disappears should be called <code>promoted</code> only when a ledger row for that run exists. Otherwise the follower should call it <code>withdrawn</code>, with the refusal named when the dispatch recorded one.</p>
+    <p><strong>Trigger:</strong> this section is deferred until &sect;2's report lands and no live run claims <code>reckon/crew/ticker.py</code> or <code>reckon/crew/recovery.py</code>. Today the S22 coordinator's next wave claims the first, and the S21 and suite-repair coordinators claim the second. The report's classes set the exact done-when. The minimum is:</p>
+    <ul>
+      <li>a synthetic fleet whose run count changes without a row being emitted shows the new count on the next line;</li>
+      <li>a refused dispatch never renders <code>promoted</code>.</li>
+    </ul>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-counter-census-landed" data-section="s3"
+           data-gated-sections="s3" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">Each counter disagreement is classified with its figure and its computing code path</h4>
+        <p class="r-gate-required-evidence">the-fleet-counters-count-the-fleet#s2</p>
+      </div>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-tfcctf-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-24"
+               data-recommends-skill="/reckon-build the-fleet-counters-count-the-fleet §2"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Measure the counters against the fleet</h4>
+        <div class="r-fu-body"><p>&sect;2 is an investigation. &sect;3 waits on its report and on the files it would touch being released.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-fleet-counters-count-the-fleet §2</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>

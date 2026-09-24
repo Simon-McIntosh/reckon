@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-mcp-answers-within-its-ceiling">
+  <meta name="plan-title" content="The MCP Answers Within Its Ceiling">
+  <meta name="plan-summary" content="Every reckon MCP read fits the transport and answers the question a coordinator asked, so nobody falls back to jq over a saved file.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S23">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;deferred&quot;}">
+  <title>The MCP Answers Within Its Ceiling | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; MCP read surface</p>
+      <h1>The MCP answers within its ceiling</h1>
+      <p class="lead">Three coordinators running sprints on the compute node on 2026-09-24 each fell back from the reckon MCP tools to bash and jq, for the same two reasons. Some answers were too large for the transport. Others were too coarse for the question. The rule in <code>reckon-build</code> is that every routine read is an MCP call. This plan makes that rule something the tools can actually carry.</p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What three coordinators hit, measured</h2>
+    <p>These findings were reported by the S21 coordinator (<code>s21-coord</code>), the S22 coordinator (<code>s22-coord</code>) and the suite-repair coordinator (<code>suite-green-at-head</code>). All ran in fleet job 1277272 on clu-2058. Each row is a call the coordinator made and what came back.</p>
+    <table>
+      <thead><tr><th>Call</th><th>What came back</th><th>Fallback used</th></tr></thead>
+      <tbody>
+        <tr><td><code>roadmap(project=reckon, sprint=S21, view=detail)</code></td><td>116,009 characters, over the MCP ceiling</td><td>jq over the saved file</td></tr>
+        <tr><td><code>roadmap(project=reckon, sprint=S22, view=detail)</code></td><td>297 KB, which overflowed the transport</td><td>jq over the saved file</td></tr>
+        <tr><td><code>roadmap(project=reckon, sprint=S22, view=summary)</code></td><td>project-wide counts with no list of the sprint's pending plans</td><td>parsing the sprint HTML</td></tr>
+        <tr><td><code>crew(view=scopes)</code></td><td>52 KB, overflowed; only the list of claimed paths was needed</td><td>none</td></tr>
+        <tr><td><code>crew(view=live, fields=[...])</code></td><td><code>fields</code> is ignored and every field of every run is returned (15&ndash;25 KB for 11&ndash;13 runs)</td><td><code>reckon crew list | python</code></td></tr>
+        <tr><td><code>crew(view=runs, fields=[log_age_seconds, commits_beyond_base, manifest_reported_status])</code></td><td>refused as unknown fields, although these are exactly the fields a coordinator checks</td><td>the CLI</td></tr>
+        <tr><td><code>crew(view=runs, run_id=r-20260924T193005157362-s21-reuse-map)</code></td><td><code>storage-slow</code> after 30.1 s</td><td>reading the run directory</td></tr>
+        <tr><td><code>read_plan</code>, to read one section</td><td>no section view exists</td><td>a regex over the plan HTML in bash</td></tr>
+        <tr><td><code>read_plan(search="test failures")</code></td><td>sprint rows only, no plans</td><td>ls and grep over <code>docs/plans</code></td></tr>
+        <tr><td><code>edit_plan set section_declarations.s3</code></td><td>refused as an unsupported plan set path, so the whole map had to be rewritten</td><td>a whole-map set</td></tr>
+        <tr><td><code>edit_plan</code> text mode, inserting a &sect; before the followups block</td><td>refused because the old HTML overlaps a <code>data-reckon</code> region</td><td>anchoring on unrelated preceding prose</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Not owned here.</strong> These findings belong to other plans and are left there:</p>
+    <ul>
+      <li>the 170 KB <code>crew member list</code>: <code>new-work-gets-a-new-worker</code> &sect;4</li>
+      <li>the missing verb for hand-dispatching a review: <code>a-review-dies-where-nobody-is-looking</code></li>
+      <li>promotion guards that are discovered one refusal at a time: <code>scoring-should-stop-a-promotion</code></li>
+    </ul>
+    <p>The reference ceiling is the harness MCP output limit. The coordinators' measurements put it between 25 and 116 thousand characters, so the budget in &sect;3 is configurable. It is not hard-coded to one harness.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A sprint summary names its pending plans</h2>
+    <p>A coordinator asks the summary view one question: which of this sprint's plans are still open, and which of them can start. Today, a sprint-scoped summary returns only counts. So the coordinator either asks for <code>detail</code>, which overflows, or parses the sprint HTML. The summary should carry one compact row for each pending plan in the sprint. Each row gives the slug, the status, <code>impl</code>, whether the plan is ready, the ids of whatever blocks it, and the ids of its sections still declared implementable. It carries no prose.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test builds a synthetic project whose sprint holds one shipped plan, one ready plan and one blocked plan. It asserts that <code>roadmap(project, sprint=X, view="summary")</code> lists exactly the two pending plans, carrying those fields.</li>
+      <li>The shipped plan is absent from the list. This is the negative case.</li>
+      <li>A summary read without <code>sprint</code> is byte-identical to its output before the change.</li>
+      <li>The recorded length of <code>roadmap(project="reckon", sprint="S22", view="summary")</code> at the integrated head is under 20,000 characters.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; No read overflows the transport</h2>
+    <p>An answer too large for the transport does not arrive at all. The coordinator gets nothing it can act on, and a second call fails the same way. Every MCP read tool (<code>roadmap</code>, <code>read_plan</code>, <code>crew</code>, <code>audit</code>) should measure its serialised answer against a response budget. The budget is configurable, defaulting to 80,000 characters. An answer over the budget comes back bounded, with a <code>truncated</code> block that says what was left out and which arguments would narrow the read (<code>narrow_with</code>), instead of the overflowing whole. An answer within the budget is unchanged.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests size synthetic fixtures over the budget for roadmap <code>detail</code>, crew <code>scopes</code> and crew <code>live</code>. For each, they assert that the serialised answer is within the budget and carries a non-empty <code>truncated.narrow_with</code>.</li>
+      <li>A fixture under the budget returns exactly what it did before the change.</li>
+      <li>The declared mutation is applied: the budget check is removed. The over-budget tests are then observed to fail, and the log of that run is recorded.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; A crew read returns the fields it was asked for</h2>
+    <p>The <code>fields</code> argument is accepted by <code>crew(view="live")</code> and then ignored. <code>crew(view="runs")</code> honours <code>fields</code>, but it refuses the three fields coordinators check first. After this section:</p>
+    <ul>
+      <li><code>live</code> rows carry exactly the requested fields plus the run id.</li>
+      <li><code>runs</code> accepts <code>log_age_seconds</code>, <code>commits_beyond_base</code> and <code>manifest_reported_status</code>, drawing them from the same classification <code>live</code> already computes.</li>
+      <li>An unknown field is still refused, and the refusal names the accepted set.</li>
+    </ul>
+    <p><strong>Done when:</strong> tests assert all three behaviours on a synthetic config home with two live runs. The live-view test fails when the projection is removed. That failure is observed and its log is recorded.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A single-run read answers in two seconds</h2>
+    <p><code>crew(view="runs", run_id=&hellip;)</code> hit the 30-second storage-slow guard for a run that is one directory on disk. A lookup by run id should read that run's pointer and its ledger row, and nothing else.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The slow call is first reproduced, and its cause is named with a measurement (which files it opens, and how many).</li>
+      <li>A test with a synthetic ledger of 2,000 rows asserts that the run-id path opens no more than a small fixed number of files, and says what that number is.</li>
+      <li>A recorded timing of the same call against this host's reckon project, at the integrated head, is under 2 s.</li>
+    </ul>
+
+    <h2 id="s6">&sect;6 &mdash; A plan can be read one section at a time</h2>
+    <p>Reading a single section today means pulling the whole plan or parsing HTML in bash. <code>read_plan(view="section", section="s3")</code> should return that section's heading, its plain text, its HTML, its declaration and the comments anchored to it. Discovery search should match the plans whose body text contains the query, not only sprint rows.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests on a synthetic plan assert the section payload for a present section.</li>
+      <li>An absent section is refused with a named error.</li>
+      <li>A search whose term appears only in a plan's body returns that plan.</li>
+      <li>The section view of a real reckon plan at head is recorded, and its length is recorded beside the length of the raw view.</li>
+    </ul>
+
+    <h2 id="s7">&sect;7 &mdash; A section's declaration and position can be written alone</h2>
+    <p><code>edit_plan</code> should accept <code>set section_declarations.&lt;id&gt;</code>. It should also accept an op that inserts a new section before the structured-state regions, so that adding a &sect; no longer means anchoring on unrelated prose.</p>
+    <p>This section waits on <code>section-contract-and-computed-impl</code> &sect;1. That plan turns a section into a typed record. The S22 coordinator plans to dispatch it next, and it writes the same parser and op table. The gate below holds this section closed until that record lands, so the two are not built against each other.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Tests assert that a dotted declaration set changes one key and preserves the rest.</li>
+      <li>An inserted section lands before the first <code>data-reckon</code> region, with the plan still passing <code>reckon audit-doc</code>.</li>
+    </ul>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">§</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-section-record-landed" data-section="s7"
+           data-gated-sections="s7" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">A section is a typed record the write boundary understands</h4>
+        <p class="r-gate-required-evidence">section-contract-and-computed-impl#s1</p>
+      </div>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-tmawic-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-24"
+               data-recommends-skill="/reckon-build the-mcp-answers-within-its-ceiling"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;6</h4>
+        <div class="r-fu-body"><p>&sect;2 to &sect;6 are independent except where two of them write the same module. Dispatch serialises those by scope. &sect;7 waits on its gate.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-mcp-answers-within-its-ceiling</pre>
+      </article>
+    </section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+      <h2><span class="sec">§</span> Comments</h2>
+    </section>
+  </main>
+</body>
+</html>
