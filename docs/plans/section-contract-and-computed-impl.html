@@ -99,6 +99,18 @@
     repair <code>8cba99030e92b11135972422932a0eed5db61f56</code> preserves existing bare
     structural section wrappers and reuses the shared capability schema within the
     existing response-size bound.</p>
+    <p><strong>Cohort gate at the merged head, 2026-09-25.</strong> The cohort's 71-file
+    gate re-run at a detached checkout of the merged main head
+    (<code>8fd6de7c5eb316ded76ecaff837df388496173a9</code>) reads <strong>7 failed, 2534
+    passed, 3 skipped</strong> against the recorded base set of 25 failed ids at
+    <code>c590aaaa</code>: <strong>zero added failures</strong>, 18 of the base ids
+    repaired by later merges (each still collected at the head, so repaired and not
+    renamed), and 7 retained as pre-existing. No failure id appears at the head that is
+    absent from the base set, so nothing is attributed to a candidate commit. The run
+    pinned <code>PYTHONPATH</code> to the checkout and logged the imported module path, so
+    it carries the merged head's source rather than the shared environment's editable
+    install. Full record:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#cohort-at-merged-head">cohort gate at the merged head</a>.</p>
 
     <h2 id="s2">§2 — Positive control: a section without its contract is refused at the write boundary</h2>
     <p>The lead asked for positive control, meaning the rule is enforced where the write happens, not audited
