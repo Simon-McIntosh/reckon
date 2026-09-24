@@ -6,13 +6,15 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-dispatch-returns-without-its-worker-landed">
-  <meta name="plan-title" content="A Dispatch Returns Without Its Worker &mdash; landed record">
+  <meta name="plan-title" content="A Dispatch Returns Without Its Worker — landed record">
   <meta name="plan-summary" content="Cumulative execution evidence for the dispatch-lifetime measurement: what the dispatch process holds, and whether its worker survives the dispatch process being killed.">
   <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
-  <meta name="plan-verifies" content="a-dispatch-returns-without-its-worker#s2, a-dispatch-returns-without-its-worker#s10">
+  <meta name="plan-verifies" content="a-dispatch-returns-without-its-worker#s2,a-dispatch-returns-without-its-worker#s10">
   <title>A Dispatch Returns Without Its Worker &mdash; landed record | reckon</title>
 <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -440,10 +442,10 @@
 
     <h2 id="s7">&sect;7 &mdash; A promoted row carries the worker's exit record</h2>
     <p>
-      The run directory is released at promotion and the live pointer is deleted with it, so the
-      run directory's <code>exit.json</code> is the worker's exit record and it has exactly one
-      place left to live: the committed ledger row. <code>complete</code> in
-      <code>reckon/crew/promotion.py</code> reads the file once, before the release, and copies
+      Promotion deletes the live pointer and releases the worktree; the run directory, with its
+      <code>exit.json</code>, survives until <code>crew gc</code> prunes it on its retention
+      window, so the committed ledger row is the copy that outlives that. <code>complete</code> in
+      <code>reckon/crew/promotion.py</code> reads the file once, at promotion, and copies
       the parsed object verbatim onto the row under <code>worker_exit</code>.
     </p>
     <figure>
