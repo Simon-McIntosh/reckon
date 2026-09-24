@@ -164,6 +164,90 @@
       yet exist. No terminal plan status or driving followup was changed.</p>
     </section>
 
+    <section id="closure-gates-delivered">
+      <h2>Closure gates preserve execution and hold terminal writes</h2>
+      <p>The scope hold above was cleared by an explicit grant for
+      <code>docs/_shared/plan.schema.json</code>. The repository's
+      <code>write_json_schema()</code> generator produced the artifact; the equality
+      check passes. Implementation commit:
+      <code>3fb14fb27fc63a7f2040f6ebfc03b28e03ce80e7</code>. The preceding reproduction
+      commit is <code>e280d50fd103b25d44ad1aacff91dd123708c2e3</code>.</p>
+      <p>One <code>Gate</code> carries <code>transition=plan-terminal</code> or
+      <code>transition=decision-lockable</code>, a <code>gating_plan</code> reference
+      using <code>[project:]slug[#section]</code>, and the local <code>decision</code>
+      key when applicable. The HTML parser and renderer preserve these attributes
+      beside <code>gated_sections</code>; ordinary gates retain their byte-identical
+      round trip and execution-blocking behavior. The outcome is explicitly recorded
+      on this gate with the existing pass/fail operations; a source reference alone
+      does not manufacture a verdict.</p>
+      <table>
+        <thead><tr><th>Condition</th><th>Measured behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Open closure gate</td><td><code>ready_now=[consumer]</code>, <code>dispatchable=true</code>; graph execution ready and <code>ship_ready=false</code>.</td></tr>
+          <tr><td>Terminal status without verdict</td><td>Refused at the store boundary for all seven terminal statuses; file bytes unchanged.</td></tr>
+          <tr><td>Recorded passed or failed verdict</td><td>The same terminal write succeeds. Existing evidence and continuation checks still apply.</td></tr>
+          <tr><td>Foreign decision outcome</td><td><code>decision_blockers</code> names the decision, gate, transition, and gating plan; multiple outstanding outcomes are retained.</td></tr>
+          <tr><td>Attempted early decision choice</td><td>Lock, dotted set, and direct store replacement refuse it; recording a verdict does not choose automatically.</td></tr>
+          <tr><td>Declared negative control</td><td>Removing the terminal-refusal call from <code>_write_state_locked</code> makes all seven refusal cases fail with <code>DID NOT RAISE OpError</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>The direct receipt records the refusal exactly:
+      <code>gate 'foreign-result' awaiting verdict from 'foreign:producer#outcome': plan-terminal refused</code>.
+      After recording the verdict, the same call writes <code>status=done</code>
+      at version 1. This receipt uses a temporary repository and imports the module
+      from the assigned worker checkout.</p>
+      <p><strong>Focused verification:</strong> 33 closure-gate cases, the legacy
+      gate round-trip, and committed-schema equality all pass (35 total).
+      The declared mutation produces seven failures, and its log begins with the
+      exact declaration. Source was restored byte-for-byte before the importer run.
+      Scoped lint findings are unchanged at 38 before and after.</p>
+      <p>The first importer run exposed two compatibility regressions in this
+      change: typed legacy gate dumps gained three empty attributes, and the MCP
+      schema response exceeded its existing bound by 103 bytes. Commit
+      <code>e1d2c312d682c7239bddb041712a193a471f769d</code> preserves unauthored-field
+      absence and shortens the gate's published description; both failing checks
+      now pass alongside the focused cases (37 total). The initial failing importer
+      log remains preserved as <code>head.log</code>. Commit
+      <code>8ff3d41fd6e6d88a95e4c22c8b672b300d73bb3f</code> removes source-role
+      attribution and historical narration in a separate comment-only cleanup.
+      The repeated importer run tests this committed repair head.</p>
+      <p>The repeated importer arm cleared both schema regressions and exposed
+      a test-instrument naming collision: a recovery assertion excludes the word
+      <code>repair</code> from a message containing its log path, while the chosen
+      basetemp was <code>/tmp/closure-gates-repaired</code>. That log remains as
+      <code>repaired-head.log</code>. The same assertion passes at the same commit
+      under a neutral temporary path (<code>path-control.log</code>, one pass).
+      The final importer comparison uses <code>/tmp/cg-230714</code> and is retained
+      as <code>current-head.log</code>; no test assertion was weakened or modified.
+      The path-sensitive assertion in <code>tests/test_crew_recovery.py</code> is a
+      fenced follow-on.</p>
+      <p><strong>Fenced follow-on:</strong> the generic lifecycle blocker summaries
+      in <code>reckon/lifecycle.py</code>, <code>reckon/mcp_views.py</code>, and
+      <code>reckon/serve.py</code> still classify every unpassed gate as an execution
+      blocker. A controlled input reports <code>blocked</code> there while roadmap
+      correctly reports the same plan ready with <code>effective_status=active</code>.
+      Those paths are outside this node's write scope; the receipt is
+      <code>surface-follow-on.json</code>. Route a separate surface-consistency repair
+      before claiming all plan-reading surfaces agree.</p>
+      <p><strong>Final importer comparison:</strong> the same 86 existing importer
+      files plus <code>tests/test_closure_gates.py</code> ran at committed source head
+      <code>8ff3d41fd6e6d88a95e4c22c8b672b300d73bb3f</code>. Base:
+      <strong>2,747 passed, 3 skipped, 8 failed</strong>. Final head:
+      <strong>2,784 passed, 3 skipped, 7 failed</strong> in 328.43 seconds.
+      <strong>Added failure IDs: zero.</strong> All remaining failure IDs are present
+      in the baseline; the timed receipt assertion passed this run, without a repair
+      to its source. The existing failures concern recovery rendering/promotion,
+      external evidence conformance, capability validation, and a ledger-read timeout.
+      <code>comparison.json</code> retains both commands, revisions and complete
+      failure-ID sets. This is the node's source comparison, not merged-head verification.</p>
+      <p>Durable logs and the explicit base/head failure IDs live under the assigned
+      run record <code>r-20260924T230714304318-closure-gates-hold-a-terminal-write</code>:
+      <code>baseline.log</code>, <code>extended-focused.log</code>,
+      <code>negative-control.log</code>, <code>head.log</code>, and
+      <code>behavior-receipt.json</code>. The earlier figure now describes the observed
+      behavior as well as the original requirement.</p>
+    </section>
+
   </main>
 </body>
 </html>
