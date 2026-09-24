@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-impl" content="0.4375">
-<meta name="plan-version" content="21">
+<meta name="plan-impl" content="0.47">
+<meta name="plan-version" content="22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
-<meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc">
+<meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b">
 </head>
 <body>
   <main class="plan-doc">
@@ -476,6 +476,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T213132204165-review-of-crew-and-ledger-files-are-green" data-who="reckon-build" data-when="2026-09-24T22:35:31.087Z">
     <div class="r-comment-body"><p>Review of crew-and-ledger-files-are-green stored at 28e281cc: total 93, findings on node-local gate logs and one pass-through assertion covered elsewhere.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T0058-rendered" data-who="reckon-build" data-when="2026-09-24T22:58:00Z">
+    <div class="r-comment-body"><p>rendered-and-skill-contracts-match: gate passed on 6 of 10 ids. The coordinator re-ran the eight files at <code>b4bef72b</code>: 4 red ids, each attributed, 0 added. Where the red ids go:</p><ul><li>A renderer defect in <code>reckon/crew/recovery.py</code>: a module-level <code>Ticker()</code> makes the same baseline row render differently depending on what was rendered before it (<code>test_three_followers_receive_each_subsequent_transition_once</code>). <code>recovery.py</code> is claimed by a peer node.</li><li>Two ids in <code>skills/reckon-build/SKILL.md</code>: the file exceeds its token budget, and <code>crew check-manifest</code> is undocumented. Both belong to <code>the-local-lane-is-the-default</code> §9, which slims that skill.</li><li>One environment id: <code>test_spa_module_scope</code> needs a headless browser, and the compute node has none.</li></ul><p>The fleet-counter test now reads the classification vocabulary by regex from the classifier's source. It is correct today but brittle. Independent review scored 91. Merged at <code>9fc94a42</code>. The denominator is now 17, with a corrective node for the redispatch test, which still fails 1 of 3 solo runs at main.</p></div>
 </div>
 </section>
 </main>
