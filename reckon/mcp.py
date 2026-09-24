@@ -174,10 +174,24 @@ else:
 # deadline. A body that outlives its deadline is abandoned rather than
 # cancelled — a blocked filesystem call cannot be interrupted — and reported as
 # a typed ``storage-slow`` result, which leaves the loop free for the next call.
+# Every filesystem touch on that path runs on the worker thread, including the
+# stats that fingerprint the write's file: an unbounded stat against the mount
+# that has just stalled is the same hazard as the read that stalled, and must
+# not execute on the loop either.
 
 READ_DEADLINE_SECONDS = 30.0
 WRITE_DEADLINE_SECONDS = 60.0
 WRITE_LANDING_GRACE_SECONDS = 0.5
+
+# The landing check polls for the write's file to appear, and each poll is a
+# stat on the same mount that may have stalled the write, so the check carries
+# a deadline of its own just above its grace and reports unknown past it.
+LANDING_POLL_SECONDS = 0.02
+LANDING_STAT_MARGIN_SECONDS = 0.5
+
+# Distinguishes "the file was absent before the write" from "the baseline stat
+# never answered", which are different states and only the first is evidence.
+_UNSET = object()
 
 DEADLINE_ENV = "RECKON_MCP_DEADLINE_SECONDS"
 READ_DEADLINE_ENV = "RECKON_MCP_READ_DEADLINE_SECONDS"
@@ -228,12 +242,17 @@ def _file_fingerprint(path: str | None) -> tuple[int, int] | None:
     return (stat.st_mtime_ns, stat.st_size)
 
 
-async def _await_landing(path: str, before: tuple[int, int] | None) -> bool:
+def _landing_state(path: str, before: tuple[int, int] | None) -> bool:
     """Report whether an abandoned write reached its file within a short grace.
 
     The grace exists because a body can complete just after the deadline: the
     thread is still running, and reporting ``landed=False`` for a write that
     actually landed would invite a blind retry that duplicates it.
+
+    This is synchronous and calls ``os.stat`` directly, so it runs on a worker
+    thread. A stat issued against the mount that has just stalled the write is
+    itself unbounded, so running it on the event loop would hold every later
+    call for as long as the filesystem takes to answer.
     """
 
     stop = time.monotonic() + _landing_grace_seconds()
@@ -242,7 +261,25 @@ async def _await_landing(path: str, before: tuple[int, int] | None) -> bool:
             return True
         if time.monotonic() >= stop:
             return False
-        await asyncio.sleep(0.02)
+        time.sleep(LANDING_POLL_SECONDS)
+
+
+async def _bounded_landing(path: str, before: tuple[int, int] | None) -> bool | None:
+    """Answer the landing question off the loop, or None if the fs will not.
+
+    The check gets its own deadline, slightly longer than its grace so a
+    healthy filesystem always answers, and reports ``None`` — unknown, not
+    false — when even that expires. A caller must not read unknown as "did not
+    land" and resubmit a write that may well have succeeded.
+    """
+
+    limit = _landing_grace_seconds() + LANDING_STAT_MARGIN_SECONDS
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_landing_state, path, before), limit
+        )
+    except TimeoutError:
+        return None
 
 
 async def _run_under_deadline(
@@ -257,9 +294,10 @@ async def _run_under_deadline(
     """Run one synchronous storage body on a worker thread under a deadline."""
 
     limit = _deadline_seconds(kind) if deadline is None else deadline
-    waiting: dict[str, Any] = {"path": str(path) if path is not None else None}
-    if kind == "write" and waiting["path"] is not None:
-        waiting["before"] = _file_fingerprint(waiting["path"])
+    waiting: dict[str, Any] = {
+        "path": str(path) if path is not None else None,
+        "before": _UNSET,
+    }
     started = time.monotonic()
 
     def _work() -> Any:
@@ -270,17 +308,25 @@ async def _run_under_deadline(
                 resolved = None
             if resolved is not None:
                 waiting["path"] = str(resolved)
-                if kind == "write":
-                    waiting["before"] = _file_fingerprint(waiting["path"])
+        # The baseline stat runs here, on this worker thread, for the same
+        # reason the landing check does: an unbounded stat on a stalled mount
+        # must never execute on the event loop.
+        if kind == "write" and waiting["path"] is not None:
+            waiting["before"] = _file_fingerprint(waiting["path"])
         return body()
 
     try:
         return await asyncio.wait_for(asyncio.to_thread(_work), limit)
     except TimeoutError:
         waited = time.monotonic() - started
-        landed = None
+        landed: bool | None = None
         if kind == "write" and waiting["path"] is not None:
-            landed = await _await_landing(waiting["path"], waiting.get("before"))
+            before = waiting["before"]
+            landed = (
+                None
+                if before is _UNSET
+                else await _bounded_landing(waiting["path"], before)
+            )
         return StorageSlowResult.for_call(
             kind=kind,
             label=label,

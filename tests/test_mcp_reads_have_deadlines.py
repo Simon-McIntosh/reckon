@@ -228,6 +228,79 @@ def test_a_write_that_never_lands_reports_not_landed(tmp_path, monkeypatch):
     assert not target.exists()
 
 
+def test_a_stalled_landing_stat_still_lets_a_concurrent_read_answer(
+    tmp_path, monkeypatch
+):
+    """The landing check stats the same mount that just stalled the write.
+
+    That stat is as unbounded as the write was, so it runs on a worker thread
+    under its own deadline. If it cannot answer, the landing state is unknown —
+    reported as ``landed: None``, never as false — and the loop stays free for
+    the concurrent read the deadline exists to protect.
+    """
+
+    slow = tmp_path / "slow-plan.html"
+    quick = tmp_path / "quick.html"
+    quick.write_text("quick-content", encoding="utf-8")
+    monkeypatch.setenv(DEADLINE_ENV, "0.2")
+    monkeypatch.setenv(LANDING_GRACE_ENV, "0.3")
+    release = threading.Event()
+    real_fingerprint = mcp_module._file_fingerprint
+    seen: list[str] = []
+
+    def fingerprint(path):
+        # The baseline stat answers; every later stat of the write's file is the
+        # landing poll, and that one blocks on the stalled mount.
+        if path == str(slow):
+            seen.append(path)
+            if len(seen) > 1:
+                release.wait(BLOCK_BOUND)
+                return None
+        return real_fingerprint(path)
+
+    monkeypatch.setattr(mcp_module, "_file_fingerprint", fingerprint)
+
+    def stalled_write() -> dict[str, object]:
+        release.wait(BLOCK_BOUND)
+        return {"ok": True}
+
+    async def scenario():
+        started = time.monotonic()
+        entered: list[float] = []
+
+        def quick_body() -> str:
+            entered.append(time.monotonic() - started)
+            return quick.read_text(encoding="utf-8")
+
+        timed = asyncio.create_task(
+            mcp_module._run_under_deadline(
+                stalled_write, kind="write", label="edit_plan", path=str(slow)
+            )
+        )
+        # Wait past the write's deadline, so the landing check is the thing
+        # holding the loop at the moment the read is dispatched.
+        await asyncio.sleep(0.25)
+        answered = await mcp_module._run_under_deadline(
+            quick_body, kind="read", label="read_plan", path=str(quick)
+        )
+        result = await timed
+        release.set()
+        return answered, result, entered
+
+    answered, result, entered = asyncio.run(scenario())
+
+    assert answered == "quick-content"
+    assert result["error"] == STORAGE_SLOW
+    assert result["kind"] == "write"
+    assert result["landed"] is None, (
+        "an unanswerable landing stat is unknown, not false"
+    )
+    assert len(seen) > 1, "the landing stat must have been attempted"
+    assert entered and entered[0] < 1.0, (
+        f"the healthy read entered at {entered} s, behind the stalled landing stat"
+    )
+
+
 # ── The registered surface is wired to the runner ──────────────────────────
 
 
