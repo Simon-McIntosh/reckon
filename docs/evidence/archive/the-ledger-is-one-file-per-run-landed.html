@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-ledger-is-one-file-per-run-landed">
+  <meta name="plan-title" content="The Ledger Is One File Per Run — Landing Record">
+  <meta name="plan-summary" content="Cumulative evidence for settling the per-run ledger plan's remaining readings and recording its existing-row writer decision.">
+  <meta name="plan-evidence-for" content="the-ledger-is-one-file-per-run">
+  <meta name="plan-verifies" content="the-ledger-is-one-file-per-run#s3">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>The Ledger Is One File Per Run — Landing Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Ledger Is One File Per Run — Landing Record</h1>
+      <p class="lead">§3 now classifies the legitimate file created between the new-writer and split phases, and the existing-row re-record writer is an explicit open decision.</p>
+    </header>
+
+    <section id="settle-ledger-readings">
+      <h2>§3 readings and existing-row writer</h2>
+      <p><strong>Reproduction before revision.</strong> At <code>9b0ab2997e792c02e23ae187fff427c89f29cbb2</code>, <code>record_gate_rerun_at_integrated_revision</code> still loaded the aggregate ledger, copied and patched the matching <code>runs</code> row with <code>integrated_gate_check</code>, called <code>ledger.write</code>, imported that ledger into the index, and committed <code>ledger.ledger_path</code>. Its own contract says it writes the full re-run report back onto the run's ledger row. Once <code>crew.json</code> no longer carries run rows, that sequence has no target.</p>
+      <table>
+        <thead>
+          <tr><th>Read-back item</th><th>Recorded settlement</th><th>Resulting implementation boundary</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>L-1</td>
+            <td>“Before writing anything for a project, the split checks every run file already present for a row in that project's <code>runs</code> list against the serialiser's output for that row; a file whose id is absent from the list is a §1-window promotion, is left untouched, and does not enter the check.”</td>
+            <td>The validation population is the rows being migrated; a legitimate pre-split promotion file cannot block the project.</td>
+          </tr>
+          <tr>
+            <td>L-2</td>
+            <td>“For every migrated project, the row count before equals the count of files the split wrote for list rows, excluding any §1-window promotion file it left untouched.”</td>
+            <td>The falsifier measures split output rather than every file in <code>runs/</code>, so the live writer/split window remains valid.</td>
+          </tr>
+          <tr>
+            <td>Existing-row re-record omission</td>
+            <td><code>integrated-gate-recording</code> is an open decision with two code-costed options. Its <code>data-leaning</code> is <code>per-file-serialiser</code>.</td>
+            <td>The preferred option adds a targeted run-file read/write through the common serialiser and keeps the committed integrated-gate report. Retiring the current update removes the aggregate load/patch/write/index-import/commit path but loses that durable report.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Scope retained.</strong> This record changes no implementation code. The decision remains open for the code-owning work; the leaning reports current code evidence rather than claiming that route is already built.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>reckon audit-doc docs/plans/the-ledger-is-one-file-per-run.html</code> and the matching evidence audit both reported <code>OK</code> with exit 0. The durable receipt is <code>~/.config/reckon/crew/runs/r-20260924T231118938600-settle-the-ledger-readings/audit-doc.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
