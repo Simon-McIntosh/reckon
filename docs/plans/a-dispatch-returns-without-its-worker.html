@@ -667,6 +667,85 @@
     placement record naming the old sleeping allocation 1276262, and the <code>salloc
     --no-shell</code> re-hold with no batch step. This section does not take them.</p>
 
+    <h3 id="s10-landed">Landed &mdash; node <code>launches-route-through-the-fleet-fifo</code></h3>
+    <p>
+      The reckon half is implemented and measured; the dotfiles half is not, so the lane is
+      present but inert until the batch step knows <code>spawn</code>. Commits
+      <code>7ae4787a</code> and <code>ab9da177</code>. <code>_start_supervisor</code> now
+      writes one line, <code>spawn &lt;run id&gt; &lt;spec path&gt;</code>, to the
+      <code>requests</code> FIFO in the fleet record's <code>runtime_dir</code> and takes the
+      pointer's pid from the <em>acknowledgement</em> the batch step writes as
+      <code>spawned.json</code> beside the spec. The supervisor spec carries the supervisor
+      argv under <code>argv</code>, so the verb runs it without reckon knowledge. An
+      unacknowledged request refuses after 10 s, leaving no live pointer and no worktree. The
+      <code>crew watch</code> producer start, <code>dispatch_awaiting_reviews</code> and
+      <code>_resume</code> all leave by the same lane: the sweep's
+      <code>launch = _spawn if launcher is None else launcher</code> had forced the follower's
+      review reflex and its resume path into the in-process seam, so a supervisor started
+      there was a grandchild of whoever swept.
+    </p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/fleet_launch_path.png"
+           alt="Left: a dispatch forks a setsid child, which is reaped with the session step. Right: the same launch writes one spawn line to the batch step, which starts the supervisor as its own child so the worker outlives the step. Below: the gate's five measured outcomes.">
+      <figcaption>
+        The launch changes parent, not shape. Every case below writes its request to the
+        FIFO, and the pid on the pointer is the one the batch step acknowledged rather than
+        the one the dispatcher forked.
+      </figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Measured</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>the gate, <code>tests/test_dispatch_spawns_through_the_fleet.py</code></td>
+          <td><strong>6 passed</strong> with a temporary runtime directory, a FIFO and a stub
+          batch-step reader; a real <code>git worktree</code> so the refusal case proves the
+          worktree is gone</td>
+        </tr>
+        <tr>
+          <td>the failure the gate must catch, with the FIFO branch in
+          <code>_start_supervisor</code> bypassed</td>
+          <td>the spawn-line assertion and the acknowledged-pid assertion both
+          <strong>FAIL</strong>; the pointer carries the forked supervisor's pid
+          (<code>1383654</code>) and the stub never acknowledges
+          (<code>1383618</code>); <strong>bypass detected: True</strong></td>
+        </tr>
+        <tr>
+          <td>the delta over the forty-five test files importing the changed modules</td>
+          <td>base <code>02e2757d</code>: 26 failed / 662 passed / 1 skipped in 269.05 s.
+          HEAD: 26 failed / 668 passed / 1 skipped in 264.94 s. Failure sets
+          <strong>identical</strong> &mdash; zero added, zero fixed; the six extra passes are
+          this node's own cases</td>
+        </tr>
+        <tr>
+          <td>the one difference the change first made, and its repair</td>
+          <td>removing the unused <code>_spawn</code> name from
+          <code>resumption.py</code> broke
+          <code>test_mcp_recovery.py::test_sweep_dry_run_reports_what_it_would_resume</code>,
+          which patches that name to assert a dry run launches nothing. The repair restores
+          <code>_spawn</code> as the seam <code>_resume</code> genuinely calls, reading the
+          run's own repository and worktree from its pointer, so the guard intercepts a real
+          launch again rather than a name nothing reaches</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Narrower than the wording above, deliberately.</strong> The lane is gated on
+      <code>RECKON_FLEET_SPAWN</code> rather than on the fleet record alone. This workstation
+      publishes a record for every session running on the node, and the batch step's
+      <code>spawn</code> verb lands separately in dotfiles, so a record-only trigger would
+      send every dispatch on the node &mdash; peer sessions and tests included &mdash; into a
+      FIFO whose reader may not know the verb, refusing each after 10 s. With the flag unset
+      a dispatch forks exactly as before. The proof that a worker outlives its step with
+      <code>scancel</code> on the step id is the dotfiles half's to run, and is not claimed
+      here.
+    </p>
+    <p>
+      Evidence for the readings above, with the negative control's own log, is in
+      <a href="../evidence/archive/a-dispatch-returns-without-its-worker-landed.html#s10">the
+      landed record</a>.
+    </p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
