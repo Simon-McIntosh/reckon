@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="65">
+  <meta name="plan-version" content="67">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -610,6 +610,62 @@
     fail. This section runs
     after &sect;3, which also writes <code>reckon/crew/promotion.py</code>. The write paths are
     <code>reckon/crew/promotion.py</code> and that test.</p>
+
+    <h2 id="s10">&sect;10 &mdash; A worker is launched from the fleet's batch step, not the session's</h2>
+    <p><strong>This is the first item of the handoff.</strong> From 2026-09-24, agent sessions
+    run on the SLURM fleet node, each as its own step. imas-ambix-af measured that a
+    <code>setsid</code>-detached child is reaped when its step ends. &sect;3's supervisor and the
+    worker beneath it both detach that way (<code>start_new_session=True</code> in
+    <code>_start_supervisor</code> and in the supervisor's spawn, in
+    <code>reckon/crew/dispatch.py</code>). So on the fleet, a coordinator ending its turn would take
+    every worker it dispatched with it. The same holds for per-project <code>crew watch</code>
+    producers. Until this section lands, no fleet session may dispatch (imas-ambix
+    <code>agent-sessions-live-on-the-fleet-node</code> &sect;6).</p>
+    <p>The only process tree on the node that outlives every session is the fleet allocation's
+    batch step, <code>fleet-supervisor</code> in dotfiles (<code>bin/fleet-supervisor</code>). It
+    reads one request per line from the FIFO <code>$XDG_RUNTIME_DIR/requests</code>, and it
+    publishes where it lives in <code>~/.local/state/fleet/record.json</code> (<code>job_id</code>,
+    <code>node</code>, <code>runtime_dir</code>). Today it knows <code>session</code> and
+    <code>reload</code>. The fix has two halves.</p>
+    <ul>
+      <li><strong>dotfiles:</strong> a <code>spawn &lt;run-id&gt; &lt;spec-path&gt;</code> verb. The
+      batch step starts the argv &sect;3's <code>_start_supervisor</code> already builds,
+      <code>&lt;interpreter&gt; -m reckon.crew.dispatch &lt;SUPERVISOR_ENTRY&gt; --spec
+      &lt;spec-path&gt;</code>, as its own child, detached from every session step. To keep the
+      verb free of reckon knowledge, reckon writes that argv into the spec as
+      <code>argv</code> and the verb runs it verbatim.
+      The <code>spec-path</code> is the supervisor spec &sect;3 writes to the run directory,
+      and it carries the interpreter and working directory, so the verb needs no reckon
+      knowledge. The verb acknowledges by writing <code>&lt;run_dir&gt;/spawned.json</code>,
+      with the pid and start time, into the spec's run directory. This file is dotfiles',
+      so its change needs the user's go-ahead in the brief of whichever session makes it.</li>
+      <li><strong>reckon:</strong> when <code>record.json</code> names a live fleet job and the
+      dispatching process runs inside that job's node allocation, <code>_start_supervisor</code>
+      writes the <code>spawn</code> line to the FIFO instead of forking. It then waits, bounded
+      at 10 s, for <code>spawned.json</code>, and records that pid as the pointer's pid, so
+      liveness and <code>crew stop</code> work as they do today. With no fleet record, or off
+      the fleet node, dispatch forks as today, so login-node dispatch is unchanged. A FIFO
+      that exists but gets no acknowledgement within 10 s is a refusal that leaves no pointer
+      and no worktree, the &sect;5 guarantee. The <code>crew watch</code> producer launch takes
+      the same path. <code>dispatch_awaiting_reviews</code> and <code>_resume</code> in
+      <code>reckon/crew/resumption.py</code> also route through the supervisor rather than the
+      inline test-seam branch they use today.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_dispatch_spawns_through_the_fleet.py</code>,
+    with a temporary runtime directory, a FIFO and a stub batch-step reader, shows five
+    things. A dispatch writes one <code>spawn</code> line and records the acknowledged pid. A
+    dispatch with no fleet record forks as before. An unacknowledged FIFO refuses, leaving
+    nothing behind. A producer start takes the same path. A sweep-dispatched review and a
+    resumption both reach the supervisor. On the fleet node itself: a worker dispatched from a
+    session step is still running after that step is ended with <code>scancel</code> on the
+    step id alone, never the job. The log names both the step and the job id and shows the
+    worker's parent is the batch step. The negative control is executed and logged: with the
+    FIFO path bypassed, the worker dies with its step. The write paths are
+    <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/resumption.py</code>, the
+    <code>crew watch</code> launch site, that test, and in dotfiles <code>bin/fleet-supervisor</code>.
+    The allocation and placement items from imas-ambix &sect;6 are S21's other plans: the
+    placement record naming the old sleeping allocation 1276262, and the <code>salloc
+    --no-shell</code> re-hold with no batch step. This section does not take them.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
