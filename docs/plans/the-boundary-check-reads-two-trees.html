@@ -18,13 +18,13 @@
   <meta name="plan-capability-risk" content="elevated">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-informs" content="the-ledger-is-one-file-per-run,a-worker-cannot-write-your-home,a-dispatch-returns-without-its-worker">
+  <meta name="plan-informs" content="the-ledger-is-one-file-per-run,a-worker-cannot-write-your-home,a-dispatch-returns-without-its-worker,a-crew-process-ends-with-its-owner">
   <title>The Boundary Check Reads Two Trees | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S19">
-<meta name="plan-modified" content="2026-09-23">
-<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-version" content="3">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -122,6 +122,11 @@
     <h4 class="r-gate-measure">the fence protects the worktree root, so a fenced worker cannot write another run&#x27;s worktree</h4>
     <p class="r-gate-required-evidence">a-worker-cannot-write-your-home#s3</p>
     </div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-tbcrtt-split-with-crew-process" data-who="reckon-e5" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>Split with <code>a-crew-process-ends-with-its-owner</code> §4.</strong> That section, in S20, changes <em>how</em> each tree is read: <code>-uno</code>, or a status scoped to the node's declared write paths, plus back-pressure on retained worktrees before dispatch creates one. This plan changes <em>which</em> trees a fenced run's boundary check reads: its own worktree and the main checkout. The two compose. Two trees read cheaply is the target, and neither change alone reaches it. Both edit <code>routing._tree_state</code>, <code>routing._repository_tree_snapshot</code> and their callers in <code>dispatch.py</code> and <code>promotion.py</code>, so they land in sequence, never concurrently. Proposed order: this plan's §1 (which trees) first, then that §4 (how each is read) on top. That lets §4's falsifier count the per-tree reads on the reduced set. The owning sessions settle it before either dispatches. The boundary check itself needs untracked files in the run's own worktree, since a worker may legitimately create them there, so the declared-paths scoping in §4 must keep that case.</p></div>
+</div>
 </section>
 </main>
 </body>
