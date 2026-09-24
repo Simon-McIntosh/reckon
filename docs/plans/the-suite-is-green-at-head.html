@@ -75,9 +75,10 @@
 
     <section id="s2-budget-session-follower">
       <h3>Node: budget, session and follower tests</h3>
-      <p class="landed-summary">Nine owned files, sixteen listed red ids. Thirteen are green: two stale
-      expectations and eleven fixture repairs. Two ids are product defects and are named as follow-ons rather
-      than repaired in place; two follower ids fail only under load. Evidence:
+      <p class="landed-summary">Nine owned files, <strong>sixteen</strong> listed red ids. At head,
+      <strong>thirteen are green</strong> (eleven fixture repairs, two stale expectations), <strong>two are
+      product defects</strong> named as follow-ons rather than repaired in place, and <strong>one is
+      load-only</strong>. Evidence:
       <a href="/reckon/evidence/the-suite-is-green-at-head-landed#budget-session-and-follower-tests">landed
       evidence</a>, figure
       <a href="/reckon/figures/the-suite-is-green-at-head/budget-session-and-follower-tests.svg">per-file
@@ -89,6 +90,10 @@
         <li><strong>Stale fixture</strong> (<code>test_crew_recovery.py</code>): the promotion fixture built a
         plain directory, and the guard that refuses promotion outside a git worktree therefore ran against it.
         The fixture now initialises a real repository.</li>
+        <li><strong>Stale expectation, the held-reason string</strong>
+        (<code>test_a_served_turn_refutes_the_refusal.py</code>): the reason is asserted as one exact string,
+        built from the shipped detail clause and the remedy registered for the refusal family, so neither
+        clause can move alone.</li>
         <li><strong>Product defect</strong>
         <code>test_a_held_backend_with_a_declared_fallback_dispatches_on_it</code>
         (<code>tests/test_budget.py</code>): the fallback lane is never reached because the dispatch's own
@@ -99,10 +104,16 @@
         (<code>tests/test_a_reexec_keeps_its_children.py</code>): <code>reckon/crew/dispatch.py:4470</code>
         iterates a decoded carrier without a type test, so a JSON scalar raises
         <code>TypeError: 'int' object is not iterable</code> against the function's own promise not to raise.</li>
-        <li><strong>Fails only under load</strong> (<code>test_follower_freshness.py</code>,
-        <code>test_follower_checks_its_owner.py</code>): real follower subprocesses with two-to-eight-second
-        wait bounds pass in a quiet serial run and fail under contention; which of them fails moves between
-        runs, so they are recorded rather than retried.</li>
+        <li><strong>Fails only under load</strong> (<code>test_follower_freshness.py</code>): the listed
+        reload id passes in a quiet run and fails under contention. <code>test_follower_checks_its_owner.py</code>
+        contributes no listed id; its two reload cases are the same class and were measured rather than
+        retried &mdash; the flagged one passed five of five runs alone and failed four of five runs in file
+        context, and that file is unchanged between the base revision and this head.</li>
+        <li><strong>Added failures: none among the sixteen listed ids.</strong> One id in an owned file but
+        not among the listed set
+        (<code>test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner</code>)
+        is load-bound and was observed red at head and green at base, which is a property of the shared node
+        rather than of the repairs.</li>
       </ul>
     </section>
 

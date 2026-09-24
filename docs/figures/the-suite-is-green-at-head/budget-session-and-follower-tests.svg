@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" width="760" height="360" font-family="sans-serif" font-size="13">
-  <rect width="760" height="360" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 380" width="990" height="380" font-family="sans-serif" font-size="13">
+  <rect width="990" height="380" fill="#ffffff"/>
   <text x="16" y="24" font-size="15" font-weight="bold">Red node ids per owned file — base revision vs after this node</text>
-  <text x="16" y="44" fill="#555">One pytest process per file, its own basetemp. Left bar base, right bar after.</text>
+  <text x="16" y="44" fill="#555">One pytest process per file, its own basetemp. Left bar base, right bar at head d00f351f.</text>
 
   <g transform="translate(300,60)">
     <line x1="0" y1="0" x2="0" y2="240" stroke="#999"/>
@@ -10,7 +10,7 @@
       <line x1="0" y1="60" x2="-4" y2="60" stroke="#999"/><text x="-8" y="64" text-anchor="end">3</text>
       <line x1="0" y1="120" x2="-4" y2="120" stroke="#999"/><text x="-8" y="124" text-anchor="end">2</text>
       <line x1="0" y1="180" x2="-4" y2="180" stroke="#999"/><text x="-8" y="184" text-anchor="end">1</text>
-      <line x1="0" y1="240" x2="-4" y2="240" stroke="#999"/><text x="-8" y="244" text-anchor="end">0</text>
+      <line x1="0" y1="240" y2="240" x2="-4" stroke="#999"/><text x="-8" y="244" text-anchor="end">0</text>
     </g>
     <!-- scale: 60 px per failure -->
     <g>
@@ -23,20 +23,15 @@
       <!-- mcp_recovery 1 -> 0 -->
       <rect x="246" y="180" width="26" height="60" fill="#c0392b"/><rect x="276" y="240" width="26" height="1" fill="#27ae60"/>
       <!-- session_delivery 1 -> 0 -->
-      <rect x="312" y="180" width="26" height="60" fill="#c0392b"/>
-      <rect x="342" y="240" width="26" height="1" fill="#27ae60"/>
+      <rect x="312" y="180" width="26" height="60" fill="#c0392b"/><rect x="342" y="240" width="26" height="1" fill="#27ae60"/>
       <!-- crew_recovery 3 -> 0 -->
-      <rect x="370" y="60" width="26" height="180" fill="#c0392b"/>
-      <rect x="400" y="240" width="26" height="1" fill="#27ae60"/>
-      <!-- follower_freshness 1 -> 0 (quiet) -->
-      <rect x="446" y="180" width="26" height="60" fill="#c0392b"/>
-      <rect x="476" y="240" width="26" height="1" fill="#27ae60"/>
-      <!-- follower_checks_owner 0 -> 1 (load only) -->
-      <rect x="522" y="240" width="26" height="1" fill="#27ae60"/>
-      <rect x="552" y="180" width="26" height="60" fill="#8e44ad"/>
+      <rect x="370" y="60" width="26" height="180" fill="#c0392b"/><rect x="400" y="240" width="26" height="1" fill="#27ae60"/>
+      <!-- follower_freshness 1 -> 1 (load-only) -->
+      <rect x="446" y="180" width="26" height="60" fill="#c0392b"/><rect x="476" y="180" width="26" height="60" fill="#8e44ad"/>
+      <!-- follower_checks_owner 0 -> 1 (load-only, not listed) -->
+      <rect x="522" y="240" width="26" height="1" fill="#27ae60"/><rect x="552" y="180" width="26" height="60" fill="#8e44ad"/>
       <!-- reexec 2 -> 1 -->
-      <rect x="598" y="120" width="26" height="120" fill="#c0392b"/>
-      <rect x="628" y="180" width="26" height="60" fill="#e67e22"/>
+      <rect x="598" y="120" width="26" height="120" fill="#c0392b"/><rect x="628" y="180" width="26" height="60" fill="#e67e22"/>
     </g>
   </g>
 
@@ -46,14 +41,19 @@
     <text x="470" y="314" text-anchor="start">served</text>
     <text x="546" y="314" text-anchor="start">mcp</text>
     <text x="622" y="314" text-anchor="start">session</text>
+    <text x="670" y="314" text-anchor="start">crew_rec</text>
+    <text x="746" y="314" text-anchor="start">fresh</text>
+    <text x="822" y="314" text-anchor="start">owner</text>
+    <text x="898" y="314" text-anchor="start">reexec</text>
   </g>
 
   <g transform="translate(16,300)" font-size="12">
     <rect x="0" y="-12" width="12" height="12" fill="#c0392b"/><text x="18" y="-1">red at base</text>
-    <rect x="110" y="-12" width="12" height="12" fill="#27ae60"/><text x="128" y="-1">green after</text>
-    <rect x="220" y="-12" width="12" height="12" fill="#e67e22"/><text x="238" y="-1">product defect (follow-on)</text>
-    <rect x="420" y="-12" width="12" height="12" fill="#8e44ad"/><text x="438" y="-1">load-only</text>
+    <rect x="110" y="-12" width="12" height="12" fill="#27ae60"/><text x="128" y="-1">green at head</text>
+    <rect x="230" y="-12" width="12" height="12" fill="#e67e22"/><text x="248" y="-1">product defect (follow-on)</text>
+    <rect x="440" y="-12" width="12" height="12" fill="#8e44ad"/><text x="458" y="-1">load-only</text>
   </g>
 
-  <text x="16" y="350" fill="#555" font-size="11">Base total 16 red ids; after this node 2 product defects and 1 load-only id remain. No id moved from pass to fail under a quiet run.</text>
+  <text x="16" y="344" fill="#555" font-size="11">Base: 16 listed red ids. At head: 13 green, 2 product defects and 1 load-only among the listed set.</text>
+  <text x="16" y="360" fill="#555" font-size="11">One further owned id (owner) is load-only and is not among the listed set. No listed id moved from pass to fail.</text>
 </svg>
