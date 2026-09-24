@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner-landed">
+  <meta name="plan-title" content="A Crew Process Ends With Its Owner — landed evidence">
+  <meta name="plan-summary" content="Each section's landing record, with the measure that decided it.">
+  <meta name="plan-evidence-for" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="a-crew-process-ends-with-its-owner#s5">
+  <meta name="plan-commits" content="d026717e,cd75efe0,744deae5,aeeb8bac,aaa888a5,fe554df8">
+  <meta name="plan-artifacts" content="reckon/mcp.py,reckon/_mcp_tools.py,tests/test_mcp_reads_have_deadlines.py,docs/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment, mcp 1.28.1">
+  <meta name="plan-tags" content="mcp,deadlines,storage,verification">
+  <title>A Crew Process Ends With Its Owner — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Crew Process Ends With Its Owner</h1>
+      <p class="lead">One cumulative record: each section appends its own anchor, with the measure that decided it.</p>
+    </header>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; Every storage read has a deadline</h2>
+      <p>Commit <code>d026717e</code> wraps every registered MCP tool as an async adapter that runs
+      its unchanged synchronous body on a worker thread under a deadline, and answers an expired
+      deadline with a typed <code>storage-slow</code> result. The premise was confirmed from the
+      installed SDK rather than assumed: <code>mcp</code> 1.28.1's
+      <code>server/fastmcp/utilities/func_metadata.py</code> calls a synchronous tool body inside
+      the coroutine (<code>else: return fn(...)</code>), so the event loop is the serialization
+      point, and a second call waits behind the first.</p>
+      <p>The bound is proved by a filesystem stand-in that blocks on one path and answers on
+      another, with the deadline set through <code>RECKON_MCP_DEADLINE_SECONDS</code> so the gate
+      runs in seconds. The mutation removes the worker thread and the deadline together: the
+      blocked read then returns past the test's bound and the concurrent read waits behind it.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/mcp_read_deadline.png"
+             alt="Before: the healthy read cannot enter until the blocked read returns at 4.0 s. After: the blocked read is bounded at its 1.0 s deadline and answered storage-slow while the healthy read answers at 0.20 s.">
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Gate <code>tests/test_mcp_reads_have_deadlines.py</code></td><td>8 passed, exit 0 (<code>fe554df8</code>)</td></tr>
+          <tr><td>Blocked read, deadline 0.2&nbsp;s</td><td><code>storage-slow</code>, <code>waited_seconds</code> &ge; 0.2, <code>path</code> named</td></tr>
+          <tr><td>Concurrent read of another path</td><td>entered and answered in &lt; 0.3&nbsp;s while the first was blocked</td></tr>
+          <tr><td>Write landing after its deadline</td><td><code>landed: true</code>; file present</td></tr>
+          <tr><td>Write never landing</td><td><code>landed: false</code>; file absent</td></tr>
+          <tr><td>Stalled write whose landing stat also blocks (<code>fe554df8</code>)</td><td>concurrent read entered and answered; <code>landed: null</code> &mdash; unknown, not false</td></tr>
+          <tr><td>Negative control: deadline and thread removed</td><td>6 of 8 tests fail; the entry-time assertion reads 3.00&nbsp;s behind (red log recorded)</td></tr>
+          <tr><td>Negative control: landing stat back on the loop</td><td>the stalled-landing case alone fails, entry-time assertion reading 3.20&nbsp;s behind; the other 7 pass</td></tr>
+          <tr><td>SDK fact, measured against a bare <code>FastMCP</code></td><td>a blocked sync tool serialises a second call</td></tr>
+          <tr><td>MCP surface regression vs base revision</td><td>243 passed / 5 failed over the ten pre-existing surface test files &mdash; identical at base (<code>a695d425</code>, base-source overlay)</td></tr>
+        </tbody>
+      </table>
+      <p>An independent review found that the write's landing check reintroduced the
+      defect it was meant to bound: it fingerprinted the file with <code>os.stat</code> from
+      inside the coroutine, and that stat targets the same mount that had just stalled the
+      write, so an <code>edit_plan</code> timeout held the loop for as long as the filesystem
+      took to answer. Commit <code>aaa888a5</code> moves the landing poll and the baseline
+      stat onto the same worker thread, bounds the check with a deadline of its own just above
+      its grace, and reports <code>landed: null</code> &mdash; unknown, not false &mdash; when
+      even that expires, because a caller must not read "did not land" and resubmit a write
+      that may have succeeded. Putting the stat back on the loop fails the new case on exactly
+      that concurrency assertion, while the other seven still pass.</p>
+      <p>No change outside the three declared write paths was required, and none was made; the
+      deadline is applied at the tool boundary the SDK calls, so the synchronous wrappers stay
+      directly callable and the published argument model is unchanged.</p>
+    </section>
+  </main>
+</body>
+</html>

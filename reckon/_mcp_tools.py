@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+STORAGE_SLOW = "storage-slow"
+
 
 class ReadPlanArgs(BaseModel):
     project: str | None = Field(None, description="Project key, or * for mounts")
@@ -92,6 +94,69 @@ class CrewRecoverArgs(BaseModel):
     dry_run: bool = Field(
         False, description="For sweep: report what would be resumed, resume nothing"
     )
+
+
+class StorageSlowResult(BaseModel):
+    """Typed result for a tool call whose storage work outlived its deadline.
+
+    ``path`` is the storage the worker was on, when it had resolved one; it is
+    ``None`` when the deadline passed before the path resolved, and ``label``
+    then names the tool that held it. ``landed`` is present only for a write:
+    it records whether the abandoned body reached its file, so a timed-out
+    write that did land is not retried blindly. ``landed`` is ``None`` when the
+    filesystem would not answer within the landing check's own deadline, which
+    is an unknown state rather than a negative one.
+    """
+
+    ok: bool = False
+    error: Literal["storage-slow"] = STORAGE_SLOW
+    kind: Literal["read", "write"]
+    label: str
+    path: str | None = None
+    waited_seconds: float
+    deadline_seconds: float
+    landed: bool | None = None
+    message: str
+    hint: str = (
+        "Storage is slow or unresponsive, so the result is unknown, not empty. "
+        "Retry once the storage recovers; a write that reports landed=True must "
+        "not be resubmitted."
+    )
+
+    @classmethod
+    def for_call(
+        cls,
+        *,
+        kind: Literal["read", "write"],
+        label: str,
+        path: str | None,
+        waited: float,
+        deadline: float,
+        landed: bool | None = None,
+    ) -> StorageSlowResult:
+        where = path or f"{label} (path unresolved)"
+        outcome = ""
+        if kind == "write":
+            outcome = {
+                True: " The write did reach its file; do not resubmit it.",
+                False: " The write did not reach its file.",
+                None: (
+                    " Whether the write reached its file could not be determined, "
+                    "so its landed state is unknown rather than false."
+                ),
+            }[landed]
+        return cls(
+            kind=kind,
+            label=label,
+            path=path,
+            waited_seconds=round(waited, 3),
+            deadline_seconds=round(deadline, 3),
+            landed=landed,
+            message=(
+                f"{kind.capitalize()} of {where} did not finish within "
+                f"{deadline:g}s (waited {waited:.1f}s).{outcome}"
+            ),
+        )
 
 
 class WriteResult(BaseModel):
