@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head-landed">
+  <meta name="plan-title" content="The Suite Is Green At Head — landed evidence">
+  <meta name="plan-summary" content="Sixteen listed node ids red at base are green at head; every one read a state the shipped classifier no longer emits, and none was a product defect.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="4e813fec">
+  <meta name="plan-artifacts" content="tests/test_crew_declared_negative_control.py,tests/test_crew_finished_display.py,tests/test_crew_negative_control_header.py,tests/test_crew_negative_control_interface.py,tests/test_crew_test_role.py,tests/test_crew_attempt_accounting.py,tests/test_a_rewritten_terminal_manifest_transitions.py,tests/test_a_live_workers_report_is_not_an_outcome.py,tests/test_a_resume_does_not_inherit_its_baseline.py,docs/figures/the-suite-is-green-at-head/scoring-state-repairs.png">
+  <meta name="plan-recorded-at" content="2026-09-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment on the fleet allocation, one pytest process per file">
+  <meta name="plan-tags" content="crew,scoring,negative-control,suite-repair">
+  <title>The Suite Is Green At Head — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Suite Is Green At Head</h1>
+      <p class="lead">A delivered run with no independent review attached reads as <code>scoring</code>, and the sixteen listed ids that pinned the older word are corrected to the shipped classifier.</p>
+    </header>
+
+    <figure>
+      <img src="/reckon/figures/the-suite-is-green-at-head/scoring-state-repairs.png"
+           alt="Left: each owned file's listed node ids failing at the base revision against zero at head. Right: the cause of each repaired id — 7 stale assertions, 7 promotion fixtures missing a review declaration, 1 record missing the launcher's lane fields, 1 unbounded watcher sleeper, 0 product defects, 0 environment failures.">
+      <figcaption>Each file in its own pytest process, its own basetemp. No id was a product defect or an environment failure, so the node raises no follow-on.</figcaption>
+    </figure>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; Repair each cause group</h2>
+      <p>The delivery tests read a run's delivery state, and two shipped changes moved what that state says. A
+      delivered completion is no longer reported as an unpromoted completion: while no independent review is stored
+      the run classifies as <code>scoring</code> (<code>0be8b2d5</code>), and a promotion that has not been reviewed
+      is refused unless the caller states why it may land without one (<code>2986f5d1</code>). The sixteen ids below
+      were written against the intermediate vocabulary that preceded both. Each repair moves the assertion to the
+      state the classifier emits, or gives a fixture the declaration the promotion gate now asks for; none weakens a
+      check, and none was met by editing <code>reckon/</code>.</p>
+      <p>Reproduced at the base revision first. Every file was exported as it stood at
+      <code>77c20349</code> and run there, one process per file with its own <code>--basetemp</code>: fifteen ids
+      FAILED and <code>test_crew_attempt_accounting</code> never returned (exit 124 under a 60&nbsp;s bound), which is
+      the sixteen listed. The red run's own log is the <code>negative_control_log</code> on this run.</p>
+      <table>
+        <thead><tr><th>Listed node id</th><th>Cause class</th><th>Recorded error at base</th></tr></thead>
+        <tbody>
+          <tr><td><code>test_crew_finished_display.py::test_terminal_manifest_survives_an_alive_process_and_a_newer_log[complete]</code></td><td>stale expectation</td><td><code>assert 'scoring' == 'completed_unpromoted'</code></td></tr>
+          <tr><td><code>test_crew_finished_display.py::test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances</code></td><td>stale expectation</td><td>watcher column <code>completed_unpromoted</code> where the reducer now derives <code>scoring</code></td></tr>
+          <tr><td><code>test_a_live_workers_report_is_not_an_outcome.py::test_every_terminal_word_defers_under_a_live_writer[complete-completed_unpromoted]</code></td><td>stale expectation</td><td><code>assert 'scoring' == 'completed_unpromoted'</code></td></tr>
+          <tr><td><code>test_a_rewritten_terminal_manifest_transitions.py::test_a_rewrite_that_changes_the_status_word_emits_exactly_one_transition</code></td><td>stale expectation</td><td><code>assert ('failed, completed_unpromoted') == ('failed', 'complete')</code></td></tr>
+          <tr><td><code>test_a_resume_does_not_inherit_its_baseline.py::test_a_resume_reads_a_manifest_equal_to_its_recorded_baseline</code></td><td>stale expectation</td><td><code>assert 'scoring' == 'completed_unpromoted'</code></td></tr>
+          <tr><td><code>test_a_resume_does_not_inherit_its_baseline.py::test_terminal_statuses_come_from_the_inherited_manifest[complete-completed_unpromoted]</code></td><td>stale expectation</td><td><code>assert 'scoring' == 'completed_unpromoted'</code></td></tr>
+          <tr><td><code>test_crew_negative_control_interface.py::test_the_emitted_manifest_template_names_the_negative_control_log</code></td><td>stale expectation</td><td><code>assert 'red log' in</code> the emitted gloss, which names the discrimination in its own words</td></tr>
+          <tr><td><code>test_crew_declared_negative_control.py::test_promotion_refuses_a_passing_gate_without_the_declared_red_log</code></td><td>stale fixture (promotion)</td><td>the promotion gate refuses on the missing review before the negative-control refusal is reached</td></tr>
+          <tr><td><code>test_crew_declared_negative_control.py::test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation</code></td><td>stale fixture (promotion)</td><td>review refusal replaces the mutation-naming refusal the test asserts</td></tr>
+          <tr><td><code>test_crew_declared_negative_control.py::test_promotion_admits_a_red_log_that_names_the_declared_mutation</code></td><td>stale fixture (promotion)</td><td>review refusal raised before <code>verdict == "matched"</code> is reached</td></tr>
+          <tr><td><code>test_crew_declared_negative_control.py::test_a_none_declaration_is_recorded_rather_than_refused</code></td><td>stale fixture (promotion)</td><td>review refusal raised before <code>verdict == "none-recorded"</code> is read</td></tr>
+          <tr><td><code>test_crew_declared_negative_control.py::test_a_node_writing_no_test_path_is_exempt</code></td><td>stale fixture (promotion)</td><td>review refusal raised before <code>verdict == "exempt"</code> is read</td></tr>
+          <tr><td><code>test_crew_negative_control_header.py::test_the_refusal_states_the_first_line_requirement</code></td><td>stale fixture (promotion)</td><td>review refusal replaces the first-line requirement the test asserts</td></tr>
+          <tr><td><code>test_crew_test_role.py::test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion</code></td><td>stale fixture (promotion)</td><td>review refusal replaces the write-scope refusal the test asserts</td></tr>
+          <tr><td><code>test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep</code></td><td>stale fixture (record fields)</td><td><code>CrewError: records no argv and its backend is not in the supplied config, so its stream cannot be read</code></td></tr>
+          <tr><td><code>test_crew_attempt_accounting.py</code> (the hang)</td><td>test isolation</td><td>exit 124: the sleeper never bounded the watcher, which no longer reads a live writer's <code>complete</code> as terminal</td></tr>
+        </tbody>
+      </table>
+      <p><strong>What each repair changed.</strong> The seven stale assertions now name <code>scoring</code> for a
+      delivered unreviewed run and the watcher state the reducer derives from it. The seven promotion fixtures state
+      the reason each run lands without a review — the declaration the CLI takes as
+      <code>--waive-unreviewed-promotion</code> — so each reaches the negative-control or write-scope subject it was
+      written to exercise instead of stopping at the gate. The resume-sweep fixture carries <code>launch</code>,
+      <code>command</code> and <code>argv</code>, the harness ground truth a real dispatched record holds and the
+      launcher rebuilds a lane from, so the sweep reaches its freshness rule. The watcher fixture models the resumed
+      attempt the early-delivery arm is written for and its sleeper bounds itself, so a watcher that never reads a
+      manifest already on disk fails rather than looping. The interface test asserts the discrimination the emitted
+      gloss states in its own words rather than a nickname for it.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p>Nine files, each in its own pytest process with its own <code>--basetemp</code>, on this compute node at the
+      committed head <code>4e813fec</code>: <strong>69 passed, exit 0</strong>, every one of the sixteen listed ids
+      green and no id moved from pass to fail. The per-file logs are under this run's report directory as
+      <code>head-&lt;file&gt;.log</code>.</p>
+      <p><strong>Declared negative control.</strong> <em>run each repaired file as it stood at the base revision and
+      observe its listed ids fail with the recorded error.</em> Each file was exported as it stood at
+      <code>77c20349</code> into a clean tree and run there; the run's first line repeats this declaration verbatim and
+      the run reproduces fifteen FAILED ids and one timeout, exactly the listed sixteen. Its log is the run's
+      <code>negative_control_log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
