@@ -10,7 +10,7 @@ over a fixture chosen to pass:
 * the clause begins at one screen column on every row, a queued run in the fleet
   or not, and no cell abuts the text;
 * every classification carrying a remedy renders only the transition before
-  elapsed, with attention derived from whether the destination needs a reader;
+  elapsed, with no attention mark anywhere on the row;
 * a line's trailing counter includes the transition that line reports;
 * a departure word is never re-derived from a ledger side fact.
 """
@@ -38,8 +38,6 @@ STATES = sorted(ticker_module.STATE_HUE["light"])
 # model cell is at its default width because this file's grid pins no aliases.
 TRANSITION_COLUMN = (
     ticker_module.CLOCK
-    + ticker_module.GAP
-    + ticker_module.ATTENTION
     + ticker_module.GAP
     + ticker_module.MODEL
     + ticker_module.GAP
@@ -184,8 +182,8 @@ def test_every_counter_bucket_renders_at_one_width(grid):
 
 
 @pytest.mark.parametrize("classification", sorted(recovery.RECOVERY_VERBS))
-def test_the_transition_prints_attention_instead_of_the_action(grid, classification):
-    """Every classified remedy stays data while the row prints only attention."""
+def test_the_transition_prints_no_action_and_no_attention_mark(grid, classification):
+    """Every classified remedy stays data; the row prints neither verb nor mark."""
     action = recovery.RECOVERY_VERBS[classification]
     event = _event(
         to_state=classification,
@@ -199,9 +197,14 @@ def test_the_transition_prints_attention_instead_of_the_action(grid, classificat
         re.findall(r"[A-Za-z0-9_-]+", line[TRANSITION_COLUMN:ELAPSED_COLUMN])
     )
     assert action not in transition_words, line
-    expected = "!" if classification in ticker_module.ATTENTION_STATES else " "
-    attention_column = ticker_module.CLOCK + ticker_module.GAP
-    assert line[attention_column] == expected, line
+    # No attention column can reach here, whatever the destination: an
+    # attention mark tried by an earlier revision was dropped at the lead's
+    # direction. The model cell follows the time's two-column gutter directly,
+    # so nothing can occupy a reserved column between them.
+    assert "!" not in line, line
+    gutter = line[ticker_module.CLOCK : ticker_module.CLOCK + ticker_module.GAP]
+    assert gutter == " " * ticker_module.GAP, line
+    assert line[ticker_module.CLOCK + ticker_module.GAP] != " ", line
     body = line[CLAUSE_COLUMN:].strip()
     assert not LABEL.match(body), body
 

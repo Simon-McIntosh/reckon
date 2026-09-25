@@ -29,8 +29,6 @@ AGE_PATTERN = re.compile(r"[0-9]+m[a-z]\b")
 TRANSITION_COLUMN = (
     ticker_module.CLOCK
     + ticker_module.GAP
-    + ticker_module.ATTENTION
-    + ticker_module.GAP
     + ticker_module.MODEL
     + ticker_module.GAP
     + ticker_module.EFFORT

@@ -7,21 +7,20 @@ screen column on every row, so a scan does not have to re-find it. And no line
 ever wraps, because a wrapped row costs a quarter of the visible history; free
 text is truncated to the room the grid leaves rather than allowed to overrun.
 
-Colour carries two questions that must not share an axis. *Which worker is
-this?* is answered by the node's own hue, handed out in order of first
-appearance. *Does this need me?* is answered by a one-character attention
-column and by the destination state, painted by the verdict that state names.
+Colour carries two questions. *Which worker is this?* is answered by the node's
+own hue, handed out in order of first appearance. *Does this need me?* is
+answered by the destination state, painted by the verdict that state names.
 Identity is kept perceptually clear of the four verdict hues, so a worker's
-colour is never mistaken for a verdict about that worker.
+colour is never mistaken for a verdict about that worker; the reading order is
+time, model, effort, role, node, transition, elapsed, fleet counters and the
+plain reason.
 
-The attention column is ``!`` for a run that needs a coordinator: a blocked,
-failed, stalled, stopped, abandoned, unreadable, unwritten, interrupted or
-otherwise help-seeking run; a wait that has aged or was never probed; and a
-completion awaiting review or promotion. Running, dispatched, self-lifting
-waits and promoted work leave it blank. The recovery vocabulary still owns the
-specific remedy, but the row never prints that action word: the transition says
-what happened, the attention column says whether to look, and the plain reason
-clause says why.
+The row prints no separate attention mark. ``!`` beside the transition was
+tried and dropped: the orchestrator reads the transition and decides, and the
+destination state's colour already carries urgency, so a mark only repeats what
+the new state says. The recovery vocabulary still owns the specific remedy, but
+the row never prints that action word either: the transition says what happened
+and the plain reason clause says why.
 """
 
 from __future__ import annotations
@@ -48,10 +47,6 @@ NODE = 36
 # node cell. The stamp and never the id's own tail, which repeats the node name
 # the cell already carries and so separates nothing.
 RUN_STAMP_TAIL = 4
-# One glyph answers whether the destination state needs the coordinator. It is
-# a column rather than a prefix on the reason so its position never depends on
-# how long the transition or explanation is.
-ATTENTION = 1
 # Model and effort are two cells so a reader scans the effort down a column
 # instead of parsing it out of a composed label. Every boundary uses the same
 # two-column gutter, so effort begins at the same screen column on every row
@@ -200,15 +195,14 @@ STATE = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP + STATE_WORD
 NEW_STATE_OFFSET = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP
 
 # States a reader must act on: the ones that have stopped progressing and want
-# the coordinator. An overdue wait is in the set: its external condition has
-# not lifted when expected, so the row carries the marker that tells a reader
-# to look at it. That marker is deliberately not the fleet's `blocked` number —
-# an overdue wait is marked but still counted as waiting — so the blocked
-# bucket in recovery derives from this set minus the waiting family rather than
-# from this set verbatim. One set serves the marker and the explanation
-# together: `unknown` once counted as blocked while the line rendered without
-# it, so the number said something needed attention and the line did not say
-# what.
+# the coordinator. An overdue wait is in the set: its external condition has not
+# lifted when expected, so a reader should look at it. That reading is
+# deliberately not the fleet's `blocked` number — an overdue wait is actionable
+# but still counted as waiting, so the blocked bucket in recovery derives from
+# this set minus the waiting family rather than from this set verbatim. One set
+# serves the count and the explanation together: `unknown` once counted as
+# blocked while the number said something needed attention and the line did not
+# say what.
 NEEDS_ACTION = frozenset(
     {
         "blocked",
@@ -223,11 +217,13 @@ NEEDS_ACTION = frozenset(
     }
 )
 
-# Every destination or recovery classification that makes the attention column
-# visible. The recovery module imports this renderer, so the display contract
-# cannot import its actionable set without a cycle; this is the one documented
-# display copy, and the property test covers the classifier's full vocabulary.
-ATTENTION_STATES = NEEDS_ACTION | frozenset(
+# Every destination or recovery classification whose clause may explain itself.
+# A state outside this set renders a bare transition with no reason, because
+# only a state a reader must act on has anything to explain. The recovery module
+# imports this renderer, so the display contract cannot import its own set
+# without a cycle; this is the one documented display copy, and the property
+# test covers the classifier's full vocabulary.
+CLAUSE_STATES = NEEDS_ACTION | frozenset(
     {
         "complete",
         "completed_unpromoted",
@@ -343,8 +339,6 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 # figure is what a later added column spends first.
 MIN_WIDTH = (
     CLOCK
-    + GAP
-    + ATTENTION
     + GAP
     + MODEL
     + GAP
@@ -969,9 +963,12 @@ class Ticker:
         order conditional.
 
         Everything before the reason is fixed-width, in the reading order set
-        by the pane: time, attention, model, effort, role, node, transition,
-        elapsed and fleet counters. A row rendered wider than the pane can
-        spare loses trailing free text and nothing else.
+        by the pane: time, model, effort, role, node, transition, elapsed and
+        fleet counters. A row rendered wider than the pane can spare loses
+        trailing free text and nothing else. No separate attention mark is
+        printed: the destination state's colour and its clause carry the
+        reading order's whole answer, so the model cell follows the time
+        directly with only the two-column gutter between them.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
@@ -1005,21 +1002,12 @@ class Ticker:
         if stream_event:
             self._reported[run_id] = to_state
 
-        unprobed = _unprobed_wait(event)
-        needs_attention = (
-            entry_state in ATTENTION_STATES
-            or typed_state in ATTENTION_STATES
-            or unprobed
-        )
-        attention = "!" if needs_attention else " "
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
         hues = STATE_HUE[self.theme]
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
-            (" " * GAP, None),
-            (f"{attention:<{ATTENTION}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
             (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
             (" " * GAP, None),
@@ -1093,10 +1081,10 @@ class Ticker:
         The destination state's own word is derived here from the same input the
         row composes it from, so the clause can avoid saying it a second time.
         The remedy remains a structured event fact and is deliberately not
-        printed: the attention column says whether the coordinator must look,
-        while this clause says what happened.
+        printed: the destination state's colour says whether the coordinator
+        must look, while this clause says what happened.
         """
-        explained = ATTENTION_STATES | {
+        explained = CLAUSE_STATES | {
             "waiting",
             "wait-aged",
             "held",
@@ -1117,9 +1105,8 @@ class Ticker:
             detail = event.get("reason")
         marker = ""
         if unprobed:
-            # This glyph is a measurement fact, not the attention signal: it
-            # says the declared probe never ran. The attention column carries
-            # the separate fact that the coordinator must look at it.
+            # This glyph is a measurement fact: it says the declared probe
+            # never ran, so the wait's condition cannot lift on its own.
             marker = UNPROBED_MARKER
         reserve = len(marker) + (1 if marker else 0)
         clause = single_clause(detail, limit=max(0, room - reserve))

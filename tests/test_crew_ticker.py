@@ -492,7 +492,7 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     between = line[line.index(model_cell) : line.index("high")]
     assert "\u00b7" not in between
     assert "gpt-5.6-sol/high" not in line
-    # The reading order puts model and effort immediately after attention.
+    # The reading order puts model and effort immediately after the time.
     assert line.index(model_cell) < line.index("ticker-node")
     assert line.index(model_cell) > line.index(
         ticker_module.local_clock(_event()["observed_at"])

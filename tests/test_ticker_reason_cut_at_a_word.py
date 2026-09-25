@@ -56,8 +56,6 @@ def _reason_start(model_width: int) -> int:
     return (
         ticker_module.CLOCK
         + ticker_module.GAP
-        + ticker_module.ATTENTION
-        + ticker_module.GAP
         + model_width
         + ticker_module.GAP
         + ticker_module.EFFORT
