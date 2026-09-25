@@ -4759,12 +4759,6 @@ def _notional_cost(
     )
 
 
-# Rendering a transition is a layout concern with its own contract, so it lives
-# beside the grid it fills. The plain default keeps this module's callers, and
-# every test that reads a line as a string, free of escape sequences.
-_PLAIN = Ticker()
-
-
 def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
     """Re-derive a transition's figures over one session's live pointers.
 
@@ -4810,9 +4804,13 @@ def format_watch_transition(
     """Render one transition as the compact human-facing watch line.
 
     ``ticker`` supplies a caller's own grid — the CLI passes one carrying the
-    reader's width, theme and colour choice. Omitted, the shared plain grid
-    renders, because there is no terminal to detect: the pane is a pipe, so
-    colour is a decision a caller makes rather than one this module can infer.
+    reader's width, theme and colour choice. Omitted, a fresh plain grid renders
+    for this call alone, because there is no terminal to detect: the pane is a
+    pipe, so colour is a decision a caller makes rather than one this module can
+    infer. A grid holds per-run state, so a fresh one keeps a row's text a
+    function of the row, not of which rows a shared instance rendered before it;
+    a caller that wants the age of a bucket's oldest member across a stream
+    passes its own grid for the whole stream.
 
     ``session`` re-scopes the line's figures to the runs that session owns. A
     session-scoped follower relays a project-wide stream whose every event
@@ -4824,7 +4822,7 @@ def format_watch_transition(
         return str(event.get("rendered") or "")
     if session is not None:
         event = _scoped_watch_event(event, session)
-    return (ticker or _PLAIN).render(event, with_session=with_session)
+    return (ticker or Ticker()).render(event, with_session=with_session)
 
 
 def _refuse_unresolvable_watch(project: str) -> None:
