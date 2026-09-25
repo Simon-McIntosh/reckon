@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.25">
+  <meta name="plan-impl" content="0.3">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -249,6 +249,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T022826434879-review-of-production-preflight-reads-the-published-document" data-who="reckon-build" data-when="2026-09-25T03:09:21.567Z">
     <div class="r-comment-body"><p>review of production-preflight-reads-the-published-document stored at 84; baked document age, real-HOME read in tests, stale docstrings, changelog prose, gate gap; sent back by resume</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260925T064500-wiring-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T04:45:00Z">
+    <div class="r-comment-body">Production wiring merged at 3902928a (commits ca43ac53, dfebd2b1, 1928299d, 2ec95173). crew preflight and the MCP budget view name the published document, and budget.preflight takes each backend's figures from it when that backend's reading is fresh, falling back per backend to the recorded windows. The age is derived from observed_at at read time. Review 84, which found a baked age, a real-HOME read in tests, stale docstrings and a gate gap. The same session repaired them, and the re-review scored 86. One open defect, the next node here: the reader resolves the path as override env, then $RECKON_HOME/paid-lanes.json, then paid_lanes' default, while the publisher resolves override env, then default. They agree wherever RECKON_HOME is unset, as on this host, and disagree wherever it is set. The fix is one resolver in reckon/crew/paid_lanes.py that both call. The one test that went red at head in the node's gate, tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact, fails in read_plan on the 30 s storage deadline; it passes at base and passed once at head alone, is outside this change, and is attributed as load-sensitive. §5 still needs the refresh deployment.</div>
 </div>
 </section>
 </main>
