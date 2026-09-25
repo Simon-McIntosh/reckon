@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -990,6 +990,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0415-attribution" data-who="reckon-build" data-when="2026-09-25T02:15:00Z">
     <div class="r-comment-body"><p>suite-time-is-attributed: delivered and merged at <code>de965e07</code>. At <code>bed6421a</code> the full suite runs under <code>-n 8</code> in <strong>560 s</strong>: 6,171 passed, 21 failed, 72 skipped. Of the 21 failures, 8 pass serially and are load-only, and 13 are deterministic, each attributed in the report. On the candidate causes:</p><ul><li><strong>Fixed waits: confirmed.</strong> A <code>git</code> shim sleeps 1 s on each of 30 charged status calls, costing about 40 s in each of the four slowest dispatch tests. The server arming test sleeps 5 s on each of 3 trees.</li><li><strong>A git commit per fixture: refuted,</strong> at 26 ms each.</li><li><strong>Flight resolution: refuted,</strong> at 5–9 ms per call.</li></ul><p>The report also found regressions merged since §2's base. Two S22 landings turned six tests red. The build-skill extraction removed rules that five skill-contract tests pin, and s22-coord restores them under <code>reckon-skill-overhaul</code>. The row redesign removed <code>ticker.RATE</code>, which <code>test_crew_recovery</code> still referenced; node <code>resumed-runs-line-reads-the-elapsed-cell</code> fixes that here. Fixed waits are dispatched as <code>slow-dispatch-tests-wait-on-events</code>. The attribution run was closed as not-run, because a test-role run may not cite a repository commit even though the landing contract has it author one.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T000001970735-no-watch-producer-outlives-the-suite" data-who="reckon-build" data-when="2026-09-25T01:47:02.377Z">
+    <div class="r-comment-body"><p>The test session fails, naming pid and home, on any crew watch producer a test started that outlives the reaper; arming isolation homes stay visible to it; at main the node&#x27;s files pass serially and add no failure under -n 4; review 90.</p></div>
 </div>
 </section>
 </main>

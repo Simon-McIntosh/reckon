@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:20:06",
+  "updated": "2026-09-25T04:27:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -376056,6 +376056,353 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T000001970735-no-watch-producer-outlives-the-suite",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a73",
+        "node": "no-watch-producer-outlives-the-suite",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1599,
+                "cached_input_tokens": 663206,
+                "input_tokens": 664807,
+                "output_tokens": 1349,
+                "reasoning_output_tokens": 383,
+                "total_tokens": 666156,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "tests/test_watch_arming_isolation.py creates every configuration home under the pytest base temp directory instead of a bare tempfile.mkdtemp; tests/conftest.py fails the session, naming the pid and its RECKON_HOME, if any crew watch process whose RECKON_HOME lies under the base temp directory or under the system temp directory with a prefix a test created is still alive after the existing reaper runs; a deliberately leaked producer in a scratch test (not committed) is observed to fail the session and that log is recorded; tests/test_watch_arming_isolation.py and tests/test_crew_dispatch_arming.py pass per file afterwards; no reckon/ file is edited",
+          "estimated_hours": null,
+          "goal": "No crew watch producer started by a test survives the test session",
+          "id": "no-watch-producer-outlives-the-suite",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T00:00:02Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 7,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 11,
+            "mean_context": 97778,
+            "observed_at": "2026-09-24T23:59:55Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/manifest.md",
+          "negative_control": "remove the new session check and observe the deliberately leaked producer go unreported",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/conftest.py",
+            "tests/test_watch_arming_isolation.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "suite-green-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T00:00:12Z",
+        "completed_at": "2026-09-25T01:47:02.377Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6302,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6410,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+        "commits": [
+          "6d00c88d6e1a85c9676302afef4386ed5641a4d6",
+          "6d813b38781758043c1d1c6eec591a14df76a9b4"
+        ],
+        "changed_lines": {
+          "added": 510,
+          "removed": 15,
+          "files": 6
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_watch_arming_isolation.py tests/test_crew_dispatch_arming.py tests/test_execution_fit.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/manifest.md",
+        "scope_changed": false,
+        "session_id": "ce60f961-0fbc-40bf-928a-0fcb42151a0d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6357558,
+            "input_tokens_cumulative": 6357558,
+            "output_tokens": 38719,
+            "output_tokens_cumulative": 38719,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T01:47:02.377Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 340,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 976,
+              "log_fresh": false,
+              "manifest_commits": [
+                "d00f351feef0c29ce059e86f6e4a9d2df4bf9472",
+                "d5207c4e6abfa745bfd2a07cb60e829174cc776d"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "b0eda975c25c2837328d54f5eb637453f14c0424d36696034707b2fb0430042d",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190110651671-budget-session-and-follower-tests/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan the-suite-is-green-at-head --section '\u00a72' --role review --spec-level exact --node review-of-budget-session-and-follower-tests --goal 'attach an independent review to run r-20260924T190110651671-budget-session-and-follower-tests' --done-when 'the review for r-20260924T190110651671-budget-session-and-follower-tests stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T190110651671-budget-session-and-follower-tests.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T190110651671-budget-session-and-follower-tests.at-d5207c4e6abfa745bfd2a07cb60e829174cc776d.json --time-budget 60m --session suite-green-at-head --allow-unreconciled-runs --backend clive",
+              "node": "budget-session-and-follower-tests",
+              "phase": "working",
+              "plan": "the-suite-is-green-at-head",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T190110651671-budget-session-and-follower-tests",
+              "session": "suite-green-at-head",
+              "terminal_age_seconds": 1084,
+              "terminal_at": "2026-09-24T23:42:00Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/budget-session-and-follower-tests"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 18,
+            "goal_fidelity": 19,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 90
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18130894,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3447.545,
+          "generated_tokens": 105235,
+          "generation_seconds": 1632.709,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 28.3,
+          "machine_seconds": 1814.836,
+          "peak_input_tokens": 136017,
+          "tokens_per_second": 64.45,
+          "wall_tokens_per_second": 30.52
+        },
+        "follow_on_paths": [
+          "index.lock",
+          "5.0",
+          "docs/evidence/archive/the-suite-is-green-at-head-landed.html"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest base",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/no-watch-producer-outlives-the-suite",
+          "session_id": "ce60f961-0fbc-40bf-928a-0fcb42151a0d",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T01:47:02.377Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T00:46:46Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T00:01:48Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T000001970735-no-watch-producer-outlives-the-suite",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 11059,
+          "worker_pid": 1951573
+        },
+        "promoted_revision": "6d813b38781758043c1d1c6eec591a14df76a9b4",
+        "plan_impl_at_dispatch": 0.72,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.72,
+          "at_complete": 0.75,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/conftest.py",
+            "tests/test_watch_arming_isolation.py"
+          ],
+          "declaration": "remove the new session check and observe the deliberately leaked producer go unreported",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/logs/leak-unreported.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/logs/leak-unreported.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T00:45:02.767050+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T00:00:02Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 7,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 11,
+          "mean_context": 97778,
+          "observed_at": "2026-09-24T23:59:55Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 94.0,
+        "orientation_input_tokens": 1588075.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -376368,6 +376715,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2630
+    "_version": 2631
   }
 }
