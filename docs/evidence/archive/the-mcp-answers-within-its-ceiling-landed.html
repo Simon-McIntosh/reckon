@@ -480,6 +480,82 @@
     not fold an unrelated lint sweep into the feature commit. The merged-head suite remains the
     separately owned integration gate.</p>
   </section>
+
+  <section id="s6-read-plan-reads-one-section">
+    <h2>&sect;6 &mdash; one authored section is a bounded read</h2>
+    <p>Commit <code>7659c019</code>, based on <code>6d407358</code>, adds the optional
+    <code>section</code> selector and <code>view="section"</code> to the public
+    <code>read_plan</code> signature. The authored-section splitter is in
+    <code>reckon/mcp_views.py</code>; routing and body-search enrichment are in
+    <code>reckon/mcp.py</code>. The parser owned by the concurrent section-contract work is
+    unchanged.</p>
+
+    <h3>The defect, reproduced</h3>
+    <p>At the base revision, all three section calls in the new regression file stopped at the API
+    boundary with <code>TypeError: _read_plan() got an unexpected keyword argument 'section'</code>.
+    The base reproduction is four failing tests in <code>base-defect.log</code>; the fourth failure
+    also corrected the fixture to the repository's current typed capability contract before the
+    implementation was judged.</p>
+    <p>The discovery failure is isolated separately. With authored-body enrichment removed from the
+    completed implementation, a search for <code>copper-orchid</code> &mdash; present only in plan
+    prose &mdash; returns <code>[]</code> instead of <code>["focused"]</code>. The focused control in
+    <code>body-search-control.log</code> fails exactly on that comparison.</p>
+
+    <h3>The read boundary</h3>
+    <p>The selector finds an authored <code>h2</code> outside Reckon's structured collections and
+    collects its siblings until the next authored heading or the first structured-state section.
+    Adjacent <code>data-reckon="section"</code> records are not copied into the HTML fragment;
+    record attributes embedded on the heading are removed from the fragment. The matching
+    declaration, typed record and section-keyed comments are returned as separate typed fields.</p>
+    <p>Discovery computes searchable prose only when <code>search</code> is present. Scripts, styles,
+    typed-record elements and structured collections do not enter that prose. The temporary
+    <code>body_text</code> value participates in <code>_matches_search</code> and is removed before
+    the filtered inventory is returned, preserving the compact discovery payload.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/section-read-view.svg"
+           alt="One authored heading and its body combine with a matching declaration, typed record and anchored comments, while neighbouring sections remain outside the response.">
+      <figcaption>The view joins authored prose and typed context by one stable section identity.</figcaption>
+    </figure>
+
+    <h3>Executed gate</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Present section</td><td><code>s3</code> returns its heading, plain text, HTML, <code>implementable</code> declaration and only <code>focused-comment</code>; neighbouring headings are absent</td></tr>
+        <tr><td>Missing section</td><td><code>section_not_found</code> names <code>missing-section</code> and the available identities <code>s2, s3, s4</code></td></tr>
+        <tr><td>Body-only discovery</td><td><code>copper-orchid</code> returns exactly the synthetic <code>focused</code> plan</td></tr>
+        <tr><td>Typed record</td><td>all six record fields round-trip beside the authored fragment; <code>data-reckon="section"</code> is absent from returned HTML</td></tr>
+        <tr><td>Registered API</td><td>the FastMCP schema exposes optional <code>section</code>; the selected view remains transport-bounded by the existing wrapper</td></tr>
+        <tr><td>Focused and adjacent tests</td><td><strong>57 passed</strong>, exit 0: the new file plus unchanged <code>test_mcp_views.py</code> and <code>test_mcp_roadmap.py</code></td></tr>
+        <tr><td>Response-schema budget</td><td>the unchanged 24 KiB assertion passes; a duplicated full section schema was removed after it measured 25,641 bytes</td></tr>
+        <tr><td>Ruff delta</td><td>20 findings at base; 20 at head; 0 added, and the new test has none</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Real-plan payload measurement</h3>
+    <p>At the implementation head, <code>read_plan</code> on
+    <code>docs/plans/a-worker-knows-it-is-on-compute.html</code> section <code>s3</code> produced
+    <strong>11,354 compact JSON characters</strong>; the same resource's raw state view produced
+    <strong>7,357</strong>, a ratio of <strong>1.543292</strong>. The apparently larger focused view
+    was checked as an instrument claim: the receipt names the imported worktree module and cwd,
+    reports <code>section_id=s3</code>, and identifies the expected heading
+    <em>A nested launch is refused where it would fan out</em>. Raw state excludes authored prose,
+    while this section contains it; both payloads remain well below the 80,000-character ceiling.</p>
+
+    <h3>Negative control</h3>
+    <p>Declared: <em>remove the section view arm</em>. With only that dispatch arm removed, the
+    present-section regression receives <code>view="schema"</code> instead of
+    <code>view="section"</code> and fails. The first line of <code>negative-control.log</code>
+    repeats the declared mutation verbatim. The arm was restored before the 57-test final gate.</p>
+
+    <h3>Retained qualification</h3>
+    <p>The schema endpoint retains its existing compact set of progressive response schemas rather
+    than duplicating the full section contract inside that already near-ceiling payload. The public
+    tool schema exposes the selector, the response identifies itself with
+    <code>view="section"</code>, and behavioral tests pin every field. Merged-head integration remains
+    the separately owned verification node.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -231,6 +231,36 @@
       <li>The section view of a real reckon plan at head is recorded, and its length is recorded beside the length of the raw view.</li>
     </ul>
 
+    <div class="r-note" data-reckon="landed" data-node="read-plan-reads-one-section" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; one authored section is now a first-class read.</strong>
+      Commit <code>7659c019</code> adds <code>view="section"</code> and the optional
+      <code>section</code> selector to <code>read_plan</code>. The response carries the selected
+      heading, plain text, authored HTML, declaration, opt-in typed record and only the comments
+      anchored to that identity. An unknown identity returns
+      <code>section_not_found</code> and names the available headings.</p>
+      <p>The authored-prose splitter lives in <code>reckon/mcp_views.py</code>. It excludes adjacent
+      typed-record markup and stops at the next authored <code>h2</code> or structured-state
+      collection. Discovery now adds searchable plan-body prose only while applying a search and
+      removes it before returning the inventory, so body-only terms match without enlarging the
+      response rows.</p>
+      <figure>
+        <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/section-read-view.svg"
+             alt="The selected authored section combines with its matching declaration, typed record and comments to form one bounded read response.">
+        <figcaption>Selection is by authored heading identity; neighbouring prose and unrelated state stay outside the response.</figcaption>
+      </figure>
+      <p>Five focused tests cover the payload, named refusal, body-only discovery, typed-record
+      adjacency and the registered tool schema. Together with the unchanged MCP view and roadmap
+      budget suites, <strong>57 tests pass</strong>. Removing the section arm makes the response
+      report <code>view="schema"</code> and fails the payload test; removing body enrichment leaves
+      the discovery result empty. On
+      <code>a-worker-knows-it-is-on-compute.html</code>, section <code>s3</code> serialises to
+      <strong>11,354 characters</strong> beside <strong>7,357 characters</strong> for the raw state
+      view; both remain below the 80,000-character transport ceiling. Ruff remains at 20 inherited
+      findings across the two edited modules at both base and head, with none in the new test.
+      Evidence:
+      <a href="/reckon/evidence/archive/the-mcp-answers-within-its-ceiling-landed#s6-read-plan-reads-one-section">&sect;6 landed record</a>.</p>
+    </div>
+
     <h2 id="s7">&sect;7 &mdash; A section's declaration and position can be written alone</h2>
     <p><code>edit_plan</code> should accept <code>set section_declarations.&lt;id&gt;</code>. It should also accept an op that inserts a new section before the structured-state regions, so that adding a &sect; no longer means anchoring on unrelated prose.</p>
     <p>This section waits on <code>section-contract-and-computed-impl</code> &sect;1. That plan turns a section into a typed record. The S22 coordinator plans to dispatch it next, and it writes the same parser and op table. The gate below holds this section closed until that record lands, so the two are not built against each other.</p>

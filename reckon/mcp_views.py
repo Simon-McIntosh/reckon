@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from bs4 import BeautifulSoup, Tag
+
 from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon.crew import rollout as rollout_module
@@ -24,7 +26,9 @@ from reckon.lifecycle import (
 )
 from reckon.project_state import _natural_identifier_key
 
-VIEW_NAMES = frozenset({"summary", "detail", "history", "version", "raw", "schema"})
+VIEW_NAMES = frozenset(
+    {"summary", "detail", "history", "version", "raw", "schema", "section"}
+)
 RESOURCE_TYPES = frozenset(
     {
         "plan",
@@ -1325,6 +1329,148 @@ def normalize_view(view: str | None) -> str:
     return selected
 
 
+def authored_plan_text(html_text: str) -> str:
+    """Return searchable prose while excluding Reckon's structured collections."""
+
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    scope = soup.body or soup
+    for element in scope.select(
+        "script, style, section[data-reckon]:not([data-reckon='section'])"
+    ):
+        element.decompose()
+    for element in scope.select("section[data-reckon='section']"):
+        element.decompose()
+    return " ".join(scope.stripped_strings)
+
+
+def _authored_headings(soup: BeautifulSoup) -> list[Tag]:
+    """Return section headings outside Reckon's structured collections."""
+
+    headings = []
+    for heading in soup.select("h2[id]"):
+        if any(
+            isinstance(parent, Tag)
+            and parent.name == "section"
+            and parent.get("data-reckon") not in (None, "section")
+            for parent in heading.parents
+        ):
+            continue
+        headings.append(heading)
+    return headings
+
+
+def _authored_heading_html(heading: Tag) -> str:
+    """Render a heading without opt-in typed-record attributes."""
+
+    rendered = BeautifulSoup(str(heading), "html.parser").find("h2")
+    if rendered is None:
+        return str(heading)
+    if rendered.get("data-reckon") == "section":
+        for attribute in tuple(rendered.attrs):
+            if (
+                attribute == "data-reckon"
+                or attribute
+                in {
+                    "data-effort-hours",
+                    "data-attempts",
+                    "data-status",
+                    "data-links",
+                }
+                or attribute.startswith("data-capability-")
+            ):
+                del rendered.attrs[attribute]
+    return str(rendered)
+
+
+def _section_response(
+    selector: ResourceSelector,
+    version: int,
+    data: dict[str, Any],
+    *,
+    section: str | None,
+    html_text: str | None,
+) -> dict[str, Any]:
+    """Select one authored h2 section and attach its typed plan context."""
+
+    if selector.type != "plan":
+        raise ViewRequestError(
+            "invalid_section_view",
+            "The section view is available only for plan resources.",
+            "Select a plan resource or choose another response view.",
+        )
+    if not isinstance(section, str) or not section.strip():
+        raise ViewRequestError(
+            "section_required",
+            "view='section' requires a non-empty section identity.",
+            "Pass section='<h2 id>'.",
+        )
+    identity = section.strip()
+    if (
+        len(identity) > MAX_SELECTOR_LENGTH
+        or identity in {".", ".."}
+        or not _SAFE_SEGMENT.fullmatch(identity)
+    ):
+        raise ViewRequestError(
+            "invalid_section",
+            "section must be one safe heading identity.",
+        )
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    headings = _authored_headings(soup)
+    selected = next(
+        (heading for heading in headings if heading.get("id") == identity),
+        None,
+    )
+    available = [str(heading.get("id")) for heading in headings]
+    if selected is None:
+        available_text = ", ".join(available) or "none"
+        raise ViewRequestError(
+            "section_not_found",
+            (
+                f"Section {identity!r} was not found in plan {selector.id!r}; "
+                f"available sections: {available_text}."
+            ),
+            "Choose one of the available section identities.",
+        )
+
+    fragments = [_authored_heading_html(selected)]
+    for sibling in selected.next_siblings:
+        if isinstance(sibling, Tag) and sibling.name == "h2":
+            break
+        if isinstance(sibling, Tag) and sibling.name == "section":
+            reckoned = sibling.get("data-reckon")
+            if reckoned == "section":
+                continue
+            if reckoned:
+                break
+        rendered = str(sibling).strip()
+        if rendered:
+            fragments.append(rendered)
+    section_html = "\n".join(fragments)
+    section_text = " ".join(BeautifulSoup(section_html, "html.parser").stripped_strings)
+    record = next(
+        (
+            item
+            for item in data.get("sections") or []
+            if isinstance(item, dict) and item.get("id") == identity
+        ),
+        None,
+    )
+    return {
+        "resource": selector.as_dict(),
+        "version": version,
+        "view": "section",
+        "section": {
+            "id": identity,
+            "heading": selected.get_text(" ", strip=True),
+            "text": section_text,
+            "html": section_html,
+            "declaration": (data.get("section_declarations") or {}).get(identity),
+            "record": record,
+            "comments": list((data.get("comments") or {}).get(identity) or []),
+        },
+    }
+
+
 def normalize_selector(
     resource: dict[str, Any],
     *,
@@ -1927,6 +2073,29 @@ def _response_schema(
                 "pagination": pagination,
             }
         )
+    elif view == "section":
+        common["required"].append("section")
+        common["properties"]["section"] = {
+            "type": "object",
+            "required": [
+                "id",
+                "heading",
+                "text",
+                "html",
+                "declaration",
+                "record",
+                "comments",
+            ],
+            "properties": {
+                "id": {"type": "string"},
+                "heading": {"type": "string"},
+                "text": {"type": "string"},
+                "html": {"type": "string"},
+                "declaration": {"type": ["string", "null"]},
+                "record": {"type": ["object", "null"]},
+                "comments": {"type": "array"},
+            },
+        }
     elif view == "version":
         pass
     elif view == "raw":
@@ -1973,6 +2142,8 @@ def resource_view(
     cursor: str | None = None,
     limit: int | None = None,
     include_prompts: bool = False,
+    section: str | None = None,
+    html_text: str | None = None,
     storage_schema: dict[str, Any] | None = None,
     op_vocab: dict[str, Any] | None = None,
     dos_donts: dict[str, Any] | None = None,
@@ -2027,6 +2198,14 @@ def resource_view(
             "records": page,
             "pagination": pagination,
         }
+    elif selected == "section":
+        result = _section_response(
+            selector,
+            version,
+            data,
+            section=section,
+            html_text=html_text,
+        )
     elif selected == "version":
         result = {
             "resource": selector.as_dict(),
