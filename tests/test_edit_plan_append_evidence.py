@@ -122,6 +122,21 @@ def _record_path(checkout: Path) -> Path:
     return checkout / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
 
 
+def _seed_record(checkout: Path, slug: str, extra: str = "") -> Path:
+    """Write a landing record for one plan slug as a prior writer left it."""
+    record = checkout / "docs" / "evidence" / "archive" / f"{slug}-landed.html"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="reckon-type" content="evidence">'
+        f'<meta name="plan-evidence-for" content="{slug}">'
+        "<title>Landing record</title></head><body>"
+        f"<main>{extra}</main></body></html>",
+        encoding="utf-8",
+    )
+    return record
+
+
 def test_append_evidence_creates_the_record_with_the_required_meta(plan) -> None:
     checkout, _ = plan
     record = _record_path(checkout)
@@ -245,8 +260,36 @@ def test_append_evidence_batch_refuses_a_repeated_anchor_untouched(plan) -> None
     assert result["ok"] is False, result
     assert result["error"] == "op_error"
     assert "beat" in result["detail"]
-    # A refused batch writes no record at all.
+    # Both requests name this one record, so the refusal creates no file.
     assert not _record_path(checkout).exists()
+
+
+def test_append_evidence_batch_refusal_leaves_other_records_untouched(plan) -> None:
+    checkout, _ = plan
+    first = _seed_record(checkout, PLAN)
+    second = _seed_record(
+        checkout,
+        "other-plan",
+        '<section id="taken"><h2>Taken</h2><p>Already there.</p></section>',
+    )
+    before = {
+        path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (first, second)
+    }
+
+    result = _edit_many(
+        checkout,
+        [
+            _append_op("first-beat", "The first beat", "<p>One.</p>"),
+            _append_op("taken", "Taken again", "<p>Two.</p>", plan="other-plan"),
+        ],
+    )
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "taken" in result["detail"]
+    for path in (first, second):
+        assert path.read_bytes() == before[path][0]
+        assert path.stat().st_mtime_ns == before[path][1]
 
 
 def test_concurrent_appends_to_one_record_both_land(
