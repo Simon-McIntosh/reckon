@@ -1,4 +1,4 @@
-# head revision: working tree of /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch (uncommitted at capture; base 4088c1ae05ee2de968547377ea80cb013d3de7ee)
+# head revision: dc52fa0807deba43ec496fe496a8f8ea18a4ac77 (fix commit dc52fa08; base 4088c1ae05ee2de968547377ea80cb013d3de7ee)
 # cwd of the run: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch
 # command: PYTHONPATH=$PWD <venv>/bin/python -m pytest -p no:cacheprovider -q <files>
 # module.__file__: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-symlinked-protected-path-cannot-block-launch/reckon/_backends.py
@@ -36,8 +36,8 @@ _____________ test_known_headroom_answers_the_exhaustion_question ______________
             is False
         )
 E       AssertionError: assert None is False
-E        +  where None = <function budget_exhausted at 0x7f5414611900>({'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...})
-E        +    where <function budget_exhausted at 0x7f5414611900> = _backends.budget_exhausted
+E        +  where None = <function budget_exhausted at 0x7fb8d21e9900>({'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...})
+E        +    where <function budget_exhausted at 0x7fb8d21e9900> = _backends.budget_exhausted
 E        +    and   {'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...} = Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='').budget
 E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
 
@@ -46,4 +46,4 @@ tests/test_backends.py:498: AssertionError
 FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
 FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
 FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
-3 failed, 69 passed in 11.21s
+3 failed, 69 passed in 10.25s

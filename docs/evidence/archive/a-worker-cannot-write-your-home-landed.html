@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-23">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0">
-  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt">
+  <meta name="plan-commits" content="9125b986,c72c460e,ed6f3f3c,7bdadce0,d31707b5,dc52fa08">
+  <meta name="plan-artifacts" content="reckon/_backends.py,tests/test_launch_plan_fences_the_home.py,tests/test_backends.py,tests/test_each_run_owns_its_harness_home.py,docs/figures/a-worker-cannot-write-your-home/fence-layering.svg,docs/figures/a-worker-cannot-write-your-home/harness-home-and-plan-write.svg,tests/test_launch_plan_attaches_images.py,tests/test_backend_environment.py,tests/test_backend_sandbox_delivery.py,docs/figures/a-worker-cannot-write-your-home/gate-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-head.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-neighbour-argv.txt,docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt,docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt,docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt,docs/figures/a-worker-cannot-write-your-home/gate-symlink-head.txt">
   <title>A Worker Cannot Write Your Home &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -368,7 +368,117 @@ E         {'CODEX_HOME': '&hellip;/runs/r-&hellip;-node-a/codex-home'}</pre>
     <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.
     The path enters the argv at <code>9125b986</code>, which introduced the protected set,
     and is used by default from <code>c72c460e</code>, which composed the fence for every
-    real launch.</p>
+    real launch. That block was measured before the repair and is kept as it stood; the
+    composition it was blocked on is repaired and measured
+    <a href="#s2-symlink-protected-path">below</a>.</p>
+
+    <h3 id="s2-symlink-protected-path">The repair, measured: the composition resolves a symlinked protected path instead of binding it</h3>
+
+    <p><strong>Node:</strong> <code>a-symlinked-protected-path-cannot-block-launch</code>,
+    base <code>4088c1ae</code>, on the node's own allocation. The defect the
+    <a href="#s2-launch-refused">refused launch</a> above isolated is repaired in the
+    composition itself, and the section's owed real-worker falsifier is consequently
+    unblocked &mdash; this node did not run it.</p>
+
+    <p><strong>The defect, reproduced from the composition alone.</strong> With the base
+    tree's <code>launch_plan</code> and this host's real home, the composed argv carries
+    <code>--ro-bind /home/ITER/mcintos/.gitconfig /home/ITER/mcintos/.gitconfig</code>, a
+    destination that is a symlink, and the launch is refused before the stub runs:</p>
+
+    <pre>protected_paths symlinks: ['/home/ITER/mcintos/.gitconfig']
+bwrap: Can't create file at /home/ITER/mcintos/.gitconfig: No such file or directory
+stub exit: 1</pre>
+
+    <p>Log: <code>docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt</code>.</p>
+
+    <p><strong>The repair, and the two cases it distinguishes.</strong>
+    <code>protected_read_only_binds</code> resolves each protected entry that is a symlink.
+    A target already inside another protected path needs no overlay of its own, because the
+    directory it lands in is sealed already &mdash; the real host's <code>~/.gitconfig</code>
+    resolves into the protected <code>Code/dotfiles</code>, so it now contributes
+    <em>no</em> bind and the whole launch composes:</p>
+
+    <pre>resolved binds (protected_read_only_binds):
+  /home/ITER/mcintos/.claude
+  /home/ITER/mcintos/.claude.json
+  &hellip;
+  .gitconfig: resolves into a protected path, no bind emitted
+stub exit: 0</pre>
+
+    <p>A target outside every protected path is bound read-only at the resolved target,
+    because the link's own path cannot be a mount destination; a dangling symlink is
+    skipped; and no overlay is ever composed with a symlink for its destination.
+    Because the destinations are the resolved paths, write-root containment is tested
+    against the paths the overlays actually land on, so a grant inside a symlinked
+    protected tree is re-opened writable rather than disappearing with the link. Log:
+    <code>docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt</code>.</p>
+
+    <h4>Proved by executing the argv</h4>
+
+    <p><code>tests/test_launch_plan_fences_the_home.py</code> gains a
+    <code>SymlinkFence</code> home holding both shapes at once: <code>.gitconfig</code> a
+    symlink into the protected <code>Code/dotfiles</code>, and <code>.netrc</code> a symlink
+    to a file outside every protected path. Both tests execute the composed argv with a
+    stub in place of the harness:</p>
+
+    <ul>
+      <li><code>test_a_symlinked_protected_path_does_not_stop_the_launch</code> asserts the
+      launch exits 0, no <code>--ro-bind</code> destination is a symlink, the
+      <code>.gitconfig</code> link carries no overlay of its own while the outside target
+      does, a write through <em>either</em> link is refused <q>Read-only file system</q>,
+      and every granted root plus the worktree is writable.</li>
+      <li><code>test_the_negative_control_binds_a_symlink_and_the_launch_is_refused</code>
+      asserts the mutation applied (link in argv, target absent), then that the launch is
+      refused.</li>
+    </ul>
+
+    <p><strong>Declared negative control.</strong> <em>remove the symlink resolution so a
+    symlinked protected path is bound at its own path; the stub launch must exit nonzero</em>
+    &mdash; applied by rewriting the resolved triple back to the link, the composed argv
+    carries the overlay at the link, bubblewrap refuses that mount, the stub never runs and
+    the exit is 1:</p>
+
+    <pre>stub exit: 1
+stub stderr: bwrap: Can't create file at /tmp/&hellip;/home/.netrc: No such file or directory
+the stub ran: False</pre>
+
+    <p>So the refusal is attributable to the resolution rather than to the fence happening
+    to fail. Log: <code>docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt</code>.
+    Both red-log entry points remain runnable from the file itself
+    (<code>python tests/test_launch_plan_fences_the_home.py symlink-resolution</code> prints
+    the mutated mutation line and the observed refusal).</p>
+
+    <h4>Gate and lint</h4>
+
+    <p>The six launch-plan test files (<code>test_launch_plan_fences_the_home.py</code>,
+    <code>test_launch_plan_attaches_images.py</code>, <code>test_backend_environment.py</code>,
+    <code>test_backend_sandbox_delivery.py</code>, <code>test_each_run_owns_its_harness_home.py</code>,
+    <code>test_backends.py</code>), run with the root environment's interpreter and
+    <code>PYTHONPATH</code> pinned to the tree under test:</p>
+
+    <table>
+      <tr><th>arm</th><th>revision</th><th>module served</th><th>result</th></tr>
+      <tr><td>base</td><td><code>4088c1ae</code></td><td><code>/tmp/reckon-base-4088c1ae/reckon/_backends.py</code></td><td><code>3 failed, 67 passed</code></td></tr>
+      <tr><td>head</td><td><code>dc52fa08</code></td><td><code>&lt;worktree&gt;/reckon/_backends.py</code></td><td><code>3 failed, 69 passed</code></td></tr>
+    </table>
+
+    <p>The three failures are identical in both arms &mdash; the pre-existing budget-parsing
+    failures <code>test_one_backend_reports_headroom_with_a_reset_time</code>,
+    <code>test_an_empty_rate_limit_mapping_is_not_a_measurement</code> and
+    <code>test_known_headroom_answers_the_exhaustion_question</code> &mdash; so this change
+    adds none, and the two new tests are the two-passing delta. Each arm's log opens with its
+    revision, its cwd, its exact command and a discriminator proving which tree served the
+    run (<code>module.__file__</code>, plus
+    <code>has protected_read_only_binds</code>: <code>False</code> at the base,
+    <code>True</code> at the head), because <code>python -c</code> puts the working directory
+    on <code>sys.path</code> and a header read from the wrong tree would make the pair
+    vacuous. Logs:
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-symlink-base.txt</code> and
+    <code>&hellip;/gate-symlink-head.txt</code>. Lint over the two touched paths on a complete
+    <code>git archive</code> tree is unchanged, <code>_backends.py</code> 8&nbsp;&rarr;&nbsp;8,
+    and <code>ruff format --check</code> reports both already formatted.</p>
+
+    <p>The repaired composition is committed at <code>dc52fa08</code>.</p>
   </section>
 </main>
 </body>

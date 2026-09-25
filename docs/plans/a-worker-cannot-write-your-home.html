@@ -242,6 +242,56 @@
         <code>d31707b5</code>. Evidence:
         <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2</code>.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260925T0720-symlink-protected-path" data-who="node a-symlinked-protected-path-cannot-block-launch" data-when="2026-09-25T07:20:00+00:00">
+        <div class="r-comment-body"><p><strong>A protected path that is a symlink no longer
+        stops the fence from launching.</strong> The smoke above found the defect on this host:
+        <code>~/.gitconfig</code> is a symlink into <code>~/Code/dotfiles</code>, it enters the
+        protected set because <code>protected_paths()</code> filters with
+        <code>Path.exists()</code>, and bubblewrap 0.4.1 cannot create a mount point whose
+        destination is a symlink &mdash; so the whole launch was refused before a harness process
+        started. Reproduced here with the composition alone:
+        <code>bwrap: Can't create file at /home/ITER/mcintos/.gitconfig: No such file or
+        directory</code>, stub exit 1
+        (<code>docs/figures/a-worker-cannot-write-your-home/reproduction-symlink-bind-refused.txt</code>).</p>
+
+        <p><strong>The composition resolves rather than binds.</strong> A new
+        <code>protected_read_only_binds</code> walks the protected set and, for each entry that
+        is a symlink, resolves it: a target already inside another protected path needs no
+        overlay of its own, because the directory it lands in is sealed already, so the real
+        host's <code>~/.gitconfig</code> now emits <em>no</em> bind; a target outside every
+        protected path is bound read-only at that resolved target, since the link's own path
+        cannot be a mount destination. A dangling symlink is skipped, and no overlay is ever
+        composed with a symlink for its destination. Because the destinations are now the
+        resolved paths, write-root containment is tested against the paths the overlays
+        actually land on, so a grant inside a symlinked protected tree is still re-opened
+        writable instead of vanishing with the link.</p>
+
+        <p><strong>Measure.</strong> <code>tests/test_launch_plan_fences_the_home.py</code> gains
+        a <code>SymlinkFence</code> home holding both shapes at once: <code>.gitconfig</code> a
+        symlink into the protected <code>Code/dotfiles</code>, and <code>.netrc</code> a symlink
+        to a file outside every protected path. The composed argv is <em>executed</em> with a
+        stub: the launch exits 0, a write through either link is refused
+        <q>Read-only file system</q>, no <code>--ro-bind</code> destination is a symlink, and
+        every granted root plus the worktree is writable. The argv the repaired composition
+        builds for this host's real home exits 0 with the stub
+        (<code>docs/figures/a-worker-cannot-write-your-home/repaired-composition-real-home.txt</code>).
+        The declared negative control &mdash; <em>remove the symlink resolution so a symlinked
+        protected path is bound at its own path; the stub launch must exit nonzero</em> &mdash;
+        is applied and logged: the mutated argv carries the overlay at the link, bubblewrap
+        refuses the mount, the stub never runs and the exit is 1
+        (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-symlink-bind.txt</code>).</p>
+
+        <p><strong>Gate.</strong> The six launch-plan test files on this node's own allocation:
+        base <code>4088c1ae</code> <code>3 failed, 67 passed</code>, head <code>dc52fa08</code>
+        <code>3 failed, 69 passed</code>, the same three pre-existing budget-parsing failures
+        with identical ids, so this change adds none. Lint over the two touched paths unchanged
+        (<code>_backends.py</code> 8&nbsp;&rarr;&nbsp;8 on a complete tree) and both formatted.
+        Commit <code>dc52fa08</code>. Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-symlink-protected-path</code>,
+        figures under <code>/reckon/figures/a-worker-cannot-write-your-home/</code>. This unblocks
+        the section's owed real-worker falsifier, which this node did not run.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>
