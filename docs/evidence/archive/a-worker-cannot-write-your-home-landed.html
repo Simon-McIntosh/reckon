@@ -310,6 +310,65 @@ E         {'CODEX_HOME': '&hellip;/runs/r-&hellip;-node-a/codex-home'}</pre>
     <p>So the absence is load-bearing rather than incidental: once the guard is removed the
     launch really does invent the variable unfenced. The log the manifest names is
     <code>logs/negative-control-codex-home-unconditional.red.log</code>.</p>
+  <h3 id="s2-launch-refused">The launch, measured: a symlinked protected path stops the fence before the worker starts</h3>
+
+    <p><strong>Node:</strong> <code>fenced-workers-smoke</code>. Two one-file nodes
+    &mdash; one on clive, one on codex &mdash; were dispatched through
+    <code>reckon crew dispatch --no-watch</code>,
+    with the package pinned to <code>51d80b95</code> by <code>PYTHONPATH</code> and with
+    <code>RECKON_HOME</code> pointing at a temporary directory holding a synthetic git
+    project registered only there. <strong>Neither launch reached a harness
+    process.</strong> Both run directories hold a 0-byte <code>stream.jsonl</code>, no
+    <code>session_id</code> and an empty transcript home; both <code>stderr.log</code>
+    files carry the same one line:</p>
+
+    <pre>bwrap: Can't create file at /home/ITER/mcintos/.gitconfig: No such file or directory</pre>
+
+    <p><strong>Cause, isolated to one bind.</strong> <code>protected_paths()</code>
+    filters with <code>Path.exists()</code>, which follows symlinks, so
+    <code>~/.gitconfig</code> &mdash; a symlink to
+    <code>Code/dotfiles/git/gitconfig</code> &mdash; qualifies;
+    <code>fence_argv</code> then emits <code>--ro-bind ~/.gitconfig ~/.gitconfig</code>,
+    and bubblewrap 0.4.1 cannot create a mount point over a symlink destination on this
+    host. A matched pair over the composed argv with the harness replaced by a
+    stub: as composed <code>rc=1</code>; with that single pair dropped <code>rc=0</code>,
+    and inside that fence a write into <code>~/.claude</code> is refused
+    <q>Read-only file system</q> with the probe absent afterwards. The offending bind is
+    redundant here: a write into <code>~/.gitconfig</code> is refused with the same
+    message when only the <code>Code/dotfiles</code> overlay is applied, and
+    <code>/proc/self/mounts</code> reads that overlay back as <code>ro</code>. Of the
+    thirteen named protected paths, <code>~/.gitconfig</code> is the only symlink at this
+    home, and every other bind in the argv is accepted.</p>
+
+    <p><strong>What the smoke did establish.</strong> The real
+    <code>~/.claude/projects</code> listing filtered to the smoke's own worktree path is
+    empty and identical before and after; the real
+    <code>~/.config/reckon/crew/live</code> and <code>crew/runs</code> listings moved only
+    by other sessions' run ids, neither smoke run id appearing in either; the real
+    <code>~/.codex/auth.json</code> sha256 is unchanged; and the codex home's login bind,
+    read from <em>inside</em> the fence, where alone it exists, is byte-identical to the
+    operator's.</p>
+
+    <p><strong>What remains unattained, and is not evidence.</strong> No worker completed
+    a node, so there is no <code>session_id</code>, no transcript under
+    <code>&lt;run&gt;/harness</code>, no resume, and no worker ever attempted a sentinel
+    write &mdash; the sentinels' absence therefore attests to nothing about the fence. The
+    section's owed falsifier is untouched and is now blocked on the repair.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-launch-refused.svg"
+           alt="The composed argv's bind sequence with the symlink bind marked, and the counterfactual with that one bind dropped.">
+      <figcaption>The composed argv aborts at the one bind whose destination is a
+      symlink; dropping it starts, and the fence then holds.</figcaption>
+    </figure>
+
+    <p>Evidence: <code>smoke.log</code>, <code>report.json</code> (11 of 16 checks; the
+    five failures are the five positive claims above), <code>diag.json</code>, and both
+    run directories under
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.
+    The path enters the argv at <code>9125b986</code>, which introduced the protected set,
+    and is used by default from <code>c72c460e</code>, which composed the fence for every
+    real launch.</p>
   </section>
 </main>
 </body>

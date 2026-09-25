@@ -244,6 +244,23 @@
       </div>
     </section>
 
+    <p><strong>Smoke: the fence does not start a worker on this host.</strong>
+      <code>fenced-workers-smoke</code> dispatched two real one-file nodes through
+      <code>reckon crew dispatch --no-watch</code> from a temporary configuration home
+      holding a synthetic project, one on clive and one on codex, with the package
+      pinned to <code>51d80b95</code>. Both launches were refused by bubblewrap before
+      any harness process started, with identical stderr naming
+      <code>~/.gitconfig</code>. The path is admitted because
+      <code>protected_paths()</code> filters with <code>Path.exists()</code>, which
+      follows symlinks, and bubblewrap 0.4.1 cannot create a mount point where the
+      destination is a symlink. Dropping that one bind starts the launch, and the fence
+      then refuses a write into <code>~/.claude</code> with
+      <q>Read-only file system</q>; the target the bind covered stays read-only under
+      the <code>Code/dotfiles</code> overlay, which reads back <code>ro</code>. So the
+      section's owed falsifier is not falsified &mdash; no worker ran to falsify it
+      &mdash; and is now blocked on that repair. Evidence:
+      docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-launch-refused,
+      figure /reckon/figures/a-worker-cannot-write-your-home/fence-launch-refused.svg.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" width="760" height="360" role="img"
+     aria-label="The composed fence argv aborts at the bind whose destination is a symlink; dropping that one bind starts the launch and the fence holds.">
+  <style>
+    .t { font: 13px sans-serif; fill: #111; }
+    .h { font: 15px bold sans-serif; fill: #111; }
+    .s { font: 11px sans-serif; fill: #444; }
+    .box { fill: #eef2f7; stroke: #8fa3bb; }
+    .bad { fill: #fbe3e3; stroke: #c0392b; }
+    .ok { fill: #e8f5e9; stroke: #2e7d32; }
+    .arrow { stroke: #444; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+
+  <text class="h" x="16" y="26">The composed fence argv, and the one bind that stops it</text>
+  <text class="s" x="16" y="44">bubblewrap 0.4.1 on this host &#183; ~/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke at 51d80b95</text>
+
+  <text class="t" x="16" y="76">as composed by fence_argv()</text>
+  <rect class="box" x="16" y="86" width="150" height="34" rx="4"/>
+  <text class="t" x="26" y="107">bwrap --dev-bind / /</text>
+  <rect class="box" x="172" y="86" width="196" height="34" rx="4"/>
+  <text class="t" x="182" y="107">--ro-bind &#215;13 protected paths</text>
+  <rect class="bad" x="374" y="86" width="188" height="34" rx="4"/>
+  <text class="t" x="384" y="102">--ro-bind ~/.gitconfig</text>
+  <text class="s" x="384" y="115">a symlink into Code/dotfiles</text>
+  <rect class="box" x="568" y="86" width="176" height="34" rx="4"/>
+  <text class="t" x="578" y="107">--bind grants &#183; -- harness</text>
+
+  <path class="arrow" d="M468 120 L468 156"/>
+  <text class="s" x="374" y="152">aborts here, argv order 12 of 22 binds</text>
+  <rect class="bad" x="176" y="160" width="384" height="44" rx="4"/>
+  <text class="t" x="186" y="178">bwrap: Can't create file at ~/.gitconfig: No such file or directory</text>
+  <text class="s" x="186" y="194">no harness process starts: stream.jsonl 0 bytes, no session_id, no transcript</text>
+
+  <text class="t" x="16" y="248">with that one pair dropped</text>
+  <rect class="box" x="16" y="258" width="150" height="34" rx="4"/>
+  <text class="t" x="26" y="279">bwrap --dev-bind / /</text>
+  <rect class="box" x="172" y="258" width="196" height="34" rx="4"/>
+  <text class="t" x="182" y="279">--ro-bind &#215;12 protected paths</text>
+  <rect class="ok" x="374" y="258" width="188" height="34" rx="4"/>
+  <text class="t" x="384" y="279">the symlink pair omitted</text>
+  <rect class="box" x="568" y="258" width="176" height="34" rx="4"/>
+  <text class="t" x="578" y="279">--bind grants &#183; -- stub</text>
+
+  <path class="arrow" d="M468 292 L468 316"/>
+  <text class="t" x="16" y="330">rc=0 &#183; inside that fence a write into ~/.claude is refused &#8220;Read-only file system&#8221;</text>
+  <text class="s" x="16" y="348">the dropped bind is redundant: the Code/dotfiles overlay alone refuses the write, and /proc/self/mounts reads it back ro</text>
+</svg>
