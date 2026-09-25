@@ -87,6 +87,31 @@ _SCALAR_META_PREFIX = "plan-"
 # every later check reads the repaired document and the audit says OK. Each is
 # counted from the raw tag stream (see _StructureScanner).
 _BALANCE_TAGS = ("tr",)
+# Elements that carry no end tag. A stack of open elements built from the tag
+# stream pops on each end tag, so a void element that is never pushed keeps the
+# stack aligned with HTML's own element nesting.
+_VOID_ELEMENTS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+)
+# The class that marks a section collapsed to its landed summary card. The
+# collapse-on-landing template puts a <header> as the section's direct child, so
+# a header under one of these is presentation, not a spliced document header.
+_LANDED_SECTION_CLASS = "section-landed"
 
 SEVERITIES = ("error", "warn", "info")
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
@@ -556,6 +581,11 @@ class _StructureScanner(HTMLParser):
     as valid and the audit says OK — while the authored section tree has every
     following sibling nested inside the unclosed one. The balance question is
     about what was authored, and only the raw tag stream carries that.
+
+    ``headers`` counts only document-level ``<header>`` elements. A ``<header>``
+    whose direct parent is a ``<section class="section-landed">`` is the
+    collapse-on-landing summary card the authoring skill prescribes, so it is
+    not a second shell header and is not counted.
     """
 
     def __init__(self) -> None:
@@ -563,28 +593,45 @@ class _StructureScanner(HTMLParser):
         self.open_sections: list[str] = []
         self.stray_closes = 0
         self.headers = 0
+        # (tag, class_attr) for every open element, so a header's direct parent
+        # is the stack top. Void elements are never pushed.
+        self.open_elements: list[tuple[str, str]] = []
         # {tag: [opens, closes]} for the balance-checked tags.
         self.tag_balance: dict[str, list[int]] = {tag: [0, 0] for tag in _BALANCE_TAGS}
 
     def handle_starttag(self, tag: str, attrs) -> None:
         tag = tag.lower()
+        attrd = dict(attrs)
         if tag in self.tag_balance:
             self.tag_balance[tag][0] += 1
         if tag == "section":
-            self.open_sections.append(dict(attrs).get("id") or "")
-        elif tag == "header":
+            self.open_sections.append(attrd.get("id") or "")
+        elif tag == "header" and not self._in_landed_section():
             self.headers += 1
+        if tag not in _VOID_ELEMENTS:
+            self.open_elements.append((tag, attrd.get("class") or ""))
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
         if tag in self.tag_balance:
             self.tag_balance[tag][1] += 1
+        for index in range(len(self.open_elements) - 1, -1, -1):
+            if self.open_elements[index][0] == tag:
+                del self.open_elements[index:]
+                break
         if tag != "section":
             return
         if self.open_sections:
             self.open_sections.pop()
         else:
             self.stray_closes += 1
+
+    def _in_landed_section(self) -> bool:
+        """True when the innermost open element is a landed-section wrapper."""
+        if not self.open_elements:
+            return False
+        tag, classes = self.open_elements[-1]
+        return tag == "section" and _LANDED_SECTION_CLASS in classes.split()
 
 
 def _structure_findings(html_text: str) -> list[Finding]:
@@ -601,7 +648,9 @@ def _structure_findings(html_text: str) -> list[Finding]:
     headers, it renders and it does not change section nesting, but the shell
     owns one and a second is the trace of content from another document
     spliced into this one — real, worth surfacing, not worth failing a build
-    over on its own.
+    over on its own. A header that is the direct child of a landed-section
+    wrapper is the collapse-on-landing summary card and is not counted, so a
+    document may carry one plus one per landed section's own header.
     """
     scanner = _StructureScanner()
     try:
