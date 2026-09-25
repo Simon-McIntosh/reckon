@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -404,6 +404,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260925T115214466534-worker-context-budget" data-who="reckon-build" data-when="2026-09-25T12:08:26Z">
     <div class="r-comment-body"><p>worker first turn 66.5k median (global AGENTS.md ~22.5k, residual base/tools/MCP ~29.6k, skills ~6.8k); role digest plus MCP/tool narrowing saves ~18-25k; adopted as f-tllitd-worker-digest</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T111003388390-shared-claims-reach-the-live-check" data-who="reckon-build" data-when="2026-09-25T12:02:16.432Z">
+    <div class="r-comment-body"><p>gate ran in the worker (55 passed) but its log was not kept; only the negative-control log exists. verify-gate at the merged head replaces it</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1206-shared-claims-live-path" data-who="" data-when="">
     <div class="r-comment-body"><p>Correction to f-tllitd-shared-claims, which was the coordinator's spec error. The followup named <code>_raise_live_scope_conflict</code> in <code>reckon/crew/runs.py</code> as the live claim check, but that function has had no caller since aaf15fd0 (2026-08-24). A real <code>crew dispatch</code> refuses through <code>_raise_repository_scope_conflict</code> (<code>reckon/crew/dispatch.py</code>, defined near line 1253, called near line 3689), which never reads <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>. The review of r-20260925T080400553758 (score 88) found this. The node's exemption is therefore correct but unreachable. The repair node <code>shared-claims-reach-the-live-check</code> builds on that run's head 26b2f499 and does two things. It applies the shared-path exemption inside <code>_raise_repository_scope_conflict</code>, through the same list reader. It also either deletes the dead <code>runs.py</code> function or makes it delegate, so the codebase has one claim check. Done when the four-case test drives a real <code>crew dispatch</code> through the CLI entry against a synthesized repository (not the helper), and two dispatches claiming a listed file both launch, while an unlisted file and a directory still refuse. The negative control ignores the list inside the dispatch path, and the co-claim case must then refuse. This is also a worked example of what the plan-review pilot's reasoning check targets: a mechanism aimed at code that does not run.</p></div>
