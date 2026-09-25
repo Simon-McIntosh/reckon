@@ -1,14 +1,15 @@
 """The context estimate charges declared reads, not every path a brief names.
 
-Reproduced on 2026-09-25 (reckon-bc): a done-when that named the project's run
-ledger made a one-worker-hour node estimate 6,150,700 tokens against a 480,000
-window and be refused, and the refusal's own top-level detail was empty while
-the informative reason sat under ``context``. These pin both repairs: a path
-merely named is not a read, and a genuine refusal answers on its top level.
+A done-when that merely named the project's run ledger made a one-worker-hour
+node estimate 6,150,700 tokens against a 480,000 window and be refused, and the
+refusal's own top-level detail was empty while the informative reason sat under
+``context``. These pin both repairs: a path merely named is not a read, and a
+genuine refusal answers on its top level.
 """
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from reckon import crew
@@ -27,6 +28,15 @@ LARGE_PATH = "targets/large_module.py"
 WINDOW = 1_000
 LEDGER_BYTES = 4_000_000
 LARGE_BYTES = 2_000_000
+
+# The estimate rule the router documents: ceil(utf8-bytes / 3.5). Expectations
+# are computed from the fixture's own byte counts under this rule so they do not
+# move with the function under test.
+BYTES_PER_TOKEN = 3.5
+
+
+def _estimated_tokens(byte_count: int) -> int:
+    return math.ceil(byte_count / BYTES_PER_TOKEN)
 
 
 def _node(*, done_when: str, write_paths: list[str]) -> crew.TaskNode:
@@ -101,8 +111,8 @@ def test_a_merely_named_file_is_not_charged_to_context(tmp_path: Path) -> None:
     )
     unmentioned = _node(done_when="the gate is green", write_paths=[])
 
-    assert _file_tokens(tmp_path, named) == _file_tokens(tmp_path, unmentioned)
     assert _file_tokens(tmp_path, named) == 0
+    assert _file_tokens(tmp_path, unmentioned) == 0
     _tokens, inputs = _context_file_inputs(tmp_path, named, _authority(tmp_path))
     assert inputs["named_files"] == []
 
@@ -112,16 +122,14 @@ def test_a_declared_write_path_is_charged_at_full(tmp_path: Path) -> None:
     _seed(tmp_path)
     declared = _node(done_when="the module is edited", write_paths=[LARGE_PATH])
     unmentioned = _node(done_when="the module is edited", write_paths=[])
+    expected = _estimated_tokens(LARGE_BYTES)
 
-    tokens = _file_tokens(tmp_path, declared)
-
-    assert tokens > 0
-    assert tokens == _file_tokens(tmp_path, declared)
+    assert _file_tokens(tmp_path, declared) == expected
     assert _file_tokens(tmp_path, unmentioned) == 0
     _tokens, inputs = _context_file_inputs(tmp_path, declared, _authority(tmp_path))
     records = {str(r["declared"]): r for r in inputs["write_paths"]}
     assert records[LARGE_PATH]["counted"] is True
-    assert records[LARGE_PATH]["estimated_tokens"] == tokens
+    assert records[LARGE_PATH]["estimated_tokens"] == expected
 
 
 def test_an_explicitly_declared_input_is_charged(tmp_path: Path) -> None:
@@ -136,7 +144,7 @@ def test_an_explicitly_declared_input_is_charged(tmp_path: Path) -> None:
         write_paths=[],
     )
 
-    assert _file_tokens(tmp_path, declared) > 0
+    assert _file_tokens(tmp_path, declared) == _estimated_tokens(LEDGER_BYTES)
     assert _file_tokens(tmp_path, mentioned) == 0
 
 

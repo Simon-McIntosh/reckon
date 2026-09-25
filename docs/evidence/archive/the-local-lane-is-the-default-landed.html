@@ -1109,6 +1109,37 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     Logs: <code>gate-context-estimate.log</code>,
     <code>negative-control-prose-mention.log</code> under the run directory.</p>
   </section>
+
+  <section id="context-estimate-tests-assert-fixed-figures">
+    <h3>The context-estimate tests assert fixed figures, not their own output</h3>
+    <p>A test of the estimate above compared the function's result against the
+    same call a second time: <code>assert tokens == _file_tokens(tmp_path, declared)</code>.
+    The assertion moved with the code, so it could not fail on a regression in
+    the estimate it existed to pin — a write path whose bytes stopped being
+    counted would still satisfy it. The expectations are now computed from the
+    fixture's own byte counts under the documented rule
+    <code>ceil(utf8-bytes / 3.5)</code> (<code>LARGE_BYTES = 2,000,000</code> →
+    <strong>571,429</strong> tokens; <code>LEDGER_BYTES = 4,000,000</code> →
+    <strong>1,142,858</strong>), and the only comparison left against a literal
+    is a file charged at zero. The module docstring's author attribution was
+    removed with them.</p>
+    <table>
+      <thead><tr><th>Evidence</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Node gate</td><td><code>tests/test_context_estimate_reads_declared_files.py</code>: 4 passed at head; no assertion compares the function's output to another call of it</td></tr>
+        <tr><td>Base arm</td><td><code>tests/test_crew_dispatch_guard.py tests/test_crew_routing_visibility.py</code> at <code>318ec2b6</code>: 16 passed, 0 failures</td></tr>
+        <tr><td>Head arm</td><td>same two files at the node head: 16 passed, no added failures</td></tr>
+        <tr><td>Negative control</td><td>Making <code>_declared_input_files</code> count every repository path named in the prose fails both prose-mention cases (2 failed, 2 passed); the declared first line is retained in the red log</td></tr>
+      </tbody>
+    </table>
+    <p>The change is confined to the test module; no product code changed, so
+    the estimate rule and the refusal wording are untouched. The base and head
+    arms over the two sibling files are green because the module under test is
+    unchanged — they bound this change, they do not exercise it. Logs under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T205313887898-context-estimate-tests-assert-fixed-figures/logs/</code>:
+    <code>gate-base.log</code>, <code>gate-head.log</code>, <code>arm-base.log</code>,
+    <code>arm-head.log</code>, <code>negative-control.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>
