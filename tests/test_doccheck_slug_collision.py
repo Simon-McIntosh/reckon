@@ -9,6 +9,7 @@ the collision for either side, and reports nothing when the slugs are unique.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from reckon import doccheck
@@ -61,6 +62,24 @@ def test_shared_slug_run_exits_nonzero(tmp_path, monkeypatch, capsys):
     assert exit_code == 1
     assert "slug-collision" in out
     assert "plans/shared.html" in out
+
+
+def test_shared_slug_cli_exits_nonzero(tmp_path, monkeypatch, capsys):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _write_doc(docs_dir, "shared", "plan", "plans/shared.html")
+    research = _write_doc(docs_dir, "shared", "research", "research/shared.html")
+
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"proj": str(docs_dir.resolve())}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    exit_code = doccheck.main(["--project", "proj", str(research)])
+
+    out = capsys.readouterr().out
+    assert exit_code == 1
+    assert "slug-collision" in out
+    assert "research/shared.html" in out
 
 
 def test_unique_slugs_produce_no_collision(tmp_path, monkeypatch, capsys):
