@@ -6067,11 +6067,9 @@ def resume_plan(
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
-        current["session_id"] = session_id or None
-        if session_id:
-            capture_run_session(current)
-            current.pop("session_id_absent", None)
-        else:
+        current["session_resumed"] = _launched_prior_session(plan) is not None
+        if fresh_reason:
+            current["session_id"] = None
             current["session_harness"] = None
             current["session_model"] = None
             current["session_withheld"] = fresh_reason
@@ -6589,7 +6587,9 @@ def record_resumption(
                 "attempt_kind": "resume",
                 # A harness change may require a fresh session even though
                 # this attempt was requested through the resume command.
-                "session_resumed": bool(record.get("session_id")),
+                "session_resumed": bool(
+                    record.get("session_resumed", record.get("session_id"))
+                ),
                 "attempt_started_at": attempt_started_at or _utc_now(),
                 "manifest_baseline_mtime_ns": (
                     _manifest_mtime_ns(record.get("manifest_path") or "")
