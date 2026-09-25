@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-stalled-row-says-whether-the-worker-lives-landed">
+  <meta name="plan-title" content="A Stalled Row Says Whether The Worker Lives — landed evidence">
+  <meta name="plan-summary" content="A worker killed mid-turn is a row on the snapshot that sees it die, not fifteen minutes later.">
+  <meta name="plan-evidence-for" content="a-stalled-row-says-whether-the-worker-lives">
+  <meta name="plan-verifies" content="a-stalled-row-says-whether-the-worker-lives#s2">
+  <meta name="plan-commits" content="8b759fa0">
+  <meta name="plan-artifacts" content="tests/test_watch_reports_death_at_once.py,docs/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,watcher,death,offline">
+  <title>A Stalled Row Says Whether The Worker Lives — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Stalled Row Says Whether The Worker Lives</h1>
+      <p class="lead">A run whose process is gone is reported on the snapshot that observes the death; the stall window no longer gates the row.</p>
+    </header>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; A worker's death is a row within one poll</h2>
+      <p><strong>Landed</strong> (<code>8b759fa0</code>). <code>_watch_snapshot</code> in
+      <code>reckon/crew/recovery.py</code> reads the newest stream's last complete record when the
+      process table has already falsified the manifest's word. A last record of type
+      <code>result</code> is a turn that ran to its own conclusion, whose remedy is to continue it,
+      and &sect;8 owns that row, so the death branch leaves it alone. Every other last record is a
+      death mid-turn: the row moves to <code>blocked</code> and carries the classifier's own
+      <code>interrupted</code> reading and the <code>redispatch</code> verb, so its cause and remedy
+      match every other surface rather than a second vocabulary composed in the reducer.</p>
+      <p>The reason names the end that was observed. Where the supervisor's <code>exit.json</code>
+      records one, the reason carries it — the classifier already reads a recorded signal as the
+      interruption it is, and a recorded non-signal exit is named as
+      <code>exited with code N</code>. Where nothing recorded the end, the reason says the process
+      is gone with no recorded exit and names the stream record the death interrupted. Measured
+      before the change: the killed run's classification read <code>running</code>, its snapshot read
+      <code>working</code> with an empty reason, and the fold emitted no transition at all.</p>
+      <figure>
+        <img src="/reckon/figures/a-stalled-row-says-whether-the-worker-lives/death-row-timeline.png" alt="Timeline of a killed worker: with the death branch the row appears on the snapshot after the kill; without it the row waits out the stall window.">
+        <figcaption>The kill falls between two snapshots. The death branch reports it on the next
+        one; the deferral that reads a non-terminal manifest as the worker's own last word held the
+        row in the working column until the stream had been quiet for the whole window.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Snapshot after the kill, death branch present</td><td>one transition, <code>working</code> &rarr; <code>blocked</code>, reason names the unrecorded exit and the <code>assistant</code> tail</td></tr>
+          <tr><td>Snapshot after the kill, death branch deleted</td><td>no transition for the run (<code>assert 0 == 1</code>)</td></tr>
+          <tr><td>Elapsed quiet time at the row</td><td>under one second, against a 900&nbsp;s window</td></tr>
+          <tr><td>Stream tail of type <code>result</code></td><td>death reading absent (the assistant arm on the same run carries it)</td></tr>
+          <tr><td>Recorded clean exit</td><td>reason reads <code>exited with code 3</code>, not "no recorded exit"</td></tr>
+        </tbody>
+      </table>
+      <p>The precedence holds at the branch: a manifest status outside
+      <code>MANIFEST_STATUSES</code> is read by &sect;5's row before any of this, and a
+      <code>result</code> tail is left for &sect;8. The branch fires only for a run the classifier
+      still calls running, which is exactly the run whose manifest's word the process table has
+      falsified.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>tests/test_watch_reports_death_at_once.py</code> passed: 3 passed, exit 0. The killed
+      case drives the published watch stream through a project watch claim, takes a baseline while
+      the process is alive, kills it, and asserts exactly one transition for the run with the reason
+      and a quiet time under the window.</p>
+      <p><strong>Negative control, executed and logged.</strong> With the death branch removed from
+      the snapshot, the killed-worker case emitted nothing for the run: the log's first line is the
+      declared control, and the run fails at <code>assert len(killed) == 1</code> with
+      <code>0 == 1</code>. The branch was then restored byte-exact to the committed revision
+      (sha256 compared before and after), leaving the worktree clean.</p>
+      <p>Every existing test file importing <code>reckon.crew.recovery</code> at this head: 63 files,
+      933 passed, 0 failed, exit 0. With no failing id there is no failing set to compare against the
+      base revision; a base run was therefore not needed to establish the delta, which is zero added
+      failures.</p>
+    </section>
+  </main>
+</body>
+</html>
