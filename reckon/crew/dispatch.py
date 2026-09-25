@@ -4528,12 +4528,16 @@ def _adopt_launched_workers_from_reexec() -> None:
     except (TypeError, ValueError):
         return
     # A bare pid list is the older carrier; the mapping is the current one.
+    # Any other parsed type — a scalar, a string — is unparseable as a carrier
+    # and starts the new image clean rather than raising from the iteration.
     if isinstance(payload, dict):
         pids = [int(pid) for pid in payload.get("pids") or ()]
         runs_carried = payload.get("runs") or {}
-    else:
+    elif isinstance(payload, (list, tuple)):
         pids = [int(pid) for pid in payload]
         runs_carried = {}
+    else:
+        return
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.update(pid for pid in pids)
         for pid in pids:

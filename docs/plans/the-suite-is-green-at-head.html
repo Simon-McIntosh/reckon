@@ -1052,6 +1052,53 @@
       main environment after the worktree is removed.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="a-scalar-reexec-carrier-starts-clean" data-when="2026-09-25">
+      <p><strong>Cause group repaired:</strong> a reexec handover carrier that parses to a JSON
+      <em>scalar</em> was iterated as a pid sequence. <code>_adopt_launched_workers_from_reexec</code>
+      branched on the parsed payload as a mapping (<code>payload['pids']</code>) or
+      <em>anything else</em>, and the "anything else" arm ran
+      <code>[int(pid) for pid in payload]</code>. A carrier of <code>"123"</code> parses to the
+      integer <code>123</code>, which is not iterable, so the new followed image raised
+      <code>TypeError: 'int' object is not iterable</code> and refused to start &mdash; the exact
+      failure the docstring says must not happen. Class: <em>product defect</em>. The arm is narrowed
+      to <code>isinstance(payload, (list, tuple))</code>; any other parsed type returns before the
+      registry is touched. Commit <code>eaf6f977</code>.</p>
+      <p><strong>Observed failing first, then passing.</strong> At base <code>d4f13e1a</code> the case
+      <code>tests/test_a_reexec_keeps_its_children.py::test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]</code>
+      fails on <code>reckon/crew/dispatch.py:4535</code> with <code>TypeError: 'int' object is not
+      iterable</code>, the other six parametrisations passing (1 failed, 6 passed). At head
+      <code>eaf6f977</code> all seven pass, and the whole file is 13 passed.</p>
+      <p><strong>Measure.</strong> No test file is edited. The 90 files importing
+      <code>reckon.crew.dispatch</code> were run at <code>-n 8</code> on the fleet node
+      <code>98dci4-clu-2058</code> (SLURM job <code>1277272</code>). At base <code>d4f13e1a</code>
+      the set is <strong>1240 passed, 2 skipped, 2 failed</strong>; at head <code>eaf6f977</code> it
+      is <strong>1242 passed, 2 skipped, 0 failed</strong>. The two base failures are this node's
+      scalar case, green at head, and
+      <code>tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code>,
+      which is red at head too outside this run: re-run alone it fails at <em>both</em> revisions on
+      <code>assert _outside_state() == outside</code>, because the live pointer of a concurrent peer
+      run (<code>r-...-recovery-reads-the-exit-record</code>) is rewritten inside the case's window.
+      It fails wherever a peer is live and passed when none touches the pointer during the head arm,
+      so it is neither this node's cause nor made greener or redder by it. With no head failure
+      attributable to the change, the added-failure count is zero. No product file other than
+      <code>dispatch.py</code> is touched and no id moved pass to fail.</p>
+      <p><strong>Follow-on.</strong>
+      <code>test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code> asserts that the
+      <em>real</em> <code>~/.config/reckon/crew/live/</code> directory is unchanged across its body,
+      so any concurrently running crew session makes it fail: it monitors the machine rather than
+      the code. It belongs to the ledger file, not to this node, and is named here for the
+      coordinator rather than triaged.</p>
+      <p><strong>Declared negative control:</strong> <em>remove the list-or-tuple type test so a
+      scalar reaches the list comprehension; the scalar case must fail</em>. Executed in a scratch
+      tree whose <code>reckon/crew/dispatch.py</code> is the head file with only the new arm removed;
+      the scalar case fails on <code>TypeError: 'int' object is not iterable</code>, first line of the
+      log repeating the declared string verbatim. Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/carrier-type-branches.png">the carrier
+      classification and the third arm's before/after outcome</a>; anchor
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-scalar-reexec-carrier-starts-clean">landed
+      evidence</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
