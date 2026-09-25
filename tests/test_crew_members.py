@@ -19,7 +19,6 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.calibration import agent_configuration_key
 
 CONFIG = {
     "default_backend": "alpha",
@@ -93,10 +92,6 @@ def repo(tmp_path: Path, home: Path) -> Path:
     return root
 
 
-def _configuration_key(agent: Mapping[str, object]) -> str:
-    return agent_configuration_key({"agent": agent})
-
-
 def _config(**role_overrides: object) -> dict[str, object]:
     config = json.loads(json.dumps(CONFIG))
     if role_overrides:
@@ -157,6 +152,8 @@ def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
     )
     assert entry["session_model"] is None
     assert entry["sessions"] == {}
+    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
+    roster_before = roster_path.read_bytes()
 
     dispatched = _dispatch(home, repo, 1)
 
@@ -166,10 +163,13 @@ def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
     captured = "019ff509-8a60-7723-94fd-65942a6d8faa"
     _complete_stream(dispatched, captured)
 
-    member = ledger.member("proj", "worker-a", repo)
-    assert member is not None
-    assert member["sessions"] == {_configuration_key(MEDIUM_AGENT): captured}
-    assert member["session_id"] == BARE_SESSION
+    recorded = crew.read_pointer(str(dispatched["run_id"]))
+    assert recorded["session_id"] == captured
+    assert recorded["session_harness"] == "codex"
+    assert recorded["session_model"] == MEDIUM_AGENT["model"]
+    assert recorded["agent"] == {**MEDIUM_AGENT, "dialect": "codex"}
+    assert ledger.member("proj", "worker-a", repo) == entry
+    assert roster_path.read_bytes() == roster_before
 
 
 def test_bare_session_ignored_when_the_dispatched_model_moves_off_the_harness_default(
