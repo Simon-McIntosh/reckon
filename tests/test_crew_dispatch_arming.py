@@ -12,9 +12,8 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, routing, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
-
 
 CONFIG = {
     "default_backend": "alpha",
@@ -126,6 +125,27 @@ def _attached(config_home: Path, repo: Path, name: str, **kwargs) -> dict:
         return _dispatch(config_home, repo, name, session=session, **kwargs)
 
 
+def _provision_session_member(repo: Path, session: str) -> None:
+    """Register a dispatch session's private roster member before any race.
+
+    A dispatch that names no member provisions one under its own session, and
+    that provisioning is a commit into the project's shared roster. Two
+    dispatches racing on it contend for one index, and the loser retries a
+    bounded number of times with no pause, so when the winner's commit has not
+    landed within those retries the dispatch is refused for a reason that is not
+    the producer seat this case measures. Registering each session's member here,
+    before the concurrent section starts, leaves that section measuring the
+    producer seat alone.
+    """
+    routing._register_session_member(
+        "sample",
+        routing._session_member_id(session),
+        backend=CONFIG["default_backend"],
+        role="implement",
+        root=repo,
+    )
+
+
 def _wait_for_stopped_producer() -> None:
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
@@ -140,10 +160,16 @@ def test_concurrent_dispatches_arm_exactly_one_detached_producer(
 ) -> None:
     config_home, repo = isolated_project
     try:
+        _provision_session_member(repo, "session-left")
+        _provision_session_member(repo, "session-right")
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [
-                pool.submit(_attached, config_home, repo, "left"),
-                pool.submit(_attached, config_home, repo, "right"),
+                pool.submit(
+                    _attached, config_home, repo, "left", session="session-left"
+                ),
+                pool.submit(
+                    _attached, config_home, repo, "right", session="session-right"
+                ),
             ]
             refusals = [
                 future.exception(timeout=WATCHER_LOAD_BOUND_SECONDS)

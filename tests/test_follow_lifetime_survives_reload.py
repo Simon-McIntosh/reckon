@@ -25,11 +25,14 @@ the reload never happened cannot pass by measuring only the carried deadline.
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import json
 import os
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -66,6 +69,18 @@ POLL_SECONDS = 0.05
 # string is absent from the argv the test arms, so finding it on the process is
 # direct evidence the image was replaced.
 RELOAD_LAUNCHER_MARKER = "sys.path.insert"
+
+# What the reload trigger appends to the source. A comment, and one whose every
+# prefix is also a comment, so the module parses with the change in place and a
+# reader that imports it mid-window is unaffected.
+_SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
+
+# The cases that force a source change edit one file on disk, and each restores
+# what it read before editing. Two of them running at once can therefore capture
+# and write back each other's edit, leaving the append behind in the tree and
+# comparing against a baseline neither of them set. One worker owns the group, so
+# the cases that touch the source run one at a time.
+SOURCE_CHANGE_GROUP = "follower-source-change"
 
 
 @pytest.fixture()
@@ -294,24 +309,80 @@ def _wait_until_ended(
     )
 
 
-def _force_source_change() -> tuple[float, float]:
-    """Advance the follower's source stamp, and hand back what to restore.
+def _wait_until_looping(home: Path, pid: int) -> None:
+    """Wait until the follower's stream loop has entered its first wait pass.
 
-    The follower reloads when a stamp computed over its own source files
-    changes, so a bare mtime bump is exactly the trigger it watches. The size is
-    left alone, so no bytes move and the tree stays clean; the caller restores
-    the timestamps afterwards.
+    ``registered`` is written as the follower enters its stream loop, and the
+    reloader fixes its source baseline partway through that entry, so a change
+    made the moment the registration appears can be captured as the baseline
+    itself and never seen as a change: the follower then runs on with a stale
+    image and the case measures nothing. The loop's first pass records a recovery
+    status naming the sweeping pid, and no earlier pass can write it, so that
+    record is the barrier — once it names this follower, the baseline was fixed
+    before this function returned and a change made after it is a change.
+    """
+    status_path = home / "crew" / "recovery" / f"{PROJECT}.status.json"
+    deadline = time.monotonic() + ARM_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        try:
+            record = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            record = None
+        if record is not None and str(record.get("swept_by_pid")) == str(pid):
+            return
+        time.sleep(POLL_SECONDS)
+    pytest.fail(
+        "the follower never recorded a wait pass, so its source baseline was not "
+        "known to be fixed before this case changed the source"
+    )
+
+
+@contextlib.contextmanager
+def _source_mutation_window():
+    """Hold the one window in which a case may edit the source the follower stamps.
+
+    The stamp is computed over the imported package, so every case that forces a
+    reload edits a path all pytest workers share. Two of them editing at once can
+    read each other's append as their own baseline and write it back after their
+    restore, which leaves the change in the tree and has the follower compared
+    against a stamp neither case set. The distributor does not keep these cases
+    apart on its own — spreading by load is its default — so the window is held
+    under an exclusive lock instead.
+    """
+    lock_path = Path(tempfile.gettempdir()) / "reckon-follower-source-change.lock"
+    with lock_path.open("a+") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def _force_source_change() -> tuple[bytes, int, int]:
+    """Advance the follower's source stamp with a real content change.
+
+    The stamp covers each source file's size and its mtime together, and an edit
+    advances both, which is the change the follower exists to notice. The appended
+    line is a comment, and every prefix of it, so the module parses while it is in
+    place. A change made before the follower has fixed its baseline is captured as
+    the baseline and never seen at all, so the caller waits for
+    ``_wait_until_looping`` first. What to restore is handed back with it.
     """
     stat = FOLLOWER_SOURCE.stat()
-    now = time.time()
-    os.utime(FOLLOWER_SOURCE, (now, now))
-    return stat.st_atime_ns, stat.st_mtime_ns
+    original = FOLLOWER_SOURCE.read_bytes()
+    with FOLLOWER_SOURCE.open("ab") as handle:
+        handle.write(_SOURCE_CHANGE_BYTES)
+    return original, stat.st_atime_ns, stat.st_mtime_ns
 
 
-def _restore_source_times(times: tuple[float, float]) -> None:
-    os.utime(FOLLOWER_SOURCE, ns=(times[0], times[1]))
+def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
+    """Put the source back byte for byte, and its timestamps back with it."""
+    original, atime_ns, mtime_ns = restore
+    FOLLOWER_SOURCE.write_bytes(original)
+    os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
 
 
+@pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
 def test_a_reload_does_not_restart_the_lifetime(home) -> None:
     """The deadline carried across a reload still ends the follower on time.
 
@@ -322,20 +393,22 @@ def test_a_reload_does_not_restart_the_lifetime(home) -> None:
     """
     _write_unpromoted_run(home)
     restore = None
-    process = _arm(home, "--lifetime", LIFETIME)
-    try:
-        _wait_until_armed(process)
-        arm_at = time.monotonic()
-        restore = _force_source_change()
-        reloaded_at = _wait_until_reloaded(process)
-        assert reloaded_at > arm_at, "the reload was seen before the arm"
-        ended_at = _wait_until_ended(process, arm_at=arm_at)
-        stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
-    finally:
-        if process.poll() is None:
-            _kill(process)
-        if restore is not None:
-            _restore_source_times(restore)
+    with _source_mutation_window():
+        process = _arm(home, "--lifetime", LIFETIME)
+        try:
+            _wait_until_armed(process)
+            arm_at = time.monotonic()
+            _wait_until_looping(home, process.pid)
+            restore = _force_source_change()
+            reloaded_at = _wait_until_reloaded(process)
+            assert reloaded_at > arm_at, "the reload was seen before the arm"
+            ended_at = _wait_until_ended(process, arm_at=arm_at)
+            stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
+        finally:
+            if process.poll() is None:
+                _kill(process)
+            if restore is not None:
+                _restore_source_bytes(restore)
 
     assert process.returncode == 0, (
         f"a lifetime exit is the follower ending by itself, so it exits zero; "
@@ -363,6 +436,7 @@ def test_a_reload_does_not_restart_the_lifetime(home) -> None:
     ), f"the final line names no re-arm executable: {final!r}"
 
 
+@pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
 def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
     """The carried deadline bounds the follower, never a child it starts.
 
@@ -378,37 +452,41 @@ def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
     dump = home / "child-environment.txt"
     _write_parked_run(home, dump)
     restore = None
-    process = _arm(home, "--lifetime", LIFETIME)
-    try:
-        _wait_until_armed(process)
-        arm_at = time.monotonic()
-        lines = _wait_for_child(dump, process)
-        # The instrument must be shown to see a known-present variable before an
-        # absence means anything: the follower was armed with RECKON_HOME, so a
-        # child inheriting its environment carries it.
-        assert any("RECKON_HOME" in line for line in lines), (
-            f"the probe did not observe the environment it was handed, so it "
-            f"cannot report what is absent from it; lines={lines!r}"
-        )
-        assert not any(DEADLINE_ENV in line for line in lines), (
-            f"a child the follower started inherited {DEADLINE_ENV}, so the "
-            f"deadline was placed in the follower's own os.environ; lines={lines!r}"
-        )
+    with _source_mutation_window():
+        process = _arm(home, "--lifetime", LIFETIME)
+        try:
+            _wait_until_armed(process)
+            arm_at = time.monotonic()
+            lines = _wait_for_child(dump, process)
+            # The instrument must be shown to see a known-present variable before
+            # an absence means anything: the follower was armed with RECKON_HOME,
+            # so a child inheriting its environment carries it.
+            assert any("RECKON_HOME" in line for line in lines), (
+                f"the probe did not observe the environment it was handed, so it "
+                f"cannot report what is absent from it; lines={lines!r}"
+            )
+            assert not any(DEADLINE_ENV in line for line in lines), (
+                f"a child the follower started inherited {DEADLINE_ENV}, so the "
+                f"deadline was placed in the follower's own os.environ; "
+                f"lines={lines!r}"
+            )
 
-        restore = _force_source_change()
-        _wait_until_reloaded(process)
-        # The arm must still end by itself: a follower that hangs here would
-        # leave the leak unobserved. The tight timing property — the end landing
-        # within eight seconds of the original arm — belongs to the reload case,
-        # whose sweep load is lighter; this one runs a probe child every cadence
-        # and reaches its end later, so it asserts only that it ends.
-        _wait_until_ended(process, arm_at=arm_at, within=SWEPT_END_WITHIN_SECONDS)
-        _stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
-    finally:
-        if process.poll() is None:
-            _kill(process)
-        if restore is not None:
-            _restore_source_times(restore)
+            _wait_until_looping(home, process.pid)
+            restore = _force_source_change()
+            _wait_until_reloaded(process)
+            # The arm must still end by itself: a follower that hangs here would
+            # leave the leak unobserved. The tight timing property — the end
+            # landing within eight seconds of the original arm — belongs to the
+            # reload case, whose sweep load is lighter; this one runs a probe
+            # child every cadence and reaches its end later, so it asserts only
+            # that it ends.
+            _wait_until_ended(process, arm_at=arm_at, within=SWEPT_END_WITHIN_SECONDS)
+            _stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
+        finally:
+            if process.poll() is None:
+                _kill(process)
+            if restore is not None:
+                _restore_source_bytes(restore)
 
     assert process.returncode == 0, (
         f"a lifetime exit is the follower ending by itself, so it exits zero; "
