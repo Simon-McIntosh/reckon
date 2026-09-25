@@ -4670,6 +4670,7 @@ def _watch_snapshot(
     # already owns for a worker that died — rather than as a second vocabulary
     # this reducer would have to keep in step.
     death_reason = None
+    ended_without_manifest = False
     if alive is False and state in ("dispatched", "working"):
         last_record_type = _newest_stream_last_record_type(pointer)
         if last_record_type == STREAM_RESULT_RECORD_TYPE:
@@ -4679,7 +4680,8 @@ def _watch_snapshot(
             # the reading names that rather than the mid-turn death a stalled row
             # would report — a resumable turn has no session to conclude rather
             # than one whose turn was cut off.
-            state = "ended-without-manifest"
+            ended_without_manifest = True
+            state = "blocked"
         elif last_record_type is not None:
             death_reason = _process_exit_reason(pointer, last_record_type)
             state = "blocked"
@@ -4735,7 +4737,7 @@ def _watch_snapshot(
         # already calls it rather than a second vocabulary composed here.
         recovery_classification = INTERRUPTED_RUN_PHASE
         recovery_verb = RECOVERY_VERBS[INTERRUPTED_RUN_PHASE]
-    elif state == "ended-without-manifest":
+    elif ended_without_manifest:
         # The classifier's clause for this pointer is about the commits that
         # survived the process; this state is about the end itself, so the
         # reading names the result record that says the turn concluded.
@@ -4837,17 +4839,7 @@ FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # wait is still waiting. Count and marker therefore separate on that one
 # member: what the number reports as blocked is what a reader must act on
 # excluding a run that is legitimately still in the waiting column.
-# Two readings the producer emits that the action set does not carry: a worker
-# whose process ended after a result record without a terminal manifest, and a
-# run the lane refused at admission. Both are stops a coordinator resumes, so
-# they belong to the blocked tally by the same argument the action set groups
-# on. Leaving them out let a row render as blocked beside a 0b, because the
-# counter counts only what the partition names while the row renders whatever
-# the producer emitted — the same defect as a bucket word no set defines.
-_BLOCKED_BEYOND_ACTION = frozenset({"ended-without-manifest", "refused-at-admission"})
-FLEET_BLOCKED_STATES = tuple(
-    sorted((NEEDS_ACTION - WAITING_STATES) | _BLOCKED_BEYOND_ACTION)
-)
+FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 
 
 def _fleet_counts(

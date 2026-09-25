@@ -87,9 +87,7 @@ _MUTATIONS = {
         "FLEET_BLOCKED_STATES",
         tuple(
             sorted(
-                recovery.NEEDS_ACTION
-                - recovery.WAITING_STATES
-                - {"ended-without-manifest", "refused-at-admission"}
+                recovery.NEEDS_ACTION - recovery.WAITING_STATES - {"blocked"}
             )
         ),
     ),
@@ -523,7 +521,8 @@ def test_a_worker_that_ended_after_a_result_record_is_resumable(
         )
     )
 
-    assert snapshot["state"] == "ended-without-manifest"
+    assert snapshot["state"] == "blocked"
+    assert snapshot["recovery_classification"] == "ended-without-manifest"
     assert snapshot["recovery"] == "resume"
     assert snapshot["state"] != "stalled"
 
@@ -580,10 +579,10 @@ def test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word() -> None:
 # ── Case 7: every emitted word falls in exactly one bucket ────────────────
 
 
-def _bucket(word: str) -> str | None:
+def _bucket(word: str, classification: str | None = None) -> str | None:
     from reckon.crew.ticker import _bucket_of
 
-    return _bucket_of(word, None)
+    return _bucket_of(word, classification)
 
 
 def test_every_emitted_word_maps_to_exactly_one_bucket(
@@ -592,6 +591,7 @@ def test_every_emitted_word_maps_to_exactly_one_bucket(
     if NEGATIVE_CONTROL in {"bucket-mapping", "all"}:
         _MUTATIONS["bucket-mapping"](monkeypatch)
     emitted = set()
+    emitted_pairs = set()
     repo, base = _worktree_with_commit(tmp_path, "tree-buckets")
     with _live_child() as worker_pid:
         stubs = [
@@ -620,7 +620,11 @@ def test_every_emitted_word_maps_to_exactly_one_bucket(
             ),
         ]
         for stub in stubs:
-            emitted.add(_snapshot(stub)["state"])
+            snapshot = _snapshot(stub)
+            emitted.add(snapshot["state"])
+            emitted_pairs.add(
+                (snapshot["state"], snapshot["recovery_classification"])
+            )
     # These are the producer's row states, not the separate recovery verbs
     # carried beside them. A ticker bucket accepts the row state and consults
     # the recovery classification only for the special held reading.
@@ -628,10 +632,24 @@ def test_every_emitted_word_maps_to_exactly_one_bucket(
     emitted |= set(recovery.FLEET_UNPROMOTED_STATES)
     emitted |= set(recovery.FLEET_WAITING_STATES)
     emitted |= set(recovery.FLEET_BLOCKED_STATES)
-    emitted |= {"ended-without-manifest", "refused-at-admission"}
+    emitted_pairs |= {
+        ("blocked", "ended-without-manifest"),
+        ("blocked", "refused-at-admission"),
+    }
 
-    missing = sorted(word for word in emitted if _bucket(word) is None)
-    assert missing == [], f"words with no bucket: {missing}"
+    missing = sorted(
+        pair for pair in emitted_pairs if _bucket(pair[0], pair[1]) is None
+    )
+    assert missing == [], f"classifications with no bucket: {missing}"
+    by_classification: dict[str, set[str | None]] = {}
+    for state, classification in emitted_pairs:
+        by_classification.setdefault(classification, set()).add(
+            _bucket(state, classification)
+        )
+    assert all(
+        len(buckets) == 1 and None not in buckets
+        for buckets in by_classification.values()
+    )
 
     partition = (
         set(recovery.FLEET_WORKING_STATES),
