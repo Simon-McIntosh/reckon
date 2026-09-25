@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="17">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="19">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -288,6 +288,27 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <h2 id="s7">§7 — A soft after edge orders the ready set without blocking it</h2>
+    <p>Measured on nova S19, 2026-09-16: a coordinator opening two plans that consume a third
+      plan's landed evidence wired <code>depends_on</code>, because nothing between
+      <code>depends_on</code> (blocks) and <code>informs</code> (orders nothing) expresses
+      <em>start after X lands if you can, do not wait</em>. The roadmap correctly reported both new
+      plans blocked, and the wire was undone an hour later (nova f2189462).</p>
+    <p>Add an <code>after</code> edge with the <code>depends_on</code> grammar (bare slug or
+      <code>project:slug</code>, optional <code>#section</code>), parsed and written through the plan
+      HTML like the other relation metas. The roadmap uses it to order ready work and to annotate the
+      ready set with came-after hints, and never to block: a plan whose after target is unshipped stays
+      in <code>ready_now</code>. The reckon-create relation checklist gains the fourth row and the
+      litmus: would this plan's first section be wrong to start before X ships? If not, X informs it,
+      sequencing is an after edge, and a real prerequisite on one section is a gate.</p>
+    <p><strong>Done when</strong> a test builds two ready plans where one carries an after edge to
+      an unshipped third, and asserts both stay in <code>ready_now</code>, the one with the edge is
+      ordered after the other or annotated with the hint naming its target, and a plan with a
+      <code>depends_on</code> to the same target is still blocked; the negative control, treating
+      <code>after</code> as <code>depends_on</code>, makes the stays-ready case fail. The write paths
+      are <code>reckon/roadmap.py</code>, <code>reckon/_plan_html.py</code>,
+      <code>reckon/_schema.py</code>, <code>skills/reckon-create/SKILL.md</code> and that test.</p>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
@@ -356,10 +377,11 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
     <p class="r-fu-outcome">Landed by closure-gates-hold-a-terminal-write (codex-astra, merged b8f97e4e): a transition gate names the transition it gates; a plan-terminal gate leaves the plan in ready_now while the store refuses a terminal write until the gate has a verdict; a decision gated on a foreign plan appears in decision_blockers naming it. Importer cohort 2,784 passed / 7 failed against base 2,747 / 8, zero added; negative control executed; review 17-20, whose three surface findings became §6.</p>
     </article>
-<article class="r-fu" data-id="f-des-soft-after-edge" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-soft-after-edge" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="2026-09-25T04:14:19+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A soft after edge that orders the ready set without blocking it</h4>
     <div class="r-fu-body"><p>Measured on nova S19, 2026-09-16: a coordinator opening two plans that consume a third plan's landed evidence wired depends_on because nothing between depends_on (blocks) and informs (orders nothing) expresses start after X lands if you can, do not wait. The roadmap correctly reported both new plans blocked, and the wire was undone an hour later (nova f2189462). Add an after edge with the depends_on grammar (bare slug or project:slug, optional #section) that the roadmap uses to order ready work and to annotate the ready set with came-after hints, never to block; a plan whose after target is unshipped stays in ready_now. The reckon-create relation checklist gains the fourth row and the litmus: would this plan's first section be wrong to start before X ships? if not, X informs it, sequencing is an after edge, and a real prerequisite on one section is a gate.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
+    <p class="r-fu-outcome">Same-plan work, so it became §7 with its own measure and write paths rather than staying a followup; f-des-005 carries the chain.</p>
     </article>
 <article class="r-fu" data-id="f-des-source-section-depends" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A section-scoped dependency on the source side, so one section can wait without hiding the others</h4>
@@ -371,10 +393,16 @@
     <div class="r-fu-body"><p>An open decision blocks its whole plan: on nova, exact-clip-moment-quadrature and centroid-constrained-oracle-solve are blocked by one decision each although their first sections do not depend on the choice. Add an optional sections list on a decision so only the named sections are decision-blocked, and an optional recommended value with a recommended_by field that the lead accepts in one action. The recommendation must never become the choice by default: an unanswered recommendation stays open and blocking, because decisions are the lead's and a coordinator default would collapse authority into mechanism (raised by the reckon crew-observability session on 2026-09-16).</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
     </article>
-<article class="r-fu" data-id="f-des-004" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T03:10:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §6" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-004" data-status="resolved" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T03:10:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §6" data-resolved-at="2026-09-25T04:14:19+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Make the served view and MCP projection read the roadmap&#x27;s execution/closure split</h4>
     <div class="r-fu-body"><p>§6 is the continuation: the served plan payload, the MCP blocking projection and the decision-transition gate must agree with the roadmap about a plan whose only open gate is a transition gate.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §6</pre>
+    <p class="r-fu-outcome">§6 landed: surfaces-read-the-closure-split (merged 40e10a80) makes the served view and MCP projection read the roadmap's execution/closure split and stops a decision-transition gate idling its plan; closure-split-narrowings-are-guarded (merged 0bbeb7ec) pins both narrowings against revert, review 20/20.</p>
+    </article>
+<article class="r-fu" data-id="f-des-005" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T06:15:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the soft after edge</h4>
+    <div class="r-fu-body"><p>§7 is the continuation: an after edge that orders the ready set and never blocks it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -413,6 +441,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260925T024313288800-review-of-surfaces-read-the-closure-split" data-who="reckon-build" data-when="2026-09-25T03:32:05.436Z">
     <div class="r-comment-body"><p>review of surfaces-read-the-closure-split stored: 16-20, two unguarded narrowings routed to closure-split-narrowings-are-guarded</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260925T0615-s22" data-who="reckon-build" data-when="2026-09-25T06:15:00+02:00">
+    <div class="r-comment-body">§6 closed: the guard node merged at 0bbeb7ec with each guard failing under its own mutation; review 20/20.</div>
 </div>
 </section>
 </main>
