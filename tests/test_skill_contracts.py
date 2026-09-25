@@ -576,15 +576,33 @@ def test_no_build_skill_file_instructs_member_registration() -> None:
 
     A member-registration instruction rewritten into a reference file is
     inside the read set the orchestrator loads, so the absence check has to
-    read the same set. The pattern is checked against each phrasing before the
-    census runs, so a weakened pattern fails loudly here rather than passing
-    the census by matching nothing.
+    read the same set, and the set itself is asserted before the census — a
+    read set narrowed back to SKILL.md alone fails here rather than passing
+    with a narrower scope than the contract. The pattern is checked against
+    each phrasing before the census runs, so a weakened pattern fails loudly
+    here rather than passing the census by matching nothing.
     """
     root = ROOT / "skills" / "reckon-build"
     paths = [
         root / "SKILL.md",
         *(path for path in sorted((root / "references").rglob("*")) if path.is_file()),
     ]
+
+    # An absence check is only as wide as the set it reads, so the set is
+    # pinned: SKILL.md is loaded in full at the start of every session, and the
+    # references are the files its pointers lead a session into. Reading fewer
+    # files would report a clean census over material the session still loads.
+    for required in (
+        root / "SKILL.md",
+        root / "references" / "sprint-orchestration.md",
+        root / "references" / "conditional-guidance.md",
+    ):
+        assert required in paths, (
+            f"{required.relative_to(ROOT)} has dropped out of the registration "
+            "census read set. The census has to read every file an orchestrator "
+            "session loads — SKILL.md and the references it points at — because "
+            "an instruction moved into an unread file would pass unseen."
+        )
 
     for phrase in RETIRED_MEMBER_REGISTRATION_PHRASES:
         assert MEMBER_REGISTRATION_INSTRUCTION.search(phrase), (
