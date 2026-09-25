@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="a-page-load-reads-each-file-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>Reckon Reads Answer In Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -74,7 +74,7 @@
     <p><code>reckon.file_memo.memoized</code> can carry the path-pure full-plan, lifecycle, link and anchor records. The discovery memo remains the corpus/tree owner. Live-run classification must reuse only unchanged pointer, manifest, receipt and stream files. These are implementation expectations, not acceptance evidence: the repair still owes three unprofiled warm measurements per read. Report and figure landed in <code>436c75f32d918cad81349350ff423c86f53378e4</code>; the cumulative execution record is <a href="/reckon/evidence/archive/reckon-reads-answer-in-seconds-landed#read-latency-profile">anchored here</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; Warm reads answer under five seconds</h2>
-    <p><strong>Trigger:</strong> deferred until &sect;2's report names the call sites. The fix reuses the named memo, and its done-when is set from the report. The minimum is that the warm <code>audit(project="reckon")</code>, roadmap summary and discovery each answer under 5 s on this host, each measured three times and recorded.</p>
+    <p>The §2 profile names the cost: unchanged plan files parsed again and again, with <code>parse_plan</code> run 268 times and <code>read_state</code> 625 times in one warm read, plus a separate link, lifecycle, question and followup pass in the audit. This section lands the part of that fix that lives in <code>reckon/_plan_html.py</code> and <code>reckon/doccheck.py</code>. The <code>read_state</code> half lives in <code>reckon/_store.py</code> and follows as its own node.</p><ul><li><code>parse_plan</code> is memoized through <code>reckon.file_memo.memoized</code>, keyed on the file's path, size, mtime and inode, so an unchanged file is parsed once per process and a changed one is re-parsed. It returns an isolated copy, so a caller that mutates the result cannot poison the memo.</li><li>The audit's per-file passes (links, lifecycle, questions, followups) read the memoized parse instead of re-reading the file.</li></ul><p><strong>Done when:</strong></p><ul><li>Tests assert: a second <code>parse_plan</code> of an unchanged file does not re-read it; a rewrite that changes the size, the mtime or the inode is re-parsed; mutating a returned result does not change the next result.</li><li>The warm <code>audit(project="reckon")</code>, <code>roadmap(project="reckon", view="summary")</code> and discovery reads are each timed three times, before and after, on this host, and recorded. The audit falls from its §1 warm time of 28.9 s. What remains is attributed to the <code>read_state</code> half or to live-pointer classification.</li><li>The declared mutation, keying the memo on the path alone, is observed to fail. The log is recorded.</li><li>Existing tests for plan parsing, the audit and doccheck pass unchanged.</li></ul>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
