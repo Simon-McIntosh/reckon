@@ -151,6 +151,18 @@
     under the operator's real home. The five-minute refresh deployment remains open; until it runs,
     the default document is stale and the recorded windows speak.</p>
 
+    <p><strong>Landed (2026-09-25):</strong> the isolation case for a document under the operator's
+    home plants at the default location rather than at whatever the resolver returns. The case
+    <code>tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read</code>
+    used to prove its plant by asserting <code>paid_lanes.document_path() == planted</code>; once the
+    document path was unified on one resolver that honours <code>RECKON_HOME</code>, the per-test
+    isolation fixture governs that resolver and the setup assertion failed before reaching the
+    isolation claim it exists to make. The plant is now proven against
+    <code>paid_lanes.DEFAULT_DOCUMENT_PATH</code> expanded under the stand-in <code>HOME</code>, which
+    is the location the case means to occupy and is independent of the resolver; the positive control
+    (the same document named explicitly) and the isolation assertion (the resolved path is not the
+    planted one) are unchanged. The five-minute refresh deployment remains open.</p>
+
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
     <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or

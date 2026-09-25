@@ -488,6 +488,75 @@ FAILED tests/test_paid_lanes_document.py::test_the_publisher_writes_where_the_pr
       the per-backend recorded-window fallback covers.</li>
     </ul>
   </section>
+
+  <section id="the-isolation-test-plants-at-the-default">
+    <h2>&sect;5 — The operator-home isolation case plants at the default, not the resolver</h2>
+
+    <p><strong>The defect.</strong> The unification of the document path left one case red.
+    <code>test_a_document_under_the_operators_home_is_not_read</code> set up its subject on a claim about
+    the resolver: it planted a document under a stand-in <code>HOME</code> and then asserted
+    <code>paid_lanes.document_path() == planted</code>. Once <code>document_path()</code> honoured
+    <code>RECKON_HOME</code> — which the suite's autouse isolation fixture sets for every test — the
+    resolver correctly answered with the fixture's crew-home document, so the setup assertion failed
+    before the case reached the isolation claim it exists to make. The setup was checking a property the
+    test does not own and the production code no longer guarantees.</p>
+
+    <p><strong>What landed.</strong> The plant is now proven against the constant the case means to
+    occupy: <code>Path(paid_lanes.DEFAULT_DOCUMENT_PATH).expanduser() == planted</code>, the default
+    location expanded under the stand-in <code>HOME</code>. That assertion is independent of the
+    resolver, so the case states its subject directly. The positive control — the same document named
+    explicitly does speak, and paces <code>codex</code> from <code>0.77</code> — and the isolation
+    assertion — the path the callers resolve is not the planted one, so <code>codex</code> falls back to
+    the recorded <code>0.11</code> — are unchanged.</p>
+
+    <h3>Gate</h3>
+
+    <p>One test changed. The gate ran the target at the node's head (passes) and the same case with the
+    base revision's file content (fails), then both files in full at the head:</p>
+
+    <pre><code># head (a7bfa676, this worktree)
+module.__file__ = &lt;worktree&gt;/reckon/crew/paid_lanes.py
+cwd = &lt;worktree&gt;
+test_a_document_under_the_operators_home_is_not_read  →  1 passed
+tests/test_preflight_reads_the_published_document.py + tests/test_paid_lanes_document.py  →  21 passed
+
+# base arm (8c192804's file content, scratch tree)
+module.__file__ = &lt;scratch&gt;/reckon/crew/paid_lanes.py
+test_a_document_under_the_operators_home_is_not_read  →  1 failed
+E  AssertionError: assert PosixPath('.../reckon-home0/paid-lanes.json') == PosixPath('.../operator-home/public/reckon/paid-lanes.json')
+E  at tests/test_preflight_reads_the_published_document.py:400</code></pre>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>remove the crew-home step from
+    paid_lanes.document_path() in a scratch copy; the isolation assertion must fail</em> — the first
+    line of the red log. The three lines resolving <code>$RECKON_HOME/paid-lanes.json</code> were
+    removed in a scratch copy of the tree, and the resolver fell to the <code>HOME</code>-expanded
+    default. The isolation assertion then failed because the path the callers resolve <em>is</em> the
+    planted one:</p>
+
+    <pre><code>remove the crew-home step from paid_lanes.document_path() in a scratch copy; the isolation assertion must fail
+module.__file__ = &lt;scratch&gt;/reckon/crew/paid_lanes.py
+&gt;       assert resolved != planted
+E       AssertionError: assert PosixPath('.../operator-home/public/reckon/paid-lanes.json') != PosixPath('.../operator-home/public/reckon/paid-lanes.json')
+FAILED tests/test_preflight_reads_the_published_document.py::test_a_document_under_the_operators_home_is_not_read
+1 failed in 1.33s</code></pre>
+
+    <p><strong>Positive control:</strong> the same case in the unmutated tree is <code>1 passed</code>,
+    so the red is the mutation and not the selection. The <code>module.__file__</code> line proves the
+    mutated resolver was the one imported.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result belongs to a separately dispatched test node.</li>
+      <li><strong>The five-minute refresh deployment is out of scope.</strong> Nothing here schedules
+      <code>paid_lanes</code>.</li>
+      <li><strong>No figure is added.</strong> The change is one setup assertion in one test; a diagram
+      would show no spatial or sequential relationship the prose above does not.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
