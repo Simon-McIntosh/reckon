@@ -563,6 +563,96 @@ tests/test_run_record_reports_actual_resume.py
     receipts are durable; the scratch source itself is temporary.</p>
     <p>The coordinator owns section closure and the driving followup. Verification after
     integration belongs to the separately dispatched test node.</p>
+    <h3>Importer comparison: zero added failure IDs across 253 files</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr><td>Baseline primary, <code>e7ea1562</code>, 249 files</td><td>3,043</td><td>24</td><td>4</td><td><code>baseline.log</code></td></tr>
+        <tr><td>Head primary, <code>e026be7a</code>, 249 files</td><td>3,052</td><td>15</td><td>4</td><td><code>after.log</code></td></tr>
+        <tr><td>Baseline dynamic imports, 4 files</td><td>25</td><td>0</td><td>1</td><td><code>baseline-dynamic.log</code></td></tr>
+        <tr><td>Head dynamic imports, 4 files</td><td>25</td><td>0</td><td>1</td><td><code>after-dynamic.log</code></td></tr>
+        <tr><td>Baseline combined</td><td>3,068</td><td>24</td><td>5</td><td><code>baseline-combined.json</code></td></tr>
+        <tr><td>Head combined</td><td>3,077</td><td>15</td><td>5</td><td><code>after-combined.json</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Method.</strong> AST imports of the six named modules, including the public crew
+    facade, select 249 files. A literal cross-check adds four files using dynamic imports or
+    child-process imports. <code>all-importers.txt</code> records the identical 253-file cohort.
+    Both primary arms and both supplements use <code>-n 8 --dist loadfile --timeout=120</code>
+    and distinct <code>--basetemp</code> values, with xdist isolating each worker below that root.
+    Every log's header gives the exact expanded command, revision, tree, resolved working
+    directory and all six imported module paths. The head supplement runs at documentation-only
+    commit <code>006b0663d9eeeb2f9ead7b651918a5e5d3830f6e</code>; production and test content
+    are identical to <code>e026be7afae87b4dcd8a8884a311969b54638822</code>.</p>
+    <p><strong>Baseline qualification.</strong> The requested baseline stays pinned to
+    <code>e7ea1562cfea4d83c5815d9ed965d47c6e6418a7</code> even though
+    <code>origin/main</code> advanced during this work. It lacks
+    <code>tests/test_session_lives_on_its_run.py</code>, so that single test file is copied from
+    the measured head into the scratch baseline. Production imports still resolve wholly to
+    the baseline tree. Its seven failures are retained in the baseline set; this overlay is
+    stated in <code>baseline.json</code> and the log header.</p>
+    <p><strong>Result.</strong> <code>suite-delta.json</code> contains both full failure sets,
+    zero added IDs and nine removed IDs. Seven removed IDs are the run-session cases and two
+    are roster-registration cases in the integrated production changes; those improvements
+    are not attributed to this test-only commit. The parser extracts 24 baseline failures,
+    15 head failures and four expected control failures, matching pytest's summaries, so
+    the empty added set comes from an instrument shown to detect failures.</p>
+    <p><strong>Unrepaired follow-ons.</strong> The retained set includes the known timing-bound
+    reload cases under load in <code>test_follow_lifetime_survives_reload.py</code> and
+    <code>test_follower_checks_its_owner.py</code>. The ledger read-view case hits the chosen
+    120-second per-test bound in both arms. Ticker colour assertions, the scalar reexec carrier
+    and two watch-arming assertions also remain in both arms. These cases are outside this
+    node's four-case fence and were not triaged or repaired. Their recorded traceback lines
+    are in <code>after-failures.json</code>. There are no added IDs to report as blockers;
+    the absolute suite remains red, and integration verification stays with its assigned node.</p>
+    <details><summary>Baseline failure set</summary><pre>tests/test_a_reexec_keeps_its_children.py::test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]
+tests/test_crew_ticker.py::test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier
+tests/test_crew_ticker.py::test_cli_watch_follow_emit_site_preserves_painted_escape_codes
+tests/test_crew_ticker.py::test_follow_emit_path_preserves_painted_escape_codes
+tests/test_crew_ticker_layout.py::test_a_worker_keeps_one_colour_and_neighbours_differ
+tests/test_crew_ticker_layout.py::test_colour_changes_only_presentation
+tests/test_crew_ticker_layout.py::test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it
+tests/test_crew_ticker_layout.py::test_the_role_is_dim_rather_than_hued
+tests/test_crew_ticker_layout.py::test_the_state_painted_on_the_row_is_the_one_it_moved_into
+tests/test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime
+tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner
+tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies
+tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact
+tests/test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched
+tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration
+tests/test_session_lives_on_its_run.py::test_a_session_owned_by_another_harness_is_withheld_from_same_task_dispatch
+tests/test_session_lives_on_its_run.py::test_dispatch_and_observe_leave_roster_members_byte_identical[False]
+tests/test_session_lives_on_its_run.py::test_dispatch_and_observe_leave_roster_members_byte_identical[True]
+tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]
+tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]
+tests/test_session_lives_on_its_run.py::test_redispatch_resume_uses_the_new_harness_session
+tests/test_session_lives_on_its_run.py::test_resume_starts_fresh_when_the_current_harness_has_no_session
+tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused
+tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory</pre></details>
+    <details><summary>Head failure set</summary><pre>tests/test_a_reexec_keeps_its_children.py::test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar]
+tests/test_crew_ticker.py::test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier
+tests/test_crew_ticker.py::test_cli_watch_follow_emit_site_preserves_painted_escape_codes
+tests/test_crew_ticker.py::test_follow_emit_path_preserves_painted_escape_codes
+tests/test_crew_ticker_layout.py::test_a_worker_keeps_one_colour_and_neighbours_differ
+tests/test_crew_ticker_layout.py::test_colour_changes_only_presentation
+tests/test_crew_ticker_layout.py::test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it
+tests/test_crew_ticker_layout.py::test_the_role_is_dim_rather_than_hued
+tests/test_crew_ticker_layout.py::test_the_state_painted_on_the_row_is_the_one_it_moved_into
+tests/test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime
+tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner
+tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies
+tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact
+tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused
+tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory</pre></details>
+    <details><summary>Failure IDs no longer present</summary><pre>tests/test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched
+tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration
+tests/test_session_lives_on_its_run.py::test_a_session_owned_by_another_harness_is_withheld_from_same_task_dispatch
+tests/test_session_lives_on_its_run.py::test_dispatch_and_observe_leave_roster_members_byte_identical[False]
+tests/test_session_lives_on_its_run.py::test_dispatch_and_observe_leave_roster_members_byte_identical[True]
+tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]
+tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]
+tests/test_session_lives_on_its_run.py::test_redispatch_resume_uses_the_new_harness_session
+tests/test_session_lives_on_its_run.py::test_resume_starts_fresh_when_the_current_harness_has_no_session</pre></details>
   </section>
 </main>
 </body>
