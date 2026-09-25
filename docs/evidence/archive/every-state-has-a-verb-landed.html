@@ -228,6 +228,59 @@
     not a missing path, and narrowing it is what made it a ten-line fix.</p>
   </section>
 
+  <section id="s6-accepted-shared-path">
+    <h2>An accepted path on the shared-write list is not a conflict</h2>
+    <p>Landed 2026-09-26, commit <code>81f9317c9442212d61f5cf8bccc7e23366544ab8</code>.
+    A promotion accepts a companion path outside the run's declared scope with a stated
+    reason, and refuses one a live peer run claims. The peer-claim loop in
+    <code>reckon/crew/promotion.py</code> refused <em>any</em> overlap
+    (<code>cannot accept artifact.png: live run '&hellip;' claims artifact.png</code>) because
+    it never consulted the project's shared-write list &mdash; the list a project declares in
+    <code>docs/state/&lt;project&gt;/shared-write-paths.json</code> precisely so that two
+    nodes editing different regions of one file are not serialised. So a run whose merged
+    change touched a shared file could not be promoted while any peer co-claimed it, and the
+    file this repair itself edits is on reckon's own list, which is how the collision was
+    reached.</p>
+    <p><strong>The defect reproduced at base, through the command rather than the function.</strong>
+    The added acceptance case run against the pristine base product tree
+    (<code>ef4a961b</code>) fails exactly as the fence stated:
+    <code>1 failed, 3 passed</code>, the failure being
+    <code>Error: run 'r-shared-companion' cannot accept artifact.png: live run
+    'r-shared-companion-owner' claims artifact.png</code>. Log:
+    <code>~/.config/reckon/crew/runs/r-20260925T224614549756-accepted-shared-path-is-not-a-conflict/logs/added-tests-against-base-product.log</code>.
+    The two accompanying cases &mdash; a co-claimed path off the list, and a directory claim
+    that merely contains a shared file &mdash; pass at base, so the repair changed only the
+    refused-at-base clause.</p>
+    <p><strong>The fix reuses dispatch's resolver rather than re-reading the list.</strong>
+    Promotion now resolves <code>runs._shared_write_paths</code> &mdash; the same helper both
+    dispatch conflict checks call (<code>reckon/crew/dispatch.py:1231</code> and
+    <code>:1275</code>) &mdash; and skips the refusal only when the peer's claim names exactly
+    that file, which is dispatch's own rule (<code>reckon/crew/dispatch.py:1289</code>). The
+    exemption is exact-match, never containment, so a directory claim keeps its whole scope.</p>
+    <figure>
+      <img src="/reckon/figures/every-state-has-a-verb/accepted-path-peer-claim.svg"
+           alt="Decision diagram for the accepted-path peer-claim check, with the three measured cases: an exact shared file is accepted, the same claim off the list is refused, and a directory claim containing a shared file refuses every path under it."
+           width="100%">
+      <figcaption>
+        The peer-claim check after this landing, and the three cases measured through
+        <code>crew complete</code> with a live peer pointer.
+      </figcaption>
+    </figure>
+    <p><strong>The measure.</strong> One invocation over
+    <code>tests/test_crew_promotion_scope.py</code> and <code>tests/test_crew_promotion.py</code>:
+    72 passed at base (pristine tree) to <strong>76 passed</strong> at head, exit 0 both arms,
+    so zero added failures with four cases added. Tests are asserted through the completion
+    entry point over a temporary repository, a temporary config home, and a live peer pointer
+    whose pid is this test process's own, with the real config home asserted untouched before
+    and after. Ruff on the staged paths reads 10 findings at base and 10 at head; the format
+    delta is zero, both arms carrying the same single pre-existing unformatted file.</p>
+    <p><strong>The negative control.</strong> Removing the exemption from the committed tree
+    (three lines, with <code>shared_files</code> verified absent afterwards) turns the added
+    acceptance assertion red with the original refusal text, so the green run is the exemption
+    working rather than a test that cannot fail. Log:
+    <code>logs/negative-control.red.log</code>, first line naming the declared mutation.</p>
+  </section>
+
 </main>
 </body>
 </html>
