@@ -185,6 +185,9 @@ def read_local_lane(
     gate = payload.get("router_generation_gate")
     gate = gate if isinstance(gate, Mapping) else {}
     age = (now - observed).total_seconds()
+    shelf_life = payload.get("suggested_shelf_life_seconds")
+    if isinstance(shelf_life, bool) or not isinstance(shelf_life, (int, float)):
+        shelf_life = stale_seconds
     return {
         "state": str(payload.get("state") or "measured"),
         "running": payload.get("running"),
@@ -198,7 +201,7 @@ def read_local_lane(
         "prefix_hit_rate": payload.get("prefix_hit_rate"),
         "observed_at": observed.isoformat(),
         "age_seconds": age,
-        "stale": age > stale_seconds,
+        "stale": age > float(shelf_life),
     }
 
 

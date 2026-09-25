@@ -181,3 +181,21 @@ def test_removing_rollout_reader_makes_codex_account_unknown(
     )
     document = paid_lanes.compose_document(["codex-luna"], sources=sources, moment=NOW)
     assert document["accounts"]["codex-luna"]["state"] == paid_lanes.UNKNOWN
+
+
+def test_local_lane_uses_its_published_shelf_life(tmp_path: Path) -> None:
+    path = tmp_path / "lane.json"
+    path.write_text(
+        json.dumps(
+            {
+                "state": "measured",
+                "observed_at": (NOW - timedelta(minutes=30)).isoformat(),
+                "suggested_shelf_life_seconds": 45,
+            }
+        )
+    )
+
+    reading = paid_lanes.read_local_lane(path, moment=NOW)
+
+    assert reading["age_seconds"] == 1800.0
+    assert reading["stale"] is True
