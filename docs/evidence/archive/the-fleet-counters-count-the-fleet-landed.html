@@ -63,6 +63,27 @@
       </table>
       <p><strong>Retained limit:</strong> this is a bounded slice of one project watcher. Zero stale and scope mismatches are not population-wide absence claims. No product code or test was changed by this node.</p>
     </section>
+
+    <section id="row-reads-cleanly">
+      <h2>The follower row reads cleanly</h2>
+      <p>Commit <code>4cec02e2</code> lands the state-cell and column work. The remedy the coordinator takes renders in the state cell as <code>&lt;state&gt; &middot; &lt;action&gt;</code> at a width derived from the widest state word the classification emits and the widest verb the vocabulary names, and the marker cell that once held the column ahead of the state is retired. The reason clause carries the explanation alone: a leading label whose words the state cell already says is dropped, so <code>ready to resume</code> renders one <code>resume</code>. Every bucket the fleet can show (<code>w</code>, <code>b</code>, <code>u</code>, <code>q</code>) prints on every row with a zero dimmed rather than dropped, and elapsed is one format right-aligned to a fixed width. A departure renders <code>withdrawn</code> unless the ledger recorded the run, and a refused dispatch is never promoted.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/row-columns.svg" alt="Two panels of follower rows. Before: the clause opens with a label whose column moves with every optional cell. After: every row reaches the clause at one column, and the action sits in the state cell.">
+        <figcaption>The clause column holds still once every optional cell keeps its place; the remedy moves into the state cell and the clause explains it.</figcaption>
+      </figure>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Command</th><th>Result</th><th>Measure</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest tests/test_ticker_reads_cleanly.py</code></td><td>26 passed</td><td>Property test over every state at every elapsed value with and without a queued run; the label, duplicate-word, per-line counter and ledger-row properties.</td></tr>
+          <tr><td><code>pytest</code> over the seven in-fence ticker test files</td><td>92 passed</td><td>The render, format and counter suites alongside the new property file.</td></tr>
+          <tr><td>declared mutation <code>render q only when non-zero</code></td><td>4 failed</td><td>The queued bucket vanishes and the clause column moves; log <code>mutation-q-only-when-nonzero.log</code>.</td></tr>
+          <tr><td>declared mutation <code>restore the label prefix</code></td><td>12 failed</td><td>The clause opens with the remedy again; log <code>mutation-restore-label-prefix.log</code>.</td></tr>
+          <tr><td><code>ruff check</code> on <code>reckon/crew/ticker.py</code></td><td>no added findings</td><td>One pre-existing <code>FURB162</code> at base, unchanged</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Retained limit.</strong> The producer that emits the departure word is <code>fleet_transitions</code> in <code>reckon/crew/recovery.py</code> (line 4749 at base), which appends <code>promoted</code> for any departure with no ledger lookup. This node renders the word correctly from <code>event["ledger_row"]</code>, but the field is populated by that producer, so a run that vanishes without the field still defaults to <code>promoted</code> at the source. The producer fix is reported as a follow-on. Column-offset assertions in four out-of-fence ticker tests moved with the layout and are reported as follow-ons.</p>
+    </section>
   </main>
 </body>
 </html>
