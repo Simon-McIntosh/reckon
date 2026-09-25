@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T10:27:12",
+  "updated": "2026-09-25T10:27:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -407952,6 +407952,27 @@
         "orientation_input_tokens": 1884330.0,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "failed",
+          "integrated_revision": "b42e5ad3fbfff9a86c039f546836895bdfce6203",
+          "checkout_revision": "b42e5ad3fbfff9a86c039f546836895bdfce6203",
+          "checkout_on_integrated_revision": true,
+          "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_mcp_views.py tests/test_mcp_vocabulary_is_complete.py tests/test_mcp_roadmap.py",
+          "gate_command_source": "stored",
+          "ran": true,
+          "exit_status": 1,
+          "timed_out": false,
+          "reason": null,
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "failed",
+            "integrated_revision": "b42e5ad3fbfff9a86c039f546836895bdfce6203",
+            "exit_status": 1,
+            "reason": null,
+            "message": "the gate passed at the worker's base but reports failed on the integrated revision b42e5ad3fbff: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       }
     ],
@@ -408265,6 +408286,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2746
+    "_version": 2747
   }
 }
