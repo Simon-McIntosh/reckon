@@ -30,12 +30,15 @@ from typing import Any
 CLOCK = 8
 NODE = 36
 # A node name wider than its cell is cut from the middle, so the end that
-# distinguishes it from the rest of its wave survives the cut. Two names can
-# still land on one text, and a row is the only place a reader can tell them
-# apart, so each then carries the last four characters of its run id, appended
-# inside the cell: the name is cut a little tighter to make the room rather
-# than the suffix pushing the columns after the node cell.
-NODE_ID_TAIL = 4
+# distinguishes it from the rest of its wave survives the cut. Two rows can
+# still land on one text — two names that differ only where the cut falls, and
+# two runs of one node, which share a name outright — and a row is the only
+# place a reader can tell them apart, so each then carries the tail of its own
+# run's minted stamp, appended inside the cell: the name is cut a little
+# tighter to make the room rather than the suffix pushing the columns after the
+# node cell. The stamp and never the id's own tail, which repeats the node name
+# the cell already carries and so separates nothing.
+RUN_STAMP_TAIL = 4
 # One glyph, not a name. The only decision-relevant thing about the owning
 # session is whether the row is the reader's to act on, and a run id spelled in
 # full — a shadow's least of all, since it is synthesised from its primary's —
@@ -538,6 +541,28 @@ def elide(text: str, width: int, *, keep_end: bool = False) -> str:
     return text[:head] + "…" + text[len(text) - tail :]
 
 
+# The stamp ``new_run_id`` mints into a run id: ``r-<stamp>-<node token>``,
+# with the token repeating the node's own name. Held as a pattern rather than
+# as a field position, because only a field that is a stamp identifies a run:
+# read by position, the middle field of any dashed id parses as one, and two
+# ids agreeing on that field would carry the same suffix.
+RUN_STAMP = re.compile(r"^r-(\d{8}T\d{6}\d{6})-")
+
+
+def minted_stamp(run_id: str) -> str:
+    """The part of a run id that tells two runs of one node apart.
+
+    Two runs of one node share everything in an id but the minted stamp, and
+    the id's tail is the node name outright, so a suffix meant to separate two
+    rows has to come from here. An id that carries no minted stamp — one from
+    a reader or a fixture rather than from ``new_run_id`` — has no such part to
+    draw from, so the whole id is the run's identity and its own tail is what
+    the row can show.
+    """
+    minted = RUN_STAMP.match(run_id)
+    return minted.group(1) if minted else run_id
+
+
 # The prefix the fleet surface prints ahead of the bound that is binding. A
 # word rather than a glyph, because the reading is a sentence fragment a reader
 # has to be able to search for, and because the same clause appears in a
@@ -824,12 +849,12 @@ class Ticker:
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
         self._hues: dict[str, int] = {}
-        # The node texts this pane has rendered, by the name that claimed each
-        # of them, and the names whose texts collided. Both live as long as the
-        # pane: a name seen once cannot be un-seen, and a later attach replays
+        # The node texts this pane has rendered, by the run that claimed each
+        # of them, and the runs whose texts collided. Both live as long as the
+        # pane: a row seen once cannot be un-seen, and a later attach replays
         # its baselines through this same grid.
         self._node_claims: dict[str, str] = {}
-        self._colliding_nodes: set[str] = set()
+        self._colliding_runs: set[str] = set()
 
     def _model_width(self, project: str | None) -> int:
         """The model cell's width for ``project``, resolved once and remembered.
@@ -858,7 +883,7 @@ class Ticker:
         return self._hues[node]
 
     def _node_cell(self, node: str, run_id: str) -> str:
-        """The node name fitted to its cell, marked when two names read alike.
+        """The node name fitted to its cell, marked when two rows read alike.
 
         The name is cut from the middle so its end survives, because the node
         column answers *which worker is this?* and the peers of a wave share a
@@ -867,27 +892,28 @@ class Ticker:
         hue cannot repair that: hues are handed out per name, so two names that
         cut to one text are two entries and two colours reading as one name.
 
-        A cut that keeps both ends still lands two names on one text when they
-        differ in the middle, and the row is the only place they can be told
-        apart, so the second name to claim a text marks both: each then carries
-        the last four characters of its own run id after the name, spaced so
-        the suffix reads as an identifier rather than as the name's own tail.
-        The claim is remembered rather than applied once, because the copy
-        already written to a pane cannot be recalled — a row for either name
-        rendered after the collision carries its own suffix.
+        What is compared is the cell a reader sees, not the name behind it: two
+        names that differ where the cut falls land on one text, and two runs of
+        one node land on one text outright, so the run that claims a text is
+        what a later row is measured against. The second run to claim a text
+        marks both, and each then carries the tail of its own minted stamp
+        after the name, spaced so the suffix reads as an identifier rather than
+        as the name's own tail. The claim is remembered rather than applied
+        once, because the copy already written to a pane cannot be recalled — a
+        row for either run rendered after the collision carries its own suffix.
         """
         text = elide(node, NODE, keep_end=True)
         claimed = self._node_claims.get(text)
         if claimed is None:
-            self._node_claims[text] = node
-        elif claimed != node:
-            self._colliding_nodes.update((claimed, node))
-        if node not in self._colliding_nodes:
+            self._node_claims[text] = run_id
+        elif claimed != run_id:
+            self._colliding_runs.update((claimed, run_id))
+        if run_id not in self._colliding_runs:
             return text
-        tail = run_id[-NODE_ID_TAIL:]
+        tail = minted_stamp(run_id)[-RUN_STAMP_TAIL:]
         if not tail:
             return text
-        return f"{elide(node, NODE - NODE_ID_TAIL - 1, keep_end=True)} {tail}"
+        return f"{elide(node, NODE - RUN_STAMP_TAIL - 1, keep_end=True)} {tail}"
 
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
