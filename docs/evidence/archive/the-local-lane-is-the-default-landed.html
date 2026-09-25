@@ -785,10 +785,10 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     <table>
       <thead><tr><th>Evidence</th><th>Observed</th></tr></thead>
       <tbody>
-        <tr><td>Node test</td><td><code>tests/test_headroom_publishes_real_readings.py</code>: 2 passed; Codex rollout, Claude stream, local fixture and atomic temp publish all asserted</td></tr>
+        <tr><td>Node test</td><td><code>tests/test_headroom_publishes_real_readings.py</code>: 4 passed; Codex rollout, real Claude stream, local fixture and atomic temp publish all asserted</td></tr>
         <tr><td>Compatibility gate</td><td><code>tests/test_paid_lanes_document.py tests/test_budget.py</code>: 84 passed, 0 failures</td></tr>
-        <tr><td>Host publish</td><td>10 configured accounts published in 4.9 s; Codex accounts and Claude accounts with recent readings were observed, and the local block was <code>state=measured</code></td></tr>
-        <tr><td>Host local block</td><td><code>running=13</code>, <code>ceiling=21</code>, <code>headroom=8</code>, <code>gate_width=14</code>, <code>in_flight=14</code>, <code>gate_waiting=2</code>, <code>kv_occupancy=0.33</code></td></tr>
+        <tr><td>Host publish</td><td><code>host-publish.json</code> records 10 accounts; recent observed windows are present for <code>claude</code>, <code>claude-opus</code>, <code>codex</code>, <code>codex-astra</code>, <code>codex-luna</code> and <code>codex-terra</code>, and the local block is <code>state=measured</code></td></tr>
+        <tr><td>Host local block</td><td>From <code>host-publish.json</code>: <code>running=12</code>, <code>ceiling=19</code>, <code>headroom=7</code>, <code>gate_width=14</code>, <code>in_flight=13</code>, <code>gate_waiting=0</code>, <code>kv_occupancy=0.28</code>, <code>prefix_hit_rate=0.988</code>, <code>stale=false</code></td></tr>
         <tr><td>Negative control</td><td>Removing the rollout reader makes the Codex account assertion fail; the declared first line is retained in the red log</td></tr>
       </tbody>
     </table>
