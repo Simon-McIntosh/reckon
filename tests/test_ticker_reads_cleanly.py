@@ -1,20 +1,18 @@
 """A ticker row reads the same way whatever it is reporting:
 
-its columns hold still, its counters always show every bucket, its state cell
-carries the action and the clause explains without repeating it, and a run that
-leaves the fleet is called promoted only when the ledger recorded it.
+its columns hold still, its counters always show every bucket, its transition
+contains no action word, and a producer's destination state is rendered as
+given.
 
 Four properties are asserted here, each over the whole vocabulary rather than
 over a fixture chosen to pass:
 
 * the clause begins at one screen column on every row, a queued run in the fleet
   or not, and no cell abuts the text;
-* every classification carrying a remedy renders its action in the state cell,
-  and the clause neither opens with a label nor repeats a word the state cell
-  says;
+* every classification carrying a remedy renders only the transition before
+  elapsed, with attention derived from whether the destination needs a reader;
 * a line's trailing counter includes the transition that line reports;
-* a departure is promoted only when a ledger row for the run exists, and a
-  refused dispatch is never promoted.
+* a departure word is never re-derived from a ledger side fact.
 """
 
 from __future__ import annotations
@@ -38,21 +36,29 @@ STATES = sorted(ticker_module.STATE_HUE["light"])
 # constants the renderer sizes them by rather than from a rendered row, so a
 # column added or widened without the clause moving with it fails here. The
 # model cell is at its default width because this file's grid pins no aliases.
-CLAUSE_COLUMN = (
+TRANSITION_COLUMN = (
     ticker_module.CLOCK
+    + ticker_module.GAP
+    + ticker_module.ATTENTION
+    + ticker_module.GAP
+    + ticker_module.MODEL
+    + ticker_module.GAP
+    + ticker_module.EFFORT
     + ticker_module.GAP
     + ticker_module.ROLE
     + ticker_module.GAP
     + ticker_module.NODE
-    + ticker_module.STATE_REGION
-    + ticker_module.MODEL
-    + ticker_module.PAIR_GAP
-    + ticker_module.EFFORT
-    + ticker_module.STATS
-    + ticker_module.SPEND_GAP
-    + ticker_module.SPEND
     + ticker_module.GAP
 )
+NEW_STATE_COLUMN = TRANSITION_COLUMN + ticker_module.NEW_STATE_OFFSET
+ELAPSED_COLUMN = (
+    TRANSITION_COLUMN
+    + ticker_module.STATE
+    + ticker_module.GAP
+    + ticker_module.SPEND_GAP
+)
+COUNTER_COLUMN = ELAPSED_COLUMN + ticker_module.SPEND + ticker_module.GAP
+CLAUSE_COLUMN = COUNTER_COLUMN + ticker_module.STATS + ticker_module.GAP
 
 # Zero seconds to thirty hours: the span an elapsed cell can be asked to print,
 # across the places the format changes shape (minutes, the hour boundary, the
@@ -110,7 +116,7 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
     counter_columns: set[int] = set()
     clause_columns: set[int] = set()
     span = ticker_module.SPEND
-    end = CLAUSE_COLUMN - ticker_module.GAP
+    end = ELAPSED_COLUMN + ticker_module.SPEND
     for state in STATES:
         for seconds in ELAPSED:
             for queued in (False, True):
@@ -124,7 +130,14 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
                 # The cells a reader scans line up down the pane: the state
                 # word, the right edge of the counter block, and the elapsed
                 # token right-aligned to a cell of one width.
-                state_columns.add(line.index(state))
+                rendered_state = ticker_module.DISPLAY.get(state, state)
+                assert (
+                    line[
+                        NEW_STATE_COLUMN : NEW_STATE_COLUMN + ticker_module.STATE_WORD
+                    ].strip()
+                    == rendered_state
+                )
+                state_columns.add(NEW_STATE_COLUMN)
                 counter_columns.add(re.search(r"\d+q", line).end())
                 cell = line[end - span : end]
                 assert len(cell) == span, (key, line)
@@ -136,10 +149,16 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
                     # A cell that vanished would let the clause's own cell sit
                     # one space against the last one, which is how
                     # `0mbinvestigate:` read as a single token.
-                    assert line[end : end + 2] == "  ", (key, line)
+                    assert line[end:COUNTER_COLUMN] == " " * ticker_module.GAP, (
+                        key,
+                        line,
+                    )
                     # The clause begins in its own cell, past the glyph the
                     # record's own verdict adds when it carries one.
-                    assert line.index(MARK) in (end + 2, end + 4), (key, line)
+                    assert line.index(MARK) in (CLAUSE_COLUMN, CLAUSE_COLUMN + 2), (
+                        key,
+                        line,
+                    )
                     clause_columns.add(line.index(MARK))
 
     assert len(state_columns) == 1, sorted(state_columns)
@@ -165,18 +184,8 @@ def test_every_counter_bucket_renders_at_one_width(grid):
 
 
 @pytest.mark.parametrize("classification", sorted(recovery.RECOVERY_VERBS))
-def test_the_state_cell_carries_the_action_and_the_clause_explains_it(
-    grid, classification
-):
-    """Every classification with a remedy: the action in the cell, never in the
-    clause.
-
-    The clause opened with the remedy — ``resume: ready to resume: the worker
-    process is gone`` — so a reader saw the same word twice before reaching the
-    explanation, and the worst case said it twice in one line. The remedy now
-    renders in the state cell, and the clause is the explanation alone: it never
-    opens with a label and never begins with a word the cell already says.
-    """
+def test_the_transition_prints_attention_instead_of_the_action(grid, classification):
+    """Every classified remedy stays data while the row prints only attention."""
     action = recovery.RECOVERY_VERBS[classification]
     event = _event(
         to_state=classification,
@@ -186,15 +195,15 @@ def test_the_state_cell_carries_the_action_and_the_clause_explains_it(
     )
     line = plain(grid.render(event))
 
-    assert action in line, line
-    # The action is in the state cell, ahead of the clause's own column.
-    assert line.index(action) < CLAUSE_COLUMN, line
+    transition_words = set(
+        re.findall(r"[A-Za-z0-9_-]+", line[TRANSITION_COLUMN:ELAPSED_COLUMN])
+    )
+    assert action not in transition_words, line
+    expected = "!" if classification in ticker_module.ATTENTION_STATES else " "
+    attention_column = ticker_module.CLOCK + ticker_module.GAP
+    assert line[attention_column] == expected, line
     body = line[CLAUSE_COLUMN:].strip()
     assert not LABEL.match(body), body
-    cell_words = set(re.findall(r"[A-Za-z0-9_-]+", line[:CLAUSE_COLUMN]))
-    if body:
-        first = re.findall(r"[A-Za-z0-9_-]+", body)[0]
-        assert first not in cell_words, (first, cell_words, body)
 
 
 def test_a_line_counter_includes_the_transition_it_reports():
@@ -236,28 +245,16 @@ def grid_row(snapshot, counts):
 
 
 @pytest.mark.parametrize("ledger_row", [True, False])
-def test_a_departure_is_promoted_only_with_a_ledger_row(grid, ledger_row):
-    """The word a departure renders as is the fact the ledger holds.
-
-    A run that leaves the live set with no ledger row behind it vanished — a
-    refused dispatch, a discarded run, a reflex review whose worker never
-    started — and calling that `promoted` tells a coordinator a review exists
-    that it will then wait on. The ledger row is what separates the two.
-    """
+def test_a_departure_renders_the_producer_state_without_a_ledger_branch(
+    grid, ledger_row
+):
+    """A renderer does not restate a producer verdict from a ledger side fact."""
     event = _event(to_state="promoted", ledger_row=ledger_row)
     line = plain(grid.render(event))
-    if ledger_row:
-        assert "promoted" in line
-        assert "withdrawn" not in line
-    else:
-        assert "withdrawn" in line
-        assert "promoted" not in line
+    assert "promoted" in line
+    assert "withdrawn" not in line
 
 
-def test_a_refused_dispatch_is_never_promoted(grid):
-    """A refusal is a departure whose cause is known: nothing ran to promote."""
-    event = _event(to_state="promoted", refused=True, detail="refused at admission")
+def test_a_withdrawn_producer_state_is_rendered_as_given(grid):
+    event = _event(to_state="withdrawn", refused=True, detail="refused at admission")
     assert "withdrawn" in plain(grid.render(event))
-    assert ticker_module.departure_word({"event": "refused"}) == "withdrawn"
-    assert ticker_module.departure_word({"ledger_row": False}) == "withdrawn"
-    assert ticker_module.departure_word({"ledger_row": True}) == "promoted"

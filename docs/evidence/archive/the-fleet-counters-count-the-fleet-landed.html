@@ -81,7 +81,6 @@
       </table>
       <p><strong>Latency.</strong> Time from start to the first baseline line, base <code>17935dc3</code> against the head, absolute <code>.venv</code> interpreter. Synthetic fleet of 40 runs: base 0.118/0.071/0.072&nbsp;s, head 0.093/0.070/0.071&nbsp;s. Real project <code>reckon</code>, read-only, <code>runs.watch_stream_cursor</code> at 29 rows: base 6.59/6.14/6.21&nbsp;s, head 6.00/6.38/6.34&nbsp;s; the dry-run sweep that runs first, before the cursor, at <code>reckon/cli.py:2166</code>: base 1.04/1.05/1.02&nbsp;s, head 1.11/1.02/1.11&nbsp;s. The change adds one small atomic write, ~25&nbsp;ms. No latency was added; the largest measured pre-emission call is <code>watch_stream_cursor</code> at ~6.3&nbsp;s, and it predates this section.</p>
       <p><strong>Retained limit.</strong> The <code>dispatched</code> label a long-working run can carry in a regenerated baseline is derived outside this section's fence, in <code>reckon/crew/recovery.py:4507</code> (<code>_watch_snapshot</code>), consumed through <code>reckon/crew/runs.py:1155-1168</code>; it was not changed here and remains the continuation path's own baseline only on a first arming.</p>
-
     </section>
 
     <section id="row-reads-cleanly">
@@ -146,6 +145,33 @@
       </table>
       <p><strong>Source map.</strong> Producer baselines and transitions come from <code>reckon/crew/runs.py:1094&ndash;1144</code> at revision <code>40e24067ea2214b16dc84916fbfac94b2aa802a1</code>; the state reducer is <code>reckon/crew/recovery.py:4575&ndash;4721</code>. That revision's worker/process ordering fixes launch flicker, first-commit process-gone classification and stall flaps from exited workers. Same-state <code>manifest-rewritten</code> records are tagged at <code>reckon/crew/recovery.py:5110&ndash;5119</code>; follower de-duplication is <code>reckon/cli.py:2126&ndash;2138</code>. Re-arm continuation and baseline selection are <code>reckon/cli.py:1927&ndash;1975</code> and <code>reckon/cli.py:2172&ndash;2203</code> at the node head <code>fe712b1cab26a5f2bfd8ef6b630294c4671e7af1</code>.</p>
       <p><strong>Verification and limits.</strong> The exact capture commands, complete 47-kind table, median timing, five-minute recovery rule, figure and policy are in the research page. This is a dated append-only receipt, not a live rate. Re-arm replay is follower-only and is not falsely claimed to be present in the producer stream. No product file changed.</p>
+    </section>
+
+    <section id="ticker-row-is-one-transition">
+      <h2>The ticker row is one aligned transition</h2>
+      <p>Commits <code>926b8743</code> and <code>c74841cb</code> replace the destination-and-action cell with one fixed-width transition and size both state halves from every lifecycle and recovery word the classifier can emit. Each row reads time, one-character attention, model, effort, role, node, previous state right-aligned to that width, one fixed <code>→</code>, destination state left-aligned, elapsed, the fixed <code>w b u q</code> counters and the reason clause. Every field boundary has at least two spaces; the long lead examples retain their node-name gutter.</p>
+      <p>The renderer holds the state it last put on this pane for each run. The producer pair <code>dispatched → abandoned</code>, then <code>dispatched → working</code> therefore renders as <code>dispatched → abandoned</code>, then <code>abandoned → working</code>. A later event whose destination is still <code>working</code> renders no row. Recovery verbs remain structured event facts and do not appear between the transition and elapsed; <code>!</code> is present exactly for a destination or recovery classification that owes the coordinator attention. The ledger-row departure branch is gone, so <code>withdrawn</code> and <code>promoted</code> render exactly as the producer supplied them.</p>
+      <p>Rows rendered by <code>reckon/crew/ticker.py</code> at this head for one run that flickered, then worked, with its same-state update suppressed, and a review that completed and was promoted. At this head each row still opens with the attention mark, which the lead dropped on 2026-09-25. A follow-up removes it.</p>
+<pre>14:25:01  !  dsv4.1-fl…  high   implement  ticker-fixture-reads-withdrawn   dispatched → abandoned     –  4w· 0b· 7u· 0q  the process is gone…
+14:26:34     dsv4.1-fl…  high   implement  ticker-fixture-reads-withdrawn    abandoned → working      1m  4w· 0b· 7u· 0q
+14:25:08  !  luna5.6     xhigh  review     re-review-of-plan…record-and-store  working → complete    10m  4w· 0b· 7u· 0q  review stored
+14:27:48     luna5.6     xhigh  review     re-review-of-plan…record-and-store complete → promoted      –  4w· 0b· 7u· 0q</pre>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Assigned ticker, watch and recovery files at implementation heads <code>926b8743</code> and <code>c74841cb</code></td><td>266 passed</td><td>Absolute project interpreter, color path enabled, no cache provider; the final-head log is named in the worker manifest.</td></tr>
+          <tr><td>Every classifier state pair, none-to-state, three node-name widths, seven elapsed boundaries and queued/not queued</td><td>29,484 rendered cases</td><td><code>tests/test_ticker_row_is_one_transition.py</code>; fixed arrow, attention, elapsed, counter and reason starts, with every gutter checked.</td></tr>
+          <tr><td><code>print the action word after the transition</code></td><td>failed as required</td><td><code>mutation-print-action-word.log</code>; the grid property rejected the inserted remedy.</td></tr>
+          <tr><td><code>drop the two-space name gap</code></td><td>failed as required</td><td><code>mutation-drop-name-gap.log</code>; the boundary property rejected the one-space gutter.</td></tr>
+          <tr><td><code>take the previous state from the event's from_state</code></td><td>failed as required</td><td><code>mutation-use-producer-from-state.log</code>; the chain fixture found <code>dispatched → working</code> instead of <code>abandoned → working</code>.</td></tr>
+          <tr><td><code>print same-state rows</code></td><td>failed as required</td><td><code>mutation-print-same-state.log</code>; the repeated-state fixture received a second row.</td></tr>
+          <tr><td>Ruff on every edited Python file</td><td>1 finding, from 6 at base</td><td><code>ruff-base.log</code> and <code>ruff-after.log</code>; the retained <code>FURB162</code> is pre-existing, and <code>ruff format --check</code> accepts all eleven files.</td></tr>
+        </tbody>
+      </table>
+      <h3>Moved geometry assertions</h3>
+      <p>The assertions that pinned the preceding row geometry now read the new cells from the renderer's constants: <code>CLAUSE_COLUMN</code> and the transition/elapsed/counter starts in <code>tests/test_ticker_reads_cleanly.py</code>; <code>_measure_column</code> in <code>tests/test_crew_ticker_layout.py</code>; <code>_spend_column</code> in <code>tests/test_crew_recovery.py</code>; <code>_reason_start</code> in <code>tests/test_ticker_reason_cut_at_a_word.py</code>; node-cell extraction in <code>tests/test_ticker_node_names_keep_their_ends.py</code>; and baseline, stream-chain, wait-marker and departure expectations in <code>tests/test_crew_ticker.py</code>, <code>tests/test_crew_watch_stream.py</code>, <code>tests/test_ticker_renders_wait_facts.py</code> and <code>tests/test_ticker_row_drops_unread_cells.py</code>.</p>
+      <p><strong>Retained limit.</strong> Carrying the Ticker's in-memory <code>reported</code> map through a process re-arm belongs to the follower continuation node, because <code>reckon/cli.py</code> and the checkpoint store are outside this node's write scope. This commit supplies the pane-owned chain and its state-map contract; the coordinator must reconcile the re-arm carry separately.</p>
     </section>
   </main>
 </body>

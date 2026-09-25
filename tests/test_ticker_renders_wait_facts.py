@@ -262,7 +262,7 @@ def _event(snapshot: Path) -> dict:
     )
 
 
-def test_the_marker_adds_to_the_needs_action_glyph_rather_than_replacing_it() -> None:
+def test_unprobed_and_attention_signals_keep_their_own_columns() -> None:
     """A wait nobody probes on a run that also needs help keeps both signals.
 
     The needs-action glyph says the run cannot proceed without a reader, and
@@ -273,8 +273,9 @@ def test_the_marker_adds_to_the_needs_action_glyph_rather_than_replacing_it() ->
     t = grid()
     held = unprobed(to_state="needs-help", needs_help_complete=True)
     clause = t._reason(held, "needs-help", 45)
-    assert clause.startswith(ticker_module.UNPROBED_MARKER + "?")
-    assert "?" in clause
+    line = rendered(held)
+    assert clause.startswith(ticker_module.UNPROBED_MARKER + " ")
+    assert line[ticker_module.CLOCK + ticker_module.GAP] == "!"
 
 
 def test_a_real_run_declaring_no_wait_carries_no_marker(tmp_path: Path) -> None:

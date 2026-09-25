@@ -53,21 +53,27 @@ def _reason_start(model_width: int) -> int:
     rather than pinned to a screen column, so a layout change moves this with
     the row it measures.
     """
-    start = (
+    return (
         ticker_module.CLOCK
+        + ticker_module.GAP
+        + ticker_module.ATTENTION
+        + ticker_module.GAP
+        + model_width
+        + ticker_module.GAP
+        + ticker_module.EFFORT
         + ticker_module.GAP
         + ticker_module.ROLE
         + ticker_module.GAP
         + ticker_module.NODE
-        + ticker_module.STATE_REGION
-        + model_width
-        + ticker_module.PAIR_GAP
-        + ticker_module.EFFORT
+        + ticker_module.GAP
+        + ticker_module.STATE
+        + ticker_module.GAP
+        + ticker_module.SPEND_GAP
+        + ticker_module.WALL
+        + ticker_module.GAP
+        + ticker_module.STATS
+        + ticker_module.GAP
     )
-    start += sum(3 for _ in ticker_module._MAX_CELLS) + (
-        len(ticker_module._MAX_CELLS) - 1
-    )
-    return start + ticker_module.SPEND_GAP + ticker_module.WALL + ticker_module.GAP
 
 
 def _event(clause: str, **overrides: Any) -> dict[str, Any]:
