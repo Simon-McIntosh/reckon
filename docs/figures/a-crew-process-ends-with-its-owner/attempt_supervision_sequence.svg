@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 360" role="img" aria-labelledby="title desc">
+  <title id="title">Every execution attempt runs beneath its own supervisor</title>
+  <desc id="desc">A fresh dispatch, resume, and lane-change redispatch each point to a supervisor process. Each supervisor starts one worker and writes attempt-numbered worker and exit records. Only the current attempt is exposed through the canonical worker and exit record names.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#334155"/>
+    </marker>
+    <style>
+      .box { fill: #fff; stroke: #334155; stroke-width: 1.5; rx: 7; }
+      .current { fill: #ecfdf5; stroke: #047857; stroke-width: 2; rx: 7; }
+      .archive { fill: #f8fafc; stroke: #64748b; stroke-width: 1.3; rx: 7; }
+      .line { stroke: #334155; stroke-width: 1.5; marker-end: url(#arrow); }
+      .muted { stroke: #94a3b8; stroke-dasharray: 5 4; }
+      text { font-family: system-ui, sans-serif; fill: #0f172a; font-size: 14px; }
+      .label { font-size: 12px; fill: #475569; }
+      .heading { font-weight: 700; font-size: 16px; }
+    </style>
+  </defs>
+
+  <text x="28" y="34" class="heading">One run identity, one supervisor per attempt</text>
+
+  <rect x="28" y="70" width="150" height="54" class="box"/>
+  <text x="103" y="92" text-anchor="middle">dispatch / resume /</text>
+  <text x="103" y="112" text-anchor="middle">redispatch command</text>
+
+  <rect x="250" y="62" width="180" height="70" class="current"/>
+  <text x="340" y="88" text-anchor="middle" class="heading">supervisor</text>
+  <text x="340" y="111" text-anchor="middle">pointer pid, attempt 2</text>
+
+  <rect x="505" y="70" width="150" height="54" class="current"/>
+  <text x="580" y="92" text-anchor="middle" class="heading">worker</text>
+  <text x="580" y="112" text-anchor="middle">worker.json pid</text>
+
+  <line x1="178" y1="97" x2="250" y2="97" class="line"/>
+  <line x1="430" y1="97" x2="505" y2="97" class="line"/>
+
+  <rect x="710" y="54" width="180" height="42" class="current"/>
+  <text x="800" y="80" text-anchor="middle">attempt-2-worker.json</text>
+  <rect x="710" y="108" width="180" height="42" class="current"/>
+  <text x="800" y="134" text-anchor="middle">attempt-2-exit.json</text>
+  <line x1="655" y1="86" x2="710" y2="75" class="line"/>
+  <line x1="655" y1="108" x2="710" y2="129" class="line"/>
+
+  <text x="28" y="198" class="heading">Attempt change preserves history and changes the current view</text>
+  <rect x="28" y="224" width="215" height="44" class="archive"/>
+  <text x="135" y="251" text-anchor="middle">attempt-1-worker.json</text>
+  <rect x="28" y="282" width="215" height="44" class="archive"/>
+  <text x="135" y="309" text-anchor="middle">attempt-1-exit.json</text>
+
+  <rect x="342" y="224" width="215" height="44" class="current"/>
+  <text x="449" y="251" text-anchor="middle">worker.json → attempt 2</text>
+  <rect x="342" y="282" width="215" height="44" class="current"/>
+  <text x="449" y="309" text-anchor="middle">exit.json → attempt 2</text>
+
+  <rect x="660" y="244" width="230" height="64" class="box"/>
+  <text x="775" y="269" text-anchor="middle">classifier and review reflex</text>
+  <text x="775" y="291" text-anchor="middle" class="label">read only the current attempt</text>
+
+  <line x1="243" y1="246" x2="342" y2="246" class="line muted"/>
+  <line x1="243" y1="304" x2="342" y2="304" class="line muted"/>
+  <line x1="557" y1="246" x2="660" y2="265" class="line"/>
+  <line x1="557" y1="304" x2="660" y2="287" class="line"/>
+</svg>

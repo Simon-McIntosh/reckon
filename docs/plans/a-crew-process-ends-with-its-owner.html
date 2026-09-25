@@ -670,6 +670,24 @@
       <code>a-crew-process-ends-with-its-owner-landed.html#s10-ticker-fixture-reads-withdrawn</code>.</p>
     </div>
 
+    <div data-reckon="landing" data-node="every-attempt-is-supervised" data-when="2026-09-25">
+      <h3>Landing record &mdash; every execution attempt keeps a supervisor</h3>
+      <p>Commit <code>ce1f6281</code> routes command-line resume and lane-change redispatch
+      through the per-run supervisor already used by fresh dispatch. The pointer pid now names
+      the supervisor on both Claude/Clive-shaped and Codex-shaped harnesses; the worker pid and
+      its exit are written as attempt-numbered immutable receipts, while canonical
+      <code>worker.json</code> and <code>exit.json</code> expose only the current attempt.</p>
+      <p>The five-case gate passed in 5.57 s. A live repair with a predecessor's complete
+      manifest and a dirty worktree classified <code>running</code>, was neither scoring nor
+      promotable, and dispatched no reflex review. The dispatch/resume/recovery comparison
+      moved from 270 to 275 passing tests while retaining the same three failures and one skip,
+      so the added failure count is zero. The declared direct-launch mutation failed all five
+      cases; its killed-resume case produced no current-attempt exit record. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-every-attempt-is-supervised</code>;
+      sequence figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/attempt_supervision_sequence.svg</code>.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
