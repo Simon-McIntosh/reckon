@@ -24,6 +24,22 @@
     {
       "path": "reckon/roadmap.py",
       "reason": "Derived roadmap facts and the surfaces that read them are extended by independent nodes at separate points in the module."
+    },
+    {
+      "path": "reckon/mcp_views.py",
+      "reason": "Each MCP view lands in its own function, so two nodes extending different views edit disjoint regions of one module."
+    },
+    {
+      "path": "reckon/doccheck.py",
+      "reason": "Independent checks are added at separate call sites in this module, and a node repairing one check rarely touches another."
+    },
+    {
+      "path": "reckon/_store.py",
+      "reason": "Plan-store readers and writers are separate functions, so appends and reads land in different regions of this module."
+    },
+    {
+      "path": "reckon/crew/ticker.py",
+      "reason": "The counter rows, cell formatting and rendering are separate functions that independent nodes extend at separate points."
     }
   ]
 }

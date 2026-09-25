@@ -91,6 +91,7 @@ from reckon.crew.runs import (
     _process_start_time,
     _project_derivations,
     _scopes_overlap,
+    _shared_write_paths,
     _utc_now,
     _watch_arming_line,
     _watch_attach_line,
@@ -1221,6 +1222,7 @@ def _live_conflict_rows(
         node, project=project, repo=repo, authority=authority
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
+    shared_files = _shared_write_paths(project, repo)
     conflicts: list[dict[str, Any]] = []
     for claim in claims:
         if claim.absolute_path.resolve() in shared:
@@ -1230,6 +1232,7 @@ def _live_conflict_rows(
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
+            and not (path in shared_files and path == claim.path)
         ]
         if not paths:
             continue
@@ -1263,6 +1266,7 @@ def _raise_repository_scope_conflict(
         node, project=project, repo=repo, authority=authority
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
+    shared_files = _shared_write_paths(project, repo)
     for _repository, candidate, absolute, _declared, _derived_from in candidates:
         for claim in claims:
             if claim.absolute_path.resolve() in shared:
@@ -1270,6 +1274,13 @@ def _raise_repository_scope_conflict(
             if _repository != claim.repository or not _scopes_overlap(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
+                continue
+            # A file this project declares shareable admits a second claimant
+            # editing a different region: worktrees isolate the in-flight work
+            # and merging is the orchestrator's job, so a whole-file refusal
+            # serialises nodes that do not actually collide. Only the exact
+            # named file is shareable; a directory claim is a different path.
+            if candidate in shared_files and candidate == claim.path:
                 continue
             if not claim.binding:
                 # Named on the record rather than passed over quietly: an
