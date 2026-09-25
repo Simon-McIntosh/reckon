@@ -678,30 +678,39 @@ def _apply_evidence_appends(
     requests: list[dict[str, str]],
     root: str | Path | None,
 ) -> list[Path]:
-    """Validate every append, then write each landing record atomically.
+    """Append each request to its own record, one record at a time.
 
-    The duplicate-anchor refusal runs over the whole batch before any file is
-    written, so a refused batch leaves every record untouched.
+    Requests are grouped by record path and applied in order, each to the text
+    the previous request produced, so a batch naming one record twice appends
+    twice and the duplicate-anchor refusal sees the anchors an earlier request
+    added. Each record's read, apply and replace run inside that record's lock,
+    so a concurrent writer's append interleaves with this one instead of being
+    overwritten by it.
     """
-    planned: list[tuple[Path, str]] = []
+    grouped: dict[Path, list[dict[str, str]]] = {}
     for request in requests:
-        path = _evidence_record_path(docs_dir, request["plan"])
-        if path.is_file():
-            current = path.read_text(encoding="utf-8", errors="replace")
-        else:
-            current = _landed_record_shell(
-                project,
-                request["plan"],
-                _evidence_plan_title(project, request["plan"], root),
-            )
-        planned.append((path, _append_evidence_to_text(current, request)))
+        grouped.setdefault(_evidence_record_path(docs_dir, request["plan"]), []).append(
+            request
+        )
 
     written: list[Path] = []
-    for path, new_text in planned:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".html.tmp")
-        tmp.write_text(new_text, encoding="utf-8")
-        tmp.replace(path)
+    for path, batch in grouped.items():
+        plan_slug = batch[0]["plan"]
+        with _serialized_path_lock(path, "evidence"):
+            if path.is_file():
+                current = path.read_text(encoding="utf-8", errors="replace")
+            else:
+                current = _landed_record_shell(
+                    project,
+                    plan_slug,
+                    _evidence_plan_title(project, plan_slug, root),
+                )
+            for request in batch:
+                current = _append_evidence_to_text(current, request)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".html.tmp")
+            tmp.write_text(current, encoding="utf-8")
+            tmp.replace(path)
         written.append(path)
     return written
 
@@ -948,9 +957,7 @@ def _write_state_locked(
         raise OpError(str(exc)) from exc
     if evidence_appends:
         if docs_dir is None:
-            raise OpError(
-                f"append_evidence: no docs dir for project {project!r}"
-            )
+            raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     authored_text_changed = source_text != text
     new_text = _plan_html.write_state(source_text, new_data)

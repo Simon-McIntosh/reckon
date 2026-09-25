@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html
+from reckon import _plan_html, _store
 from reckon import mcp as mcp_module
 from reckon.cli import main
 
@@ -98,6 +100,21 @@ def _edit(checkout: Path, op: dict) -> dict:
         doc_type="plan",
         mode="state",
         ops=[op],
+    )
+
+
+def _edit_many(checkout: Path, ops: list[dict]) -> dict:
+    """Apply several ops in one batch through the plan-editing tool."""
+    plan_path = checkout / "docs" / "plans" / f"{PLAN}.html"
+    state = _plan_html.read_state(plan_path.read_text(encoding="utf-8"))
+    return mcp_module._edit_plan_tool(
+        PROJECT,
+        PLAN,
+        expected_version=state["version"],
+        checkout_path=str(checkout),
+        doc_type="plan",
+        mode="state",
+        ops=ops,
     )
 
 
@@ -192,3 +209,89 @@ def test_append_evidence_refuses_a_body_with_its_own_heading(plan) -> None:
     assert result["error"] == "op_error"
     assert "h2" in result["detail"]
     assert not _record_path(checkout).exists()
+
+
+def test_append_evidence_batch_appends_both_anchors_to_one_record(plan) -> None:
+    checkout, _ = plan
+
+    result = _edit_many(
+        checkout,
+        [
+            _append_op("first-beat", "The first beat", "<p>One.</p>"),
+            _append_op("second-beat", "The second beat", "<p>Two.</p>"),
+        ],
+    )
+
+    assert result["ok"] is True, result
+    text = _record_path(checkout).read_text(encoding="utf-8")
+    assert '<section id="first-beat">' in text
+    assert '<section id="second-beat">' in text
+    assert "<p>One.</p>" in text
+    assert "<p>Two.</p>" in text
+    assert text.count("<section id=") == 2
+
+
+def test_append_evidence_batch_refuses_a_repeated_anchor_untouched(plan) -> None:
+    checkout, _ = plan
+
+    result = _edit_many(
+        checkout,
+        [
+            _append_op("beat", "A beat", "<p>One.</p>"),
+            _append_op("beat", "A beat again", "<p>Two.</p>"),
+        ],
+    )
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "beat" in result["detail"]
+    # A refused batch writes no record at all.
+    assert not _record_path(checkout).exists()
+
+
+def test_concurrent_appends_to_one_record_both_land(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Two writers appending at once land both anchors, not one overwritten."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    docs_dir = tmp_path / "repo" / "docs"
+    record = docs_dir / "evidence" / "archive" / f"{PLAN}-landed.html"
+    record.parent.mkdir(parents=True)
+    record.write_text(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="reckon-type" content="evidence">'
+        f'<meta name="plan-evidence-for" content="{PLAN}">'
+        "<title>Demo plan</title></head><body><main></main></body></html>",
+        encoding="utf-8",
+    )
+
+    rounds = 12
+    for round_index in range(rounds):
+        record.write_text(
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="reckon-type" content="evidence">'
+            f'<meta name="plan-evidence-for" content="{PLAN}">'
+            "<title>Demo plan</title></head><body><main></main></body></html>",
+            encoding="utf-8",
+        )
+        barrier = threading.Barrier(2)
+
+        def append(anchor: str, barrier: threading.Barrier = barrier) -> None:
+            barrier.wait(timeout=10)
+            _store._apply_evidence_appends(
+                docs_dir, PROJECT, [_append_op(anchor, anchor, "<p>x.</p>")], None
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [
+                pool.submit(append, f"beat-{side}") for side in ("left", "right")
+            ]
+            for future in futures:
+                future.result(timeout=10)
+
+        text = record.read_text(encoding="utf-8")
+        assert '<section id="beat-left">' in text, (round_index, text)
+        assert '<section id="beat-right">' in text, (round_index, text)
+        assert text.count("<section id=") == 2, (round_index, text)
