@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:25:37",
+  "updated": "2026-09-25T12:27:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -419457,6 +419457,369 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T080934765563-obligations-mcp-view",
+        "plan": "an-orchestrator-cannot-forget-its-obligations",
+        "section": "\u00a72",
+        "node": "obligations-mcp-view",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1540,
+                "cached_input_tokens": 961597,
+                "input_tokens": 963139,
+                "output_tokens": 797,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 963936,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/mcp.py's _crew accepts view='obligations' with project and session and returns reckon.crew.obligations.obligations(project, session) unchanged inside the ok envelope, refusing a missing session with a named error; the view name joins the accepted-views list and the crew docstring in one short clause; tests/test_mcp_crew_obligations.py asserts the view returns the same items as the function on a synthetic config home and refuses a missing session; tests/test_mcp_views.py, tests/test_mcp_vocabulary_is_complete.py and tests/test_mcp_response_budget.py pass unchanged, including the 24 KiB schema budget; the declared mutation (drop the obligations branch) is applied and observed to fail with its log recorded; ruff on reckon/mcp.py reports no more findings than at base",
+          "estimated_hours": null,
+          "goal": "expose the derived obligations as a crew MCP view",
+          "id": "obligations-mcp-view",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T08:09:35Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 6,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 8,
+            "mean_context": 82500,
+            "observed_at": "2026-09-25T08:09:29Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/manifest.md",
+          "negative_control": "drop the obligations branch",
+          "plan": "an-orchestrator-cannot-forget-its-obligations",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp.py",
+            "tests/test_mcp_crew_obligations.py",
+            "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+            "docs/figures/an-orchestrator-cannot-forget-its-obligations",
+            "docs/plans/an-orchestrator-cannot-forget-its-obligations.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-role-scope",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T08:09:49Z",
+        "completed_at": "2026-09-25T08:52:57.445Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2541,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2588,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "d8f13a61645724d29abdbaa12ae2327d1d60de1e",
+        "commits": [
+          "da226e1eb45ed93b71576dff7cd1662b1ef92ba0",
+          "d1b632ce65f92c87127bcc2e453079c9c86d1922"
+        ],
+        "changed_lines": {
+          "added": 216,
+          "removed": 3,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_mcp_crew_obligations.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/manifest.md",
+        "scope_changed": false,
+        "session_id": "4d355720-48ab-4592-b133-2063e04be5b0",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8153804,
+            "input_tokens_cumulative": 8153804,
+            "output_tokens": 33913,
+            "output_tokens_cumulative": 33913,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T08:52:57.445Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "complete",
+              "elapsed_seconds": 1233,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T06:33:27Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:19:07Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 4917,
+                "worker_pid": 3635779
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2658,
+              "log_fresh": false,
+              "manifest_commits": [
+                "3fc05501",
+                "23350901",
+                "3b3a048e",
+                "7b1db1b1"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "1fdadb49bd04ce82d435c841d3bbba96bbf94bbee160fb172c5ec88ea7286d71",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan the-mcp-answers-within-its-ceiling --section '\u00a78' --role review --spec-level exact --node review-of-op-vocabulary-names-every-op --goal 'attach an independent review to run r-20260925T061717238455-op-vocabulary-names-every-op' --done-when 'the review for r-20260925T061717238455-op-vocabulary-names-every-op stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T061717238455-op-vocabulary-names-every-op.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T061717238455-op-vocabulary-names-every-op.at-7b1db1b1fbb7a894d26b49cc71433983d0b1dce8.json --time-budget 30m --session s23-coord --allow-unreconciled-runs --backend clive",
+              "node": "op-vocabulary-names-every-op",
+              "phase": "complete",
+              "plan": "the-mcp-answers-within-its-ceiling",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+              "session": "s23-coord",
+              "terminal_age_seconds": 2700,
+              "terminal_at": "2026-09-25T07:24:36Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/op-vocabulary-names-every-op"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8153804,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2557.866,
+          "generated_tokens": 33913,
+          "generation_seconds": 2508.873,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 27.6,
+          "machine_seconds": 48.993,
+          "peak_input_tokens": 132572,
+          "tokens_per_second": 13.52,
+          "wall_tokens_per_second": 13.26
+        },
+        "follow_on_paths": [
+          "tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers",
+          "reckon/mcp_views.py",
+          "/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/obligations-mcp-view",
+          "session_id": "4d355720-48ab-4592-b133-2063e04be5b0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T08:52:57.445Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T08:52:57Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T08:10:16Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T080934765563-obligations-mcp-view",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 5350,
+          "worker_pid": 4108548
+        },
+        "promoted_revision": "d1b632ce65f92c87127bcc2e453079c9c86d1922",
+        "impl_move": {
+          "plan": "an-orchestrator-cannot-forget-its-obligations",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_mcp_crew_obligations.py"
+          ],
+          "declaration": "drop the obligations branch",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/logs/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:44:35.381502+00:00",
+          "horizon_seconds": 2100,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T08:09:35Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 6,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 8,
+          "mean_context": 82500,
+          "observed_at": "2026-09-25T08:09:29Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 85.0,
+        "orientation_input_tokens": 1363583.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -419769,6 +420132,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2775
+    "_version": 2776
   }
 }
