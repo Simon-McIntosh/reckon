@@ -178,28 +178,53 @@ def _reservation_query_placement() -> dict[str, Any]:
     }
 
 
+def reservation_state(
+    record: Mapping[str, Any] | None,
+    runner: Callable[[list[str]], str | None] | None = None,
+) -> bool | None:
+    """What the scheduler answers about the record's job, and whether it answered.
+
+    True the scheduler reports the job in the system, False it ran and named no
+    such job, None the question could not be asked at all. The last two are
+    kept apart because they mean opposite things: a job the scheduler has
+    answered for has left the queue, while a query that never ran has said
+    nothing about the job, and a caller that collapses them reads every
+    unreadable scheduler as a released reservation.
+    """
+    from reckon.crew.runs import scheduler_job_state
+
+    if not record or not record.get("job_id"):
+        return None
+    state = scheduler_job_state(
+        _reservation_query_placement(), record.get("job_id"), runner
+    )
+    if state is None:
+        return None
+    return bool(state.strip())
+
+
 def reservation_alive(
     record: Mapping[str, Any] | None,
     runner: Callable[[list[str]], str | None] | None = None,
 ) -> bool:
-    """Whether the reservation a record names is still held.
+    """Whether the reservation a record names may be placed into.
 
     Answered from the scheduler rather than from a pid, because the pid a
     holding client leaves behind belongs to whoever submitted the reservation.
-    A question that cannot be asked at all answers False — the caller then
-    holds a fresh reservation rather than reporting an id nothing answers for.
-    """
-    from reckon.crew.runs import scheduler_job_state
 
-    if not record:
+    Only an answer releases the reservation. A question that could not be asked
+    at all — no reporting client on the PATH, a non-zero exit, a controller
+    that did not answer inside the query's bound — leaves a record naming a job
+    id standing, because reading an unreadable probe as an absent reservation
+    hands every worker of the placement the caller's fallback path, and there
+    the declared wrapping mints an allocation per worker: one reservation each,
+    silently, for as long as the query stays unreadable.
+
+    A record naming no job id is not a reservation at all, and answers False.
+    """
+    if not record or not record.get("job_id"):
         return False
-    job_id = record.get("job_id")
-    if not job_id:
-        return False
-    state = scheduler_job_state(_reservation_query_placement(), job_id, runner)
-    if state is None:
-        return False
-    return bool(state.strip())
+    return reservation_state(record, runner) is not False
 
 
 def _parse_job_id(completed: subprocess.CompletedProcess[str]) -> str | None:
@@ -239,6 +264,11 @@ def ensure_reservation(
 
     Idempotence is per project, which is what lets two projects each hold one
     allocation rather than the first to ask holding the only one.
+
+    A record the scheduler cannot be asked about is reported rather than
+    replaced, for the same reason a held one is: a query that did not run says
+    nothing about the job, and minting an id for it spends a second allocation
+    on a reservation that may well be held.
     """
     existing = read_reservation(project)
     probe = alive_probe or reservation_alive
