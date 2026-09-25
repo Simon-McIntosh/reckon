@@ -1,0 +1,50 @@
+# base revision: 4088c1ae05ee2de968547377ea80cb013d3de7ee
+# tree: /tmp/reckon-base-4088c1ae (git archive of the base revision)
+# cwd of the run: /tmp/reckon-base-4088c1ae
+# command: PYTHONPATH=/tmp/reckon-base-4088c1ae <venv>/bin/python -m pytest -p no:cacheprovider -q <files>  (cwd=/tmp/reckon-base-4088c1ae)
+# module.__file__: /tmp/reckon-base-4088c1ae/reckon/_backends.py
+# has protected_read_only_binds: False
+.........................................................FF....F......   [100%]
+=================================== FAILURES ===================================
+_____________ test_one_backend_reports_headroom_with_a_reset_time ______________
+
+    def test_one_backend_reports_headroom_with_a_reset_time() -> None:
+        budget = _observe(CLAUDE, "claude-turn.jsonl").budget
+>       assert budget["headroom"] == "known"
+E       AssertionError: assert 'unknown' == 'known'
+E         
+E         - known
+E         + unknown
+E         ? ++
+
+tests/test_backends.py:444: AssertionError
+____________ test_an_empty_rate_limit_mapping_is_not_a_measurement _____________
+
+    def test_an_empty_rate_limit_mapping_is_not_a_measurement() -> None:
+        budget = _backends.dialect_for(CLAUDE)._budget({})
+    
+        assert budget["headroom"] == "unknown"
+        assert budget["utilisation_pct"] is None
+>       assert "no numeric utilisation" in budget["detail"]
+E       AssertionError: assert 'no numeric utilisation' in 'rate-limit event carried no unifiedWindows'
+
+tests/test_backends.py:457: AssertionError
+_____________ test_known_headroom_answers_the_exhaustion_question ______________
+
+    def test_known_headroom_answers_the_exhaustion_question() -> None:
+>       assert (
+            _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget)
+            is False
+        )
+E       AssertionError: assert None is False
+E        +  where None = <function budget_exhausted at 0x7fdbf6301430>({'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...})
+E        +    where <function budget_exhausted at 0x7fdbf6301430> = _backends.budget_exhausted
+E        +    and   {'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...} = Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='').budget
+E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
+
+tests/test_backends.py:498: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
+FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
+FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
+3 failed, 67 passed in 10.02s

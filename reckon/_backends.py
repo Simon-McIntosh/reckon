@@ -1927,6 +1927,48 @@ def _within_any(path: Path, roots: Sequence[Path]) -> bool:
     return any(path == root or path.is_relative_to(root) for root in roots)
 
 
+def protected_read_only_binds(
+    protected: Sequence[Path],
+) -> list[tuple[Path, Path]]:
+    """Return the source/destination pairs that overlay the protected paths.
+
+    A protected path that is itself a symlink cannot be a mount destination:
+    bubblewrap will not create a mount point where the destination is a symlink.
+    A symlink that reaches this list — ``protected_paths`` filters on
+    ``Path.exists()``, which follows links — would otherwise abort the whole
+    launch before the worker starts, so each one is resolved and its target
+    bound read-only in place. That seals the same bytes, because a write through
+    the link lands on the target.
+
+    A target already inside another protected path needs no overlay of its own:
+    that path is sealed in its own right, so composing one would add a redundant
+    read-only bind. A symlink whose target does not exist is skipped outright —
+    a link into nothing seals nothing, and there is no file to mount.
+
+    The destination is always the resolved path, never the link, so nothing this
+    returns has a symlink for a destination.
+    """
+    pairs: list[tuple[Path, Path]] = []
+    seen: set[str] = set()
+    for path in protected:
+        if path.is_symlink():
+            target = path.resolve()
+            if not target.exists():
+                continue
+            others = [other.resolve() for other in protected if other != path]
+            if _within_any(target, others):
+                continue
+            source = destination = target
+        else:
+            source = destination = path
+        key = str(destination)
+        if key in seen:
+            continue
+        seen.add(key)
+        pairs.append((source, destination))
+    return pairs
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -1949,6 +1991,13 @@ def fence_argv(
     the run directory the manifest lives in — the last because a worker that
     cannot write its own manifest has delivered nothing.
 
+    A protected path that is a symlink is bound at its resolved target rather
+    than at its own path, because bubblewrap cannot create a mount point where
+    the destination is a symlink; see :func:`protected_read_only_binds`. The
+    writable roots are therefore tested for containment against the paths the
+    overlays actually land on, so a grant inside a symlinked protected tree is
+    still re-opened writable.
+
     ``read_only_binds`` are source/destination pairs mounted last: a writable
     grant re-binds a whole subtree, so a file mounted underneath one is exposed
     correctly only when it is mounted after that grant.
@@ -1960,13 +2009,15 @@ def fence_argv(
     if manifest_path is not None:
         roots.append(Path(manifest_path).parent)
 
+    binds = protected_read_only_binds(protected)
+    sealed = [destination for _source, destination in binds]
     fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
-    for path in protected:
-        fenced += ["--ro-bind", str(path), str(path)]
+    for source, destination in binds:
+        fenced += ["--ro-bind", str(source), str(destination)]
     granted: set[str] = set()
     for root in roots:
         key = str(root)
-        if key in granted or not _within_any(root, protected):
+        if key in granted or not _within_any(root, sealed):
             continue
         granted.add(key)
         fenced += ["--bind", key, key]
