@@ -775,7 +775,11 @@ def _read_plan_tool(
 ) -> dict[str, Any]:
     """Return a transport-bounded plan or project read by default.
 
-    Typed ``summary`` is the default for a selected project or resource. Request
+    ``view`` names the response shape for a typed resource read: ``'summary'``
+    (the default), ``'detail'``, ``'history'``, ``'version'``, ``'raw'``,
+    ``'schema'`` and ``'section'``. ``view='section'`` returns one authored h2
+    section selected by its positional ``section`` argument (the section id),
+    and refuses with ``section_not_found`` when that id is absent. Request
     ``view='raw'`` explicitly for the lossless storage response. The explicit
     legacy schema injector remains unchanged for callers using ``with_schema``.
     """
@@ -1306,6 +1310,7 @@ _OP_VOCAB = {
     "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one exact authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
+    "insert_section": "{op:'insert_section', id, title, body} — appends one authored h2 section before the first structured-state region and after any data-reckon='section' records.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
     "push": "{op:'push'} — selected sprint resource; marks it active (pushed) and demotes any other active sprint to open in the same versioned write.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
