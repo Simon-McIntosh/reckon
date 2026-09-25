@@ -634,16 +634,22 @@ For observer replacement, project-wide counts, stream flags, colour, and pointer
 binding rule is per-member serialisation: dispatch refuses a member that
 already owns a non-terminal live pointer, so the concurrency ceiling is exactly
 the number of registered members with no run in flight: **free members are the
-only ceiling.** The coordinator raises
-concurrency by registering more members (`reckon crew member add`) — a
-one-line, reversible act — and lowers it by dispatching fewer. Backend
-`concurrency:` keys in flight config are retired and ignored. Never treat
+only ceiling.** Backend `concurrency:` keys in flight config are retired and
+ignored. Never treat
 "the pool is loaded" as a constraint, a reason to queue ready independent
-work, or a reason to route around the crew system: if ready nodes outnumber
-free members, add members. The coordinator **registers enough members to meet
-it**, then redispatch each member as soon as its finished node is verified. No
-dependent node builds on unverified work; no dependent node builds on
-unverified work. Do not wait for the slowest active node.
+work, or a reason to route around the crew system.
+
+**Every dispatch gets a disposable worker, and concurrency comes from the
+members a project already has.** Reuse them and register none: `reckon crew
+member add` is not a concurrency lever, because a roster member is a named,
+reusable identity — a registration made to buy concurrency leaks a session
+across tasks and churns the committed `crew.json` under peer sessions.
+
+**Where ready nodes outnumber free members, the coordinator never registers enough
+members to meet it** and the wave waits for a member to finish; dispatch
+resumes as one does. Then redispatch each member as soon as its finished node
+is verified; no dependent node builds on unverified work. Do not wait for the
+slowest active node.
 
 ### Advisory fleet-size guide
 
@@ -770,6 +776,11 @@ visibly incomplete rather than plausibly done. Completion and hold examples:
 ### 5. Verify every worker — MANDATORY
 
 Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly. Fold final stream state with `reckon crew observe --run <id>` and promote only with `reckon crew complete --run <id> --gate <verdict> --commit <sha>` after the evidence is coherent. The landing is a **review of an authored record, not a transcription of a manifest**. Workers author their own landing record in the same beat, while the orchestrator writes shared state. Never mutate the shared project index, sprint state, or another plan from a worker record. Immediately perform that review and plan write before another promotion; dispatching an unrelated ready node is outside this freeze.
+
+**Dispatch a test worker and audit its compact result manifest** before
+releasing a dependent node: the implementing worker's own gate is not
+independent evidence. The full integration sequence, including merge order and
+the post-merge test dispatch, is `references/sprint-orchestration.md` §7.
 
 A provider refusal or an idle worker without a report is not automatically a failed implementation: inspect its recorded deliverables and resume or request them before redispatching. A genuine incomplete result receives a corrective worker in its original scope; dependent work remains closed.
 
