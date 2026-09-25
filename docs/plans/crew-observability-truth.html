@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="494">
+<meta name="plan-version" content="495">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.45">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1766,10 +1766,16 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     <p class="r-fu-outcome">Landed at c8178dd4 and b8f946aa (merged b51b1dbf): tests/test_crew_gate_log_agrees.py pins both halves of the by-value sentinel rule, a quoted diagnostic beside an executed exit is accepted and beside EXIT=126 or EXIT=127 is refused naming the line. The review reproduced the focused gate (17 passed against 14 at base, zero added) and both mutations falsify the pair; total 100.</p>
     </article>
-<article class="r-fu" data-id="f-cot-a-blocked-manifest-folds-to-complete" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T05:41:00+02:00" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-a-blocked-manifest-folds-to-complete" data-status="resolved" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T05:41:00+02:00" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-09-25T10:12:25+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A blocked manifest folds to a complete phase, so crew widen can never reach it</h4>
     <div class="r-fu-body"><p>Measured twice on 2026-09-25 by the S22 coordinator. A worker that hits its fence writes <code>status: blocked</code> with a scope blocker and ends its turn; <code>crew observe</code> then folds the live pointer's phase to <code>complete</code>, and <code>crew widen</code> refuses with <em>run … is complete, not 'blocked'</em>. Runs <code>r-20260925T022155719269-session-lives-on-its-run</code> and <code>r-20260925T032255706004-session-on-its-run-without-regressions</code> both carried a blocked manifest naming a single missing write path; the only available discharge was discard and redispatch, which throws away the session that had diagnosed the change. Same shape as this plan's mirror-versus-authority findings: the phase mirrors the manifest and a reader acts on the mirror. Remedy: fold a manifest reporting <code>blocked</code> to the blocked phase, or let widen read the manifest's reported status; falsifier, a run whose manifest reads blocked with a scope blocker is widened and resumed on its own session.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
+    <p class="r-fu-outcome">done — crew widen reads the run's own manifest status (bd10fb72, 21f5c334, merged at ec6dd7ef; review 96). Falsifier met live: append-run-writes-one-run-file (phase complete, manifest blocked) was widened with its session id preserved and resumed on that session, where the old code refused the same run at 10:17.</p>
+    </article>
+<article class="r-fu" data-id="f-cot-widen-predicate-matches-its-docstring" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T10:14:00Z" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Widen&#x27;s predicate and its stated invariant disagree on a still-working run</h4>
+    <div class="r-fu-body"><p>Review of widen-reaches-a-blocked-run (96): the comment near <code>reckon/cli.py:2908</code> and the docstring near :2967 say only a stopped run that stated a block may be widened, but the predicate widens whenever the fresh manifest reports blocked, even with the phase still reading working. No case covers that combination. Make one match the other, preferably by requiring the worker process to be gone, and add the case.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-observability-truth — widen refuses a blocked manifest while its worker is still running</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
