@@ -17,18 +17,24 @@ Two modes, selected by ``--hook``:
   session's last-injected set of ``(kind, run_id)`` pairs is kept beside that
   session's follower registration, and an injection happens only when a duty
   has appeared or gone since the last one. An age that moved without the set
-  moving is not a change worth saying again.
+  moving is not a change worth saying again. A list that empties clears that
+  record, because emptying is the one change a comparison cannot record: a
+  duty that went away and returned would otherwise match the set left behind
+  and never be spoken again.
 - ``stop`` — wired as Stop. Prints ``{"decision": "block", "reason": ...}``
   while duties remain, so the turn cannot end into forgotten work. The block
   fires at most once per list: ``stop_hook_active`` marks a turn that already
   continued on a blocking reason, and the hook then stays silent rather than
   looping. Stopping is read by the harness as a verdict on the turn, so this
-  mode is unconditional on the digest and says nothing about it.
+  mode's verdict never consults the digest; it clears that record when the list
+  is empty, because whichever event first sees the emptying is the last one
+  that can notice it.
 
 A command the hook prints is one a coordinator may type, so it follows the
 configured local lane rather than whichever backend the run was carried on: the
 lane a run arrived on is the right lane to *read* about and the wrong one to
-route new work to silently.
+route new work to silently. Both modes print the checklist ``resolve`` returns,
+so both carry that rewrite.
 
 Silence is a mode of operation here, not a failure. A working directory
 outside the registered mounts, or a session that armed no follower, both mean
@@ -444,7 +450,14 @@ def format_checklist(payload: dict[str, Any]) -> str:
 
 
 def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """The obligations payload this hook should act on, or None."""
+    """The obligations payload this hook should act on, or None.
+
+    None means this session is not coordinating reckon work: its directory is
+    in no mount, or no follower registered it. An empty duty list is not None —
+    the session is coordinating and owes nothing, which is a state the caller
+    has to act on, because the record of what the session was last injected
+    with must not outlive the duties it describes.
+    """
     from reckon.crew.obligations import obligations as obligations_view
 
     cwd = Path(
@@ -461,10 +474,7 @@ def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
     if session is None:
         return None
     obligations = obligations_view(project, session)
-    items = obligations.get("obligations") or ()
-    if not items:
-        return None
-    for item in items:
+    for item in obligations.get("obligations") or ():
         if isinstance(item, dict):
             item["next_command"] = follow_local_lane(
                 str(item.get("next_command") or ""), project=project
@@ -526,21 +536,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if resolved is None:
         return 0
-    digest = ""
-    digest_file: Path | None = None
-    if mode == "prompt":
-        digest = duty_digest(resolved.get("obligations") or ())
-        digest_file = digest_path(
-            str(resolved.get("project") or ""), str(resolved.get("session") or "")
-        )
-        if _read_digest(digest_file) == digest:
-            return 0
+    items = resolved.get("obligations") or ()
+    digest_file = digest_path(
+        str(resolved.get("project") or ""), str(resolved.get("session") or "")
+    )
+    if not items:
+        # An empty list is the one change the digest cannot record by
+        # comparison: there is no checklist to inject and nothing to compare
+        # it with, so the set that was last injected has to be cleared instead.
+        # Left in place, it makes the same duties *returning* read as a repeat
+        # of what the session was already shown, and the duty that emptied and
+        # came back is never spoken again. Either mode clears it, because
+        # whichever event first sees the list empty is the last one that can
+        # notice it went away: a duty drained over a stop and returned before
+        # the next prompt is exactly the case a prompt-only clear would swallow.
+        if _read_digest(digest_file):
+            _store_digest(digest_file, "")
+        return 0
+    digest = duty_digest(items)
+    if mode == "prompt" and _read_digest(digest_file) == digest:
+        return 0
     try:
         emit(mode, payload, resolved)
     except Exception as exc:  # noqa: BLE001 - emission failure is silence, not a session fault
         sys.stderr.write(f"coordinator_obligations: {exc}\n")
         return 0
-    if digest_file is not None:
+    if mode == "prompt":
         _store_digest(digest_file, digest)
     return 0
 
