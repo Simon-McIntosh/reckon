@@ -5029,7 +5029,7 @@ def fleet_transitions(
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
-        if state == "promoted":
+        if state in {"promoted", "withdrawn"}:
             running.pop(run_id, None)
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
