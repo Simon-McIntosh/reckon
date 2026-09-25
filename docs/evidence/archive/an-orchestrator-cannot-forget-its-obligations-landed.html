@@ -237,6 +237,11 @@
       <p><strong>Declared mutation:</strong> the stop mode was made to block regardless of <code>stop_hook_active</code> in a scratch copy of the committed tree. The continuation assertion failed as declared and no other case moved (1 failed, 6 passed). The receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080904634390-obligations-hook-binds-the-harness/negative-control-stop-hook-active.log</code>, whose first line records the declared mutation verbatim.</p>
       <p><strong>Scope retained:</strong> the installer half of the section (<code>reckon hooks install</code> prints the snippet and writes nothing) belongs to a separate node, and the acknowledged case waits on &sect;3's deferral store; neither is asserted here. The real settings home and config home were read before and after every run and required unchanged, because the hook must be provably unable to touch them.</p>
     </section>
-  </main>
+    <section id="obligations-bound-to-recovery-vocabulary">
+    <h2>Obligations are bound to recovery&#x27;s classification vocabulary</h2>
+    <p>Commit <code>e3945576</code> (merged at <code>b039605c</code>) replaces the if-chain in <code>obligations()</code> with two named tables, <code>CLASSIFICATION_DUTY_KINDS</code> and <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code>, and adds <code>test_every_mapped_classification_is_in_recoverys_vocabulary</code>, which asserts every mapped classification is one <code>recovery.RECOVERY_CLASSIFICATIONS</code> names. A renamed classification now fails the suite instead of silently dropping a duty from the live view.</p><table><thead><tr><th>Gate at the reviewed head</th><th>Result</th></tr></thead><tbody><tr><td><code>pytest -q tests/test_crew_obligations.py</code> at <code>e3945576</code></td><td>9 passed</td></tr><tr><td>Declared mutation: rename the mapped <code>scoring</code> classification</td><td>failed as required: the vocabulary contract test</td></tr><tr><td>Purity control, carried from <code>9f7ea716</code>: restore the <code>recovery.recover</code> call</td><td>failed as required: the forbidden <code>dispatch.observe</code> entry point is reached</td></tr></tbody></table><p>This supersedes the earlier gate row that reads 5 passed, which measured the pre-repair revision <code>7e881d73</code>. Re-reviews scored 86 at <code>9f7ea716</code> and 89 at <code>e3945576</code>.</p>
+  </section>
+
+</main>
 </body>
 </html>
