@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -149,7 +149,8 @@
     Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">execution
     record</a>.</p>
 
-    <h3 id="s4-focus">Landed &mdash; the focus follows the live crew, and its cost is the blocker</h3>
+    <h3 id="s4-focus">Landed &mdash; the focus follows the live crew, and its cost is closed</h3>
+    <p><strong>Closed.</strong> The latency blocker described below was removed when <code>reckon.sprint_liveness</code> began reading each run's latest state from the watcher's recorded stream in one pass, re-measured at 0.14&ndash;0.16 s for 39 live pointers against the 11.6 s recorded below. Recorded states now carry an age bound, so a run that stopped writing no longer reads live. The paragraphs that follow record the blocker as it was measured. See the <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution record</a>.</p>
     <p><code>active_sprint_id</code> now names the live sprint with the most recent stream
     activity, and falls back to the stored <code>active</code> sprint when no crew is live. It sits
     beside a new <code>live_sprint_ids</code> list, live sprints most recent first. Both surfaces
