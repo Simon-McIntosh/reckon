@@ -3449,6 +3449,7 @@ def _crew(
         if view == "runs":
             return crew_runs_view(
                 project,
+                run_id=run_id,
                 checkout_path=checkout_path,
                 source=source,
                 scope=scope,
