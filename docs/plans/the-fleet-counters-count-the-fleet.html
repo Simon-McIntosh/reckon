@@ -23,8 +23,8 @@
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="70">
+<meta name="plan-modified" content="2026-09-26">
+<meta name="plan-version" content="71">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -324,6 +324,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260925T163720529021-review-of-ticker-row-prints-only-real-transitions" data-who="reckon-build" data-when="2026-09-25T17:59:05.336Z">
     <div class="r-comment-body"><p>review of ticker-row-prints-only-real-transitions at 60d89bd4 scored 95: the manifest tests field carries unsubstituted placeholders</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260925T203146830965-reason-room-geometry-lands-whole" data-who="reckon-build" data-when="2026-09-25T21:30:52.862Z">
+    <div class="r-comment-body"><p>the ticker and watch tests pin the compressed row (reason at column 120, 60 columns at 180, 88 at 208); a long state word keeps the arrow on one column; 259 passed at head against 4 failed at base and 28 at 5ef9ee49; carries 5ef9ee49, the fence-integration commit of row-gives-the-reason-room (banners removed, reason never cut to an empty ellipsis); review 88, whose finding is a false base-revision history in the landing record, corrected beside it</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-correction-watcher-seat-gate-record" data-who="s23-coord" data-when="2026-09-25T21:02:00Z">
     <div class="r-comment-body"><p><strong>Correction to the promotion record of r-20260925T164609522941-watcher-seat-survives-other-hosts.</strong> That promotion cited <code>gate-head-rerun.log</code> with exit status 0, under a gate command naming only <code>tests/test_watch_seat_across_hosts.py</code>. The log is in fact the node's full family run at head, which ends <code>11 failed, 219 passed, 2 skipped</code>. The accurate account: at base 9a9cb581 the same family is 16 failed (11 pre-existing, owned by other nodes, plus this node's 5 new tests red, per <code>gate-base-new-tests.log</code>). At head it is 11 failed, identical by id to the 11 pre-existing ones, so no failures were added and the 5 new tests are fixed. The verdict stands; the recorded exit status and command did not describe that log.</p></div>
