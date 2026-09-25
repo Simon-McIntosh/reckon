@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13">
+  <rect width="960" height="470" fill="#ffffff"/>
+  <text x="24" y="28" font-size="16" font-weight="bold">A headless session's tabs need a client's size, and it must be there while the layout is applied</text>
+  <text x="24" y="48" fill="#555">zellij 0.45.1; per-client tab sizes (zellij-org/zellij#5594). Two runs of the same four-tab layout, one server log each.</text>
+
+  <!-- left panel: without the sized client -->
+  <rect x="24" y="66" width="440" height="380" rx="6" fill="#fdf4f4" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="40" y="90" font-weight="bold" fill="#a93226">Before &#8212; no sized client while the tabs are made</text>
+  <line x1="60" y1="112" x2="60" y2="424" stroke="#c0392b" stroke-width="2"/>
+  <g>
+    <circle cx="60" cy="136" r="5" fill="#c0392b"/>
+    <text x="76" y="140">attach --create-background --create demo</text>
+    <text x="76" y="156" fill="#777">no client, so no size to lay tabs out in</text>
+
+    <circle cx="60" cy="196" r="5" fill="#c0392b"/>
+    <text x="76" y="200">tabs 1, 2, 3 applied with no size</text>
+    <rect x="76" y="208" width="368" height="30" rx="4" fill="#f7d9d7" stroke="#c0392b"/>
+    <text x="86" y="228" fill="#a93226">ERROR  Failed to apply layout: Not enough room for panes</text>
+
+    <circle cx="60" cy="272" r="5" fill="#c0392b"/>
+    <text x="76" y="276">client 1 attaches &#8212; survives</text>
+
+    <circle cx="60" cy="318" r="5" fill="#c0392b"/>
+    <text x="76" y="322" font-weight="bold" fill="#a93226">client 2 attaches &#8212; server panics</text>
+    <rect x="76" y="330" width="368" height="46" rx="4" fill="#f7d9d7" stroke="#c0392b"/>
+    <text x="86" y="350" fill="#a93226">Panic: Program terminates: a fatal error occurred</text>
+    <text x="86" y="368" fill="#a93226">Caused by: failed to attach client 2 to tab with index 3</text>
+
+    <text x="76" y="404" fill="#777">recorded on this node 2026-09-25 02:51:58 &ndash; 02:52:05</text>
+  </g>
+
+  <!-- right panel: with the sized client -->
+  <rect x="496" y="66" width="440" height="380" rx="6" fill="#f2faf4" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="512" y="90" font-weight="bold" fill="#196f3d">After &#8212; one sized client attached while the tabs are made</text>
+  <line x1="532" y1="112" x2="532" y2="424" stroke="#1e8449" stroke-width="2"/>
+  <g>
+    <circle cx="532" cy="136" r="5" fill="#1e8449"/>
+    <text x="548" y="140">attach --create-background --create demo</text>
+    <text x="548" y="156" fill="#777">as before</text>
+
+    <circle cx="532" cy="196" r="5" fill="#1e8449"/>
+    <text x="548" y="200" font-weight="bold" fill="#196f3d">client on a 200&#215;50 pty attaches</text>
+    <rect x="548" y="208" width="368" height="30" rx="4" fill="#d7f0de" stroke="#1e8449"/>
+    <text x="558" y="228" fill="#196f3d">TIOCSWINSZ 200 cols &#215; 50 rows &#8212; a size every tab can hold</text>
+
+    <circle cx="532" cy="272" r="5" fill="#1e8449"/>
+    <text x="548" y="276">tabs 1&ndash;4 applied at that size</text>
+    <rect x="548" y="284" width="368" height="30" rx="4" fill="#d7f0de" stroke="#1e8449"/>
+    <text x="558" y="304" fill="#196f3d">query-tab-names &rarr; one, two, three, four</text>
+
+    <circle cx="532" cy="344" r="5" fill="#1e8449"/>
+    <text x="548" y="348">sized client detaches; client 2 attaches for 5 s</text>
+    <rect x="548" y="356" width="368" height="30" rx="4" fill="#d7f0de" stroke="#1e8449"/>
+    <text x="558" y="376" fill="#196f3d">0 pane errors, 0 attach failures in the probe window</text>
+
+    <text x="548" y="404" fill="#777">on-node probe logged 2026-09-25 07:00:59</text>
+  </g>
+
+  <text x="24" y="462" fill="#555">The fix is removable once a zellij release carries PR #5612, which sizes a tab from the client that will attach to it rather than from the one that created the session.</text>
+</svg>

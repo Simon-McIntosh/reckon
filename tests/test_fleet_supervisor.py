@@ -50,15 +50,18 @@ ENV_DUMP_CHILD = (
 )
 
 # A stand-in for zellij: it appends its argv to the file named by
-# RECKON_ZELLIJ_STUB_LOG, and prints the sessions named by
-# RECKON_ZELLIJ_STUB_SESSIONS when asked to list them. The names deliberately
-# avoid the ZELLIJ prefix, which the reader strips from every environment it
-# passes on, so the stub would lose its own configuration. Nothing is left to
-# the real zellij for the reader to start a session on this machine.
+# RECKON_ZELLIJ_STUB_LOG, prints the sessions named by
+# RECKON_ZELLIJ_STUB_SESSIONS when asked to list them, and prints the tabs
+# named by RECKON_ZELLIJ_STUB_TAB_NAMES when asked for the tab names. The names
+# deliberately avoid the ZELLIJ prefix, which the reader strips from every
+# environment it passes on, so the stub would lose its own configuration.
+# Nothing is left to the real zellij for the reader to start a session on this
+# machine.
 ZELLIJ_STUB = """#!/bin/sh
 printf '%s\\n' "$*" >> "$RECKON_ZELLIJ_STUB_LOG"
 case "$1" in
   list-sessions) printf '%s' "$RECKON_ZELLIJ_STUB_SESSIONS" ;;
+  action) printf '%s' "$RECKON_ZELLIJ_STUB_TAB_NAMES" ;;
 esac
 exit 0
 """
@@ -89,6 +92,41 @@ def _reader_log(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return ""
+
+
+def _argv_log(path: Path) -> str:
+    """The zellij stub's recorded invocations, or empty before it has run."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
+def _settled_argv(
+    path: Path, *, quiet: float = 0.5, timeout: float = WAIT_SECONDS
+) -> str:
+    """The stub's invocations once no new one has been recorded for ``quiet``.
+
+    An ordering read out of a live log is only meaningful when nothing further
+    is coming: the session line runs several zellij commands in sequence, so a
+    read taken between two of them would report the later one missing. The wait
+    is bounded, and returns whatever was last seen, so a caller always gets a
+    string to assert against rather than a hanging read.
+    """
+    deadline = time.monotonic() + timeout
+    previous: str | None = None
+    stable_since: float | None = None
+    while time.monotonic() < deadline:
+        current = _argv_log(path)
+        if current and current == previous:
+            stable_since = stable_since or time.monotonic()
+            if time.monotonic() - stable_since >= quiet:
+                return current
+        else:
+            stable_since = None
+        previous = current
+        time.sleep(POLL_SECONDS)
+    return _argv_log(path)
 
 
 @pytest.fixture()
@@ -325,11 +363,15 @@ def test_session_starts_zellij_and_reload_reexecutes_the_module(
         "PATH": f"{stub_bin}{os.pathsep}{os.environ['PATH']}",
         "RECKON_ZELLIJ_STUB_LOG": str(stub_log),
         "RECKON_ZELLIJ_STUB_SESSIONS": "",
+        "RECKON_ZELLIJ_STUB_TAB_NAMES": "main\n",
     }
     reader.start(env)
     _send(reader.runtime, "session demo")
+    # Wait on the invocation rather than on the reader's "starting" line: the
+    # line is written before zellij is invoked, so a reader that waited on it
+    # could read the log before the create had run.
     _wait_for(
-        lambda: "starting zellij session demo" in _reader_log(reader.log),
+        lambda: "attach --create-background --create demo" in _argv_log(stub_log),
         message=(
             "the session line did not start a zellij session; "
             f"log={_reader_log(reader.log)!r}"
@@ -366,6 +408,65 @@ def test_session_starts_zellij_and_reload_reexecutes_the_module(
         exec_=lambda path, argv: recorded.append(argv),
     )
     assert recorded == [MODULE_ARGV], recorded
+
+
+def test_a_session_line_sizes_the_tabs_with_a_brief_client(reader, tmp_path) -> None:
+    """A headless session's tabs are sized by a short-lived client.
+
+    zellij 0.45 sizes each tab from the client that created it, so a session
+    created with ``--create-background`` cannot lay out the tabs of a multi-tab
+    layout: the server logs "Not enough room for panes" for each, and the first
+    client to attach afterwards panics it. The verb therefore attaches one
+    fixed-size client while the layout's tabs are created and takes it off once
+    zellij reports them. The stub records every invocation, so the three steps
+    and their order are observable without a real zellij.
+    """
+    stub_log = tmp_path / "zellij-argv.log"
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    stub = stub_bin / "zellij"
+    stub.write_text(ZELLIJ_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    env = {
+        "PATH": f"{stub_bin}{os.pathsep}{os.environ['PATH']}",
+        "RECKON_ZELLIJ_STUB_LOG": str(stub_log),
+        "RECKON_ZELLIJ_STUB_SESSIONS": "",
+        "RECKON_ZELLIJ_STUB_TAB_NAMES": "fleet\nrecord\nshell\nextra\n",
+    }
+    reader.start(env)
+    _send(reader.runtime, "session demo fleet")
+    invocations = _settled_argv(stub_log)
+    assert invocations, (
+        "the session line invoked zellij with nothing, so no order can be read "
+        f"from it; log={_reader_log(reader.log)!r}"
+    )
+
+    # The ordered steps: create headless, attach the sized client, read the
+    # tabs. The middle needle is the sized-client attach the declared mutation
+    # removes, so the ordering assertion fails against it rather than a later
+    # step, and the failure names the removed attach.
+    lines = invocations.splitlines()
+    cursor = 0
+    for needle in (
+        "--create-background --create demo",
+        "attach demo",
+        "action query-tab-names",
+    ):
+        index = next(
+            (i for i in range(cursor, len(lines)) if needle in lines[i]),
+            None,
+        )
+        assert index is not None, (
+            f"zellij was never invoked with {needle!r} in this order; "
+            f"invocations={lines}"
+        )
+        cursor = index + 1
+
+    # The read reported every tab the layout declares, and the client was gone
+    # by the time the session line returned, so the session is left headless.
+    reader_log = _reader_log(reader.log)
+    assert "sized client attached to demo on a 200x50 pty" in reader_log, reader_log
+    assert "sized client detached from demo; 4 tabs" in reader_log, reader_log
 
 
 def test_the_stripped_variables_are_absent_from_a_spawned_child(
