@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -758,6 +758,11 @@
     <h4 class="r-fu-title">A worker is retired once its work is accepted</h4>
     <div class="r-fu-body"><p>Lead directive, 2026-09-25: no slot limit, and a worker is removed once its work is accepted (reviewed and promoted). The dispatch half is new-work-gets-a-new-worker §4 (S22): each no-member dispatch gets a disposable identity recorded on the run, and nothing is registered in the committed roster. This node is the acceptance half, in <code>reckon/crew/promotion.py</code>. It runs after S22's ledger §1b and its never-amend corrective, so the three changes to that file land one after another. <b>Measured defect:</b> today's workers kept their process alive 1–2 h after writing a terminal manifest. For example, the review of the design scout and the review-node-utility review were still running long after their final records, holding their member slot the whole time. <b>The change:</b> promotion's release step deletes the run's disposable identity, and it signals and reaps any process group still alive for that run, printing what it stopped. Separately, a worker whose manifest turns terminal exits within a bounded grace period without waiting for promotion. That second part may sit in the supervisor; if so, the node names the file. <b>Done when</b> a test drives a stub run through terminal manifest, then promotion, and asserts four things: the process has exited within the grace period after the terminal manifest (measured from the manifest's terminal write to process exit, not only the state at promotion); the disposable identity is gone after promotion; an explicitly named member is not deleted; and a blocked run's process and identity are kept for resume. The negative control skips the release step's identity deletion, and the disposable-identity case then fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
+    </article>
+<article class="r-fu" data-id="f-acpewio-phase-writer" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A pointer&#x27;s stored phase advances past starting</h4>
+    <div class="r-fu-body"><p>Finding 2 of the review (85) of a-live-run-never-reads-dead, merged at 40e24067. The node derives an effective phase for classifier consumers, but nothing rewrites the stored <code>pointer["phase"]</code>. At review time 26 of 41 live pointers still read <code>starting</code>, and every other reader of the pointer (the follower's re-arm replay, the MCP views, peers' tooling) still sees the pre-spawn label. The writer side is in <code>reckon/crew/dispatch.py</code>, where the supervisor observes worker.json and the first stream record; it writes <code>working</code> when the worker starts, and the terminal phase comes from the manifest or exit record. Done when a test drives a stub run from launch, through its first stream record, to a terminal manifest, and asserts that the stored pointer phase reads starting, then working, then its terminal phase. The negative control removes the writer, and the stored phase stays starting. It runs on dispatch.py once shared claims are live, beside new-work §4. Deployment note: the fleet's long-lived producer (pid 853019, armed 2026-09-24 19:00Z) runs the code it was started with, so this fix and 40e24067 only show on the follower after the producer restarts on the merged head.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
