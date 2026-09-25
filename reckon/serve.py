@@ -1795,6 +1795,7 @@ def _derive_lifecycle(
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
+    from reckon.roadmap import closure_blockers, execution_gates, unsettled_decisions
 
     plans = deepcopy(inventory)
     plan_by_slug = {
@@ -1863,12 +1864,16 @@ def _derive_lifecycle(
                 explicit_by_slug.get(str(plan.get("slug")), [])
             )
         )
-        blocking.extend(unpassed_gate_blockers(plan.get("gates") or []))
+        blocking.extend(unpassed_gate_blockers(execution_gates(plan)))
         workflow_status = str(plan.get("status") or "draft")
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = effective_status(workflow_status, blocking)
         plan["blocking"] = blocking
         plan["blockers"] = len(blocking)
+        # Transition gates hold a closure or a choice, not execution, so they
+        # leave this list and surface beside it instead.
+        plan["closure_blockers"] = closure_blockers(plan)
+        plan["decision_blockers"] = unsettled_decisions(plan)
 
     hydrated_sprints = deepcopy(sprints)
     for sprint in hydrated_sprints:

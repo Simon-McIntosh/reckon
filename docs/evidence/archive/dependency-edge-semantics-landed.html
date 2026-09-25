@@ -248,6 +248,86 @@
       behavior as well as the original requirement.</p>
     </section>
 
+    <section id="closure-split-reads-alike">
+      <h2>Every surface reads the same execution/closure split</h2>
+      <p><strong>Defect, reproduced at base <code>0bd7a7c9</code>.</strong> Two readers
+      outside the roadmap still blocked on every unpassed gate. In
+      <code>reckon/serve.py</code> the served payload's <code>unpassed_gate_blockers</code>
+      call took <code>plan.get("gates") or []</code>, so a plan whose only open gate was a
+      plan-terminal closure gate reported <code>blocking: [{"id": "outcome-gate", ...}]</code>
+      and <code>effective_status: "blocked"</code>. In <code>reckon/roadmap.py</code> a
+      decision held by a pending decision-lockable gate was classified <code>open</code>,
+      which removed its plan from <code>ready_now</code>.</p>
+      <p><strong>Reproduction.</strong> A parity test builds a three-plan project in a
+      temporary tree — one plan whose only open gate is a plan-terminal closure gate, one
+      whose only open gate is a decision-transition gate, and a scope control whose
+      unanswered decision carries no transition edge. Before the repair
+      (<code>6277e533</code>): <strong>2 failed, 1 passed</strong>. The closure case failed
+      on the served row's blocker list; the decision case failed because
+      <code>decision-held</code> is not in the roadmap ready set.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/surfaces-agree.svg"
+             alt="A plan-terminal gate and a decision-lockable gate leave the execution blocker set through execution_gates, so the roadmap ready set, the served payload and the MCP blocking projection all report the plan as ready with no gate blocker, while an open decision with no transition edge still withholds readiness.">
+        <figcaption>The split, and its boundary. Both transition gate kinds leave the
+        blocker set that all three readers consume, so the three agree; an unanswered
+        decision carrying no transition edge is not part of the split and still blocks.</figcaption>
+      </figure>
+      <p><strong>Repair.</strong> <code>reckon/roadmap.py</code> publishes the split it
+      already used internally: <code>execution_gates(plan)</code>,
+      <code>closure_blockers(plan)</code> and <code>unsettled_decisions(plan)</code>. A
+      decision held by a pending transition gate now reports <code>status: "gated"</code>
+      and carries its <code>gate_id</code> and <code>transition</code>; it stays in the
+      reported decision set and withholds the graph ship verdict, while readiness,
+      <code>is_blocked</code>, <code>effective_status</code> and <code>ready_now</code>
+      consume only strictly open decisions. <code>reckon/serve.py</code> and
+      <code>reckon/mcp_views.py</code> call <code>execution_gates</code> at the site that
+      previously blocked on every gate, and the served payload publishes
+      <code>closure_blockers</code> and <code>decision_blockers</code> beside its blocker
+      list. After the repair (<code>5aa16c5a</code>): <strong>3 passed</strong>.</p>
+      <p><strong>Declared negative control</strong> — <em>"restore the unfiltered
+      unpassed_gate_blockers call over every gate in reckon/serve.py; the closure-gate case
+      in tests/test_transition_gates_read_alike.py must fail"</em> — executed twice, once
+      before and once after the MCP assertion in the test was relaxed to the blocker set.
+      Each run: <strong>2 failed, 1 passed</strong>, the closure case failing first and the
+      scope control passing. Hand-reverted each time, the file returns to
+      <strong>3 passed</strong>. The mutation is one line:
+      <code>unpassed_gate_blockers(plan.get("gates") or [])</code>.</p>
+      <p><strong>Importer cohort by delta against base <code>0bd7a7c9</code>.</strong> Every
+      existing test file importing <code>reckon.serve</code>, <code>reckon.mcp_views</code>
+      or <code>reckon.roadmap</code>: <strong>70 files at base</strong>, plus the new test
+      at head. Head: <strong>1 failed, 834 passed, 21 skipped</strong>. Base (a
+      <code>git archive</code> export with <code>PYTHONPATH</code> pinned to it):
+      <strong>2 failed, 826 passed, 21 skipped, 4 errors</strong>.
+      <strong>Added failure IDs: zero.</strong> The single head failure
+      (<code>test_spa_module_scope.py::test_inlined_bundle_renders_from_a_file_url_without_reference_errors</code>)
+      is present at base as well — no headless browser is installed. The base-only failure
+      and four errors are all in <code>tests/test_build.py</code>: the export carries no git
+      metadata for the build tests' version resolution. Totals reconcile: 853 at base plus
+      the 3 new cases is 856 at head. This is the node's source comparison, not merged-head
+      verification.</p>
+      <p><strong>Budget limit found and not repaired.</strong> The MCP blocking projection
+      reads the split, but cannot name the edges. Two payload budgets in
+      <code>tests/test_mcp_views.py</code> both sit at their limit — the summary must stay
+      within 60% of the raw response and the response schema within 24 KiB. Adding the
+      <em>closure_blockers</em> and <em>decision_blockers</em> keys took the summary to 718
+      bytes against an allowed 587, and the two schema properties took it to 24,832 against
+      an allowed 24,576. The keys were removed: the projection agrees with the roadmap on
+      the blocker set and the effective status, while the named closure and decision edges
+      live on the roadmap row and the served payload. Widening either budget is a design
+      decision, and it is recorded as a follow-on rather than absorbed here.</p>
+      <p>Durable logs live under the assigned run record
+      <code>r-20260925T011148256501-surfaces-read-the-closure-split</code>:
+      <code>base-repro.log</code> (2 failed, 1 passed at base),
+      <code>head-repro.log</code> (3 passed at head),
+      <code>negative-control.log</code> (declared string, two runs, and both hand-revert
+      passes), <code>cohort-head.log</code> and <code>cohort-base.log</code> with both
+      failure-ID sets. Commits in the node:
+      <code>6277e533</code> (test as reproduction), <code>5aa16c5a</code> (the split read by
+      both surfaces and the decision-transition fix), <code>0e4e159d</code> (remove the
+      budget-breaking MCP payload keys). Section closure and the driving followup remain
+      with the coordinator.</p>
+    </section>
+
   </main>
 </body>
 </html>

@@ -1536,10 +1536,14 @@ def _relations(data: dict[str, Any]) -> dict[str, list[Any]]:
 
 
 def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
+    from reckon.roadmap import execution_gates
+
     explicit = data.get("blocked_by")
     result = list(explicit) if isinstance(explicit, list) else []
     result.extend(unresolved_dependencies(deps))
-    result.extend(unpassed_gate_blockers(data.get("gates") or []))
+    # Transition gates hold a closure or a choice, not execution, so the
+    # roadmap's execution split governs what counts as blocking here too.
+    result.extend(unpassed_gate_blockers(execution_gates(data)))
     return result
 
 
