@@ -948,6 +948,56 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
       naturally a table.</li>
     </ul>
   </section>
+  <section id="gate-aware-headroom">
+    <h2>&sect;6 &mdash; Local headroom includes the router admission gate
+    <a class="anchor" href="#gate-aware-headroom">#</a></h2>
+
+    <p><strong>The defect.</strong> The engine's top-level <code>headroom</code> did not see
+    requests waiting in the router FIFO. At the live 12:42Z shape, the engine reported
+    headroom <code>6</code> and waiting <code>0</code>, while
+    <code>router_generation_gate</code> carried width <code>14</code>, in-flight
+    <code>14</code> and waiting <code>9</code>. The old reader therefore exposed six slots
+    even though the admission queue was already congested.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/crew/lane_document.py</code> now carries the
+    gate counters, computes <code>admission_headroom = width - in_flight - waiting</code>,
+    and reports the smaller of admission and engine headroom. A non-positive admission
+    value reports <code>admission_verdict: congested</code> with the arithmetic reason. When
+    the producer supplies its newer <code>admission.headroom</code>, <code>verdict</code> and
+    <code>reason</code> fields, those published values take precedence over local arithmetic.
+    The reckon flight layer declares clive's <code>~/public/imas-ambix/lane.json</code>
+    document. The implementation commit is <code>d677269f</code>; the cumulative record
+    is updated in the landing commit that carries this anchor.</p>
+
+    <table>
+      <caption>Gate-aware reader checks</caption>
+      <thead><tr><th>Fixture</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>width 14, in-flight 14, waiting 9</td><td>admission −9, reported −9, congested</td><td><code>test_the_router_gate_reduces_headroom_and_reports_congestion</code></td></tr>
+        <tr><td>width 14, in-flight 0, waiting 0</td><td>admission 14, engine headroom retained at 6</td><td><code>test_an_idle_gate_keeps_the_engine_headroom</code></td></tr>
+        <tr><td>No gate block</td><td>engine headroom remains 6; gate fields are unknown</td><td><code>test_a_document_without_a_gate_keeps_the_existing_engine_reading</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The focused gate ran at the worker head with <strong>19 passed</strong> in
+    <code>tests/test_local_headroom_counts_the_gate.py</code> and
+    <code>tests/test_lane_document.py</code>. The adjacent lane-document, flight and lanes
+    checks ran with <strong>122 passed, 2 skipped</strong>. The live reader on this host
+    resolved the current lane document as width <code>14</code>, in-flight
+    <code>14</code>, waiting <code>7</code>, admission headroom <code>−7</code> and
+    <code>congested</code>. The declared negative control loaded the pre-change reader;
+    it read the 12:42Z fixture's headroom as <code>6</code> and failed the non-positive
+    congestion assertion as required.</p>
+
+    <p><strong>Scope boundary.</strong> The current <code>crew(view="lanes")</code> renderer
+    still omits gate fields for clive because its implementation is outside this node's
+    exclusive write paths. The host view was run and logged, and this renderer wiring is
+    a follow-on for the coordinator rather than an unscoped edit here.</p>
+
+    <p>Logs: <code>~/.config/reckon/crew/runs/r-20260925T124611073262-local-headroom-counts-the-gate/focused.log</code>,
+    <code>after-suite.log</code>, <code>host-lane-reader.log</code>,
+    <code>lanes-view.log</code> and <code>negative-control.log</code>.</p>
+  </section>
 </main>
 </body>
 </html>

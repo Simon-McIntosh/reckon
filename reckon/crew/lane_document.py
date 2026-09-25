@@ -11,6 +11,14 @@ independently: a missing precondition costs its own field and never the whole
 document, and a field that did arrive is never reported as unknown because a
 sibling did not.
 
+The engine's headroom does not account for a router admission FIFO. When a
+document carries ``router_generation_gate``, this reader carries its width,
+in-flight count and waiting count and computes the slots available at the
+router. A newer ``admission`` block may publish that calculation directly;
+that value is preferred to local arithmetic. The reported headroom is the
+minimum of the engine and admission readings, so queued work is visible to the
+caller that decides whether to send another request.
+
 Two properties are the point of the module, and each exists because its
 opposite was observed on a live document:
 
@@ -81,6 +89,9 @@ _NUMERIC_FIELDS = frozenset(
 )
 
 SHELF_LIFE_KEY = "suggested_shelf_life_seconds"
+GATE_KEY = "router_generation_gate"
+ADMISSION_KEY = "admission"
+_GATE_FIELDS = ("width", "in_flight", "waiting")
 
 
 def _number(value: object) -> int | float | None:
@@ -125,6 +136,72 @@ def _parse_stamp(value: object) -> datetime | None:
     return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed
 
 
+def _unknown_gate() -> dict[str, Any]:
+    """Return the carried gate shape when no gate was published."""
+    return dict.fromkeys(_GATE_FIELDS, UNKNOWN)
+
+
+def _gate_reading(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve the router gate counters without inventing a missing count."""
+    raw = payload.get(GATE_KEY)
+    if not isinstance(raw, Mapping):
+        return _unknown_gate()
+    return {
+        name: value if (value := _number(raw.get(name))) is not None else UNKNOWN
+        for name in _GATE_FIELDS
+    }
+
+
+def _admission_reading(
+    payload: Mapping[str, Any], gate: Mapping[str, Any]
+) -> tuple[int | float | str, str, str]:
+    """Resolve admission headroom, verdict and reason from the published shape."""
+    admission = payload.get(ADMISSION_KEY)
+    published_headroom: int | float | None = None
+    published_verdict: str | None = None
+    published_reason: str | None = None
+    if isinstance(admission, Mapping):
+        published_headroom = _number(admission.get("headroom"))
+        published_verdict = _text(admission.get("verdict"))
+        published_reason = _text(admission.get("reason"))
+
+    if published_headroom is not None:
+        available: int | float = published_headroom
+        source = "published admission headroom"
+    else:
+        width = _number(gate.get("width"))
+        in_flight = _number(gate.get("in_flight"))
+        waiting = _number(gate.get("waiting"))
+        if width is None or in_flight is None or waiting is None:
+            return (
+                UNKNOWN,
+                UNKNOWN,
+                "admission headroom is unknown: gate counts are incomplete",
+            )
+        available = width - in_flight - waiting
+        source = f"width {width:g} - in_flight {in_flight:g} - waiting {waiting:g}"
+
+    verdict = published_verdict
+    if verdict is None:
+        verdict = "congested" if available <= 0 else "open"
+    reason = published_reason
+    if reason is None:
+        if verdict == "congested":
+            reason = f"admission headroom is {available:g} ({source})"
+        else:
+            reason = f"admission headroom is {available:g} ({source})"
+    return available, verdict, reason
+
+
+def _minimum_headroom(engine_headroom: object, admission_headroom: object) -> object:
+    """Return the smaller measured headroom, or unknown when either is absent."""
+    engine = _number(engine_headroom)
+    admission = _number(admission_headroom)
+    if engine is None or admission is None:
+        return UNKNOWN
+    return min(engine, admission)
+
+
 def blank_report(*, detail: str, malformed: bool = False) -> dict[str, Any]:
     """Return every field unknown, with a reason and the malformed marker."""
     report: dict[str, Any] = {name: UNKNOWN for name, _ in _FIELD_KEYS}
@@ -134,6 +211,11 @@ def blank_report(*, detail: str, malformed: bool = False) -> dict[str, Any]:
     report["unknown_fields"] = [name for name, _ in _FIELD_KEYS]
     report["detail"] = detail
     report["malformed"] = malformed
+    report["engine_headroom"] = UNKNOWN
+    report["router_generation_gate"] = _unknown_gate()
+    report["admission_headroom"] = UNKNOWN
+    report["admission_verdict"] = UNKNOWN
+    report["admission_reason"] = UNKNOWN
     return report
 
 
@@ -196,6 +278,22 @@ def read_lane_document(
             unknown_fields.append(name)
         else:
             report[name] = resolved
+
+    gate = _gate_reading(payload)
+    report["router_generation_gate"] = gate
+    report["engine_headroom"] = _number(payload.get("engine_headroom"))
+    if report["engine_headroom"] is None:
+        report["engine_headroom"] = report["headroom"]
+    admission_headroom, admission_verdict, admission_reason = _admission_reading(
+        payload, gate
+    )
+    report["admission_headroom"] = admission_headroom
+    report["admission_verdict"] = admission_verdict
+    report["admission_reason"] = admission_reason
+    if admission_headroom != UNKNOWN:
+        report["headroom"] = _minimum_headroom(
+            report["engine_headroom"], admission_headroom
+        )
 
     shelf = _number(payload.get(SHELF_LIFE_KEY))
     report["shelf_life_seconds"] = shelf if shelf is not None and shelf > 0 else None
