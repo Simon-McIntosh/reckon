@@ -2691,6 +2691,7 @@ def _observed_phase(
     phase: str,
     *,
     alive: bool | None,
+    worker_alive: bool | None,
     ended_exit: Mapping[str, Any] | None,
     manifest_status: str,
     stream_present: bool,
@@ -2701,10 +2702,12 @@ def _observed_phase(
     A pointer's phase is written by the launcher: a supervisor sets it at spawn,
     and a run whose launch was interrupted can keep a pre-spawn label for its
     whole life. Where the stored phase is still one of those labels, the run's
-    own evidence decides instead — a live process, a stream, or retained commits
-    show the launch got past starting, and a terminal verdict on a gone process
-    shows it finished. With no evidence at all the label stands: nothing has
-    happened yet, and inventing an advance would be as wrong as inventing an end.
+    own evidence decides instead — a live worker record, a stream, or retained
+    commits show the launch got past starting. A live supervisor alone does not:
+    it may still be between admission and worker spawn. A terminal verdict on a
+    gone process shows it finished. With no evidence at all the label stands:
+    nothing has happened yet, and inventing an advance would be as wrong as
+    inventing an end.
     """
     if phase not in _PRE_SPAWN_PHASES:
         return phase
@@ -2712,7 +2715,7 @@ def _observed_phase(
         return "complete"
     if ended_exit is not None:
         return "complete"
-    if alive is True or stream_present or commits_beyond_base:
+    if worker_alive is True or stream_present or commits_beyond_base:
         return "working"
     return phase
 
@@ -3320,23 +3323,6 @@ def classify_pointer(
     ended_exit = exit_record if exit_record is not None and alive is not True else None
     if ended_exit is not None:
         alive = False
-    # A launch that recorded no worker and no exit cannot be proven dead: the
-    # supervisor may simply not have spawned yet, and a run in one of its
-    # pre-spawn phases has nothing the process table could name. The reading is
-    # left unproven rather than dead: a launch flicker is not an abandonment,
-    # and duplicating a worker that is about to start is the cost of guessing
-    # death here. A recorded exit, a worker record, or retained work all lift
-    # it, so a genuine vanish still commits/leaves evidence and reads dead.
-    if (
-        alive is False
-        and ended_exit is None
-        and worker_alive is None
-        and _worker_record(record) is None
-        and phase in _PRE_SPAWN_PHASES
-        and not _commits_beyond_base(record)
-    ):
-        alive = None
-        liveness_proven = False
     # The liveliest stream the run has, taken through the shared reader, so a
     # resumed or lane-changed run is aged against what it is writing now rather
     # than the first file the pointer named. Absent a non-empty stream the
@@ -4115,6 +4101,7 @@ def classify_pointer(
     observed_phase = _observed_phase(
         phase,
         alive=alive,
+        worker_alive=worker_alive,
         ended_exit=ended_exit,
         manifest_status=manifest_status,
         stream_present=stream_reading is not None,

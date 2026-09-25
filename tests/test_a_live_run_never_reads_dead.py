@@ -27,6 +27,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import signal
 import socket
 import subprocess
 import time
@@ -343,12 +344,12 @@ def test_a_genuinely_dead_worker_with_commits_still_reads_interrupted(
 def test_a_pre_spawn_launch_is_not_abandoned(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    with _control(monkeypatch, "worker-json-wait"):
+    with _control(monkeypatch, "worker-json-wait"), _live_child() as supervisor_pid:
         row = _classify(
             _pointer(
                 tmp_path,
                 "r-launch-flicker",
-                pid=_absent_pid(),
+                pid=supervisor_pid,
                 phase="starting",
                 write_stream=False,
             )
@@ -459,20 +460,22 @@ def test_a_pointer_phase_advances_from_starting_to_working_to_complete(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     run_id = "r-phase-advance"
-    with _control(monkeypatch, "phase-advance"):
+    with _control(monkeypatch, "phase-advance"), _live_child() as supervisor_pid:
         started = _pointer(
-            tmp_path, run_id, pid=_absent_pid(), phase="starting", write_stream=False
+            tmp_path, run_id, pid=supervisor_pid, phase="starting", write_stream=False
         )
         started_row = _classify(started)
         started_snapshot = _snapshot(started)
-        working = _pointer(tmp_path, run_id, pid=_absent_pid(), phase="starting")
+        working = _pointer(tmp_path, run_id, pid=supervisor_pid, phase="starting")
         working_row = _classify(working)
         working_snapshot = _snapshot(working)
+        os.kill(supervisor_pid, signal.SIGTERM)
+        os.waitpid(supervisor_pid, 0)
         _write_exit_record(run_id)
         complete = _pointer(
             tmp_path,
             run_id,
-            pid=_absent_pid(),
+            pid=supervisor_pid,
             phase="starting",
             manifest_body=COMPLETE_BODY,
         )
