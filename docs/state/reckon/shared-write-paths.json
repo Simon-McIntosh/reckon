@@ -1,0 +1,45 @@
+{
+  "project": "reckon",
+  "paths": [
+    {
+      "path": "reckon/crew/dispatch.py",
+      "reason": "A preflight node, a wave-planning node and a scope-resolution node each edit a different region of this file, so a whole-file claim serialises work that does not actually collide."
+    },
+    {
+      "path": "reckon/crew/promotion.py",
+      "reason": "The promotion path and the review-gate checks are separate concerns, and nodes repairing one rarely touch the other."
+    },
+    {
+      "path": "reckon/crew/recovery.py",
+      "reason": "Resume, death-row classification and stream measurement are independent repairs against one file."
+    },
+    {
+      "path": "reckon/mcp.py",
+      "reason": "Each MCP op or view lands in its own handler, so two nodes extending different ops edit disjoint regions of a large file."
+    },
+    {
+      "path": "reckon/cli.py",
+      "reason": "CLI verbs are added by independent nodes at separate call sites and in separate subcommand groups."
+    },
+    {
+      "path": "reckon/roadmap.py",
+      "reason": "Derived roadmap facts and the surfaces that read them are extended by independent nodes at separate points in the module."
+    },
+    {
+      "path": "reckon/mcp_views.py",
+      "reason": "Each MCP view lands in its own function, so two nodes extending different views edit disjoint regions of one module."
+    },
+    {
+      "path": "reckon/doccheck.py",
+      "reason": "Independent checks are added at separate call sites in this module, and a node repairing one check rarely touches another."
+    },
+    {
+      "path": "reckon/_store.py",
+      "reason": "Plan-store readers and writers are separate functions, so appends and reads land in different regions of this module."
+    },
+    {
+      "path": "reckon/crew/ticker.py",
+      "reason": "The counter rows, cell formatting and rendering are separate functions that independent nodes extend at separate points."
+    }
+  ]
+}

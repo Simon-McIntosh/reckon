@@ -770,6 +770,184 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     repair, re-review and promotion as separate receipts rather than treating a green gate as
     proof of repair.</p>
   </section>
+<section id="shared-claims-on-declared-hot-files">
+    <h2>&sect;1 &mdash; A declared hot file admits more than one live claimant</h2>
+
+    <p><strong>The defect.</strong> The live claim check refused <em>any</em> overlap between a
+    candidate's write scope and an existing live claim, so a whole-file claim on a hot module
+    serialised nodes that do not actually collide. On 2026-09-25 the three reckon coordinators
+    reported local-lane width bound by whole-file claims on six to eleven hot modules, with 15
+    running against a computed ceiling of 27, while the refused nodes would mostly have edited
+    different functions in those files. Worktrees isolate in-flight work and merging is the
+    orchestrator's job, so the refusal was protecting nothing.</p>
+
+    <p><strong>What landed.</strong> A project may declare shareable files in
+    <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>: a list of repository-relative
+    files, each with a one-line reason.
+    <code>runs._raise_live_scope_conflict</code> reads that list and refuses every overlap
+    <em>except</em> when the candidate and the live claim are the same file named in it. The
+    exemption is the exact file and only that file: an unlisted path still conflicts, a directory
+    claim that merely contains a shared file still conflicts, and a project with no list (or an
+    unreadable one) keeps the whole-file refusal unchanged. A permitted claim is not recorded
+    anywhere new &mdash; both live pointers simply stand, so <code>crew(view="scopes")</code> lists
+    every node sharing the file. The list for reckon is committed with the six modules the
+    coordinators reported as the width bind.</p>
+
+    <p><strong>Co-claimants stay visible.</strong> The check records nothing new: both nodes'
+    live pointers already carry the shared path, so the claim registry that
+    <code>crew(view="scopes")</code> reads derives every claimant from the pointers themselves. A
+    fifth case writes two live pointers on the shared file and asserts the read model lists both
+    nodes, which is what "records the co-claimants" means here.</p>
+
+    <table>
+      <caption>The four cases the node asserts, and where each is made.</caption>
+      <thead><tr><th>Case</th><th>Expectation</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>Two nodes claim the declared file</td><td>both pass, in either direction</td><td><code>test_a_declared_shared_file_admits_two_live_claimants</code></td></tr>
+        <tr><td>A node claims an unlisted file against a live claim on it</td><td>refused</td><td><code>test_an_unlisted_file_is_refused_against_a_live_claim</code></td></tr>
+        <tr><td>A directory claim overlaps the shared file</td><td>refused, in either direction</td><td><code>test_a_directory_claim_containing_a_shared_file_is_refused</code></td></tr>
+        <tr><td>No list is present</td><td>the shared file is refused</td><td><code>test_a_shared_file_is_refused_when_no_list_is_present</code></td></tr>
+        <tr><td>Both permitted claimants remain</td><td>both appear in <code>scope_claims</code></td><td><code>test_both_co_claimants_stay_visible_in_the_read_model</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p><strong>The gate adds no failures over the crew scope, and runs the gate file against base.</strong>
+    The selection is the node's own file beside five scope test files, run at head in this worktree
+    and at the base revision extracted read-only with <code>git archive</code> (no second checkout,
+    worktree or branch). The base arm's module under test resolved to the scratch tree, named on its
+    header.</p>
+
+    <pre><code># head (9e54d079, this worktree)
+module.__file__ = &lt;worktree&gt;/reckon/crew/runs.py
+command: python -m pytest -p no:cacheprovider -q &lt;gate file + 5 scope files&gt;
+73 passed in 8.66s   EXIT=0
+
+# base (git archive a898092d &rarr; /tmp/sc-base-shared-claims)
+module.__file__ = /tmp/sc-base-shared-claims/reckon/__init__.py
+cwd = /tmp/sc-base-shared-claims
+command: same selection
+4 failed, 69 passed in 9.83s   EXIT=1
+FAILED test_a_declared_shared_file_admits_two_live_claimants
+FAILED test_an_unlisted_file_is_refused_against_a_live_claim
+FAILED test_a_directory_claim_containing_a_shared_file_is_refused
+FAILED test_a_shared_file_is_refused_when_no_list_is_present</code></pre>
+
+    <p>The base arm expresses the same population the head arm does once the five new cases are set
+    aside: the five scope files pass at both revisions (68 cases each), so the gate adds no failure
+    over the four scope cases it exercises. The four new cases fail at base because the
+    <code>project</code> argument and the list read do not exist there. The log is
+    <code>logs/gate-base.log</code>, the head log <code>logs/gate-head.log</code>.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>ignore the shared-write-paths list so
+    every overlap is refused; the two-node co-claim case must fail</em> &mdash; the first line of the
+    red log. It was applied without editing the reviewed test: a driver rebinds
+    <code>runs._shared_write_paths</code> to answer the empty set and asserts the rebinding took
+    effect (<code>returns frozenset()</code>) before running the co-claim case. The two-node
+    co-claim case then fails, because the shared file is treated as any other:</p>
+
+    <pre><code>ignore the shared-write-paths list so every overlap is refused; the two-node co-claim case must fail
+control applied: _shared_write_paths returns frozenset()
+FAILED tests/test_shared_claims_on_declared_hot_files.py::test_a_declared_shared_file_admits_two_live_claimants
+E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim 'pkg/hot.py' held by run 'r-owner' (node 'owner')
+1 failed in 0.36s</code></pre>
+
+    <p><strong>Positive control:</strong> the same case in the unmutated tree is <code>1
+    passed</code> (within the <code>5 passed</code> at head), so the red is the mutation and not the
+    selection. Log: <code>logs/negative-control.log</code>, driver
+    <code>logs/negative-control-driver.py</code>.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The change is not yet reached by the production dispatch path.</strong>
+      <code>runs._raise_live_scope_conflict</code> is the check the followup names, and the
+      <code>project</code> argument it now reads the list through is supplied by the caller. The
+      refusal a real <code>crew dispatch</code> raises travels through
+      <code>dispatch._raise_repository_scope_conflict</code>, in a file outside this node's write
+      scope; wiring the declaration into that path is a separate node and is named under the node's
+      <code>follow_ons</code>. This node lands the mechanism and its contract test.</li>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result belongs to a separately dispatched test
+      node.</li>
+      <li><strong>No figure is added.</strong> The mechanism is a decision over two paths (named file
+      versus anything else) and a four-row case table; a diagram would be an image of what is
+      naturally a table.</li>
+    </ul>
+  </section>
+<section id="shared-claims-reach-the-live-check">
+    <h2>&sect;1 &mdash; The shared-path exemption reaches the dispatch claim check</h2>
+
+    <p><strong>The defect.</strong> The mechanism above landed in
+    <code>runs._raise_live_scope_conflict</code>, which no production caller reaches: a real
+    <code>crew dispatch</code> raises its refusal from
+    <code>dispatch._raise_repository_scope_conflict</code>. So a project's declared shareable file
+    still serialised the nodes the declaration exists to admit, on the path that actually fences
+    work.</p>
+
+    <p><strong>What landed.</strong> <code>_raise_repository_scope_conflict</code>, and the dry-run's
+    companion report <code>_live_conflict_rows</code>, now read the list through the same reader
+    (<code>runs._shared_write_paths</code>) and admit the exact named file while keeping the
+    whole-file refusal for a directory claim and for an unlisted path.
+    <code>runs._raise_live_scope_conflict</code> is now a thin delegate to that one check, so a
+    single claim check remains rather than two that can drift. The reckon list gains four more hot
+    modules &mdash; <code>reckon/mcp_views.py</code>, <code>reckon/doccheck.py</code>,
+    <code>reckon/_store.py</code> and <code>reckon/crew/ticker.py</code> &mdash; each with a reason.</p>
+
+    <table>
+      <caption>The cases the contract test asserts, driven through the real dispatch entry.</caption>
+      <thead><tr><th>Case</th><th>Expectation</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>Two dispatches claim the declared file</td><td>both launch</td><td><code>test_two_dispatches_on_a_listed_file_both_launch</code></td></tr>
+        <tr><td>An unlisted file is claimed against a live claim</td><td>refused</td><td><code>test_an_unlisted_file_is_refused_against_a_live_claim</code></td></tr>
+        <tr><td>A directory claim overlaps the declared file</td><td>refused</td><td><code>test_a_directory_claim_containing_a_shared_file_is_refused</code></td></tr>
+        <tr><td>No list is present</td><td>the declared file is refused</td><td><code>test_a_shared_file_is_refused_when_no_list_is_present</code></td></tr>
+        <tr><td>Both co-claimants remain</td><td>both appear in <code>scope_claims</code></td><td><code>test_both_co_claimants_stay_visible_in_the_read_model</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p><strong>The gate adds no failures over the dispatch scope</strong>, and it runs against base.
+    At head (this worktree) the selection is the contract file plus five scope files, all passing.
+    The base arm runs the same selection at the base revision, where the contract file is the
+    <em>old</em> one that drove the dead helper; the five scope files pass at both revisions, so the
+    gate adds no failure over them.</p>
+
+    <pre><code># head (e99035f3, this worktree)
+module.__file__ = &lt;worktree&gt;/reckon/crew/dispatch.py
+command: python -m pytest -p no:cacheprovider -q &lt;contract file + 5 scope files&gt;
+55 passed in 72.10s   EXIT=0
+
+# base arm and the negative control log paths are named on the manifest</code></pre>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>the dispatch path ignores the
+    shared-write-paths list; the two-dispatch co-claim case must refuse</em> &mdash; the first line of
+    the red log. A driver rebinds <code>dispatch._shared_write_paths</code> to answer the empty set
+    and asserts the rebinding (<code>returns frozenset()</code>) before running the co-claim case,
+    which then refuses.</p>
+
+    <pre><code>the dispatch path ignores the shared-write-paths list; the two-dispatch co-claim case must refuse
+control applied: dispatch._shared_write_paths returns frozenset()
+FAILED .../tests/test_shared_claims_on_declared_hot_files.py::test_two_dispatches_on_a_listed_file_both_launch
+E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim 'pkg/hot.py' held by run ...</code></pre>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result belongs to a separately dispatched test
+      node.</li>
+      <li><strong>No figure is added.</strong> The mechanism is a decision over two paths (named file
+      versus anything else) and a five-row case table; a diagram would be an image of what is
+      naturally a table.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
