@@ -2192,6 +2192,79 @@ reckon/crew/dispatch.py:4535: TypeError
       <a href="/reckon/figures/the-suite-is-green-at-head/ledger-reader-scope.png">the
       read-surface duration at each revision, and the guard's two directions</a>.</p>
     </section>
+
+    <section id="a-digest-only-gate-check-is-kept">
+      <h2>a-digest-only-gate-check-is-kept — a digest-only gate check survives promotion</h2>
+
+      <p><strong>The defect.</strong> §2's promotion-guards node reported it and did not repair it
+      (outside that node's write scope): <code>_preserve_cited_gate_log</code> in
+      <code>reckon/crew/promotion.py</code> returned <code>None</code> when
+      <code>gate_check.get("log_path")</code> was empty, discarding the whole mapping — including a
+      supplied <code>log_digest</code>. The promotion caller assigns the function's return over
+      <code>gate_check</code>, so a passing gate citing only a digest reached
+      <code>ledger.build_record</code> as <code>None</code> and was refused with <em>missing
+      command, exit_status, log path or digest</em> — while
+      <code>reckon/ledger.py::gate_check_missing_fields</code> accepts a <code>log_path</code>
+      <em>or</em> a <code>log_digest</code>. The guard contradicted the field it validates, and the
+      cited digest never reached the ledger row. The behaviour was repaired, not the assertion: the
+      no-log-path branch now returns the check as given, because there is no path to copy and the
+      digest is the citation. The docstring gained the case it already implied.</p>
+
+      <h3>Measured at the node's head <code>81179778</code>, base <code>c1e014bf</code></h3>
+      <p>The pinned test is
+      <code>tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code>,
+      read and never edited by this node. It is red at base and green at head, each logged, and it
+      returns to red under the declared mutation. Because the test imports <code>reckon</code> as a
+      package while <code>tests/</code> is itself a package, the base and mutated runs are each
+      materialised as a synthetic tree and pinned with <code>PYTHONPATH</code>, so
+      <code>import reckon</code> resolves to the named tree rather than to the reading session's
+      checkout.</p>
+      <table>
+        <thead><tr><th>Run</th><th>Revision / tree</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>base</td><td><code>c1e014bf</code>, synthetic tree</td><td>FAILED, exit 1</td><td><code>baseline-base.log</code></td></tr>
+          <tr><td>head</td><td><code>81179778</code>, node worktree</td><td>1 passed, exit 0</td><td><code>after-head.log</code></td></tr>
+          <tr><td>negative control</td><td>head + declared mutation, synthetic tree</td><td>FAILED, exit 1</td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The base refusal is verbatim <em>Error: a passing gate requires the check that produced it;
+      missing command, exit_status, log path or digest</em> — the guard speaking about a check that
+      was in fact supplied and then dropped one frame earlier.</p>
+
+      <h3>Delta over every file importing the module</h3>
+      <p>Twenty-four test files import <code>reckon.crew.promotion</code> (the pinned test plus
+      twenty-three others). All twenty-four ran at base and at head, on compute, with
+      <code>-n 8</code> and its own <code>--basetemp</code>.</p>
+      <table>
+        <thead><tr><th>Suite</th><th>Revision</th><th>Passed / failed</th><th>Failing ids</th></tr></thead>
+        <tbody>
+          <tr><td>base</td><td><code>c1e014bf</code></td><td>274 / 2</td><td>the digest test (the defect); <code>test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td></tr>
+          <tr><td>head</td><td><code>81179778</code> (tree at <code>67d5e552</code>)</td><td>275 / 1</td><td><code>test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td></tr>
+        </tbody>
+      </table>
+      <p>The head suite's single failure is a timing assertion (<code>elapsed &lt; 2.0</code>) in
+      <code>tests/test_receipt_after_release.py</code>. It is present at <em>both</em> revisions, so
+      it is not attributable to this change: the digest test is the one failure the change removes,
+      and the flake is unchanged. Its promotion call passes <code>gate_check=None</code>, so the
+      branch this node edited is never reached, and it passes alone at the same revision
+      (<code>timing-serial.log</code>, 1 passed, exit 0). It is recorded as a load-induced flake,
+      not retried until green. Attributable added failures against the base revision:
+      <strong>none</strong>.</p>
+
+      <p><strong>Negative control — the declared mutation returns the pinned test to red.</strong>
+      The mutation is declared verbatim: <em>restore 'return None' on _preserve_cited_gate_log's
+      no-log-path branch; the digest test must fail</em>. Applied to a copy of the head tree, the
+      selected test failed with exit 1, so the repaired branch is one the test can still drive red —
+      the fix is exercised by the test rather than merely sitting beside a passing assertion.</p>
+
+      <p><img src="/reckon/figures/the-suite-is-green-at-head/digest-gate-check-states.svg"
+      alt="Three states of the same gate check side by side: base refuses it (exit 1), head accepts
+      it (exit 0), and the declared mutation returns it to refusal (exit 1)."></p>
+
+      <p><strong>Not evidence for.</strong> This section claims only this node's own change. The
+      plan's §2 measure "Green at the integrated head" is answered by one full-suite run at the
+      merged head after every node lands, which a file-local reading cannot stand in for.</p>
+    </section>
   </main>
 </body>
 </html>

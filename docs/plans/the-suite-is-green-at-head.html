@@ -270,7 +270,41 @@
       tests green at head."></p>
     </div>
 
-    
+    <div data-reckon="landing" data-node="a-digest-only-gate-check-is-kept">
+      <h3>Landed &mdash; a digest-only gate check survives promotion unchanged</h3>
+      <p><strong>Cause named before repair.</strong> This node repairs the product defect the
+      promotion-guards node reached and could not touch: in
+      <code>reckon/crew/promotion.py</code>, <code>_preserve_cited_gate_log</code> returned
+      <code>None</code> when the gate check carried a <code>log_digest</code> but no
+      <code>log_path</code>. The caller assigns that return over <code>gate_check</code>, so the
+      whole mapping &mdash; digest included &mdash; arrived at <code>ledger.build_record</code> as
+      <code>None</code> and the passing gate was refused for a missing check, while
+      <code>reckon/ledger.py::gate_check_missing_fields</code> accepts a <code>log_path</code> or a
+      <code>log_digest</code>. The guard contradicted the field it validates. The <em>behaviour</em>
+      moved, not the assertion: the no-log-path branch now returns the check as given, because there
+      is no path to copy and the digest is the citation.</p>
+
+      <p><strong>Evidence.</strong> The pinned test
+      <code>tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path</code>
+      is red at base <code>c1e014bf</code> (exit 1) and green at head <code>81179778</code>
+      (exit 0), each logged; under the declared mutation it is red again (exit 1), so the repaired
+      branch is one the test can still drive. Both synthetic-tree runs pin the product tree with
+      <code>PYTHONPATH</code>. Across the twenty-four test files importing
+      <code>reckon.crew.promotion</code>, base is 274 passed / 2 failed and head is 275 passed /
+      1 failed. The one failure the change removes is this defect. The other is a load-induced
+      timing flake in <code>test_receipt_after_release</code> present at both revisions &mdash; its
+      promotion call passes <code>gate_check=None</code>, so it never reaches the edited branch, and
+      it passes alone. Attributable added failures: none. The test file is read, never edited.</p>
+
+      <p>Commits: <code>81179778</code>, <code>67d5e552</code>. Full per-run logs and the delta
+      table: <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#a-digest-only-gate-check-is-kept">the
+      cumulative landed record</a>.</p>
+
+      <p>
+      <img src="/reckon/figures/the-suite-is-green-at-head/digest-gate-check-states.svg"
+      alt="Three states of the same digest-only gate check: base refuses it, head accepts it, the
+      declared mutation returns it to refusal."></p>
+    </div>
 
     <section id="s2-budget-session-follower">
       <h3>Node: budget, session and follower tests</h3>

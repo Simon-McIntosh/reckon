@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" role="img"
+     aria-labelledby="t d" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+  <title id="t">Gate-check states through promotion: base, head, and the negative control</title>
+  <desc id="d">A gate check carrying a log digest and an empty log path is refused at the base
+  revision and accepted at the head. Restoring the no-path branch to return None, the declared
+  mutation, returns the digest test to red.</desc>
+
+  <rect x="0" y="0" width="900" height="360" fill="#0f1115"/>
+  <text x="24" y="32" fill="#e8eaee" font-size="16" font-weight="700">
+    _preserve_cited_gate_log(run_id, {command, exit_status, log_digest, log_path: ""})
+  </text>
+  <text x="24" y="54" fill="#9aa3b2" font-size="12">
+    identical input at every step; only the no-log-path branch differs
+  </text>
+
+  <g>
+    <rect x="24" y="82" width="256" height="104" rx="8" fill="#3a1418" stroke="#b3453f" stroke-width="1.5"/>
+    <text x="40" y="108" fill="#f0c4bf" font-size="13" font-weight="700">base c1e014bf</text>
+    <text x="40" y="130" fill="#f0c4bf" font-size="12">if not raw: return None</text>
+    <text x="40" y="150" fill="#f0c4bf" font-size="12">digest discarded, check -&gt; None</text>
+    <text x="40" y="170" fill="#ff8f86" font-size="12" font-weight="700">REFUSED (exit 1)</text>
+  </g>
+
+  <path d="M284 134 h44" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="288" y="124" fill="#9aa3b2" font-size="11">fix</text>
+
+  <g>
+    <rect x="332" y="82" width="256" height="104" rx="8" fill="#102a1a" stroke="#3f9a5f" stroke-width="1.5"/>
+    <text x="348" y="108" fill="#bfe0cd" font-size="13" font-weight="700">head 81179778</text>
+    <text x="348" y="130" fill="#bfe0cd" font-size="12">if not raw: return dict(check)</text>
+    <text x="348" y="150" fill="#bfe0cd" font-size="12">digest kept, cited in place</text>
+    <text x="348" y="170" fill="#5fd98a" font-size="12" font-weight="700">ACCEPTED (exit 0)</text>
+  </g>
+
+  <path d="M592 134 h44" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="596" y="124" fill="#9aa3b2" font-size="11">mutate</text>
+
+  <g>
+    <rect x="640" y="82" width="236" height="104" rx="8" fill="#3a1418" stroke="#b3453f" stroke-width="1.5"/>
+    <text x="656" y="108" fill="#f0c4bf" font-size="13" font-weight="700">negative control</text>
+    <text x="656" y="130" fill="#f0c4bf" font-size="12">restore return None</text>
+    <text x="656" y="150" fill="#f0c4bf" font-size="12">at the no-path branch</text>
+    <text x="656" y="170" fill="#ff8f86" font-size="12" font-weight="700">FAILS (exit 1)</text>
+  </g>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+            orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/>
+    </marker>
+  </defs>
+
+  <line x1="24" y1="216" x2="876" y2="216" stroke="#2a3140" stroke-width="1"/>
+  <text x="24" y="242" fill="#9aa3b2" font-size="12" font-weight="700">
+    tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path
+  </text>
+  <text x="24" y="264" fill="#6b7280" font-size="11">
+    red at base (exit 1) -&gt; green at head (exit 0) -&gt; red again under the declared mutation (exit 1)
+  </text>
+  <text x="24" y="298" fill="#6b7280" font-size="11">
+    logs: baseline-base.log, after-head.log, negative-control.log
+  </text>
+  <text x="24" y="316" fill="#6b7280" font-size="11">
+    base revision and mutated head are each materialised as a synthetic tree and pinned via PYTHONPATH, so
+  </text>
+  <text x="24" y="334" fill="#6b7280" font-size="11">
+    import reckon resolves to the named tree rather than the reading session's checkout.
+  </text>
+</svg>
