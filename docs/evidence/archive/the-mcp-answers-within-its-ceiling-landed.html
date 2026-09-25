@@ -396,8 +396,9 @@
 
   <section id="s7-section-writes-one-section">
     <h2>&sect;7 &mdash; one declaration and one authored section can be written alone</h2>
-    <p>Commits <code>25845dc8f99a30e339b09e8c4f5cf41d9d94629e</code> and
-    <code>0b3cd08c1e9f587436382468131f76f9d23b679a</code>, based on
+    <p>Commits <code>25845dc8f99a30e339b09e8c4f5cf41d9d94629e</code>,
+    <code>0b3cd08c1e9f587436382468131f76f9d23b679a</code> and
+    <code>5fad6a7c8aa38694263dc8c0ed9489db1280ab14</code>, based on
     <code>0bd7a7c9667176b07d0d7912d07a1e8739581d03</code>, changes
     <code>reckon/_store.py</code> and adds
     <code>tests/test_edit_plan_section_writes.py</code>.</p>
@@ -425,6 +426,13 @@
     every typed section record, places the new heading after the last one, then stops before the
     first gates, decisions, followups, questions, research or comments collection. A section can
     never be separated from the record that describes it.</p>
+    <p>The effect is consumed before optimistic-concurrency handling can replace the validated
+    mapping. This matters on the one version-conflict shape the store merges: append-only comments.
+    The regression begins with a version-0 plan, appends a peer comment to reach version 1, then
+    submits a stale version-0 batch carrying a second comment and <code>insert_section</code>. The
+    result is version 2 with both comments and the authored section. Any later insertion validation
+    still raises before the atomic replacement, so the write cannot report success after losing or
+    refusing its authored section.</p>
 
     <figure>
       <img src="/reckon/figures/the-mcp-answers-within-its-ceiling/section-write-boundary.svg"
@@ -444,9 +452,10 @@
         <tr><td>Structured-state refusal</td><td><code>insert_section body must not contain structured plan state</code>; file unchanged</td></tr>
         <tr><td>Plan-meta refusal</td><td><code>insert_section body must not contain plan metadata</code>; file unchanged</td></tr>
         <tr><td>Forged diagnostic control</td><td>a caller-supplied <code>insert_section_request</code> diagnostic produced no heading, no version change and no byte change</td></tr>
+        <tr><td>Stale comment merge</td><td>peer comment at version 1 plus stale version-0 comment-and-insert batch returned version 2 with both comments and the new <code>h2</code></td></tr>
         <tr><td>Document gate</td><td>the synthetic plan passed <code>reckon audit-doc</code> after insertion</td></tr>
         <tr><td>Overlap guard</td><td>a text edit beginning inside the gates region was still refused as overlapping structured state</td></tr>
-        <tr><td>Focused and adjacent tests</td><td>13 passed, 45 deselected, exit 0</td></tr>
+        <tr><td>Focused and adjacent tests</td><td>14 passed, 45 deselected, exit 0</td></tr>
         <tr><td>Ruff delta for <code>reckon/_store.py</code></td><td>14 findings at base; 14 at head; 0 added</td></tr>
         <tr><td>New test lint and format</td><td>0 findings; both staged Python paths formatted</td></tr>
       </tbody>
@@ -459,7 +468,12 @@
     <code>{"ok": false, "error": "op_error", "detail": "unsupported plan set path 'section_declarations.s2'"}</code>.
     The log begins with the declared mutation verbatim and names review-repair head
     <code>0b3cd08c</code>. The handler was restored and <code>git status</code> returned clean before
-    the final thirteen-test gate.</p>
+    the final gate.</p>
+    <p>A second mutation restored section-effect consumption to its post-reassignment position.
+    The stale-comment regression then failed on the missing
+    <code>&lt;h2 id="s3"&gt;Third section&lt;/h2&gt;</code> even though the write returned version 2 and both
+    comments survived. Its log begins <em>restore the post-reassignment section insertion
+    consumption</em>. The pre-merge consumption was restored before the final fourteen-test gate.</p>
 
     <h3>Retained qualification</h3>
     <p><code>reckon/_store.py</code> already carries 14 Ruff findings. This node adds none; it does
