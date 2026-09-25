@@ -48,12 +48,19 @@ _STATUS_LINE = re.compile(r"^status:\s*(\S+)")
 _FALLBACK_SCAN_LINES = 64
 
 
-def _recorded_states(project: str) -> dict[str, str]:
-    """Read the watcher's latest state for each run in one stream pass."""
+def _recorded_states(project: str) -> dict[str, tuple[str, str]]:
+    """Read the watcher's latest state and observation time per run.
+
+    Returns ``run_id -> (state, observed_at)``. A state is carried together with
+    the instant the record was observed: on its own a state cannot be aged, and
+    an unageable verdict is exactly the stale reading this module must refuse.
+    ``observed_at`` is an ISO UTC string, or ``""`` for a line an older producer
+    wrote without one.
+    """
     path = runs.watch_stream_path(project)
     if not path.is_file():
         return {}
-    latest: dict[str, str] = {}
+    latest: dict[str, tuple[str, str]] = {}
     try:
         with path.open(encoding="utf-8") as stream:
             for line in stream:
@@ -63,10 +70,43 @@ def _recorded_states(project: str) -> dict[str, str]:
                 run_id = str(event.get("run_id") or "")
                 state = str(event.get("to_state") or "")
                 if run_id and state:
-                    latest[run_id] = state
+                    latest[run_id] = (state, str(event.get("observed_at") or ""))
     except OSError:
         return {}
     return latest
+
+
+def _observed_seconds(observed_at: str) -> float | None:
+    """Epoch seconds for a record's own ISO stamp, or None when unreadable."""
+    if not observed_at:
+        return None
+    try:
+        parsed = datetime.fromisoformat(observed_at)
+    except ValueError:
+        return None
+    return parsed.timestamp()
+
+
+def _recorded_within_window(
+    observed_at: float | None,
+    *,
+    stream_mtime: float | None,
+    moment: float,
+    stall_seconds: int,
+) -> bool:
+    """Whether a recorded verdict is recent enough to carry liveness.
+
+    A record counts while its own observation sits inside the stall window, or
+    while the run's own stream was written inside it. The second clause keeps a
+    run live through a long turn whose last recorded transition is older than
+    the window but whose engine is still producing output. Both clocks go stale
+    together when the process dies, so a run that stopped writing after its last
+    recorded working event is not live: its record falls through to the bounded
+    manifest-and-age check, so a stale ``working`` never outlives the run.
+    """
+    if observed_at is not None and moment - observed_at <= stall_seconds:
+        return True
+    return stream_mtime is not None and moment - stream_mtime <= stall_seconds
 
 
 def _manifest_status(record: Mapping[str, Any]) -> str:
@@ -192,9 +232,16 @@ def sprint_liveness(
                 row["last_activity_at"] = stamp
 
         run_id = str(record.get("run_id") or "")
-        state = recorded.get(run_id) or _fallback_state(
-            record, moment=moment, stall_seconds=stall_seconds
-        )
+        recorded_state, recorded_at = recorded.get(run_id, ("", ""))
+        if recorded_state and _recorded_within_window(
+            _observed_seconds(recorded_at),
+            stream_mtime=newest,
+            moment=moment,
+            stall_seconds=stall_seconds,
+        ):
+            state = recorded_state
+        else:
+            state = _fallback_state(record, moment=moment, stall_seconds=stall_seconds)
         if state in LIVE_STATES:
             row["live"] = True
             if run_id and run_id not in row["live_runs"]:
