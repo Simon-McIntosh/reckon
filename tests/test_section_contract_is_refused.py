@@ -18,6 +18,7 @@ def plan(tmp_path):
         '<!doctype html><html><head><meta name="docs-project" content="sample">'
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="sample">'
+        '<meta name="plan-title" content="Sample work">'
         '<meta name="plan-status" content="active">'
         '<meta name="plan-version" content="0">'
         '</head><body><main><h2 id="s1">Existing work</h2>'
@@ -89,7 +90,29 @@ def test_append_writes_heading_body_and_typed_record(plan):
     assert soup.select_one('[data-reckon="section"][data-id="s2"]') is not None
     assert item["body"] in html
     assert '<h2 id="s1">Existing work</h2><p>Existing prose.</p>' in html
-    assert html.index('id="s2"') < html.index('id="followups"')
+    assert html.index('id="s1"') < html.index('id="s2"') < html.index(item["body"])
+
+
+def test_multiple_appends_preserve_order_and_allow_explicit_empty_links(plan):
+    root, path = plan
+    assert _append(root, _item(links=[]), _item(id="s3")) == 1
+    state, _ = store.read_plan("sample", "sample", root=root)
+    assert [record["id"] for record in state["sections"]] == ["s2", "s3"]
+    assert state["sections"][0]["links"] == []
+    assert path.read_text().index('id="s2"') < path.read_text().index('id="s3"')
+
+
+def test_append_to_plan_without_structured_collections(plan):
+    root, path = plan
+    path.write_text(
+        path.read_text().replace(
+            '<section data-reckon="followups" id="followups"></section>', ""
+        )
+    )
+    assert _append(root, _item()) == 1
+    state, _ = store.read_plan("sample", "sample", root=root)
+    assert state["sections"][0]["id"] == "s2"
+    assert BeautifulSoup(path.read_text(), "html.parser").main.find("h2", id="s2")
 
 
 @pytest.mark.parametrize("field", ["effort_hours", "capability", "links"])
@@ -207,6 +230,49 @@ def test_existing_unrecorded_plan_remains_editable(plan):
 def test_text_that_only_quotes_a_heading_does_not_add_a_section(plan):
     root, _ = plan
     assert _text(root, '<p>&lt;h2 id="s2"&gt;Quoted&lt;/h2&gt;</p>')[0] == 1
+
+
+def test_text_edit_preserves_an_existing_contract(plan):
+    root, _ = plan
+    _append(root, _item())
+    before, _ = store.read_plan("sample", "sample", root=root)
+    assert _text(root, "<p>Amended prose.</p>")[0] == 2
+    after, _ = store.read_plan("sample", "sample", root=root)
+    assert after["sections"] == before["sections"]
+
+
+def test_nonplan_heading_does_not_require_a_work_contract(plan):
+    root, path = plan
+    path.write_text(path.read_text().replace('content="plan"', 'content="research"'))
+    research = root / "docs" / "research" / path.name
+    research.parent.mkdir()
+    path.rename(research)
+    assert _text(root, '<h2 id="s2">Research notes</h2>')[0] == 1
+
+
+def test_append_rejects_authored_attempt_count(plan):
+    root, path = plan
+    original = path.read_bytes()
+    with pytest.raises(store.OpError, match="attempts"):
+        _append(root, _item(attempts=4))
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("identity", [None, [], "invalid id"])
+def test_append_refuses_invalid_identity(plan, identity):
+    root, path = plan
+    original = path.read_bytes()
+    with pytest.raises(store.OpError, match="id"):
+        _append(root, _item(id=identity))
+    assert path.read_bytes() == original
+
+
+def test_append_rejects_malformed_link(plan):
+    root, path = plan
+    original = path.read_bytes()
+    with pytest.raises(store.OpError, match="links"):
+        _append(root, _item(links=["not::a-ref"]))
+    assert path.read_bytes() == original
 
 
 @pytest.mark.parametrize("identity", ["s1", "followups"])
