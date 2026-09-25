@@ -3514,6 +3514,7 @@ def _crew(
                     windows=budget_module.recorded_windows(
                         project, config, root=checkout_path
                     ),
+                    document_path=budget_module.published_document_path(),
                     ready=candidates or [],
                 ),
             }
