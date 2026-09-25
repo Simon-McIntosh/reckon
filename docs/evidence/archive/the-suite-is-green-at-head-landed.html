@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
   <meta name="plan-verifies" content="the-suite-is-green-at-head#s2">
-  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df">
+  <meta name="plan-commits" content="7ff63a7d,4e813fec,24d4a264,bc89b5fd,de851cfa,14995811,b4bef72b,a45d8b9c,24aeb95b,4bef6acc,eeaf3bbb,5c913d3f,70c1c3df,2bb4fd6d">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>The Suite Is Green At Head — landed evidence | reckon</title>
@@ -1223,6 +1223,83 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
         fifty-file arms, each header naming the revision, the tree, the imported module path and the
         resolved working directory.</li>
       </ul>
+    </section>
+    <section id="suite-time-is-attributed">
+      <h2>Where the suite's wall clock goes &mdash; call-site attribution for the fifteen slowest ids</h2>
+      <p class="landed-summary">Measured at <code>bed6421a</code> on fleet job <code>1277272</code>:
+      21 failed, 6171 passed, 72 skipped, 17 warnings in 555.96 s under <code>-n 8</code> with pytest's
+      default basetemp and the repository-configured 300 s timeout. The same 21 ids under a serial
+      single-process arm: 13 failed, 8 passed.</p>
+
+      <h3>Separation of deterministic from load-only</h3>
+      <p>Eight of the twenty-one ids pass when run alone in one process, and all eight are members of
+      the load-sensitive family this plan already records: the two follower-reload ids,
+      <code>test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime</code>,
+      <code>test_crew_dispatch_arming.py::test_concurrent_dispatches_arm_exactly_one_detached_producer</code>,
+      <code>test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>
+      (5.28 s against its 2.0 s bound),
+      <code>test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>,
+      <code>test_watch_arming_isolation.py::test_a_dispatch_under_the_shared_fixture_arms_no_producer</code>,
+      and <code>test_crew.py::test_complete_clears_a_pointer_when_the_run_is_already_ledgered</code>.
+      The remaining thirteen fail alone as well and are the deterministic set; five of them are
+      pre-existing at this revision and named in the plan's record, and the four
+      <code>skill_contract_parity[SKILL.md]</code> failures attribute to
+      <code>11348097 docs(skills): extract conditional orchestration guidance</code>, which removed the
+      sentences the parity test requires from <code>skills/reckon-build/SKILL.md</code>.</p>
+
+      <h3>The dominant call site per id, and the three candidate causes</h3>
+      <table>
+        <thead><tr><th>shape</th><th>ids</th><th>dominant frame (evidence)</th></tr></thead>
+        <tbody>
+          <tr><td>Fixed sleep / wall-clock wait</td>
+            <td><code>test_dispatch_returns_without_worker.py</code> &times;4 (39&ndash;47 s),
+            <code>test_server_listens_before_it_watches.py</code></td>
+            <td><code>_wait_for</code> at <code>tests/test_dispatch_returns_without_worker.py:602</code>
+            carries 33.7&ndash;41.5 s of its test's cumulative time; the sleep source is the module host's
+            git shim, <code>SHIM_SLEEP_SECONDS = 1.0</code> at <code>:77</code> &times;
+            <code>WORKTREE_COUNT = 30</code> at <code>:76</code>, injected at shim line <code>:240</code>.
+            Independently, <code>_ARM_SECONDS_PER_TREE = 5.0</code> at <code>:26</code> &times;
+            <code>_MOUNT_COUNT = 3</code> at <code>:25</code> = 15 s against a measured 15.06 s.</td></tr>
+          <tr><td>HTML parse + CSS selection</td>
+            <td><code>test_ledger.py::test_every_read_view_&hellip;</code>,
+            <code>test_plan_read_warns_unparsed.py</code>, <code>test_roadmap_endpoints.py</code>,
+            <code>test_spa_graph_authority.py</code>, <code>test_spa_vertical_scroll.py</code></td>
+            <td>soupsieve <code>match_selectors</code> 13.4&ndash;23.5 s over 0.97&ndash;1.93 million calls
+            per test, reached through <code>reckon/_store.py:228</code> and
+            <code>reckon/resources.py:525</code>, parsed by <code>reckon/_plan_html.py</code>. The
+            <code>test_plan_read_warns_unparsed</code> loop reads 128 live plans at ~118 ms each.</td></tr>
+          <tr><td>Real git operation (per document)</td>
+            <td><code>test_roadmap_endpoints.py</code>, <code>test_schema.py</code>,
+            <code>test_spa_*</code> &times;2</td>
+            <td><code>reckon/serve.py:992 _git_first_committed</code> 5.08&ndash;5.58 s and
+            <code>serve.py:1169 _git_last_committed</code> 5.38&ndash;5.51 s &mdash; a <code>git log</code>
+            per plan read.</td></tr>
+          <tr><td>Real subprocess spawn (unattributed)</td>
+            <td><code>test_budget.py</code>, <code>test_ledger.py</code> &times;2,
+            <code>test_gate_evidence.py</code></td>
+            <td>no in-process frame above 0.4 s while the wall time is 13&ndash;20 s; the time sits inside
+            git child processes a profile cannot attribute (4,557&ndash;5,158 <code>posix.stat</code> calls
+            per test, <code>_git</code> fixture helpers).</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The three candidates.</strong> Fixed waits in dispatch tests &mdash; <em>confirmed</em>,
+      the largest single cause among the fifteen. A real git commit per promotion fixture &mdash;
+      <em>refuted</em>: a fresh <code>init + config + add + commit</code> measures a median 25.7 ms
+      (n=12), so fifteen promotions are about 0.4 s of a 15.5 s test; real git is large in the read
+      paths, as per-document <code>git log</code>, not as fixture seeding. Flight resolution per call
+      &mdash; <em>refuted</em>: <code>flight.resolve()</code> measures 5.5&ndash;9.5 ms/call> per call and
+      no <code>reckon/flight.py</code> frame reached the reporting floor in any of the fifteen profiles.</p>
+
+      <h3>Evidence and figure</h3>
+      <p>Full-run log <code>logs/full-n8-durations.log</code>, serial arm <code>logs/solo-arm.log</code>,
+      per-id profiles and their spines under <code>profiles/</code>, and the report
+      <code>report.md</code> in the run record at
+      <code>~/.config/reckon/crew/reports/reckon/suite-green-at-head/suite-time-is-attributed/</code>.
+      Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/suite-time-attribution.png">the fifteen
+      slowest ids coloured by the call site that dominates each</a>. Reviewer note: a peer session's
+      pytest processes ran on the same node during the measured run, so the wall times here are upper
+      bounds; the attribution of time to a frame is unaffected.</p>
     </section>
   </main>
 </body>
