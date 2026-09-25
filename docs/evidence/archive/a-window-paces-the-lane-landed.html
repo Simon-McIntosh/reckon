@@ -1937,6 +1937,94 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
       because <code>main</code> advanced between the two, not because the selection changed.</li>
     </ul>
   </section>
+
+  <section id="s5b-wallet-figures">
+    <h2>&sect;5b &mdash; A wallet's pace, bar and reserve resolve once per wallet</h2>
+
+    <p><strong>What landed.</strong> <code>reckon/crew/budget_group.py</code> gains
+    <code>group_figures(group, config, readings, *, block=None, now=None)</code>, returning a
+    <code>GroupFigures</code> payload carrying the declared wallet's <code>fill</code>,
+    <code>pace</code>, <code>bar</code> and <code>reserve_pct</code>. The figure is taken from the
+    wallet's freshest member reading &mdash;
+    the position the module already resolved &mdash; and each part is delegated to the module that owns
+    its arithmetic: <code>crew.pace.allowance_for_group</code> for the allowance,
+    <code>crew.bar</code> for the threshold and
+    <code>crew.reserve.reserve_pct</code> for the withheld fraction. Commit <code>bb971efb</code>.</p>
+
+    <p><strong>A lane is not a wallet, and the code says so.</strong> The function requires a declared
+    group identifier and raises the same <code>ValueError</code> <code>group_position</code> raises:
+    <code>'codex-luna' is not a declared budget group (declared groups: codex-sub, spark-sub)</code>.
+    The test also asserts the module exposes no other callable whose name carries
+    <em>figure</em>, so a per-lane figures entry point cannot be added without turning that case
+    red.</p>
+
+    <p><strong>Absence is not zero.</strong> A wallet with no ageable member reading reports
+    <code>fill</code>, <code>bar</code> and <code>pace</code> as no figure rather than as zeros,
+    because a zero fill would read as an empty window and admit everything; the reserve is reported
+    all the same, since it is withheld before any work is dispatched. Asserted directly, and asserted
+    again across wallets: a reading owned by the second wallet leaves the first
+    <code>unobserved</code> with no figures at all.</p>
+
+    <h3>The declarations are read from a synthesised home, and the real one is watched</h3>
+
+    <p>The test writes a host <code>flight.yaml</code> and a mounts file into a throwaway
+    configuration home, points <code>RECKON_HOME</code> and <code>RECKON_MOUNTS_PATH</code> at it
+    behind <code>monkeypatch</code>, and resolves it through the real
+    <code>reckon.flight.resolve</code> &mdash; so the path under test is the one a host layer reaches
+    and not a mapping a fixture built by hand. The layer's own path is asserted, and a backend that
+    exists only in the synthesised home is asserted present, which is the positive marker proving the
+    throwaway file was the one read. The workstation's own configuration home is snapshotted before
+    the run and required unchanged after it, so the run can neither depend on what this host declares
+    nor write to it.</p>
+
+    <h3>Gate</h3>
+
+    <table>
+      <caption>The new declaration file and the four-file cohort, both measured against the dispatch
+      base.</caption>
+      <thead>
+        <tr><th>Measurement</th><th>Base <code>b453d7632</code></th><th>This head</th><th>Exit</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_budget_group_declaration.py</code></td><td>absent (new file)</td>
+        <td><strong>8 passed</strong></td><td>0</td></tr>
+        <tr><td>cohort: reserve, pace, budget_group, hold</td><td>54 passed</td>
+        <td><strong>54 passed</strong></td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Zero added failures, and the base was measured rather than assumed:</strong> the cohort
+    ran in a scratch tree of the dispatch base with <code>import reckon</code> resolving to that tree
+    &mdash; printed in the log before the run &mdash; and again at head in the worktree. Lint by delta: the
+    changed module's base copy and this head each report no finding, and
+    <code>ruff format --check</code> is clean on both changed paths.</p>
+
+<h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim &mdash; the first line of the red log:</strong></p>
+
+    <blockquote><p>Drop the budget_group declaration from one sol-family lane so it resolves to no group, which must redden tests/test_budget_group_declaration.py::test_the_four_sol_lanes_resolve_to_one_group</p></blockquote>
+
+    <p>It was applied to a scratch tree of this head by removing the <code>budget_group: codex-sub</code>
+    line under <code>codex-luna</code>, the mutation asserting that it applied (four declarations
+    before, three after). <code>import reckon</code> resolves to the scratch tree, printed in the log
+    before the run. The named case is red on its membership assertion &mdash; <code>assert 3 == 4</code>,
+    the wallet's members being <code>['codex', 'codex-astra', 'codex-terra']</code> &mdash; and the file
+    reports <strong>2 failed, 6 passed</strong>: the second red is the same mutation's effect on the
+    figures case, and the six that pass are the control that the copied tree itself runs.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Nothing consumes the figures yet.</strong> The module is proven; the surface a reader
+      reaches is not changed, and wiring belongs to the node that owns it.</li>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its head; a merged-head verification is a separately dispatched node's job.</li>
+      <li><strong>The declarations are not the schema's.</strong> <code>reckon/schema/flight.yaml</code>
+      declares the <em>budget_group</em> slot and names no backend; the values live in the host layer.
+      This node changes neither the schema nor the generated artifacts.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>...
