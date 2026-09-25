@@ -540,7 +540,14 @@ def test_ship_refills_members_without_crossing_unverified_dependencies() -> None
     assert "Concurrency — the roster is the whole authority" in ship
     assert "There is no slot pool and no numeric worker cap anywhere in Reckon" in ship
     assert "free members are the only ceiling" in ship
-    assert "registers enough members to meet it" in ship
+    assert "concurrency comes from the members a project already has" in ship
+    assert not re.search(
+        r"\bregister(?:ing|ed)?\s+(?:one|a|an|another|more|new|fresh|enough)\b",
+        ship,
+    ), (
+        "the skill must not instruct anyone to register a member: concurrency "
+        "comes from the members a project already has"
+    )
     assert "redispatch each member as soon as its finished node is verified" in ship
     assert "no dependent node builds on unverified work" in ship
     assert "Do not wait for the slowest active node" in ship
@@ -808,6 +815,10 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
 # documenting one of these forces the entry to be removed rather than left to rot.
 CREW_VERBS_OUTSIDE_ORCHESTRATION = {
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
+    ("crew", "path"): (
+        "prints one state path for a consumer repository to call; an "
+        "orchestrator reads state through the crew views, never by path"
+    ),
 }
 
 

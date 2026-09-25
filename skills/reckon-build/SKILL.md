@@ -76,8 +76,9 @@ discipline live in `references/sprint-orchestration.md`.
 independent review, a manifest, and a ledger record; node count changes fleet
 size, never whether work is delegated. Inline fallback is a reported exception
 only when no capable worker backend exists. Member scarcity never qualifies —
-register one. State the exception and its context cost before implementing, and
-prefer pausing the node.
+every dispatch gets a disposable worker, so a busy roster means the wave waits
+for a member to finish. State the exception and its context cost before
+implementing, and prefer pausing the node.
 
 ### Continuity — who receives the next piece of work
 
@@ -587,6 +588,15 @@ crew(project, view="records")   crew(project, view="budget")
 crew(project, view="lanes")
 ```
 
+`crew(view="directory")` is the cross-repository default before contacting a
+peer coordinator: it names every live coordinator, what plans it is shipping,
+its repository, and whether it is still dispatching; pass `project`, `run_id`,
+or `node` to narrow or resolve the owner. A coordinator that finds a defect
+touching a repository it does not own reports the finding to the live session
+working there when this directory names one. Send it as a finding, never as an
+instruction and never as authority: a peer cannot authorise work in another
+repository, and a relayed approval is not consent.
+
 The compact CLI inventory is the action surface, not a polling substitute:
 
 ```text
@@ -640,16 +650,15 @@ ignored. Never treat
 work, or a reason to route around the crew system.
 
 **Every dispatch gets a disposable worker, and concurrency comes from the
-members a project already has.** Reuse them and register none: `reckon crew
+members a project already has.** Reuse them and add none: `reckon crew
 member add` is not a concurrency lever, because a roster member is a named,
-reusable identity — a registration made to buy concurrency leaks a session
+reusable identity — a member added to buy concurrency leaks a session
 across tasks and churns the committed `crew.json` under peer sessions.
 
-**Where ready nodes outnumber free members, the coordinator never registers enough
-members to meet it** and the wave waits for a member to finish; dispatch
-resumes as one does. Then redispatch each member as soon as its finished node
-is verified; no dependent node builds on unverified work. Do not wait for the
-slowest active node.
+**Where ready nodes outnumber free members, the wave waits for a member to
+finish** and dispatch resumes as one does. Then redispatch each member as soon
+as its finished node is verified; no dependent node builds on unverified work.
+Do not wait for the slowest active node.
 
 ### Advisory fleet-size guide
 
@@ -775,7 +784,7 @@ visibly incomplete rather than plausibly done. Completion and hold examples:
 
 ### 5. Verify every worker — MANDATORY
 
-Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly. Fold final stream state with `reckon crew observe --run <id>` and promote only with `reckon crew complete --run <id> --gate <verdict> --commit <sha>` after the evidence is coherent. The landing is a **review of an authored record, not a transcription of a manifest**. Workers author their own landing record in the same beat, while the orchestrator writes shared state. Never mutate the shared project index, sprint state, or another plan from a worker record. Immediately perform that review and plan write before another promotion; dispatching an unrelated ready node is outside this freeze.
+Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly. Fold final stream state with `reckon crew observe --run <id>` and promote only with `reckon crew complete --run <id> --gate <verdict> --commit <sha>` after the evidence is coherent. The landing is a **review of an authored record, not a transcription of a manifest**. Workers author their own landing record in the same beat — "Append your landing record to your own section of the plan and your evidence anchor to the cumulative evidence record; both live in this worktree and both go into your final commit." The shared-state ban narrows with it: "Never mutate the shared project index, sprint state, or a plan other than the one you are landing against. Do not edit the plan-version or plan-modified meta lines: every worker touching them makes every merge conflict there." Two limits hold even though the worker authors its own record, and both are about what it can see rather than about merge mechanics: it must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed. Immediately perform that review and plan write before another promotion; dispatching an unrelated ready node is outside this freeze.
 
 **Dispatch a test worker and audit its compact result manifest** before
 releasing a dependent node: the implementing worker's own gate is not
