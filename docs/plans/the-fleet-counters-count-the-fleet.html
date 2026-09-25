@@ -19,12 +19,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The Fleet Counters Count The Fleet | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="11">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -91,8 +91,43 @@
       <li>A vanished reflex review must be reported as withdrawn. Otherwise the coordinator believes a review exists and waits on it.</li>
     </ul>
 
-    <h2 id="s4">§4 — A re-attach restores the view it left</h2>
-<p>The lead reported on 2026-09-25 that re-arming the follower every 30 minutes is fine, but every re-attach loses the view. Each live run is replayed as a fresh <code>now dispatched</code> row, with the start time and elapsed age reset, so the ticker no longer shows what it showed before. After this section, a re-attach restores the rows the previous follower showed, each with its original timestamp, and every age is computed from the run's real start rather than from the attach.</p><p>The work is folded in from <code>a-follower-outlives-its-monitor</code> &sect;4, whose falsifier is this section's done-when. The S22 coordinator agreed on 2026-09-25, and that plan's section declarations and evidence stay with S22.</p><p><strong>Done when:</strong></p><ul><li>A test attaches a follower, lets transitions arrive, detaches, and re-attaches against the same synthetic fleet. It asserts the replayed rows carry their original timestamps, and that each row's age equals now minus the run's recorded start.</li><li>No already-running run is rendered as <code>dispatched</code>.</li><li>The declared mutation, stamping replayed rows with the attach time, is observed to fail. The log is recorded.</li></ul><p>The node's fence names the follow and watch files a scout identifies. It does not guess them.</p>
+    <h2 id="s4">§4 — A re-arm continues the stream it left</h2>
+<p>The lead reported on 2026-09-25 that re-arming the follower every 30 minutes is fine, but every re-arm loses the history. A batch of rows arrives under one common timestamp, and the transitions that happened while no follower was attached never appear, which leaves a gap. The S23 coordinator's own follower reproduced it at 10:36:51–52 that day: after a re-arm it replayed twelve rows for runs already in flight, each stamped with the attach time.</p>
+<p><strong>Cause, at revision <code>b453d763</code>.</strong> The follower already has a resume path, but its checkpoint travels only through an environment variable handed across an in-place process reload (<code>_take_follower_checkpoint</code>, <code>reckon/cli.py:1702</code>). A re-arm is a new process with no checkpoint, so <code>_follow_watch_lines</code> (<code>reckon/cli.py:2098–2112</code>) takes the other branch, and two defects follow:</p>
+<ul>
+  <li>It emits <code>watch_stream_cursor</code>'s baseline: one row per live run, stamped now. That is the common-timestamp batch.</li>
+  <li>It starts reading the producer's stream at the file's current end, so every line written between the old follower's exit and the new one's start is skipped. That is the gap.</li>
+</ul>
+<p><strong>After this section, a re-arm is a continuation.</strong></p>
+<ul>
+  <li>The follower persists its checkpoint durably, per project and session, in the follower directory, and rewrites it atomically as it delivers. The checkpoint holds the stream path, enough of the stream's identity to tell a replaced or truncated file from the same one, the byte offset after the last line delivered, and the state last reported for each run.</li>
+  <li>A new follower for the same session reads that checkpoint. It seeks to the offset, delivers every line written since, each with the time the stream recorded, and then continues live. It emits no baseline. When nothing moved, the re-arm prints nothing.</li>
+  <li>When the checkpoint cannot be continued, because the stream was replaced or truncated, the follower falls back to state. It emits only runs whose state differs from the checkpoint's reported state, each stamped with the run's own recorded transition time, never the attach time.</li>
+  <li>A session's first arming has no checkpoint and emits the baseline as today, stamped per run.</li>
+  <li>Every row's age is computed from the run's recorded start.</li>
+</ul>
+<p>The work is folded in from <code>a-follower-outlives-its-monitor</code> &sect;4, whose falsifier this section's done-when extends. The S22 coordinator agreed on 2026-09-25, and that plan's section declarations and evidence stay with S22.</p>
+<p><strong>Done when:</strong></p>
+<ul>
+  <li>A test with a synthetic config home and producer stream does the following in order:
+    <ul>
+      <li>arms a follower and delivers transitions;</li>
+      <li>ends the follower at its lifetime;</li>
+      <li>writes more transitions while nothing is attached;</li>
+      <li>re-arms with no environment checkpoint, as a fresh process would.</li>
+    </ul>
+    It asserts that the second follower emits exactly the gap transitions, in order and with their stream timestamps, and no row for a run whose state did not change.</li>
+  <li>A re-arm with no intervening transition emits no line.</li>
+  <li>A test that replaces the stream between the two arms asserts that only changed runs are emitted, each stamped with its recorded time, and that no already-running run renders as <code>dispatched</code>.</li>
+  <li>Two declared mutations are applied and each is observed to fail, with its log recorded:
+    <ul>
+      <li>the re-arm ignores the durable checkpoint;</li>
+      <li>replayed rows are stamped with the attach time.</li>
+    </ul>
+  </li>
+  <li>The tests leave the real follower directory under the user's config home untouched, and assert it.</li>
+</ul>
+<p>The fence is the follow loop in <code>reckon/cli.py</code>, a new module holding the durable checkpoint, and the test. <code>reckon/crew/runs.py</code> joins it only if the stream's identity cannot be read without it.</p>
 
     <h2 id="s5">§5 — The unpromoted count says what each run needs</h2>
 <p>The <code>u</code> counter says a run is unpromoted but not why. On 2026-09-25 the lead saw <code>3u</code> while one of the three had no review at all. The reflex had reviewed only the run's first completion, and a resumed worker's new head sat idle for about ten minutes.</p><p>After this section, the follower emits a standing line, only when the set of unpromoted runs or their review state changes. It never repeats on a cadence: the lead rejected a heartbeat on 2026-09-25 because a signal that repeats gets ignored. Pending duties reach the coordinator every turn through the hooks in <code>an-orchestrator-cannot-forget-its-obligations</code>. The line names each of the session's unpromoted runs with its age, and says whether an independent review is in flight or the coordinator is needed.</p><p>The work is folded in from <code>a-follower-keeps-your-work-in-view</code> &sect;2, whose falsifier is this section's done-when. Re-reviewing a resumed run's new head is reflex logic in <code>reckon/crew/recovery.py</code>, which S21's review-reflex node carries or which follows it. It is not part of this section.</p><p><strong>Done when:</strong></p><ul><li>A test with three unpromoted runs asserts the standing line names all three with their ages. It labels the two with live reviews as review in flight and the one with no review as needs you.</li><li>The declared mutation, dropping the review-in-flight check, is observed to fail. The log is recorded.</li></ul>
