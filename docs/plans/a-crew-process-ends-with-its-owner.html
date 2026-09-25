@@ -731,6 +731,37 @@
       <code>docs/figures/a-crew-process-ends-with-its-owner/stall_clock_starts_at_the_attempt.svg</code>.</p>
     </div>
 
+    <div data-reckon="landing" data-node="a-discard-never-reads-promoted" data-when="2026-09-25">
+      <h3>Landing record &mdash; a departure is promoted only from a recorded ledger row</h3>
+      <p>Commit <code>ddf4509f</code> makes the departure fold in
+      <code>fleet_transitions</code> resolve its run ids against the project ledger instead of
+      against whether a caller happened to pass a reader. At 22:31:52 on 2026-09-25 the ticker
+      rendered a run as <code>blocked &rarr; promoted</code> after another session removed its
+      pointer with <code>crew discard</code>, though nothing was promoted. The fold chose
+      <code>promoted</code> whenever no ledger set was available, and the fleet-stream producer
+      supplies none, so a discard and a promotion read alike.</p>
+      <p>The reported defect reproduces at base <code>132a7d4b</code>: a blocked run's pointer
+      removed with <code>crew discard</code>, folded through the producer's own call shape
+      <code>fleet_transitions(known, {})</code> with no reader, returned the to-state
+      <code>promoted</code>. After the change the same departure reads <code>withdrawn</code>, a
+      departure the ledger records still reads <code>promoted</code>, and a record that cannot be
+      resolved withdraws rather than promoting. The snapshot now carries the run's
+      <code>project</code>, which is what lets the reader-less producer resolve the ledger without
+      any change to <code>reckon/crew/runs.py</code>. The focused gate ran <strong>4 passed</strong>
+      at the committed head; base <code>132a7d4b</code> runs the four regression suites at
+      <strong>3 failed / 107 passed</strong> and the committed implementation at
+      <strong>3 failed / 111 passed</strong> with identical failure ids, so the added failure count
+      is zero (the three pre-existing failures are in a suite outside this node's fence). The
+      declared negative control restores the base rule and the discard case fails reading
+      <code>promoted</code>, exit 1. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-a-departure-reads-only-a-recorded-promotion</code>;
+      figure:
+      <code>docs/figures/a-crew-process-ends-with-its-owner/departure_reads_a_recorded_promotion.svg</code>.
+      A distinct <code>discarded</code> word for a run whose directory records a discard needs a
+      discard marker to record and a ticker state to render, neither of which lives in a file
+      inside this node's fence, so it is left as a follow-on.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
