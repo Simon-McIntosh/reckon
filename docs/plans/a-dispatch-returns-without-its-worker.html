@@ -541,6 +541,28 @@
     turned on. The write paths are
     <code>reckon/crew/promotion.py</code> and that test.</p>
 
+    <h3 id="s7-landed-test-docstring">Landed &mdash; node <code>the-worker-exit-test-says-what-promotion-releases</code></h3>
+    <p>Node <code>the-worker-exit-test-says-what-promotion-releases</code> carried a docstring
+    correction into <code>tests/test_promotion_keeps_the_worker_exit.py</code>, the test file §7's
+    done-when names. Its module docstring stated that the run directory is <em>released at
+    promotion</em>, so the ledger row is <em>the only record that outlives the pointer and the run
+    directory</em>. That was the same overstatement the earlier text pass repaired in
+    <code>reckon/crew/promotion.py</code>, and it disagreed with what that module now says.</p>
+    <p><strong>The correction.</strong> The docstring now reads: <q>Promotion releases the run's live
+    pointer and its worktree, but not the run directory: that survives, <code>exit.json</code> with
+    it, until <code>crew gc</code> prunes it on a retention window, so the ledger row is the durable
+    copy once gc runs.</q> This matches <code>_promoted_worker_exit</code>'s docstring in
+    <code>reckon/crew/promotion.py</code>. Text only &mdash; no code line and no test body changed.</p>
+    <p><strong>The check that could have failed.</strong> A grep of the file for
+    <code>released at promotion, so the ledger row is the only record that outlives the</code>
+    returns zero hits in the working tree, and the same grep against <code>HEAD</code>'s copy of the
+    file returns the phrase at line 5 &mdash; a positive control proving the instrument sees the
+    phrase when present, so the empty result is the phrase's absence, not the instrument's.
+    <code>tests/test_promotion_keeps_the_worker_exit.py</code>: 2 passed. No negative control is
+    declared: a docstring-only change carries no behaviour a test could fail against, and the grep's
+    own positive control is the check. Evidence, including the grep log and the test log, is in
+    <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;§7.</p>
+
     <h2 id="s8">&sect;8 &mdash; A backend carries no worker cap</h2>
     <p>Measured by imas-ambix-61 at 13:17 UTC on 2026-09-23. <code>reckon crew dispatch --local</code>
     was refused with <code>backend 'clive' is at its concurrency ceiling (65 live runs of 64
