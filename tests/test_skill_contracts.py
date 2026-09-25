@@ -562,33 +562,11 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 
 
 # reckon-build SKILL.md is loaded in full at the start of every session, so its size
-# is a per-run cost rather than a one-off. The budget exists to force reference
-# material into references/, which is read only when hand-composing.
-#
-# Headroom is deliberate. The previous value of 12_000 was met by ONE token, which
-# made it a ratchet rather than a budget: the next legitimate sentence broke the
-# suite, and the only ways out were trimming good prose or bumping the number. A
-# budget should bind where a review is actually wanted, so it is set above current
-# size with room for the rule set to grow, and raising it again should require
-# stating why here.
-# A ratchet on attention, not a hard limit. Nothing breaks when this file grows:
-# the figure is a word-count proxy rather than a tokenizer, and the file is a few
-# per cent of a session's context. What degrades with length is which rules an
-# agent still applies by the bottom of the file, which is why a ceiling exists and
-# why it moves deliberately instead of silently.
-#
-# So the ordering is: relocate reference material first, raise this second, shave
-# a rule never. A measured failure outranks the number every time -- 82% of
-# dispatches were running in sessions attached to no wake channel at all, and the
-# rules that close that are worth more than the words they cost.
-# Raised from 16_000: SKILL.md now carries the landing contract verbatim from
-# the runtime prompt -- the worker authors its own record in its own section and
-# never mutates the shared index, sprint state or a foreign plan. That copy is a
-# rule, not reference: it changes what a worker does at landing, so it stays in
-# the read-set the orchestrator needs in hand, and it mirrors the prompt's own
-# wording, so it cannot be shortened. Relocate-first does not apply; this is the
-# sanctioned second step, and the raise stays far above current size.
-FIXED_READ_SET_TOKEN_BUDGET = 17_000
+# is a per-run cost. The ceiling reserves room for new core rules, while requiring
+# explanatory history, exhaustive mechanics, and worked procedures to live in
+# conditional references. A word-count proxy is enough to make that review
+# visible; extracting material comes before widening this bound.
+FIXED_READ_SET_TOKEN_BUDGET = 15_000
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -615,6 +593,27 @@ def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
         "it with a reason recorded here rather than shaving a rule that earned "
         "its place."
     )
+
+
+def test_fixed_read_set_conditional_links_resolve() -> None:
+    """Every extracted passage remains reachable from its decision point."""
+    root = ROOT / "skills" / "reckon-build"
+    ship = (root / "SKILL.md").read_text()
+    links = re.findall(r"\]\((references/[a-z0-9_./-]+)(?:#[^)]+)?\)", ship)
+
+    assert links, "conditional guidance must stay reachable from SKILL.md"
+    for relative in links:
+        assert (root / relative).is_file(), f"unresolved reference link: {relative}"
+
+    guidance = (root / "references" / "conditional-guidance.md").read_text()
+    for section in (
+        "## Continuity, stopping, and prerequisite diagnosis",
+        "## Local-lane specification and capacity rationale",
+        "## Dispatch lifecycle, read views, and integrated gates",
+        "## Follower mechanics and stalled-fleet recovery",
+        "## Verification depth and incomplete worker reports",
+    ):
+        assert section in guidance
 
 
 def test_ship_advances_implementation_for_every_node_landing() -> None:
@@ -857,6 +856,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--tests-added",
             "--scope-changed",
         },
+        ("crew", "check-manifest"): {"--run"},
         ("crew", "directory"): {"--project", "--run", "--node"},
         ("crew", "dispatch"): {
             "--project",
@@ -886,6 +886,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
         ("crew", "observe"): {"--run"},
+        ("crew", "placement"): {"--ensure", "--session", "--project"},
         ("crew", "preflight"): {"--project", "--role"},
         ("crew", "recover"): set(),
         ("crew", "redispatch"): {"--run", "--backend", "--reason"},
@@ -896,6 +897,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "unwatch"): {"--project"},
         ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
         ("crew", "watch"): {"--project", "--stall-window"},
+        ("crew", "widen"): {"--run", "--write-path"},
         ("flight",): {"--project"},
         ("audit-doc",): set(),
     }
