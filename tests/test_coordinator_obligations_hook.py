@@ -15,13 +15,15 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import runs
-from reckon.hooks.coordinator_obligations import format_checklist
+from reckon.crew import recovery, runs
+from reckon.crew.obligations import obligations as obligations_view
+from reckon.hooks.coordinator_obligations import digest_path, format_checklist
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -34,6 +36,13 @@ FIRST_RUN_ID = "run-hook-alpha"
 FIRST_NODE_ID = "hook-alpha-node"
 SECOND_RUN_ID = "run-hook-beta"
 SECOND_NODE_ID = "hook-beta-node"
+SCORING_RUN_ID = "run-hook-scoring"
+SCORING_NODE_ID = "hook-scoring-node"
+# The lane a run arrived on, and the lane this fixture's host declares as the
+# local default. A composed review dispatch names the first; the injected
+# command must follow the second.
+FOREIGN_BACKEND = "codex"
+LOCAL_BACKEND = "clive"
 HELD_ITEMS = 25
 # Held trees are staged with distinct retention ages, the first and oldest at
 # HELD_OLDEST_AGE seconds and each later tree HELD_AGE_STEP seconds newer, so
@@ -168,6 +177,88 @@ def _review_ready_run(
         status="complete",
         role="review",
     )
+
+
+def _scoring_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    run_id: str,
+    node_id: str,
+    backend: str,
+) -> Path:
+    """Record one completed run whose head no review has read yet.
+
+    The manifest names the head commit, which is what makes the run scoring
+    rather than promotable: completion with no review of that revision. The
+    recorded backend is the lane the run was carried on, and the composed
+    review dispatch for it names that lane.
+    """
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    head = _git(repository, "rev-parse", "HEAD")
+    manifest.write_text(
+        f"node: {node_id}\nstatus: complete\ncommits: [{head}]\n", encoding="utf-8"
+    )
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": SESSION,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": head,
+            "process_alive": False,
+            "role": "implement",
+            "backend": backend,
+            "manifest_path": str(manifest),
+            "node": {
+                "id": node_id,
+                "plan": "fixture-plan",
+                "section": "fixture-section",
+                "time_budget": "20m",
+                "write_paths": ["seed.txt"],
+            },
+        },
+    )
+    return manifest
+
+
+@pytest.fixture()
+def local_lane_config(config_home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A host flight config declaring a local lane beside a metered backend.
+
+    The hook reads the local lane default from the resolved flight config, so
+    the fixture plants the host layer of the synthetic home -- never the
+    operator's own file -- and names it through the environment override, so an
+    operator variable cannot reach into the case.
+    """
+    path = config_home / "flight.yaml"
+    path.write_text(
+        "\n".join(
+            [
+                "version: 1",
+                f"default_backend: {LOCAL_BACKEND}",
+                f"local_backend: {LOCAL_BACKEND}",
+                "backends:",
+                f"  {LOCAL_BACKEND}:",
+                "    launch: in-harness",
+                "    sandbox: worktree-full",
+                "    session_reuse: false",
+                f"  {FOREIGN_BACKEND}:",
+                "    launch: cli",
+                f"    command: {FOREIGN_BACKEND}",
+                "    model: fixture-model",
+                "    sandbox: worktree-full",
+                "    session_reuse: false",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(path))
+    return path
 
 
 def _retained_worktrees(repository: Path, tmp_path: Path, count: int) -> None:
@@ -578,3 +669,141 @@ def test_the_collapsed_line_reports_the_oldest_age_of_its_members() -> None:
     ]
 
     assert collapsed == [f"- [worktree-held] 2 items (oldest 50m0s old): {command}"]
+
+
+def test_prompt_mode_speaks_on_a_changed_duty_set_and_is_quiet_on_a_repeated_one(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """The third drive is what makes the second drive's silence mean anything.
+
+    A silent second drive on its own proves nothing, because a session the hook
+    cannot resolve is silent too. The same fixture gains one more duty before
+    the third drive, and the hook speaks again over the same registration -- so
+    the second drive was quiet because the set had not moved, not because
+    nothing was there to say.
+    """
+    _blocked_run(repository, tmp_path)
+    digest_file = digest_path(PROJECT, SESSION)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        assert digest_file.is_file(), "the prompt drive must record its digest"
+        first_digest = digest_file.read_text(encoding="utf-8").strip()
+        first_stamp = _stamp(digest_file)
+        repeated = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        repeated_stamp = _stamp(digest_file)
+        _blocked_run(repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID)
+        changed = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert first.returncode == 0
+    assert first.stderr == ""
+    injected = json.loads(first.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert RUN_ID in injected
+    assert first_digest, "the digest is the record of what was injected"
+    # Where the record lives is part of the contract: under the config home,
+    # beside the registration of the session it describes.
+    assert digest_file.parent == runs.follower_lock_path(PROJECT, SESSION).parent
+    assert config_home in digest_file.parents
+
+    assert repeated.returncode == 0
+    assert repeated.stdout == ""
+    assert repeated.stderr == ""
+    assert repeated_stamp == first_stamp, (
+        "a repeated duty set must not rewrite the record it matched"
+    )
+
+    assert changed.returncode == 0
+    assert changed.stderr == ""
+    checklist = json.loads(changed.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert RUN_ID in checklist
+    assert SECOND_RUN_ID in checklist
+    assert digest_file.read_text(encoding="utf-8").strip() != first_digest
+
+
+def test_an_age_that_moved_alone_does_not_re_inject(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """A duty whose age grew is the same duty, so it is not read out twice.
+
+    The age is shown to have moved rather than assumed to have: the derivation
+    the hook itself reads is asked again after the manifest is backdated, and
+    it reports the older figure while the hook stays quiet.
+    """
+    manifest = _blocked_run(repository, tmp_path)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        aged = time.time() - 900
+        os.utime(manifest, (aged, aged))
+        moved = obligations_view(PROJECT, SESSION)
+        again = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert first.stdout, "the first drive must inject for this case to bite"
+    assert moved["obligations"][0]["age_seconds"] >= 900
+    assert again.returncode == 0
+    assert again.stdout == ""
+    assert again.stderr == ""
+
+
+def test_the_digest_does_not_silence_the_stop_mode(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """A stop is a verdict on the turn, not a repeat of a checklist.
+
+    The prompt drive records the digest for the very duty set the stop that
+    follows it reads. The block must still fire: a stop allowed over
+    outstanding work is the forgetting this hook exists to prevent.
+    """
+    _blocked_run(repository, tmp_path)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        prompting = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        stopping = _hook("stop", _stop_payload(repository, "harness-session"))
+
+    assert prompting.stdout, "the prompt drive must inject for this case to bite"
+    assert stopping.returncode == 0
+    assert json.loads(stopping.stdout)["decision"] == "block"
+
+
+def test_a_review_command_in_the_checklist_follows_the_local_lane(
+    repository: Path,
+    tmp_path: Path,
+    config_home: Path,
+    local_lane_config: Path,
+) -> None:
+    """A dispatch printed for a coordinator names the local lane, not the run's.
+
+    The composed command the obligations reader derives names the backend the
+    run was carried on; that composition is asserted first, so a rewrite cannot
+    pass by having nothing to rewrite. What the hook injects is a command a
+    coordinator may type, so it follows the host's declared local lane and the
+    rest of the command is left byte for byte as composed.
+    """
+    _scoring_run(
+        repository,
+        tmp_path,
+        run_id=SCORING_RUN_ID,
+        node_id=SCORING_NODE_ID,
+        backend=FOREIGN_BACKEND,
+    )
+    composed = recovery.classify_pointer(runs.read_pointer(SCORING_RUN_ID))[
+        "next_action"
+    ]
+    assert f"--backend {FOREIGN_BACKEND}" in composed, (
+        "the composed review dispatch must name the run's own backend for this "
+        "case to bite"
+    )
+
+    with runs.follower_claim(PROJECT, SESSION):
+        completed = _hook("prompt", _prompt_payload(repository, "harness-session"))
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    checklist = json.loads(completed.stdout)["hookSpecificOutput"]["additionalContext"]
+    review = [
+        line for line in checklist.splitlines() if line.startswith("- [review-missing]")
+    ]
+    assert len(review) == 1, checklist
+    injected = review[0].split("): ", 1)[1]
+    assert FOREIGN_BACKEND not in injected
+    assert injected == composed.replace(f" --backend {FOREIGN_BACKEND}", " --local")

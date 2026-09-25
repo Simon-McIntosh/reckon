@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 640" width="980" height="640" role="img" aria-labelledby="title desc">
+  <title id="title">Coordinator obligations hook, prompt mode: the checklist is injected on a change, not on every turn</title>
+  <desc id="desc">Prompt mode derives the duties, digests the set of (kind, run_id) pairs, and compares that digest with the one stored beside the session's follower registration. An equal digest exits silently with code 0; a different one prints the checklist and then stores the new digest. The printed checklist's next_command has any backend lane rewritten to the configured local lane. Stop mode does not consult the digest at all.</desc>
+
+  <rect x="0" y="0" width="980" height="640" fill="#ffffff"/>
+  <text x="30" y="34" font-family="sans-serif" font-size="19" font-weight="bold" fill="#1f2933">Coordinator obligations hook &#8212; prompt mode speaks on change</text>
+  <text x="30" y="56" font-family="sans-serif" font-size="13" fill="#52606d">The duty set, not the clock, decides whether a turn opens with the checklist. An age that moved is the same duty.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="strokeWidth" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7b8794"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="86" width="360" height="44" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="114" font-family="sans-serif" font-size="14" fill="#1f2933">hook JSON on stdin (prompt mode)</text>
+
+  <line x1="220" y1="130" x2="220" y2="150" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="152" width="360" height="46" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="172" font-family="sans-serif" font-size="14" fill="#1f2933">project and crew session resolved</text>
+  <text x="60" y="189" font-family="sans-serif" font-size="13" fill="#52606d">mounts, then the follower registrations</text>
+
+  <line x1="220" y1="198" x2="220" y2="218" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="220" width="360" height="46" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="240" font-family="sans-serif" font-size="14" fill="#1f2933">duties derived for this session</text>
+  <text x="60" y="257" font-family="sans-serif" font-size="13" fill="#52606d">then each command&#8217;s lane follows local_backend</text>
+
+  <line x1="220" y1="266" x2="220" y2="286" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="288" width="360" height="46" rx="8" fill="#fff6d6" stroke="#b8860b" stroke-width="2"/>
+  <text x="60" y="308" font-family="sans-serif" font-size="14" fill="#1f2933">digest of the (kind, run_id) set</text>
+  <text x="60" y="325" font-family="monospace" font-size="12" fill="#7b5e00">sha256("kind\t run_id" lines, sorted)</text>
+
+  <line x1="220" y1="334" x2="220" y2="354" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="356" width="360" height="52" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="377" font-family="sans-serif" font-size="14" fill="#1f2933">equal to the stored digest?</text>
+  <text x="60" y="396" font-family="monospace" font-size="12" fill="#52606d">~/.config/reckon/crew/watch/&lt;project&gt;.followers/</text>
+
+  <line x1="400" y1="382" x2="560" y2="382" stroke="#2f6b4f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="430" y="374" font-family="sans-serif" font-size="13" fill="#2f6b4f">yes</text>
+  <line x1="400" y1="300" x2="560" y2="300" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="415" y="292" font-family="sans-serif" font-size="13" fill="#52606d">no</text>
+
+  <rect x="565" y="352" width="375" height="60" rx="8" fill="#f2f6f3" stroke="#2f6b4f" stroke-width="2"/>
+  <text x="583" y="374" font-family="sans-serif" font-size="14" fill="#1f2933">silence: exit 0, no output</text>
+  <text x="583" y="392" font-family="sans-serif" font-size="13" fill="#52606d">nothing is written; the record keeps its bytes</text>
+
+  <rect x="565" y="266" width="375" height="68" rx="8" fill="#eaf3fb" stroke="#2c6ea8" stroke-width="2"/>
+  <text x="583" y="288" font-family="sans-serif" font-size="14" fill="#1f2933">inject the checklist</text>
+  <text x="583" y="306" font-family="sans-serif" font-size="13" fill="#52606d">as additionalContext, ending with the</text>
+  <text x="583" y="323" font-family="sans-serif" font-size="13" fill="#52606d">authority line &#8212; then store the digest</text>
+
+  <rect x="40" y="440" width="900" height="76" rx="8" fill="#f7f3fb" stroke="#6b4fa8" stroke-width="1.5"/>
+  <text x="60" y="464" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">A command in the checklist names the local lane, not the run&#8217;s</text>
+  <text x="60" y="485" font-family="monospace" font-size="12" fill="#52606d">composed review dispatch:  ... --allow-unreconciled-runs --backend codex</text>
+  <text x="60" y="503" font-family="monospace" font-size="12" fill="#1f2933">injected:                  ... --allow-unreconciled-runs --local</text>
+
+  <rect x="40" y="536" width="900" height="76" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="560" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1f2933">Stop mode reads none of this</text>
+  <text x="60" y="581" font-family="sans-serif" font-size="13" fill="#52606d">It blocks while duties remain and prints nothing once the turn has already continued &#8212; a stop is a verdict on the</text>
+  <text x="60" y="599" font-family="sans-serif" font-size="13" fill="#52606d">turn, so it must not be silenced by a checklist the same session was already shown.</text>
+</svg>
