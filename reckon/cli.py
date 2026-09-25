@@ -2764,6 +2764,83 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit(result, pretty)
 
 
+# The storage kinds `crew path` resolves, in the vocabulary a consumer script
+# writes against. Each names a directory the crew store already owns, so the
+# verb is added here rather than beside the directory it prints.
+_PATH_KINDS = ("config-home", "reports", "runs", "live", "reviews")
+
+
+@crew.command(name="path")
+@click.option(
+    "--kind",
+    "kind",
+    required=True,
+    type=click.Choice(_PATH_KINDS),
+    help="Storage kind whose absolute path to print.",
+)
+@click.option(
+    "--project",
+    default=None,
+    help="Project to resolve under a project-keyed kind.",
+)
+@click.option(
+    "--run",
+    "run_id",
+    default=None,
+    help="Run to resolve under a run-keyed kind.",
+)
+def crew_path(kind, project, run_id):
+    """Print where reckon keeps one kind of file, as a plain path.
+
+    Consumers outside this repository need the location, not a JSON envelope
+    they unwrap before use, so this writes the resolved absolute path and a
+    newline on it. Every value comes from the resolver the crew store already
+    uses for that kind, so when a directory moves, this verb follows. A
+    selector the kind does not accept is refused rather than ignored: a
+    silently dropped `--run` answers a different question than the one asked.
+    """
+    from reckon._store import _config_home
+    from reckon.crew.review import review_path, review_store_root
+    from reckon.crew.runs import live_dir, pointer_path, reports_dir, run_dir, runs_dir
+
+    if kind == "config-home":
+        if project is not None or run_id is not None:
+            raise click.ClickException(
+                "--kind config-home takes no selector, it is the home every "
+                "other kind resolves under."
+            )
+        path = _config_home()
+    elif kind == "reports":
+        if run_id is not None:
+            raise click.ClickException(
+                "--kind reports takes --project only, reports are keyed by "
+                "project rather than by run."
+            )
+        path = reports_dir() / project if project is not None else reports_dir()
+    elif kind in ("runs", "live"):
+        if project is not None:
+            raise click.ClickException(
+                f"--kind {kind} takes --run only, the form of the path is "
+                "decided by the run it names."
+            )
+        if run_id is None:
+            path = runs_dir() if kind == "runs" else live_dir()
+        else:
+            path = run_dir(run_id) if kind == "runs" else pointer_path(run_id)
+    else:  # kind == "reviews"; click.Choice admits nothing else
+        if project is None:
+            raise click.ClickException(
+                "--kind reviews requires --project, the review store is keyed "
+                "by project first."
+            )
+        path = (
+            review_store_root() / project
+            if run_id is None
+            else review_path(project, run_id)
+        )
+    click.echo(str(path))
+
+
 @crew.command(name="check-manifest")
 @click.option("--run", "run_id", required=True, help="Run id whose manifest to check.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
