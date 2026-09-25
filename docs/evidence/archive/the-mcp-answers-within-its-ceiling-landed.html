@@ -549,6 +549,30 @@
     <code>view="section"</code> and fails. The first line of <code>negative-control.log</code>
     repeats the declared mutation verbatim. The arm was restored before the 57-test final gate.</p>
 
+    <h3>Independent-review test repair</h3>
+    <p>Review scored the implementation 92/100 and found two boundary branches that the first test
+    set traversed without making their positive and negative effects observable. Test-only commit
+    <code>0eba4849</code> closes both gaps; <code>reckon/mcp_views.py</code> remains byte-identical to
+    the reviewed implementation.</p>
+    <ul>
+      <li><strong>Authored prose after a typed record.</strong> The adjacent-record test now asserts
+      that the <code>copper-orchid</code> paragraph following
+      <code>data-reckon="section"</code> is present in both returned text and HTML. Replacing the
+      record skip with <code>break</code> reduces the response text to
+      <code>&sect;3 &mdash; Focused transport</code>; the new assertion fails. The receipt is
+      <code>adjacent-record-skip-control.log</code>.</li>
+      <li><strong>Terminal authored boundary.</strong> A new case selects the last authored heading
+      before structured followups and comments. It asserts the authored terminal paragraph remains,
+      while the two <code>data-reckon</code> regions and three unique structured-text sentinels are
+      absent from returned text and HTML; the anchored comment remains available only through the
+      separate <code>comments</code> field. Disabling the structured-region stop makes
+      <code>data-reckon="followups"</code> appear in the returned HTML and fails the test. The
+      receipt is <code>structured-region-stop-control.log</code>.</li>
+    </ul>
+    <p>The implementation was restored after each mutation. At commit <code>0eba4849</code>, the
+    focused file plus the unchanged MCP view and roadmap suites report
+    <strong>58 passed in 12.69 s</strong>, exit 0. Ruff reports no findings in the edited test.</p>
+
     <h3>Retained qualification</h3>
     <p>The schema endpoint retains its existing compact set of progressive response schemas rather
     than duplicating the full section contract inside that already near-ceiling payload. The public
