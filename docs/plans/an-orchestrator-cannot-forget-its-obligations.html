@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 </head>
 <body>
   <main class="plan-doc">
@@ -208,6 +208,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260925T082101656238-worker-stop-binds-the-manifest" data-who="reckon-build" data-when="2026-09-25T11:43:07.308Z">
     <div class="r-comment-body"><p>reckon/hooks/worker_stop.py refuses a worker's stop while its manifest is absent or non-terminal, at most three times per stop chain keyed on stop_hook_active, and writes status blocked on the final allowed stop; resolves runs by RECKON_MANIFEST or a cwd inside a live worktree; 13 passed; three declared mutations red; reviews 84, then 90</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T110541579257-re-review-of-worker-stop-binds-the-manifest" data-who="reckon-build" data-when="2026-09-25T11:44:49.020Z">
+    <div class="r-comment-body"><p>re-review of re-review-of-worker-stop-binds-the-manifest stored</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s22-hook-installer-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed: hook-installer-prints-before-it-writes (run r-20260925T080918504205, commits fbf1bca1, 9f04406a, merged at 70f7366b, evidence splice closed at the following commit). reckon/hooks/install.py prints the snippet by default and writes only on request; nothing is installed. Review 91, with one test gap: the fragment test compares against installer.hook_script_path() itself, so moving the script keeps all ten tests green (a reviewer mutation proved it). This is fixed in the installer follow-on that adds the worker Stop entry, before any real install. The coordinator hook script (obligations-hook-binds-the-harness) is still in review. Plan state stays with reckon-ee.</p></div>
