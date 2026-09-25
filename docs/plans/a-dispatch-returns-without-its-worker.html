@@ -919,6 +919,18 @@
     <code>list-sessions --no-formatting</code> and <code>--layout fleet attach
     --create-background --create demo</code>. Removing the line makes the ordering assertion
     fail, not some earlier timeout.</p>
+    <p><strong>After review.</strong> Three properties the first draft rested on without
+    measuring are now measured, each with its own executed control. The tab list must be
+    non-empty and <em>unchanged for a settle window</em> longer than the ~1.5&nbsp;s spacing the
+    recorded application shows before the client is taken off, so a slow layout cannot be called
+    complete after its first tab; the pty's size is read back from the kernel after it is set, so
+    the size the log reports is the one the tabs were laid out in rather than the one that was
+    requested; and the detach line carries the client's own exit status, read after the wait, so
+    it reports that the process ended rather than that it was asked to. Deleting the ioctl,
+    deleting the detach, or shortening the settle window each turns a case red &mdash; the driver
+    is <code>negative_controls.sh</code> in the node's reports directory, with
+    <code>negative_control_wait.log</code>, <code>negative_control_pty_size.log</code> and
+    <code>negative_control_detach.log</code> beside it.</p>
     <p><strong>What this node does not take.</strong> Nothing outside the verb: the
     <code>spawn</code> and <code>reload</code> verbs, the reader loop and its runtime directory
     are untouched, and no caller changes. The workaround costs one throwaway client per session
