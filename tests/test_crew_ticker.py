@@ -13,6 +13,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+from reckon import ledger
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
@@ -58,6 +59,19 @@ def _deliver(home: Path, run_id: str, status: str, *, blocker: str = "") -> None
         f"node: ticker-node\nstatus: {status}\ncommits: HEAD\n"
         f"blockers: {blocker or 'none'}\n"
     )
+
+
+def _record_ledger_row(run_id: str) -> None:
+    """Write the promotion row a completed run leaves behind when it lands.
+
+    A departure is not a fact the pointer records: a promotion and a pointer
+    that vanished with nothing behind it look identical from the fleet. The
+    ledger decides which one it was, so a fixture that models a landing records
+    the row a promotion would have written.
+    """
+    path = ledger.run_path("proj", run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"run_id": run_id}))
 
 
 def _event(**overrides) -> dict:
@@ -119,6 +133,7 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
             )
         elif sleeps == 5:
             _deliver(home, "r-new", "complete")
+            _record_ledger_row("r-new")
         elif sleeps == 6:
             crew.pointer_path("r-new").unlink()
         elif sleeps == 7:
@@ -144,7 +159,7 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         # departure then leaves.
         ("new-node", "blocked", "completed_unpromoted"),
         ("new-node", "completed_unpromoted", "promoted"),
-        ("existing-node", "dispatched", "promoted"),
+        ("existing-node", "dispatched", "withdrawn"),
     ]
     # Each triple is the fleet after that transition, and the three buckets
     # partition it — a blocked or delivered run leaves the working count, which
@@ -501,13 +516,12 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     assert "  \u00b7" not in recovery.format_watch_transition(_event(model=""))
 
 
-def test_a_departure_carries_no_explanation_from_the_state_it_left() -> None:
-    """A run promoted out of a block must not still report the block.
+def test_a_departure_carries_no_explanation_from_the_state_it_left(home) -> None:
+    """A run withdrawn out of a block must not still report the block.
 
-    The promotion is synthesised from the run's last known snapshot, so the
-    clause explaining why it stopped travels with it unless it is cleared. The
-    result described a problem that was already over, on the very line saying it
-    was resolved.
+    The withdrawal is synthesised from the run's last known snapshot, so the
+    clause explaining why it stopped must be cleared. The result must not
+    describe a problem that was already over on the line saying it vanished.
     """
     known = {
         "r-1": {
@@ -522,11 +536,15 @@ def test_a_departure_carries_no_explanation_from_the_state_it_left() -> None:
         }
     }
 
-    events, remaining = recovery.fleet_transitions(known, {})
+    events, remaining = recovery.fleet_transitions(
+        known,
+        {},
+        ledger_run_ids=recovery._ledger_run_id_reader("proj"),
+    )
 
     assert remaining == {}
     (snapshot, previous, state, _counts) = events[0]
-    assert (previous, state) == ("blocked", "promoted")
+    assert (previous, state) == ("blocked", "withdrawn")
     assert snapshot["detail"] == ""
     # The fact a glyph is derived from goes with it: a departure carrying one
     # would render a marker asking a reader to answer a block that is over.

@@ -314,6 +314,24 @@
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/negative-controls-final-3.log</code>.
       Base named-gate receipt:
       <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T090349791305-a-live-run-never-reads-dead/baseline-named-gate.log</code>.</p>
+      <section id="s10-ticker-fixture-reads-withdrawn">
+        <h3>Ledger-backed ticker departure fixtures</h3>
+        <p>The ticker test fixtures now follow the liveness contract at the base revision.
+        The completed <code>r-new</code> fixture writes a per-run ledger row before its pointer
+        disappears, so its departure remains <code>promoted</code>. The starting
+        <code>r-existing</code> fixture has no row, so the same departure is
+        <code>withdrawn</code>. The blocked departure test uses the real ledger reader with no
+        row and expects <code>withdrawn</code>; its detail and completion marker are still
+        cleared, so no stale explanation crosses the departure boundary.</p>
+        <p><strong>Measured.</strong> The named gate ran at <code>902dc899</code> and completed
+        <strong>34 tests</strong>; the three failures are the pre-existing colour-environment
+        assertions in the ticker file. The independent liveness file completed all of its
+        cases. The negative control forced every departure to <code>promoted</code> and failed
+        both changed expectations; its first line repeats the declared mutation verbatim.
+        Receipts: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122434547693-ticker-fixture-reads-withdrawn/ticker-gate.log</code>
+        and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122434547693-ticker-fixture-reads-withdrawn/negative-control.log</code>.
+        Implementation commits: <code>5f31e8fb</code> and <code>902dc899</code>.</p>
+      </section>
     </section>
   </main>
 </body>
