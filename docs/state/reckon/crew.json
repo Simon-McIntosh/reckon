@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T07:31:04",
+  "updated": "2026-09-25T07:32:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -392001,6 +392001,383 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T043556686767-roster-write-cases-meet-the-run-record",
+        "plan": "new-work-gets-a-new-worker",
+        "section": "\u00a73",
+        "node": "roster-write-cases-meet-the-run-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1173,
+                "cached_input_tokens": 810448,
+                "input_tokens": 811623,
+                "output_tokens": 1317,
+                "reasoning_output_tokens": 133,
+                "total_tokens": 812940,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Based on 8ea87c3a (main merged with the session-on-its-run branch), each of tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first, tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one, tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run and tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it is rewritten to assert the same intent against the run's live pointer or ledger row rather than a roster member, and no other case in those files changes (test_ledger.py's home fixture near lines 158-170 is a peer's and stays as it is). Then every test file importing reckon.crew.dispatch, reckon.crew.runs, reckon.ledger, reckon.crew.routing, reckon.crew.promotion or reckon._backends is run at your head with -n 8 and a per-process basetemp, and compared against the same files at origin/main e7ea1562: record both failure sets, and report in blockers any added id with its traceback line (known timing-bound flakes under load are named as such, not repaired). The declared negative control is executed and logged: restoring a member session write at the capture site in reckon/crew/dispatch.py, in a scratch copy, makes at least one rewritten case fail. No reckon/ source file changes.",
+          "estimated_hours": null,
+          "goal": "The remaining test cases that assert a session written onto a roster member assert it on the run record instead, at the integrated head",
+          "id": "roster-write-cases-meet-the-run-record",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T04:35:57Z",
+            "read_at": "2026-09-25T04:35:58Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 9.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record/manifest.md",
+          "negative_control": "in a scratch copy, restore the session write onto the member entry at the dispatch capture site; at least one rewritten case must fail",
+          "plan": "new-work-gets-a-new-worker",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew.py",
+            "tests/test_ledger.py",
+            "tests/test_crew_members.py",
+            "docs/plans/new-work-gets-a-new-worker.html",
+            "docs/evidence/archive/new-work-gets-a-new-worker-landed.html",
+            "docs/figures/new-work-gets-a-new-worker"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s19x-astra-a",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T04:36:06Z",
+        "completed_at": "2026-09-25T05:02:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1603,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1603,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "8ea87c3a186069bb9f67ec8b2b4d0b3c0a6d5f78",
+        "commits": [
+          "e026be7afae87b4dcd8a8884a311969b54638822",
+          "006b0663d9eeeb2f9ead7b651918a5e5d3830f6e",
+          "05f20e0ddf1b39759db5a2c05de99b75a89850b5"
+        ],
+        "changed_lines": {
+          "added": 231,
+          "removed": 14,
+          "files": 6
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_lives_on_its_run.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record/after-dynamic.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d6da-d351-7e02-b038-c2c8c7d19678",
+        "session_harness": "codex",
+        "session_model": "gpt-6-astra",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8314496,
+            "cached_input_tokens_cumulative": 8314496,
+            "input_tokens": 8651466,
+            "input_tokens_cumulative": 8651466,
+            "output_tokens": 37935,
+            "output_tokens_cumulative": 37935,
+            "reasoning_output_tokens": 10988,
+            "reasoning_output_tokens_cumulative": 10988
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T05:02:49Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 10.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T05:02:49Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: Importer done-when unmet: tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it is outside this node write scope and outside the declared exception set; no triage or repair performed.; Importer done-when unmet: tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers is outside this node write scope and outside the declared exception set; no triage or repair performed.; Importer done-when unmet: tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt is outside this node write scope and outside the declared exception set; no triage or repair performed.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1944,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1610,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f0324bd11afe806559137d0673703f2610c874b5",
+                "70b8eb4fd10531e85b9b9d1dcd3373e014e3fb74",
+                "ae05630c11da75eb820e04f2a66c8a902adf9143",
+                "fd272fd7de16ba421ed1a62b0eb9cb3031cc3fd8",
+                "199069f16c2e3a41231a9652eb02baa4d6d3d945",
+                "88740ddc776933687f82d20f16dd07c982fabbee",
+                "2dd38c461a3d39827263a8fcaeaf608b06e0cd68",
+                "3eb57e55ac50452a71a1fb07a30c44575e59e685"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "bf285da743d24f3afb5b33f3d1c1d5096c24692d4589c819c56e04d8d351377c",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md; resolve the blocker before resuming the run",
+              "node": "session-on-its-run-keeps-its-contracts",
+              "phase": "starting",
+              "plan": "new-work-gets-a-new-worker",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+              "session": "s22-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+                "session_id": "01a0d6a6-ecbe-7483-9b3b-9ef0f9c0940a",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 1653,
+              "terminal_at": "2026-09-25T04:08:26Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/session-on-its-run-keeps-its-contracts"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 18,
+            "goal_fidelity": 19,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 92
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 8314496,
+          "cumulative_input_tokens": 8651466,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 48923,
+          "generation_seconds": 1315.094,
+          "machine_seconds": 193.473,
+          "tokens_per_second": 37.2
+        },
+        "follow_on_paths": [
+          "after-failures.json",
+          "tests/test_a_reexec_keeps_its_children.py::test_an_absent_empty_or_unparseable_carrier_starts_the_new_image_clean[scalar",
+          "tests/test_crew_ticker.py::test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier",
+          "tests/test_crew_ticker.py::test_cli_watch_follow_emit_site_preserves_painted_escape_codes",
+          "tests/test_crew_ticker.py::test_follow_emit_path_preserves_painted_escape_codes",
+          "tests/test_crew_ticker_layout.py::test_a_worker_keeps_one_colour_and_neighbours_differ",
+          "tests/test_crew_ticker_layout.py::test_colour_changes_only_presentation",
+          "tests/test_crew_ticker_layout.py::test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it",
+          "tests/test_crew_ticker_layout.py::test_the_role_is_dim_rather_than_hued",
+          "tests/test_crew_ticker_layout.py::test_the_state_painted_on_the_row_is_the_one_it_moved_into",
+          "tests/test_follow_lifetime_survives_reload.py::test_a_reload_does_not_restart_the_lifetime",
+          "tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner",
+          "tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies",
+          "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact",
+          "tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused",
+          "tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/roster-write-cases-meet-the-run-record",
+          "session_id": "01a0d6da-d351-7e02-b038-c2c8c7d19678",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T05:02:49Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T05:02:49Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T04:37:39Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T043556686767-roster-write-cases-meet-the-run-record",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 337,
+          "worker_pid": 3092477
+        },
+        "promoted_revision": "05f20e0ddf1b39759db5a2c05de99b75a89850b5",
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "new-work-gets-a-new-worker",
+          "at_dispatch": 0.5,
+          "at_complete": 0.67,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew.py",
+            "tests/test_crew_members.py",
+            "tests/test_ledger.py"
+          ],
+          "declaration": "in a scratch copy, restore the session write onto the member entry at the dispatch capture site; at least one rewritten case must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-astra",
+          "burn_multiple": 1.1671920231585717,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-astra' is projected to exhaust at 2026-09-30T17:26:08Z, which is after this node's 3300s horizon ending 2026-09-25T05:30:58.564223+00:00",
+          "horizon_ends_at": "2026-09-25T05:30:58.564223+00:00",
+          "horizon_seconds": 3300,
+          "metered": true,
+          "observed_at": "2026-09-25T04:35:57Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T17:26:08Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 558165,
+          "state": "quiet",
+          "utilisation_pct": 9.0
+        },
+        "lane_declaration": {
+          "backend": "codex-astra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T04:35:57Z",
+          "read_at": "2026-09-25T04:35:58Z",
+          "resolved_backend": "codex-astra",
+          "utilisation_pct": 9.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 136.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -392313,6 +392690,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2697
+    "_version": 2698
   }
 }
