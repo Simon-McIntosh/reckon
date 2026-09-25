@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T07:23:31",
+  "updated": "2026-09-25T07:31:04",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -391682,6 +391682,325 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+        "plan": "new-work-gets-a-new-worker",
+        "section": "\u00a73",
+        "node": "session-on-its-run-keeps-its-contracts",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 671,
+                "cached_input_tokens": 730995,
+                "input_tokens": 731668,
+                "output_tokens": 1534,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 733202,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Based on c6abaeb9 (session-lives-on-its-run plus its test rewrites), each of the seven regressions listed under blockers in /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T025931154715-session-tests-meet-the-run-record/manifest.md is resolved by restoring the contract rather than editing its test: agent configuration equality does not gain a dialect key, the session harness being carried on the run record and promoted ledger row instead, which needs the caller change in reckon/crew/promotion.py a previous diagnosis identified; resume detail keeps its re-verifying-context-fit wording; concurrent unnamed dispatches do not collide on git index.lock in reckon/crew/routing.py; observe does not raise BackendError resolving a dialect for an unsupported command before interruption classification; resume resolves a stream session read-only without writing it onto the pointer; and a promoted row carries session_harness and session_model. A test file is edited only where its assertion encodes the removed roster write. Commit after each repair. At your head the seven listed test ids pass, tests/test_session_lives_on_its_run.py passes, and every test file importing reckon.crew.dispatch, reckon.crew.runs, reckon.ledger, reckon.crew.routing, reckon.crew.promotion or reckon._backends shows no failure id outside its base set at 0bd7a7c9 other than ids in tests/test_crew.py, tests/test_ledger.py, tests/test_crew_dispatch_arming.py and tests/test_follower_checks_its_owner.py (held by peer runs), each listed with whether it asserts the roster write. The declared negative control is executed and logged: re-adding the dialect key to the recorded agent shape makes test_run_record_agent_configuration_excludes_environment fail.",
+          "estimated_hours": null,
+          "goal": "The session-on-its-run change keeps every contract it broke that was not about roster writes",
+          "id": "session-on-its-run-keeps-its-contracts",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T03:36:28Z",
+            "read_at": "2026-09-25T03:36:30Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 7.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md",
+          "negative_control": "re-add the dialect key to the recorded agent configuration; tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment must fail",
+          "plan": "new-work-gets-a-new-worker",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/runs.py",
+            "reckon/ledger.py",
+            "reckon/crew/routing.py",
+            "reckon/_backends.py",
+            "reckon/crew/resumption.py",
+            "reckon/crew/promotion.py",
+            "tests/test_backend_environment.py",
+            "tests/test_backend_reconstruction_settings.py",
+            "tests/test_crew_ephemeral_members.py",
+            "tests/test_crew_interrupted_phase.py",
+            "tests/test_mcp_recovery.py",
+            "tests/test_removed_flag_migration.py",
+            "tests/test_routing_evidence_fields.py",
+            "tests/test_session_lives_on_its_run.py",
+            "docs/plans/new-work-gets-a-new-worker.html",
+            "docs/evidence/archive/new-work-gets-a-new-worker-landed.html",
+            "docs/figures/new-work-gets-a-new-worker"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "orphan-diagnosis",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T03:36:46Z",
+        "completed_at": "2026-09-25T04:09:10Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1944,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1944,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "c6abaeb9c1fe7e932ee3cd46475632672ea11975",
+        "commits": [
+          "f0324bd11afe806559137d0673703f2610c874b5",
+          "70b8eb4fd10531e85b9b9d1dcd3373e014e3fb74",
+          "ae05630c11da75eb820e04f2a66c8a902adf9143",
+          "fd272fd7de16ba421ed1a62b0eb9cb3031cc3fd8",
+          "199069f16c2e3a41231a9652eb02baa4d6d3d945",
+          "88740ddc776933687f82d20f16dd07c982fabbee",
+          "2dd38c461a3d39827263a8fcaeaf608b06e0cd68",
+          "3eb57e55ac50452a71a1fb07a30c44575e59e685"
+        ],
+        "changed_lines": {
+          "added": 194,
+          "removed": 51,
+          "files": 9
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_lives_on_its_run.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d6a6-ecbe-7483-9b3b-9ef0f9c0940a",
+        "session_harness": "codex",
+        "session_model": "gpt-6-astra",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10203520,
+            "cached_input_tokens_cumulative": 10203520,
+            "input_tokens": 10428582,
+            "input_tokens_cumulative": 10428582,
+            "output_tokens": 43778,
+            "output_tokens_cumulative": 43778,
+            "reasoning_output_tokens": 17512,
+            "reasoning_output_tokens_cumulative": 17512
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T04:09:10Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 8.0,
+              "resets_at": 1790869123,
+              "observed_at": "2026-09-25T04:09:10Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 17,
+            "goal_fidelity": 16,
+            "scope_discipline": 19
+          },
+          "absent": [],
+          "total": 88
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 10203520,
+          "cumulative_input_tokens": 10428582,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 61290,
+          "generation_seconds": 1487.545,
+          "machine_seconds": 203.184,
+          "tokens_per_second": 41.2
+        },
+        "follow_on_paths": [
+          "tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first;",
+          "tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it;",
+          "tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers;",
+          "tests/test_follower_checks_its_owner.py::test_a_reloaded_follower_still_leaves_when_the_original_owner_dies;",
+          "tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one;",
+          "tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run;",
+          "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/session-on-its-run-keeps-its-contracts",
+          "session_id": "01a0d6a6-ecbe-7483-9b3b-9ef0f9c0940a",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T04:09:10Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T04:09:10Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T03:40:58Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T033627599580-session-on-its-run-keeps-its-contracts",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 566,
+          "worker_pid": 2781887
+        },
+        "promoted_revision": "3eb57e55ac50452a71a1fb07a30c44575e59e685",
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "new-work-gets-a-new-worker",
+          "at_dispatch": 0.5,
+          "at_complete": 0.67,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_backend_environment.py",
+            "tests/test_backend_reconstruction_settings.py",
+            "tests/test_crew_ephemeral_members.py",
+            "tests/test_crew_interrupted_phase.py",
+            "tests/test_mcp_recovery.py",
+            "tests/test_removed_flag_migration.py",
+            "tests/test_routing_evidence_fields.py",
+            "tests/test_session_lives_on_its_run.py"
+          ],
+          "declaration": "re-add the dialect key to the recorded agent configuration; tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T033627599580-session-on-its-run-keeps-its-contracts/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-astra",
+          "burn_multiple": 0.9830492732085637,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-astra' is projected to exhaust at 2026-10-01T15:38:43Z, which is after this node's 3600s horizon ending 2026-09-25T04:36:30.017496+00:00",
+          "horizon_ends_at": "2026-09-25T04:36:30.017496+00:00",
+          "horizon_seconds": 3600,
+          "metered": true,
+          "observed_at": "2026-09-25T03:36:28Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-10-01T15:38:43Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 561734,
+          "state": "quiet",
+          "utilisation_pct": 7.0
+        },
+        "lane_declaration": {
+          "backend": "codex-astra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T03:36:28Z",
+          "read_at": "2026-09-25T03:36:30Z",
+          "resolved_backend": "codex-astra",
+          "utilisation_pct": 7.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 244.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -391994,6 +392313,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2696
+    "_version": 2697
   }
 }
