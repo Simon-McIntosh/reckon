@@ -9,11 +9,11 @@
   <meta name="plan-title" content="Reckon Reads Answer In Seconds — Landing Record">
   <meta name="plan-summary" content="Cumulative evidence for profiling and reducing the latency of routine Reckon reads.">
   <meta name="plan-evidence-for" content="reckon-reads-answer-in-seconds">
-  <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2">
-  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4">
-  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg">
+  <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2,reckon-reads-answer-in-seconds#s3">
+  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640">
+  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
-  <meta name="plan-verdict" content="passed">
+  <meta name="plan-verdict" content="qualified">
   <meta name="plan-environment" content="fleet allocation 1277272 on clu-2058; reckon project virtual environment">
   <meta name="plan-tags" content="performance,profiling,mcp">
   <title>Reckon Reads Answer In Seconds — Landing Record | reckon</title>
@@ -48,6 +48,29 @@
 
       <p><strong>Full ranked evidence.</strong> <a href="/reckon/research/reckon-read-latency-profile">The research record</a> tabulates the top five call sites of every read with cumulative seconds, revision-stable file and line, parse/walk/compute category, and the existing memo candidate. It records the profiling command and receipt paths. No product file changed.</p>
       <p><strong>Qualification retained.</strong> cProfile inflates absolute wall time; the residual values are Amdahl-style expectations from the consistently instrumented profiles, not post-change benchmarks. The implementation still owes three unprofiled warm measurements for each public read and invalidation checks for one changed plan and one changed live-run file.</p>
+    </section>
+
+    <section id="parse-memo">
+      <h2>Unchanged plan parses are reused</h2>
+      <p><strong>The defect reproduced before repair.</strong> At <code>53b0e22ad51909f97c1fb415c66958e9bd7ae0f7</code>, two calls to <code>parse_plan</code> on one unchanged document caused two <code>Path.read_text</code> calls. Each public read then ran once to warm its process and three more times for the recorded baseline. Every call returned a nonempty result.</p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg" alt="Grouped horizontal bars compare median warm latency before and after parse memoization. Audit falls from 35.39 to 14.58 seconds, roadmap summary from 11.82 to 7.81 seconds, and discovery from 9.71 to 0.98 seconds. A vertical line marks five seconds.">
+        <figcaption>Median of three warmed calls in independent processes on fleet allocation 1277272. Discovery crosses the five-second line; audit and roadmap retain separately attributable work.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Read</th><th>Before, three warm calls</th><th>After, three warm calls</th><th>Median change</th></tr></thead>
+        <tbody>
+          <tr><td>Audit</td><td>33.82, 35.66, 35.39 s</td><td>14.58, 14.59, 14.46 s</td><td>35.39 &rarr; 14.58 s; 58.8% lower</td></tr>
+          <tr><td>Roadmap summary</td><td>12.10, 11.79, 11.82 s</td><td>7.87, 7.81, 7.74 s</td><td>11.82 &rarr; 7.81 s; 33.9% lower</td></tr>
+          <tr><td>Discovery</td><td>9.71, 9.48, 9.73 s</td><td>1.00, 0.98, 0.88 s</td><td>9.71 &rarr; 0.98 s; 89.9% lower</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Guard evidence.</strong> At <code>057d8ad0170cb071537c8a92797f7cbd34158640</code>, <code>tests/test_parse_plan_memo.py</code> asserts one physical read for an unchanged file across parsing, lifecycle and link use; invalidation when size, mtime or inode changes; deep-copy isolation; and project-absolute anchor resolution from a relative corpus root. The named gate over that file plus <code>tests/test_doccheck*.py</code>, <code>tests/test_audit*.py</code> and <code>tests/test_mcp_audit.py</code> passed 113 tests in 5.68 s. Under the declared path-only mutation, the size, mtime and inode cases all failed with stale slugs; the other three cases passed, showing that the red result came from removed invalidation rather than a broken harness.</p>
+
+      <p><strong>Residual retained.</strong> The warmed audit is below the plan's 28.9 s reference but not below five seconds. A post-change cProfile call took 44.66 instrumented seconds: <code>read_state</code> accumulated 18.29 s across 184 calls, including 17.91 s in <code>from_html</code>; <code>partition_live_runs</code> accumulated 16.93 s, including 9.81 s observing logs. Those branches are not repaired here. Roadmap likewise remains above five seconds because its live-state path is unchanged. No change was made to <code>reckon/_store.py</code>.</p>
     </section>
   </main>
 </body>
