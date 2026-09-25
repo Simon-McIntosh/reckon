@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
@@ -516,6 +516,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085041165316" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. Section-anchor handling already landed, so the old §2 continuation is resolved; §3 is now next and §4 remains decision-gated.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s22-schema-budget-correction" data-who="" data-when="">
+    <div class="r-comment-body"><p>Correction appended to the schema-view-fits-its-budget-again landing (merged at 81dcc758, review 90). The title figures "14455 → 12111" are PlanState.model_json_schema() before and after the strip measured inside one process; measured at the two named revisions the generated schema reads 14998 at base and 12580 at head. The cited head receipts (head-size.log, head-gates.log) were written before commit c57c1d6c existed. The reviewer reproduced the results at the named revisions: 49 passed and a schema view of 22483 against the unchanged 24576 budget.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T054942427549-a-followup-naming-a-terminal-foreign-plan-is-reported" data-who="skill-verb-surface" data-when="2026-09-15T08:50:59.180Z">
     <div class="r-comment-body"><p>reckon audit now reports a followup naming a foreign plan in a terminal state, with three distinct codes for terminal, unmounted and missing targets, so an obligation invisible to both projects' roadmaps becomes a finding. Count over the registered mounts stated as 2. Gate 7 passed with 5 new tests; test_schema 1282 passed; 75 passed across the doccheck-importing files. Two failures in test_provenance and test_mcp_recovery were verified pre-existing by reproducing them at base with pristine doccheck.py installed, so zero added. Its manifest is unreadable to the parser because it reports status 'done', which is outside the recognised set, so commit and gate evidence are supplied from independent verification.</p></div>
