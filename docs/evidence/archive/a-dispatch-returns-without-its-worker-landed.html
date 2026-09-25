@@ -442,11 +442,12 @@
 
     <h2 id="s7">&sect;7 &mdash; A promoted row carries the worker's exit record</h2>
     <p>
-      Promotion deletes the live pointer and releases the worktree; the run directory, with its
-      <code>exit.json</code>, survives until <code>crew gc</code> prunes it on its retention
-      window, so the committed ledger row is the copy that outlives that. <code>complete</code> in
-      <code>reckon/crew/promotion.py</code> reads the file once, at promotion, and copies
-      the parsed object verbatim onto the row under <code>worker_exit</code>.
+      Promotion releases the run's live pointer and its worktree, but not the run directory:
+      that survives, <code>exit.json</code> with it, until <code>crew gc</code> prunes it on a
+      retention window. <code>complete</code> in <code>reckon/crew/promotion.py</code> reads the
+      file once and copies the parsed object verbatim onto the committed ledger row under
+      <code>worker_exit</code>, so the row is the durable copy of the worker's exit record once
+      gc has run.
     </p>
     <figure>
       <img src="/reckon/figures/a-dispatch-returns-without-its-worker/worker_exit_promotion_flow.png"
@@ -500,6 +501,36 @@
       adds zero failures; every one of the 30 is pre-existing at base and lies in peer-scoped
       files. Judge by the delta, not the absolute count: the base is red and the change adds
       nothing to it.
+    </p>
+    <p>
+      <strong>Wording correction (<code>5e7515e8</code>).</strong> The docstring of
+      <code>_promoted_worker_exit</code> in <code>reckon/crew/promotion.py</code> had said the run
+      directory is released at promotion and that the ledger row is the only record that outlives
+      the run. Promotion releases the run's live pointer and its worktree; the run directory
+      survives, <code>exit.json</code> with it, until <code>crew gc</code> prunes it on a
+      retention window, so the row is the durable copy once gc has run. The docstring now states
+      that, matching <code>_preserve_cited_gate_log</code>'s docstring in the same module, and the
+      section-opening paragraph above was corrected to the same fact. Text only &mdash; no code
+      line changed. The check that could have failed: a grep of
+      <code>reckon/crew/promotion.py</code> for <code>released at promotion</code> and
+      <code>only record that outlives</code> returns nothing (exit 1), logged
+      <code>grep.log</code>; a positive control in the same log shows the grep reading a phrase
+      the new docstring does carry (line 603), so the empty result is the file's, not the
+      instrument's. <code>tests/test_promotion_keeps_the_worker_exit.py</code>: 2 passed, logged
+      <code>test.log</code>. No negative control is declared: a docstring-only change carries no
+      behaviour a test could fail against.
+    </p>
+    <p>
+      <strong>Follow-up text pass (<code>1a494b54</code>).</strong> A fuller line-by-line scan of
+      <code>reckon/crew/promotion.py</code> found three further comments carrying the same
+      overstatement with different wording: the routing-evidence comment said the run directory is
+      deleted after the manifest is read; the worker-exit comment said the record is copied before
+      the directory is released; and the shadow-contamination comment said the directory is
+      released after the append. All three now say promotion releases the live pointer and the
+      worktree and the run directory survives until <code>crew gc</code>. A grep of the module for
+      <code>directory is released</code>, <code>directory is deleted</code>, and
+      <code>released.*run directory</code> returns nothing; <code>tests/test_promotion_keeps_the_worker_exit.py</code>
+      2 passed at the follow-up head. Comments only, no code line changed.
     </p>
 
     <h2 id="s10">&sect;10 &mdash; The launch leaves through the allocation's batch step</h2>

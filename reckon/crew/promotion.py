@@ -597,12 +597,14 @@ def _require_gate_log_agrees(
 def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
     """The worker's exit record, read verbatim from the run directory.
 
-    A CLI dispatch's supervisor writes ``exit.json`` beside the worker it spawned,
-    and the run directory is released at promotion, so the ledger row is the only
-    record that outlives the run. The row carries this promotion's copy under
-    ``worker_exit`` when the file exists, and carries no such key when it does
-    not: an empty key would read as the supervisor having run and recorded
-    nothing, which is the opposite of a run whose supervisor never wrote a record.
+    A CLI dispatch's supervisor writes ``exit.json`` beside the worker it spawned.
+    Promotion releases the run's live pointer and its worktree, but not the run
+    directory: that survives, ``exit.json`` with it, until ``crew gc`` prunes it
+    on a retention window, so the ledger row is the durable copy once gc runs.
+    The row carries this promotion's copy under ``worker_exit`` when the file
+    exists, and carries no such key when it does not: an empty key would read as
+    the supervisor having run and recorded nothing, which is the opposite of a run
+    whose supervisor never wrote a record.
 
     A file that exists but cannot be read or parsed as a JSON object is treated
     as absent rather than propagated as a failure: a corrupt file is not
@@ -3874,7 +3876,8 @@ def _complete_locked(
 
     # Routing evidence is read from the delivered manifest at promotion, so a
     # later measure can separate a followup touch from a defect on the row
-    # alone; the run directory is deleted after this. An unreadable manifest
+    # alone; the run directory survives, pruned only later by crew gc. An
+    # unreadable manifest
     # leaves follow-on paths unmeasured (key absent) and the dispute count
     # "unknown" — a node never measured is not one that measured zero.
     manifest_text: str | None = None
@@ -3936,10 +3939,11 @@ def _complete_locked(
     # resolve on this machine, and a copy that cannot be read or written all
     # leave the check as given, because preservation must never decide the verdict.
     gate_check = _preserve_cited_gate_log(run_id, gate_check)
-    # The worker's own exit record is copied onto the row before the run
-    # directory is released, so the facts a census reads (the terminating signal
-    # and whether the exit landed mid-work either way) outlive the pointer and
-    # the run directory they were first written in. The row's ``exit_status`` is
+    # The worker's own exit record is copied onto the row before promotion
+    # releases the live pointer and the worktree. The run directory survives
+    # until crew gc prunes it, but the row must carry the record regardless: the
+    # facts a census reads (the terminating signal and whether the exit landed
+    # mid-work either way) then outlive the pointer. The row's ``exit_status`` is
     # left as the gate command's status; the worker's exit is a separate fact
     # under its own key, so a run with no exit record carries no ``worker_exit``
     # key rather than an empty one.
@@ -4073,7 +4077,7 @@ def _complete_locked(
         run[lane_key] = dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
     # A shadow whose stream read its primary's landed answer is void as
     # calibration evidence; the stream is still on disk at this point (the run
-    # directory is released after the append) so promotion scans it rather than
+    # directory survives until crew gc) so promotion scans it rather than
     # trusting a worker's self-report. Contamination recreates the primary's
     # answer from the object store, never from the shadow's own patch.
     if shadow:
