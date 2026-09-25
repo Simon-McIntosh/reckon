@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -56,27 +57,44 @@ def _pointer(
     base: str,
     *,
     write_paths: tuple[str, ...] = ("allowed.txt",),
+    pid: int | None = None,
 ) -> None:
-    _write_json(
-        pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": PROJECT,
-            "repo": str(repository),
-            "worktree": str(repository),
-            "base_sha": base,
-            "launch": "in-harness",
-            "role": "implement",
-            "backend": "native",
-            "created_at": "2026-08-26T12:00:00Z",
-            "node": {
-                "id": "scope-check",
-                "plan": "fixture",
-                "section": "guard",
-                "time_budget": "25m",
-                "write_paths": list(write_paths),
-            },
+    pointer: dict[str, object] = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "repo": str(repository),
+        "worktree": str(repository),
+        "base_sha": base,
+        "launch": "in-harness",
+        "role": "implement",
+        "backend": "native",
+        "created_at": "2026-08-26T12:00:00Z",
+        "node": {
+            "id": "scope-check",
+            "plan": "fixture",
+            "section": "guard",
+            "time_budget": "25m",
+            "write_paths": list(write_paths),
         },
+    }
+    if pid is not None:
+        pointer["pid"] = pid
+    _write_json(pointer_path(run_id), pointer)
+
+
+def _declare_shared_write_paths(repository: Path, *paths: str) -> None:
+    """Declare repository-relative files a project admits concurrent claims on."""
+    (repository / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "paths": [
+                    {"path": path, "reason": "concurrent editors touch one file"}
+                    for path in paths
+                ],
+            }
+        ),
+        encoding="utf-8",
     )
 
 
@@ -455,6 +473,148 @@ def test_companion_path_acceptance_refuses_another_live_run_claim(
             accepted_paths={"artifact.png": "rendered companion"},
         )
 
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def _complete_arguments(run_id: str, commit: str) -> list[str]:
+    return [
+        "crew",
+        "complete",
+        "--run",
+        run_id,
+        "--gate",
+        "passed",
+        "--commit",
+        commit,
+        "--gate-command",
+        "pytest tests/test_crew_promotion_scope.py",
+        "--gate-exit-status",
+        "0",
+        "--gate-log-path",
+        "/durable/promotion-scope.log",
+    ]
+
+
+def test_companion_path_acceptance_admits_a_shared_write_claim(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-shared-companion"
+    peer_run = "r-shared-companion-owner"
+    real_live = Path.home() / ".config" / "reckon" / "crew" / "live"
+    assert not (real_live / f"{run_id}.json").exists()
+    assert not (real_live / f"{peer_run}.json").exists()
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    _pointer(
+        repository,
+        peer_run,
+        base,
+        write_paths=("artifact.png",),
+        pid=os.getpid(),
+    )
+    _declare_shared_write_paths(repository, "artifact.png")
+    commit = _commit_artifact_with_companion(run_tree)
+    _git(repository, "merge", "-q", "--no-ff", commit, "-m", "Merge producer")
+
+    accepted = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, commit),
+            "--accept-path",
+            "artifact.png",
+            "rendered by the shared producer",
+        ],
+    )
+
+    assert accepted.exit_code == 0, accepted.output
+    stored = json.loads(accepted.output)["record"]
+    assert stored["scope_acceptances"] == [
+        {
+            "path": "artifact.png",
+            "reason": "rendered by the shared producer",
+        }
+    ]
+    assert not pointer_path(run_id).exists()
+    assert not (real_live / f"{run_id}.json").exists()
+    assert not (real_live / f"{peer_run}.json").exists()
+
+
+def test_companion_path_acceptance_still_refuses_a_claim_off_the_shared_list(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-unshared-companion"
+    peer_run = "r-unshared-companion-owner"
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    _pointer(
+        repository,
+        peer_run,
+        base,
+        write_paths=("artifact.png",),
+        pid=os.getpid(),
+    )
+    _declare_shared_write_paths(repository, "allowed.txt")
+    commit = _commit_artifact_with_companion(run_tree)
+
+    with pytest.raises(
+        crew.CrewError,
+        match=(
+            r"cannot accept artifact\.png: live run "
+            r"'r-unshared-companion-owner' claims artifact\.png"
+        ),
+    ):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            accepted_paths={"artifact.png": "rendered companion"},
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+@pytest.mark.parametrize("outside_path", ["rendered/note.txt", "rendered/artifact.png"])
+def test_directory_claim_keeps_refusing_paths_under_it(
+    repository: Path, tmp_path: Path, outside_path: str
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-directory-claim"
+    peer_run = "r-directory-claim-owner"
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    _pointer(
+        repository,
+        peer_run,
+        base,
+        write_paths=("rendered",),
+        pid=os.getpid(),
+    )
+    _declare_shared_write_paths(repository, "rendered/artifact.png")
+    (run_tree / "artifact.json").write_text('{"result": "ready"}\n', encoding="utf-8")
+    (run_tree / "rendered").mkdir()
+    (run_tree / outside_path).write_text("rendered companion\n", encoding="utf-8")
+    _git(run_tree, "add", "artifact.json", outside_path)
+    _git(run_tree, "commit", "-q", "-m", "test: render into the output directory")
+    commit = _git(run_tree, "rev-parse", "HEAD")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            accepted_paths={outside_path: "rendered companion"},
+        )
+
+    assert (
+        f"cannot accept {outside_path}: live run "
+        f"'r-directory-claim-owner' claims rendered"
+    ) in str(refusal.value)
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
 

@@ -52,6 +52,7 @@ from reckon.crew.runs import (
     _live_worktree_claims,
     _manifest_freshness,
     _pointer_lock,
+    _shared_write_paths,
     _utc_now,
     _write_json,
     drain,
@@ -1385,6 +1386,7 @@ def _accepted_scope_exceptions(
             f"scope; these do not: {', '.join(unchanged)}"
         )
 
+    shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     for pointer in list_live():
         peer_run = str(pointer.get("run_id") or "")
         if not peer_run or peer_run == run_id:
@@ -1409,6 +1411,16 @@ def _accepted_scope_exceptions(
                     or candidate.is_relative_to(claim)
                     or claim.is_relative_to(candidate)
                 ):
+                    # A file the project declares shareable admits a second
+                    # claimant editing a different region: worktrees isolate the
+                    # in-flight work and merging is the orchestrator's job, so a
+                    # whole-file refusal here serialises nodes that do not
+                    # actually collide. Only the exact named file is shareable;
+                    # a directory claim that merely contains it is a different
+                    # path, and paths under such a claim stay refused. Dispatch
+                    # resolves the same list through this same helper.
+                    if candidate == claim and path in shared_files:
+                        continue
                     raise CrewError(
                         f"run {run_id!r} cannot accept {path}: live run "
                         f"{peer_run!r} claims {claim.as_posix()}"
