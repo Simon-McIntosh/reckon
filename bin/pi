@@ -1,0 +1,10 @@
+#!/bin/bash
+# pi — paste the terminal client's clipboard: an image's path, or the text.
+#
+# A thin wrapper so reckon carries the behaviour: `reckon paste` resolves the
+# live fleet from the record the fleet supervisor publishes, and writes an image
+# on the fleet node as well as here, at the same /tmp path. The checkout is
+# resolved beside this script's real path, so a link from any bin directory
+# works. --no-sync keeps a paste from ever mutating the shared environment.
+root=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+exec uv run --quiet --no-sync --project "$root" reckon paste "$@"

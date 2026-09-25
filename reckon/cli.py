@@ -502,6 +502,24 @@ def fleet(pretty):
     _emit({"ok": True, "view": "fleet", "projects": rows}, pretty)
 
 
+@main.command(name="paste")
+@click.option(
+    "--no-fleet",
+    is_flag=True,
+    help="Keep an image on this host; do not copy it to the live fleet node.",
+)
+def paste_command(no_fleet):
+    """Paste the terminal client's clipboard: an image's path, or the text.
+
+    An image is written to /tmp here and, when a fleet allocation is running,
+    at the same path on its node, so the printed path is valid in a fleet
+    session too. `pi` is this command.
+    """
+    from reckon.paste import paste
+
+    sys.exit(paste(fleet=not no_fleet))
+
+
 @main.command(name="badge")
 @click.option("--project", required=True, help="Mounted project whose badge to render.")
 @click.option(
