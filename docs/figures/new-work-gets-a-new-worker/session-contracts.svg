@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="410" viewBox="0 0 1000 410" role="img" aria-labelledby="title desc">
+<title id="title">Session identity and agent configuration take separate paths</title>
+<desc id="desc">Observation captures session identity on the run and promotion copies it to the ledger. Resume reads the run's session authorities and composes a launch without caching a stream identity. Agent configuration keeps its existing shape.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#245c74"/></marker></defs>
+<rect width="1000" height="410" fill="#fff"/>
+<g font-family="sans-serif" fill="#182d37">
+<text x="30" y="35" font-size="22" font-weight="bold">Session ownership follows the run</text>
+<g fill="#f0f7fa" stroke="#245c74" stroke-width="1.2">
+<rect x="30" y="80" width="215" height="92" rx="4"/>
+<rect x="385" y="80" width="230" height="92" rx="4"/>
+<rect x="755" y="80" width="215" height="92" rx="4"/>
+</g>
+<g text-anchor="middle" font-size="19">
+<text x="137" y="113">Worker stream</text><text x="500" y="113">Live run</text><text x="862" y="113">Promoted ledger row</text>
+</g>
+<g text-anchor="middle" font-size="15">
+<text x="137" y="144">session announcement</text><text x="500" y="144">id · harness · model</text><text x="862" y="144">id · harness · model</text>
+</g>
+<g stroke="#245c74" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+<path d="M245 126 H375"/><path d="M615 126 H745"/>
+<path d="M137 172 V234 H490 V278"/><path d="M500 172 V278"/><path d="M862 172 V234 H510 V278"/>
+<path d="M615 315 H745"/>
+</g>
+<g text-anchor="middle" font-size="15">
+<text x="310" y="110">observe</text><text x="683" y="110">promote</text>
+<text x="500" y="217">Resume reads the run's authorities</text>
+</g>
+<rect x="385" y="285" width="230" height="60" rx="4" fill="#f0f7fa" stroke="#245c74" stroke-width="1.2"/>
+<rect x="755" y="285" width="215" height="60" rx="4" fill="#f0f7fa" stroke="#245c74" stroke-width="1.2"/>
+<g text-anchor="middle" font-size="18">
+<text x="500" y="321">Resolved session</text><text x="862" y="321">Launch invocation</text>
+</g>
+<text x="30" y="316" font-size="17">Agent configuration stays stable</text>
+<text x="30" y="341" font-size="15">backend · launch · model · effort · sandbox</text>
+<text x="500" y="386" text-anchor="middle" font-size="16">Read-only resolution leaves a stream-only session uncached on the pointer.</text>
+</g>
+</svg>
+
