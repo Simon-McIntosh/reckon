@@ -26,10 +26,17 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
 # The fleet counter block, wherever it sits on the row. Located by its own
 # shape rather than by searching from the right edge: the reason is the last
-# column now, so a letter at the end of a line belongs to free text. The
-# counters are joined by a bare middle dot with no surrounding space (the gap
-# was reclaimed to fund the model and effort cells).
-COUNTERS = re.compile(r"(\s?\d{1,2})w(·\s?\d{1,2})b(·\s?\d{1,2})u")
+# column now, so a letter at the end of a line belongs to free text. Each cell
+# is two right-aligned digits and one letter, and the cells abut with the
+# second digit's own leading space as the gap — the middle-dot separators the
+# block once carried were reclaimed to fund the reason clause.
+COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})b( \s?\d{1,2})u")
+
+# The roles a fleet node carries as its ordinary work, and the longest of them.
+# The role column is sized from these, so the two rare roles wider than the cell
+# elide rather than widening it.
+ORDINARY_ROLES = ("implement", "review", "test")
+IMPLEMENT_ROLE = "implement"
 
 
 def plain(line: str) -> str:
@@ -124,28 +131,28 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w·4b·1u`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w 4b 1u`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
-    The counts are joined by a bare middle dot with no surrounding space, so
-    the separator adds nothing to the block a reader is summing.
+    Each cell is two right-aligned digits followed by its letter, so the cells
+    abut with the second digit's leading space as the gap and no separator of
+    its own takes width from the reason.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert " 2w· 4b· 1u" in line
+    assert " 2w 4b 1u" in line
 
 
-def test_the_counter_separator_carries_no_surrounding_space(grid):
-    """Each count ends at its letter and the bare dot follows it directly.
+def test_the_counter_block_carries_one_space_between_cells(grid):
+    """Each count ends at its letter and the next cell's own pad is the gap.
 
-    The old separator wrapped its middle dot in two spaces; the reclaimed
-    spaces are what fund the model and effort cells without taking width from
-    the reason. Asserted on a rendered row: a space before the dot would read
-    as the padding the change set out to remove.
+    The block once wrapped a middle dot in two spaces; the reclaimed columns
+    are what the reason clause is bought with. Asserted on a rendered row: a
+    second space between two cells would read as the padding the change set
+    out to remove, and a surviving dot would redraw the retired separator.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert "w· " in line
-    assert "b· " in line
-    assert " ·" not in line
-    assert " · " not in line
+    assert "w 4b" in line
+    assert "b 1u" in line
+    assert "·" not in line
 
 
 def test_the_counter_block_holds_one_width_across_counts(grid):
@@ -336,7 +343,9 @@ def test_a_reason_is_truncated_to_the_room_the_grid_leaves(grid):
     assert "\n" not in line
     assert "…" in line
     assert line.count("…") == 1
-    assert "the canonical…" in line
+    # The compressed fixed cells leave sixty columns at the default width, so
+    # the clause reaches deep into the sentence before the cut.
+    assert "the canonical installed writer named by the plan does not…" in line
 
 
 def test_a_reason_that_fits_is_printed_whole(grid):
@@ -353,9 +362,10 @@ def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
     )
     clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
     assert len(clipped) == 180
-    # The clause owns the margin the retired attention column used to spend, so
-    # it now reaches one word further before the cut.
-    assert "the process is gone…" in clipped
+    # The clause owns the margin the retired attention column used to spend, and
+    # the compressed fixed cells nearly triple the room it had, so it reaches
+    # well into the sentence before the cut.
+    assert "the process is gone without a complete manifest for the…" in clipped
     assert "marker moved before its files" not in clipped
     assert "…" in clipped
     assert "\n" not in clipped
@@ -547,56 +557,72 @@ def test_the_action_set_is_one_set_with_three_readers():
 # ── The role column: the dispatch vocabulary, verbatim, left of the node ────
 
 
-def test_every_dispatch_role_renders_as_its_complete_word_in_its_own_column(grid):
-    """Each configured role spells itself in full; the vocabulary sets the width.
+def test_every_dispatch_role_renders_in_its_own_column(grid):
+    """Each row's role begins on one screen column whatever the role word is.
 
-    The display form is the dispatch word itself — a role once configured
-    renders exactly as it was dispatched, with no derivation and no prefix cut.
-    The assertion iterates the vocabulary rather than listing roles, so a role
-    added later is covered without editing this test.
+    The cell is nine wide, the longest of the roles a node carries as its
+    ordinary work, so `implement`, `review`, `test` and the others render whole
+    while a longer role keeps its head and is elided to the cell — the same cut
+    every fixed column makes, so a longer role never pushes the columns after
+    it. The assertion iterates the vocabulary rather than listing roles, so a
+    role added later is covered without editing this test.
     """
     rows = {
         role: plain(grid.render(_event(role=role, node="n-target")))
         for role in ticker_module.DISPATCH_ROLES
     }
     for role, line in rows.items():
-        start = line.index(role)
-        # The whole word, not a prefix of it, occupies its own column; the
-        # truncation that used to ship would leave the tail outside the cell.
-        assert line[start : start + ticker_module.ROLE].strip() == role, role
+        rendered = ticker_module._display_role(role)
+        start = line.index(rendered)
+        # The role occupies its own cell exactly, whole or elided; a word wider
+        # than the cell keeps its head rather than spilling its tail across the
+        # gutter into the node column.
+        assert line[start : start + ticker_module.ROLE].strip() == rendered, role
 
     # Every row's role text starts at the same screen column.
-    positions = {line.index(role) for role, line in rows.items()}
+    positions = {
+        line.index(ticker_module._display_role(role)) for role, line in rows.items()
+    }
     assert len(positions) == 1
 
 
-def test_documentation_as_the_longest_role_sizes_the_column():
-    """`documentation` at thirteen characters is what sets the column width.
+def test_the_ordinary_roles_size_the_column_and_a_longer_one_elides():
+    """The cell is the longest ordinary role; a longer word keeps its head.
 
-    The column is derived from the vocabulary rather than guessed, so the
-    longest member renders whole and the cell is exactly its width.
+    `implement`, `review` and `test` are the work a fleet node carries, and the
+    longest of them, `implement` at nine, sets the column. The two rare roles
+    wider than that — `investigate` and `documentation` — are elided to the
+    cell rather than widening it, so the room they would have taken is spent on
+    the reason clause instead.
     """
-    assert len("documentation") == ticker_module.ROLE
+    longest_ordinary = max(ORDINARY_ROLES, key=len)
+    assert longest_ordinary == IMPLEMENT_ROLE
+    assert len(longest_ordinary) == ticker_module.ROLE
+    assert max(len(role) for role in ORDINARY_ROLES) == ticker_module.ROLE
     line = plain(
         ticker_module.Ticker(width=180).render(
             _event(role="documentation", node="n-target")
         )
     )
-    start = line.index("documentation")
-    assert line[start : start + ticker_module.ROLE].strip() == "documentation"
+    rendered = ticker_module._display_role("documentation")
+    assert rendered.endswith("…")
+    assert len(rendered) == ticker_module.ROLE
+    assert rendered in line
+    assert "documentation" not in line
     assert len(line) == 180
 
 
-def test_the_widest_role_word_still_fits_the_width_budget(grid):
+def test_the_widest_role_word_never_widens_the_row_budget(grid):
     """A row carrying the longest role word never exceeds the stated budget.
 
-    The role column is sized by the vocabulary, so `documentation` renders
-    whole and the fixed grid stays within DEFAULT_WIDTH; the budget is asserted
-    on the rendered row, with the longest member present.
+    The role cell is sized by the ordinary vocabulary, so a role wider than the
+    cell is elided to it and the fixed grid stays within DEFAULT_WIDTH; the
+    budget is asserted on the rendered row, with the longest member elided in
+    place rather than overflowing its column.
     """
-    assert max(len(r) for r in ticker_module.DISPATCH_ROLES) == ticker_module.ROLE
     line = plain(grid.render(_event(role="documentation", node="n" * 8)))
-    assert "documentation" in line
+    assert "documentation" not in line
+    assert ticker_module._display_role("documentation") in line
     assert len(line) <= ticker_module.DEFAULT_WIDTH
 
 
@@ -627,7 +653,17 @@ def test_the_role_column_is_stable_across_every_configured_role(grid):
         plain(grid.render(_event(role="investigate", node="n-c"))),
     ]
     tokens = ("implement", "test", "investigate")
-    assert len({row.index(token) for row, token in zip(rows, tokens, strict=True)}) == 1
+    # A role wider than the cell is elided to it, so the token to locate is the
+    # display form the renderer produces, not the dispatch word.
+    assert (
+        len(
+            {
+                row.index(ticker_module._display_role(role))
+                for row, role in zip(rows, tokens, strict=True)
+            }
+        )
+        == 1
+    )
 
 
 def test_the_role_is_dim_rather_than_hued():
@@ -765,13 +801,14 @@ def test_the_model_and_effort_are_not_fused_into_one_cell(grid):
     assert len(line) == 180
 
 
-def test_the_longest_role_model_and_effort_land_whole_in_budget(grid):
-    """The widest shipped vocabulary fits the fixed grid, whole, in budget.
+def test_the_longest_role_model_and_effort_elide_within_budget(grid):
+    """The widest shipped vocabulary fits the fixed grid within its budget.
 
-    documentation (thirteen characters) is the longest dispatch role,
-    dsv4-flash (ten) the widest model alias and minimal (seven) the widest
-    effort word; the row carries all three with no elision mark, within the
-    180-column default the module states as its budget.
+    documentation (thirteen characters) is the longest dispatch role, dsv4-flash
+    (ten) the widest model alias and minimal (seven) the widest effort word; the
+    model and effort cells hold their words whole, the role is elided to its
+    nine-column cell, and the row still lands within the 180-column default the
+    module states as its budget.
     """
     line = plain(
         grid.render(
@@ -783,10 +820,10 @@ def test_the_longest_role_model_and_effort_land_whole_in_budget(grid):
             )
         )
     )
-    assert "documentation" in line
+    assert "documentation" not in line
+    assert ticker_module._display_role("documentation") in line
     assert "dsv4-flash" in line
     assert "minimal" in line
-    assert "\N{HORIZONTAL ELLIPSIS}" not in line
     assert len(line) == ticker_module.DEFAULT_WIDTH
     assert len(line) <= grid.width
 
@@ -1171,7 +1208,7 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
     # never a count.
-    assert "12w· 9b· 7u" in line
+    assert "12w 9b 7u" in line
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)

@@ -145,7 +145,7 @@ def test_the_marker_costs_no_width_and_marker_and_unmarked_rows_align() -> None:
     never = rendered(unprobed(), width=180)
     pending = rendered(probed(), width=180)
     assert len(never) == len(pending) == 180
-    counters = re.compile(r"(\s?\d{1,2})w(\u00b7\s?\d{1,2})b")
+    counters = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})b")
     marked = counters.search(never)
     unmarked = counters.search(pending)
     assert marked and unmarked

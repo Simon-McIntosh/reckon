@@ -21,8 +21,8 @@ from pathlib import Path
 import pytest
 
 from reckon import cli, crew
-from reckon.crew import ticker as ticker_module
 from reckon.crew import recovery, runs
+from reckon.crew import ticker as ticker_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 
@@ -198,10 +198,12 @@ def test_a_scoped_follower_receives_only_the_runs_its_session_dispatched(
     assert nodes == {"my-node"}, "a peer session's run must not reach this follower"
 
 
-def test_an_unscoped_follower_marks_foreign_ownership_with_a_glyph(home) -> None:
-    """A row another session owns is not this reader's to act on, so the owned
-    column holds a single glyph rather than a name; the session id never reaches
-    the line."""
+def test_an_unscoped_follower_renders_a_row_without_a_session_id(home) -> None:
+    """A row another session owns is not this reader's to act on, and the
+    session id never reaches the line whether or not the caller asks for it: a
+    readable identifier in a fixed column would make the lead's reading order
+    conditional, so ownership is carried by the follower's own delivery scope
+    rather than by a row column."""
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
 
     with runs._project_watch_claim("proj", "1h") as (_acquired, _seat):
@@ -209,11 +211,12 @@ def test_an_unscoped_follower_marks_foreign_ownership_with_a_glyph(home) -> None
         events = _follow("proj")
 
     assert events, "an unscoped follower still receives the fleet"
-    rendered = recovery.format_watch_transition(events[0], with_session=True)
-    # Ownership is the whole glyph, not a readable identifier.
-    assert ticker_module.FOREIGN_OWNER in rendered
-    assert "mine" not in rendered, "the session id is not for the line to show"
+    asked = recovery.format_watch_transition(events[0], with_session=True)
+    assert "mine" not in asked, "the session id is not for the line to show"
     assert "mine" not in recovery.format_watch_transition(events[0])
+    # Both forms render the same row, so the compatibility argument cannot
+    # change the width or the reading order.
+    assert asked == recovery.format_watch_transition(events[0])
 
 
 def _assert_attach_line_shape(
@@ -456,7 +459,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
     rendered = [recovery.format_watch_transition(event) for event in events]
-    assert all(" 2w· 0b· 0u" in line for line in rendered)
+    assert all(" 2w 0b 0u" in line for line in rendered)
     for line in rendered:
         assert "[stderr]" not in line
 

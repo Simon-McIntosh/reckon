@@ -69,6 +69,11 @@ def plain(line: str) -> str:
     return ESCAPES.sub("", line)
 
 
+def ticker_state(state: str) -> str:
+    """The state cell's rendered form: the display word, elided to the cell."""
+    return ticker_module._display_state(state)
+
+
 @pytest.fixture
 def grid():
     """A grid whose model cell is pinned, so the row's columns are its own."""
@@ -113,6 +118,7 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
     state_columns: set[int] = set()
     counter_columns: set[int] = set()
     clause_columns: set[int] = set()
+    arrow_columns: set[int] = set()
     span = ticker_module.SPEND
     end = ELAPSED_COLUMN + ticker_module.SPEND
     for state in STATES:
@@ -126,16 +132,20 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
                 key = f"{state}/{seconds}/{queued}"
 
                 # The cells a reader scans line up down the pane: the state
-                # word, the right edge of the counter block, and the elapsed
-                # token right-aligned to a cell of one width.
-                rendered_state = ticker_module.DISPLAY.get(state, state)
-                assert (
-                    line[
-                        NEW_STATE_COLUMN : NEW_STATE_COLUMN + ticker_module.STATE_WORD
-                    ].strip()
-                    == rendered_state
-                )
+                # word, the arrow with its two-state transition, the right edge
+                # of the counter block, and the elapsed token right-aligned to a
+                # cell of one width. The state cell renders the display form the
+                # renderer produces, so a word wider than the cell is compared
+                # as the elided form the row carries rather than as the word the
+                # classifier emitted — a state is elided to the cell, never
+                # allowed to widen it and push the arrow off its column.
+                rendered_state = ticker_state(state)
+                state_cell = line[
+                    NEW_STATE_COLUMN : NEW_STATE_COLUMN + ticker_module.STATE_WORD
+                ].strip()
+                assert state_cell == rendered_state, (key, line)
                 state_columns.add(NEW_STATE_COLUMN)
+                arrow_columns.add(line.index(ticker_module.ARROW))
                 counter_columns.add(re.search(r"\d+q", line).end())
                 cell = line[end - span : end]
                 assert len(cell) == span, (key, line)
@@ -162,6 +172,39 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
     assert len(state_columns) == 1, sorted(state_columns)
     assert len(counter_columns) == 1, sorted(counter_columns)
     assert len(clause_columns) <= 2, sorted(clause_columns)
+    # The arrow holds one column whatever state the row entered, the long
+    # recovery spellings included: each half is exactly the elided state word,
+    # so no word can widen its cell and push the arrow.
+    assert len(arrow_columns) == 1, sorted(arrow_columns)
+
+
+def test_a_long_state_word_keeps_the_arrow_on_one_column(grid):
+    """A state wider than the cell elides into it; the arrow never moves.
+
+    The three classifier words longer than the ten-column cell —
+    ended-without-manifest, completed_unpromoted and refused-at-admission —
+    must render their head inside the cell so the arrow sits on the same screen
+    column as it does for a short state. A word rendered at full length would
+    widen its half and push the arrow right, which is what a reader scanning
+    the arrow column down the pane would see as ragged.
+    """
+    short = plain(grid.render(_event(to_state="blocked")))
+    arrow = short.index(ticker_module.ARROW)
+    long_states = (
+        "ended-without-manifest",
+        "completed_unpromoted",
+        "refused-at-admission",
+    )
+    for state in long_states:
+        for side in ("to_state", "from_state"):
+            line = plain(grid.render(_event(**{side: state})))
+            assert line.index(ticker_module.ARROW) == arrow, (state, side, line)
+            # The word is elided into its half, not truncated to nothing: the
+            # half carries the head that distinguishes it, not a bare ellipsis.
+            start = NEW_STATE_COLUMN if side == "to_state" else TRANSITION_COLUMN
+            cell = line[start : start + ticker_module.STATE_WORD].strip()
+            assert cell == ticker_module._display_state(state), (state, side, line)
+            assert cell.strip("…") != "", (state, side, line)
 
 
 def test_every_counter_bucket_renders_at_one_width(grid):
@@ -172,7 +215,7 @@ def test_every_counter_bucket_renders_at_one_width(grid):
         if queued:
             event["waiting"] = 9
         line = plain(grid.render(event))
-        block = re.search(r"\d+w· *\d+b· *\d+u· *\d+q", line)
+        block = re.search(r"\d+w *\d+b *\d+u *\d+q", line)
         assert block, line
         counts.append(block.group(0))
     assert {len(block) for block in counts} == {len(counts[0])}, counts

@@ -23,12 +23,14 @@ WIDTH = 180
 # The four-cell block a reading holding one launch-failed run, one ordinary
 # blocked run, one working run and one queued run renders, pinned as a literal
 # because the requirement is that this block keeps exactly the width it renders
-# today: a fifth cell or a wider label fails on the literal.
-BLOCK = " 1w· 2b· 0u· 1q"
-BLOCK_WIDTH = 15
+# today: a fifth cell or a wider label fails on the literal. The cells abut with
+# each two-digit cell's own leading space as the gap; the middle-dot separators
+# the block once carried were reclaimed to fund the reason clause.
+BLOCK = " 1w 2b 0u 1q"
+BLOCK_WIDTH = 12
 
 # The same block for a reading with no launch-failed run in it.
-CONTROL_BLOCK = " 1w· 1b· 0u· 1q"
+CONTROL_BLOCK = " 1w 1b 0u 1q"
 
 # A verbatim classifier cause for a backend that was not on the path, and an
 # ordinary blocked worker's own reason: the launch cause names the launcher as
@@ -46,7 +48,7 @@ BLOCK_DETAIL = (
 # The clause names the fault itself rather than leaving a blocked number
 # explained by nothing; the case asserts the leading words, which survive the
 # elision a pane's margin applies.
-FAULT_CLAUSE_PREFIX = "launch failed before any turn"
+FAULT_CLAUSE_PREFIX = "the launch failed before any turn"
 
 
 def _snapshot(
@@ -140,14 +142,16 @@ def test_launch_failed_row_names_the_launch_failure_the_number_counts() -> None:
     launch_clause = rows["r-launch"][rows["r-launch"].index(BLOCK) + BLOCK_WIDTH :]
     assert "launch" in launch_clause.lower()
     assert "launch for backend 'claude'" in launch_clause
-    assert "resume" in launch_clause.lower()
+    # The remedy is a structured fact on the record, not row text: the row says
+    # what happened, and the destination state's colour says whether the
+    # coordinator must act. So the clause never spends a column restating the
+    # action the record carries.
+    assert "resume" not in launch_clause.lower()
 
     # An ordinary blocked run's row carries its own reason and no launch
     # wording, so the two rows are distinguishable from the lines alone.
-    blocked_clause = rows["r-blocked"][
-        rows["r-blocked"].index(BLOCK) + BLOCK_WIDTH :
-    ]
-    assert "worker manifest reports" in blocked_clause
+    blocked_clause = rows["r-blocked"][rows["r-blocked"].index(BLOCK) + BLOCK_WIDTH :]
+    assert "the gate needs a coordinator decision" in blocked_clause
     assert "launch" not in blocked_clause.lower()
     assert launch_clause.strip() != blocked_clause.strip()
 
@@ -157,10 +161,11 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
     rows = _launch_failed_and_blocked()
     launch = rows["r-launch"]
 
-    # Four cells and three separators, at the width the module states for the
-    # block: the number's bucket layout did not move to carry the fault.
+    # Four cells and three single-space gaps, at the width the module states
+    # for the block: the number's bucket layout did not move to carry the fault.
     assert re.findall(r"\d[wbuq]", launch) == ["1w", "2b", "0u", "1q"]
-    assert launch.count("·") == 3
+    assert BLOCK in launch
+    assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
 
     # Every row keeps the pane's width, so nothing wrapped to make room.
@@ -186,7 +191,9 @@ def test_a_reading_without_a_launch_failure_names_no_launch_fault() -> None:
     blocked = rows["r-blocked"]
     assert CONTROL_BLOCK in blocked
     assert "launch" not in blocked.lower()
-    assert "worker manifest reports" in blocked
+    # The producer's label — "worker manifest reports blocked:" — restates the
+    # state cell, so the row drops it and begins with the explanation itself.
+    assert "the gate needs a coordinator decision" in blocked
 
 
 def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> None:
@@ -201,7 +208,7 @@ def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> No
     )
 
     row = rows["r-launch"]
-    assert " 0w· 1b· 0u" in row
+    assert " 0w 1b 0u" in row
     assert "launch" in row.lower()
     assert FAULT_CLAUSE_PREFIX in row
 

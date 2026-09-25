@@ -36,7 +36,12 @@ from numbers import Real
 from typing import Any
 
 CLOCK = 8
-NODE = 36
+# The cell is 28, not 36: a name already elides from the middle, so the eight
+# columns the cell gave up are spent on the reason clause, the one column a
+# reader is actually trying to read. The cut below still keeps both ends of a
+# truncated name, so a name that fits the narrower cell keeps its whole text and
+# only the ones that already elided lose a little more of their middle.
+NODE = 28
 # A node name wider than its cell is cut from the middle, so the end that
 # distinguishes it from the rest of its wave survives the cut. Two rows can
 # still land on one text — two names that differ only where the cut falls, and
@@ -188,7 +193,19 @@ CLASSIFIER_STATE_WORDS = frozenset(STATE_HUE["light"]) | frozenset(
 # screen column even when either word changes length. A first sighting has no
 # previous word, so the left half and arrow are blank while the destination
 # keeps its column.
-STATE_WORD = max(len(word) for word in CLASSIFIER_STATE_WORDS)
+#
+# Each half is ten columns, not the twenty-two the longest classifier word
+# (ended-without-manifest) would ask for. The two halves are the widest pair of
+# cells the row can fund, and giving up twelve of their columns is what buys the reason
+# clause its readable width: the row's whole purpose is the explanation beside
+# the transition, and a state word is decodable from its head while a clause cut
+# to nothing is not. The five words wider than the half are the rare recovery
+# spellings (ended-without-manifest, refused-at-admission, launch-failed,
+# interrupted, completed_unpromoted); each keeps the head that distinguishes it
+# and is elided the same way the model cell elides an id outside its alias set.
+# Every common lifecycle state — dispatched, abandoned, blocked, working,
+# unpromoted — fits whole.
+STATE_WORD = 10
 ARROW = "→"
 ARROW_GAP = 1
 STATE = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP + STATE_WORD
@@ -252,11 +269,13 @@ DISPATCH_ROLES = frozenset(
     {"implement", "cleanup", "review", "investigate", "test", "documentation"}
 )
 
-# The role column is sized by the vocabulary above, not guessed: the word is
-# the display form, so a longer role widens its own column rather than being
-# cut to a prefix. The longest member today is documentation at thirteen
-# characters, which sets the column width.
-ROLE = max(len(word) for word in DISPATCH_ROLES)
+# The role column is nine wide, the longest of the three roles a fleet node
+# carries as its ordinary work (implement, review, test). The rare
+# documentation and investigate roles, thirteen and eleven, are elided to the
+# cell by `_display_role` exactly as the model cell elides an id outside its
+# alias set: the four columns the cell gives up are spent on the reason clause,
+# and a role word keeps its head while a clause cut to nothing keeps nothing.
+ROLE = 9
 
 # What an undispatched or unconfigured role renders as. A marker rather than a
 # truncated word, because a cut-off word invites a reader to guess the rest
@@ -311,39 +330,36 @@ STAT_LETTER = {
     "queued": "q",
 }
 
-# Two digits and the bucket label per counter, joined by a bare middle dot with
-# no surrounding space. Two digits cover any fleet the dispatcher opens; a
-# wider count pushes its own label rather than silently misaligning the column
-# beside it. The label is one character for three buckets and the spelled word
-# for the waiting one, so the block is sized from the labels themselves rather
-# than assumed at one character each. The two-digit alignment keeps the block a
-# constant width as counts change, so the right edge of the row never moves,
-# and the reclaimed separator space funds the model and effort cells without
-# taking width from the reason.
+# Two digits and the bucket label per counter, cells laid side by side. Two
+# digits cover any fleet the dispatcher opens; a wider count pushes its own
+# label rather than silently misaligning the column beside it. The label is one
+# character for three buckets and the spelled word for the waiting one, so the
+# block is sized from the labels themselves rather than assumed at one character
+# each. A cell is right-aligned to its two digits, so a single-digit count
+# carries a leading space and abutting cells still show one space between a
+# count and the next bucket's label. The two-digit alignment keeps the block a
+# constant width as counts change, so the right edge of the row never moves. The
+# middle dots the cells were once joined by are gone: each cell's leading space
+# is the gap, and the three columns the dots spent now fund the reason clause.
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
+STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 # Everything before the reason consumes exactly this many columns with the role
-# word at its widest (documentation, thirteen), the model cell at its default
-# width of ten (a grid sized from a longer configured alias raises this floor by
-# the same amount it widens the cell), the effort cell at seven, the four fleet
-# counters and the elapsed cell in full. The waiting counter's spelled word is
-# five columns wider than the single letter it replaced, so this floor carries
-# that much and the reason's share of a fixed pane carries it too. Against the
-# 180-column DEFAULT_WIDTH budget this leaves 21 columns for the reason — 49 on
-# the 208-column pane this workstation measures (its observed cut, read directly
-# with no inset subtracted) — measured at the default model cell width of ten,
-# and each column a longer configured alias adds to that cell comes straight off
-# both figures. 21 clears the 12-column floor below which a clause is not worth
-# reading and no more — it holds a nineteen-character clause, measured — and 180
-# is what a later added column spends first. The one cell that could fund a
-# wider reason is the node cell at 36: its cut already survives its own
-# middle-elision, so 28 is a defensible cell and would hand eight columns to the
-# clause. The transition's two state halves are not fundable — each is exactly
-# the longest word the classifier emits (ended-without-manifest, twenty-two), so
-# narrowing either one elides a state a reader needs whole.
+# cell at nine, the model cell at its default width of ten (a grid sized from a
+# longer configured alias raises this floor by the same amount it widens the
+# cell), the effort cell at seven, the node cell at twenty-eight, each
+# transition half at ten, the four fleet counters and the elapsed cell in full.
+# Against the 180-column DEFAULT_WIDTH budget this leaves 60 columns for the
+# reason — 88 on the 208-column pane this workstation measures — measured at the
+# default model cell width of ten, and each column a longer configured alias
+# adds to that cell comes straight off both figures. The four cells that fund
+# that 60 are the four this row narrowed: the node cell from thirty-six to
+# twenty-eight, the role cell from thirteen to nine, the transition halves from
+# twenty-two to ten each, and the counter block's three separator columns. The
+# clause starts at column 120 on every row at the default width; the arrow still
+# holds one fixed column and every boundary keeps its two-space gutter.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -537,8 +553,8 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     return None
 
 
-def single_clause(value: Any, *, limit: int = 96) -> str:
-    """Collapse free text to one bounded clause that fits a ticker field.
+def _first_clause(value: Any) -> str:
+    """Collapse free text to its first clause, with no width cut yet.
 
     A worker writes prose; the grid has a column. Cutting at the first clause
     boundary keeps the sentence that states the problem and drops the elaboration
@@ -550,12 +566,9 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     must not render as a "reason" no reader can act on. The refusal lives here,
     where the clause is derived, so the producer never has to make it.
 
-    A clause still wider than the field is cut at the last word boundary inside
-    it, so what a reader keeps is a whole word: a cut through a word reads as a
-    typo rather than as a cut, and the word a reader scans for is where the
-    clause's own sense stops. Only a clause whose first word is at least as wide
-    as the field has no boundary to cut at, and then the cut falls inside that
-    word and fills the field, because the head of it is all the room can show.
+    The width cut is deliberately a separate step: a caller that must also drop
+    a leading label or a word the state cell already says needs the whole clause
+    to test, because a field already cut has already eaten the label it matches.
     """
     compact = " ".join(str(value or "").split())
     clause = re.split(
@@ -563,12 +576,38 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     )[0].strip()
     if clause and not re.search(r"[A-Za-z0-9]", clause):
         return ""
+    return clause
+
+
+def _fit_clause(clause: str, limit: int) -> str:
+    """Cut a clause to a field, never to a bare ellipsis.
+
+    A clause wider than its field is cut at the last word boundary inside it, so
+    what a reader keeps is a whole word: a cut through a word reads as a typo
+    rather than as a cut. A clause whose first word alone is wider than the field
+    has no boundary to cut at, so the cut falls inside that word and keeps as
+    much of its head as the ellipsis leaves room for. It never returns just the
+    ellipsis: a field one column wide returns its first character alone, because
+    a reason that shows a reader nothing to start reading is worse than a word
+    cut short.
+    """
+    if limit <= 0:
+        return ""
     if len(clause) <= limit:
         return clause
     boundary = clause.rfind(" ", 0, limit)
-    if boundary < 0:
-        boundary = limit - 1
-    return clause[:boundary].rstrip(" ,:") + "…"
+    if boundary > 0:
+        head = clause[:boundary].rstrip(" ,:")
+        if head:
+            return head + "…"
+    if limit < 2:
+        return clause[:1]
+    return clause[: limit - 1].rstrip(" ,:") + "…"
+
+
+def single_clause(value: Any, *, limit: int = 96) -> str:
+    """Collapse free text to one clause bounded to fit a ticker field."""
+    return _fit_clause(_first_clause(value), limit)
 
 
 def elide(text: str, width: int, *, keep_end: bool = False) -> str:
@@ -662,19 +701,22 @@ def _display_state(state: Any) -> str:
 
 
 def _display_role(role: Any) -> str:
-    """The role word spelled in full, or the marker.
+    """The role word, or the marker.
 
     The whole dispatch word is the display form — no table or derivation to
     stay in step with, so a role word configured for the first time renders
-    exactly as it was dispatched. The pane has the room and the column is sized
-    by the vocabulary, so nothing is cut to a prefix. A role not in the
-    vocabulary is never truncated to fit — that would show a plausible-looking
-    but wrong word — so anything unrecognised renders the marker instead.
+    exactly as it was dispatched. The cell is nine wide, the longest of the
+    roles a node carries as its ordinary work; the two rare roles wider than
+    that keep their head and are elided to the cell, the same cut every fixed
+    column makes, so a longer role never pushes the columns after it. A role not
+    in the vocabulary renders the marker rather than a cut prefix, because an
+    unrecognised word cut to fit would show a plausible-looking but wrong word,
+    which is worse than an admitted unknown.
     """
     spelled = str(role or "")
     if spelled not in DISPATCH_ROLES:
         return ROLE_UNKNOWN
-    return spelled
+    return elide(spelled, ROLE)
 
 
 def _derive_effort(effort: Any) -> str:
@@ -1127,16 +1169,25 @@ class Ticker:
             # never ran, so the wait's condition cannot lift on its own.
             marker = UNPROBED_MARKER
         reserve = len(marker) + (1 if marker else 0)
-        clause = single_clause(detail, limit=max(0, room - reserve))
+        room_for_clause = max(0, room - reserve)
+        # The label is dropped before the field cuts, not after: a clause whose
+        # first word repeats the state cell is stripped to its explanation, and
+        # if the cut came first the field could have already eaten everything
+        # past that word — leaving an empty reason where a shorter one belonged.
+        # Cutting last is what lets a clause longer than its field keep its head
+        # instead of collapsing to the ellipsis alone.
+        state_word = _display_state(entry_state)
+        clause = _fit_clause(
+            self._strip_repeated_label(_first_clause(detail), state_word),
+            room_for_clause,
+        )
         if not clause and entry_state == LAUNCH_FAULT_STATE:
             # The blocked bucket is where a launch failure's number arrives, so
             # the clause is the only place the row can say the stop is an
             # infrastructure fault. The classifier's cause normally fills it;
             # this names the fault itself for a record that carried the state
             # without one, rather than rendering a number with no reason.
-            clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=max(0, room - reserve))
-        state_word = _display_state(entry_state)
-        clause = self._strip_repeated_label(clause, state_word)
+            clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=room_for_clause)
         if marker and clause:
             return f"{marker} {clause}"
         return marker or clause
@@ -1192,9 +1243,7 @@ class Ticker:
         # columns after it never move. A zero is dimmed rather than dropped: a
         # reader watching a drain needs to see the count reach zero rather than
         # see the cell disappear and the row's right edge go ragged.
-        for index, label in enumerate(_MAX_CELLS):
-            if index:
-                cells += [("·", "dim")]
+        for label in _MAX_CELLS:
             count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
             cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
         # The bound sits beside the counters the transition carries, because

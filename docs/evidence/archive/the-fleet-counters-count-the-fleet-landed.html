@@ -293,6 +293,56 @@ head, a first sighting that did move keeps its left word and its arrow:
       </table>
       <p><strong>Retained limit.</strong> The local commit was not created: the primary checkout's <code>.git</code> is mounted read-only on this fleet compute node, so <code>git add</code> fails creating <code>index.lock</code>. The change set is left uncommitted in worktree <code>.reckon-worktrees/reckon-c8f839407e49/s23-coord/watcher-seat-survives-other-hosts</code> at base <code>9a9cb581</code>.</p>
     </section>
+
+  <section id="row-gives-the-reason-room">
+      <h2>The row gives the reason room and drops the re-arm banners</h2>
+      <p>The lead's review of 2026-09-25 found every row's reason showing a bare <code>…</code>. The clause began at column 159, so at the 180-column default it had 21 columns for the reason, and a clause whose head repeated the destination state was cut to that word and then stripped of it — the field emptied and then reported nothing. Measured on rendered rows at the base revision (<code>971d4889</code>), the reproduction is <code>detail="blocked hook-stop-mode-silent-without-follower"</code> with <code>to_state="blocked"</code>, which renders a blank clause.</p>
+      <p>Four cells are narrowed, funding 39 columns: the node cell from 36 to 28, the role cell from 13 to 9, each transition half from 22 to 10, and the counter block's three separator columns. The arrow still holds one fixed column with a two-space gutter either side, and every boundary keeps its two-space gutter.</p>
+      <table>
+        <thead><tr><th>Pane width</th><th>Reason starts (base)</th><th>Reason columns (base)</th><th>Reason starts (head)</th><th>Reason columns (head)</th></tr></thead>
+        <tbody>
+          <tr><td>120 (<code>MIN_WIDTH</code>)</td><td>159</td><td>0</td><td>120</td><td>0</td></tr>
+          <tr><td>180 (<code>DEFAULT_WIDTH</code>)</td><td>159</td><td>21</td><td>120</td><td>60</td></tr>
+          <tr><td>208 (the workstation pane)</td><td>159</td><td>49</td><td>120</td><td>88</td></tr>
+        </tbody>
+      </table>
+      <p>Measured at the default model cell width of ten; each column a longer configured alias takes comes straight off the head figures. The column is located on the rendered row rather than read back from the sentence that defines it, and the figures above come from <code>logs/geometry-head.log</code> and <code>logs/measure-base.log</code>.</p>
+      <p>The clause's head is stripped of a label repeating the state cell <em>before</em> the field cuts, so a clause wider than its field keeps the head of the word that did not fit instead of the ellipsis alone. The re-arm replay writes its dimmed rows alone in one write: the <code>history … </code> header and the <code>re-armed … · live below</code> separator are removed, since the rows carry their own clocks and their chaining across the split.</p>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The three named tests, base <code>971d4889</code> with this node's tests</td><td>3 failed</td><td><code>logs/base-three-named-tests.log</code>; reason start 159, clause empty, banner present.</td></tr>
+          <tr><td>The same three tests at head</td><td>3 passed</td><td><code>logs/head-three-named-tests.log</code>.</td></tr>
+          <tr><td>Declared mutation <code>print only the ellipsis when the first word of the reason does not fit</code></td><td>failed as required (1 failed, 1 passed)</td><td><code>logs/negative-control.log</code>, whose first line repeats the declaration verbatim. The emptiness guard fails; the geometry guard still passes, so the two are separate.</td></tr>
+          <tr><td>Reason column and width</td><td>starts at 120, 60 columns at 180 and 88 at 208</td><td><code>logs/geometry-head.log</code> against <code>logs/measure-base.log</code> (159 / 21 / 49 at base).</td></tr>
+          <tr><td>Ticker, watch, recovery, follow and re-arm test files</td><td>base 15 failed / 418 passed; head 36 failed / 397 passed — 11 pre-existing shared failures, 25 added</td><td><code>logs/family-base.log</code> and <code>logs/family-head.log</code>, failure sets diffed rather than counted absolutely.</td></tr>
+          <tr><td>The 25 added failures</td><td>all outside this node's write fence</td><td>Six files pin the retired geometry and counter separators: <code>test_crew_ticker_layout.py</code> 15, <code>test_crew_watch_stream.py</code> 3, <code>test_follow_counts_its_session.py</code> 3, <code>test_ticker_reads_cleanly.py</code> 2, <code>test_ticker_renders_wait_facts.py</code> 1, <code>test_crew_recovery.py</code> 1. They are this node's follow-ons: the fence must be widened before they can be brought onto the head geometry.</td></tr>
+        </tbody>
+      </table>
+      <p>The node's landing commit is withheld: the run repository's git store is mounted read-only in this sandbox, so the changed paths are delivered in the worktree for the coordinator to commit. The worker does not resolve the driving followup or change terminal plan state.</p>
+    </section>
+
+  <section id="row-geometry-tests-landed">
+      <h2>The test files are brought onto the row geometry</h2>
+      <p>The reason-room landing above named six test files outside its fence as the price of the compression: they pinned the retired cell widths and the counter block's middle-dot separators, so they were red at head and said nothing about the row the renderer produces. That fence is widened and the files land in commit <code>c9a2ff4b</code>.</p>
+      <p>Every counter pin moves to the abutting-cell form (<code>1w 2b 0u 1q</code>), with the block's width read from the module's <code>STATS</code> rather than a literal 15; a role is asserted through the renderer's own display form, so <code>documentation</code> is compared as the elided word the nine-column cell carries; and the state cell, the elapsed cell and the clause's column arithmetic are asserted against the constants the renderer sizes them by.</p>
+      <p>Two clause assertions were stale rather than geometric, and are corrected to the contract the renderer keeps. The ordinary blocked row prints its explanation, not the producer's label: <code>worker manifest reports blocked:</code> restates the state cell, so it is stripped before the field cuts, and the row reads <code>the gate needs a coordinator decision</code>. And the remedy is a structured fact on the record, never row text — the destination state's colour says whether the coordinator must act — so the launch-failure case asserts the classifier's cause reaches the pane (<code>launch for backend 'claude'</code>) and that the word <code>resume</code> is not printed.</p>
+      <p>The three counter files are repaired without touching the renderer: the seven files are the node's whole product, and <code>reckon/crew/ticker.py</code> needed no change.</p>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The nine assigned ticker, watch, recovery and follow test files at head</td><td>259 passed, 0 failed</td><td><code>after-arm-head.log</code></td></tr>
+          <tr><td>The same updated files against the base source <code>971d4889</code></td><td>26 failed, 233 passed</td><td><code>after-arm-base-updated-tests.log</code>, run in <code>/tmp/rrg-base-old</code> (<code>git archive 971d4889</code> plus this commit's test files). The updated files fail on the retired geometry, so none passes vacuously.</td></tr>
+          <tr><td>Declared negative control <code>render a long state word at full length so its row pushes the arrow right</code></td><td>failed as required (1 failed)</td><td><code>negative-control-log.txt</code>, whose first line repeats the declaration verbatim. In the mutated tree (<code>/tmp/rrg-nc</code>, <code>_display_state</code> returning the word unelided) the arrow moves from column 85 to 97 and the long-state test goes red; in the head tree the same rows all hold column 85.</td></tr>
+          <tr><td>The followup's premise that long state words misalign the arrow</td><td>not reproducible</td><td><code>ended-without-manifest</code>, <code>completed_unpromoted</code> and <code>refused-at-admission</code> render the arrow on column 85 as a short state does, at <code>971d4889</code>, at <code>5ef9ee49</code> and at head, because <code>_display_state</code> elides every state word to the cell. The guard is still worth having: it is the elision's removal that the negative control catches, not a defect that was present.</td></tr>
+          <tr><td>Lint and format on the seven changed files</td><td>3 findings fixed, 0 remaining; all seven formatted</td><td>Baseline 13 findings on the same files; the two introduced by this commit (a Yoda condition and a format drift) are fixed rather than ignored.</td></tr>
+        </tbody>
+      </table>
+      <p>Two pins in the file set were not geometry. <code>tests/test_crew_session_delivery.py</code> asserted <code>FOREIGN_OWNER</code>, a glyph for foreign ownership that no longer exists — a row column carries no session identifier by design, so the row this test guards now asserts that the session id never reaches the line in either render mode. And the missing newline at end of file in <code>tests/test_fleet_counter_launch_failure.py</code> is pre-existing at head.</p>
+      <p>The worker does not resolve the driving followup or change terminal plan state. No figure accompanies this record: the geometry itself is the reason-room figure already in the plan, and this node changed no product code.</p>
+    </section>
   </main>
 </body>
 </html>

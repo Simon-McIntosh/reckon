@@ -97,7 +97,7 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
             ]
             assert baselines[0] == baselines[1]
             assert len(baselines[0]) == 2
-            assert all(" 2w· 0b· 0u" in line for line in baselines[0])
+            assert all(" 2w 0b 0u" in line for line in baselines[0])
 
             _set_phase("r-first", "working")
             crew.list_live(project="proj")
@@ -149,12 +149,12 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     # quarter of a pane that shows about eight. The counters go first because
     # the pane clips its own right edge, so what is lost is free text.
     assert "dependency unavailable" in lines[-1]
-    assert lines[-1].index(" 0w· 1b· 0u") < lines[-1].index("dependency unavailable")
+    assert lines[-1].index(" 0w 1b 0u") < lines[-1].index("dependency unavailable")
     # The fixed reading order begins at the clock and keeps the node before the
     # transition even when model and effort are absent.
     assert re.match(r"^\d{2}:\d{2}:\d{2}", lines[-1])
     assert lines[-1].index("only-node") < lines[-1].index("working")
-    assert " 0w· 1b· 0u" in lines[-1]
+    assert " 0w 1b 0u" in lines[-1]
     assert events[-1]["run_id"] == "r-only"
 
 
@@ -182,4 +182,4 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
     assert "blocked → unpromoted" in subsequent[0]
     assert "dispatched" not in subsequent[0]
     assert "working" not in subsequent[0]
-    assert " 0w· 0b· 1u" in subsequent[0]
+    assert " 0w 0b 1u" in subsequent[0]
