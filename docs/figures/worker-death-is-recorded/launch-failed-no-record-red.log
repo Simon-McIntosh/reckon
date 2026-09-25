@@ -1,0 +1,23 @@
+revision=ffc3775d + new test case only (guard not yet applied)
+tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record (the node worktree)
+command=env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recovery-reads-the-exit-record /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --tb=short tests/test_recovery_reads_the_exit_record.py
+........F                                                                [100%]
+=================================== FAILURES ===================================
+_____ test_a_launch_failed_pointer_with_nothing_recorded_still_classifies ______
+tests/test_recovery_reads_the_exit_record.py:369: in test_a_launch_failed_pointer_with_nothing_recorded_still_classifies
+    row = _observed_classification(run_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_recovery_reads_the_exit_record.py:137: in _observed_classification
+    return recovery.classify_pointer(observed)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/recovery.py:3727: in classify_pointer
+    f"{_exit_record_end_phrase(ended_exit)} before writing any "
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/recovery.py:2898: in _exit_record_end_phrase
+    if exit_record.get("signal") is not None:
+       ^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+=========================== short test summary info ============================
+FAILED tests/test_recovery_reads_the_exit_record.py::test_a_launch_failed_pointer_with_nothing_recorded_still_classifies
+1 failed, 8 passed in 2.11s
+EXIT=1

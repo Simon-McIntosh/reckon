@@ -314,6 +314,46 @@
     a git worktree, so promotion refuses &mdash; and are reported as follow-ons rather
     than absorbed here.</p>
 
+    <h3 id="s5-landing-recovery-reads-the-exit-record">&sect;5.1 landing &mdash; recovery reads the exit record</h3>
+    <p>Landed: the classification reads the run's own account of its end before it
+    infers anything from a missing pid. <code>recovery._run_exit_record</code> opens
+    <code>exit.json</code> in the run directory the pointer names and refuses a record
+    written for a different run, an unreadable one, or a missing one; where it reads a
+    record, the classification takes the end from it &mdash; a signal names an
+    <code>interrupted</code> run and the signal that ended it, an exit code with stream
+    records behind it is an <code>abandoned</code> run whose detail carries the code and
+    the moment it stopped, and a record with <code>stream_records_seen</code> of 0 is the
+    <code>launch-failed</code> path whether or not the phase was ever written down. The
+    dead-pid inferences &mdash; the orphan reason and the retained-work reading &mdash;
+    stand only where no record exists, and a process the process table proves alive
+    outranks the record, so a resumed attempt reusing a run directory is not called dead
+    by the previous attempt's record. The order the three questions are asked in is drawn
+    at <a href="/reckon/figures/worker-death-is-recorded/exit-record-reader.svg">the
+    exit-record reader figure</a>.</p>
+    <p>Evidence: <code>tests/test_recovery_reads_the_exit_record.py</code> drives
+    <code>dispatch.observe</code> over run directories built in a temporary config home
+    and classifies what it returns: the signalled run reads <code>interrupted</code> with
+    <code>ended by SIGTERM</code>, the exit-0 run reads <code>abandoned</code> with
+    <code>exited with code 0</code>, and the 0-record run reads
+    <code>launch-failed</code>, all nine tests passing. A review found the launch-failed
+    arm reading its exit record on a route where a pointer holds the phase and nothing
+    else behind it, which raised rather than classified; that pointer is now a test of
+    its own, red before the guard with an <code>AttributeError</code> at
+    <code>recovery.py:3727</code> and green after it, and the arm names an end only
+    where a record was written. The declared negative control
+    (&ldquo;make recovery ignore <code>exit.json</code> so classification falls back to
+    pid inference&rdquo;) reverts all three to the inference verdict &mdash;
+    <strong>4 failed, 4 passed</strong>, the three declared cases among them; log
+    <code>docs/figures/worker-death-is-recorded/negative-control.log</code>, whose first
+    line repeats the declared mutation verbatim. The delta gate holds the population of
+    test files importing <code>reckon.crew.recovery</code> fixed at the base revision
+    (<code>2bf6587b</code>, 61 files): <strong>2 failed, 920 passed</strong> at the base
+    and <strong>922 passed</strong> at this head, both failures of the base run passing
+    in isolation at the base, so no failure is a new one; logs
+    <code>delta-base.log</code> and <code>delta-head.log</code>. Full result at
+    <a href="/reckon/evidence/archive/worker-death-is-recorded-landed#s5-1-exit-record">&sect;5.1
+    exit-record evidence</a>. Items (2) and (3) of &sect;5 are not this node's.</p>
+
     <h2 id="s6">§6 — What this does not cover</h2>
     <p>This records a death; it does not prevent one. The broadcast that produced the
     evidence in §2 was a separate defect in a test fixture, repaired independently, and a
