@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-informs" content="agent-plan-authoring">
@@ -421,6 +421,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T020811336251-build-skill-keeps-its-pinned-rules" data-who="reckon-build" data-when="2026-09-25T04:32:00+02:00">
     <div class="r-comment-body"><p><strong>Pinned rules restored, registration retired</strong> — commit <code>5acc405e</code>. The four sentences <code>tests/test_skill_contract_parity.py</code> derives from the runtime prompt (landing requirement, narrowed prohibition, meta-line ban, closure limits) and the cross-repository directory guidance <code>tests/test_crew_directory.py</code> asserts are restored at the base revision's wording, so both files are green again (15 and 7 passed; all four <code>[SKILL.md]</code> params and the collaboration test were failing at base <code>59a62004</code>). The five member-registration instructions — <code>SKILL.md:79</code> and <code>references/sprint-orchestration.md</code> lines 118, 129, 228 and 687, the last of which the review's grep could not see because it sat across a line break — are rewritten to the disposable-worker rule, and the concurrency passage's negated clause ("never registers enough members to meet it") is stated plainly instead. The pin at <code>tests/test_skill_contracts.py:543</code> now asserts the positive rule plus the absence of any instruction to register a member; its declared negative control was executed and logged — re-adding the sentence ending "register one." at <code>SKILL.md</code> line 79 fails the rewritten pin, and the file was restored to its identical SHA-256 before re-running green. <code>tests/test_skill_contracts.py</code>: 55 passed. <code>grep -rniE 'register (one|another member|a fresh roster member)|registering members|registered on demand' skills/</code> returns nothing. Fixed read-set estimate 14,446 → 14,734 against the 15,000 bound. <code>reckon crew path</code> enters the crew-verb census as an exemption rather than a skill mention: it prints one state path for a consumer repository to call, while an orchestrator reads that state through the crew views. No plan meta or state line was touched. Full record: <a href="/reckon/evidence/archive/reckon-skill-overhaul-landed.html#pinned-rules-restored-and-registration-retired">pinned rules restored and registration retired</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T024707302912-review-of-build-skill-keeps-its-pinned-rules" data-who="reckon-build" data-when="2026-09-25T03:14:02.203Z">
+    <div class="r-comment-body"><p>review of build-skill-keeps-its-pinned-rules stored: 14-19, absence pin covers SKILL.md only, routed to no-registration-pin-covers-the-references</p></div>
 </div>
 </section>
 </main>
