@@ -373,6 +373,44 @@
         and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122434547693-ticker-fixture-reads-withdrawn/negative-control.log</code>.
         Implementation commits: <code>5f31e8fb</code> and <code>902dc899</code>.</p>
       </section>
+      <section id="s10-stall-clock-starts-at-the-attempt">
+        <h3>A resumed run's stall clock starts at its current attempt</h3>
+        <p><strong>Outcome.</strong> <code>_run_stream_quiet_seconds</code> in
+        <code>reckon/crew/recovery.py</code> now caps a run's quiet time at the age of the
+        attempt now running, read from the pointer's <code>attempt_started_at</code> or, when
+        the pointer predates that field, from the run directory's current
+        <code>attempt.json</code>. Quiet time is therefore the earlier of the stream's silence
+        and the age of the current attempt, so a resumed or redispatched run cannot inherit
+        its superseded attempt's silence. An attempt at least as old as its last stream record
+        gains nothing from the floor, so a genuinely quiet run still stalls at its measured
+        age, and a run with no attempt clock anywhere reads exactly as before.</p>
+        <figure>
+          <img src="/reckon/figures/a-crew-process-ends-with-its-owner/stall_clock_starts_at_the_attempt.svg"
+               alt="A resume begins 30 seconds before now while the previous attempt's stream last wrote 1919 seconds before now. Reading the stream alone gives a quiet time of 1919 seconds, past the 900-second window, and the run stalls. Taking the earlier of that silence and the 30-second age of the current attempt gives a quiet time of 30 seconds, inside the window, and the run reads working.">
+          <figcaption>The stall clock is the earlier of the stream's silence and the current
+          attempt's age. Only the second reading survives a resume that has not yet written
+          its own stream.</figcaption>
+        </figure>
+        <table>
+          <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Reported defect</td><td>A resume 30 seconds old beside a 1919-second-old stream classifies <code>working</code>, not <code>stalled</code>.</td></tr>
+            <tr><td>Dead control</td><td>The same silence under an attempt start at or before the last stream record still classifies <code>stalled</code> with detail <code>stream quiet for 1919s</code>.</td></tr>
+            <tr><td>No attempt clock</td><td>A pointer with neither the field nor an attempt record reads the stream alone, unchanged.</td></tr>
+            <tr><td>Attempt-record fallback</td><td>A pointer without the field but with a fresh <code>attempt.json</code> beside it classifies <code>working</code>.</td></tr>
+            <tr><td>Focused gate</td><td><strong>116 passed</strong> on <code>40102f8b</code>: the new module plus the recovery, watch-stream, attempt-supervision and producer-verdict suites.</td></tr>
+            <tr><td>Base arm</td><td>Base <code>311bfc62</code> runs the four regression suites at <strong>112 passed</strong>; the head adds the four new cases to <strong>116 passed</strong>. Added failures: <strong>0</strong>.</td></tr>
+            <tr><td>Declared negative control</td><td>Drop the attempt start so quiet time reads the stream alone: the freshly resumed case fails, exit 1. The red log's first line repeats the declared mutation verbatim.</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Receipts.</strong> All logs live under
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T151555002150-stall-clock-starts-at-the-attempt/</code>:
+        <code>gate.log</code> (focused gate), <code>base-arm.log</code> (base revision in a
+        scratch tree, naming the imported module and the resolved working directory) and
+        <code>negative-control.log</code>. Implementation commit <code>40102f8b</code>.</p>
+        <p><strong>Remaining.</strong> This gate measures only this node's own change; the
+        merged-head verification belongs to a separately dispatched test node.</p>
+      </section>
     </section>
     <section id="producer-classifier-verdict">
       <h2>Producer and classifier share one fleet verdict</h2>

@@ -2851,6 +2851,44 @@ def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
     return found[1] if found is not None else None
 
 
+# The run directory's own record of the current attempt's identity. A
+# supervisor writes it before the attempt's worker can start, so it names the
+# moment the attempt now running began even when the pointer predates the field.
+ATTEMPT_RECORD_NAME = "attempt.json"
+
+
+def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
+    """When the run's current attempt began, or None when nothing records it.
+
+    The pointer carries ``attempt_started_at`` once a supervisor wrote it; a run
+    whose pointer predates that field still names the same moment in the current
+    attempt record the supervisor publishes beside it, so both are read. Absent
+    from both means the run has no attempt clock and its quiet time reads from
+    its stream alone.
+    """
+    raw = record.get("attempt_started_at")
+    if not raw:
+        try:
+            marker = json.loads(
+                (_run_directory(record) / ATTEMPT_RECORD_NAME).read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, ValueError):
+            marker = None
+        if isinstance(marker, Mapping):
+            raw = marker.get("attempt_started_at")
+    if not raw:
+        return None
+    try:
+        started = datetime.fromisoformat(str(raw))
+    except ValueError:
+        return None
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
+    return started.timestamp()
+
+
 def _run_stream_quiet_seconds(
     record: Mapping[str, Any], *, now_seconds: float
 ) -> int:
@@ -2860,11 +2898,22 @@ def _run_stream_quiet_seconds(
     stream at all keeps the reading authoritative when one exists, without
     turning a run that has never written anything into an instantly stalled
     run.
+
+    The current attempt's start is a floor: a run resumed or redispatched
+    writes a new attempt while its superseded attempt's stream stays on disk,
+    so the stream alone can report silence that belongs to the earlier attempt.
+    Quiet time is therefore capped at the age of the attempt now running, and a
+    fresh attempt cannot inherit its predecessor's silence.
     """
     found = _record_newest_stream(record)
     if found is None:
-        return _stream_quiet_seconds(record, now_seconds=now_seconds)
-    return max(0, int(now_seconds - found[1]))
+        quiet = _stream_quiet_seconds(record, now_seconds=now_seconds)
+    else:
+        quiet = max(0, int(now_seconds - found[1]))
+    attempt_started = _attempt_started_seconds(record)
+    if attempt_started is not None:
+        quiet = min(quiet, max(0, int(now_seconds - attempt_started)))
+    return quiet
 
 
 def _declared_wait_age_seconds(
