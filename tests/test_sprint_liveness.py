@@ -219,7 +219,10 @@ def test_a_stored_active_sprint_status_does_not_make_it_live(
     # the project's own reader, not an absent field defaulting to a value.
     assert read_sprint_record(docs, PROJECT, "S102").get("status") == "active"
 
+    before = _mtimes(home, docs)
     result = sl.sprint_liveness(PROJECT, docs, list_live(project=PROJECT))
+    after = _mtimes(home, docs)
 
+    assert after == before, "the read changed a file's mtime"
     assert result["S102"]["live"] is False
     assert [sid for sid in result if result[sid]["live"]] == ["S100", "S101"]
