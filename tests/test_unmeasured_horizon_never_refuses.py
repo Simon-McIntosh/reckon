@@ -22,7 +22,6 @@ from __future__ import annotations
 import importlib
 import json
 import subprocess
-from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -257,6 +256,26 @@ def test_a_measured_zero_is_not_an_unmeasured_horizon(
     message = str(raised.value)
     assert "12.0 worker-hours" in message
     assert "0.0 worker-hour competence horizon" in message
+
+
+def test_the_estimate_falls_back_to_the_plan_effort(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A node with no estimate of its own still gets one, from the plan."""
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=None),
+    )
+    _set_plan_hours(repo, 12.0)
+
+    record = _dispatch(home, repo, horizon=None, estimated_hours=None)
+
+    competence = record["competence"]
+    assert competence["allowed"] is True
+    assert competence["reason"] == "no-measured-horizon"
+    assert competence["estimated_hours"] == 12.0
+    assert competence["estimate_provenance"] == "plan-fallback"
 
 
 def _live_run(home: Path, repo: Path) -> dict:
