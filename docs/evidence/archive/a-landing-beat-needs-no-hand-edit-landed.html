@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-beat-needs-no-hand-edit-landed">
+  <meta name="plan-title" content="A Landing Beat Needs No Hand Edit — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Landing Beat Needs No Hand Edit: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-landing-beat-needs-no-hand-edit">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Landing Beat Needs No Hand Edit — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Landing Beat Needs No Hand Edit — landed record</h1>
+  <p>Closure synthesis for A Landing Beat Needs No Hand Edit: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — An op appends an anchored section to an evidence record</h2>
+    <p>Added an <code>append_evidence</code> op to <code>edit_plan</code>. It targets the cumulative record <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>, creating it when absent through the evidence synthesis renderer so an op-created record and a synthesized one are the same document, and appends one <code>&lt;section id=anchor&gt;</code> before <code>&lt;/main&gt;</code>. A duplicate anchor is refused by name, so a second writer's append lands beside the first instead of overwriting it.</p><ul><li>Commit <code>cf26c6df</code>; 5 new tests in <code>tests/test_edit_plan_append_evidence.py</code>, 130 passing across the suites that touch <code>reckon/_store.py</code>.</li><li>Dropping the duplicate-anchor refusal makes the refusal test fail (negative-control log recorded).</li><li><code>reckon audit-doc</code> reports OK on a record the op creates.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
