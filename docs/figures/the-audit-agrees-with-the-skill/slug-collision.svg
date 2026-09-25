@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" role="img"
+     aria-labelledby="t d" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+  <title id="t">A slug shared across two resource types</title>
+  <desc id="d">Left: resolve_resource on a shared slug reaches both a plan and a
+  research document and raises "ambiguous across types", so a slug-only lookup
+  fails. Right: audit-doc reads the project's resource map, sees the same slug
+  under two types, and reports an error-severity slug-collision finding naming
+  both document paths, exiting non-zero.</desc>
+
+  <rect x="0" y="0" width="760" height="360" fill="#fbfbfd"/>
+
+  <!-- Left panel: slug-only lookup -->
+  <rect x="20" y="20" width="345" height="320" rx="10" fill="#ffffff"
+        stroke="#d5d5de" stroke-width="1.5"/>
+  <text x="192" y="48" text-anchor="middle" font-size="14" font-weight="600"
+        fill="#2b2b36">slug-only lookup fails</text>
+
+  <rect x="120" y="70" width="145" height="42" rx="8" fill="#eef1f8"
+        stroke="#8a93b5" stroke-width="1.5"/>
+  <text x="192" y="96" text-anchor="middle" font-size="13" fill="#2b2b36">
+    resolve_resource("shared")</text>
+
+  <rect x="30" y="170" width="140" height="52" rx="8" fill="#eaf5ec"
+        stroke="#5a9c6b" stroke-width="1.5"/>
+  <text x="100" y="192" text-anchor="middle" font-size="12" font-weight="600"
+        fill="#1f5233">plan</text>
+  <text x="100" y="209" text-anchor="middle" font-size="11" fill="#3c5a47">
+    plans/shared.html</text>
+
+  <rect x="215" y="170" width="140" height="52" rx="8" fill="#f6eef8"
+        stroke="#9a6bab" stroke-width="1.5"/>
+  <text x="285" y="192" text-anchor="middle" font-size="12" font-weight="600"
+        fill="#5a2c66">research</text>
+  <text x="285" y="209" text-anchor="middle" font-size="11" fill="#5f4467">
+    research/shared.html</text>
+
+  <path d="M165 112 L100 168" stroke="#8a93b5" stroke-width="1.6" fill="none"/>
+  <path d="M210 112 L285 168" stroke="#8a93b5" stroke-width="1.6" fill="none"/>
+
+  <rect x="55" y="252" width="275" height="62" rx="8" fill="#fdeceb"
+        stroke="#c8554b" stroke-width="1.6"/>
+  <text x="192" y="277" text-anchor="middle" font-size="12.5" font-weight="600"
+        fill="#8f2d26">ambiguous across types: plan, research</text>
+  <text x="192" y="298" text-anchor="middle" font-size="11.5" fill="#a4443c">
+    every slug-only edit_plan on the plan fails</text>
+
+  <!-- Right panel: project-aware audit -->
+  <rect x="395" y="20" width="345" height="320" rx="10" fill="#ffffff"
+        stroke="#d5d5de" stroke-width="1.5"/>
+  <text x="567" y="48" text-anchor="middle" font-size="14" font-weight="600"
+        fill="#2b2b36">project-aware audit sees it</text>
+
+  <rect x="495" y="70" width="145" height="42" rx="8" fill="#eef1f8"
+        stroke="#8a93b5" stroke-width="1.5"/>
+  <text x="567" y="96" text-anchor="middle" font-size="13" fill="#2b2b36">
+    resource_map(docs, project)</text>
+
+  <rect x="405" y="170" width="140" height="52" rx="8" fill="#eaf5ec"
+        stroke="#5a9c6b" stroke-width="1.5"/>
+  <text x="475" y="192" text-anchor="middle" font-size="12" font-weight="600"
+        fill="#1f5233">("plan","shared")</text>
+  <text x="475" y="209" text-anchor="middle" font-size="11"
+        fill="#3c5a47">plans/shared.html</text>
+
+  <rect x="590" y="170" width="140" height="52" rx="8" fill="#f6eef8"
+        stroke="#9a6bab" stroke-width="1.5"/>
+  <text x="660" y="192" text-anchor="middle" font-size="12" font-weight="600"
+        fill="#5a2c66">("research","shared")</text>
+  <text x="660" y="209" text-anchor="middle" font-size="11" fill="#5f4467">
+    research/shared.html</text>
+
+  <path d="M540 112 L475 168" stroke="#8a93b5" stroke-width="1.6" fill="none"/>
+  <path d="M595 112 L660 168" stroke="#8a93b5" stroke-width="1.6" fill="none"/>
+
+  <rect x="430" y="252" width="275" height="62" rx="8" fill="#fdeceb"
+        stroke="#c8554b" stroke-width="1.6"/>
+  <text x="567" y="277" text-anchor="middle" font-size="12.5" font-weight="600"
+        fill="#8f2d26">error [slug-collision] — names both paths</text>
+  <text x="567" y="298" text-anchor="middle" font-size="11.5" fill="#a4443c">
+    exits non-zero</text>
+</svg>

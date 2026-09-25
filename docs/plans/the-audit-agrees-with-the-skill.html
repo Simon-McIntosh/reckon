@@ -68,6 +68,24 @@
       <li>A project whose slugs are all unique produces no such finding.</li>
       <li>The declared mutation, removing the cross-type check, is applied, and the collision test is observed to fail. The log is recorded.</li>
     </ul>
+    <p class="r-landing"><strong>Landed 2026-09-25</strong> at <code>3824f9cf</code> (test case
+    <code>a255c027</code>), base <code>f7b6f9b9</code>. <code>reckon/doccheck.py</code>'s
+    <code>slug_collision_findings</code> reads the audited document's <code>plan-slug</code> and
+    declared <code>reckon-type</code>, then consults <code>reckon.resources.resource_map</code>
+    for the project and reports an error-severity <code>slug-collision</code> finding when
+    another resource carries the same slug under a different type — one index of the project
+    rather than a second slug scan. The finding names both documents and either side reports it
+    when audited; <code>run()</code> resolves the docs root from the registered mounts under
+    <code>--project</code> and merges the finding, so the command exits non-zero, while a run
+    with no <code>--project</code> is unchanged. <code>tests/test_doccheck_slug_collision.py</code>
+    builds a synthetic project in <code>tmp_path</code> (never a real mount) and asserts the
+    error for each side, the non-zero exit through <code>main</code> with a synthetic mounts
+    file, and no finding when slugs are unique. The doccheck-focused set is 33 passed;
+    <code>ruff check</code> on the module reports 12 findings, equal to base, and the new test
+    file none. The declared mutation (the cross-type comparison removed) was applied, the three
+    collision assertions observed to fail while the unique-slug case still passed, and the
+    comparison restored &mdash; log under the run's <code>negative-control.log</code>. Full
+    record: <a href="/reckon/evidence/archive/the-audit-agrees-with-the-skill-landed#slug-collision-refused-across-types">&sect;2 landed</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; A review's commitless manifest promotes without a hand edit</h2>
     <p>Three local-lane reviews in a row wrote prose into <code>commits:</code>, for example <code>commits: none (review node; no repository change; &hellip;)</code>. <code>crew complete</code> then parsed that prose as commit ids and refused with "&hellip; does not resolve to an object". The coordinator blanked the line by hand each time. The runs were:</p>
