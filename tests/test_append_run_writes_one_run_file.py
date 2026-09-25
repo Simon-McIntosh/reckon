@@ -158,7 +158,7 @@ def test_append_preserves_complete_record_and_writes_index_after_file(
         return original(project, record)
 
     monkeypatch.setattr(run_store, "append", check_order)
-    result = ledger.append_run(PROJECT, row, root=repository, attempts=99)
+    result = ledger.append_run(PROJECT, row, root=repository)
     assert result["path"] == str(target)
     assert result["run"] == expected
     assert result["store"] == {"status": "written"}

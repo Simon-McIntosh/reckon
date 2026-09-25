@@ -1919,15 +1919,14 @@ def append_run(
     record: Mapping[str, Any],
     *,
     root: str | Path | None = None,
-    attempts: int = 12,
     allow_create: bool = False,
 ) -> dict[str, Any]:
     """Create one run file exclusively, then attempt one index update.
 
     Existing target paths and top-level aggregate rows refuse duplicate ids.
     A byte scan avoids parsing the aggregate unless it contains this id; other
-    run files are never opened. The caller owns the commit. ``attempts`` remains
-    accepted for call compatibility, but independent files need no retry queue.
+    run files are never opened. The caller owns the commit. Independent files
+    need no retry queue.
     The returned ``version`` is None because no aggregate version is advanced.
 
     An absent aggregate still needs the history guard: a tracked file missing
