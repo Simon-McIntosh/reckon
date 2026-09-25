@@ -379,9 +379,12 @@ def test_a_document_under_the_operators_home_is_not_read(
 ) -> None:
     """A published document outside the crew home does not reach a pre-flight.
 
-    A document is planted exactly where ``paid_lanes``' own default resolves it
-    -- under the reader's ``HOME``, the operator's real-home location -- and the
-    pre-flight resolves its path through the crew home instead. The positive
+    A document is planted at ``paid_lanes``' own default location -- the
+    ``DEFAULT_DOCUMENT_PATH`` constant expanded under the stand-in ``HOME``, the
+    operator's real-home location -- and the pre-flight resolves its path through
+    the crew home instead. The plant is asserted against that constant rather
+    than against the resolver, because the resolver answers with the crew home
+    the isolation fixture governs and no longer names the default. The positive
     control is the same document named explicitly: it does speak, which is what
     makes the isolation claim mean something rather than passing because the
     document was unreadable.
@@ -397,7 +400,9 @@ def test_a_document_under_the_operators_home_is_not_read(
     monkeypatch.setenv("HOME", str(stand_in_home))
     planted = stand_in_home / "public" / "reckon" / "paid-lanes.json"
     paid_lanes.write_document_atomically(document, planted)
-    assert paid_lanes.document_path() == planted
+    # The plant sits at paid_lanes' default location under the stand-in HOME,
+    # proven by the constant rather than by the resolver the crew home governs.
+    assert Path(paid_lanes.DEFAULT_DOCUMENT_PATH).expanduser() == planted
     recorded = {"codex": _reading(0.11, 0.09, moment=NOW)}
 
     # The control: named explicitly, the planted document does speak.
