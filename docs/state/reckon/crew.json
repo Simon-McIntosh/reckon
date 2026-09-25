@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T05:27:28",
+  "updated": "2026-09-25T05:30:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -382022,6 +382022,294 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T011144444203-edit-plan-writes-one-section",
+        "plan": "the-mcp-answers-within-its-ceiling",
+        "section": "\u00a77",
+        "node": "edit-plan-writes-one-section",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1883,
+                "cached_input_tokens": 547152,
+                "input_tokens": 549037,
+                "output_tokens": 995,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 550032,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/_store.py accepts {op:'set', path:'section_declarations.s3', value:'done'} (any section id in place of s3) changing that one key and preserving every other declaration (the refusal 'unsupported plan set path' at _store.py:1461 no longer fires for it, and an unknown declaration value is still refused naming the accepted values), and accepts a new insert-section op that places an authored h2 section before the first section[data-reckon] region without anchoring on unrelated prose (the overlap guard at _store.py:866 still refuses a text edit overlapping a structured region); tests/test_edit_plan_section_writes.py on a synthetic plan asserts the dotted set changes one key and preserves the rest, the inserted section lands before the first data-reckon region with the plan passing reckon audit-doc, an unknown declaration value is refused, and a plan carrying S22 section records (the sections list from section-contract-and-computed-impl s1) keeps them intact; the declared mutation (the dotted declaration path removed) is applied and the dotted-set test observed to fail with its log recorded; ruff --output-format=concise on reckon/_store.py reports no more findings than at base",
+          "estimated_hours": null,
+          "goal": "let edit_plan set one section's declaration and insert a new section before the structured-state regions",
+          "id": "edit-plan-writes-one-section",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T01:11:45Z",
+            "read_at": "2026-09-25T01:11:46Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 4.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011144444203-edit-plan-writes-one-section/manifest.md",
+          "negative_control": "remove the dotted section_declarations path so the set is refused again",
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_store.py",
+            "tests/test_edit_plan_section_writes.py",
+            "docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html",
+            "docs/figures/the-mcp-answers-within-its-ceiling",
+            "docs/plans/the-mcp-answers-within-its-ceiling.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-i",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T01:12:00Z",
+        "completed_at": "2026-09-25T02:52:11Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 6011,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "0bd7a7c9667176b07d0d7912d07a1e8739581d03",
+        "commits": [
+          "25845dc8f99a30e339b09e8c4f5cf41d9d94629e",
+          "dfa424c3ee0c16eda3b2f001a2a8b5a8776cffe8",
+          "0b3cd08c1e9f587436382468131f76f9d23b679a",
+          "06642dc71ba473ac21d0b8064eaf0ade14bd5d8b",
+          "5fad6a7c8aa38694263dc8c0ed9489db1280ab14",
+          "ae64e502bc7dd27356900d556b10a97cdb08d1c7"
+        ],
+        "changed_lines": {
+          "added": 629,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 14,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan_section_writes.py tests/test_section_record_round_trips.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011144444203-edit-plan-writes-one-section/stale-comment-merge-final-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011144444203-edit-plan-writes-one-section/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d61f-b6b0-7d70-aa48-bbfc86ff2cb3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 40048896,
+            "cached_input_tokens_cumulative": 40048896,
+            "input_tokens": 40550070,
+            "input_tokens_cumulative": 40550070,
+            "output_tokens": 81807,
+            "output_tokens_cumulative": 81807,
+            "reasoning_output_tokens": 23232,
+            "reasoning_output_tokens_cumulative": 23232
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T02:52:11Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 6.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T02:52:11Z"
+            }
+          ],
+          "notional_cost_usd": 190.8446,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 40048896,
+          "cumulative_input_tokens": 40550070,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 105039,
+          "generation_seconds": 5749.401,
+          "machine_seconds": 183.843,
+          "tokens_per_second": 18.27
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/edit-plan-writes-one-section",
+          "session_id": "01a0d61f-b6b0-7d70-aa48-bbfc86ff2cb3",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T02:52:11Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T01:30:41Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T01:13:17Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T011144444203-edit-plan-writes-one-section",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 340,
+          "worker_pid": 2166579
+        },
+        "promoted_revision": "ae64e502bc7dd27356900d556b10a97cdb08d1c7",
+        "plan_impl_at_dispatch": 0.67,
+        "impl_move": {
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "at_dispatch": 0.67,
+          "at_complete": 0.83,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_edit_plan_section_writes.py"
+          ],
+          "declaration": "remove the dotted section_declarations path so the set is refused again",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011144444203-edit-plan-writes-one-section/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011144444203-edit-plan-writes-one-section/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 0.703623989296725,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "no projected exhaustion is available for 'codex'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+          "horizon_ends_at": "2026-09-25T02:01:46.957224+00:00",
+          "horizon_seconds": 3000,
+          "metered": true,
+          "observed_at": "2026-09-25T01:11:45Z",
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": "2026-10-01T15:38:44Z",
+          "seconds_until_reset": 570418,
+          "state": "quiet",
+          "utilisation_pct": 4.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T01:11:45Z",
+          "read_at": "2026-09-25T01:11:46Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 4.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 110.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -382334,6 +382622,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2657
+    "_version": 2658
   }
 }

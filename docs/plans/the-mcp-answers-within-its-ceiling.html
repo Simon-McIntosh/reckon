@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-commits" content="20258e3a,8bc09a50,39dee90a,8db64fe6,d5773b49,215821ed,9e02b5f6,2122207b,c8eab419,0c021526,1de67ffb,29016e25,25845dc8,dfa424c3,0b3cd08c,06642dc7,5fad6a7c,ae64e502">
 <meta name="plan-impl" content="0.83">
 </head>
@@ -354,6 +354,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260925-s7-landed" data-who="reckon-build" data-when="2026-09-25T03:27:00Z">
     <div class="r-comment-body"><p>Run <code>r-20260925T011144444203-edit-plan-writes-one-section</code> (codex sol5.6) landed after three reviews. It was merged at <code>94e18b52</code> and <code>120927d0</code>.</p><ul><li><code>edit_plan</code> accepts <code>set section_declarations.&lt;id&gt;</code>.</li><li>A new <code>insert_section</code> op places an authored h2 before the first structured-state region, after any <code>data-reckon="section"</code> records, so a section never separates from its record.</li></ul><p>The reviews:</p><ul><li><strong>86:</strong> the four refusals were untested, and the boundary wording was imprecise.</li><li>The coordinator also rejected carrying insertions through <code>validation_diagnostics</code>. They are now write effects bound to the state object.</li><li><strong>92:</strong> reproduced a silent loss. A stale write whose batch appended a comment dropped its insertion and still reported success. It was fixed by consuming effects before the comment merge.</li><li><strong>96:</strong> the re-review at <code>ae64e502</code>, with no findings.</li></ul><p>The gate is 14 passed.</p><p>Two things are outstanding. The resident MCP server runs pre-merge code until it is restarted: this write's own dotted set was refused, so the whole map was set instead. And <code>insert_section</code> is not yet listed in <code>_OP_VOCAB</code> in <code>reckon/mcp.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T011144444203-edit-plan-writes-one-section" data-who="reckon-build" data-when="2026-09-25T02:52:11Z">
+    <div class="r-comment-body"><p>edit_plan sets section_declarations.&lt;id&gt; and inserts an authored section before structured state; insertions are write effects, not diagnostics; a stale comment-merge batch keeps its insertion; reviews 86, 92, 96; 14 passed</p></div>
 </div>
 </section>
   </main>
