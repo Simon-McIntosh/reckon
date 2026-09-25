@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 250" role="img" aria-labelledby="title desc">
+  <title id="title">Worker-owned liveness and phase evidence</title>
+  <desc id="desc">A live supervisor without a worker record remains starting. Worker-owned evidence advances the run to working. A terminal manifest advances it to complete, while a successful result without a terminal manifest is a blocked row with an ended-without-manifest recovery classification.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#243447"/>
+    </marker>
+  </defs>
+  <rect width="900" height="250" fill="#fff"/>
+  <g font-family="system-ui, sans-serif" fill="#111827" font-size="15">
+    <rect x="24" y="72" width="210" height="86" rx="4" fill="#eef5fb" stroke="#243447"/>
+    <text x="129" y="101" text-anchor="middle" font-weight="700">starting</text>
+    <text x="129" y="126" text-anchor="middle">supervisor live</text>
+    <text x="129" y="147" text-anchor="middle">no worker.json yet</text>
+
+    <rect x="344" y="72" width="210" height="86" rx="4" fill="#edf7ed" stroke="#243447"/>
+    <text x="449" y="101" text-anchor="middle" font-weight="700">working</text>
+    <text x="449" y="126" text-anchor="middle">worker.json or</text>
+    <text x="449" y="147" text-anchor="middle">retained work proves progress</text>
+
+    <rect x="664" y="72" width="210" height="86" rx="4" fill="#f7f3e8" stroke="#243447"/>
+    <text x="769" y="101" text-anchor="middle" font-weight="700">complete</text>
+    <text x="769" y="126" text-anchor="middle">terminal manifest</text>
+    <text x="769" y="147" text-anchor="middle">after liveness ends</text>
+
+    <line x1="234" y1="115" x2="344" y2="115" stroke="#243447" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="554" y1="115" x2="664" y2="115" stroke="#243447" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="274" y="188" width="352" height="42" rx="4" fill="#fff4f0" stroke="#a33a24"/>
+    <text x="450" y="214" text-anchor="middle" fill="#7c2d12">result record + no terminal manifest → blocked row; recovery: ended-without-manifest</text>
+    <line x1="449" y1="158" x2="449" y2="188" stroke="#a33a24" stroke-width="1.5" marker-end="url(#arrow)"/>
+  </g>
+</svg>
