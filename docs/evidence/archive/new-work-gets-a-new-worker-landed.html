@@ -516,6 +516,54 @@ tests/test_run_record_reports_actual_resume.py
     Next action: review these commits and the explicit delta, then run the separately
     assigned merged-head verification.</p>
   </section>
+  <section id="roster-write-cases">
+    <h2>Remaining roster-write cases assert on their run records</h2>
+    <p><strong>Worker test delivery, 2026-09-25.</strong> Node
+    <code>roster-write-cases-meet-the-run-record</code>, based on
+    <code>8ea87c3a186069bb9f67ec8b2b4d0b3c0a6d5f78</code>, records test commit
+    <code>e026be7afae87b4dcd8a8884a311969b54638822</code>. No <code>reckon/</code>
+    source file changes. Every other case in the three assigned test files and the peer's
+    ledger home fixture are byte-identical. One import used only by a rewritten assertion
+    is removed.</p>
+    <figure>
+      <img src="/reckon/figures/new-work-gets-a-new-worker/independent-run-sessions.svg"
+           alt="The first and later tasks capture sessions on different live run pointers; the first pointer and shared roster bytes remain unchanged after the later capture.">
+      <figcaption>Cross-task and cross-model captures are checked together with preservation
+      of the first run and the roster.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Assigned case</th><th>Reproduced assertion</th><th>Run-record assertion</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code></td><td><code>assert None == original_session</code></td><td>Each pointer carries its own session, harness, model and agent; the first pointer and roster bytes stay unchanged.</td></tr>
+        <tr><td><code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code></td><td><code>assert True is False</code> for the later capture</td><td>The later run captures its own session while preserving the first pointer and roster bytes.</td></tr>
+        <tr><td><code>tests/test_ledger.py::test_a_member_with_a_null_session_captures_one_from_its_first_run</code></td><td><code>assert None == SESSION_ID</code></td><td>The live pointer carries the announced session, harness and model; roster bytes stay unchanged.</td></tr>
+        <tr><td><code>tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it</code></td><td>Expected agent contains an extra <code>dialect: codex</code> key.</td><td>The run's existing separate harness assertion remains; the agent matches its configuration and the member remains unchanged.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Reproduction:</strong> all four assigned cases fail in <code>reproduction.log</code>
+    at the starting revision. The focused rewritten arm reports <strong>4 passed in 3.29 s</strong>.
+    The scratch clean arm reports <strong>4 passed in 5.11 s</strong>. Both scratch arms print the
+    resolved working directory and the imported paths of all six measured modules, and require
+    every path to be under the scratch root before pytest starts.</p>
+    <pre>in a scratch copy, restore the session write onto the member entry at the dispatch capture site; at least one rewritten case must fail</pre>
+    <p><strong>Declared control:</strong> the mutation preserves run capture and additionally writes
+    <code>session_id</code> and <code>session_model</code> onto the member from
+    <code>_capture_member_session</code>. All four cases fail at roster equality, after their
+    session and harness assertions pass: <code>tests/test_crew.py:2962</code>,
+    <code>tests/test_ledger.py:1591</code>, <code>tests/test_ledger.py:1538</code> and
+    <code>tests/test_crew_members.py:171</code>. The final case fails member-field equality;
+    the other three fail roster-byte equality. The exact mutation is preserved in
+    <code>negative-control.patch</code> and the red log begins with the declared sentence above.</p>
+    <p>All receipts and expanded commands are under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T043556686767-roster-write-cases-meet-the-run-record</code>:
+    <code>reproduction.log</code>, <code>focused.log</code>, <code>control-clean.log</code>,
+    <code>negative-control.log</code>, <code>scope-proof.json</code> and
+    <code>lint-delta.json</code>. Ruff adds zero findings (13→13, 11→11 and 0→0).
+    Tests run on the inherited compute allocation <code>1277272</code> using the root
+    environment, a 120-second per-test bound and separate node-local basetemps. Logs and
+    receipts are durable; the scratch source itself is temporary.</p>
+    <p>The coordinator owns section closure and the driving followup. Verification after
+    integration belongs to the separately dispatched test node.</p>
+  </section>
 </main>
 </body>
 </html>
