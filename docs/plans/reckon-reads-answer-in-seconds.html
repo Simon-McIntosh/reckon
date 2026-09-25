@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="a-page-load-reads-each-file-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <title>Reckon Reads Answer In Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-commits" content="436c75f3,37c8988a">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="5">
+<meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="6">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,10 +93,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rraiss-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rraiss-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds §2" data-resolved-at="2026-09-25T13:22:34+00:00" data-resolved-by="reckon-build s23-coord">
     <h4 class="r-fu-title">Profile the slow reads</h4>
     <div class="r-fu-body"><p>§2 is an investigation, and §3 waits on it.</p></div>
     <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds §2</pre>
+    <p class="r-fu-outcome">§2 profiled the slow reads (73fe3c82); §3 landed the stat-keyed parse_plan memo and the audit's shared parse (merged at 3045e05c): warm audit 35.4 → 14.6 s, roadmap summary 11.8 → 7.8 s, discovery 9.7 → 1.0 s.</p>
+    </article>
+<article class="r-fu" data-id="f-rraiss-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Bring the audit and roadmap under five seconds</h4>
+    <div class="r-fu-body"><p>The residual profile after the parse memo: <code>_plan_html.read_state</code> and <code>from_html</code> in the MCP validation path (about 18 s profiled across 184 calls) and <code>partition_live_runs</code> (about 17 s, 9.8 s of it observing logs). Memoize <code>read_state</code> in <code>reckon/_store.py</code> on the same file signature, and make live-run partitioning read the watch producer's recorded classification, as sprint liveness now does.</p></div>
+    <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds</pre>
     </article>
 </section>
 
