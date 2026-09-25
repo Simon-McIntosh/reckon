@@ -145,6 +145,36 @@
     failure identities and the write flow are in the
     <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#typed-section-write-boundary">typed-section write-boundary record</a>.</p>
 
+    <p><strong>The third route is closed; its pinned compatibility cases are not,
+    2026-09-25.</strong> Commit <code>e4be85c957eff10856da81c36e81c9a88aa84415</code>
+    makes the state-mode <code>insert_section</code> op validate the same
+    <code>SectionRecord</code> as the <code>append sections</code> target and refuse before
+    any byte is written, naming the missing or off-enum field and carrying the same worked
+    append example. The record validation is now one shared helper, so the two state routes
+    cannot drift; the authored h2 and its typed record reach the file in the one versioned
+    write that the append route already used. Removing the check makes the designated
+    refusal case fail with <code>DID NOT RAISE OpError</code>.</p>
+    <p>The wider gate does not pass by delta, and the delta is entirely outside this change's
+    write scope. Base <code>adfc6715</code> reports 5 failed, 2750 passed, 3 skipped over the
+    78-file cohort; head <code>e4be85c9</code> reports 10 failed, 2756 passed, 3 skipped.
+    All six added failures are in <code>tests/test_edit_plan_section_writes.py</code>, whose
+    cases pin the pre-contract <code>insert_section</code> behaviour: five call the op with
+    no <code>effort_hours</code>, <code>capability</code> or <code>links</code> and now reach
+    the contract refusal instead of the detail they assert, and one reads back a heading the
+    op no longer writes. They are reported for their owner without repair, rerunning for a
+    different result, or a causal claim beyond the observed replacement of one refusal
+    detail by another. One base failure (<code>test_schema.py</code>, a cross-project
+    conformance case) passes at the head and is not attributed to this change. Full failure
+    identities and receipts:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#insert-section-typed-record">the insert_section refusal record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/creation-routes.svg"
+           alt="Three routes — the state append sections target, the state insert_section op, and a text edit introducing a numbered heading — converge on one SectionRecord validation that either writes the heading with its record or refuses before any bytes are written, naming the field and showing a valid append; a text edit that introduces no new section stays on the ordinary prose path.">
+      <figcaption>One validation, reached by every route that creates a section. The
+      <code>insert_section</code> op now shares the append target's helper, so a new section
+      cannot enter the file without its effort and capability.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the
