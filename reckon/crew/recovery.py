@@ -4223,6 +4223,12 @@ def classify_pointer(
         classified["session_resolution"] = session_resolution
     if resume_remedy is not None:
         classified["resume_remedy"] = resume_remedy
+    # Lifecycle and fleet attention are distinct vocabularies. Publish both
+    # from this observation so consumers never reread a stream or process to
+    # derive the fleet's verdict, while lifecycle callers retain their contract.
+    classified["fleet_verdict"] = _watch_verdict(
+        record, classified, moment=moment, stall_seconds=stale_after_seconds
+    )
     return classified
 
 
@@ -4572,15 +4578,18 @@ EXPLAINED_STATES = frozenset(
 )
 
 
-def _watch_snapshot(
-    pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
+def _watch_verdict(
+    pointer: Mapping[str, Any],
+    row: Mapping[str, Any],
+    *,
+    moment: float,
+    stall_seconds: int,
 ) -> dict[str, Any]:
-    """Reduce one pointer to the state and reason a ticker compares."""
-    row = classify_pointer(
-        pointer,
-        now_seconds=moment,
-        stale_after_seconds=stall_seconds,
-    )
+    """Complete the shared verdict with stream progress and fleet vocabulary.
+
+    Called only by the classifier: producers carry its result without probing
+    processes, streams or manifests for a second judgement.
+    """
     stored_phase = str(pointer.get("phase") or "")
     # The stored phase is the launcher's label; the row carries the phase the
     # run's own evidence supports, so a pointer that never advanced past
@@ -4761,6 +4770,26 @@ def _watch_snapshot(
         recovery_verb = RECOVERY_VERBS["paused"]
         lifting_condition = detail
 
+    return {
+        "state": state,
+        "detail": detail,
+        "recovery_classification": recovery_classification,
+        "recovery": recovery_verb,
+        "lifting_condition": lifting_condition,
+    }
+
+
+def _watch_snapshot(
+    pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
+) -> dict[str, Any]:
+    """Reduce one pointer to the state and reason a ticker compares."""
+    row = classify_pointer(
+        pointer,
+        now_seconds=moment,
+        stale_after_seconds=stall_seconds,
+    )
+    verdict = row["fleet_verdict"]
+
     # What ran it, as facts rather than a display string. The alias and effort
     # spelling were decided at dispatch and frozen onto the pointer; a later
     # configuration edit must not restate what ran, so the facts are read from
@@ -4789,16 +4818,19 @@ def _watch_snapshot(
         # renderer dims a shadow row end to end from that fact, so the snapshot
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
-        "state": state,
-        "recovery_classification": recovery_classification,
-        "recovery": recovery_verb,
-        "lifting_condition": lifting_condition,
+        "state": verdict["state"],
+        "classification": row["classification"],
+        "process_alive": row["process_alive"],
+        "liveness_proven": row["liveness_proven"],
+        "recovery_classification": verdict["recovery_classification"],
+        "recovery": verdict["recovery"],
+        "lifting_condition": verdict.get("lifting_condition"),
         "resets_at": row.get("resets_at"),
         "next_action": row.get("next_action"),
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
         # grid before it is stored.
-        "detail": detail,
+        "detail": verdict["detail"],
         # The fact a block's glyph is derived from. Only a "blocked" state
         # carries a marker; a run entering any other state has nothing for the
         # reader to answer or read a manifest for.
@@ -5082,6 +5114,9 @@ def _watch_transition(
         "alias": str(snapshot.get("alias") or ""),
         "from_state": previous,
         "to_state": current,
+        "classification": snapshot.get("classification"),
+        "process_alive": snapshot.get("process_alive"),
+        "liveness_proven": snapshot.get("liveness_proven"),
         "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],

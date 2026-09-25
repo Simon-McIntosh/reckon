@@ -670,6 +670,27 @@
       <code>a-crew-process-ends-with-its-owner-landed.html#s10-ticker-fixture-reads-withdrawn</code>.</p>
     </div>
 
+    <div data-reckon="landing" data-node="producer-shares-the-classifier-verdict" data-when="2026-09-25">
+      <h3>Landing record — producer consumes the shared classifier verdict</h3>
+      <p>Commit <code>7bcd27ac</code> moves the producer's stream/death/stall verdict into
+      <code>classify_pointer</code>, returned as <code>fleet_verdict</code>. The snapshot
+      copies that verdict, and emitted transitions carry the classifier's lifecycle
+      classification, process liveness and liveness provenance. Existing lifecycle fields
+      retain their compatibility meaning; fleet state and recovery words have one owner.</p>
+      <p>The live-supervisor-exited case was already correct at base <code>c1c1f7e9</code>:
+      <code>classifier=running snapshot=working transition=working</code> with a live worker
+      and one commit beyond base. The new parity instrument did expose a separate verdict
+      in the snapshot for a completed turn without a manifest. That fleet verdict now comes
+      from the classifier too. All <strong>12 new checks pass</strong>, including every
+      pointer-bearing case in the existing liveness module. The scoped gate records
+      <strong>191 passed / 8 failed</strong> against <strong>179 passed / the same 8 failed</strong>
+      at base: <strong>zero added failures</strong>. Restoring a snapshot-local pid probe
+      produces <code>blocked</code> for the live worker and fails the declared control.</p>
+      <p><a href="/reckon/evidence/archive/a-crew-process-ends-with-its-owner-landed#producer-classifier-verdict">Evidence, receipts and compatibility boundary</a>.
+      This is a worker landing record; review, integration, the merged gate and deployment
+      remain coordinator-owned, and the driving followup stays open.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
