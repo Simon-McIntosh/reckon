@@ -28,7 +28,7 @@
 
     <section id="finding">
       <h2>Finding</h2>
-      <p>The census was taken at <code>2026-09-25T12:55:21Z</code> from the records whose <code>observed_at</code> begins with <code>2026-09-25</code>. It read both named project streams, with the last observed record at <code>2026-09-25T12:55:18Z</code>. The event-type split was 482 producer baselines, 1,853 state transitions and 283 <code>manifest-rewritten</code> records. Counts are a dated receipt, not a live promise: both streams can append after the capture.</p>
+      <p>The census was taken at <code>2026-09-25T12:55:21Z</code> from the records whose <code>observed_at</code> falls on <code>2026-09-25</code> and is no later than that instant, so an append to either stream after the capture cannot move the counts. It read both named project streams, with the last observed record at <code>2026-09-25T12:55:18Z</code>. The event-type split was 482 producer baselines, 1,853 state transitions and 283 <code>manifest-rewritten</code> records. Counts are a dated receipt, not a live promise: both streams can append after the capture.</p>
       <table>
         <thead><tr><th>Observed family</th><th>Rows</th><th>Share</th><th>Decision</th></tr></thead>
         <tbody>
@@ -48,31 +48,206 @@
 
     <section id="method">
       <h2>Method and provenance</h2>
-      <p>The two primary inputs were <code>/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events</code> and <code>/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events</code>. The parser ignored legacy non-JSON lines, selected <code>observed_at[:10] == "2026-09-25"</code>, grouped by project and <code>run_id</code>, and sorted within each run by <code>observed_at</code>. “First sighting” means the earliest selected-day record for that run in that stream. The table's median is the median seconds from that record to the current row.</p>
-      <p>For an ordinary transition, “reverts within five minutes” means that the same run subsequently returns to its prior <code>from_state</code> within 300 seconds. The three measured noise groups have a more useful recovery target than a literal reverse edge: <code>dispatched&rarr;abandoned</code> resolves at <code>abandoned&rarr;working</code>, <code>working&rarr;blocked</code> resolves at <code>blocked&rarr;completed_unpromoted</code>, and <code>working&rarr;stalled</code> resolves at <code>stalled&rarr;working</code>. The recovery row itself is not counted as reverting again. Baselines and same-state rows have <code>&mdash;</code> because they have no prior state to return to.</p>
+      <p>The two primary inputs were <code>/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events</code> and <code>/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events</code>. The parser ignored legacy non-JSON lines, selected the records with <code>observed_at[:10] == "2026-09-25"</code> and <code>observed_at &lt;= "2026-09-25T12:55:21Z"</code>, grouped by project and <code>run_id</code>, and sorted within each run by <code>observed_at</code>. “First sighting” means the earliest selected-day record for that run in that stream. The table's median is the median seconds from that record to the current row.</p>
+      <p>For an ordinary transition, “reverts within five minutes” means that a later row in the same run's sorted order returns it to its prior <code>from_state</code> within 300 seconds; a row sharing the transition's own timestamp counts as later. The three measured noise groups have a more useful recovery target than a literal reverse edge: <code>dispatched&rarr;abandoned</code> resolves at <code>abandoned&rarr;working</code>, <code>working&rarr;blocked</code> resolves at <code>blocked&rarr;completed_unpromoted</code>, and <code>working&rarr;stalled</code> resolves at <code>stalled&rarr;working</code>. The recovery row itself is not counted as reverting again. Baselines and same-state rows have <code>&mdash;</code> because they have no prior state to return to.</p>
       <p>The stream is project-wide. A follower re-scopes it to the owning session at render time, and a follower-only re-arm baseline is not appended to this producer file. The re-arm evidence is therefore kept separate: the live plan records twelve rows replayed under one attach timestamp at <code>10:36:51&ndash;10:36:52</code>, while the current follower code's continuation path is cited below. This distinction prevents a producer census from silently claiming to have measured a follower replay.</p>
       <details>
-        <summary>Exact capture commands</summary>
-        <pre><code>date -u +%Y-%m-%dT%H:%M:%SZ
-wc -l /home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events /home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events
-python3 - &lt;&lt;'PY'
-import json, statistics, datetime
+        <summary>Exact census command</summary>
+        <pre><code>python3 - &lt;&lt;'PY'
+import json
+from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
-from collections import defaultdict, Counter
-paths = {
+from statistics import median
+
+CAPTURE = "2026-09-25T12:55:21Z"  # records observed later cannot move the counts
+DAY = "2026-09-25"
+STREAMS = {
     "reckon": Path("/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events"),
     "imas-ambix": Path("/home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events"),
 }
-# Read JSON lines, select observed_at[:10] == "2026-09-25", group by
-# (project, run_id), then tabulate (from_state, to_state), median age and
-# the five-minute recovery rule described above.
+# A noise pair resolves at a more useful recovery target than its literal
+# reverse edge; the target is the row that shows the pair was transient.
+RECOVERY = {
+    ("dispatched", "abandoned"): ("abandoned", "working"),
+    ("working", "blocked"): ("blocked", "completed_unpromoted"),
+    ("working", "stalled"): ("stalled", "working"),
+}
+PAIRS = {
+    "launch-flicker": [("dispatched", "abandoned"), ("abandoned", "working")],
+    "exit-phantom": [("working", "blocked"), ("blocked", "completed_unpromoted")],
+    "stall-flap": [("working", "stalled"), ("stalled", "working")],
+}
+NOT_MEASURED = "—"  # a row with no prior state has no revert to measure
+FMT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def seconds(later, earlier):
+    return (datetime.strptime(later, FMT) - datetime.strptime(earlier, FMT)).total_seconds()
+
+
+def selected(path):
+    rows = []
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue  # legacy human-readable lines
+        row = json.loads(line)
+        if row["observed_at"][:10] == DAY and row["observed_at"] &lt;= CAPTURE:
+            rows.append(row)
+    return rows
+
+
+by_stream = {name: selected(path) for name, path in STREAMS.items()}
+runs = defaultdict(list)
+for rows in by_stream.values():
+    for row in rows:
+        runs[(row["project"], row["run_id"])].append(row)
+first_seen = {}
+for key, group in runs.items():
+    group.sort(key=lambda row: row["observed_at"])
+    first_seen[key] = group[0]["observed_at"]
+
+kinds = Counter()
+events = Counter()
+ages = defaultdict(list)
+reverts = Counter()
+for key, group in runs.items():
+    for index, row in enumerate(group):
+        kind = (row["from_state"], row["to_state"])
+        kinds[kind] += 1
+        events[row["event"]] += 1
+        ages[kind].append(seconds(row["observed_at"], first_seen[key]))
+        prior = row["from_state"]
+        if prior is None or prior == row["to_state"]:
+            continue
+        target = RECOVERY.get(kind, (prior, None))
+        for later in group[index + 1 :]:
+            if seconds(later["observed_at"], row["observed_at"]) > 300:
+                break
+            if target[1] is not None:
+                arrived = (later["from_state"], later["to_state"]) == target
+            else:
+                arrived = later["to_state"] == target[0]
+            if arrived:
+                reverts[kind] += 1
+                break
+
+
+def kind_order(kind):
+    return (0, "", kind[1]) if kind[0] is None else (1, kind[0], kind[1])
+
+
+print(f"capture={CAPTURE}")
+for name, path in STREAMS.items():
+    print(f"{name}: {len(by_stream[name]):,} selected records from {path}")
+print(
+    f"selected={sum(len(rows) for rows in by_stream.values()):,} runs={len(runs)}"
+    f" transition_kinds={len(kinds)}"
+)
+print(
+    "event_types="
+    + " ".join(f"{event}:{events[event]}" for event in ("baseline", "transition", "manifest-rewritten"))
+)
+print(f"last_observed={max(row['observed_at'] for rows in by_stream.values() for row in rows)}")
+print()
+print("streams")
+for name in STREAMS:
+    stream_kinds = {(row["from_state"], row["to_state"]) for row in by_stream[name]}
+    print(f"{name}: {len(by_stream[name]):,} records, {len(stream_kinds)} kinds")
+
+same_state = sum(n for (f, t), n in kinds.items() if f is not None and f == t)
+paired = {member for members in PAIRS.values() for member in members}
+other = sum(
+    n for kind, n in kinds.items() if kind not in paired and (kind[0] is None or kind[0] != kind[1])
+)
+print()
+print("families")
+total = sum(kinds.values())
+for family, members in PAIRS.items():
+    count = sum(kinds[member] for member in members)
+    print(f"{family}={count:,} ({100.0 * count / total:.1f}%)")
+print(f"same-state={same_state:,} ({100.0 * same_state / total:.1f}%)")
+print(f"other={other:,} ({100.0 * other / total:.1f}%)")
+
+print()
+print("kinds  count  median from first sighting  reverts within 300 s")
+for kind in sorted(kinds, key=kind_order):
+    prior = "∅" if kind[0] is None else kind[0]
+    if kind[0] is None or kind[0] == kind[1]:
+        revert = NOT_MEASURED
+    else:
+        n = kinds[kind]
+        revert = f"{reverts[kind]}/{n} ({100.0 * reverts[kind] / n:.1f}%)"
+    print(f"{prior} -> {kind[1]}  {kinds[kind]}  {median(ages[kind]):,.1f} s  {revert}")
 PY</code></pre>
       </details>
       <pre><code>capture=2026-09-25T12:55:21Z
-reckon: 2,554 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events
-imas-ambix: 64 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events
+reckon: 2,573 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events
+imas-ambix: 45 selected records from /home/ITER/mcintos/.config/reckon/crew/watch/imas-ambix-fd8fbc1b4563.events
 selected=2,618 runs=273 transition_kinds=47
-event_types=baseline:482 transition:1853 manifest-rewritten:283</code></pre>
+event_types=baseline:482 transition:1853 manifest-rewritten:283
+last_observed=2026-09-25T12:55:18Z
+
+streams
+reckon: 2,573 records, 47 kinds
+imas-ambix: 45 records, 11 kinds
+
+families
+launch-flicker=449 (17.2%)
+exit-phantom=202 (7.7%)
+stall-flap=48 (1.8%)
+same-state=296 (11.3%)
+other=1,623 (62.0%)
+
+kinds  count  median from first sighting  reverts within 300 s
+∅ -> dispatched  482  0.0 s  —
+abandoned -> complete  3  1,455.0 s  0/3 (0.0%)
+abandoned -> promoted  3  94.0 s  0/3 (0.0%)
+abandoned -> stopped  2  76.0 s  0/2 (0.0%)
+abandoned -> unreadable  6  153.5 s  0/6 (0.0%)
+abandoned -> working  219  178.0 s  0/219 (0.0%)
+blocked -> blocked  22  2,161.0 s  —
+blocked -> complete  2  8,535.0 s  0/2 (0.0%)
+blocked -> completed_unpromoted  96  2,045.5 s  2/96 (2.1%)
+blocked -> promoted  12  4,041.5 s  0/12 (0.0%)
+blocked -> working  9  4,327.0 s  4/9 (44.4%)
+complete -> blocked  2  4,224.5 s  0/2 (0.0%)
+complete -> complete  91  1,584.0 s  —
+complete -> completed_unpromoted  23  7,138.0 s  0/23 (0.0%)
+complete -> promoted  326  3,209.0 s  1/326 (0.3%)
+complete -> stalled  2  5,593.5 s  1/2 (50.0%)
+complete -> working  25  6,129.0 s  2/25 (8.0%)
+completed_unpromoted -> blocked  4  1,023.5 s  2/4 (50.0%)
+completed_unpromoted -> complete  210  4,874.5 s  12/210 (5.7%)
+completed_unpromoted -> completed_unpromoted  183  5,467.0 s  —
+completed_unpromoted -> promoted  35  4,201.0 s  0/35 (0.0%)
+completed_unpromoted -> working  8  4,443.5 s  0/8 (0.0%)
+dispatched -> abandoned  230  5.0 s  178/230 (77.4%)
+dispatched -> blocked  11  1,739.0 s  0/11 (0.0%)
+dispatched -> complete  82  1,789.5 s  0/82 (0.0%)
+dispatched -> completed_unpromoted  84  1,898.0 s  0/84 (0.0%)
+dispatched -> promoted  23  122.0 s  0/23 (0.0%)
+dispatched -> stalled  2  904.0 s  0/2 (0.0%)
+dispatched -> stopped  2  77.0 s  0/2 (0.0%)
+dispatched -> waiting  1  1,384.0 s  0/1 (0.0%)
+dispatched -> working  45  987.0 s  0/45 (0.0%)
+stalled -> promoted  4  1,871.0 s  0/4 (0.0%)
+stalled -> working  24  2,510.5 s  0/24 (0.0%)
+stopped -> promoted  8  532.5 s  0/8 (0.0%)
+unreadable -> blocked  1  2,676.0 s  0/1 (0.0%)
+unreadable -> complete  1  3,798.0 s  0/1 (0.0%)
+unreadable -> working  6  218.0 s  0/6 (0.0%)
+waiting -> blocked  1  1,664.0 s  0/1 (0.0%)
+waiting -> dispatched  1  1,719.0 s  0/1 (0.0%)
+working -> blocked  106  1,349.0 s  24/106 (22.6%)
+working -> complete  98  1,895.0 s  2/98 (2.0%)
+working -> completed_unpromoted  57  5,866.0 s  1/57 (1.8%)
+working -> promoted  35  2,758.0 s  0/35 (0.0%)
+working -> stalled  24  2,151.0 s  20/24 (83.3%)
+working -> stopped  4  873.0 s  0/4 (0.0%)
+working -> unreadable  2  2,905.0 s  1/2 (50.0%)
+working -> waiting  1  1,386.0 s  0/1 (0.0%)</code></pre>
     </section>
 
     <section id="census">
