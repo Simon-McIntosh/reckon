@@ -1141,13 +1141,13 @@ def test_a_run_terminal_for_another_reason_is_unaffected(
     ("divergent", "artifact_classification"),
     [(False, "integrated"), (True, "unintegrated")],
 )
-def test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state(
+def test_a_complete_session_releases_integrated_work_and_audits_unintegrated_work(
     repository: Path,
     tmp_path: Path,
     divergent: bool,
     artifact_classification: str,
 ) -> None:
-    """Session retention supersedes both ordinary artifact classifications."""
+    """A completed session closes integrated work but keeps an unintegrated commit."""
     suffix = "divergent" if divergent else "reachable"
     run_id = f"r-20260903T110000000000-{suffix}"
     worktree = _linked_worktree(
@@ -1173,24 +1173,56 @@ def test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state(
         root=repository,
     )
 
-    assert worktree.is_dir()
-    assert promoted["release"]["worktree_released"] is False
-    retention = promoted["record"]["worktree_retention"]
-    assert retention["classification"] == "retained-for-resume"
-    assert retention["session_id"] == f"session-{suffix}"
-    assert retention["worktree"] == str(worktree.resolve())
-    audit = promoted["release"]["worktree_audit"]
-    row = next(item for item in audit["worktrees"] if item["path"] == str(worktree))
-    assert row["classification"] == "retained-for-resume"
-    assert row["artifact_classification"] == artifact_classification
-    assert row["reclaimable"] is False
-    assert audit["counts"]["retained-for-resume"] == 1
+    if divergent:
+        assert worktree.is_dir()
+        assert promoted["release"]["worktree_released"] is False
+        assert promoted["record"].get("worktree_retention") is None
+        audit = promoted["release"]["worktree_audit"]
+        row = next(item for item in audit["worktrees"] if item["path"] == str(worktree))
+        assert row["classification"] == artifact_classification
+        assert row["reclaimable"] is False
+        assert audit["counts"][artifact_classification] == 1
+    else:
+        assert not worktree.exists()
+        assert promoted["release"]["worktree_released"] is True
+        assert promoted["record"].get("worktree_retention") is None
     stored = next(
         item
         for item in ledger.runs(PROJECT, root=repository)
         if item["run_id"] == run_id
     )
-    assert stored["worktree_retention"] == retention
+    assert stored.get("worktree_retention") is None
+
+
+def test_an_incomplete_session_retains_its_worktree_for_resume(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T110100000000-incomplete"
+    worktree = _linked_worktree(repository, tmp_path, "incomplete")
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id="session-incomplete",
+        status="blocked",
+        worktree=worktree,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="not-run",
+        outcome="the incomplete run remains resumable",
+        resume_waiver="retain the session worktree for the next resume",
+        root=repository,
+    )
+
+    assert worktree.is_dir()
+    assert promoted["release"]["worktree_released"] is False
+    retention = promoted["record"]["worktree_retention"]
+    assert retention["classification"] == "retained-for-resume"
+    assert retention["session_id"] == "session-incomplete"
+    assert promoted["release"]["worktree_audit"]["counts"]["retained-for-resume"] == 1
+    assert ledger.runs(PROJECT, root=repository)[0]["worktree_retention"] == retention
 
 
 def test_promotion_audits_only_its_own_worktree(
@@ -1213,7 +1245,7 @@ def test_promotion_audits_only_its_own_worktree(
             target,
             manifest=tmp_path / "manifests" / f"{target}.md",
             session_id="session-promoted",
-            status="complete",
+            status="blocked",
             worktree=tree,
         )
         git_invocations.clear()
@@ -1711,11 +1743,7 @@ def _worker_plan_pointer(
                 "section": "§2",
                 "time_budget": "25m",
                 "write_paths": write_paths
-                or (
-                    ["candidate.txt"]
-                    if code_file
-                    else [f"docs/plans/{PLAN}.html"]
-                ),
+                or (["candidate.txt"] if code_file else [f"docs/plans/{PLAN}.html"]),
             },
         },
     )
@@ -1770,9 +1798,7 @@ def test_promotion_appends_no_second_comment_when_the_worker_authored_the_record
     # the landing commit carried only the ledger row.
     plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     assert (plan["comments"].get("s2") or []) == []
-    assert set(_landing_commit_paths(repository)) == {
-        f"docs/state/{PROJECT}/crew.json"
-    }
+    assert set(_landing_commit_paths(repository)) == {f"docs/state/{PROJECT}/crew.json"}
     assert not pointer_path(run_id).exists()
 
 
