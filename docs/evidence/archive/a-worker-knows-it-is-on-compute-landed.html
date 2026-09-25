@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-knows-it-is-on-compute-landed">
   <meta name="plan-title" content="A Worker Knows It Is On Compute — landed evidence">
-  <meta name="plan-summary" content="Cumulative evidence for the compute-node plan: the suite declares its own per-test bound and its own parallel-safe temporary trees.">
+  <meta name="plan-summary" content="Cumulative evidence for compute-aware workers: host detection, nested-launch refusal, worker PATH and prompt facts, and bounded parallel tests.">
   <meta name="plan-status" content="active">
   <meta name="plan-evidence-for" content="a-worker-knows-it-is-on-compute">
-  <meta name="plan-verifies" content="a-worker-knows-it-is-on-compute#s5">
+  <meta name="plan-verifies" content="a-worker-knows-it-is-on-compute#s2,a-worker-knows-it-is-on-compute#s3,a-worker-knows-it-is-on-compute#s4,a-worker-knows-it-is-on-compute#s5">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <title>A Worker Knows It Is On Compute — landed evidence | reckon</title>
@@ -315,6 +315,139 @@ the test failed under the mutation, as declared (pytest exit 1)</code></pre>
       <code>97</code>, and generalises the runner to drive both declared
       mutations. Verifying the merged result belongs to a separately dispatched
       test node.</p>
+    </section>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; Workers receive the shim and the facts</h2>
+
+      <p><strong>What landed.</strong> Product commit <code>a690ab92</code>
+      extends <code>reckon/crew/dispatch.py</code> at the existing
+      <code>launch_search_path()</code> seam. One fixture-selected
+      <code>HostFacts</code> reading now controls both launch surfaces: a CLI
+      worker's supervisor specification receives the effective environment,
+      while an in-harness directive carries the same <code>PATH</code> for its
+      host launcher. <code>reckon/crew/prompts.py</code> accepts the one host line
+      composed by dispatch. It contains no host probe of its own, so prompt text
+      and process placement cannot grow separate definitions of
+      <q>inside the allocation</q>.</p>
+
+      <table>
+        <thead><tr><th>Fixture placement</th><th>Worker launch PATH</th><th>Composed prompt</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>in_allocation: true</code><br>node <code>98dci4-clu-2058</code><br>job <code>1277272</code></td>
+            <td><code>reckon/host_shims</code> is entry zero; every inherited entry follows. A duplicate or symlinked shim entry is removed before the canonical entry is prepended.</td>
+            <td>One <code>HOST — ALLOCATION</code> line names node and job, says <code>/tmp</code> is node-local, forbids <code>srun</code>, <code>sbatch</code> and <code>salloc</code> because the worker already runs on the node, and names the run directory for durable logs.</td>
+          </tr>
+          <tr>
+            <td><code>in_allocation: false</code></td>
+            <td>The inherited search path is byte-for-byte unchanged; the shim directory is absent.</td>
+            <td>No host line and no scheduler prohibition are added.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>The pass-through remains reachable.</strong> The inside fixture
+      places a fake real <code>srun</code> after the shim directory, then asks
+      <code>reckon.nested_launch.real_binary()</code> to resolve it. The answer is
+      the fake's absolute path, outside <code>reckon/host_shims</code>. This is the
+      positive control for the path instrument: the first entry is known to be
+      the shim, and the known-present real scheduler is still visible after that
+      entry is filtered.</p>
+
+      <p><strong>Defect reproduction.</strong> Before the repair, the
+      inside-allocation fixture produced the inherited real-binary directory as
+      entry zero:</p>
+      <pre><code>&gt;       assert entries[0] == str(shim_directory())
+E       AssertionError: assert '/tmp/pytest-of-mcintos/…/real-bin' == '/home/ITER/mcintos/Code/…/reckon/host_shims'
+FAILED tests/test_worker_path_carries_shims.py::test_inside_allocation_launch_path_starts_with_the_shim_directory
+1 failed in 0.26s</code></pre>
+
+      <p><strong>Focused gate.</strong> The gate ran at
+      <code>a690ab92498ac6c03477537b7332b5e17a106513</code> in the assigned
+      worktree. It includes the new fixture module, the existing prompt suite,
+      backend-environment and launch-failure suites, and the dispatch/prompt
+      cases in <code>tests/test_crew.py</code>:</p>
+      <pre><code>...............................................                          [100%]
+47 passed in 6.15s</code></pre>
+
+      <p><strong>Declared mutation.</strong> With <q>remove the shim-directory
+      PATH prepend</q> applied, the inside case fails on the intended observable:
+      entry zero becomes the inherited real-binary directory. The red log begins
+      with the declaration verbatim and records <strong>1 failed</strong> in
+      0.26 s. The outside case remains the control: it expects the inherited path
+      unchanged and no host line.</p>
+
+      <p><strong>Lint delta.</strong> Ruff was run with
+      <code>--no-cache --output-format=concise</code> on each edited source and
+      test file. <code>reckon/crew/dispatch.py</code> reports 7 findings at the
+      parent and 7 after; <code>reckon/crew/prompts.py</code> reports 2 and 2;
+      <code>tests/test_worker_path_carries_shims.py</code> reports none. No new
+      finding is introduced.</p>
+
+      <p><strong>Durable logs.</strong> The full reproduction, passing gate,
+      mutation failure, and lint comparison are stored under the run directory
+      as <code>defect-reproduction.log</code>, <code>focused-gate.log</code>,
+      <code>remove-shim-path-prepend.red.log</code>, and
+      <code>ruff-delta.log</code>. They live outside git, so the decisive lines
+      are reproduced here rather than linked to a path another checkout cannot
+      open. The product commit changes only
+      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/prompts.py</code>,
+      and <code>tests/test_worker_path_carries_shims.py</code>; this section and
+      the plan's landing record travel in the record commit. Verification at the
+      merged head belongs to the separately dispatched test node.</p>
+
+      <h3>Coordinator-review correction: persisted data is an overlay</h3>
+      <p>The initial implementation called
+      <code>_launch_environment(plan.environment, facts=facts)</code> while
+      constructing the supervisor specification. That helper merged
+      <code>os.environ</code> into its result. Because the specification is
+      written under the run directory on GPFS, this changed an ephemeral process
+      environment into a durable copy of every dispatcher variable, including
+      credentials. The defect reproduced with
+      <code>RECKON_TEST_SECRET=do-not-persist</code>:</p>
+      <pre><code>&gt;       assert SENTINEL not in spec["plan"]["environment"]
+E       AssertionError: assert 'RECKON_TEST_SECRET' not in {'PYTHONPATH': '…', …}
+FAILED tests/test_worker_path_carries_shims.py::test_inside_allocation_launch_path_starts_with_the_shim_directory
+1 failed in 0.54s</code></pre>
+
+      <p>Repair commit <code>7326f7fe</code> replaces that helper with
+      <code>_persisted_worker_environment()</code>. Its starting value is
+      exactly <code>dict(environment or {})</code>. When the supplied host facts
+      read <code>in_allocation: true</code>, it adds one key:
+      <code>PATH = launch_search_path(environment, facts=facts)</code>. When they
+      read false, it returns the overlay unchanged. The in-harness directive
+      calls the same helper with an empty overlay, so its inside-allocation
+      environment contains exactly <code>PATH</code> and its outside-allocation
+      environment is omitted.</p>
+
+      <p>The dedicated test sets the sentinel in the dispatcher process,
+      builds a supervisor specification whose plan overlay contains only
+      <code>PATH</code> and <code>PLAN_ONLY</code>, and asserts that the serialized
+      mapping contains exactly those two keys while the path still starts with
+      <code>reckon/host_shims</code>. It also asserts the in-harness mapping
+      contains exactly <code>PATH</code> and no sentinel. The outside fixture
+      asserts the specification mapping equals <code>dict(plan.environment)</code>
+      exactly.</p>
+
+      <p><strong>Mutation control.</strong> The declaration is <q>restore the
+      full-environment merge in persisted launch data</q>. Reintroducing
+      <code>{**os.environ, **persisted_overlay}</code> makes the dedicated test
+      fail at the supervisor-spec sentinel assertion:</p>
+      <pre><code>restore the full-environment merge in persisted launch data
+&gt;       assert SENTINEL not in spec["plan"]["environment"]
+E       AssertionError: assert 'RECKON_TEST_SECRET' not in {'PYTHONPATH': '…', …}
+FAILED tests/test_worker_path_carries_shims.py::test_persisted_worker_environments_exclude_dispatcher_secrets
+1 failed in 0.53s</code></pre>
+
+      <p><strong>Repaired gate.</strong> At
+      <code>7326f7fefc06e1de1bee5623cd9ee968f0325d90</code>, the focused gate is
+      <strong>48 passed in 6.05 s</strong>. Ruff remains at 7 findings for
+      <code>dispatch.py</code> at both parent and repaired commit, and the test
+      file reports none at both revisions. The additional durable logs are
+      <code>environment-persistence-reproduction.log</code>,
+      <code>restore-full-environment-merge.red.log</code>, and
+      <code>ruff-persistence-delta.log</code> under the run directory.</p>
     </section>
   </main>
 </body>

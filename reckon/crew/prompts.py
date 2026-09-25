@@ -234,6 +234,7 @@ def compose_prompt(
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
     peer_channel_path: str = "",
     can_write_worktree: bool | None = None,
+    host_line: str = "",
 ) -> str:
     """Compose a worker prompt from the four fences and a pointer to the plan.
 
@@ -285,6 +286,7 @@ def compose_prompt(
             "SPEC     open — the plan fixes the goal and measure; design and implement.\n"
         ),
     }.get(node.spec_level, "")
+    host_context = f"{host_line}\n" if host_line else ""
     delivery_directory_note = ""
     if Path(working_directory) != Path(worktree):
         delivery_directory_note = f"""
@@ -339,7 +341,7 @@ RUNTIME FILESYSTEM
 GOAL     {node.goal}
 PLAN     {project}:{node.plan}{section}
 ROLE     {node.role}
-{specification_guidance}{delivery_directory_note}
+{specification_guidance}{host_context}{delivery_directory_note}
 
 {landing_contract}
 
