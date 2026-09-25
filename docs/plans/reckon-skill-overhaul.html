@@ -16,12 +16,13 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="17">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="18">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-informs" content="agent-plan-authoring">
 <meta name="plan-sprint" content="S22">
+<meta name="plan-section-declarations" content="{&quot;s0&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -387,10 +388,11 @@ Done-when
   5. sprint per locked decision. uv run pytest clean. impl advanced; this followup resolved.</pre>
     <p class="r-fu-outcome">All items landed (commits 017cbe5 structural + 5df5d7f lint). §2 finish: fast-path recipe atop all six skills; §05 marked canonical in reckon-edit + self-contradicting example fixed. §3: reckon-status leads with dependency DAG/ready-set + audit-as-source-of-truth + dangling/cyclic checks; reckon-sync shrunk to a thin wrapper over the CLI (prefix-agnostic enumeration); NEW reckon-sprint skill extracted from reckon-edit. 1092 reckon tests pass; doctor verifies all six skills.</p>
     </article>
-<article class="r-fu" data-id="f-rso-04" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rso-04" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="2026-09-25T04:21:22+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Extract reference material from the ship skill instead of raising its bound again</h4>
     <div class="r-fu-body"><p>The ship skill's fixed read-set bound has moved twice in four days while the remedy its own note prescribes has not been exercised. Measured 2026-08-25: 11,631 tokens against a 12,000 bound on 08-21; the bound raised to 14,000 on 08-24; raised to 14,400 on 08-25 with 54 tokens of headroom at the time; 14,314 now, 86 remaining. That is +2,683 tokens (+23%) on the file with the ceiling raised twice to stay ahead of it.</p><p>Each raise was individually justified and recorded as the constant requires, and each added a rule worth stating — the aggregate is the problem, not any one edit. A ceiling that moves whenever it binds is tracking the file rather than constraining it, and this file is the fixed read-set of <em>every</em> orchestration turn, so its size is a per-dispatch cost. The constant's own note names the intended remedy: move REFERENCE material into <code>references/</code>, read conditionally, rather than shaving rules worth keeping. Between 08-21 and now the file gained rules while the reference split held roughly still, so each raise substituted for the extraction.</p><p>Do the extraction pass at the next binding edit rather than a third raise, and decide it deliberately — not at the moment a good sentence is ninety tokens too long. Candidates are the passages that read as explanation rather than as a rule an orchestrator applies mid-turn. Observed and quantified by a peer orchestration session.</p></div>
     <pre class="r-fu-prompt">/reckon-build reckon-skill-overhaul</pre>
+    <p class="r-fu-outcome">done — no followup. The extraction landed instead of a third raise: build-skill-sheds-reference-material (merged 5c1d8450) moved explanatory passages into references/conditional-guidance.md, taking the fixed read set from 18,670 to 14,339 tokens and the bound from 17,000 to 15,000. Its reviews then drove four corrective nodes: the review findings (7d0e927e), restoring the rules five contract tests pin and retiring every member-registration instruction (42bfc207), the registration census across the reference files (5a5c3b86), and pinning that census's read set (09c1306a). Read set now 14,734 of 15,000.</p>
     </article>
 </section>
 
