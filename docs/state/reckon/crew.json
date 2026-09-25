@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:10:38",
+  "updated": "2026-09-25T12:11:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -415817,6 +415817,347 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T075522000409-local-lane-at-width",
+        "plan": "the-local-lane-is-the-default",
+        "section": "\u00a71",
+        "node": "local-lane-at-width",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1254,
+                "cached_input_tokens": 216415,
+                "input_tokens": 217671,
+                "output_tokens": 1035,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 218706,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "docs/research/local-lane-at-width.html (reckon-type=research) cites where the earlier limit was recorded, carries a time series figure of running, the ceiling, kv occupancy and ttft or prefill against wall time, states the peak concurrency reached and whether degradation (stalls, ttft growth, waiting above 0) appeared and at what running count, and gives a verdict on whether the prefill limit binds at the observed width; when running never passed 20 the doc says so and names what held the width (plan width, members or claims) instead of inferring lane capacity; the sample JSONL is in the reports dir; the doc is committed and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "produce a research record of the local model lane measured while coordinators ramp concurrent local workers toward 30+, answering from real-world samples whether the earlier prefill-rate capacity limit still binds. The earlier limit and its evidence are found by grepping imas-ambix docs/ and ~/public/imas-ambix/ for prefill, concurrent_requests, sizing_verdict and admission. Samples come from ~/public/imas-ambix/lane.json every 30 s across the whole slice (running, concurrent_requests or concurrent_requests_instant when absent, headroom, waiting, kv_occupancy, router_generation_gate in_flight and width, and any prefill, ttft or throughput field), plus the stall signature across ~/.config/reckon/crew/live runs (stream silent over 900 s with a live process, or a last line about corrupt output), written as JSONL under the reports dir",
+          "id": "local-lane-at-width",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T07:55:22Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 27,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 12,
+            "mean_context": 100000,
+            "observed_at": "2026-09-25T07:54:55Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075522000409-local-lane-at-width/manifest.md",
+          "negative_control": "none \u2014 an operational measurement; the positive control is one lane.json sample whose running count matches crew(view=live) process_alive local runs at the same minute, recorded in the doc",
+          "plan": "the-local-lane-is-the-default",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/local-lane-at-width.html",
+            "docs/figures/local-lane-at-width",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/local-lane-at-width",
+            "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+            "docs/figures/the-local-lane-is-the-default",
+            "docs/plans/the-local-lane-is-the-default.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T07:55:32Z",
+        "completed_at": "2026-09-25T09:56:35.203Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7159,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7263,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075522000409-local-lane-at-width/manifest.md",
+        "scope_changed": false,
+        "session_id": "32d0fbe5-8039-4d48-81da-0760a3170e51",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13223037,
+            "input_tokens_cumulative": 13223037,
+            "output_tokens": 86114,
+            "output_tokens_cumulative": 86114,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T09:56:35.203Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2506,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 2544,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 13389973,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 7237.502,
+          "generated_tokens": 99625,
+          "generation_seconds": 7183.17,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.5,
+          "machine_seconds": 54.332,
+          "peak_input_tokens": 165636,
+          "tokens_per_second": 13.87,
+          "wall_tokens_per_second": 13.77
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "research record merged by the coordinator at 3f49c0b7 and ca7a5382 (commits 34003528 1211952b 7ab76fc0 0d80b897); a measurement with no pass/fail gate",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/local-lane-at-width",
+          "session_id": "32d0fbe5-8039-4d48-81da-0760a3170e51",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T09:56:35.203Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T09:56:35Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T07:55:55Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T075522000409-local-lane-at-width",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13184,
+          "worker_pid": 4048372
+        },
+        "promoted_revision": "0d80b897e25c99f50fd851dcb83d35463e9a05b2",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "the-local-lane-is-the-default",
+          "at_dispatch": 0.33,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "gate-not-passing"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:55:22.451619+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T07:55:22Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 27,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 12,
+          "mean_context": 100000,
+          "observed_at": "2026-09-25T07:54:55Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 129.0,
+        "orientation_input_tokens": 801785.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -416129,6 +416470,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2768
+    "_version": 2769
   }
 }
