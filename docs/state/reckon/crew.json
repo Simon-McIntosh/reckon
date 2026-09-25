@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T03:22:17",
+  "updated": "2026-09-25T03:45:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -657,11 +657,13 @@
         "session_id": "aa2b56c8-5ac7-41fb-943b-9c6d32121eab",
         "session_model": "deepseek-v4.1-flash",
         "sessions": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "aa2b56c8-5ac7-41fb-943b-9c6d32121eab"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "aa2b56c8-5ac7-41fb-943b-9c6d32121eab",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "74e0f837-2a16-42af-8b09-cdcf9891e2a2"
         },
         "created": "2026-09-08",
         "session_owners": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "660d357e-1ede-4027-b678-d89d9391ff8f"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "660d357e-1ede-4027-b678-d89d9391ff8f",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "s22-coord"
         }
       },
       {
@@ -372816,6 +372818,303 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T000054297424-ticker-tests-meet-the-single-measure-row",
+        "plan": "a-monitor-row-reads-at-a-glance",
+        "section": "\u00a74",
+        "node": "ticker-tests-meet-the-single-measure-row",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1819,
+                "cached_input_tokens": 484335,
+                "input_tokens": 486156,
+                "output_tokens": 1140,
+                "reasoning_output_tokens": 274,
+                "total_tokens": 487296,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Based on 8dfe2bbb (the \u00a74 renderer), tests/test_crew_ticker_layout.py is rewritten against the single elapsed-time measure cell with no RATE constant, and tests/test_counter_carries_age.py stops asserting an age cell in the rendered row while still asserting whatever age value the transition record or fleet summary computes (if nothing computes it any more, the file's row-cell cases are removed and the manifest says so, naming a-follower-keeps-your-work-in-view \u00a72 as the age's future surface). reckon/crew/ticker.py is not changed. The thirteen test files importing reckon.crew.ticker, run at your head, show no failure id that is absent from the base c590aaaa failure set recorded in /home/ITER/mcintos/.cache/reckon-row-drops-unread-cells/base-c590aaaa.log, with the before and after counts stated. The declared negative control is executed and logged: restoring the rate cell in Ticker.render makes the rewritten layout test fail.",
+          "estimated_hours": null,
+          "goal": "The two ticker test files that still assert the removed rate and age cells assert the row \u00a74 now renders",
+          "id": "ticker-tests-meet-the-single-measure-row",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T00:00:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 30,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 102222,
+            "observed_at": "2026-09-25T00:00:25Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000054297424-ticker-tests-meet-the-single-measure-row/manifest.md",
+          "negative_control": "restore the generation-rate cell in Ticker.render at your head; tests/test_crew_ticker_layout.py must fail",
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_counter_carries_age.py",
+            "docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html",
+            "docs/figures/a-monitor-row-reads-at-a-glance",
+            "docs/plans/a-monitor-row-reads-at-a-glance.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-matrix-currency",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T00:01:06Z",
+        "completed_at": "2026-09-25T01:07:04.901Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3858,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3958,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "8dfe2bbb46ac3b205eca0304409af6d358d4b883",
+        "commits": [
+          "6d83dc992cce5d65aecd87ad860a650006b6ecee",
+          "ed74f180e57f7dfd1cee24005ddab60243600dc8"
+        ],
+        "changed_lines": {
+          "added": 555,
+          "removed": 242,
+          "files": 6
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker_layout.py tests/test_counter_carries_age.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000054297424-ticker-tests-meet-the-single-measure-row/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000054297424-ticker-tests-meet-the-single-measure-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "74e0f837-2a16-42af-8b09-cdcf9891e2a2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11086032,
+            "input_tokens_cumulative": 11086032,
+            "output_tokens": 86732,
+            "output_tokens_cumulative": 86732,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T01:07:04.901Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11252418,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3872.562,
+          "generated_tokens": 95501,
+          "generation_seconds": 3789.79,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 82.772,
+          "peak_input_tokens": 165086,
+          "tokens_per_second": 25.2,
+          "wall_tokens_per_second": 24.66
+        },
+        "follow_on_paths": [
+          "tests/test_crew_dispatch_guard.py",
+          "tests/test_crew_recovery.py",
+          "tests/test_crew_session_delivery.py",
+          "tests/test_fleet_counter_coverage.py",
+          "tests/test_ticker_renders_wait_facts.py",
+          "tests/test_counter_carries_age.py"
+        ],
+        "predecessor_run": "r-20260924T211219792337-row-drops-unread-cells",
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/ticker-tests-meet-the-single-measure-row",
+          "session_id": "74e0f837-2a16-42af-8b09-cdcf9891e2a2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T01:07:04.901Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T01:07:05Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T00:02:29Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T000054297424-ticker-tests-meet-the-single-measure-row",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 16014,
+          "worker_pid": 1957983
+        },
+        "promoted_revision": "ed74f180e57f7dfd1cee24005ddab60243600dc8",
+        "plan_impl_at_dispatch": 0.5,
+        "impl_move": {
+          "plan": "a-monitor-row-reads-at-a-glance",
+          "at_dispatch": 0.5,
+          "at_complete": 0.67,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_counter_carries_age.py",
+            "tests/test_crew_ticker_layout.py"
+          ],
+          "declaration": "restore the generation-rate cell in Ticker.render at your head; tests/test_crew_ticker_layout.py must fail",
+          "log": "/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.cache/reckon-ticker-tests-meet-the-single-measure-row/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T00:40:55.071059+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T00:00:55Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 30,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 102222,
+          "observed_at": "2026-09-25T00:00:25Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 102.0,
+        "orientation_input_tokens": 1882664.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -373128,6 +373427,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2612
+    "_version": 2614
   }
 }
