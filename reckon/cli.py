@@ -955,6 +955,7 @@ def crew_preflight(
     """
     from reckon import budget as budget_module
     from reckon import ledger as ledger_module
+    from reckon.crew import paid_lanes as paid_lanes_module
 
     crew_module, flight_module = _crew_modules()
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
@@ -969,6 +970,7 @@ def crew_preflight(
             root=checkout_path,
             purpose=purpose,
             windows=windows,
+            document_path=paid_lanes_module.document_path(),
             ready=ready_nodes,
         )
         report["hold_history"] = budget_module.record_checks(

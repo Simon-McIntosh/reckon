@@ -1422,6 +1422,63 @@ def _published_windows(
     return paid_lanes.document_windows(resolved, moment=moment)
 
 
+def _published_fresh_windows(
+    document: Mapping[str, Any] | None,
+    document_path: str | Path | None,
+    moment: datetime,
+) -> dict[str, window_reading.WindowReading]:
+    """Published readings whose newest figure is still fresh, per backend.
+
+    The document is one reconciled record, but its age is per backend: a reader
+    that treated the whole document as stale would drop a backend it had just
+    measured, and one that treated it fresh would trust a backend untouched for
+    hours. So each backend is judged on its own newest observation against the
+    document's staleness horizon, and only the fresh ones compete. An absent or
+    unreadable document resolves to none, which is what the per-backend fallback
+    then supplies for.
+    """
+    from reckon.crew import paid_lanes
+
+    published = _published_windows(document, document_path, moment)
+    horizon = paid_lanes.DEFAULT_STALE_SECONDS
+    fresh: dict[str, window_reading.WindowReading] = {}
+    for name, reading in published.items():
+        age = reading.age_seconds
+        if age is None or age <= horizon:
+            fresh[name] = reading
+    return fresh
+
+
+def _merge_windows(
+    recorded: Mapping[str, Any] | None,
+    document: Mapping[str, Any] | None,
+    document_path: str | Path | None,
+    moment: datetime,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """One reading per backend: the document's fresh figure, else recorded.
+
+    Running both sources through one merge is what lets the production callers,
+    which always inject their recorded windows, still hear the published
+    document without discarding what they measured. A backend the document
+    covers freshly is taken from it; every other backend -- the document absent,
+    unreadable, silent about it, or holding only a stale figure -- keeps the
+    caller's own recorded reading. The returned source map names which spoke for
+    each, so the report can say so rather than leave a reader to guess.
+    """
+    held: dict[str, Any] = dict(recorded) if isinstance(recorded, Mapping) else {}
+    fresh = _published_fresh_windows(document, document_path, moment)
+    merged: dict[str, Any] = {}
+    sources: dict[str, str] = {}
+    for name in sorted({*held, *fresh}):
+        if name in fresh:
+            merged[name] = fresh[name]
+            sources[name] = WINDOW_SOURCE_DOCUMENT
+        else:
+            merged[name] = held[name]
+            sources[name] = WINDOW_SOURCE_RECORDED
+    return merged, sources
+
+
 def preflight(
     project: str,
     config: Mapping[str, Any],
@@ -1461,23 +1518,23 @@ def preflight(
     are optional, and a wave that names neither still gets the hold decision and
     a group block reading unknown, which is what absence of a signal means.
 
-    ``windows`` is the caller's own reading and always wins when given. When it
-    is absent the pace may be read from the published headroom document, but only
-    when the caller names one -- through ``document`` directly or through
-    ``document_path``. Nothing is read by default: a reader that fell back to a
-    machine-wide location would answer differently on two workstations looking at
-    the same code, and a test calling here would consult the host rather than its
-    fixture. A caller naming neither gets the hold decision and a group block
-    reading unknown, which is what absence of a signal means.
+    ``windows`` is the caller's own reading. When the caller also names the
+    published headroom document -- through ``document`` directly or through
+    ``document_path`` -- the two are merged per backend: a backend the document
+    carries a fresh reading for is paced from it, and every other backend keeps
+    the caller's recorded reading. Nothing is read when the caller names no
+    document, so the pace never depends on a machine-wide file, and a test
+    calling here consults its own fixture or nothing. The report's
+    ``window_sources`` names, per backend, which source supplied its figures. A
+    caller naming neither a reading nor a document gets the hold decision and a
+    group block reading unknown, which is what absence of a signal means.
     """
     moment = _now(now)
-    if windows is None and (document is not None or document_path is not None):
-        # No caller-injected reading, but the caller named the published headroom
-        # document: pace from the document, which is the one place every metered
-        # account's windows are observed and reconciled. Nothing is read when the
-        # caller names no document, so the pace never depends on a machine-wide
-        # file, and a test calling here consults its own fixture or nothing.
-        windows = _published_windows(document, document_path, moment)
+    window_sources: dict[str, str] = {}
+    if document is not None or document_path is not None:
+        windows, window_sources = _merge_windows(
+            windows, document, document_path, moment
+        )
     policy_block = policy(config)
     configured = config.get("backends") or {}
     if backends is not None:
@@ -1581,6 +1638,16 @@ def preflight(
         "resume_at": _earliest_reset(held),
     }
     report["groups"] = group_pace(config, windows=windows, ready=ready, now=moment)
+    if window_sources:
+        # Name the source only where a figure exists to name one for. A report
+        # with no reading at all -- a backend the document and the records both
+        # missed -- gains no empty block, so a reader sees an addition only when
+        # something was actually read, and no group grows a null source.
+        for entry in report["groups"]:
+            member = entry.get("member")
+            if member is not None and member in window_sources:
+                entry["source"] = window_sources[member]
+        report["window_sources"] = window_sources
     report["summary"] = summary(report)
     return report
 
@@ -1599,6 +1666,14 @@ CLOCK_SEVEN_DAY = "seven_day"
 # the payload, since the first admits nothing and the second admits everything.
 OBSERVED = "observed"
 UNKNOWN = "unknown"
+
+# Where one backend's pace figures came from. The published document speaks when
+# it carries a fresh reading for that backend; otherwise the caller's own
+# recorded evidence speaks. Named because the report has to say which, and a
+# reader that could not tell the two apart would trust a stale document as
+# though it were fresh, or ignore a fresh document as though it were absent.
+WINDOW_SOURCE_DOCUMENT = "document"
+WINDOW_SOURCE_RECORDED = "recorded"
 
 
 def _window_value(source: object, *, moment: datetime) -> window_reading.WindowReading:
