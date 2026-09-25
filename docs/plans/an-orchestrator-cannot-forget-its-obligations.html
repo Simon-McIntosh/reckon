@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-impl" content="0.35">
 </head>
 <body>
@@ -145,6 +145,11 @@
     <h4 class="r-fu-title">Land §2–§6</h4>
     <div class="r-fu-body"><p>§2 comes first. §3 and §5 build on it. §4 lands with the counters ticker node. §6 comes last. Where the hook is installed is the lead's decision.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations</pre>
+    </article>
+<article class="r-fu" data-id="f-aocfio-review-in-flight" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build an-orchestrator-cannot-forget-its-obligations" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A standing review under any node id keeps its run out of review-missing</h4>
+    <div class="r-fu-body"><p>Reported by the S21 coordinator, 2026-09-25. Two defects in <code>reckon/crew/recovery.py</code>, both surfacing in the obligations list and the ticker's next_action, steer a coordinator toward a duplicate review on a lane it has withdrawn.</p><p><strong>Recognition.</strong> <code>_review_in_flight</code> finds a standing review only by the reflex's recorded dispatch or by a live pointer whose node id is exactly <code>review-of-</code> plus the source node. A review launched under another id is invisible. Measured: node <code>re-review-of-headroom-publishes-real-readings</code> (run r-20260925T134804008927) was reviewing r-20260925T115122496308-headroom-publishes-real-readings while that run kept reading review-missing. The fix also matches any live pointer whose role is review and whose declared write paths include one of the scoring run's review store record paths (the plain and <code>.at-</code>head paths that <code>_review_dispatch_fields</code> composes). Those paths name the reviewed run exactly, whatever the node is called. Keep the two existing lookups.</p><p><strong>Lane.</strong> <code>_review_dispatch_argv</code> prints <code>--backend</code> with the owning run's backend and never consults <code>review_excluded_backends</code>, while the reflex's own selection (<code>_review_lane_candidates</code>) drops excluded backends. The printed command must choose its lane by that same function, with the owning backend as the preference and <code>--local</code> when no candidate remains. One rule, with no second copy of the ordering.</p><p><strong>Tests.</strong> One: a live review-role pointer under a non-canonical node id, whose write path names the scoring run's record, makes <code>_review_in_flight</code> return it, and obligations no longer lists the run. Two: with the owning backend excluded, the composed argv names another lane. Both are red at base.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations f-aocfio-review-in-flight</pre>
     </article>
 </section>
 
