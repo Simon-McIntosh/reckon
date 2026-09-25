@@ -1524,12 +1524,18 @@ def test_a_member_with_a_null_session_captures_one_from_its_first_run(
 ) -> None:
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
     assert ledger.member(PROJECT, "worker-a", repo)["session_id"] is None
+    roster_path = repo / "docs" / "state" / PROJECT / "crew.json"
+    roster_before = roster_path.read_bytes()
 
     record = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     observed = crew.observe(record["run_id"])
 
     assert observed["session_capture"]["captured"] is True
-    assert ledger.member(PROJECT, "worker-a", repo)["session_id"] == SESSION_ID
+    captured = crew.read_pointer(record["run_id"])
+    assert captured["session_id"] == SESSION_ID
+    assert captured["session_harness"] == "codex"
+    assert captured["session_model"] == "some-model"
+    assert roster_path.read_bytes() == roster_before
 
 
 def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
@@ -1553,10 +1559,13 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
 
 
 def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> None:
-    """Overwriting would silently retire the long-lived session."""
+    """Each task retains its own captured session when another task runs."""
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
+    roster_path = repo / "docs" / "state" / PROJECT / "crew.json"
+    roster_before = roster_path.read_bytes()
     first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     crew.observe(first["run_id"])
+    first_record = crew.read_pointer(first["run_id"])
 
     later = _dispatch(
         repo,
@@ -1570,9 +1579,16 @@ def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> Non
     )
     observed = crew.observe(later["run_id"])
 
-    assert observed["session_capture"]["captured"] is False
-    assert "not written over the top" in observed["session_capture"]["detail"]
-    assert ledger.member(PROJECT, "worker-a", repo)["session_id"] == SESSION_ID
+    assert observed["session_capture"]["captured"] is True
+    later_record = crew.read_pointer(later["run_id"])
+    assert first_record["session_id"] == SESSION_ID
+    assert first_record["session_harness"] == "codex"
+    assert first_record["session_model"] == "some-model"
+    assert later_record["session_id"] == "other-session"
+    assert later_record["session_harness"] == "codex"
+    assert later_record["session_model"] == "some-model"
+    assert crew.read_pointer(first["run_id"]) == first_record
+    assert roster_path.read_bytes() == roster_before
 
 
 def test_dispatching_to_an_unregistered_member_is_refused(home, repo) -> None:

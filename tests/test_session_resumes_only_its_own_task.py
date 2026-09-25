@@ -100,7 +100,13 @@ def repo(tmp_path: Path, home: Path) -> Path:
         ["init", "-q", "-b", "main"],
         ["config", "user.email", "worker@example.invalid"],
         ["config", "user.name", "Worker"],
-        ["add", "seed.txt", "skills", "docs/plans/plan-a.html", "docs/plans/plan-b.html"],
+        [
+            "add",
+            "seed.txt",
+            "skills",
+            "docs/plans/plan-a.html",
+            "docs/plans/plan-b.html",
+        ],
         ["commit", "-q", "-m", "chore: seed"],
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
@@ -176,20 +182,23 @@ def test_a_new_node_does_not_continue_the_members_other_node_session(
 ) -> None:
     """The defect: the member's last session, keyed by member, not by task."""
     shared = "coordinator-one"
-    _complete(
-        _dispatch(home, repo, "task-alpha", session=shared), ALPHA_SESSION
-    )
-    # The member really does hold that session — the roster is what made the
-    # defect possible, and it was left in place here to prove the decision no
-    # longer consults it.
-    stored = ledger.member("proj", "worker-a", repo)
-    assert stored is not None
-    assert ALPHA_SESSION in json.dumps(stored.get("sessions") or {})
+    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
+    roster_before = roster_path.read_bytes()
+    first = _dispatch(home, repo, "task-alpha", session=shared)
+    _complete(first, ALPHA_SESSION)
+    # A real captured session exists on the other task's run. The next
+    # dispatch must withhold it even though both tasks share a member.
+    recorded = crew.read_pointer(str(first["run_id"]))
+    assert recorded["session_id"] == ALPHA_SESSION
+    assert recorded["session_harness"] == "codex"
+    assert recorded["session_model"] == "some-model"
+    assert roster_path.read_bytes() == roster_before
 
     dispatched = _dispatch(home, repo, "task-beta", session=shared)
 
     assert dispatched["session_id"] is None
     assert _resume_carried(list(dispatched["argv"])) is None
+    assert roster_path.read_bytes() == roster_before
 
 
 # ── case 2: a second dispatch of the same task continues its session ────────
@@ -279,8 +288,7 @@ REFUSAL_LINES = {
 
 @pytest.mark.parametrize("refusal", sorted(REFUSAL_LINES))
 def test_a_session_too_large_to_continue_is_not_composed(
-    home: Path,
-    repo: Path, refusal: str
+    home: Path, repo: Path, refusal: str
 ) -> None:
     """A run promoted on success still leaves a session the endpoint refuses."""
     first = _dispatch(home, repo, "task-alpha")
@@ -332,7 +340,9 @@ def test_a_completed_compaction_boundary_leaves_the_session_continuable(
 # ── case 5: a resume still continues the resumed run's own session ──────────
 
 
-def test_a_resume_of_a_run_continues_that_runs_own_session(home: Path, repo: Path) -> None:
+def test_a_resume_of_a_run_continues_that_runs_own_session(
+    home: Path, repo: Path
+) -> None:
     dispatched = _dispatch(home, repo, "task-alpha")
     _complete(dispatched, ALPHA_SESSION)
 

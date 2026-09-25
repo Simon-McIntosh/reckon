@@ -3982,6 +3982,14 @@ def _complete_locked(
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=session_id,
+        session_harness=(record.get("session_harness") or record.get("dialect"))
+        if session_id
+        else None,
+        session_model=(
+            record.get("session_model") or (record.get("agent") or {}).get("model")
+        )
+        if session_id
+        else None,
         budget=measured_budget,
         lane_receipt=lane_receipt,
         throughput=stream.throughput,
@@ -4173,8 +4181,8 @@ def _complete_locked(
             ],
         )
 
-        # The session id lives only in the pointer until it reaches the roster, so
-        # it has to be captured before the pointer goes.
+        # Return capture metadata while the pointer still exists. Session
+        # ownership has already been copied onto the committed ledger row.
         capture = _capture_member_session(record)
         pointer_path(run_id).unlink(missing_ok=True)
         release = _release_after_promotion(
