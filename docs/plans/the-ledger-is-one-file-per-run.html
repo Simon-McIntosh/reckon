@@ -194,6 +194,27 @@
         preserves the complete delta, mutation, receipts and sequence figure. Remaining test
         ownership, independent merged verification and followup closure belong to the coordinator.</p>
       </aside>
+      <aside id="promotion-tests-locate-the-landing-commit">
+        <h3>Promotion-history assertions read the landing, not HEAD</h3>
+        <p><strong>2026-09-25.</strong> Commit <code>10632d40</code> repairs the three
+        <code>tests/test_crew_promotion.py</code> cases that identified the promotion commit by
+        final HEAD. A promotion records its release receipt in a commit on top of the landing,
+        so HEAD names the receipt; each case now reads the landing commit, located by the
+        <code>promote(&lt;run_id&gt;):</code> subject promotion gives it, and asserts the same
+        run id, gate verdict, non-empty body and exact two-path file list as before.</p>
+        <p><strong>Measured.</strong> The three cases fail at base <code>789ef768</code>, both
+        in the focused reproduction and in the 22-module promotion / ledger / run-store cohort,
+        and pass at <code>10632d40</code>. The cohort moves from 4 failed, 402 passed to
+        1 failed, 405 passed — <strong>3 resolved, 0 added</strong>, one retained
+        (<code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+        outside this node's fence). <code>reckon/crew/promotion.py</code> is not edited, and
+        <code>test_crew_promotion.py</code> with
+        <code>test_promotion_never_amends_its_commit.py</code> pass whole at the head:
+        55 passed.</p>
+        <p>Receipts: <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-tests-find-the-landing-commit">the anchored evidence</a>
+        retains the reproduction, both cohort arms and the id delta. Independent merged
+        verification and followup closure remain coordinator-owned.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">
