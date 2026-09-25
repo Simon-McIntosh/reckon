@@ -15,11 +15,14 @@ and exits 0, so a coordinator or an interactive session is never affected.
 When a run does resolve, the hook blocks while the manifest is absent or its
 top-level ``status:`` line does not name a terminal value. The reason names the
 manifest path and what is missing. So a worker that genuinely cannot finish is
-never trapped, the hook blocks at most three times for a run, counting in a file
-unlikely to collide with a manifest block key. The stop allowed once that cap is
-reached is not silent: the hook writes the terminal record itself, setting the
-manifest's top-level status to ``blocked`` and appending the blocker line that
-names why, so a capped run never reads as an ordinary stop.
+never trapped, the hook blocks at most three times per stop chain, counting in a
+file in the run directory. The chain is delimited by the payload's
+``stop_hook_active`` flag: a fresh stop (``False``) resets the count, so a run
+resumed after its predecessor exhausted the cap gets its own three refusals
+rather than inheriting a spent counter. The stop allowed once the cap is reached
+is not silent: the hook writes the terminal record itself, setting the manifest's
+top-level status to ``blocked`` and appending the blocker line that names why, so
+a capped run never reads as an ordinary stop.
 """
 
 from __future__ import annotations
@@ -155,9 +158,12 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
         return False, None
 
     counter = manifest.parent / COUNTER_NAME
-    try:
-        count = int(counter.read_text().strip() or "0")
-    except (OSError, ValueError):
+    if payload.get("stop_hook_active"):
+        try:
+            count = int(counter.read_text().strip() or "0")
+        except (OSError, ValueError):
+            count = 0
+    else:
         count = 0
     if count >= BLOCK_LIMIT:
         _write_terminal_record(manifest)
