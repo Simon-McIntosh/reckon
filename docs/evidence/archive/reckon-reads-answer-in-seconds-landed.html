@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="Cumulative evidence for profiling and reducing the latency of routine Reckon reads.">
   <meta name="plan-evidence-for" content="reckon-reads-answer-in-seconds">
   <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2,reckon-reads-answer-in-seconds#s3,reckon-reads-answer-in-seconds#s4">
-  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640,2b05c42b9054be8ca115d604743c04c8b3c814d4">
-  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg">
+  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640,2b05c42b9054be8ca115d604743c04c8b3c814d4,e2045fc6f41b04512d2350cc6b201f025d8fdbca">
+  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/mcp-validation-memo-before-after.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="qualified">
   <meta name="plan-environment" content="fleet allocation 1277272 on clu-2058; reckon project virtual environment">
@@ -95,6 +95,31 @@
       <p><strong>Guard evidence.</strong> The focused memo, partition and existing parse-memo checks passed 13 tests. Holding the file signature constant made the size, mtime and inode cases fail with stale titles while the unchanged-read and isolation cases stayed green. The named regression gate passed 148 tests and retained the same two <code>test_store_concurrency.py</code> failures at base and after, so this commit added no failure.</p>
 
       <p><strong>Qualification retained.</strong> The audit gate did not pass. A warm profile at the committed head attributes 16.90 of 21.70 instrumented seconds to 182 direct <code>from_html(read_text(...))</code> calls in <code>reckon/mcp.py</code>. That file is outside this node's declared paths and concurrently owned, so no replacement cache was invented in the assigned files. The remaining repair is to route that audit loop through the stat-keyed file reader, then repeat the three-call audit receipt.</p>
+    </section>
+
+    <section id="mcp-validation-memo">
+      <h2>The audit validation loop reads each plan through the memo</h2>
+      <p><strong>The defect reproduced before repair.</strong> At <code>311bfc6256b029cafd9934a013452d41c192ea48</code>, each warm audit parsed every plan's HTML itself: the validation loop called <code>_plan_html.from_html</code> on freshly read bytes once per plan, so 182 plans were re-read and re-parsed on every warm read and the median warm audit was 5.519 s. The reproduction returned a nonempty audit (182 checked, 155 findings), so the timing observed a working path rather than a failed one.</p>
+
+      <p>Commit <code>e2045fc6f41b04512d2350cc6b201f025d8fdbca</code> routes that loop through <code>_audit_plan_state</code>, which memoises <code>from_html(_read_plan_text(path))</code> on the file's stat identity in <code>reckon.file_memo</code> and hands back a deep copy. The shared text read is reused, so the file is opened once, and a rewrite that moves size, mtime or inode is re-parsed.</p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/mcp-validation-memo-before-after.svg" alt="Top panel: warm audit median latency falls from 5.519 to 0.914 seconds, crossing the dashed five-second bound. Bottom panel: from_html parses per warm audit fall from 182 to 0.">
+        <figcaption>Three interleaved warm audits per arm on fleet allocation 1277272. Head latency sits well under the bound and the parses per warm read drop to zero.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Read</th><th>Base 311bfc62, three warm calls</th><th>Head e2045fc6, three warm calls</th><th>Median verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Warm audit</td><td>5.47, 5.42, 5.53 s</td><td>0.89, 0.83, 0.86 s</td><td>5.519 &rarr; 0.914 s; <strong>under the 5 s bound</strong></td></tr>
+          <tr><td>Findings, sorted set</td><td>155</td><td>155</td><td>identical across all six interleaved runs</td></tr>
+          <tr><td>Named mcp and audit gate</td><td>74 passed</td><td>81 passed</td><td>zero failures at both arms; the seven added are this node's checks</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Guard evidence.</strong> Seven focused checks hold the loop to the memo: two audits over unchanged plans parse twice then zero times, a rewrite re-parses only the changed file, the memo parses an unchanged file once and re-parses after a size or inode change, a mutated return stays isolated, and a parse failure still surfaces as a violation. Restoring the direct <code>from_html</code> parse in the loop refailed the two reuse checks (4 parses where 2 were required) while the other five stayed green.</p>
+
+      <p><strong>Measurement inputs pinned.</strong> Both arms ran against one frozen corpus (<code>mounts.json</code> pointed at this worktree's <code>docs/</code> and the state root at its <code>docs/state</code>). Crew liveness was frozen to an empty live-pointer root because the audit's sprint-focus finding is a function of live crew state: with crew pointers unfrozen it flipped in one run of each arm, adding <code>active-sprint-mismatch</code> to both, so a live input rather than this change. Every log names the revision, tree, imported <code>module.__file__</code> and resolved cwd.</p>
     </section>
   </main>
 </body>
