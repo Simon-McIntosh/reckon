@@ -16,9 +16,9 @@ run, and new work on that same node for a repair or re-review. Every new node,
 new write scope, and widened file set starts a fresh session.
 
 The invalid stopping rationalisations and the check separating a transient
-hiccup from a blocker are in `sprint-orchestration.md` §Role of stopping. Read
-that section only while evaluating whether a reported inability to continue is
-actually a hard blocker.
+hiccup from a blocker are in `sprint-orchestration.md` §12 "Stop discipline —
+these are not valid reasons to stop". Read that section only while evaluating
+whether a reported inability to continue is actually a hard blocker.
 
 `pending_work` is the authoritative set on a relaunch. A plan at `impl` 1.0 or
 status `shipped`/`done` is already excluded from `pending_work`, `ready_now`,

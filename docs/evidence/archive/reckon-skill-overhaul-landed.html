@@ -183,6 +183,70 @@
         reference, contract coverage, and the current command inventory.
       </p>
     </section>
+  <section id="extraction-review-corrections">
+      <h2>An independent review of the extraction found four residual defects</h2>
+
+      <p>
+        The extraction that moved explanatory material out of the skill into
+        <code>references/conditional-guidance.md</code> was read at its landed revision by a
+        separate review run, which routed four findings to a corrective node. All four are the
+        class the extractor was meant to serve: a rule that survives somewhere but not where the
+        decision is made, or a pointer that names nothing.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Finding at review</th><th>Correction</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"No dependent node builds on unverified work" written twice in one sentence</td>
+            <td>Stated once, in the concurrency passage</td>
+          </tr>
+          <tr>
+            <td>The conditional reference pointed at a section that does not exist
+              (<code>§Role of stopping</code>)</td>
+            <td>Names the real heading: <code>sprint-orchestration.md</code> §12
+              "Stop discipline — these are not valid reasons to stop"</td>
+          </tr>
+          <tr>
+            <td>The concurrency passage instructed the coordinator to raise the ceiling itself by
+              registering members</td>
+            <td>The passage carries the binding rule instead: every dispatch gets a disposable
+              worker, concurrency comes from the free members a project already has, and a wave
+              whose ready nodes outnumber free members waits for a member to finish</td>
+          </tr>
+          <tr>
+            <td>The verification section had dropped the mandatory step "Dispatch a test worker and
+              audit its compact result manifest", leaving the rule reachable only from a reference
+              the skill never pointed at</td>
+            <td>The step is restored in the skill with a pointer to the integration sequence it
+              belongs to</td>
+          </tr>
+          </tbody>
+      </table>
+
+      <p>
+        The gate is <code>tests/test_skill_contracts.py</code>: it pins the sentences the passage
+        must carry and asserts the fixed read-set estimate stays under
+        <code>FIXED_READ_SET_TOKEN_BUDGET</code>. It passed <strong>55 tests</strong> at the
+        corrective commit <code>8b04081b</code>, as it did at the base revision
+        <code>76baf0f8</code>, so the corrections added no failure and removed none. The estimate
+        moved from <strong>14,339</strong> to <strong>14,446</strong> tokens against the 15,000
+        bound — the corrected rule and its reason are longer than the retired instruction they
+        replace — leaving <strong>554</strong> tokens of headroom.
+      </p>
+
+      <p>
+        One pin is now weaker than its name suggests. The test
+        <code>test_ship_refills_members_without_crossing_unverified_dependencies</code> asserts the
+        literal phrase "registers enough members to meet it", which now survives only inside the
+        negation that retires it: the assertion passes, but it no longer pins the behaviour it was
+        written for, and a session reading the test would take the retired rule for live guidance.
+        Rewriting that assertion belongs to a node holding test scope and is recorded in the
+        corrective run's follow-ons.
+      </p>
+    </section>
   </main>
 </body>
 </html>
