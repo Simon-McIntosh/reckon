@@ -534,6 +534,87 @@ exit: 0</pre>
 
     <p>The ancestor repair is committed at <code>5f570af2</code>, on top of
     <code>dc52fa08</code>.</p>
+
+    <h3 id="s2-smoke-repaired-tree">The smoke, run again on the repaired composition: both real workers hold, and neither touches the operator's home</h3>
+
+    <p><strong>Node:</strong> <code>fenced-workers-smoke</code>, rerun with the package pinned by
+    <code>PYTHONPATH</code> to the repaired tree at
+    <code>edc04cc542b84e45694c0aaa3b4760bdcd0a680e</code> &mdash; whole-ancestry resolution of
+    protected-path destinations &mdash; and with <code>RECKON_HOME</code> pointing at a temporary
+    directory holding a synthetic git project registered only there. Where the
+    <a href="#s2-launch-refused">first attempt</a> never reached a harness process, both of these
+    launches did, and both workers completed their one-file nodes.</p>
+
+    <p><strong>clive.</strong> Run <code>r-20260925T120722338762-fence-smoke-clive</code>, phase
+    <code>complete</code>, session <code>6f696595-ae29-48e6-8bef-094a58b1553a</code>; the
+    transcript lies under that run's
+    <code>harness/projects/-tmp-fenced-workers-smoke-worktrees-&hellip;fence-smoke-clive/</code>.
+    The node's declared falsifier is the sentinel write, and the worker committed it verbatim:</p>
+
+    <pre>touch: cannot touch '/home/ITER/mcintos/.claude/fence-smoke-sentinel-clive': Read-only file system</pre>
+
+    <p>The sentinel is absent before and after, and the worker's own instrument check shows
+    <code>touch</code> succeeding in a writable directory, so the refusal is specific to the
+    fenced path rather than a dead probe. The operator's real <code>~/.claude/projects</code>
+    listing filtered to this smoke's worktree path is empty and identical before and after &mdash;
+    the harness home, not the operator's, received the transcript.</p>
+
+    <p><strong>codex.</strong> Run <code>r-20260925T131240901465-fence-smoke-codex</code>, phase
+    <code>complete</code>, session <code>01a0d8b2-6191-72e2-a9fd-cca53470caeb</code>. Its probe
+    records the same refusal for its own sentinel, absent before and after. The run seeded a
+    <code>codex-home</code> inside its run directory; its composed argv binds the operator's login
+    read-only into that home, and read from <em>inside</em> the fence &mdash; where alone that bind
+    exists &mdash; <code>codex-home/auth.json</code> is byte-identical to the operator's. The real
+    <code>~/.codex/auth.json</code> sha256 is unchanged across the smoke. Its stderr carries one
+    unrelated warning about PATH aliases under <code>/tmp</code>.</p>
+
+    <p><strong>The operator's listings moved only by other sessions.</strong> Neither smoke run id
+    appears in the real <code>crew/live</code> or <code>crew/runs</code> listing, before or after.
+    The live listing moved by 24 additions and 11 removals, the runs listing by 32 additions, every
+    id itemised in <code>report.json</code> and none of them this smoke's. The composed fence was
+    also exercised directly: <code>as composed rc=0</code>, a stub write into
+    <code>~/.claude</code> refused <q>Read-only file system</q> with the probe absent afterwards,
+    the <code>Code/dotfiles</code> overlay reading back <q>ro</q>, and a write through the
+    <code>~/.gitconfig</code> symlink refused.</p>
+
+    <p><strong>What the smoke found still broken: a resumed fenced run composes the fence binary
+    as its harness.</strong> A resume of the clive run produced no turn at all &mdash;
+    <code>resume-1.jsonl</code> is 0 bytes and <code>resume-1.stderr.log</code> holds
+    <code>bwrap: Unknown option -p</code>, reproduced on a second attempt. A matched pair over the
+    composed argv isolates it: the fence prefix is identical on both sides of the <code>--</code>,
+    and only the command after it differs. The dispatch argv carries
+    <code>clive -p --output-format stream-json --verbose &hellip;</code>; the resume argv carries
+    <code>/usr/bin/bwrap -p --output-format stream-json --verbose --resume &lt;id&gt; --add-dir
+    &lt;worktree&gt;</code>, so the fence wraps the fence binary and bubblewrap refuses its own
+    harness flag.</p>
+
+    <p>The mechanism is one field. The run record's <code>command</code> field is written from the
+    composed <code>argv[0]</code>, and the resume path feeds that field back as the harness
+    command; <code>resolve_launch_executable</code> takes <code>plan.argv[0]</code> the same way.
+    That was a valid harness command only while the composition was opt-in;
+    <code>c72c460e</code>, which composes the fence for every real launch, made it the fence
+    binary. Fresh dispatch is unaffected &mdash; these two runs are the live demonstration of
+    that &mdash; but every resume of a fenced run composes the fence around <code>bwrap</code> and
+    produces no turn. This node's role is <code>test</code>, so it did not repair it; the
+    candidate commit is <code>c72c460e</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-resume-composition.svg"
+           alt="Two argv rows with an identical bwrap fence prefix; the dispatch row names clive and runs, the resume row names /usr/bin/bwrap and writes no turn.">
+      <figcaption>The same fence prefix and two harness commands: a dispatch names the harness and
+      runs; a resume names the fence binary and exits before a turn is written.</figcaption>
+    </figure>
+
+    <p><strong>Not attained:</strong> the check <q>clive resume continued the same
+    session_id</q> &mdash; 15 of 16 pass, and that is the one failure. The section's owed
+    real-worker falsifier is otherwise attained: both harnesses ran inside the fence, both
+    sentinel writes were refused by the read-only overlay with the paths left absent, and neither
+    the operator's home nor the fleet's listings moved. Evidence: <code>smoke.log</code>,
+    <code>report.json</code>, <code>diag.json</code>, <code>snapshot-before.json</code>,
+    <code>snapshot-after.json</code>, <code>dispatch-clive.json</code>,
+    <code>dispatch-codex.json</code>, <code>verify-clive.json</code>, <code>verify-codex.json</code>,
+    <code>resume.json</code>, <code>cleanup.json</code>, and the four run directories under
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.</p>
   </section>
 </main>
 </body>

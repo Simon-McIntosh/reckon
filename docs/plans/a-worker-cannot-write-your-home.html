@@ -346,6 +346,37 @@
       &mdash; and is now blocked on that repair. Evidence:
       docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-launch-refused,
       figure /reckon/figures/a-worker-cannot-write-your-home/fence-launch-refused.svg.</p>
+
+    <p><strong>Smoke, run again on the repaired composition.</strong>
+      <code>fenced-workers-smoke</code> reran at <code>edc04cc5</code> &mdash; whole-ancestry
+      resolution of protected destinations &mdash; with the package pinned by
+      <code>PYTHONPATH</code> and a temporary configuration home holding a synthetic
+      project. Both real workers completed their one-file nodes fenced: clive
+      (<code>session 6f696595&hellip;</code>, its transcript under the run's
+      <code>harness/</code>) and codex, each recording
+      <q>Read-only file system</q> verbatim for its sentinel write, with both sentinels
+      absent before and after. The operator's <code>~/.claude/projects</code> listing
+      filtered to the smoke's worktree is empty and unchanged; neither smoke run id
+      appears in the real <code>crew/live</code> or <code>crew/runs</code> listing, whose
+      movement is entirely other sessions'; the real <code>~/.codex/auth.json</code>
+      sha256 is unchanged, and the codex home's login bind, read from inside the fence,
+      is byte-identical to the operator's. 15 of the 16 checks pass.</p>
+
+    <p><strong>Three of the four falsifier clauses are attained; the resume clause is
+      not, and it is a second defect.</strong> A resume of a fenced run produces no turn:
+      <code>crew resume</code> composes the fence binary as its harness, so the argv's
+      inner command is <code>/usr/bin/bwrap</code> where the dispatch argv carried
+      <code>clive</code>, bubblewrap refuses <code>Unknown option -p</code>, and the
+      attempt log is 0 bytes. The run record's <code>command</code> field is written from
+      the composed <code>argv[0]</code> and fed back as the harness command on resume
+      &mdash; an assumption <code>c72c460e</code> invalidated when it made the composition
+      default &mdash; and <code>resolve_launch_executable</code> reads
+      <code>plan.argv[0]</code> the same way. Fresh dispatch is unaffected, both runs
+      above being the demonstration; every resume of a fenced run is dead until the
+      resume path names the harness rather than the composed argv's first element.
+      Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-smoke-repaired-tree</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-composition.svg</code>.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host
