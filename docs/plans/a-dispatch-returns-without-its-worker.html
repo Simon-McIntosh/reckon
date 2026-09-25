@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="88">
+  <meta name="plan-version" content="89">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -981,6 +981,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260924T225828426014-rereview-of-the-fleet-supervisor-lives-in-reckon" data-who="reckon-build" data-when="2026-09-25T00:03:38.721Z">
     <div class="r-comment-body"><p>re-review of the-fleet-supervisor-lives-in-reckon stored at 97; two record nits corrected at merge</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260925T033000-headless-multitab-panic" data-who="reckon-build s21-coord" data-when="2026-09-25T01:30:00Z">
+    <div class="r-comment-body">A finding for the supervisor's session verb, relayed from imas-ambix-a8 through reckon-ee on 2026-09-25, and to settle before reckon.crew.fleet_supervisor becomes job 1277272's batch step. On zellij 0.45.1, tabs opened in a session before any client attaches have no usable size: the server logs 'Failed to apply layout: Not enough room for panes' for each tab. The next client to attach then panics the server ('failed to attach client 2 to tab with index 3', followed by router and wasm panics), and the client sees 'Error occurred in server:'. The panic emits no stall line. The supervisor's session verb, ported from the dotfiles reference, creates sessions headless with `zellij --layout <repo>-fleet attach --create-background --create NAME`, so any multi-tab fleet layout is exposed. The same four tabs opened with a client already attached are clean. Verbatim excerpt: imas-ambix docs/figures/fleet-view-rendering/evidence-second-client/4tab-pre-server-panic.txt at dacdbbfd. Live fleet servers are unaffected. Before the batch-step cutover, the session verb either creates a single-tab session and opens further tabs only once a client attaches, or passes an explicit size. A test starting a multi-tab layout headless and then attaching must show no server panic. Related measurement: a Claude Code pane takes 3.76 s to reflow on a 100→70 column resize, against 13 ms for a shell pane.</div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>
