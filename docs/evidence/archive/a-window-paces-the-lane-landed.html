@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-21">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; nodes dispatched through reckon crew to detached worktrees; tests run against the main checkout's environment reached through PYTHONPATH, with pytest -p no:cacheprovider; negative controls run in scratch copies of the same tree">
-  <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,9ca9e963">
-  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py,docs/figures/a-window-paces-the-lane/group-position.svg,reckon/budget.py,tests/test_preflight_pace.py,docs/figures/a-window-paces-the-lane/preflight-bar-lanes.svg">
+  <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,9ca9e963,827123ae">
+  <meta name="plan-artifacts" content="reckon/crew/window_reading.py,tests/test_window_reading.py,reckon/crew/budget_group.py,tests/test_budget_group.py,docs/figures/a-window-paces-the-lane/group-position.svg,reckon/budget.py,tests/test_preflight_pace.py,docs/figures/a-window-paces-the-lane/preflight-bar-lanes.svg,tests/test_hold_requeries_a_stale_reading.py,docs/figures/a-window-paces-the-lane/hold-requeries-a-stale-receipt.svg">
   <title>A Window Paces The Lane — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -892,6 +892,93 @@ allowance_5h      = pace_multiple * remaining_budget / remaining_windows</code><
     mechanism is proven while the call site a reader reaches is unchanged &mdash; the gap this
     repository records most often. The measure ranges over this node's own change only; a merged-head
     verification is a separately dispatched node's job.</p>
+  </section>
+
+  <section id="s7-hold-requeries-a-stale-reading">
+    <h2>&sect;7 &mdash; A hold re-queries a reading past its shelf life before it holds</h2>
+
+    <p>The landed hold cannot be built without its evidence, and the resolve path re-queried a figure
+    past its shelf life. This node supplies the measure that the rule holds where a reader reaches it:
+    from a receipt recorded on disk, in a configuration home the process resolves, with the shelf life
+    read as the flight key <code>budget.evidence_shelf_life_minutes</code> rather than passed in as a
+    literal. The mechanism was already present at the node's base &mdash; the finding is that nothing
+    asserted it end to end, so the deliverable is the missing case rather than a second implementation
+    of a working guard. A hold path that stopped resolving through the reader, or a process that
+    resolved a different configuration home, would have kept the predecessor's green.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/hold-requeries-a-stale-receipt.svg" alt="One
+      stale receipt resolved to a hold. A receipt for the lane carrying 99.0 % used, observed 2 h
+      24 min before now, exceeds the 60-minute shelf life the temporary configuration home declares, so
+      the lane's own probe is asked; a reading inside its shelf life would never be. Two outcomes
+      follow. The probe answers with 97.0 % at an age of 30 s, and the hold carries the probe's figure
+      and the probe's age, never the receipt's 99.0. The probe cannot answer, so the old figure is kept
+      with the age that disqualifies it and marked unknown, and no hold is produced: a missed hold
+      costs some quota while a false hold costs the lane. The displaced home, whose shelf life is
+      100 000 minutes, is digested before and after the run and required to match.">
+      <figcaption>A figure past its shelf life cannot be held on directly; the probe's answer is what
+      the hold carries, and an unanswerable re-query yields <code>unknown</code> rather than the figure
+      that asked.</figcaption>
+    </figure>
+
+    <p><strong>Commit</strong> <code>827123ae</code>,
+    <code>tests/test_hold_requeries_a_stale_reading.py</code> (new). <code>reckon/crew/hold.py</code>
+    and <code>reckon/crew/staleness.py</code> were inside this node's fence and were read rather than
+    modified, because the behaviour they own already stood at the dispatch base. Gate <code>pytest -q
+    tests/test_hold_requeries_a_stale_reading.py tests/test_hold.py tests/test_staleness.py</code>
+    &mdash; <strong>24 passed</strong> at that commit (the new file alone: <strong>3 passed</strong>);
+    the two pre-existing files are unchanged and add zero failures against the dispatch base.</p>
+
+    <p><strong>The temporary configuration home is the instrument, and the home it displaces is the
+    falsifier.</strong> The receipt for the lane (<code>99.0 %</code>, observed 2 h 24 min before now)
+    is written into a home the process is pointed at, whose flight declaration sets the shelf life to
+    60 minutes, and the case first asserts the shelf life in force <em>is</em> 60 &mdash; so the
+    staleness under test is a fact about resolved configuration rather than about a literal the test
+    chose. The home is temporary because a suite must never digest the operator's own configuration;
+    the home it displaces declares a shelf life of 100 000 minutes, wide enough to trust the very same
+    receipt, so a run resolving the wrong home could neither re-query nor carry the figure the
+    assertions require. That displaced home is digested before and after and required byte-identical,
+    because an isolated read does not prove an isolated write.</p>
+
+    <p><strong>Three properties, each driving <code>hold_from_position</code> from the receipt.</strong>
+    A reading past its shelf life is re-queried, the probe is called exactly once, and the hold carries
+    the probe's figure (<code>97.0</code>) and age (30 s) rather than the receipt's
+    <code>99.0</code>. A failed re-query &mdash; a transport that raises, an answer carrying no figure
+    &mdash; leaves the serving state <code>unknown</code> and produces no hold, with the reader's
+    <code>unknown</code> asserted on the same input first so the refusal cannot pass for an unrelated
+    reason. A figure the probe observed from a pool the held group does not declare never becomes that
+    group's position however fresh it is, and the same probe answering from the group's own pool is
+    held, so the pool decides rather than freshness or distance above the ceiling.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation returns the stored figure from
+    <code>resolve_configured_reading</code> without re-querying, so the hold holds on a reading past
+    its shelf life. Applied to a scratch copy built from <code>git archive HEAD</code> and run from
+    that tree's own working directory, the named test
+    <code>test_a_hold_re_queries_a_stale_reading</code> <strong>fails</strong> on the declared
+    observable &mdash; <code>assert 99.0 == 97.0</code>, the hold carrying the receipt's figure where
+    the probe's was required &mdash; and all three cases in the file redden. The same scratch tree
+    unmutated <strong>passes</strong> (<strong>3 passed</strong>, exit 0), so the red is attributable
+    to the mutation rather than to the scratch environment. The log's first line repeats the declared
+    string verbatim; the mutation script refuses to continue unless the mutation site was found exactly
+    once and the mutant text is what the file then carries; and the log prints the scratch module paths
+    with the run's working directory, so the mutated package is shown to be the one imported rather
+    than assumed. That last point is the trap the predecessor record named from the other side: a
+    control that passes can mean the mutation is wrong, or that the mutated copy was never loaded, and
+    only the second failure mode is invisible from the outside.</p>
+
+    <p><strong>What this does not claim.</strong> Nothing calls <code>hold.py</code> yet, so the
+    dispatch refusal it will justify remains the consuming sections' residual, exactly as the
+    predecessor recorded. One gap is named for those sections rather than papered over:
+    <code>hold.py</code> reads a reading's <code>source</code> as the <em>pool</em> a figure was
+    observed from and requires it to equal the held group, while the evidence-side rows carry
+    <code>source</code> as a <em>provenance kind</em> (<code>receipt</code> / <code>probe</code>).
+    Both readings are deliberate in their own layer; the mapping between them is undecided, and a
+    consumer passing a row straight through would refuse every real hold as borrowed.</p>
+
+    <p><strong>Logs</strong> (run directory, outside the repository):
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082135945791-hold-holds-only-on-a-fresh-figure/negative_control.log</code>,
+    <code>.../negative_control_twin.log</code>, <code>.../gate.log</code>, with the re-runnable driver
+    <code>.../negative_control.sh</code> and <code>.../negative_control_mutation.py</code>.</p>
   </section>
 
   <section id="s6-preflight-pace">
