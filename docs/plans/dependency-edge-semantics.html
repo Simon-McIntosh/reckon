@@ -22,10 +22,10 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="10">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-impl" content="0.85">
+<meta name="plan-version" content="12">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -204,6 +204,29 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <h2 id="s6">§6 — Every surface reads the same split between execution and closure</h2>
+    <p>§4 taught the roadmap and the store that a transition gate holds closure and not
+      execution, and the independent review of that landing found three readers that were not
+      taught. The served plan view runs <code>unpassed_gate_blockers</code> over every gate
+      (<code>reckon/serve.py</code>, near line 1866), so a plan whose only open gate is a closure
+      gate renders as blocked while <code>roadmap</code> lists it in <code>ready_now</code>. The MCP
+      blocking projection makes the same unfiltered call (<code>reckon/mcp_views.py</code>, near line
+      1542), so a closure gate appears both as a blocker and as the roadmap's own
+      <code>closure_blockers</code> entry. And a pending decision-lockable gate forces its decision row
+      open (<code>reckon/roadmap.py</code>, near line 328), which removes the plan from
+      <code>ready_now</code>, so of the two transitions §4 models as one edge the decision one idles its
+      plan while the plan-terminal one does not.</p>
+    <p>The repair follows the repository's one-source rule: the roadmap already computes the split,
+      so the served view and the MCP projection read it rather than recomputing gate blockers, and
+      the decision transition is made to hold only the decision it gates.</p>
+    <p><strong>Done when</strong> a test builds one plan whose only open gate is a plan-terminal
+      closure gate and one whose only open gate is a decision-transition gate, and asserts for each
+      that <code>roadmap</code>, the served plan payload and the MCP blocking projection agree on
+      whether the plan is ready and name the same blockers; the negative control, restoring the
+      unfiltered call in either surface, makes that surface's case fail. The write paths are
+      <code>reckon/serve.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/roadmap.py</code>
+      and that test.</p>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
@@ -266,10 +289,11 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §3</pre>
     <p class="r-fu-outcome">§3 landed in fd0b1d4. reckon audit reports a followup naming a terminal foreign plan (FOLLOWUP_FOREIGN_TERMINAL) with holder and target, stays silent on a live foreign plan, reports an unmounted target distinctly (FOLLOWUP_FOREIGN_UNMOUNTED), and covers a mounted-but-unresolvable target (FOLLOWUP_FOREIGN_MISSING). Finding count over two registered reciprocal mounts = 2; tests/test_audit.py passed 7/7 with zero added failures; scoped ruff 14 → 14. Recorded in the accumulated evidence and the §3 landed block.</p>
     </article>
-<article class="r-fu" data-id="f-des-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="agent" data-written-at="2026-09-15" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-003" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="agent" data-written-at="2026-09-15" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="2026-09-25T01:07:00+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Implement §4 — closure gates, behind the locked transition-gate-shape decision</h4>
     <div class="r-fu-body">§4 is the next implementable section and stays behind the open transition-gate-shape decision; implement it once that decision is made.</div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
+    <p class="r-fu-outcome">Landed by closure-gates-hold-a-terminal-write (codex-astra, merged b8f97e4e): a transition gate names the transition it gates; a plan-terminal gate leaves the plan in ready_now while the store refuses a terminal write until the gate has a verdict; a decision gated on a foreign plan appears in decision_blockers naming it. Importer cohort 2,784 passed / 7 failed against base 2,747 / 8, zero added; negative control executed; review 17-20, whose three surface findings became §6.</p>
     </article>
 <article class="r-fu" data-id="f-des-soft-after-edge" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-build dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">A soft after edge that orders the ready set without blocking it</h4>
@@ -285,6 +309,11 @@
     <h4 class="r-fu-title">Decisions scoped to sections, carrying a recommendation the lead accepts and that never resolves itself</h4>
     <div class="r-fu-body"><p>An open decision blocks its whole plan: on nova, exact-clip-moment-quadrature and centroid-constrained-oracle-solve are blocked by one decision each although their first sections do not depend on the choice. Add an optional sections list on a decision so only the named sections are decision-blocked, and an optional recommended value with a recommended_by field that the lead accepts in one action. The recommendation must never become the choice by default: an unanswered recommendation stays open and blocking, because decisions are the lead's and a coordinator default would collapse authority into mechanism (raised by the reckon crew-observability session on 2026-09-16).</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §4</pre>
+    </article>
+<article class="r-fu" data-id="f-des-004" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T03:10:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the served view and MCP projection read the roadmap&#x27;s execution/closure split</h4>
+    <div class="r-fu-body"><p>§6 is the continuation: the served plan payload, the MCP blocking projection and the decision-transition gate must agree with the roadmap about a plan whose only open gate is a transition gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §6</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -305,6 +334,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260915T112500" data-who="reckon-ship" data-when="2026-09-15T11:25:00Z">
     <div class="r-comment-body">Section closed, and what closed it was assertions rather than an implementation, because the implementation was already here. THE MECHANISM LANDED 2026-08-26 at commit 9e666e3, merged 1790e61, which introduced section-anchor honouring in reckon/roadmap.py - three weeks before this node was dispatched. The worker found that, declined to reimplement it, and wrote the assertions this section specifies instead: a staged ref blocking only the sections it names, the plan remaining in the roadmap's ready set rather than being excluded, an absent anchor reported as a wiring finding rather than as a whole-plan block, and an unstaged ref behaving exactly as before. Commit ec8fb56d, 3 tests added, verified by the coordinator at the merged head where tests/test_roadmap.py reports 39 passed. THE COORDINATOR ERROR IS RECORDED BECAUSE IT IS THE THIRD INSTANCE TODAY. I declared this section implementable by reading its prose, which is written in the present tense and describes the fault as live, without checking whether the described repair already existed in the tree. The same mistake dispatched a redundant node against binding-rules-need-bound-checks section 3 this morning, whose deliverable had landed 2026-08-25; and its inverse marked landed-record-at-closure section 5 done when the test its measure names did not exist at all. In every case the plan document was read as though it described the repository. An uncollapsed section is evidence about the document, and the authority is one git log against the file the section would create. THE UNCOMFORTABLE PART, worth recording on this plan rather than privately: the rule was written down at about 09:00 today after the first instance, and broken twice afterwards, because it was written as prose and bound to no moment - which is the exact thesis of binding-rules-need-bound-checks, the plan being shipped in the same session. The moment it binds to is writing section_declarations, since that is the single place every section gets classified.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260925T0310-s22" data-who="reckon-build" data-when="2026-09-25T03:10:00+02:00">
+    <div class="r-comment-body">Gate passed by delta over an 87-file importer cohort (zero added ids). The worker's first pass blocked asking for docs/_shared/plan.schema.json; the fence was widened and the run resumed on its own session. The review's three findings are the one repair written up as §6.</div>
 </div>
 </section>
 </main>
