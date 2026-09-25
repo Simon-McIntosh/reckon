@@ -635,6 +635,53 @@
       <p><strong>Follow-ons.</strong> None.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="suite-time-is-attributed" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the call site behind each of the fifteen slowest test ids is named,
+      and the three candidate causes are each confirmed or refuted by measurement.</strong> No
+      repository file was edited by this node; the deliverable is the attribution report and its
+      figure. Full run at <code>bed6421a</code>: 21 failed, 6171 passed, 72 skipped in 555.96 s
+      (exit 1), under <code>-n 8</code> with pytest's default basetemp and the configured 300 s
+      timeout. The same 21 ids then run serially in one process: <strong>13 failed, 8 passed</strong>
+      &mdash; the eight that pass alone are load-only, and all eight sit in the load-sensitive family
+      this section already records; the thirteen that fail alone are the deterministic set.</p>
+      <p><strong>Attribution, with the dominant frame per id.</strong> The four slowest
+      (<code>test_dispatch_returns_without_worker.py</code>, 39&ndash;47 s each) are wall-clock waits:
+      <code>_wait_for</code> at <code>tests/test_dispatch_returns_without_worker.py:602</code> carries
+      33.7&ndash;41.5 s of its own test's cumulative time, and <code>subprocess._wait</code> 39.7 s in
+      the boundary-snapshot case. The wait is for a supervisor subprocess whose <code>git status</code>
+      scan is deliberately slowed by the module host's shim &mdash; <code>SHIM_SLEEP_SECONDS = 1.0</code>
+      (<code>:77</code>) on each of <code>WORKTREE_COUNT = 30</code> (<code>:76</code>) charged calls,
+      injected at shim line <code>:240</code>. Naming this is what lets a follow-on node replace the
+      injected sleep with an event and keep the ordering guarantee the shim exists to test.
+      <code>test_server_listens_before_it_watches</code> is the same shape and is arithmetic:
+      <code>_ARM_SECONDS_PER_TREE = 5.0</code> (<code>:26</code>) &times; <code>_MOUNT_COUNT = 3</code>
+      (<code>:25</code>) = 15 s against a measured 15.06 s. Four ids are HTML parse and CSS selection:
+      soupsieve <code>match_selectors</code> 13.4&ndash;23.5 s over 1.0&ndash;1.9 million calls per test,
+      reached through <code>reckon/_store.py:228</code> and <code>reckon/resources.py:525</code>, with
+      <code>reckon/_plan_html.py</code> as the parser. Three more carry per-document
+      <code>git log</code> subprocesses &mdash; <code>reckon/serve.py:992 _git_first_committed</code> and
+      <code>serve.py:1169 _git_last_committed</code>, 5.1&ndash;5.6 s each. Four ids have no in-process
+      frame above 0.4 s at all: their wall time sits inside real git subprocess children that a
+      profile cannot attribute.</p>
+      <p><strong>The three candidates.</strong> Fixed waits in dispatch tests: <em>confirmed</em>, and
+      the largest single cause in the top fifteen (30 s injected per test by the shim above).
+      A real git commit per promotion fixture: <em>refuted</em> as a dominant cost &mdash; measured
+      median 25.7 ms for a fresh <code>init + config + add + commit</code> (n=12), so fifteen
+      promotions account for about 0.4 s of a 15.5 s test; real git is large here, but as per-document
+      <code>git log</code> in the read paths, not as fixture seeding. Flight resolution per call:
+      <em>refuted</em> as dominant &mdash; <code>flight.resolve()</code> measures 5.5&ndash;9.4 ms/call,
+      and no <code>reckon/flight.py</code> frame reached the reporting floor in any of the fifteen
+      profiles. Report with the per-id table, the evidence grid and the fixed-sleep list:
+      <code>~/.config/reckon/crew/reports/reckon/suite-green-at-head/suite-time-is-attributed/report.md</code>;
+      figure <a href="/reckon/figures/the-suite-is-green-at-head/suite-time-attribution.png">the fifteen
+      slowest ids coloured by dominant call site. Anchor:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#suite-time-is-attributed">suite-time-is-attributed</a>.</p>
+      <p><strong>Follow-ons.</strong> Replace the shim's injected sleeps and the two
+      <code>_wait_for</code> poll loops with bounded event waits (list with file:line in the report);
+      the 128-plan loop at <code>tests/test_plan_read_warns_unparsed.py:201</code> re-parses each plan
+      at ~118 ms and is the other sizeable target.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
