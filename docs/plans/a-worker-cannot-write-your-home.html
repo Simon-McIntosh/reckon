@@ -377,6 +377,39 @@
       Evidence:
       <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-smoke-repaired-tree</code>,
       figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-composition.svg</code>.</p>
+    <p><strong>Repaired: a fenced resume reaches its harness.</strong>
+      <code>fenced-resume-reaches-its-harness</code> reproduced the defect on the same composition a
+      dispatch uses &mdash; a fenced launch recorded the way dispatch records it, then asked for its
+      resume, whose inner command was <code>/usr/bin/bwrap</code> where the dispatch argv carried
+      <code>clive</code> &mdash; and repaired it at <code>49ecff80</code>:
+      <code>_backend_settings</code> refuses a recorded command that names the fence binary and
+      recovers the harness from the run's own composed argv, searching after the fence element so a
+      placed launch's scheduler options are not read as its separator, so a resumed worker is fenced
+      exactly as a dispatched one and reuses the run's own harness home including its per-run
+      <code>CODEX_HOME</code>. The measure is
+      <code>tests/test_fenced_resume_reaches_its_harness.py</code> (4 passed): the resumed inner
+      command is the harness with <code>--resume</code> and the session id, one fence element, the
+      fence never handed <code>-p</code>; a fenced codex resume sets the run's own
+      <code>CODEX_HOME</code> and names <code>codex exec &hellip; resume</code>; a placed record's
+      command field is still the harness; and the declared negative control &mdash; <em>read the
+      harness command from the run record command field as today; the fenced clive case must yield
+      bwrap as the inner command and fail</em> &mdash; is applied and logged, composing two fence
+      elements and yielding the fence as the inner command
+      (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-fenced-resume.txt</code>).
+      Gate over twelve launch-plan, dispatch-resume and fence files, each arm run from its own tree:
+      base <code>18a89e6f</code> <code>6 failed, 114 passed</code>, head <code>49ecff80</code>
+      <code>6 failed, 118 passed</code>, the same six ids in both arms, so this change adds none and
+      adds the four tests; the six are pre-existing in
+      <code>tests/test_a_resume_does_not_inherit_its_baseline.py</code>, outside this node's scope
+      (<code>docs/figures/a-worker-cannot-write-your-home/gate-fenced-resume-base.txt</code>,
+      <code>gate-fenced-resume-head.txt</code>). Lint is unchanged (<code>dispatch.py</code> 7
+      findings and the same 6 unformatted sites at both revisions), the new test file is formatted
+      and clean. Evidence:
+      <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-fenced-resume</code>,
+      figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg</code>.
+      The section's owed real-worker resume falsifier is still owed: this node proved the
+      composed argv, not a live resumed turn, and only a separately dispatched test node can
+      confirm the merged result.</p>
     <section id="s3" data-reckon="section">
       <h2>§3 — The protected set is declared, and the fence fails closed</h2>
       <p><strong>Measure.</strong> The set is a flight key, <code>protected_paths</code>, in the host

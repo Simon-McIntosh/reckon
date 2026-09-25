@@ -1,0 +1,138 @@
+revision: 18a89e6f80b66f63185c27b6f531ee2d46e6d907 (base arm)
+tree: /tmp/fenced-resume-base-1429673
+module.__file__: /tmp/fenced-resume-base-1429673/reckon/__init__.py
+cwd: /tmp/fenced-resume-base-1429673
+---
+...................................................FF....F.............. [ 60%]
+.............F.F..F.............................                         [100%]
+=================================== FAILURES ===================================
+_____________ test_one_backend_reports_headroom_with_a_reset_time ______________
+
+    def test_one_backend_reports_headroom_with_a_reset_time() -> None:
+        budget = _observe(CLAUDE, "claude-turn.jsonl").budget
+>       assert budget["headroom"] == "known"
+E       AssertionError: assert 'unknown' == 'known'
+E         
+E         - known
+E         + unknown
+E         ? ++
+
+tests/test_backends.py:444: AssertionError
+____________ test_an_empty_rate_limit_mapping_is_not_a_measurement _____________
+
+    def test_an_empty_rate_limit_mapping_is_not_a_measurement() -> None:
+        budget = _backends.dialect_for(CLAUDE)._budget({})
+    
+        assert budget["headroom"] == "unknown"
+        assert budget["utilisation_pct"] is None
+>       assert "no numeric utilisation" in budget["detail"]
+E       AssertionError: assert 'no numeric utilisation' in 'rate-limit event carried no unifiedWindows'
+
+tests/test_backends.py:457: AssertionError
+_____________ test_known_headroom_answers_the_exhaustion_question ______________
+
+    def test_known_headroom_answers_the_exhaustion_question() -> None:
+>       assert (
+            _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget)
+            is False
+        )
+E       AssertionError: assert None is False
+E        +  where None = <function budget_exhausted at 0x7f5bb8ca1bc0>({'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...})
+E        +    where <function budget_exhausted at 0x7f5bb8ca1bc0> = _backends.budget_exhausted
+E        +    and   {'headroom': 'unknown', 'utilisation_pct': None, 'rate_limit_type': None, 'rate_limit_period_minutes': None, ...} = Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='').budget
+E        +      where Observation(backend='b', session_id='7c49fef5-2fc0-46c7-87ad-0c69347d6d6d', phase='complete', terminal=True, exit_stat... separately by the backend; utilisation divided by the stream window 1000000'}, events=4, malformed_lines=0, detail='') = _observe({'launch': 'cli', 'command': 'claude', 'sandbox': 'worktree-full'}, 'claude-turn.jsonl')
+
+tests/test_backends.py:498: AssertionError
+________ test_a_resume_reads_a_manifest_equal_to_its_recorded_baseline _________
+
+pointer_factory = <function pointer_factory.<locals>.build at 0x7f5bb7435430>
+
+    def test_a_resume_reads_a_manifest_equal_to_its_recorded_baseline(
+        pointer_factory,
+    ) -> None:
+        pointer = pointer_factory(attempt=2, status="complete")
+        manifest = Path(pointer["manifest_path"])
+    
+        assert pointer["manifest_baseline_mtime_ns"] == manifest.stat().st_mtime_ns
+        row = recovery.classify_pointer(pointer)
+    
+        assert row["manifest_present"] is True
+        assert row["manifest_status"] == "complete"
+>       assert row["classification"] == "completed_unpromoted"
+E       AssertionError: assert 'scoring' == 'completed_unpromoted'
+E         
+E         - completed_unpromoted
+E         + scoring
+
+tests/test_a_resume_does_not_inherit_its_baseline.py:116: AssertionError
+_ test_terminal_statuses_come_from_the_inherited_manifest[complete-completed_unpromoted] _
+
+pointer_factory = <function pointer_factory.<locals>.build at 0x7f5bb7435dd0>
+status = 'complete', classification = 'completed_unpromoted'
+
+    @pytest.mark.parametrize(("status", "classification"), TERMINAL_CLASSIFICATIONS.items())
+    def test_terminal_statuses_come_from_the_inherited_manifest(
+        pointer_factory, status: str, classification: str
+    ) -> None:
+        pointer = pointer_factory(attempt=2, status=status)
+    
+        row = recovery.classify_pointer(pointer)
+    
+        assert row["process_alive"] is False
+        assert row["manifest_status"] == status
+>       assert row["classification"] == classification
+E       AssertionError: assert 'scoring' == 'completed_unpromoted'
+E         
+E         - completed_unpromoted
+E         + scoring
+
+tests/test_a_resume_does_not_inherit_its_baseline.py:149: AssertionError
+________________ test_a_parked_resume_stays_in_the_resume_sweep ________________
+
+pointer_factory = <function pointer_factory.<locals>.build at 0x7f5bb7436a30>
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-10717/test_a_parked_resume_stays_in_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5bb7878fa0>
+
+    def test_a_parked_resume_stays_in_the_resume_sweep(
+        pointer_factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        pointer = pointer_factory(attempt=2, status="waiting")
+        monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+        monkeypatch.setattr(resumption, "list_live", lambda **_kwargs: [pointer])
+        monkeypatch.setattr(resumption, "_claimed_write_paths", lambda _pointer: [])
+    
+        classified = recovery.classify_pointer(
+            pointer,
+            condition_test=lambda _pointer, _wait: {
+                "state": "met",
+                "observed": "COMPLETED",
+            },
+        )
+        report = resumption.sweep(
+            "fixture-project",
+            dry_run=True,
+            condition_test=lambda _pointer, _wait: {
+                "terminal": True,
+                "observed": "COMPLETED",
+            },
+        )
+    
+        assert classified["classification"] == recovery.WAITING_STATUS
+        assert classified["recovery_classification"] == "ready"
+        assert report["checked"] == 1
+>       assert [row["run_id"] for row in report["resumed"]] == [pointer["run_id"]]
+E       AssertionError: assert [] == ['r-attempt-2-waiting']
+E         
+E         Right contains one more item: 'r-attempt-2-waiting'
+E         Use -v to get more diff
+
+tests/test_a_resume_does_not_inherit_its_baseline.py:179: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backends.py::test_one_backend_reports_headroom_with_a_reset_time
+FAILED tests/test_backends.py::test_an_empty_rate_limit_mapping_is_not_a_measurement
+FAILED tests/test_backends.py::test_known_headroom_answers_the_exhaustion_question
+FAILED tests/test_a_resume_does_not_inherit_its_baseline.py::test_a_resume_reads_a_manifest_equal_to_its_recorded_baseline
+FAILED tests/test_a_resume_does_not_inherit_its_baseline.py::test_terminal_statuses_come_from_the_inherited_manifest[complete-completed_unpromoted]
+FAILED tests/test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep
+6 failed, 114 passed in 34.42s
+EXIT=1

@@ -616,6 +616,74 @@ exit: 0</pre>
     <code>resume.json</code>, <code>cleanup.json</code>, and the four run directories under
     <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.</p>
   </section>
+  <section id="s2-fenced-resume" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; a fenced resume reaches its harness</h2>
+
+    <p><strong>The defect reproduced at base <code>18a89e6f</code>.</strong> A dispatch built
+    through <code>launch_plan(fence=True)</code> and recorded the way dispatch records it
+    &mdash; <code>command</code> from the composed <code>argv[0]</code> &mdash; then asked for its
+    resume: the dispatch argv's inner command is <code>clive</code>, the resume argv's is
+    <code>/usr/bin/bwrap</code>, and the resume record's <code>command</code> field is
+    <code>/usr/bin/bwrap</code>. Reproduced with the composition alone at base
+    (<code>docs/figures/a-worker-cannot-write-your-home/repro-fenced-resume-base.txt</code>), which
+    is the same argv shape the smoke saw in a real run. At head <code>49ecff80</code> the same
+    procedure at the same lane yields <code>clive</code> behind a single fence element
+    (<code>repro-fenced-resume-after.txt</code>).</p>
+
+    <p><strong>The repair.</strong> <code>_backend_settings</code> refuses a recorded command that
+    names the fence binary and recovers the harness from the run's own composed argv, searching
+    after the fence element so a placed launch's scheduler options cannot be mistaken for the
+    fence's own separator. A resume therefore composes the fence around the harness exactly as a
+    dispatch does, and the run's own harness home &mdash; including its per-run
+    <code>CODEX_HOME</code>, where a codex session rollout lives &mdash; is the home it reuses.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg"
+           alt="Three argv rows: the dispatch row names clive and runs; the base resume row names bwrap inside a bwrap fence and writes no turn; the head resume row names clive inside one fence and runs.">
+      <figcaption>The command after the fence separator, three ways. The fence prefix is identical
+      in all three; the repair changes only the command after the separator, from the fence binary
+      to the harness.</figcaption>
+    </figure>
+
+    <p><strong>Measure.</strong> <code>tests/test_fenced_resume_reaches_its_harness.py</code> states
+    four properties and passes (4 passed): a fenced clive resume yields a fenced argv whose inner
+    command is <code>clive</code>, carrying <code>--resume</code> and the recorded session id, with
+    exactly one fence element and the fence never handed <code>-p</code>; a fenced codex resume
+    sets <code>CODEX_HOME</code> to the run's own <code>codex-home</code> and names
+    <code>codex exec &hellip; resume</code>; a placed record's <code>command</code> field is still
+    read as the harness, so a reader does not translate the scheduler; and the declared negative
+    control trips.</p>
+
+    <p><strong>Gate.</strong> Twelve launch-plan, dispatch-resume and fence test files on this
+    node's own allocation, each arm run from its own tree so the <code>reckon</code> imported is
+    the tree under test (base module
+    <code>/tmp/fenced-resume-base-1405962/reckon/__init__.py</code>, head module under the
+    worktree root, both named on the log headers): base <code>18a89e6f</code>
+    <code>6 failed, 114 passed</code>, head <code>49ecff80</code> <code>6 failed, 118 passed</code>
+    &mdash; the same six ids in both arms, so this change adds no failure and adds the four new
+    tests (<code>docs/figures/a-worker-cannot-write-your-home/gate-fenced-resume-base.txt</code>,
+    <code>gate-fenced-resume-head.txt</code>). The six are pre-existing and confined to
+    <code>tests/test_a_resume_does_not_inherit_its_baseline.py</code>, outside this node's declared
+    scope; see follow-ons.</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>resume_plan reads the
+    harness command from the run record command field as today; the fenced clive case must yield
+    bwrap as the inner command and fail.</em> Applied by restoring the field-as-harness reading:
+    the fenced clive resume then composes two fence elements, its inner command is the fence binary
+    and the fence is handed its own <code>-p</code>
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-fenced-resume.txt</code>).
+    Without the control the suite would pass against a wiring that never removed the nested
+    fence.</p>
+
+    <p><strong>Lint and format delta, measured on complete trees.</strong>
+    <code>reckon/crew/dispatch.py</code> is <em>unchanged</em> in both: 7 lint findings and the same
+    6 unformatted sites at base and at head, this change adding none; the new test file is
+    formatted and clean (0 findings). Commit <code>49ecff80</code>. Evidence:
+    <code>docs/figures/a-worker-cannot-write-your-home/repro-fenced-resume-base.txt</code>,
+    <code>repro-fenced-resume-after.txt</code>, <code>negative-control-fenced-resume.txt</code>,
+    <code>gate-fenced-resume-base.txt</code>, <code>gate-fenced-resume-head.txt</code>, figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg</code>.</p>
+  </section>
 </main>
 </body>
 </html>
