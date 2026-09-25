@@ -958,6 +958,56 @@
       and the probing seam that replaces it</a>.</p>
     </section>
 
+
+    <div class="r-note" data-reckon="landed" data-node="slow-dispatch-tests-wait-on-events" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the four slowest dispatch cases and the server arming case
+      await an observed event instead of a fixed sleep, and every bound they assert is still
+      asserted.</strong> Both files pass serially and under <code>-n 4</code> with pytest's default
+      basetemp, at head <code>39072bc7</code>, with no <code>reckon/</code> file edited and no test
+      skipped, xfailed, deleted or weakened.</p>
+      <p><strong>The dispatch shim.</strong> The shim no longer sleeps one second per charged
+      <code>git status</code> call (<code>SHIM_SLEEP_SECONDS</code> is gone). Instead, a call charged
+      from a working directory under the worktree root writes a <code>scanning</code> signal and then
+      waits, bounded, for the case to touch a <code>release</code> file. The
+      <code>test_dispatch_returns_once_its_supervisor_runs</code> case starts dispatch with the gate
+      armed, waits for that signal, and asserts <code>DISPATCH_EXIT_BOUND</code> on dispatch's own
+      clock and on the wall clock with the driver's measured <code>startup_seconds</code> attributed
+      out. The discriminator is measured, not assumed: the boundary scan runs with cwd set to each
+      registered worktree, while dispatch's own pre-return call runs from the repository root, so
+      gating on cwd-under-the-worktree-root holds the scan without holding dispatch. The signal
+      arrives before the worker is spawned, so the marker's absence while the scan is held proves
+      the ordering the shim exists to test.</p>
+      <p><strong>The server watch.</strong> The patched watch constructor at
+      <code>tests/test_server_listens_before_it_watches.py</code> no longer sleeps
+      <code>_ARM_SECONDS_PER_TREE</code> per tree; it signals that arming has begun and waits,
+      bounded, for the case to release it. The answer-time case waits for that signal before it
+      measures the port, so its answer is measured against a genuinely open arming window; the
+      arming case releases and still asserts <code>_ARMED_WITHIN_S</code>.</p>
+      <p><strong>Durations, serial <code>--durations=0</code>, base <code>587adf48</code> to head
+      <code>39072bc7</code>, each at least halved.</strong>
+      <code>test_a_discarded_run_is_not_recreated</code> 48.93&rarr;10.75 s;
+      <code>test_a_delegated_launch_records_a_boundary_snapshot</code> 43.15&rarr;6.57 s;
+      <code>test_sigkill_to_the_worker_is_recorded</code> 42.55&rarr;8.17 s;
+      <code>test_sigkill_to_dispatch_leaves_the_worker_marker</code> 39.30&rarr;5.39 s;
+      <code>test_every_tree_is_armed_within_the_bound</code> 15.03&rarr;0.06 s. The whole run is
+      <strong>8 passed in 39.91 s</strong> serial and <strong>8 passed</strong> in
+      <strong>19.50&ndash;20.66 s</strong> across three consecutive <code>-n 4</code> runs.
+      <code>test_dispatch_returns_once_its_supervisor_runs</code>, which failed its wall bound at the
+      base (6.53 s against 5.0 s), now passes with its startup time attributed out.</p>
+      <p><strong>Return bound.</strong> Dispatch's own clock ran 2.5&ndash;3.2 s serially but 5.3 s
+      when the case ran beside seven siblings across four workers, so the bound is 8.0 s: still far
+      below the ~30 s held scan a waiting dispatch would take, and clear of ordinary contention.</p>
+      <p><strong>Every bound still fails when violated.</strong> A 15 s sleep injected into a scratch
+      copy of <code>reckon/crew/dispatch.py</code> makes the rewritten return case fail on the bound
+      (exit 18.10 s against 10.66 s allowed); holding every tree open past
+      <code>_ARMED_WITHIN_S</code> makes the arming case fail on the bound (0 of 3 trees armed within
+      20.0 s). Figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/event-wait-durations.png">before and after
+      per test, with both violated-bound results</a>; anchors
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#slow-dispatch-tests-wait-on-events">landed
+      evidence</a>.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
