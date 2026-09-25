@@ -354,6 +354,57 @@
         reader has no use for.
       </p>
     </section>
+
+    <section id="registration-census-over-the-read-set">
+      <h2>The registration census reads the whole fixed read set</h2>
+
+      <p>
+        The pin that no build-skill file instructs a session to register a member read
+        <code>SKILL.md</code> alone, and its pattern spanned one verb family
+        (<code>register|registering|registered</code> with a count object). A review of the
+        registration sweep found the class of miss that leaves: an instruction sitting in a
+        reference file — still inside the fixed read set every orchestrator session loads — or
+        phrased with the third-person verb (<code>registers enough members</code>) or the passive
+        idiom (<code>registered on demand</code>) passed the pin unseen. The census that had been
+        run by hand as a grep over <code>skills/</code> was a one-off measurement, so nothing
+        repeated it on the next edit.
+      </p>
+
+      <p>
+        The check is now its own test,
+        <code>test_no_build_skill_file_instructs_member_registration</code>, reading
+        <code>SKILL.md</code> and every file under <code>references/</code> — 11 files at
+        <code>ff3fc8dd</code> — with whitespace normalised, so a phrasing wrapped across a line
+        break is still detected. The pattern spans four branches: the base verb and participle with
+        a count object, the third person with a count object, the gerund/plural object, and the
+        passive idiom. Before the census runs, the pattern is asserted against each of the six
+        retired phrasings, so a weakened pattern fails loudly instead of passing the census by
+        matching nothing. Two spellings stay deliberately outside it: <code>registers a</code>,
+        where the harness reference describes the CLI registering a descriptor, and the participle
+        <code>registered members</code>, the roster tally of members already registered.
+      </p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-skill-overhaul/registration-census-coverage.svg"
+             alt="Left: the eleven scanned files, with SKILL.md and references/sprint-orchestration.md marked as having carried the instruction at base. Right: the pattern's four branches, the phrasings each catches, and the two spellings excluded with their reasons.">
+        <figcaption>
+          The scanned surface and the pattern that reads it. One file read alone left an
+          instruction in <code>references/</code> unseen; the census now reads the same set the
+          orchestrator loads.
+        </figcaption>
+      </figure>
+
+      <p>
+        Gate at <code>ff3fc8dd</code>: <code>tests/test_skill_contracts.py</code>
+        <strong>56 passed</strong>, exit 0 (55 at base <code>81d0c364</code>; the census test is
+        the one added). The declared negative control was executed and logged: re-adding
+        "members are registered on demand" to <code>references/sprint-orchestration.md</code> fails
+        the census, naming that file and the match <code>'registered on demand'</code>, and the
+        file was restored to its identical SHA-256
+        (<code>96827ed3850145fb6e8756aab72a272b09cfb40d27ec3ff919852dd2a3d59abb</code>) before the
+        file re-ran green. No skill file change is carried by this node.
+      </p>
+    </section>
   </main>
 </body>
 </html>
