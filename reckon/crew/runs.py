@@ -2421,6 +2421,7 @@ WATCH_ATTENTION_STATES = (
     "complete",
     "blocked",
     "failed",
+    "launch-failed",
     "stalled",
     "stopped",
     "abandoned",
