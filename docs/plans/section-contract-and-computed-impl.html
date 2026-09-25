@@ -125,6 +125,26 @@
     carries the example, and the existing plans that predate the contract audit as warnings (not errors) until
     their sections are converted, so the fleet does not stop on the day the rule lands.</p>
 
+    <p><strong>Local implementation retained; wider gate blocked, 2026-09-25.</strong>
+    Commits <code>1a819a671286ce674f4e7eb32cc006dd7fe5d9d5</code> (contract tests) and
+    <code>ae15796309309739255391b206dbd1cf92ae4b5c</code> (implementation) add the state-mode
+    <code>append sections</code> target and refuse text edits introducing numbered headings
+    without records. Both contract refusals name the field and supply a valid append example;
+    tests submit that example through the same store boundary. Existing unrecorded sections
+    remain editable. All 41 new cases pass, and the focused record/write cohort passes 86
+    cases. Removing the text-mode check makes the designated refusal case fail with
+    <code>DID NOT RAISE ValueError</code>.</p>
+    <p>The required broader gate is <strong>not passed by delta</strong>: base
+    <code>0bbeb7ec5559e4a9e0aa1a1d96f4b2c735e927e9</code> reports 5 failed, 2709 passed,
+    3 skipped; implementation head reports 8 failed, 2747 passed, 3 skipped. The three added
+    failures are in the concurrently owned ledger, terminal-record promotion and receipt
+    timing tests. They are reported for their owner without repair or a causal attribution
+    to this change. The audit-doc half, the pre-existing untyped <code>insert_section</code>
+    route, and advertising the new target in the MCP op vocabulary remain follow-ons.
+    Section closure and merged-head verification remain with the coordinator. Full receipts,
+    failure identities and the write flow are in the
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#typed-section-write-boundary">typed-section write-boundary record</a>.</p>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the

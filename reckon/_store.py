@@ -537,7 +537,7 @@ def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
-    """Insert one authored h2 block immediately before structured plan state."""
+    """Insert an h2 before structured plan state, or at the end of main prose."""
     from html import escape
 
     from bs4 import BeautifulSoup
@@ -564,7 +564,11 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
             boundary = candidate
             break
     if boundary is None:
-        raise OpError("insert_section requires a structured-state region")
+        boundary = re.search(r"</main\s*>", html_text, re.IGNORECASE)
+    if boundary is None:
+        raise OpError(
+            "insert_section requires a structured-state region or main element"
+        )
 
     line_start = html_text.rfind("\n", 0, boundary.start()) + 1
     indentation = html_text[line_start : boundary.start()]
@@ -947,6 +951,8 @@ def _replace_authored_html(
     replaced = html_text[:start] + replacement + html_text[end:]
     stamps = frozenset({"version", "modified"})
     before_state = _plan_html.read_state(html_text)
+    if before_state.get("type", "plan") == "plan":
+        _require_new_section_contracts(html_text, replaced)
     after_state = _plan_html.read_state(replaced)
     before = {key: value for key, value in before_state.items() if key not in stamps}
     after = {key: value for key, value in after_state.items() if key not in stamps}
@@ -956,6 +962,61 @@ def _replace_authored_html(
             "edit_plan structured ops for metadata or data-reckon sections"
         )
     return replaced
+
+
+def _section_contract_refusal(detail: str) -> str:
+    """Give authors a complete state-mode append they can adapt and submit."""
+    example = {
+        "op": "append",
+        "target": "sections",
+        "item": {
+            "id": "s2",
+            "title": "Implement and verify",
+            "body": "<p>Describe the work and its acceptance check.</p>",
+            "effort_hours": 1.25,
+            "capability": {
+                "version": "1.0",
+                "class": "general",
+                "requirements": {
+                    "reasoning": "standard",
+                    "verification": "strict",
+                    "risk": "low",
+                },
+            },
+            "links": [],
+        },
+    }
+    return f"{detail}. Use edit_plan mode=state. Example: {json.dumps(example)}"
+
+
+def _require_new_section_contracts(before_html: str, after_html: str) -> None:
+    """Require records for newly introduced numbered plan headings only."""
+    from bs4 import BeautifulSoup
+
+    from reckon import _plan_html
+
+    before = BeautifulSoup(before_html, "html.parser")
+    after = BeautifulSoup(after_html, "html.parser")
+    old_ids = {heading.get("id") for heading in before.find_all("h2", id=True)}
+    added = {
+        heading["id"]
+        for heading in after.find_all("h2", id=re.compile(r"^s[0-9]+$"))
+        if heading["id"] not in old_ids
+    }
+    if not added:
+        return
+    try:
+        records = _plan_html.read_state(after_html).get("sections", [])
+    except ValueError as exc:
+        raise ValueError(_section_contract_refusal(str(exc))) from exc
+    missing = added - {record["id"] for record in records}
+    if missing:
+        raise ValueError(
+            _section_contract_refusal(
+                f"new sections {sorted(missing)!r} missing effort_hours and capability: "
+                "no typed section record"
+            )
+        )
 
 
 # An archived EVIDENCE record stays writable; an archived plan or research
@@ -1769,6 +1830,52 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         raise OpError(f"unsupported index append target {target!r}")
 
     # ── plan append ──
+    if target == "sections":
+        from pydantic import ValidationError
+
+        from reckon._schema import SectionRecord
+
+        if str(working.get("type", "plan") or "plan") != "plan":
+            raise OpError("append sections is plan-only")
+        if not isinstance(item, dict):
+            raise OpError(
+                _section_contract_refusal("append sections requires an item object")
+            )
+        fields = {"id", "title", "body", "effort_hours", "capability", "links"}
+        extra = item.keys() - fields
+        if extra:
+            raise OpError(
+                _section_contract_refusal(
+                    f"unsupported section fields: {sorted(extra)}"
+                )
+            )
+        declarations = working.get("section_declarations") or {}
+        record_fields = {
+            key: value for key, value in item.items() if key not in {"title", "body"}
+        }
+        try:
+            record = SectionRecord.model_validate(
+                {
+                    **record_fields,
+                    "attempts": 0,
+                    "status": (
+                        declarations.get(item["id"], "implementable")
+                        if isinstance(item.get("id"), str)
+                        else "implementable"
+                    ),
+                }
+            ).model_dump(by_alias=True, exclude_none=True)
+        except ValidationError as exc:
+            raise OpError(_section_contract_refusal(str(exc))) from exc
+        sections = working.setdefault("sections", [])
+        _refuse_duplicate_id(sections, target, record["id"])
+        try:
+            _apply_insert_section(working, item, is_index, warnings)
+        except OpError as exc:
+            raise OpError(_section_contract_refusal(str(exc))) from exc
+        sections.append(record)
+        working.setdefault("section_declarations", {})[record["id"]] = record["status"]
+        return
     if target == "followups":
         if not isinstance(item, dict):
             raise OpError("append followups requires an item object")
