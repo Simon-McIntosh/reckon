@@ -147,12 +147,14 @@
     <p><code>tests/test_nested_launch.py</code> injects fixture host facts
     through a temporary <code>sitecustomize</code>, so no case reads the real
     <code>/proc</code> — the case that matters, because this suite runs inside
-    an allocation where the real answer is <code>true</code>. Ten cases pass
-    (<code>10 passed in 5.00s</code>), driving the declared shim executables
-    against a fake real binary that records its argv. The declared mutation —
-    remove the in-allocation check so plain srun always execs — is applied and
-    the node's own refusal test is run against the mutant; it fails, and that
-    red log is recorded.</p>
+    an allocation where the real answer is <code>true</code>. Eleven cases pass
+    (<code>11 passed in 7.16s</code>), driving the declared shim executables
+    against a fake real binary that records its argv, and asserting the refusal
+    status as the literal <code>97</code> rather than the module's own constant.
+    One case places the shim directory first on <code>PATH</code>, which is the
+    order the lookup's shim-directory filter exists for. Two mutations are each
+    applied and the case they are declared for run against a mutant; both fail,
+    and both red logs are recorded.</p>
     <figure>
       <img src="/reckon/figures/a-worker-knows-it-is-on-compute/nested-launch-decision-flow.png"
            alt="The nested-launch decision order: in_allocation first, then the override, then the explicit-single-step srun form; a no at any branch reaches refuse exit 97, and the in_allocation yes and the two explicit-single-step arms reach exec. The in_allocation gate is the one the declared mutation removes.">

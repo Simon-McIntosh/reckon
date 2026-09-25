@@ -215,10 +215,10 @@ EXIT=0</pre>
       <code>tests/test_nested_launch.py</code>, run in the worktree against the
       shared root environment:</p>
 
-      <pre><code>revision: 4ff4228baf09113d40e81e30b8dbe1aa725acfbd
+      <pre><code>revision: 20822ec89fdf8af46fe24ceba69a02c8e43f1f1f
 command: PYTHONPATH=&lt;worktree&gt; &lt;main-checkout&gt;/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_nested_launch.py
-..........                                                               [100%]
-10 passed in 5.00s
+...........                                                              [100%]
+11 passed in 7.16s
 EXIT=0</code></pre>
 
       <p>Every case drives the real shim executables, with the fixture host
@@ -235,34 +235,61 @@ EXIT=0</code></pre>
       the exec paths are told from the refusal path and how a case proves the
       shim directory was dropped from the lookup rather than re-exec'd.</p>
 
-      <p><strong>Evidence — the negative control.</strong> The declared
-      mutation is <q>remove the in-allocation check so plain srun always
-      execs</q>. It is applied by
+      <p>One case places the shim directory <em>first</em> and the fake second,
+      with the fixture facts reporting the process outside the allocation. That
+      is the order the lookup's own filter exists for: every other case puts the
+      fake ahead of the shim directory, where a lookup that never filters is
+      indistinguishable from one that does. The observable is the record the
+      fake writes, so the case fails on the fake never being reached rather than
+      on whatever a self-exec then produced. The two refusal cases assert exit
+      status <code>97</code> as the literal the contract names, not the module's
+      own <code>REFUSAL_STATUS</code> constant, so they pin the status instead
+      of restating the implementation.</p>
+
+      <hr>
+
+      <p><strong>Evidence — the negative control.</strong> Two mutations are
+      declared, each driving the case it is declared for. Both are applied by
       <code>docs/figures/a-worker-knows-it-is-on-compute/nested_launch_mutation_check.py</code>,
-      which loads the mutant beside the run; nothing here edits the reviewed
-      module or test. The node's own refusal test is then run against the
-      mutant and observed to fail, its log's first line repeating the
-      declaration verbatim:</p>
+      which takes the mutation and the case as arguments and loads the mutant
+      beside the run; nothing here edits the reviewed module or test. Each log's
+      first line repeats its own declaration verbatim. The first is <q>remove
+      the in-allocation check so plain srun always execs</q>, run against the
+      refusal case:</p>
 
       <pre><code>remove the in-allocation check so plain srun always execs
 ...
-    def test_plain_srun_inside_the_allocation_is_refused(tmp_path: Path) -&gt; None:
-        fixture = make_fixture(tmp_path)
         result = run_shim("srun", ["true"], launch_env(fixture, inside=True))
-&gt;       assert result.returncode == REFUSAL_STATUS, result.stderr
+&gt;       assert result.returncode == 97, result.stderr
 E       AssertionError:
 E       assert 0 == 97
-E        +  where 0 = CompletedProcess(args=['.../reckon/host_shims/srun', 'true'], returncode=0, stdout='', stderr='').returncode
 FAILED tests/test_nested_launch.py::test_plain_srun_inside_the_allocation_is_refused
-1 failed in 0.91s
-the refusal test failed under the mutation, as declared (pytest exit 1)</code></pre>
+1 failed in 1.15s
+the test failed under the mutation, as declared (pytest exit 1)</code></pre>
 
-      <p>The failure is the right one: with the gate gone the plain
-      <code>srun</code> execs the fake instead of refusing, so the assertion
-      sees <code>returncode 0</code> where it requires 97. The gate log and the
-      negative-control log are ignored by the repository's <code>*.log</code>
-      rule, which is why their decisive lines are reproduced above rather than
-      linked.</p>
+      <p>The second is <q>drop the shim-directory filter from the real-binary
+      lookup</q>, run against the shim-directory-first case:</p>
+
+      <pre><code>drop the shim-directory filter from the real-binary lookup
+...
+&gt;       assert recorded(fixture.record) == [(str(fixture.fake_bin / "srun"), ("true",))]
+E       AssertionError: assert [] == [('/tmp/…/fake-real/srun', ('true',))]
+E         Right contains one more item: ('/tmp/…/fake-real/srun', ('true',))
+FAILED tests/test_nested_launch.py::test_the_shim_directory_first_on_path_does_not_reexec_the_shim
+1 failed in 2.00s
+the test failed under the mutation, as declared (pytest exit 1)</code></pre>
+
+      <p>Both failures are the right ones, and each is the case's own
+      observable. With the gate gone, the plain <code>srun</code> execs the fake
+      instead of refusing, so the assertion sees <code>returncode 0</code>
+      where it requires the literal <code>97</code>. With the filter gone and
+      the shim directory first, the lookup resolves the shim's own path rather
+      than the fake, so the fake is never run and the record stays empty — which
+      is why the case asserts against the record first, so the mutation trips
+      the assertion naming the observable under test rather than a later one.
+      The gate log and both negative-control logs are ignored by the
+      repository's <code>*.log</code> rule, which is why their decisive lines
+      are reproduced above rather than linked.</p>
 
       <figure>
         <img src="/reckon/figures/a-worker-knows-it-is-on-compute/nested-launch-decision-flow.png"
@@ -281,9 +308,13 @@ the refusal test failed under the mutation, as declared (pytest exit 1)</code></
       <code>reckon/host.py</code> is read, not edited — it belongs to the
       sibling node that landed &sect;2. Nothing outside
       <code>reckon/nested_launch.py</code>, <code>reckon/host_shims/</code> and
-      <code>tests/test_nested_launch.py</code> changes in product code.
-      Verifying the merged result belongs to a separately dispatched test
-      node.</p>
+      <code>tests/test_nested_launch.py</code> changes in product code. A
+      follow-up commit against a review of the delivered tests touches only
+      <code>tests/test_nested_launch.py</code> and the mutation runner: it adds
+      the shim-directory-first case, asserts the refusal status as the literal
+      <code>97</code>, and generalises the runner to drive both declared
+      mutations. Verifying the merged result belongs to a separately dispatched
+      test node.</p>
     </section>
   </main>
 </body>
