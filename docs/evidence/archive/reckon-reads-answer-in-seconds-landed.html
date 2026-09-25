@@ -9,9 +9,9 @@
   <meta name="plan-title" content="Reckon Reads Answer In Seconds — Landing Record">
   <meta name="plan-summary" content="Cumulative evidence for profiling and reducing the latency of routine Reckon reads.">
   <meta name="plan-evidence-for" content="reckon-reads-answer-in-seconds">
-  <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2,reckon-reads-answer-in-seconds#s3">
-  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640">
-  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg">
+  <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2,reckon-reads-answer-in-seconds#s3,reckon-reads-answer-in-seconds#s4">
+  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4,f7f6fe29b063a774f07ce572c1e07948b7c33746,057d8ad0170cb071537c8a92797f7cbd34158640,2b05c42b9054be8ca115d604743c04c8b3c814d4">
+  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg,docs/figures/reckon-reads-answer-in-seconds/parse-memo-before-after.svg,docs/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="qualified">
   <meta name="plan-environment" content="fleet allocation 1277272 on clu-2058; reckon project virtual environment">
@@ -71,6 +71,30 @@
       <p><strong>Guard evidence.</strong> At <code>057d8ad0170cb071537c8a92797f7cbd34158640</code>, <code>tests/test_parse_plan_memo.py</code> asserts one physical read for an unchanged file across parsing, lifecycle and link use; invalidation when size, mtime or inode changes; deep-copy isolation; and project-absolute anchor resolution from a relative corpus root. The named gate over that file plus <code>tests/test_doccheck*.py</code>, <code>tests/test_audit*.py</code> and <code>tests/test_mcp_audit.py</code> passed 113 tests in 5.68 s. Under the declared path-only mutation, the size, mtime and inode cases all failed with stale slugs; the other three cases passed, showing that the red result came from removed invalidation rather than a broken harness.</p>
 
       <p><strong>Residual retained.</strong> The warmed audit is below the plan's 28.9 s reference but not below five seconds. A post-change cProfile call took 44.66 instrumented seconds: <code>read_state</code> accumulated 18.29 s across 184 calls, including 17.91 s in <code>from_html</code>; <code>partition_live_runs</code> accumulated 16.93 s, including 9.81 s observing logs. Those branches are not repaired here. Roadmap likewise remains above five seconds because its live-state path is unchanged. No change was made to <code>reckon/_store.py</code>.</p>
+    </section>
+
+    <section id="state-and-live-run-reuse">
+      <h2>State parses and recorded live-run verdicts are reused</h2>
+      <p><strong>The defects reproduced before repair.</strong> At <code>490ad6c0907b49a9a06b476dfb7353d21fb9d86b</code>, two reads of one unchanged plan caused four physical reads of that file, and partitioning a run already present in the watch stream still called the live classifier once. The reproduction returned the expected plan and in-flight run, so both counts observed a working path rather than an empty instrument.</p>
+
+      <p>Commit <code>2b05c42b9054be8ca115d604743c04c8b3c814d4</code> adds a stat-keyed <code>read_state_file</code> memo with isolated returns, keeps cross-file diagnostics outside that memo, and makes live-run partitioning consume each run's latest recorded watcher event before observing an unrecorded run. The new guards cover unchanged reads, size/mtime/inode invalidation, isolation, recorded interrupted detail, and fallback calls only for unrecorded runs.</p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/state-and-live-run-before-after.svg" alt="Paired latency points. Audit median falls from 15.03 to 8.01 seconds and remains above the five-second bound. Roadmap summary falls from 7.86 to 1.33 seconds and crosses the bound.">
+        <figcaption>The recorded live-run path brings roadmap below the bound. Audit improves but retains a separate direct HTML validation loop.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Read</th><th>Before, three warm calls</th><th>After, three warm calls</th><th>Median verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Audit</td><td>15.15, 15.03, 14.52 s</td><td>7.81, 8.75, 8.01 s</td><td>15.03 &rarr; 8.01 s; 46.7% lower, <strong>above bound</strong></td></tr>
+          <tr><td>Roadmap summary</td><td>7.46, 7.86, 8.01 s</td><td>1.44, 1.31, 1.33 s</td><td>7.86 &rarr; 1.33 s; 83.0% lower, <strong>passed</strong></td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Guard evidence.</strong> The focused memo, partition and existing parse-memo checks passed 13 tests. Holding the file signature constant made the size, mtime and inode cases fail with stale titles while the unchanged-read and isolation cases stayed green. The named regression gate passed 148 tests and retained the same two <code>test_store_concurrency.py</code> failures at base and after, so this commit added no failure.</p>
+
+      <p><strong>Qualification retained.</strong> The audit gate did not pass. A warm profile at the committed head attributes 16.90 of 21.70 instrumented seconds to 182 direct <code>from_html(read_text(...))</code> calls in <code>reckon/mcp.py</code>. That file is outside this node's declared paths and concurrently owned, so no replacement cache was invented in the assigned files. The remaining repair is to route that audit loop through the stat-keyed file reader, then repeat the three-call audit receipt.</p>
     </section>
   </main>
 </body>
