@@ -329,6 +329,25 @@
       dispatchability; <code>after</code> changes the order and the annotation.</figcaption>
     </figure>
 
+    <aside id="published-schema-regenerated">
+      <p><strong>Worker implementation, 2026-09-25:</strong> the stale published schema recorded above
+      as this section's follow-on is regenerated. Reproduced at base <code>4a87503f</code>:
+      <code>test_committed_schema_matches_generated</code> fails with
+      <em>plan.schema.json is stale — regenerate with write_json_schema()</em>. The command the
+      check names — <code>from reckon._schema import write_json_schema;
+      write_json_schema()</code> — run from this worktree, changes exactly one file: the whole diff
+      is the single <code>after</code> property, 8 insertions, no other key moved. Both named gates
+      pass at head <code>4a1d7a15</code> (<strong>9 passed</strong>:
+      <code>tests/test_schema.py::test_committed_schema_matches_generated</code> plus
+      <code>tests/test_after_edge_orders_without_blocking.py</code>).</p>
+      <p><strong>Declared negative control:</strong> restoring the base revision's
+      <code>docs/_shared/plan.schema.json</code> in a scratch export of the head fails
+      <code>test_committed_schema_matches_generated</code> — <code>1 failed</code> — while the
+      unmutated head passes, so the artifact is what the check reads and not the export.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#published-schema-regenerated">reproduction, gate and mutation logs</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout

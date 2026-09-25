@@ -437,6 +437,61 @@
     the node: <code>4ce2d39b</code>. Section closure and the driving followup remain with the
     coordinator.</p>
 
+  <section id="published-schema-regenerated">
+    <h2>The published schema is regenerated for the after relation</h2>
+
+    <p>The added <code>after</code> field was declared on the plan-state model while the published
+    JSON Schema is a generated copy of that model, so the two diverged and the schema-equality check
+    failed. The defect was confirmed to still reproduce before the repair: at base
+    <code>4a87503f</code>, <code>tests/test_schema.py::test_committed_schema_matches_generated</code>
+    reported <code>1 failed</code> with <em>plan.schema.json is stale — regenerate with
+    write_json_schema()</em>. The run is <code>base-repro.log</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/published-schema-tracks-the-model.svg"
+           alt="Two rows over one derivation chain from the model through the generator to the
+                committed schema. In the stale row the committed artifact lacks the after property and
+                the equality check fails; in the regenerated row the artifact carries it and the check
+                passes.">
+      <figcaption>The committed schema is not authored and cannot drift by reading it: the model
+      generates it, and the equality check is the only thing that reports the two apart.</figcaption>
+    </figure>
+
+    <p><strong>Regeneration.</strong> The generator was run from this worktree as the check's own
+    message names it — <code>from reckon._schema import write_json_schema;
+    write_json_schema()</code> — with <code>PYTHONPATH</code> pinned to the worktree so
+    <code>reckon._schema.__file__</code> resolved inside it rather than to a sibling checkout. Exactly
+    one file changed. <code>git diff --stat</code>: <code>docs/_shared/plan.schema.json | 8 ++++++++</code>,
+    one file changed, eight insertions, no deletions; the whole diff:</p>
+
+    <pre class="code">     "blocks": { … },
++    "after": {
++      "description": "Soft sequencing refs: this plan would rather start after them, and must not be held when they have not shipped. Same grammar as depends_on: bare 'slug' = same-project; 'project:slug' = external; optional '#stage'. Unlike depends_on it never blocks: the roadmap orders and annotates ready work with it.",
++      "items": { "type": "string" },
++      "title": "After",
++      "type": "array"
++    },
+     "informs": { … },</pre>
+
+    <p><strong>Gate.</strong> At head <code>4a1d7a15</code>, <code>tests/test_schema.py::test_committed_schema_matches_generated</code>
+    and <code>tests/test_after_edge_orders_without_blocking.py</code> together report
+    <strong>9 passed</strong> (<code>head-gates.log</code>). The second file is the after edge's own
+    gate, unchanged by this node, run because the regenerated artifact is what it consumes.</p>
+
+    <p><strong>Negative control.</strong> Declared as: restore the base revision's
+    <code>docs/_shared/plan.schema.json</code>; <code>test_committed_schema_matches_generated</code>
+    must fail. Executed in a scratch export of head <code>4a1d7a15</code> with that one file
+    substituted from base: <code>1 failed</code>, the same stale-schema assertion. The unmutated head
+    arm passes the same test on the same interpreter, so the failing arm is the mutation rather than
+    the export. The scratch tree carried no <code>.git</code>; the check reads only the file and the
+    model, and the log's header lines record <code>module.__file__</code> and the resolved working
+    directory as inside the scratch tree, so the arm measured that tree and not a sibling checkout.
+    Log: <code>negative-control.log</code> (first line the declared string).</p>
+
+    <p>Commit in the node: <code>4a1d7a15</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+  </section>
+
   </main>
 </body>
 </html>
