@@ -1070,11 +1070,24 @@
       <code>eaf6f977</code> all seven pass, and the whole file is 13 passed.</p>
       <p><strong>Measure.</strong> No test file is edited. The 90 files importing
       <code>reckon.crew.dispatch</code> were run at <code>-n 8</code> on the fleet node
-      <code>98dci4-clu-2058</code> (SLURM job <code>1277272</code>): at head <strong>1242 passed, 2
-      skipped, 0 failed</strong>. With zero head failures, the added-failure count against the base
-      revision is zero by construction; the base arm is run to confirm the set was exercised rather
-      than silently erroring. No product file other than <code>dispatch.py</code> is touched and no
-      node id moved pass to fail.</p>
+      <code>98dci4-clu-2058</code> (SLURM job <code>1277272</code>). At base <code>d4f13e1a</code>
+      the set is <strong>1240 passed, 2 skipped, 2 failed</strong>; at head <code>eaf6f977</code> it
+      is <strong>1242 passed, 2 skipped, 0 failed</strong>. The two base failures are this node's
+      scalar case, green at head, and
+      <code>tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code>,
+      which is red at head too outside this run: re-run alone it fails at <em>both</em> revisions on
+      <code>assert _outside_state() == outside</code>, because the live pointer of a concurrent peer
+      run (<code>r-...-recovery-reads-the-exit-record</code>) is rewritten inside the case's window.
+      It fails wherever a peer is live and passed when none touches the pointer during the head arm,
+      so it is neither this node's cause nor made greener or redder by it. With no head failure
+      attributable to the change, the added-failure count is zero. No product file other than
+      <code>dispatch.py</code> is touched and no id moved pass to fail.</p>
+      <p><strong>Follow-on.</strong>
+      <code>test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code> asserts that the
+      <em>real</em> <code>~/.config/reckon/crew/live/</code> directory is unchanged across its body,
+      so any concurrently running crew session makes it fail: it monitors the machine rather than
+      the code. It belongs to the ledger file, not to this node, and is named here for the
+      coordinator rather than triaged.</p>
       <p><strong>Declared negative control:</strong> <em>remove the list-or-tuple type test so a
       scalar reaches the list comprehension; the scalar case must fail</em>. Executed in a scratch
       tree whose <code>reckon/crew/dispatch.py</code> is the head file with only the new arm removed;

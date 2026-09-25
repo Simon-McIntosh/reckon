@@ -2088,14 +2088,27 @@ reckon/crew/dispatch.py:4535: TypeError
       <code>-n 8</code> on fleet node <code>98dci4-clu-2058</code> (SLURM job
       <code>1277272</code>): <strong>1242 passed, 2 skipped, 0 failed</strong> in 383.50 s. At base
       <code>d4f13e1a</code>, the same selection from a <code>git archive</code> of the base into a
-      scratch tree, also <code>-n 8</code>: the counts are recorded in
-      <code>importers-base-n8.log</code>. With zero failures at head there is no failure to attribute
-      and the added-failure count is zero; the base arm is the positive control that the selection
-      exercised the code rather than erroring out wholesale. No test file is edited, no test is
-      skipped, xfailed, deleted or weakened, and no other product file is touched.</p>
+      scratch tree, also <code>-n 8</code>: <strong>1240 passed, 2 skipped, 2 failed</strong> in
+      362.71 s. One base failure is this node's scalar case, green at head. The other is
+      <code>tests/test_ledger.py::test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code>,
+      red on <code>assert _outside_state() == outside</code>: the case snapshots the real
+      <code>~/.config/reckon/crew/live/</code> directory and compares, and a concurrent live run
+      rewrote its own pointer inside the window &mdash;
+      <code>.../live/r-20260925T043805585389-recovery-reads-the-exit-record.json</code> moved mtime
+      between the two reads. Re-run alone, it fails at <em>both</em> revisions with the same cause
+      (11.57 s and 9.76 s, <code>ledger-alone.log</code>), and it passed in the head arm only because
+      no peer touched that pointer in that window. It is not attributable to this change and moves
+      in neither direction with it. No test file is edited, no test is skipped, xfailed, deleted or
+      weakened, and no other product file is touched.</p>
       <p>Two skips are present in both arms, so they are not attributable to this node. The base and
       head arm logs each carry on their header lines the revision, the tree, the command, the
       imported module's <code>__file__</code> and the resolved cwd.</p>
+
+      <h3>Follow-on</h3>
+      <p>The ledger case above asserts that the real live-pointer directory is unchanged across its
+      body, so it fails whenever any concurrent crew session is live &mdash; it reports on the
+      machine, not on the code. It lies in <code>tests/test_ledger.py</code>, outside this node's
+      write paths, and is named for the coordinator rather than triaged or repaired here.</p>
 
       <h3>Evidence and figure</h3>
       <p>Logs in the run record
