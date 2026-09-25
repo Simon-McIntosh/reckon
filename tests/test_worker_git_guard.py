@@ -12,6 +12,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import shlex
 from pathlib import Path
 from pwd import getpwuid
 
@@ -123,6 +124,125 @@ def test_without_a_run_id_everything_is_allowed(tmp_path: Path, monkeypatch) -> 
     assert message is None
 
 
+# ── A verb the command aliases is judged by what it expands to ──────────────
+
+
+def test_a_verb_aliased_in_the_command_is_resolved(tmp_path: Path, monkeypatch) -> None:
+    worktree, other = _fenced(tmp_path, monkeypatch)
+
+    mutating = guard.decide(
+        _payload(
+            f"git -c alias.co=checkout -C {other} co -- docs/plans/x.html", worktree
+        )
+    )
+    read_only = guard.decide(
+        _payload(f"git -c alias.st=status -C {other} st", worktree)
+    )
+    inside = guard.decide(
+        _payload(
+            f"git -c alias.co=checkout -C {worktree} co -- docs/plans/x.html", worktree
+        )
+    )
+
+    assert mutating[0] is False
+    assert str(other) in mutating[1]
+    assert read_only == (True, None)
+    assert inside == (True, None)
+
+
+def test_a_verb_the_command_does_not_define_is_not_assumed_read_only(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """An alias configured outside the command cannot be expanded here.
+
+    ``co`` may be a mutating alias in the operator's git config. The guard
+    cannot read that config, so an unknown verb aimed at another checkout is
+    refused rather than assumed harmless.
+    """
+    worktree, other = _fenced(tmp_path, monkeypatch)
+
+    unknown = guard.decide(
+        _payload(f"git -C {other} co -- docs/plans/x.html", worktree)
+    )
+    read_only = guard.decide(_payload(f"git -C {other} status --porcelain", worktree))
+
+    assert unknown[0] is False
+    assert str(other) in unknown[1]
+
+    # A genuinely read-only verb stays allowed everywhere, and an unknown verb
+    # inside the run's own worktree is not this guard's business.
+    assert read_only == (True, None)
+    assert guard.decide(_payload("git frobnicate", worktree)) == (True, None)
+
+
+# ── A leading environment assignment names the target repository ────────────
+
+
+def test_a_leading_assignment_names_the_target_repository(
+    tmp_path: Path, monkeypatch
+) -> None:
+    worktree, other = _fenced(tmp_path, monkeypatch)
+
+    by_git_dir = guard.decide(
+        _payload(f"GIT_DIR={other} git checkout -- docs/plans/x.html", worktree)
+    )
+    by_work_tree = guard.decide(
+        _payload(f"GIT_WORK_TREE={other} git commit -m wip", worktree)
+    )
+    inside = guard.decide(_payload(f"GIT_DIR={worktree} git commit -m wip", worktree))
+
+    assert by_git_dir[0] is False
+    assert str(other) in by_git_dir[1]
+    assert by_work_tree[0] is False
+    assert str(other) in by_work_tree[1]
+    assert inside == (True, None)
+
+
+# ── A nested script is scanned, and a cd inside it is tracked ───────────────
+
+
+def test_a_mutating_verb_inside_a_nested_script_is_denied(
+    tmp_path: Path, monkeypatch
+) -> None:
+    worktree, other = _fenced(tmp_path, monkeypatch)
+
+    substitution = guard.decide(
+        _payload(f'echo "$(git -C {other} checkout -- docs/plans/x.html)"', worktree)
+    )
+    backtick = guard.decide(
+        _payload(f"echo `git -C {other} checkout -- docs/plans/x.html`", worktree)
+    )
+    shell_c = guard.decide(
+        _payload(f"bash -c 'cd {other} && git reset --hard HEAD~1'", worktree)
+    )
+    inside = guard.decide(
+        _payload(f"bash -c 'cd {worktree} && git commit -m wip'", worktree)
+    )
+
+    for allowed, message in (substitution, backtick, shell_c):
+        assert allowed is False
+        assert str(other) in message
+    assert inside == (True, None)
+
+
+# ── A command form that cannot be parsed is refused, not allowed ────────────
+
+
+def test_an_unparsable_command_carrying_a_mutating_verb_is_denied(
+    tmp_path: Path, monkeypatch
+) -> None:
+    worktree, other = _fenced(tmp_path, monkeypatch)
+
+    mutating = guard.decide(
+        _payload(f"git -C {other} checkout -- docs/plans/x.html 'unclosed", worktree)
+    )
+    read_only = guard.decide(_payload("git status --porcelain 'unclosed", worktree))
+
+    assert mutating[0] is False
+    assert "parse" in mutating[1].lower()
+    assert read_only == (True, None)
+
+
 # ── The installer entry ─────────────────────────────────────────────────────
 
 
@@ -153,6 +273,64 @@ def test_the_installer_emits_the_guard_entry_without_writing_settings() -> None:
     assert commands == [str(installer.worker_git_guard_script_path())]
     assert Path(commands[0]).name == "worker_git_guard.py"
     assert installer.worker_git_guard_script_path().is_file()
+    after = real_settings.read_bytes() if real_settings.is_file() else None
+    assert after == before
+
+
+def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
+    tmp_path: Path,
+) -> None:
+    """The CLI path that installs the sibling guards can bind this one too.
+
+    ``_configure_crew_guards`` composes the native-agent and worker-message
+    guards itself, so an entry only ``install.py`` knows about is reachable
+    from tests and from nothing an operator runs. The git guard is wired
+    through that same path, behind the same opt-in, and the real user-scope
+    settings file is fingerprinted to prove nothing was installed by the test.
+    """
+    from reckon import cli
+
+    real_settings = Path(getpwuid(os.getuid()).pw_dir) / ".claude" / "settings.json"
+    before = real_settings.read_bytes() if real_settings.is_file() else None
+
+    target = tmp_path / "settings.json"
+    default_changed = cli._configure_crew_guards(target, remove=False)
+    default_groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
+    default_commands = [
+        hook["command"] for group in default_groups for hook in group.get("hooks", [])
+    ]
+
+    opted_changed = cli._configure_crew_guards(
+        target, remove=False, include_git_guard=True
+    )
+    opted_groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
+    bash_commands = [
+        hook["command"]
+        for group in opted_groups
+        if group.get("matcher") == "Bash"
+        for hook in group.get("hooks", [])
+    ]
+
+    assert default_changed is True
+    assert opted_changed is True
+    assert default_commands and not any(
+        Path(shlex.split(command)[0]).name == "worker_git_guard.py"
+        for command in default_commands
+    )
+    assert bash_commands == [str(cli._worker_git_guard_path())]
+    assert Path(bash_commands[0]).name == "worker_git_guard.py"
+
+    # The guard group is reckon's own, so a later remove takes it back out.
+    cli._configure_crew_guards(target, remove=True)
+    removed_groups = (
+        json.loads(target.read_text()).get("hooks", {}).get("PreToolUse", [])
+    )
+    assert not any(
+        Path(shlex.split(hook["command"])[0]).name == "worker_git_guard.py"
+        for group in removed_groups
+        for hook in group.get("hooks", [])
+    )
+
     after = real_settings.read_bytes() if real_settings.is_file() else None
     assert after == before
 
