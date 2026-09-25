@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:33:52",
+  "updated": "2026-09-25T11:43:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -414113,6 +414113,342 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T075705698064-s21-wave-scope",
+        "plan": "the-page-paints-from-an-index",
+        "section": "\u00a73",
+        "node": "s21-wave-scope",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2420,
+                "cached_input_tokens": 225075,
+                "input_tokens": 227497,
+                "output_tokens": 1051,
+                "reasoning_output_tokens": 31,
+                "total_tokens": 228548,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "a checker script saved beside wave.json loads it, asserts every dispatchable entry has write paths disjoint from every other dispatchable entry and from the live claim map it read, asserts each entry cites a plan section, and prints the count of dispatchable entries and the size of the widest disjoint set; its output is logged beside wave.json with exit 0, and the manifest reads complete",
+          "estimated_hours": null,
+          "goal": "write a dispatch-ready wave manifest for sprint S21 as JSON at the reports dir wave.json, one entry per implementable section of the S21 plans (the-page-paints-from-an-index s3-s8, the-local-lane-is-the-default s2-s9, a-crew-process-ends-with-its-owner s2 s3 s5 s6 s7 s9 s10 s11, a-dispatch-returns-without-its-worker s4 s6 s8 s9, a-worker-cannot-write-your-home s3 s4, a-page-load-reads-each-file-once s5, a-placement-with-no-reservation-mints-one-per-worker s3), each entry read from the plan section and the code it touches and carrying plan, section, node id, role, a goal naming exactly one deliverable, the done-when quoted or tightened from the section, the exclusive write paths (source, a new test module named for the behaviour, the plan evidence record), a declared negative control, the in-plan predecessors, and whether it conflicts with any path in `reckon crew scopes --project reckon` at scope time, with entries already landed, held by a live run, or blocked on an unmerged node listed separately with the reason",
+          "id": "s21-wave-scope",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T07:57:06Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 10,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 11,
+            "mean_context": 84444,
+            "observed_at": "2026-09-25T07:56:56Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075705698064-s21-wave-scope/manifest.md",
+          "negative_control": "",
+          "plan": "the-page-paints-from-an-index",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/s21-wave-scope"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "exact",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T07:57:16Z",
+        "completed_at": "2026-09-25T09:35:03.597Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5676,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5867,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075705698064-s21-wave-scope/manifest.md",
+        "scope_changed": false,
+        "session_id": "7c5fb944-116b-44e4-85f2-abf465d85b6e",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6714363,
+            "input_tokens_cumulative": 6714363,
+            "output_tokens": 73404,
+            "output_tokens_cumulative": 73404,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T09:35:03.597Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2610,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 2647,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6870150,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5840.719,
+          "generated_tokens": 82085,
+          "generation_seconds": 5794.873,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 32.2,
+          "machine_seconds": 45.846,
+          "peak_input_tokens": 154487,
+          "tokens_per_second": 14.17,
+          "wall_tokens_per_second": 14.05
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "read-only investigation: the deliverable is wave.json and its check log under the reports dir",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/s21-wave-scope",
+          "session_id": "7c5fb944-116b-44e4-85f2-abf465d85b6e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T09:35:03.597Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T09:35:03Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T07:57:40Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T075705698064-s21-wave-scope",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13292,
+          "worker_pid": 4057290
+        },
+        "promoted_revision": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+        "plan_impl_at_dispatch": 0.14,
+        "impl_move": {
+          "plan": "the-page-paints-from-an-index",
+          "at_dispatch": 0.14,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:investigate"
+        },
+        "negative_control": {
+          "verdict": "exempt",
+          "reason": "node-writes-no-test-path"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:37:06.257777+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T07:57:06Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 10,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 11,
+          "mean_context": 84444,
+          "observed_at": "2026-09-25T07:56:56Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 80.0,
+        "orientation_input_tokens": 2286277.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -414425,6 +414761,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2764
+    "_version": 2765
   }
 }
