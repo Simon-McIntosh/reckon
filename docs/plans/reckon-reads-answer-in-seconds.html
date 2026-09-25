@@ -57,6 +57,18 @@
     </ul>
     <p><strong>Done when:</strong> the report tabulates, for each of the three reads, its top five call sites with cumulative seconds, the category of each, and the reuse candidate. It records the profiling command and the revision. No product file changes.</p>
 
+    <h3 id="read-latency-profile">Landing record &mdash; warm read profile</h3>
+    <p>At revision <code>ac231ab23c991fc574799a28645ecaccd97cde24</code> on <code>clu-2058</code>, the second call in a fresh process reproduced every slow read above the five-second bound under cProfile. Each receipt returned a successful structured result and recorded a nonempty call population. The ranked profiles and the reusable memo boundary are in <a href="/reckon/research/reckon-read-latency-profile">the warm-read research record</a>.</p>
+    <table>
+      <thead><tr><th>Warm read</th><th>Profiled</th><th>Expected after existing-memo reuse</th><th>Dominant branch</th></tr></thead>
+      <tbody>
+        <tr><td><code>audit(project="reckon")</code></td><td>88.554 s</td><td>about 4.0 s</td><td>625 full semantic parses plus independent link, lifecycle, question and followup passes</td></tr>
+        <tr><td><code>roadmap(project="reckon", view="summary")</code></td><td>19.872 s</td><td>about 1.2 s</td><td>134 full plan parses, then 5.666 s classifying 17 live pointers</td></tr>
+        <tr><td><code>read_plan(project="reckon")</code></td><td>27.547 s</td><td>about 1.5 s</td><td>134 plans parsed once for questions and again for followups</td></tr>
+      </tbody>
+    </table>
+    <p><code>reckon.file_memo.memoized</code> can carry the path-pure full-plan, lifecycle, link and anchor records. The discovery memo remains the corpus/tree owner. Live-run classification must reuse only unchanged pointer, manifest, receipt and stream files. These are implementation expectations, not acceptance evidence: the repair still owes three unprofiled warm measurements per read. Report and figure landed in <code>436c75f32d918cad81349350ff423c86f53378e4</code>; the cumulative execution record is <a href="/reckon/evidence/archive/reckon-reads-answer-in-seconds-landed#read-latency-profile">anchored here</a>.</p>
+
     <h2 id="s3">&sect;3 &mdash; Warm reads answer under five seconds</h2>
     <p><strong>Trigger:</strong> deferred until &sect;2's report names the call sites. The fix reuses the named memo, and its done-when is set from the report. The minimum is that the warm <code>audit(project="reckon")</code>, roadmap summary and discovery each answer under 5 s on this host, each measured three times and recorded.</p>
 
