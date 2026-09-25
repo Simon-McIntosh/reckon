@@ -650,26 +650,25 @@ def _follow_rows(monkeypatch, events, *args) -> list[str]:
 def _state_cell_start(row: str, state: str) -> int:
     """Where the fixed-width state cell begins, reached through its own word.
 
-    The marker cell ahead of the state holds one width on every row — the word
-    on a baseline, blanks on a transition — so the state cell sits at the same
-    screen column whoever the row belongs to and whatever it is reporting.
+    The state word is left-aligned in a cell of its own width on every row, so
+    the cell begins where its word does, whoever the row belongs to and whatever
+    it is reporting. The marker cell that once held the column ahead of it is
+    retired, so there is no offset between the two.
     """
-    return row.index(state) - ticker_module.MARKER
+    return row.index(state)
 
 
-def test_a_baseline_row_reads_differently_from_a_transition_into_it(
+def test_the_retired_baseline_marker_never_renders(
     monkeypatch,
 ) -> None:
-    """Inventory at attach must not read as news, and the kind decides.
+    """Inventory at attach is still suppressed, and the marker word is gone.
 
     A reattaching follower emits one baseline per live run within a second or
-    two, because a baseline that renders identically to a transition turns a
-    restart into a burst of things that look like they just happened. A word
-    carries that where a lone glyph did not: a reader took three baseline rows
-    marked by a bullet for fresh dispatches. The distinction is taken from the
-    kind the log records: a genuine first sighting also has no from-state, so
-    inferring it from a null source would mark real transitions as inventory and
-    hide them.
+    two, so a baseline for a run that has already finished is inventory about
+    work that is over and is dropped rather than shown as news. The word the
+    row used to print for the live ones is retired: the state cell names the
+    state, which is the fact a reader scans for, and a label saying the row is
+    inventory spends a column on what the log's own kind already records.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -687,20 +686,17 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     assert len(rows) == 3
     assert "settled-node" not in "\n".join(rows)
 
-    # Same destination state, two different records, two different rows. The
-    # baseline is marked by the word on the row, the transition carries no
-    # marker at all.
+    # No row carries the retired word as a word of its own; the state cell is
+    # the only label a row prints.
+    assert not re.search(r"\bnow\b", "\n".join(rows))
+    assert ticker_module.BASELINE_MARKER not in "\n".join(rows)
     assert "working" in baseline and "working" in transition
-    assert baseline != transition
-    assert ticker_module.BASELINE_MARKER in baseline
-    assert baseline.index(ticker_module.BASELINE_MARKER) < baseline.index("working")
-    assert ticker_module.BASELINE_MARKER not in transition
     # Neither row claims the state it left, and neither claims any state but
     # the one it moved into: `dispatched` is the source of the transition and
     # the destination of the first sighting, and it appears on no row here.
     assert "dispatched" not in baseline
     assert "dispatched" not in transition
-    assert "→" not in "\n".join(rows)
+    assert "\u2192" not in "\n".join(rows)
 
     # The kind, never the absent source: this transition has no from-state and
     # is still rendered as a transition — no marker, and the state it moved
@@ -709,18 +705,16 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     assert "dispatched" in first_sighting
 
 
-def test_the_baseline_marker_stands_as_its_own_word_before_the_state(
+def test_a_baseline_row_keeps_the_state_column_of_a_transition(
     monkeypatch,
 ) -> None:
-    """A baseline row reads `now working`, never the single token `nowworking`.
+    """The state cell lands on one screen column on every row.
 
-    The marker and the state are two facts a reader scans separately — that the
-    row is inventory, and the state the run sits in. Butting the two words
-    together leaves no boundary for the eye to catch, so the marker stops being
-    a word the row can be found by and does not do what it was added for. The
-    separation is one space, and it costs no column: the marker cell holds one
-    width whether it carries the word or is blank, so the state cell keeps the
-    same screen column on a baseline as it does on a transition.
+    A reader scans the state column down the pane, so it must sit at the same
+    offset whether the row is inventory or news. The marker cell that used to
+    hold that column is retired, and the state cell is the only thing ahead of
+    the model, so the column is held by the cell's own fixed width rather than
+    by a cell ahead of it.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -733,15 +727,12 @@ def test_the_baseline_marker_stands_as_its_own_word_before_the_state(
     )
     baseline, transition = rows[0], rows[1]
 
-    # Two words, one space between them: the marker's own word, then the state.
-    assert "now working" in baseline
-    assert "nowworking" not in baseline
-    assert baseline.index("working") == baseline.index("now") + len("now") + 1
-
-    # The row does not carry the state twice or drop the marker, and the blank
-    # marker cell of a transition leaves its state on the same column.
+    # The word is on no row, and the state is not printed twice on one.
+    assert not re.search(r"\bnow\b", "\n".join(rows))
     assert baseline.count("working") == 1
-    assert "now" not in transition
+    assert transition.count("working") == 1
+
+    # The state cell begins at the same screen column on both rows.
     assert _state_cell_start(baseline, "working") == _state_cell_start(
         transition, "working"
     )

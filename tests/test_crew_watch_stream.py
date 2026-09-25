@@ -135,11 +135,12 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     assert len(lines) == 2
     # The transition row names the state the run moved into and neither the
     # one it left nor any arrow; the baseline row before it names its own
-    # state behind the marker word.
+    # state, which the retired marker word no longer precedes: the state cell
+    # itself is the only label a row prints.
     assert sum("blocked" in line for line in lines) == 1
     assert "working" not in lines[-1]
-    assert ticker_module.BASELINE_MARKER in lines[0]
-    assert lines[0].index(ticker_module.BASELINE_MARKER) < lines[0].index("working")
+    assert ticker_module.BASELINE_MARKER not in lines[0]
+    assert "working" in lines[0]
     assert all("→" not in line for line in lines)
     # The clause explaining a blocked state sits on the line, after the counts
     # rather than before them — never on a row of its own, which would cost a

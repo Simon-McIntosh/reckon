@@ -35,10 +35,24 @@ AGE_PATTERN = re.compile(r"[0-9]+m[a-z]\b")
 # The assertions below tie the count to that geometry rather than to each other,
 # so a layout that moved without giving the columns back would fail here.
 RECOVERED_COLUMNS = 6
-FLOOR_BEFORE = 127
-FIXED_BEFORE = 120
+# The state cell no longer holds the destination alone: it carries the remedy
+# beside it, so it is wider than the ten-column cell it replaces by the longest
+# state word, the separator and the longest verb, less the marker cell the row
+# no longer holds (the marker's own word and the space that separated it).
+STATE_CELL_GROWTH = ticker_module.STATE + 1 - (ticker_module.MARKER + 10 + 1)
+# The queued counter renders on every row now, so a row whose event carries no
+# waiting key — this file's fixture — spends one more two-digit counter, its
+# letter and one separator than it did when the bucket appeared only while a run
+# waited. The floor below already counted the bucket; the rendered row did not.
+QUEUE_CELL_GROWTH = 4
+# Both figures above are read at the 180-column default from this revision's own
+# renderer with the blocked fixture below, and the assertions tie the recovered
+# count to that geometry rather than to each other, so a layout that moved
+# without giving the columns back would fail here.
+FLOOR_BEFORE = 127 + STATE_CELL_GROWTH
+FIXED_BEFORE = 120 + STATE_CELL_GROWTH + QUEUE_CELL_GROWTH
 REASON_ROOM_BEFORE = 60
-REASON_ROOM_AFTER = 66
+REASON_ROOM_AFTER = 66 - STATE_CELL_GROWTH - QUEUE_CELL_GROWTH
 
 # The clause the blocked fixture renders, so the row's fixed columns can be
 # lifted clear of it.
@@ -168,9 +182,11 @@ def test_the_clause_starts_at_the_measured_column(grid):
     """The clause begins where the recovered columns put it, not where they claim.
 
     The base row's clause begins at column 126, which is the 120 fixed columns
-    plus the six the age cells took from the margin. This row's begins at 114 —
-    the fixed columns less the six the rate and age cells spent — so the count
-    is read off the row rather than taken from the constant beside it.
+    plus the six the age cells took from the margin. This row's begins at
+    ``FIXED_BEFORE - RECOVERED_COLUMNS`` — the fixed columns, net of the state
+    cell and queued counter this revision widens, less the six the rate and age
+    cells spent — so the count is read off the row rather than taken from the
+    constant beside it.
     """
     at = plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
     assert at == FIXED_BEFORE - RECOVERED_COLUMNS, at
@@ -186,7 +202,9 @@ def test_the_clause_gains_the_recovered_columns(grid):
     """
     room = 180 - plain(grid.render(_event(to_state="blocked"))).index(CLAUSE)
     assert room == REASON_ROOM_AFTER, room
-    assert room == REASON_ROOM_BEFORE + RECOVERED_COLUMNS, room
+    assert room == (
+        REASON_ROOM_BEFORE + RECOVERED_COLUMNS - STATE_CELL_GROWTH - QUEUE_CELL_GROWTH
+    ), room
     whole = grid.render(_event(to_state="blocked", detail=("x" * (room - 1)) + "z"))
     elided = grid.render(_event(to_state="blocked", detail=("x" * room) + "z"))
     assert whole.rstrip().endswith("x" * (room - 1) + "z"), whole
