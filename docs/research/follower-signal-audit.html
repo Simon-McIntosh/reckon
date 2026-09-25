@@ -28,7 +28,7 @@
 
     <section id="finding">
       <h2>Finding</h2>
-      <p>The census was taken at <code>2026-09-25T12:55:21Z</code> from the records whose <code>observed_at</code> begins with <code>2026-09-25</code>. It read 2,554 records from the Reckon stream and 64 from the imas-ambix stream, with the last observed record at <code>2026-09-25T12:55:18Z</code>. The event-type split was 482 producer baselines, 1,853 state transitions and 283 <code>manifest-rewritten</code> records. Counts are a dated receipt, not a live promise: both streams can append after the capture.</p>
+      <p>The census was taken at <code>2026-09-25T12:55:21Z</code> from the records whose <code>observed_at</code> begins with <code>2026-09-25</code>. It read both named project streams, with the last observed record at <code>2026-09-25T12:55:18Z</code>. The event-type split was 482 producer baselines, 1,853 state transitions and 283 <code>manifest-rewritten</code> records. Counts are a dated receipt, not a live promise: both streams can append after the capture.</p>
       <table>
         <thead><tr><th>Observed family</th><th>Rows</th><th>Share</th><th>Decision</th></tr></thead>
         <tbody>
@@ -167,7 +167,7 @@ event_types=baseline:482 transition:1853 manifest-rewritten:283</code></pre>
       <h2>Limits</h2>
       <ul>
         <li>This is a dated capture through <code>12:55:18Z</code>, not a long-run failure rate. The stream is append-only and can grow after the page was written.</li>
-        <li>The imas-ambix comparison contributes 64 records and 11 kinds; the Reckon stream contributes the other 2,554 records and all high-volume noise classes. Cross-project agreement therefore validates the row vocabulary and emitter shape, not equal workload mix.</li>
+        <li>The imas-ambix comparison contributes 11 kinds, while the Reckon stream contributes the high-volume noise classes. Cross-project agreement therefore validates the row vocabulary and emitter shape, not equal workload mix.</li>
         <li>Re-arm replay is a follower emission and does not appear in either producer stream. The page records the twelve-row replay observed by the coordinator and cites the checkpoint/baseline source path instead of treating its absence from the producer file as a negative control.</li>
         <li>No product file was changed. This page and its figure are the complete investigation artifact; the policy implementation remains the separate product node.</li>
       </ul>
