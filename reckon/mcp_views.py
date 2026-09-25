@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup, Tag
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
@@ -550,6 +551,51 @@ def _probe_is_lane_owned(
     return lane_group is not None and groups == {lane_group}
 
 
+def _lane_document_fields(
+    settings: Mapping[str, Any], composition_time: str
+) -> dict[str, Any]:
+    """Return the declared lane document's reading for one lanes-view row."""
+    declared = settings.get("lane_document")
+    if not declared:
+        return {}
+    observed = _parsed_observation(composition_time)
+    report = lane_document_module.read_lane_document_file(declared, now=observed)
+    answered = not report.get("malformed") and any(
+        report.get(name) != lane_document_module.UNKNOWN
+        for name in ("state", "headroom", "observed_at", "admission_headroom")
+    )
+    detail = str(report.get("detail") or "").strip()
+    return {
+        "lane_document": str(declared),
+        "lane_state": report["state"],
+        "lane_observed_at": report["observed_at"],
+        "lane_age_seconds": report["age_seconds"],
+        "lane_stale": report["stale"],
+        "lane_detail": detail,
+        "headroom": report["headroom"],
+        "engine_headroom": report["engine_headroom"],
+        "admission_headroom": report["admission_headroom"],
+        "router_generation_gate": report["router_generation_gate"],
+        "admission_verdict": report["admission_verdict"],
+        "admission_reason": report["admission_reason"],
+        "lane_probe_status": "answered" if answered else "unavailable",
+        "lane_probe_detail": detail or "lane document answered",
+    }
+
+
+def _attach_lane_document(
+    lane: dict[str, Any], fields: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Attach a lane reading and let it answer an otherwise absent probe."""
+    if not fields:
+        return lane
+    lane.update(fields)
+    if lane.get("probe_status") == "not_declared":
+        lane["probe_status"] = fields["lane_probe_status"]
+        lane["probe_detail"] = fields["lane_probe_detail"]
+    return lane
+
+
 def crew_lanes_view(
     config: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]],
@@ -562,7 +608,10 @@ def crew_lanes_view(
 ) -> dict[str, Any]:
     """Compose endpoint availability without selecting or ranking a backend.
 
-    Each lane carries its declared ``budget_group``.  A probe reading is
+    Each lane carries its declared ``budget_group``.  A declared local lane
+    document contributes its gate-aware headroom and admission verdict.  An
+    otherwise absent probe reports that document's answer instead of hiding
+    the reading as ``not_declared``.  An account probe reading is
     adopted as the lane's own only when every backend declaring that probe's
     command declares the same budget group; otherwise the lane keeps its own
     receipt reading, and a lane with no reading of its own renders ``borrowed``
@@ -628,54 +677,61 @@ def crew_lanes_view(
     ):
         backend_name = str(backend)
         settings = settings_value if isinstance(settings_value, Mapping) else {}
+        lane_document_fields = _lane_document_fields(settings, composition_time)
         run = latest.get(backend_name)
         if run is None:
             lanes.append(
-                {
-                    "backend": backend_name,
-                    "alias": settings.get("alias"),
-                    "model": settings.get("model"),
-                    "budget_group": group_by_backend.get(backend_name),
-                    "receipt_state": "unused",
-                    "observed_at": "unmeasured",
-                    "effective_context_window": "unmeasured",
-                    "quota_windows": [],
-                    "unmeasured": {
-                        "observed_at": "unused",
-                        "effective_context_window": "unused",
-                        "quota_windows": "unused",
+                _attach_lane_document(
+                    {
+                        "backend": backend_name,
+                        "alias": settings.get("alias"),
+                        "model": settings.get("model"),
+                        "budget_group": group_by_backend.get(backend_name),
+                        "receipt_state": "unused",
+                        "observed_at": "unmeasured",
+                        "effective_context_window": "unmeasured",
+                        "quota_windows": [],
+                        "unmeasured": {
+                            "observed_at": "unused",
+                            "effective_context_window": "unused",
+                            "quota_windows": "unused",
+                        },
+                        "quota_source": UNMEASURED,
+                        "probe_status": (
+                            probe_by_command[command_by_backend[backend_name]]["status"]
+                            if command_by_backend.get(backend_name) is not None
+                            else "not_declared"
+                        ),
                     },
-                    "quota_source": UNMEASURED,
-                    "probe_status": (
-                        probe_by_command[command_by_backend[backend_name]]["status"]
-                        if command_by_backend.get(backend_name) is not None
-                        else "not_declared"
-                    ),
-                }
+                    lane_document_fields,
+                )
             )
             continue
 
         session_id = str(run.get("session_id"))
         if ledger.is_unmetered_backend(backend_name):
             lanes.append(
-                {
-                    "backend": backend_name,
-                    "alias": settings.get("alias"),
-                    "model": settings.get("model"),
-                    "budget_group": group_by_backend.get(backend_name),
-                    "receipt_state": "unmetered",
-                    "observed_at": UNMEASURED,
-                    "effective_context_window": UNMEASURED,
-                    "quota_windows": [],
-                    "unmeasured": {
-                        "receipt": "unmetered",
-                        "observed_at": "unmetered",
-                        "effective_context_window": "unmetered",
-                        "quota_windows": "unmetered",
+                _attach_lane_document(
+                    {
+                        "backend": backend_name,
+                        "alias": settings.get("alias"),
+                        "model": settings.get("model"),
+                        "budget_group": group_by_backend.get(backend_name),
+                        "receipt_state": "unmetered",
+                        "observed_at": UNMEASURED,
+                        "effective_context_window": UNMEASURED,
+                        "quota_windows": [],
+                        "unmeasured": {
+                            "receipt": "unmetered",
+                            "observed_at": "unmetered",
+                            "effective_context_window": "unmetered",
+                            "quota_windows": "unmetered",
+                        },
+                        "quota_source": UNMEASURED,
+                        "probe_status": "not_declared",
                     },
-                    "quota_source": UNMEASURED,
-                    "probe_status": "not_declared",
-                }
+                    lane_document_fields,
+                )
             )
             continue
 
@@ -821,7 +877,7 @@ def crew_lanes_view(
         }
         if unmeasured:
             lane["unmeasured"] = unmeasured
-        lanes.append(lane)
+        lanes.append(_attach_lane_document(lane, lane_document_fields))
 
     return {
         "composed_at": composition_time,
