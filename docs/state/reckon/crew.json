@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T09:11:12",
+  "updated": "2026-09-25T09:14:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -399520,6 +399520,374 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T060824882496-every-reader-reads-the-run-files",
+        "plan": "the-ledger-is-one-file-per-run",
+        "section": "\u00a72",
+        "node": "every-reader-reads-the-run-files",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1261,
+                "cached_input_tokens": 910646,
+                "input_tokens": 911909,
+                "output_tokens": 1685,
+                "reasoning_output_tokens": 262,
+                "total_tokens": 913594,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "Following plan \u00a72 and the site audit at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/ledger-reader-site-audit/sites.md: ledger.load in reckon/ledger.py keeps its {members, runs, holds} contract with runs the union of runs/<run_id>.json files and crew.json's runs list, reading an id held identically in both once and raising, naming the id and both paths, when the two copies differ; reckon/run_store.py answers a keyed question from the files when the index is absent or its id set disagrees with them, and rebuilds it; reckon/crew/death_census.py and reckon/crew/carryover_census.py answer from the files when the index is absent (carryover using run_store.store_path()). A new test module under tests/ named for the files/index agreement gives every reader the same rows in all three placements (all in crew.json, all in run files, split) with the index present, deleted and rebuilt, and asserts identical answers across the nine combinations, one read for an identical duplicate, and a refusal naming the id for a differing one. Every existing test that reads runs passes unmodified. The declared negative control is executed and logged: making load skip the run files, with all rows in run files and no index, returns an empty runs list and fails the test. No writer changes (that is \u00a71). Your landing record is appended to the plan's \u00a72.",
+          "estimated_hours": null,
+          "goal": "Every ledger reader answers from the per-run files as well as the aggregate, with the index as a disposable cache",
+          "id": "every-reader-reads-the-run-files",
+          "lane_declaration": {
+            "backend": "codex-astra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T06:08:25Z",
+            "read_at": "2026-09-25T06:08:26Z",
+            "resolved_backend": "codex-astra",
+            "utilisation_pct": 11.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/manifest.md",
+          "negative_control": "make ledger.load skip the per-run files; with all rows in run files and the index absent it must return an empty runs list and the new test must fail",
+          "plan": "the-ledger-is-one-file-per-run",
+          "requested_backend": "codex-astra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/ledger.py",
+            "reckon/run_store.py",
+            "reckon/crew/death_census.py",
+            "reckon/crew/carryover_census.py",
+            "tests/test_ledger_files_and_index_agree.py",
+            "docs/plans/the-ledger-is-one-file-per-run.html",
+            "docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html",
+            "docs/figures/the-ledger-is-one-file-per-run"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "serving-origin",
+        "backend": "codex-astra",
+        "local": false,
+        "agent": {
+          "alias": "astra6",
+          "backend": "codex-astra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-6-astra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T06:08:36Z",
+        "completed_at": "2026-09-25T06:35:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1599,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1599,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "60943d24700e65854f3bfda12c2bec10dd872d2f",
+        "commits": [
+          "3d02a02f8112f2518d8548674c8717440dcb1273",
+          "f17e6988a98867268f09356c3608569a91f87304"
+        ],
+        "changed_lines": {
+          "added": 727,
+          "removed": 128,
+          "files": 8
+        },
+        "tests_added": 104,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=60 tests/test_ledger_files_and_index_agree.py tests/test_run_store.py tests/test_review_death_census.py tests/test_session_carryover_census.py tests/test_ledger_write_cannot_shrink.py tests/test_a_promotion_never_creates_a_ledger.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/focused.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d72f-8a0a-7951-a4b5-b68b539b0338",
+        "session_harness": "codex",
+        "session_model": "gpt-6-astra",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6885632,
+            "cached_input_tokens_cumulative": 6885632,
+            "input_tokens": 7082114,
+            "input_tokens_cumulative": 7082114,
+            "output_tokens": 43550,
+            "output_tokens_cumulative": 43550,
+            "reasoning_output_tokens": 13668,
+            "reasoning_output_tokens_cumulative": 13668
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T06:35:15Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 11.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T06:35:15Z"
+            }
+          ],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "notional_cost_usd": "no_dated_rate",
+            "rate_basis": "no_dated_rate"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: The done-when's delta gate (no failure id at the head absent from the base set) cannot pass while tests/test_edit_plan_section_writes.py pins the pre-contract insert_section behaviour, and that file is outside this node's write scope. The node's own change is complete and green in scope (52 passed vs 41 at base), and the six added failures are named with their receipts. A scope extension onto that file, or a coordinator-owned repair of it, resolves the block.; The concurrent-node list named a predecessor node that holds no live pointer; its path claim on reckon/_store.py is disregarded, so this node's writes were legitimate. No other node's path was touched.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 1738,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T05:40:41Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T05:13:17Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T051130395922-insert-section-carries-its-contract",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 15881,
+                "worker_pid": 3267691
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1667,
+              "log_fresh": false,
+              "manifest_commits": [
+                "e4be85c957eff10856da81c36e81c9a88aa84415 feat(store): insert_section writes the section's typed record",
+                "3d7afe48 docs(evidence): record the insert_section refusal, its control and the blocked gate"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "5dd7200a9fbbe24f37fb4db445bd6bc4d2362bfa6e9f46b88fde6a25ad7b474f",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051130395922-insert-section-carries-its-contract/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051130395922-insert-section-carries-its-contract/manifest.md; resolve the blocker before resuming the run",
+              "node": "insert-section-carries-its-contract",
+              "phase": "starting",
+              "plan": "section-contract-and-computed-impl",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T051130395922-insert-section-carries-its-contract",
+              "session": "s22-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T051130395922-insert-section-carries-its-contract",
+                "session_id": "746cae33-f79d-41a3-acfd-f038a94be310",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 1702,
+              "terminal_at": "2026-09-25T05:40:05Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/insert-section-carries-its-contract"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 6885632,
+          "cumulative_input_tokens": 13967746,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 57218
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/every-reader-reads-the-run-files",
+          "session_id": "01a0d72f-8a0a-7951-a4b5-b68b539b0338",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T06:35:15Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T06:35:16Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T06:10:11Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T060824882496-every-reader-reads-the-run-files",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 374,
+          "worker_pid": 3602225
+        },
+        "promoted_revision": "f17e6988a98867268f09356c3608569a91f87304",
+        "impl_move": {
+          "plan": "the-ledger-is-one-file-per-run",
+          "at_dispatch": null,
+          "at_complete": 0.25,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_ledger_files_and_index_agree.py"
+          ],
+          "declaration": "make ledger.load skip the per-run files; with all rows in run files and the index absent it must return an empty runs list and the new test must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/negative-control-observed.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T060824882496-every-reader-reads-the-run-files/negative-control-observed.log"
+        },
+        "lane_advisory": {
+          "backend": "codex-astra",
+          "burn_multiple": 1.2748979552727902,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex-astra' is projected to exhaust at 2026-09-30T06:32:44Z, which is after this node's 3600s horizon ending 2026-09-25T07:08:26.884588+00:00",
+          "horizon_ends_at": "2026-09-25T07:08:26.884588+00:00",
+          "horizon_seconds": 3600,
+          "metered": true,
+          "observed_at": "2026-09-25T06:08:25Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T06:32:44Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 552617,
+          "state": "quiet",
+          "utilisation_pct": 11.0
+        },
+        "lane_declaration": {
+          "backend": "codex-astra",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T06:08:25Z",
+          "read_at": "2026-09-25T06:08:26Z",
+          "resolved_backend": "codex-astra",
+          "utilisation_pct": 11.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 158.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -399832,6 +400200,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2724
+    "_version": 2725
   }
 }
