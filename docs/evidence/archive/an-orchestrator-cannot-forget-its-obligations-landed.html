@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Derived coordinator duties, review-head freshness, focused verification, and mutation evidence">
   <meta name="plan-evidence-for" content="an-orchestrator-cannot-forget-its-obligations">
   <meta name="plan-verifies" content="an-orchestrator-cannot-forget-its-obligations#s2">
-  <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42">
+  <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42,9f7ea716ef16db2eb834fdb35e8f5248d56f5f4c">
   <meta name="plan-artifacts" content="reckon/crew/obligations.py,tests/test_crew_obligations.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="passed">
@@ -53,6 +53,13 @@
       <h2>Review-head freshness</h2>
       <p>The recovery classifier already selects review evidence by the revision it read. The new obligations layer consumes that verdict. A synthetic run moved from its previously reviewed base to a new head; the older stored review remained on disk, and the derived duty was <code>review-missing</code>, not <code>review-ready</code>.</p>
       <p>The declared mutant replaced the head-keyed lookup with the newest review for the run id. The focused freshness assertion then failed because recovery returned <code>promotable</code> instead of <code>scoring</code>. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/negative-review-freshness.log</code>; its first line records the declared mutation verbatim.</p>
+    </section>
+
+    <section id="obligations-reads-are-pure">
+      <h2>Obligation reads are side-effect free</h2>
+      <p>Repair commit <code>9f7ea716ef16db2eb834fdb35e8f5248d56f5f4c</code> replaced the call to the orchestration action <code>recovery.recover</code> with a read of <code>runs.list_live(project=project)</code> classified one pointer at a time by the pure <code>recovery.classify_pointer</code>. An obligations read therefore neither observes a run through <code>dispatch.observe</code> nor launches the project-wide review reflex. Current-head review suppression also reads live reviews from every coordinator session, while an older-head review remains ineligible.</p>
+      <p>The focused gate passed <strong>8 tests</strong>. Its positive purity control held a scoring run with no review in a synthetic config home, replaced both <code>reckon.crew.dispatch.dispatch</code> and <code>reckon.crew.dispatch.observe</code> with raising sentinels, returned <code>review-missing</code>, and confirmed that every file under the synthetic config home and docs tree retained its exact nanosecond mtime. The same gate covers a legacy-only stored review, an older-head live review, and a current-head review owned by another coordinator session.</p>
+      <p>The declared mutation restored the <code>recovery.recover</code> call. The selected purity test failed immediately when the mutant reached the forbidden <code>dispatch.observe</code> entry point. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/negative-pure-read.log</code>; its first line records the mutation verbatim.</p>
     </section>
 
     <section id="verification">

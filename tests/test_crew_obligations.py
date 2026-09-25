@@ -257,6 +257,13 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
     }
 
 
+def test_every_mapped_classification_is_in_recoverys_vocabulary() -> None:
+    mapped = set(obligations_module.CLASSIFICATION_DUTY_KINDS)
+    mapped.update(obligations_module.RECOVERY_CLASSIFICATION_DUTY_KINDS)
+
+    assert mapped <= set(recovery.RECOVERY_CLASSIFICATIONS)
+
+
 def test_obligations_reads_scoring_without_observing_or_dispatching(
     repository: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
