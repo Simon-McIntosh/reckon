@@ -17,16 +17,16 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-09-24">
-  <meta name="plan-version" content="19">
+  <meta name="plan-modified" content="2026-09-25">
+  <meta name="plan-version" content="20">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.0">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.14">
 </head>
 <body>
   <main class="plan-doc">
@@ -270,6 +270,11 @@
     <h4 class="r-fu-title">Make a stall say whether the worker lives</h4>
     <div class="r-fu-body"><p>§2, §3 and §5 all edit <code>reckon/crew/recovery.py</code> and run in order. §4 is independent. §6 waits on the stall census.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
+    </article>
+<article class="r-fu" data-id="f-asrswtwl-tail-window" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T06:56:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The death row misses a worker whose final stream record exceeds the 64 KiB tail window</h4>
+    <div class="r-fu-body"><p>The independent review of §2 (score 90) measured the landed reader at head <code>e63245d1</code>: the tail read in <code>reckon/crew/recovery.py</code> is bounded to the last 64 KiB, so a worker killed mid-turn whose final stream record is larger reads as having no last record — <code>last_record_type</code> None, row state <code>working</code>, no death clause — which is exactly the stale working column §2 replaces. A 64.5 KiB final record fires; 65.5 KiB and 512 KiB do not; the small-record control fires. Repair: the tail read must return the last complete record however large it is (extend backwards until a record boundary is found), with a test at each of those three sizes.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §2 — make the death row read the last stream record whatever its size</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
