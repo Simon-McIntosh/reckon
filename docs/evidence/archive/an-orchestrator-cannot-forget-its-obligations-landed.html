@@ -339,6 +339,30 @@
       </table>
       <p>The receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131108748775-worker-env-carries-its-run/</code>. The first line of each mutation receipt repeats its declared mutation verbatim. <code>reckon/crew/recovery.py</code> is intentionally unchanged: all resume launch-plan construction already converges in <code>reckon/crew/dispatch.py</code>, while that module was concurrently claimed by another node. Integrated-head verification remains coordinator-owned.</p>
     </section>
+
+    <section id="review-in-flight-by-record-path">
+      <h2>A standing review is recognised by the record it names</h2>
+      <p>Commit <code>1f9f4626f8bc86cdd3898ad1c391ef858650be2b</code> extends <code>_review_in_flight</code> in <code>reckon/crew/recovery.py</code>. Recognition consulted two facts: the reflex's recorded review dispatch, and a live pointer whose node id is exactly <code>review-of-</code> plus the source node. A review launched under a coordinator's own id carried neither, so a run with a live review of it kept reading <code>review-missing</code> and its coordinator was steered toward a duplicate review. Reported by the S21 coordinator on 2026-09-25: node <code>re-review-of-headroom-publishes-real-readings</code> was reviewing a run that kept reading <code>review-missing</code>.</p>
+      <p>The third lookup matches any live review-role pointer whose declared write paths include one of the record paths the dispatch composes from the reviewed run &mdash; the plain store path and the <code>.at-&lt;head&gt;</code> path. Those paths name the reviewed run exactly, whatever the reviewer's node id is, so the run is recognised. The head-keyed path is composed beside the legacy one, and the obligations reader's own currency check still keys on the head, so a review of an older revision does not suppress <code>review-missing</code> for the current one.</p>
+      <p>The composed review command selects its lane through <code>_review_lane_candidates</code>, the ordering the reflex already runs on, rather than printing the owning backend unconditionally. The owning lane leads when it is not excluded, the local lane prints as <code>--local</code>, and a backend named in <code>review_excluded_backends</code> is never named on any fallback: one rule, with no second copy of the ordering.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg" alt="Left: three lookups decide whether a scoring run already has a review in flight - the recorded dispatch, a review-of- node id, and a live review-role pointer whose declared write path names the run's record. Right: the printed command orders lanes owning, local, then the rest, and never names an excluded backend.">
+        <figcaption>Recognition and lane selection both read one composed authority: the record path the dispatch derives from the reviewed run, and the candidate ordering the reflex derives from the flight configuration.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Measure</th><th>Observed result</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>New file at the base revision</td><td>2 failed, exit 1. The recognition case reads <code>''</code> where a review of the run is alive.</td><td><code>logs/tests-red-at-base.log</code></td></tr>
+          <tr><td>New file at this head</td><td>2 passed, exit 0.</td><td><code>logs/tests-green-at-head.log</code></td></tr>
+          <tr><td>The four files this change reaches, base revision</td><td><code>tests/test_crew_recovery.py tests/test_crew_obligations.py tests/test_review_reflex_selects_a_backend.py tests/test_review_reflex_sweep.py</code>: 114 passed, 0 failed, exit 0. Scratch base tree at <code>4487e9e0</code>; the log's module line resolves <code>reckon/__init__.py</code> inside that tree.</td><td><code>logs/gate-base.log</code></td></tr>
+          <tr><td>The same four files at this head</td><td>114 passed, 0 failed, exit 0, module resolved in the worktree: <strong>added failures 0</strong>.</td><td><code>logs/gate-head.log</code></td></tr>
+          <tr><td>Adjacent review files at this head</td><td><code>tests/test_review_lane_follows_its_run.py tests/test_scoring_dispatches_its_review.py tests/test_review_composition.py tests/test_review_call_sites.py</code>: 18 passed, exit 0.</td><td>head run, focused set</td></tr>
+          <tr><td><code>ruff check</code> and <code>ruff format --check</code></td><td>The added test file is clean; <code>recovery.py</code> carries only pre-existing findings, none on an added line.</td><td>path-scoped concise checks</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The declared mutation was observed to fail.</strong> Judging recognition by the node id alone &mdash; the declared string is not shown here, see the log &mdash; the recognition case fails with the source run reading in flight as the empty string while a review of it is alive. That is the base module's behaviour, and the red log's first line repeats the declared mutation verbatim. Log: <code>runs/r-20260925T143848980698-review-in-flight-recognises-any-review-node/logs/negative-control-node-id-only.log</code>.</p>
+      <p><strong>Scope retained, deliberately.</strong> The driving followup is not resolved and no terminal status is set: a worker knows its node landed, not whether the section closed. Evidence path: this section, <code>review-in-flight-by-record-path</code>.</p>
+    </section>
   </main>
 </body>
 </html>

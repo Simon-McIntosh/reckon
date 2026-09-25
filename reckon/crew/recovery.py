@@ -409,7 +409,9 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
+def _review_dispatch_argv(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
+) -> list[str]:
     """The review dispatch as an argument vector, ready to run or to print.
 
     The unreconciled-runs waiver is part of the composed command because a run
@@ -420,16 +422,7 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
     command that cannot succeed on the runs it is composed for.
     """
     fields = _review_dispatch_fields(record)
-    owning_backend = str(record.get("backend") or "").strip()
-    # The lane the owning run recorded, so a reader retyping the printed command
-    # composes it from the owning run rather than from whichever runtime happens
-    # to be sweeping: a hardcoded local lane attributes the choice to the
-    # sweeper, which is how a project-wide sweep placed reviews on a lane their
-    # owner never chose. A pointer written before a run carried a backend has
-    # none to name, and keeps the local-lane spelling.
-    lane = ["--local"]
-    if owning_backend:
-        lane = ["--backend", owning_backend]
+    lane = _composed_review_lane(fields["project"], record, config)
     write_paths: list[str] = []
     for path in fields["write_paths"]:
         write_paths += ["--write-path", path]
@@ -463,9 +456,45 @@ def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
     ]
 
 
-def _review_dispatch_action(record: Mapping[str, Any]) -> str:
+def _composed_review_lane(
+    project: str,
+    record: Mapping[str, Any],
+    config: Mapping[str, Any] | None,
+) -> list[str]:
+    """The ``--local``/``--backend`` argv naming a composed review's lane.
+
+    The lane is selected by the same ordering the reflex uses to place its own
+    automations, so the printed command and the executed one choose one lane
+    rather than two. Selection rather than assertion is what keeps a reader's
+    retyped command off a lane the flight configuration has removed from review
+    routing; the local spelling stands in only when the ordering yields no
+    lane, so a pointer written before a run carried a backend keeps the spelling
+    it had. A flight configuration that cannot be read leaves the ordering empty
+    and the owning lane is named directly, because a composed command is a
+    printed artifact and must always print.
+    """
+    owning_backend = str(record.get("backend") or "").strip()
+    try:
+        resolved = _resolved_review_config(project, config)
+    except Exception:  # noqa: BLE001 - a printed command must not raise
+        return ["--backend", owning_backend] if owning_backend else ["--local"]
+    candidates = _review_lane_candidates(resolved, owning_backend=owning_backend)
+    if not candidates:
+        return ["--local"]
+    chosen = candidates[0]
+    local = str(resolved.get("local_backend") or "").strip()
+    if chosen == local:
+        return ["--local"]
+    return ["--backend", chosen]
+
+
+def _review_dispatch_action(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
+) -> str:
     """Return the review dispatch that advances one scoring run."""
-    return " ".join(shlex.quote(part) for part in _review_dispatch_argv(record))
+    return " ".join(
+        shlex.quote(part) for part in _review_dispatch_argv(record, config=config)
+    )
 
 
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
@@ -770,12 +799,16 @@ REVIEW_EXCLUDED_BACKENDS_KEY = "review_excluded_backends"
 def _review_in_flight(record: Mapping[str, Any]) -> str:
     """The review run already standing for this scoring run, or empty.
 
-    Two facts are consulted because the durable one fails soft. The dispatch
+    Three facts are consulted because the durable one fails soft. The dispatch
     record the reflex wrote is the precise answer, but a review launched by a
     coordinator by hand carries no such record; the deterministic node id the
     review dispatch names is, so a hand-launched review is found by identity.
-    A recorded run whose pointer is gone is not in flight — the review died —
-    and the reflex is free to dispatch again rather than wait on a run that no
+    A review launched under another node id carries neither, so a third fact is
+    read — the record paths the reviewer was told to write, which the dispatch
+    composes from the reviewed run and which therefore name it whatever the
+    reviewer is called. A recorded run whose pointer is gone is not in flight —
+    the review died — and the reflex is free to dispatch again rather than wait
+    on a run that no
     longer exists. A promoted or abandoned review leaves no live pointer, and a
     sweep that reads the missing one as a pointer to inspect raises out of the
     reflex rather than recomposing: the probe would fail on exactly the case it
@@ -794,7 +827,27 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
         node = pointer.get("node") or {}
         if str(node.get("id") or "") == fields["node_id"]:
             return str(pointer.get("run_id") or "")
+        if _is_review_run(pointer) and _pointer_names_review_record(
+            pointer, fields["write_paths"]
+        ):
+            return str(pointer.get("run_id") or "")
     return ""
+
+
+def _pointer_names_review_record(
+    pointer: Mapping[str, Any], expected: Iterable[Any]
+) -> bool:
+    """Whether a live pointer was told to write one of these review records.
+
+    The dispatch grants a reviewer the record path of the run it reviews, so a
+    match identifies that run's standing review exactly. The node id is not
+    ``review-of-`` plus the source only by convention — a coordinator may launch
+    the review under its own id — but the granted path is composed from the
+    reviewed run and so cannot name a different one.
+    """
+    node = pointer.get("node") or {}
+    granted = {str(path) for path in node.get("write_paths") or ()}
+    return bool(granted.intersection(str(path) for path in expected))
 
 
 def _record_review_dispatch(
@@ -871,7 +924,11 @@ def _review_lane_candidates(
     its coordinator chose; the locally served backend follows, then the rest in
     a stable alphabetical order. Excluded backends never appear: a coordinator
     that has removed a backend from review routing must not see a fallback land
-    on it, or the exclusion is a note rather than a rule.
+    on it, or the exclusion is a note rather than a rule. The owning lane and
+    the local lane lead even when the configuration no longer lists them, so a
+    composed command names the lane the run was actually carried on rather than
+    substituting one the reader did not choose; whether a named lane can be
+    dispatched is dispatch's own check, not this ordering's.
     """
     backends = config.get("backends") or {}
     excluded = _review_excluded_backends(config)
@@ -880,7 +937,7 @@ def _review_lane_candidates(
     owning = str(owning_backend or "").strip()
     ordered: list[str] = []
     for preferred in (owning, local):
-        if preferred in names and preferred not in ordered:
+        if preferred and preferred not in excluded and preferred not in ordered:
             ordered.append(preferred)
     ordered.extend(name for name in names if name not in ordered)
     return ordered
