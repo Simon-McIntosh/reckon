@@ -19,14 +19,14 @@
   <meta name="plan-sprint" content="S23">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="Three independent contract mismatches between reckon&#x27;s own validators and the skill text; nothing upstream must land first, and §3 is sequenced by a file trigger rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <title>The Audit Agrees With The Skill | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="4">
-<meta name="plan-commits" content="6e168152,17bb7142">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="6e168152,17bb7142,3824f9cf,a255c027,da3ea4a6">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -119,6 +119,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260925T030321341230-review-of-landed-header-is-not-a-splice" data-who="reckon-build" data-when="2026-09-25T03:38:15.298Z">
     <div class="r-comment-body"><p>review of landed-header-is-not-a-splice scored 98/100 with no findings</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925-slug-collision" data-who="reckon-build" data-when="2026-09-25T04:13:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260925T033714063483-slug-collision-is-refused-at-audit</code> is promoted with its gate passed. It was merged at <code>7e936cb8</code>.</p><p>A project-aware <code>reckon audit-doc --project</code> now reports a <code>slug-collision</code> error when another resource type in the same project carries the same <code>plan-slug</code>, and it names both documents. The check reads the project's resource map. A per-file audit without <code>--project</code> is unchanged. 33 doccheck tests pass, flipping the comparison to same-type is observed to fail the collision cases, and the independent review scored 99/100.</p><p>&sect;3 stays deferred on the promotion.py and prompts.py claims.</p></div>
 </div>
 </section>
 </main>
