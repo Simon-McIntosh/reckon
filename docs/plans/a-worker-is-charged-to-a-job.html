@@ -576,6 +576,44 @@ unmeasured; the roster cap moves on that last reading rather than on a core coun
 roster limit are recorded with the measurement each was sized on in the evidence anchor. Verifying the merged
 result belongs to a separately dispatched test node.</p>
 </div>
+<div class="r-note" data-reckon="landed" data-node="placement-steps-run-under-one-reservation" data-when="2026-09-25">
+    <p><strong>Outcome — only the scheduler's own answer releases the reservation.</strong> Commit
+    <code>eaeef031</code>. <code>reckon/crew/placement.py</code> now keeps apart the three things a state query
+    can produce, which the reading collapsed into two: the scheduler reports the job (<code>True</code>); the
+    scheduler ran and named no such job (<code>False</code>); or the question could not be asked at all
+    (<code>None</code>) — no reporting client on the PATH, a non-zero exit, or a controller silent inside the
+    query's own bound. <code>reservation_alive</code> answers from those three and only an answer releases, so a
+    placement whose scheduler cannot be asked keeps its published reservation standing where it previously lost
+    it. That reading was the scatter the published record exists to prevent: with the query unreadable,
+    <code>apply_backend_placement</code> took its fallback branch and the backend's declared wrapping minted an
+    allocation per worker — silently, for as long as the query stayed unaskable — and the same reading made a
+    second <code>ensure</code> spend a second allocation. Both callers inherit the one correction.</p>
+    <p><strong>Gate, and the delta.</strong> The new file's five cases — run as
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_placement_steps_under_reservation.py</code> — <strong>5 passed, exit 0</strong> at the landed head,
+    against <strong>2 failed, 3 passed</strong> for the same file on a tree at base <code>b453d763</code>, where
+    the two failures are the two halves of the defect: the second worker losing the shared id, and a second
+    <code>ensure</code> submitting the allocation it should have asked the scheduler about. Regression arms —
+    <code>tests/test_reserve.py</code>, <code>tests/test_crew_lane_agnostic_placement.py</code>,
+    <code>tests/test_crew_placement_reservation.py</code> — <strong>21 passed / 1 failed on both revisions</strong>,
+    one and the same id, pre-existing at the base and untouched by this change. The cases put a recording fake
+    scheduler on the PATH inside a synthesised config home, assert from its own log what it was asked, and assert
+    the ambient config home carries no trace of the run — so the shared id is read rather than inferred, and the
+    isolation check cannot pass on the wrong directory.</p>
+    <p><strong>The guard was shown to fire.</strong> Declared mutation: make
+    <code>apply_backend_placement</code> mint one reservation per worker again. It reddens 3 of the 5 cases in a
+    scratch tree — the shared-id case, which is the named one, and both cases that rest on the scheduler's own
+    answer — and leaves the no-record case and the <code>ensure</code> case green. The mutation is the defect the
+    node exists to close rather than a nearby line: a reading that collapses an unanswerable query into a
+    released job passes every case with a scheduler to ask, and fails only where the question cannot be put.</p>
+    <p><strong>What this node did not do.</strong> No reservation was held on the cluster from this work and no
+    worker was launched from it, so the queue wait, the real job id and the per-worker resident memory across a
+    wave remain unmeasured, and the roster cap stays the figure the first rung moves. The step form, the
+    publish-and-read path and the cap are as §3 landed them; this node corrects which answer releases them. The
+    reproduction, the reading and the figure are in
+    <a href="/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed#reservation-stands-until-answered">the
+    landed evidence</a>.</p>
+  </div>
 <h2 id="s4">§4 — The workspace contract: what a worker needs visible, and what must never be node-local</h2>
     <p>Three preconditions were measured from both partitions and hold today, but nothing in reckon asserts
     them, so a placement into a partition that lacks one would fail in a way that reads as a worker defect.
