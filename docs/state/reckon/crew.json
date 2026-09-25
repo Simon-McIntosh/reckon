@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:27:17",
+  "updated": "2026-09-25T04:28:29",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -376403,6 +376403,406 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T011708390047-a-failed-launch-test-expects-the-refusal",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a72",
+        "node": "a-failed-launch-test-expects-the-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1435,
+                "cached_input_tokens": 640947,
+                "input_tokens": 642384,
+                "output_tokens": 1042,
+                "reasoning_output_tokens": 93,
+                "total_tokens": 643426,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "Based on eafdb655, which already makes a launcher OSError a CrewError refusal in reckon/crew/dispatch.py, tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope expects crew.CrewError instead of OSError, asserts the raised error's __cause__ is the launcher's OSError, and keeps its no-worktree-holding-write-scope assertion unchanged. No other test in tests/test_crew.py is edited, shown by the diff. That test passes at the node's head and fails at eafdb655, both logged. tests/test_refused_dispatch_leaves_no_pointer.py::test_a_pre_pointer_spawn_refusal_leaves_no_trace still passes. The declared negative control is executed and logged: with the launcher call unwrapped again in a scratch copy of dispatch.py, the edited test fails. tests/test_crew.py and the files importing reckon.crew.dispatch show zero added failures against eafdb655's own base c1e014bf; a load-sensitive id that fails under parallelism is re-run alone before it is counted.",
+          "estimated_hours": null,
+          "goal": "The failed-launch worktree test expects the CrewError refusal the launcher fix raises",
+          "id": "a-failed-launch-test-expects-the-refusal",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T01:17:09Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 29,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 14,
+            "mean_context": 88000,
+            "observed_at": "2026-09-25T01:16:40Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011708390047-a-failed-launch-test-expects-the-refusal/manifest.md",
+          "negative_control": "unwrap the launcher call in a scratch copy so the OSError propagates; the edited test must fail",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "dispatch-readback-2",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T01:17:17Z",
+        "completed_at": "2026-09-25T01:52:16.829Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2010,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2099,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "eafdb655e50828738ec99568bf537a1dc1976c7c",
+        "commits": [
+          "c11eaf2f45e4fd6a11bc5c94ea8e78ab93ef7757",
+          "8b9ee037cb2669da35a711f84d840d9860a9b9e4",
+          "9fd5a738abffa868b3237929c7b93176b04ba90c"
+        ],
+        "changed_lines": {
+          "added": 251,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew.py::test_a_failed_launch_leaves_no_worktree_holding_write_scope tests/test_refused_dispatch_leaves_no_pointer.py::test_a_pre_pointer_spawn_refusal_leaves_no_trace",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011708390047-a-failed-launch-test-expects-the-refusal/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011708390047-a-failed-launch-test-expects-the-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "7058762c-6729-4269-b4a0-e4ff2b1712ae",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9973104,
+            "input_tokens_cumulative": 9973104,
+            "output_tokens": 48792,
+            "output_tokens_cumulative": 48792,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T01:52:16.829Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 2562,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3053,
+              "log_fresh": false,
+              "manifest_commits": [
+                "70c1c3dff3f5b8b32afa2dd9651f9fb690e81739",
+                "5ce3090751a216f0bf95e021a145047fca6ee935"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "52c02e143383a7fc6f7c762f0790629f923408dd285637a8897c3dcad39c876e",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T234000569820-launch-failed-wakes-a-follower/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan the-suite-is-green-at-head --section '\u00a72' --role review --spec-level exact --node review-of-launch-failed-wakes-a-follower --goal 'attach an independent review to run r-20260924T234000569820-launch-failed-wakes-a-follower' --done-when 'the review for r-20260924T234000569820-launch-failed-wakes-a-follower stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T234000569820-launch-failed-wakes-a-follower.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T234000569820-launch-failed-wakes-a-follower.at-5ce3090751a216f0bf95e021a145047fca6ee935.json --time-budget 45m --session s21-coord --allow-unreconciled-runs --backend clive",
+              "node": "launch-failed-wakes-a-follower",
+              "phase": "working",
+              "plan": "the-suite-is-green-at-head",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T234000569820-launch-failed-wakes-a-follower",
+              "session": "s21-coord",
+              "terminal_age_seconds": 3090,
+              "terminal_at": "2026-09-25T00:25:40Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/launch-failed-wakes-a-follower"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 27,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1213,
+              "log_fresh": false,
+              "manifest_commits": [
+                "5e7515e8 39bc5ee4"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "078ec37cf3867e3ecba25e649213d13ad52f10a67a443833d1940d14e0070fd8",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235647999584-the-worker-exit-docstring-says-what-promotion-releases/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260924T235647999584-the-worker-exit-docstring-says-what-promotion-releases --gate <verdict> --commit 5e7515e8ea5a318fe09e9e939430d3edea05415e",
+              "node": "the-worker-exit-docstring-says-what-promotion-releases",
+              "phase": "working",
+              "plan": "a-dispatch-returns-without-its-worker",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260924T235647999584-the-worker-exit-docstring-says-what-promotion-releases",
+              "session": "s21-coord",
+              "terminal_age_seconds": 3800,
+              "terminal_at": "2026-09-25T00:13:50Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/the-worker-exit-docstring-says-what-promotion-releases"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 18,
+            "fit": 18,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9973104,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2017.675,
+          "generated_tokens": 48792,
+          "generation_seconds": 1298.952,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 31.5,
+          "machine_seconds": 718.723,
+          "peak_input_tokens": 151234,
+          "tokens_per_second": 37.56,
+          "wall_tokens_per_second": 24.18
+        },
+        "follow_on_paths": [
+          "tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream",
+          "host/ordering-dependent",
+          "tests/test_watch_arming_isolation.py::test_a_dispatch_under_the_shared_fixture_arms_no_producer",
+          "tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_reuse_their_captured_session"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/a-failed-launch-test-expects-the-refusal",
+          "session_id": "7058762c-6729-4269-b4a0-e4ff2b1712ae",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T01:52:16.829Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T01:52:17Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T01:18:36Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T011708390047-a-failed-launch-test-expects-the-refusal",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 8192,
+          "worker_pid": 2191081
+        },
+        "promoted_revision": "9fd5a738abffa868b3237929c7b93176b04ba90c",
+        "plan_impl_at_dispatch": 0.75,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.75,
+          "at_complete": 0.75,
+          "verdict": "waived",
+          "reason": "the-suite-is-green-at-head's state is written by its own coordinator session, which records this landing"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew.py"
+          ],
+          "declaration": "unwrap the launcher call in a scratch copy so the OSError propagates; the edited test must fail",
+          "log": "/home/ITER/mcintos/.cache/a-failed-launch-test/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.cache/a-failed-launch-test/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T02:02:09.059008+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T01:17:09Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 29,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 14,
+          "mean_context": 88000,
+          "observed_at": "2026-09-25T01:16:40Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 91.0,
+        "orientation_input_tokens": 1146238.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -376715,6 +377115,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2631
+    "_version": 2632
   }
 }
