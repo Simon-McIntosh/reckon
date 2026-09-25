@@ -81,6 +81,7 @@
       </table>
       <p><strong>Latency.</strong> Time from start to the first baseline line, base <code>17935dc3</code> against the head, absolute <code>.venv</code> interpreter. Synthetic fleet of 40 runs: base 0.118/0.071/0.072&nbsp;s, head 0.093/0.070/0.071&nbsp;s. Real project <code>reckon</code>, read-only, <code>runs.watch_stream_cursor</code> at 29 rows: base 6.59/6.14/6.21&nbsp;s, head 6.00/6.38/6.34&nbsp;s; the dry-run sweep that runs first, before the cursor, at <code>reckon/cli.py:2166</code>: base 1.04/1.05/1.02&nbsp;s, head 1.11/1.02/1.11&nbsp;s. The change adds one small atomic write, ~25&nbsp;ms. No latency was added; the largest measured pre-emission call is <code>watch_stream_cursor</code> at ~6.3&nbsp;s, and it predates this section.</p>
       <p><strong>Retained limit.</strong> The <code>dispatched</code> label a long-working run can carry in a regenerated baseline is derived outside this section's fence, in <code>reckon/crew/recovery.py:4507</code> (<code>_watch_snapshot</code>), consumed through <code>reckon/crew/runs.py:1155-1168</code>; it was not changed here and remains the continuation path's own baseline only on a first arming.</p>
+    </section>
 
     <section id="row-reads-cleanly">
       <h2>The follower row reads cleanly</h2>
@@ -128,6 +129,29 @@
         </tbody>
       </table>
       <p><strong>Retained limit.</strong> <code>reckon/crew/ticker.py</code> and <code>reckon/crew/recovery.py</code> are untouched by this node. Four failures remain in the full ticker, watch and recovery set and all four failed at base: three in <code>tests/test_recovery_state_typing.py</code> (the action word moved out of the clause into the state cell, so a literal <code>resume:</code> or <code>decide:</code> label no longer renders) and one unrelated unit-template gap in <code>tests/test_watcher_unit_restart.py</code> (a source module with no generator). All four are outside this node's fence and are reported as follow-ons rather than fixed.</p>
+    </section>
+
+    <section id="ticker-row-is-one-transition">
+      <h2>The ticker row is one aligned transition</h2>
+      <p>Commit <code>926b8743</code> replaces the destination-and-action cell with one fixed-width transition. Each row reads time, one-character attention, model, effort, role, node, previous state right-aligned to the classifier's widest state word, one fixed <code>→</code>, destination state left-aligned, elapsed, the fixed <code>w b u q</code> counters and the reason clause. Every field boundary has at least two spaces; the long lead examples retain their node-name gutter.</p>
+      <p>The renderer holds the state it last put on this pane for each run. The producer pair <code>dispatched → abandoned</code>, then <code>dispatched → working</code> therefore renders as <code>dispatched → abandoned</code>, then <code>abandoned → working</code>. A later event whose destination is still <code>working</code> renders no row. Recovery verbs remain structured event facts and do not appear between the transition and elapsed; <code>!</code> is present exactly for a destination or recovery classification that owes the coordinator attention. The ledger-row departure branch is gone, so <code>withdrawn</code> and <code>promoted</code> render exactly as the producer supplied them.</p>
+      <figure><img src="/reckon/figures/the-fleet-counters-count-the-fleet/ticker-transition-grid.svg" alt="Two ticker rows aligned on one arrow, with the second row beginning from the first row's destination"><figcaption>One vertical arrow guide makes the chain visible: the first destination is the second previous state, while attention changes independently and the node cell retains its gutter.</figcaption></figure>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Assigned ticker, watch and recovery files at <code>926b8743b2733460bdb1e962d15e09d99d53138f</code></td><td>266 passed</td><td><code>final-suite.log</code>; absolute project interpreter, color path enabled, no cache provider.</td></tr>
+          <tr><td>Every classifier state pair, none-to-state, three node-name widths, seven elapsed boundaries and queued/not queued</td><td>29,484 rendered cases</td><td><code>tests/test_ticker_row_is_one_transition.py</code>; fixed arrow, attention, elapsed, counter and reason starts, with every gutter checked.</td></tr>
+          <tr><td><code>print the action word after the transition</code></td><td>failed as required</td><td><code>mutation-print-action-word.log</code>; the grid property rejected the inserted remedy.</td></tr>
+          <tr><td><code>drop the two-space name gap</code></td><td>failed as required</td><td><code>mutation-drop-name-gap.log</code>; the boundary property rejected the one-space gutter.</td></tr>
+          <tr><td><code>take the previous state from the event's from_state</code></td><td>failed as required</td><td><code>mutation-use-producer-from-state.log</code>; the chain fixture found <code>dispatched → working</code> instead of <code>abandoned → working</code>.</td></tr>
+          <tr><td><code>print same-state rows</code></td><td>failed as required</td><td><code>mutation-print-same-state.log</code>; the repeated-state fixture received a second row.</td></tr>
+          <tr><td>Ruff on every edited Python file</td><td>1 finding, from 6 at base</td><td><code>ruff-base.log</code> and <code>ruff-after.log</code>; the retained <code>FURB162</code> is pre-existing, and <code>ruff format --check</code> accepts all eleven files.</td></tr>
+        </tbody>
+      </table>
+      <h3>Moved geometry assertions</h3>
+      <p>The assertions that pinned the preceding row geometry now read the new cells from the renderer's constants: <code>CLAUSE_COLUMN</code> and the transition/elapsed/counter starts in <code>tests/test_ticker_reads_cleanly.py</code>; <code>_measure_column</code> in <code>tests/test_crew_ticker_layout.py</code>; <code>_spend_column</code> in <code>tests/test_crew_recovery.py</code>; <code>_reason_start</code> in <code>tests/test_ticker_reason_cut_at_a_word.py</code>; node-cell extraction in <code>tests/test_ticker_node_names_keep_their_ends.py</code>; and baseline, stream-chain, wait-marker and departure expectations in <code>tests/test_crew_ticker.py</code>, <code>tests/test_crew_watch_stream.py</code>, <code>tests/test_ticker_renders_wait_facts.py</code> and <code>tests/test_ticker_row_drops_unread_cells.py</code>.</p>
+      <p><strong>Retained limit.</strong> Carrying the Ticker's in-memory <code>reported</code> map through a process re-arm belongs to the follower continuation node, because <code>reckon/cli.py</code> and the checkpoint store are outside this node's write scope. This commit supplies the pane-owned chain and its state-map contract; the coordinator must reconcile the re-arm carry separately.</p>
     </section>
   </main>
 </body>
