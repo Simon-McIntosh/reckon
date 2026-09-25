@@ -6,9 +6,13 @@ user-scope settings file, and it is read only to prove the installer's default
 call leaves it alone. The hook scripts the snippet names are resolved from this
 file's own location, never through the installer's helper, so a snippet naming
 a path that is not in this repository fails the test rather than agreeing with
-whatever the installer computed. The merge cases cover a settings file that
-already registers one of the entries: it is skipped, the rest are still added,
-and an install with nothing to add leaves the file exactly as it was.
+whatever the installer computed — and the interpreter the commands name is
+resolved from that same location, so a command launched by the platform python3
+fails here rather than in the harness, where it would leave the hook a silent
+no-op. The merge cases cover a settings file that already registers one of the
+entries: it is skipped, the rest are still added, an install with nothing to add
+leaves the file exactly as it was, and an entry written before the interpreter
+was added counts as registered rather than being duplicated.
 """
 
 from __future__ import annotations
@@ -52,29 +56,54 @@ EXISTING_SETTINGS: dict = {
 
 
 # The hook scripts as this repository carries them, resolved from this file's
-# own location: tests/ sits directly under the repository root, and both scripts
-# ship in reckon/hooks/. Nothing here reads the installer's own path helper: a
-# snippet whose command points somewhere else is meant to fail these tests.
+# own location: tests/ sits directly under the repository root, both scripts
+# ship in reckon/hooks/, and the interpreter they run under is that root's own
+# virtualenv. Nothing here reads the installer's own path helper: a snippet
+# whose command points somewhere else is meant to fail these tests.
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / "reckon" / "hooks"
 COORDINATOR_HOOK = HOOKS_DIR / "coordinator_obligations.py"
 WORKER_STOP_HOOK = HOOKS_DIR / "worker_stop.py"
+INTERPRETER = REPO_ROOT / ".venv" / "bin" / "python"
+
+HOOK_SCRIPT_NAMES = {COORDINATOR_HOOK.name, WORKER_STOP_HOOK.name}
 
 
 def _encode(payload: dict) -> bytes:
     return (json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode()
 
 
+def _hook_command(mode: str) -> str:
+    """The coordinator command as the installer composes it, for one mode."""
+    return shlex.join(
+        [
+            str(installer.interpreter_path()),
+            str(installer.hook_script_path()),
+            "--hook",
+            mode,
+        ]
+    )
+
+
 def _prompt_command() -> str:
-    return shlex.join([str(installer.hook_script_path()), "--hook", "prompt"])
+    return _hook_command("prompt")
 
 
 def _stop_command() -> str:
-    return shlex.join([str(installer.hook_script_path()), "--hook", "stop"])
+    return _hook_command("stop")
 
 
 def _worker_stop_command() -> str:
     return shlex.join([str(installer.worker_stop_script_path())])
+
+
+def _bare_prompt_command() -> str:
+    """The form an install wrote before the command named an interpreter."""
+    return shlex.join([str(COORDINATOR_HOOK), "--hook", "prompt"])
+
+
+def _bare_stop_command() -> str:
+    return shlex.join([str(COORDINATOR_HOOK), "--hook", "stop"])
 
 
 def _commands(payload: dict, event: str) -> list[str]:
@@ -85,9 +114,17 @@ def _commands(payload: dict, event: str) -> list[str]:
     ]
 
 
+def _script_path(command: str) -> Path:
+    """Return the hook script a command runs, past whatever launches it."""
+    for token in shlex.split(command):
+        if Path(token).name in HOOK_SCRIPT_NAMES:
+            return Path(token)
+    raise AssertionError(f"command names no hook script: {command}")
+
+
 def _command_paths(payload: dict, event: str) -> list[Path]:
-    """Return the script each command in ``event`` runs, as the command names it."""
-    return [Path(shlex.split(command)[0]) for command in _commands(payload, event)]
+    """Return the script each command in ``event`` runs."""
+    return [_script_path(command) for command in _commands(payload, event)]
 
 
 def _fingerprint(path: Path) -> tuple[int, bytes] | None:
@@ -103,6 +140,10 @@ def _write_settings_file(path: Path, payload: dict) -> bytes:
     original = _encode(payload)
     path.write_bytes(original)
     return original
+
+
+def _group(command: str) -> dict:
+    return {"hooks": [{"type": "command", "command": command}]}
 
 
 def _expected_entries() -> tuple[str, ...]:
@@ -151,6 +192,41 @@ def test_snippet_commands_name_the_hook_scripts_this_repository_carries() -> Non
     for paths in observed.values():
         for path in paths:
             assert path.is_file()
+
+
+def test_the_coordinator_commands_name_the_repository_interpreter() -> None:
+    """The commands launch the hooks with the checkout's own interpreter.
+
+    The obligations hook imports this package, so an entry launched through the
+    script's own ``env python3`` shebang reports ``No module named 'reckon'``
+    and reads no duties at all — silently, since the hook exits 0 either way.
+    The interpreter is resolved from this file's location rather than from the
+    installer's helper, so a command launched by anything else fails here.
+    """
+    assert INTERPRETER.is_file()
+
+    snippet = installer.build_hook_snippet()
+
+    expected = {
+        "UserPromptSubmit": [
+            shlex.join([str(INTERPRETER), str(COORDINATOR_HOOK), "--hook", "prompt"])
+        ],
+        "SessionStart": [
+            shlex.join([str(INTERPRETER), str(COORDINATOR_HOOK), "--hook", "prompt"])
+        ],
+        "Stop": [
+            shlex.join([str(INTERPRETER), str(COORDINATOR_HOOK), "--hook", "stop"]),
+            _worker_stop_command(),
+        ],
+    }
+
+    observed = {event: _commands(snippet, event) for event in expected}
+    assert observed == expected
+    # The negative half: no coordinator command is left in the bare form an
+    # install wrote before the interpreter was added.
+    for event in ("UserPromptSubmit", "SessionStart"):
+        assert _bare_prompt_command() not in observed[event]
+    assert _bare_stop_command() not in observed["Stop"]
 
 
 def test_dry_run_prints_the_fragment_and_leaves_the_file_untouched(
@@ -292,6 +368,56 @@ def test_an_entry_registered_under_another_event_is_still_added(
         _worker_stop_command(),
     ]
     assert _commands(result.document, "UserPromptSubmit") == [_prompt_command()]
+
+
+def test_an_entry_written_before_the_interpreter_was_added_is_recognised(
+    tmp_path: Path,
+) -> None:
+    """A registered bare-form command suppresses the interpreter form of itself."""
+    settings = tmp_path / "settings.json"
+    existing = _group(_bare_prompt_command())
+    _write_settings_file(settings, {"hooks": {"UserPromptSubmit": [existing]}})
+
+    result, _ = _call(settings, write=True)
+
+    assert result.skipped == (f"UserPromptSubmit: {_prompt_command()}",)
+    assert result.added == (
+        f"SessionStart: {_prompt_command()}",
+        f"Stop: {_stop_command()}",
+        f"Stop: {_worker_stop_command()}",
+    )
+    # The registered group keeps its bytes: it is recognised as this entry
+    # rather than rewritten into the interpreter form or duplicated beside it.
+    assert result.document["hooks"]["UserPromptSubmit"][0] == existing
+    assert _commands(result.document, "UserPromptSubmit") == [_bare_prompt_command()]
+
+
+def test_a_settings_file_holding_the_bare_form_of_every_entry_is_left_alone(
+    tmp_path: Path,
+) -> None:
+    """A reinstall over the pre-interpreter form adds nothing at all."""
+    settings = tmp_path / "settings.json"
+    original = _write_settings_file(
+        settings,
+        {
+            "hooks": {
+                "UserPromptSubmit": [_group(_bare_prompt_command())],
+                "SessionStart": [_group(_bare_prompt_command())],
+                "Stop": [
+                    _group(_bare_stop_command()),
+                    _group(_worker_stop_command()),
+                ],
+            }
+        },
+    )
+    before = _fingerprint(settings)
+
+    result, _ = _call(settings, write=True)
+
+    assert result.added == ()
+    assert result.skipped == _expected_entries()
+    assert settings.read_bytes() == original
+    assert _fingerprint(settings) == before
 
 
 def test_dry_run_under_an_already_installed_hook_changes_nothing(
