@@ -770,6 +770,64 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     repair, re-review and promotion as separate receipts rather than treating a green gate as
     proof of repair.</p>
   </section>
+
+  <section id="lanes-view-shows-local-congestion">
+    <h2>&sect;6 — The lanes view shows local admission congestion
+    <a class="anchor" href="#lanes-view-shows-local-congestion">#</a></h2>
+
+    <p><strong>The reproduced defect.</strong> At base <code>d677269f</code>, calling
+    <code>crew_lanes_view</code> with clive's declared
+    <code>lane_document: ~/public/imas-ambix/lane.json</code> returned
+    <code>probe_status: not_declared</code> and carried none of the router gate. The reproduction is
+    stored in <code>reproduction.log</code> under run
+    <code>r-20260925T130201428821-lanes-view-shows-local-congestion</code>.</p>
+
+    <p><strong>What landed.</strong> Commit <code>fe70b862</code> makes
+    <code>reckon/mcp_views.py</code> read every declared lane document through the shared
+    gate-aware reader. A lanes row now carries the declared document, engine and effective
+    headroom, admission headroom and reason, the nested gate's width, in-flight and waiting
+    counters, and the admission verdict. When no account probe exists, an answered lane document
+    changes <code>probe_status</code> from <code>not_declared</code> to <code>answered</code>; an
+    undeclared backend keeps the prior <code>not_declared</code> shape.</p>
+
+    <table>
+      <caption>Evidence that the guarded path ran.</caption>
+      <thead><tr><th>Check</th><th>Receipt</th></tr></thead>
+      <tbody>
+        <tr><td>Declared congested fixture</td><td><code>engine_headroom=6</code>, <code>admission_headroom=-9</code>, effective <code>headroom=-9</code>, gate <code>{width: 14, in_flight: 14, waiting: 9}</code>, verdict <code>congested</code></td></tr>
+        <tr><td>Undeclared fixture</td><td><code>probe_status=not_declared</code>; no lane-document or admission fields are invented</td></tr>
+        <tr><td>Focused gate</td><td><strong>2 passed</strong> in 0.41 s</td></tr>
+        <tr><td>Matched MCP/lanes regression surface</td><td>base <code>d677269f</code>: <strong>99 passed</strong>; head <code>fe70b862</code>: <strong>99 passed</strong>; zero added failures</td></tr>
+        <tr><td>Lint delta</td><td>two pre-existing findings at base and the same two at head; the new test adds none</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Live host receipt.</strong> The real <code>crew(view="lanes")</code> call at this
+    node's head read clive's published document as fresh and answered. At that observation the row
+    carried <code>engine_headroom=5</code>, <code>admission_headroom=-3</code>, effective
+    <code>headroom=-3</code>, gate <code>{width: 14, in_flight: 14, waiting: 3}</code>, and
+    <code>admission_verdict=congested</code>. The complete response is
+    <code>crew-lanes-host.log</code> in the run directory.</p>
+
+    <h3>Negative control</h3>
+
+    <p>The red log begins with the declared mutation verbatim: <em>crew_lanes_view ignores the
+    declared lane_document; the declared-config case must report not_declared and fail</em>. Run
+    against the unmodified view with the new test present, the declared-config case fails on the
+    first introduced marker, <code>lane_document</code>, with <code>KeyError</code>; the undeclared
+    case passes. The log records <strong>1 failed, 1 passed</strong>, proving the green gate depends
+    on the new wiring rather than merely exercising the old undeclared path.</p>
+
+    <p>Logs:
+    <code>~/.config/reckon/crew/runs/r-20260925T130201428821-lanes-view-shows-local-congestion/negative-control.log</code>,
+    <code>gate.log</code>, <code>base-suite.log</code>, <code>after-suite.log</code>,
+    <code>lint-base.log</code>, <code>lint-after.log</code>, and
+    <code>crew-lanes-host.log</code>.</p>
+
+    <p><strong>Boundary.</strong> This record proves this node's commit and the live host reading;
+    it does not claim the separately assembled merged head. The worker leaves the driving followup
+    open and makes no terminal plan-state change for the coordinator to adjudicate.</p>
+  </section>
 </main>
 </body>
 </html>
