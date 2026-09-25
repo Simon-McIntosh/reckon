@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -324,10 +324,11 @@
     <div class="r-fu-body"><p><strong>Nothing in this plan has been implemented.</strong> Its text went through three read-backs. The first found 18 two-reading sentences, the second 9 and the third 4, and all were settled in revisions d1bd70d4, 2bd62d04 and ca99eae1. Their reports are under <code>~/.config/reckon/crew/reports/reckon/ship-s19-20260922/</code> (<code>review-of-the-ledger-is-one-file-per-run</code>, <code>review-of-the-ledger-revision</code>, <code>third-read-back-of-the-ledger</code>). ca99eae1 has not been read back. <strong>Next:</strong> (1) dispatch a local read-back of the current text, which must find no load-bearing two-reading sentence. (2) §2 readers, then §1 writer, then §3 split, then §4 roster and holds (after <code>new-work-gets-a-new-worker</code> §3), with the two-part gate named above. Record each promotion's wall time beside the snapshot's tree count, so this plan is not credited with what <code>the-boundary-check-reads-two-trees</code> removes.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run §2</pre>
     </article>
-<article class="r-fu" data-id="f-tlioefpr-promotion-never-amends" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T12:05:00Z" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tlioefpr-promotion-never-amends" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T12:05:00Z" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run §1" data-resolved-at="2026-09-25T18:24:22+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A promotion never amends its own commit</h4>
     <div class="r-fu-body"><p><code>crew complete</code> writes the promote commit, then amends it to add the release outcome (<code>reckon/crew/promotion.py:3103</code>, <code>git commit --amend</code>, introduced with the worktree release in c676b011). In a shared checkout, any session's push between those two steps publishes the pre-amend commit, and the amend then diverges main from origin. Observed 2026-09-25 13:53: 005f5bab (pushed) and ab0643dc (amended) promoted the same run, and the next pull conflicted on <code>crew.json</code> and a plan file while another session's promotion was reading <code>crew.json</code>, which failed with CorruptEnvelopeError. The reflog shows commit-then-amend on every promotion. Measure: the release outcome is written before the one promote commit, or as a second commit, and never by amend. A test drives a promotion whose release step runs and asserts the promote commit's sha is unchanged after <code>crew complete</code> returns.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run §1 — the promotion commit is never amended</pre>
+    <p class="r-fu-outcome">done — crew complete records the release outcome as a second commit and never amends (038b4735, 7f51cb12, 789ef768); the three promotion tests find the promote commit by its sha (577c78df); the unused attempts parameter on append_run is removed; merged at 41af9d03, reviews 88 and 90. A fourth sibling test that still reads final HEAD (review finding on tests/test_crew_promotion.py near :1843) is left as a P3.</p>
     </article>
 <article class="r-fu" data-id="f-tlioefpr-promotion-scope-counts-main" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T16:46:00Z" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run §1" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Promotion scope counts main&#x27;s own history when a run&#x27;s head sits on a merge from main</h4>
