@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="24">
+  <meta name="plan-version" content="25">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -295,10 +295,11 @@
     <div class="r-fu-body"><p>§2, §3 and §5 all edit <code>reckon/crew/recovery.py</code> and run in order. §4 is independent. §6 waits on the stall census.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-tail-window" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T06:56:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-tail-window" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T06:56:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §2" data-resolved-at="2026-09-25T09:01:47+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The death row misses a worker whose final stream record exceeds the 64 KiB tail window</h4>
     <div class="r-fu-body"><p>The independent review of §2 (score 90) measured the landed reader at head <code>e63245d1</code>: the tail read in <code>reckon/crew/recovery.py</code> is bounded to the last 64 KiB, so a worker killed mid-turn whose final stream record is larger reads as having no last record — <code>last_record_type</code> None, row state <code>working</code>, no death clause — which is exactly the stale working column §2 replaces. A 64.5 KiB final record fires; 65.5 KiB and 512 KiB do not; the small-record control fires. Repair: the tail read must return the last complete record however large it is (extend backwards until a record boundary is found), with a test at each of those three sizes.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §2 — make the death row read the last stream record whatever its size</pre>
+    <p class="r-fu-outcome">done — the tail reader extends backwards to the last complete record whatever its size (c5b2e184, 7db40838, merged at ece4fa95); review 96; its one test-docstring finding forwarded to the liveness node on recovery.py</p>
     </article>
 <article class="r-fu" data-id="f-asrswtwl-live-worker-read-dead" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T07:20:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The watcher read two live workers as dead with retained work</h4>
