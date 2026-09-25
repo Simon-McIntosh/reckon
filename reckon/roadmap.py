@@ -40,6 +40,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 from reckon.mcp_views import compose_review, load_composed_review, partition_live_runs
+from reckon.project_state import focus_sprint_id, live_sprint_ids
 from reckon.resources import (
     read_plan_record,
     read_sprint_record,
@@ -47,6 +48,7 @@ from reckon.resources import (
     resource_scan_scope,
 )
 from reckon.schedule import derive_schedule
+from reckon.sprint_liveness import sprint_liveness
 
 _EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
@@ -1259,28 +1261,26 @@ def _drift_is_member_progress(stored: str, derived: str) -> bool:
 
 
 def _sprint_status_buckets(
-    sprints: list[dict[str, Any]], declared_active: str | None
+    sprints: list[dict[str, Any]],
+    declared_active: str | None,
+    liveness: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> tuple[str | None, list[str]]:
     """Derive the pushed sprint and the open-sprint bucket from sprint status.
 
-    ``active`` means pushed and exactly one sprint may carry it, so the unique
-    active row is the authority; the declared value survives only while the
-    statuses cannot settle it (none active, or more of them, which the audit
-    reports at error severity). ``open`` sprints — work remains and this is not
-    the one being pushed — are returned as their own bucket.
+    The sprint a live crew is working wins the focus, most recent stream
+    activity first; with no live crew the stored status decides, and where
+    several sprints are stored ``active`` the deterministic pick documented on
+    :func:`reckon.sprint_liveness.focus_sprint_id` applies. The declared value
+    survives only when neither settles it. ``open`` sprints — work remains and
+    this is not the one being pushed — are returned as their own bucket.
     """
-    active_ids = [
-        str(sprint.get("id") or "")
-        for sprint in sprints
-        if str(sprint.get("status") or "").lower() == "active"
-    ]
-    unique = active_ids[0] if len(active_ids) == 1 else None
+    focused = focus_sprint_id(sprints, liveness)
     open_ids = [
         str(sprint.get("id") or "")
         for sprint in sprints
         if str(sprint.get("status") or "").lower() == "open"
     ]
-    return (unique or declared_active), open_ids
+    return (focused or declared_active), open_ids
 
 
 def _dependency_endpoints(
@@ -1471,8 +1471,14 @@ def _build_roadmap(
         project, sprints, all_plans
     )
     membership, sprint_order = _sprint_membership(sprints, project)
+    resolved_docs = (
+        Path(docs_dir) if docs_dir is not None else _load_mounts().get(project)
+    )
+    liveness = (
+        sprint_liveness(project, resolved_docs) if resolved_docs is not None else {}
+    )
     active_sprint_id, open_sprint_ids = _sprint_status_buckets(
-        sprints, active_sprint_id
+        sprints, active_sprint_id, liveness
     )
     resolved_sprint_items = _resolved_sprint_items(project, sprints, all_plans)
     open_sprints = _open_sprints(sprints, all_plans, resolved_sprint_items)
@@ -2369,6 +2375,7 @@ def _build_roadmap(
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
         "active_sprint_id": active_sprint_id,
+        "live_sprint_ids": live_sprint_ids(liveness),
         "open_sprint_ids": open_sprint_ids,
         "completion": {
             "plans": len(plan_values),
