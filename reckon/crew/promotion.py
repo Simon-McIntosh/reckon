@@ -3978,6 +3978,14 @@ def _complete_locked(
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=session_id,
+        session_harness=(record.get("session_harness") or record.get("dialect"))
+        if session_id
+        else None,
+        session_model=(
+            record.get("session_model") or (record.get("agent") or {}).get("model")
+        )
+        if session_id
+        else None,
         budget=measured_budget,
         lane_receipt=lane_receipt,
         throughput=stream.throughput,

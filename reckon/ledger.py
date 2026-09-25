@@ -1237,6 +1237,8 @@ def build_record(
     manifest_path: str = "",
     scope_changed: bool = False,
     session_id: str | None = None,
+    session_harness: str | None = None,
+    session_model: str | None = None,
     budget: Mapping[str, Any] | None = None,
     lane_receipt: Mapping[str, Any] | None = None,
     throughput: Mapping[str, Any] | None = None,
@@ -1343,6 +1345,8 @@ def build_record(
         "manifest_path": str(manifest_path),
         "scope_changed": bool(scope_changed),
         "session_id": session_id,
+        "session_harness": session_harness,
+        "session_model": session_model,
         # Whatever headroom the backend reported while this run was in flight.
         # Carried here because the pointer that held it is deleted on promotion,
         # and a pre-flight that has to make a call to learn headroom spends the
@@ -1357,9 +1361,6 @@ def build_record(
         ),
         "review": None if review is None else dict(review),
     }
-    if session_id:
-        record["session_harness"] = stored_agent.get("dialect")
-        record["session_model"] = stored_agent.get("model")
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a
     # run generated at and the lane it was handed over to are measurements; a

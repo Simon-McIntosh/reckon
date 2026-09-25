@@ -3998,7 +3998,6 @@ def dispatch(
                 # Read before the placement wraps the plan: the harness is
                 # argv[0] here, and after the wrap argv[0] is the scheduler.
                 harness_command = str(plan.argv[0]) if plan.argv else None
-                agent["dialect"] = plan.dialect
                 record["session_harness"] = plan.dialect if reuse_session else None
                 plan = apply_backend_placement(plan, backend, project)
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
@@ -6514,7 +6513,6 @@ def change_lane(
                     "dialect": target_plan.dialect,
                 }
             )
-            current["agent"]["dialect"] = target_plan.dialect
             current.pop("directive", None)
         else:
             current.update(
