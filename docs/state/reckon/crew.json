@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T08:08:52",
+  "updated": "2026-09-25T08:16:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -395380,6 +395380,295 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T044753199067-read-plan-reads-one-section",
+        "plan": "the-mcp-answers-within-its-ceiling",
+        "section": "\u00a76",
+        "node": "read-plan-reads-one-section",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1292,
+                "cached_input_tokens": 684042,
+                "input_tokens": 685336,
+                "output_tokens": 1244,
+                "reasoning_output_tokens": 298,
+                "total_tokens": 686580,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "read_plan(view='section', section='s3') returns that section's heading, plain text, HTML, declaration and the comments anchored to it, and an absent section is refused with a named error, with the authored-prose section splitter living in reckon/mcp_views.py because reckon/_plan_html.py is claimed by another run and must not change (reuse map Node A5 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s23-reuse-map/reuse-map.md: _read_plan_view mcp.py:910, resource_view in mcp_views.py, VIEW_NAMES, parse_plan in _plan_html.py read-only, the S22 sections records); discovery search with a term found only in a plan's body returns that plan (_matches_search mcp.py:1435); tests/test_read_plan_section_view.py asserts all three on a synthetic plan plus one carrying S22 section records; the existing MCP payload budgets hold (tests/test_mcp_views.py and tests/test_mcp_roadmap.py pass unchanged, including the summary and response-schema size bounds); the declared mutation (the section view arm removed) is applied and the section test observed to fail with its log recorded; the recorded character length of the section view for docs/plans/a-worker-knows-it-is-on-compute.html section s3 is written beside its raw view's length; ruff --output-format=concise on every edited source file reports no more findings than at base",
+          "estimated_hours": null,
+          "goal": "add a read_plan section view that returns one authored section, and let discovery search match plan body text",
+          "id": "read-plan-reads-one-section",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-25T04:47:53Z",
+            "read_at": "2026-09-25T04:47:54Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 9.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044753199067-read-plan-reads-one-section/manifest.md",
+          "negative_control": "remove the section view arm",
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp.py",
+            "reckon/mcp_views.py",
+            "tests/test_read_plan_section_view.py",
+            "docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html",
+            "docs/figures/the-mcp-answers-within-its-ceiling",
+            "docs/plans/the-mcp-answers-within-its-ceiling.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-25T04:48:06Z",
+        "completed_at": "2026-09-25T05:48:09Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 3603,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 3603,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "6d407358864ed21c589eebd0216d2fc72c118660",
+        "commits": [
+          "7659c019e05e2da9c80f84c8909bbbdd928cf9ba",
+          "f05c311da5bc0062e38f060c0e249e160e6bef36",
+          "0eba4849f9688370f1ffd1963c965a9989f75447",
+          "806c0737778f6967d2d7e4dc1ef8ca5e740388f1"
+        ],
+        "changed_lines": {
+          "added": 664,
+          "removed": 5,
+          "files": 6
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_read_plan_section_view.py tests/test_mcp_views.py tests/test_mcp_roadmap.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044753199067-read-plan-reads-one-section/review-repair-final-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044753199067-read-plan-reads-one-section/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0d6e5-c6ab-70a1-9d5c-7211b8806a96",
+        "session_harness": "codex",
+        "session_model": "gpt-5.6-sol",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 25813120,
+            "cached_input_tokens_cumulative": 25813120,
+            "input_tokens": 26030844,
+            "input_tokens_cumulative": 26030844,
+            "output_tokens": 55685,
+            "output_tokens_cumulative": 55685,
+            "reasoning_output_tokens": 15263,
+            "reasoning_output_tokens_cumulative": 15263
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-25T05:48:09Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 11.0,
+              "resets_at": 1790869124,
+              "observed_at": "2026-09-25T05:48:09Z"
+            }
+          ],
+          "notional_cost_usd": 105.2371,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 19,
+            "evidence": 16,
+            "fit": 20,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 25813120,
+          "cumulative_input_tokens": 26030844,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 70948,
+          "generation_seconds": 3386.158,
+          "machine_seconds": 124.878,
+          "tokens_per_second": 20.95
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/read-plan-reads-one-section",
+          "session_id": "01a0d6e5-c6ab-70a1-9d5c-7211b8806a96",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T05:48:09Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T05:11:11Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-09-25T04:49:37Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T044753199067-read-plan-reads-one-section",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 397,
+          "worker_pid": 3144738
+        },
+        "promoted_revision": "806c0737778f6967d2d7e4dc1ef8ca5e740388f1",
+        "plan_impl_at_dispatch": 0.83,
+        "impl_move": {
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "at_dispatch": 0.83,
+          "at_complete": 0.86,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_read_plan_section_view.py"
+          ],
+          "declaration": "remove the section view arm",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044753199067-read-plan-reads-one-section/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044753199067-read-plan-reads-one-section/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "codex",
+          "burn_multiple": 1.1495427762877237,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'codex' is projected to exhaust at 2026-09-30T19:30:04Z, which is after this node's 3600s horizon ending 2026-09-25T05:47:54.739039+00:00",
+          "horizon_ends_at": "2026-09-25T05:47:54.739039+00:00",
+          "horizon_seconds": 3600,
+          "metered": true,
+          "observed_at": "2026-09-25T04:47:53Z",
+          "precedes_horizon": false,
+          "projected_exhaustion_at": "2026-09-30T19:30:04Z",
+          "resets_at": "2026-10-01T15:38:43Z",
+          "seconds_until_reset": 557449,
+          "state": "quiet",
+          "utilisation_pct": 9.0
+        },
+        "lane_declaration": {
+          "backend": "codex",
+          "headroom": "known",
+          "metered": true,
+          "observed_at": "2026-09-25T04:47:53Z",
+          "read_at": "2026-09-25T04:47:54Z",
+          "resolved_backend": "codex",
+          "utilisation_pct": 9.0
+        },
+        "lane_reading": {
+          "age_seconds": null,
+          "binding_observed": "unknown",
+          "detail": "backend declares no lane document",
+          "headroom": "unknown",
+          "mean_context": "unknown",
+          "observed_at": null,
+          "state": "unknown",
+          "suggested_shelf_life_seconds": null
+        },
+        "tool_steps": 137.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -395692,6 +395981,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2709
+    "_version": 2710
   }
 }
