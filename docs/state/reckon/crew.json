@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T08:20:47",
+  "updated": "2026-09-25T08:26:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -396503,6 +396503,307 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T053343436358-test-ledger-reads-only-its-own-state",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a73",
+        "node": "test-ledger-reads-only-its-own-state",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 567,
+                "cached_input_tokens": 857122,
+                "input_tokens": 857693,
+                "output_tokens": 1090,
+                "reasoning_output_tokens": 37,
+                "total_tokens": 858783,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "(1) _outside_state() no longer fails when a peer session writes to the workstation's real crew/live directory during the run: it still asserts the tests leave the real directory untouched, but compares only entries a test in this file could have created (for example by the run ids or project names the tests use), and a check that simulates a peer pointer appearing mid-test (a scratch file written into a temporary stand-in directory, not the real one) is observed to pass while a pointer carrying a test's own run id is observed to fail; (2) test_every_read_view_returns_and_large_defaults_are_compact reads a small synthetic checkout under the test's own temporary root instead of the real repository (tests/test_ledger.py around line 1990), and when the response lacks 'view' its assertion prints the whole envelope; that test's duration is recorded before and after with --durations; (3) test_a_promoted_row_carries_the_throughput_its_observation_measured, test_a_promoted_row_carries_the_budget_fallback_its_pointer_held and test_every_read_view_returns_and_large_defaults_are_compact each pass in three consecutive runs of tests/test_ledger.py under -n 8 while a concurrent -n 8 full-suite run loads the node, logs recorded; tests/test_ledger.py passes in full serially; no reckon/ file is edited and no test is skipped, xfailed, deleted or weakened",
+          "estimated_hours": null,
+          "goal": "tests/test_ledger.py reads and compares only state its own tests created",
+          "id": "test-ledger-reads-only-its-own-state",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T05:33:44Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 17,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 17,
+            "mean_context": 96000,
+            "observed_at": "2026-09-25T05:33:27Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053343436358-test-ledger-reads-only-its-own-state/manifest.md",
+          "negative_control": "restore the whole-directory _outside_state comparison and observe a simulated peer pointer fail it",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_ledger.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "suite-green-f",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T05:33:51Z",
+        "completed_at": "2026-09-25T06:06:39.270Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1872,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1968,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "d4f13e1ac6d57b4c72e708367d3e628ba24d5a07",
+        "commits": [
+          "e885dee7179a08340e02c7865ecc68249d0847a0",
+          "718d783893ced0c6ed89b28703fb035d39b66f09"
+        ],
+        "changed_lines": {
+          "added": 326,
+          "removed": 21,
+          "files": 5
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 tests/test_ledger.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053343436358-test-ledger-reads-only-its-own-state/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053343436358-test-ledger-reads-only-its-own-state/manifest.md",
+        "scope_changed": false,
+        "session_id": "eb417578-09f0-4ea4-a5e6-067296a883e0",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11122186,
+            "input_tokens_cumulative": 11122186,
+            "output_tokens": 52845,
+            "output_tokens_cumulative": 52845,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T06:06:39.270Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 16,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 89
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11288394,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1874.832,
+          "generated_tokens": 58307,
+          "generation_seconds": 1038.051,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.4,
+          "machine_seconds": 836.781,
+          "peak_input_tokens": 164908,
+          "tokens_per_second": 56.17,
+          "wall_tokens_per_second": 31.1
+        },
+        "follow_on_paths": [
+          "logs/load-full-suite-n8.log",
+          "/",
+          "507.53s",
+          "tests/test_watch_arming_isolation.py",
+          "tests/test_a_reexec_keeps_its_children.py",
+          "tests/test_schema.py",
+          "tests/test_spa_module_scope.py",
+          "tests/test_ledger",
+          "tests/test_ledger.py",
+          "docs/",
+          "and/or"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/test-ledger-reads-only-its-own-state",
+          "session_id": "eb417578-09f0-4ea4-a5e6-067296a883e0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T06:06:39.270Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T06:06:39Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T05:35:21Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T053343436358-test-ledger-reads-only-its-own-state",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 8056,
+          "worker_pid": 3368063
+        },
+        "promoted_revision": "718d783893ced0c6ed89b28703fb035d39b66f09",
+        "plan_impl_at_dispatch": 0.85,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.85,
+          "at_complete": 0.89,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_ledger.py"
+          ],
+          "declaration": "restore the whole-directory _outside_state comparison and observe a simulated peer pointer fail it",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053343436358-test-ledger-reads-only-its-own-state/logs/negative-control-whole-directory.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T053343436358-test-ledger-reads-only-its-own-state/logs/negative-control-whole-directory.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T06:33:44.118646+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T05:33:44Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 17,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 17,
+          "mean_context": 96000,
+          "observed_at": "2026-09-25T05:33:27Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 103.0,
+        "orientation_input_tokens": 2770019.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -396815,6 +397116,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2714
+    "_version": 2715
   }
 }
