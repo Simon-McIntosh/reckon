@@ -234,6 +234,83 @@ def test_validation_diagnostic_cannot_execute_an_insert_request(plan) -> None:
     assert '<h2 id="s3">' not in after
 
 
+def test_stale_comment_merge_keeps_the_queued_section_insertion(plan) -> None:
+    checkout, path = plan
+    stale_state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+    assert stale_state["version"] == 0
+
+    peer_state = deepcopy(stale_state)
+    store_module.apply_ops(
+        peer_state,
+        [
+            {
+                "op": "append",
+                "target": "comments",
+                "section": "s2",
+                "item": {
+                    "id": "peer-comment",
+                    "who": "peer",
+                    "when": "2026-09-25T01:00:00Z",
+                    "body": "<p>Peer comment.</p>",
+                },
+            }
+        ],
+        is_index=False,
+    )
+    assert (
+        store_module.write_plan(
+            "sample",
+            "section-writes",
+            peer_state,
+            expected_version=0,
+            root=checkout,
+            artifact_type="plan",
+        )
+        == 1
+    )
+
+    stale_batch = deepcopy(stale_state)
+    store_module.apply_ops(
+        stale_batch,
+        [
+            {
+                "op": "append",
+                "target": "comments",
+                "section": "s2",
+                "item": {
+                    "id": "stale-writer-comment",
+                    "who": "stale-writer",
+                    "when": "2026-09-25T01:01:00Z",
+                    "body": "<p>Stale writer comment.</p>",
+                },
+            },
+            {
+                "op": "insert_section",
+                "id": "s3",
+                "title": "Third section",
+                "body": "<p>Inserted after comment merge.</p>",
+            },
+        ],
+        is_index=False,
+    )
+    version = store_module.write_plan(
+        "sample",
+        "section-writes",
+        stale_batch,
+        expected_version=0,
+        root=checkout,
+        artifact_type="plan",
+    )
+
+    text = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(text)
+    comment_ids = {comment["id"] for comment in state["comments"]["s2"]}
+    assert version == 2
+    assert comment_ids == {"peer-comment", "stale-writer-comment"}
+    assert '<h2 id="s3">Third section</h2>' in text
+    assert "<p>Inserted after comment merge.</p>" in text
+
+
 def test_authored_text_edit_still_refuses_a_structured_overlap(plan) -> None:
     _checkout, path = plan
     text = path.read_text(encoding="utf-8")

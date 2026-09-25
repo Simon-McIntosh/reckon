@@ -729,13 +729,16 @@ def _write_state_locked(
         cur_state = _state_from_text(project, text, root)
         cur_version = int(cur_state.get("version", 0) or 0)
 
+    # Consume against the exact op-working object before a commutative comment
+    # merge can replace ``data`` with a fresh mapping.
+    section_insertions = _consume_section_insertions(data)
+
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
         if merged_comments is None:
             raise VersionConflict(expected_version, cur_version, cur_state)
         data = {**dict(data), "comments": merged_comments}
 
-    section_insertions = _consume_section_insertions(data)
     new_data = dict(data)
     state_type = canonical_type(new_data.get("type"))
     if selected_resource_type and state_type != selected_resource_type:
