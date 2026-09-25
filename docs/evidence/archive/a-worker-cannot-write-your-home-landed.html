@@ -743,6 +743,100 @@ exit: 0</pre>
     <code>gate-fence-opt-in-head.txt</code>, <code>negative-control-fence-opt-in.txt</code>, figure
     <code>/reckon/figures/a-worker-cannot-write-your-home/fence-opt-in.svg</code>.</p>
   </section>
+  <section id="s2-worker-git-guard" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; a worker cannot run mutating git against another checkout</h2>
+
+    <p><strong>The defect, measured 2026-09-25 at 20:52:06Z.</strong> Unfenced imas-ambix worker
+    <code>r-20260925T203357366663-s18-pause-cut-flag</code> ran
+    <code>git -C /home/ITER/mcintos/Code/imas-ambix checkout --
+    docs/plans/local-lane-admission-control.html</code> against the coordinator's main checkout to
+    undo its own stray plan write. That verb is banned for files an agent did not author, and had
+    the coordinator held uncommitted plan edits it would have destroyed them with no trace. With
+    the fence off, nothing stopped it.</p>
+
+    <p><strong>The repair: a PreToolUse Bash guard that is in scope only inside a crew run.</strong>
+    <code>reckon/hooks/worker_git_guard.py</code> reads <code>RECKON_RUN_ID</code>, exports nothing
+    when it is absent, so a coordinator session is untouched. It tokenises the Bash command, splits
+    it at the shell separators (<code>;</code>, <code>&amp;&amp;</code>, <code>||</code>,
+    <code>|</code>, <code>&amp;</code>), and tracks a <code>cd</code> so a later segment's working
+    directory is the one the <code>cd</code> left behind. For each segment running <code>git</code>
+    it resolves the target from <code>-C</code>, <code>--git-dir</code> or <code>--work-tree</code>
+    (both separated and attached forms), and from that working directory otherwise. The run's own
+    worktree is read from its live pointer
+    (<code>&lt;RECKON_HOME&gt;/crew/live/&lt;run&gt;.json</code>, the <code>worktree</code> field).
+    A mutating verb &mdash; checkout, restore, reset, clean, stash, commit, merge, rebase, pull,
+    push, add, rm, mv, switch, cherry-pick, revert, am, apply &mdash; whose target resolves outside
+    that worktree is denied, and the refusal names the run, the worktree and the target. A read-only
+    verb, and any verb outside that set, stays allowed everywhere. The guard is stdlib-only and
+    ships as a bare script command.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/worker-git-guard-decision.svg"
+           alt="A flow from a Bash payload through the RECKON_RUN_ID scope test, the live-pointer worktree read, tokenisation with cd tracking, target resolution from -C, --git-dir or --work-tree, and the mutating-verb test, ending in deny when the target is outside the run's worktree and allow otherwise.">
+      <figcaption>Where the answer comes from. A coordinator takes the left branch to allow
+      everything; a run-scoped worker's mutating verb is decided by whether its target resolves
+      inside the run's own worktree.</figcaption>
+    </figure>
+
+    <p><strong>Measure.</strong> Four tests in <code>tests/test_worker_git_guard.py</code> carry the
+    falsifier, and each is red at base <code>2cd573f1</code> (the module does not exist, so the file
+    errors at collection) and green at the head. A mutating verb aimed at another checkout
+    <em>by <code>-C</code></em> and <em>by <code>cd &amp;&amp;</code></em> is denied, and the
+    refusal names the run, the worktree and the target; the same verb inside the run's own worktree
+    is allowed; a read-only verb (<code>status</code>, <code>log</code>, <code>diff</code>,
+    <code>show</code>, <code>rev-parse</code>, <code>grep</code>) is allowed anywhere; and with no
+    <code>RECKON_RUN_ID</code> every command is allowed. Base arm: collection error, exit 2
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-base.txt</code>);
+    head arm: <code>7 passed</code>, the four named tests plus the installer cases and the hook
+    entry point
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-head.txt</code>).</p>
+
+    <p><strong>The installer entry, and nothing installed.</strong>
+    <code>reckon/hooks/install.py</code> gains an opt-in PreToolUse Bash entry:
+    <code>build_hook_snippet(include_git_guard=True)</code> and
+    <code>install_hook_settings(include_git_guard=True)</code> add the group whose command is
+    <code>worker_git_guard.py</code>, while the default fragment is byte-identical to what it was
+    before, so the obligations and worker-stop install path is unmoved. The default call is a dry
+    run: the entry is composed as data and printed, and no settings file is opened. The test asserts
+    the user-scope <code>~/.claude/settings.json</code> is byte-identical before and after, and that
+    the default fragment keeps its events. Installing it is the lead's explicit decision and this
+    node performs no install.</p>
+
+    <p><strong>No added failures on the neighbouring hook tests.</strong>
+    <code>tests/test_hook_installer.py</code>, <code>tests/test_guard_install.py</code> and
+    <code>tests/test_worker_stop_hook.py</code>, each arm run from its own tree (base module
+    <code>/tmp/wgg-base-2329838/reckon/__init__.py</code>, head module under the worktree root,
+    both named on the log headers; the base tree's <code>.venv</code> is a symlink to the main
+    checkout's, since the installer test resolves the interpreter from the repository root): base
+    <code>2cd573f1</code> <code>36 passed</code>, head <code>36 passed</code>, zero added
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-companions-base.txt</code>,
+    <code>gate-worker-git-guard-companions-head.txt</code>).</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong>
+    <em>allow a mutating git verb whose -C target is another checkout.</em> Applied to a scratch copy
+    of the head tree by making <code>_git_target</code> stop reading a <code>-C</code> value as the
+    target, the <code>-C</code> case is allowed and so is the hook entry point's
+    <code>-C</code> reset: <code>2 failed, 5 passed</code>, failing exactly
+    <code>test_a_mutating_verb_against_another_checkout_is_denied</code> and
+    <code>test_main_denies_a_cross_checkout_command_with_a_deny_payload</code>. With the mutation
+    reverted in the same tree, <code>7 passed</code>, so the <code>-C</code> resolution is what the
+    denial rests on
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-worker-git-guard.txt</code>,
+    <code>negative-control-worker-git-guard-reverted.txt</code>).</p>
+
+    <p><strong>Lint and format delta, measured on complete trees.</strong> The clean
+    <code>git archive</code> of base <code>2cd573f1</code> carries 466 lint lines and the head tree
+    (base plus the three changed paths) 466, so this change adds none; all three paths are
+    formatted, and <code>ruff check</code> on them is clean
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-worker-git-guard.txt</code>). Commit
+    <code>8d515f5e</code>. Evidence:
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-worker-git-guard-base.txt</code>,
+    <code>gate-worker-git-guard-head.txt</code>,
+    <code>gate-worker-git-guard-companions-base.txt</code>,
+    <code>gate-worker-git-guard-companions-head.txt</code>,
+    <code>negative-control-worker-git-guard.txt</code>, figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/worker-git-guard-decision.svg</code>.</p>
+  </section>
 </main>
 </body>
 </html>
