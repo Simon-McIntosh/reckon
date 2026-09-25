@@ -9,12 +9,12 @@
   <meta name="plan-title" content="The audit agrees with the skill — cumulative execution-evidence record">
   <meta name="plan-summary" content="Execution evidence for the-audit-agrees-with-the-skill. One anchor per material outcome, accumulating as nodes land.">
   <meta name="plan-evidence-for" content="the-audit-agrees-with-the-skill">
-  <meta name="plan-verifies" content="the-audit-agrees-with-the-skill#s1">
+  <meta name="plan-verifies" content="the-audit-agrees-with-the-skill#s1,the-audit-agrees-with-the-skill#s2">
   <meta name="plan-recorded-at" content="2026-09-25">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; the mutated negative-control run followed by an edit and an exact restore, verified against HEAD">
-  <meta name="plan-commits" content="6e168152">
-  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_doccheck_landed_header.py,docs/figures/the-audit-agrees-with-the-skill/landed-header-exemption.svg">
+  <meta name="plan-commits" content="6e168152,3824f9cf,a255c027">
+  <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_doccheck_landed_header.py,docs/figures/the-audit-agrees-with-the-skill/landed-header-exemption.svg,tests/test_doccheck_slug_collision.py,docs/figures/the-audit-agrees-with-the-skill/slug-collision.svg">
   <title>The audit agrees with the skill — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -87,6 +87,72 @@
     "document carries 4 &lt;header&gt; elements" &mdash; 1 failed. The log is at
     the run's <code>negative-control.log</code>. The exemption was restored
     afterwards and the full focused set re-run green.</p>
+  </section>
+
+  <section id="slug-collision-refused-across-types">
+    <h2>&sect;2 — A slug two resource types share is refused at audit</h2>
+
+    <figure>
+      <img src="/reckon/figures/the-audit-agrees-with-the-skill/slug-collision.svg"
+           alt="Left: a slug-only resolve_resource on the shared slug reaches both a plan and a research document and raises ambiguous across types, so every slug-only edit_plan on the plan fails. Right: audit-doc reads the project's resource map, sees the same slug indexed under plan and under research, and reports an error-severity slug-collision finding naming both document paths, exiting non-zero.">
+      <figcaption>The failing lookup and the reporting audit read the same
+      shared slug; the resource map makes the collision visible to an audit that
+      a per-file check could not see.</figcaption>
+    </figure>
+
+    <p><strong>The defect.</strong> A research note at
+    <code>docs/research/fleet-view-rendering.html</code> carried the
+    <code>plan-slug</code> of a live plan,
+    <code>agent-sessions-live-on-the-fleet-node</code>. <code>resolve_resource</code>
+    then resolved that slug to two resources and raised "resource slug &hellip; is
+    ambiguous across types: plan, research", so every slug-only
+    <code>edit_plan</code> on the plan failed. The worker's gate was
+    <code>reckon audit-doc</code>, and a per-file audit of either document
+    passed — the collision lived in the project, which no single-file check
+    looked at.</p>
+
+    <p><strong>What landed.</strong> <code>reckon/doccheck.py</code> gains
+    <code>slug_collision_findings(path, docs_dir=, project=)</code>. It reads the
+    audited document's <code>plan-slug</code> and declared
+    <code>reckon-type</code>, then consults <code>reckon.resources.resource_map</code>
+    for the project and reports an <code>error</code>-severity
+    <code>slug-collision</code> finding when another resource carries the same
+    slug under a different type. The resource map already indexes the project by
+    type and slug, so the check reuses that one index rather than adding a second
+    tree scan. The finding names both documents, and either side reports it when
+    audited, so no direction depends on which document the caller names.
+    Project-scoped <code>run()</code> resolves the docs root from the registered
+    mounts and merges the finding into the per-path results, so a
+    <code>reckon audit-doc --project &lt;p&gt; &lt;doc&gt;</code> that hits a
+    collision now exits non-zero. A run with no <code>--project</code> is
+    unchanged, because there is no docs root to read a map from.</p>
+
+    <p><strong>Verification.</strong>
+    <code>tests/test_doccheck_slug_collision.py</code> builds a synthetic project
+    under <code>tmp_path</code> (never a real mount) with a plan and a research
+    document sharing a slug. It asserts the error for <em>each</em> side, that
+    the message names both paths, that the command surface
+    (<code>doccheck.main</code> with a synthetic mounts file, so argument parsing,
+    the mounts lookup and the exit code are all exercised) exits non-zero on the
+    collision, and that a project whose slugs are unique produces no
+    <code>slug-collision</code> finding and exits zero. The doccheck-focused set
+    (<code>test_doccheck.py</code>, <code>test_doccheck_landed_header.py</code>,
+    <code>test_doccheck_slug_collision.py</code>) is 33 passed. <code>ruff check
+    --output-format=concise reckon/doccheck.py</code> reports 12 findings, equal
+    to the base revision's 12, and the new test file reports none, so the change
+    adds no findings.</p>
+
+    <p><strong>Negative control.</strong> The declared mutation removes the
+    cross-type comparison in <code>slug_collision_findings</code>, so only a
+    same-type slug share is compared and a cross-type collision is never
+    detected. With it applied, the three collision assertions fail
+    (<code>test_shared_slug_reported_for_each_document</code>,
+    <code>test_shared_slug_run_exits_nonzero</code>,
+    <code>test_shared_slug_cli_exits_nonzero</code>) while the unique-slug case
+    still passes &mdash; 3 failed, 1 passed. The log is at the run's
+    <code>negative-control.log</code>, its first line the declared mutation
+    verbatim. The comparison was restored afterwards and the focused set re-run
+    green.</p>
   </section>
 </main>
 </body>
