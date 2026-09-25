@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -135,10 +135,13 @@
     <div class="r-comment-body"><p>review of obligations-mcp-view at d1b632ce scored 98/100 with no findings</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T080934765563-obligations-mcp-view" data-who="reckon-build" data-when="2026-09-25T08:52:57.445Z">
-    <div class="r-comment-body"><p>crew(view=&#x27;obligations&#x27;, session=...) returns the derived duties a coordinator session owes and refuses a missing session by name; its test passed 2 of 2 at 7c4be2b6, the integrated state before the obligations purity fix; review 98 with no findings. At the later head the purity fix made the test&#x27;s recovery.recover stub inert and the view test fails, so a corrective reseeds the fixture with real pointers</p></div>
+    <div class="r-comment-body"><p>crew(view='obligations', session=...) returns the derived duties a coordinator session owes and refuses a missing session by name; its test passed 2 of 2 at 7c4be2b6, the integrated state before the obligations purity fix; review 98 with no findings. At the later head the purity fix made the test's recovery.recover stub inert and the view test fails, so a corrective reseeds the fixture with real pointers</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260925-obligations-mcp-view-gate-at-head" data-who="reckon-build-worker" data-when="2026-09-25T12:20:00Z">
     <div class="r-comment-body"><p>Gate at the integrated head <code>f97cd292</code>: <code>tests/test_mcp_crew_obligations.py</code> runs <strong>1 failed, 1 passed</strong>. The failing test still patches <code>recovery.recover</code>, and the patch is now <strong>inert</strong>: <code>obligations()</code> classifies each pointer through <code>recovery.classify_pointer</code> (<code>reckon/crew/obligations.py:88-93</code>), so the stubbed rows never enter the derivation and the kinds assertion is the one that trips (<code>assert [] == ['review-ready','review-missing']</code>). The identical test file passes <strong>2/2 at the base</strong> <code>7c4be2b6</code> (merge first parent, where <code>obligations()</code> still calls <code>recover</code>), so this is a new failure attributed to <code>9f7ea716</code> (keep obligation reads side effect free), integrated at merge <code>6eac9d30</code>. The purity fix answered the review at <code>7e881d73</code>; this test was not re-run against it. Fix is either re-pointing the fixture at <code>classify_pointer</code> or a live-stub precondition; the repository was read-only for this gate. Figure: <a href="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-gate.svg">where the stub went inert</a>. Full record: <a href="/reckon/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed#obligations-mcp-view-gate-at-head">gate evidence</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T092353250759-review-of-obligations-are-a-derived-view" data-who="reckon-build" data-when="2026-09-25T10:40:11.306Z">
+    <div class="r-comment-body"><p>re-review of obligations-are-a-derived-view at 9f7ea716 scored 86/100: reads confirmed side-effect free; the evidence record still described the pre-repair revision, and the census stubbed the classifier so vocabulary drift could not redden; both returned to the node&#x27;s session</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
