@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:30:14",
+  "updated": "2026-09-25T11:30:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -413735,6 +413735,27 @@
         "orientation_input_tokens": 1939667.0,
         "store_write": {
           "status": "written"
+        },
+        "integrated_gate_check": {
+          "base_verdict": "passed",
+          "integrated_verdict": "not-run",
+          "integrated_revision": "967de482fa8840968415bb8b34dfab131e79bb51",
+          "checkout_revision": "85bc3d2b599251ed4b85f44bbef96e998ec9e511",
+          "checkout_on_integrated_revision": false,
+          "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_supervisor.py",
+          "gate_command_source": "stored",
+          "ran": false,
+          "exit_status": null,
+          "timed_out": false,
+          "reason": "the checkout is at 85bc3d2b5992, not the integrated revision 967de482fa88: a gate run here would verify the wrong tree. Check the integrated revision out, or name the revision the checkout actually carries",
+          "finding": {
+            "base_verdict": "passed",
+            "integrated_verdict": "not-run",
+            "integrated_revision": "967de482fa8840968415bb8b34dfab131e79bb51",
+            "exit_status": null,
+            "reason": "the checkout is at 85bc3d2b5992, not the integrated revision 967de482fa88: a gate run here would verify the wrong tree. Check the integrated revision out, or name the revision the checkout actually carries",
+            "message": "the gate passed at the worker's base but reports not-run on the integrated revision 967de482fa88: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted"
+          }
         }
       }
     ],
@@ -414048,6 +414069,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2761
+    "_version": 2762
   }
 }
