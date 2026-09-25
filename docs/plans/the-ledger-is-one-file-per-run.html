@@ -138,6 +138,24 @@
       run files is expected everywhere and is not what this checks. The negative control makes
       <code>load</code> skip the run files, and with all rows in run files and the index absent it must
       then return an empty <code>runs</code> list.</p>
+      <aside id="reader-files-landing">
+        <h3>Reader implementation landed in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Commit <code>3d02a02f8112f2518d8548674c8717440dcb1273</code>
+        reads aggregate and per-run rows through one union, refuses differing duplicate copies,
+        and rebuilds missing or mismatched index membership for keyed and census reads. The
+        new contract module covers eight reader entry points across all nine placement/cache
+        combinations. No promotion writer was changed.</p>
+        <p>The read-time negative control observes three actual run files, makes the loader skip
+        them, and fails the new assertion on <code>[]</code>. The conflicting-copy refusal names
+        <code>r-alpha</code>, <code>crew.json</code> and <code>runs/r-alpha.json</code>.
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#reader-files">Reader evidence and gate receipts</a>
+        retain the reproduction, cache-failure controls and broader regression result. Integration,
+        the temporary-project promotion gate and section closure remain coordinator-owned.</p>
+        <p><strong>Worker gate:</strong> all 104 new contract cases pass; the broader reader-related
+        gate reports 1,352 passed, one skipped and one MCP audit timeout in the concurrently owned
+        <code>tests/test_ledger.py</code>. That failure is retained as a follow-on, not hidden by the
+        passing reader checks.</p>
+      </aside>
     </section>
 
     <section id="s3" data-reckon="section">

@@ -413,9 +413,8 @@ def recorded_dispatch_metadata(
 ) -> tuple[dict[str, str], dict[str, str]]:
     """Read per-run backend and member from whatever dispatch-time record survives.
 
-    The live pointer is the only record that names both, but a promoted run's
-    pointer is deleted; the run store keeps a backend for some of those.  Both
-    are read here and merged, the live pointer winning where both know a run, so
+    The live pointer and committed run record can both name these attributes.
+    Both are read here and merged, the live pointer winning where both know a run, so
     the census's per-backend aggregation covers every run whose lane was ever
     recorded rather than only the runs still in flight.  A run in neither store
     keeps its dialect lane, and its row notes the basis.
@@ -451,43 +450,25 @@ def recorded_dispatch_metadata(
             if member:
                 members[run_id] = member
 
-    store = home / "run_store.db"
-    if store.is_file():
-        import sqlite3
+    from reckon import run_store
 
-        try:
-            connection = sqlite3.connect(f"file:{store}?mode=ro", uri=True)
-            try:
-                for run_id, detail in connection.execute(
-                    "select run_id, detail from run_details"
-                ):
-                    if run_id in backends:
-                        continue
-                    try:
-                        parsed = json.loads(detail)
-                    except (TypeError, json.JSONDecodeError):
-                        continue
-                    definition = (
-                        parsed.get("node_definition")
-                        if isinstance(parsed, Mapping)
-                        else None
-                    )
-                    declaration = (
-                        definition.get("lane_declaration")
-                        if isinstance(definition, Mapping)
-                        else None
-                    )
-                    backend = (
-                        declaration.get("backend")
-                        if isinstance(declaration, Mapping)
-                        else None
-                    )
-                    if backend:
-                        backends[str(run_id)] = str(backend)
-            finally:
-                connection.close()
-        except (OSError, sqlite3.Error):
-            pass
+    with run_store.RunStore(run_store.store_path()) as store:
+        records = store.records()
+    for run_id, record in records.items():
+        definition = record.get("node_definition")
+        definition = definition if isinstance(definition, Mapping) else {}
+        declaration = definition.get("lane_declaration")
+        declaration = declaration if isinstance(declaration, Mapping) else {}
+        agent = record.get("agent")
+        agent = agent if isinstance(agent, Mapping) else {}
+        backend = (
+            declaration.get("backend") or agent.get("backend") or record.get("backend")
+        )
+        member = record.get("member")
+        if backend:
+            backends.setdefault(run_id, str(backend))
+        if member:
+            members.setdefault(run_id, str(member))
 
     return backends, members
 
