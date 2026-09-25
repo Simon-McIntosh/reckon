@@ -133,6 +133,32 @@
         the run file untracked. All tests and their substantive assertions remain enabled;
         the node still requires the separately owned promotion change.</p>
       </aside>
+      <aside id="promotion-file-landing">
+        <h3>Combined append and promotion landing recorded in the worker checkout</h3>
+        <p><strong>2026-09-25.</strong> Test commit <code>a25c8ee0fdbf1d2f59833ea03490553f33f4538e</code>
+        and implementation <code>7f9fe3f11247e79a892923a8bd75d42c89a405e7</code> build on
+        <code>0a1d9a266bb81a15e36166cf9cf43947b06a4072</code>, which combines the append
+        implementation and expectation repairs through <code>0548c94b</code> with main.
+        Promotion stages the path returned by <code>append_run</code>. Release keeps its
+        existing safety decisions and atomically records its receipt in that same run file,
+        through the common serialiser; the final promotion commit contains no aggregate ledger.</p>
+        <p>Two real <code>crew complete</code> calls succeed in each of two temporary repository
+        layouts, with and without an existing aggregate. Their commit lists contain exactly one
+        run file apiece, their prior run and aggregate bytes remain unchanged, and their release
+        receipts are committed. A write observer detects a deliberate forbidden write in its
+        positive control and observes no attempted writes into the real configuration home or
+        pointer directory during completion. All three contract cases and all nine existing
+        release cases pass. Restoring aggregate staging fails the declared one-run-file assertion.</p>
+        <p><strong>The broader gate remains blocked.</strong> All 23 previously recorded promotion
+        failures now pass, but the 21-module gate moves from 62 failed / 353 passed to
+        19 failed / 396 passed: 55 resolved, seven retained and 12 added failing ids. The
+        remaining tests are outside this node's write fence and were neither triaged nor edited.
+        The zero-added-failures measure is not met. Full ids, receipts, the combined implementation
+        sequence and the scope boundary are retained in
+        <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#promotion-run-file">the promotion evidence</a>.
+        Coordinator review, ownership of the residual failures, merged verification and the first
+        live promotion receipt remain required; the section and driving followup remain open.</p>
+      </aside>
     </section>
 
     <section id="s2" data-reckon="section">
