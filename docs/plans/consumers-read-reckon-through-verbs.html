@@ -77,6 +77,46 @@
     <code>RECKON_HOME</code> branch. The write paths are <code>reckon/cli.py</code> and that test.
     <strong>Order.</strong> §2 lands first.</p>
 
+    <h3>Landed &mdash; the verb prints the resolved home, and a selector a kind does not take is refused</h3>
+    <p><code>reckon crew path</code> prints one newline-terminated absolute path and never a JSON
+    envelope. It resolves the home through <code>_config_home()</code> unchanged, and every other
+    kind through the crew store's own resolver &mdash; <code>reports_dir()</code>,
+    <code>runs_dir()</code> and <code>run_dir()</code>, <code>live_dir()</code> and
+    <code>pointer_path()</code>, <code>review_store_root()</code> and
+    <code>review_path()</code> &mdash; so the verb prints exactly the directory the other crew
+    commands already read and write rather than a second notion of the layout.</p>
+    <p><code>config-home</code> takes no selector and refuses either one; <code>reports</code>
+    takes only an optional <code>--project</code>; <code>runs</code> and <code>live</code> take
+    only an optional <code>--run</code>, printing the run's directory and the run's pointer file
+    respectively; <code>reviews</code> requires <code>--project</code> and permits
+    <code>--run</code>, printing the project's review directory without it and that project's
+    review of the named run with it. Each refused combination exits non-zero and names the
+    selector the kind does take, so a dropped selector cannot answer a different question
+    quietly.</p>
+    <p><code>tests/test_crew_path_prints_the_resolved_home.py</code> drives the command through
+    <code>CliRunner</code> under a synthetic home and proves all three precedence branches &mdash;
+    an explicit <code>RECKON_HOME</code>, an existing <code>~/.config/reckon</code>, and the
+    legacy <code>~/docs-server</code> &mdash; for every kind and every selector form: 5 passed.
+    The declared negative control is executed and logged: with the verb hardcoding
+    <code>~/.config/reckon</code> joined with the kind instead of calling
+    <code>_config_home()</code>, the <code>RECKON_HOME</code> branch fails (1 failed, 4
+    deselected, exit 1).</p>
+    <p>Every existing test file that imports <code>reckon.cli</code> that names crew passes at the
+    landing head judged by delta against the base revision, and one added failure lies outside
+    this section's write paths: <code>tests/test_crew_help_names_its_state.py</code> holds a closed
+    registry of 27 verb help phrases and a count of 27, which the new <code>path</code> verb is
+    not in. It is reported rather than repaired here, and repaired by adding
+    <code>("path",): "one kind of file"</code> and moving the count to 28, against the verb's
+    first help line <code>Print where reckon keeps one kind of file, as a plain path.</code></p>
+
+    <figure>
+      <img src="/reckon/figures/consumers-read-reckon-through-verbs/storage-kinds-and-selectors.svg"
+           alt="The three-branch config-home precedence resolves the base directory, and below it each storage kind names one directory keyed by an optional project or run.">
+      <figcaption>The precedence is the one consumers already depend on; the verb adds names for the
+      directories below it rather than a new layout, and a selector a kind does not key is refused
+      instead of dropped.</figcaption>
+    </figure>
+
     <h2 id="s3">&sect;3 &mdash; Lane, run and claim facts come from verbs, not files</h2>
     <p>Three read-only verbs replace direct file reads. <code>reckon crew lanes</code> prints JSON
     from <code>read_lane_document_file()</code>: <code>headroom</code>, <code>running</code>,

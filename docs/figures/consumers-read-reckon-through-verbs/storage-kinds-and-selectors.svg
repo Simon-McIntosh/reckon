@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="560" viewBox="0 0 1120 560" role="img" aria-labelledby="title description">
+  <title id="title">Where each storage kind resolves</title>
+  <desc id="description">The three-branch configuration-home precedence resolves the base directory, and each storage kind names one directory below it, keyed by an optional project or run.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#1d3557"/>
+    </marker>
+  </defs>
+  <rect width="1120" height="560" fill="#ffffff"/>
+  <text x="48" y="44" font-family="system-ui, sans-serif" font-size="23" font-weight="700" fill="#172033">One verb prints where reckon keeps things</text>
+  <text x="48" y="73" font-family="system-ui, sans-serif" font-size="15" fill="#334155">The home resolves through the existing precedence; each kind names one directory already below it.</text>
+
+  <g font-family="system-ui, sans-serif" fill="#172033">
+    <rect x="48" y="110" width="260" height="58" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="68" y="136" font-size="17" font-weight="700">RECKON_HOME</text>
+    <text x="68" y="157" font-size="13" fill="#334155">explicit override, always wins</text>
+
+    <rect x="348" y="110" width="260" height="58" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="368" y="136" font-size="17" font-weight="700">~/.config/reckon</text>
+    <text x="368" y="157" font-size="13" fill="#334155">preferred when it exists</text>
+
+    <rect x="648" y="110" width="260" height="58" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="668" y="136" font-size="17" font-weight="700">~/docs-server</text>
+    <text x="668" y="157" font-size="13" fill="#334155">legacy fallback</text>
+  </g>
+  <g stroke="#1d3557" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <path d="M308 139 H341"/>
+    <path d="M608 139 H641"/>
+  </g>
+  <text x="48" y="196" font-family="system-ui, sans-serif" font-size="14" fill="#334155">First branch that resolves wins; <tspan font-family="ui-monospace, monospace">crew path</tspan> prints whatever that chain returns, unchanged.</text>
+
+  <text x="48" y="238" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#172033">The tree below the home, one kind per directory</text>
+
+  <g font-family="system-ui, sans-serif" fill="#172033">
+    <rect x="48" y="262" width="200" height="52" rx="6" fill="#fff4d6" stroke="#9a6700" stroke-width="2"/>
+    <text x="66" y="294" font-size="15" font-weight="700">&lt;config-home&gt;</text>
+    <rect x="300" y="262" width="140" height="52" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="320" y="294" font-size="15" font-weight="700">crew/</text>
+
+    <rect x="470" y="316" width="340" height="42" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="490" y="343" font-size="15">reports/&lt;project&gt;/…</text>
+    <rect x="470" y="368" width="340" height="42" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="490" y="395" font-size="15">runs/&lt;run&gt;/…</text>
+    <rect x="470" y="420" width="340" height="42" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="490" y="447" font-size="15">live/&lt;run&gt;.json</text>
+    <rect x="470" y="472" width="340" height="42" rx="6" fill="#e8f1fb" stroke="#1d3557" stroke-width="2"/>
+    <text x="490" y="499" font-size="15">reviews/&lt;project&gt;/&lt;run&gt;.json</text>
+  </g>
+  <g stroke="#1d3557" stroke-width="2.5" fill="none">
+    <path d="M248 288 H281" marker-end="url(#arrow)"/>
+    <path d="M440 288 H455"/>
+    <path d="M455 288 V493"/>
+    <path d="M455 337 H463" marker-end="url(#arrow)"/>
+    <path d="M455 389 H463" marker-end="url(#arrow)"/>
+    <path d="M455 441 H463" marker-end="url(#arrow)"/>
+    <path d="M455 493 H463" marker-end="url(#arrow)"/>
+  </g>
+  <g font-family="system-ui, sans-serif" font-size="14" fill="#334155">
+    <text x="828" y="343"><tspan font-weight="700" fill="#172033">--kind reports</tspan> [--project P]</text>
+    <text x="828" y="395"><tspan font-weight="700" fill="#172033">--kind runs</tspan> [--run R]</text>
+    <text x="828" y="447"><tspan font-weight="700" fill="#172033">--kind live</tspan> [--run R]</text>
+    <text x="828" y="499"><tspan font-weight="700" fill="#172033">--kind reviews</tspan> --project P [--run R]</text>
+    <text x="66" y="343" font-size="13">--kind config-home prints this</text>
+    <text x="66" y="362" font-size="13">box itself, and takes no selector.</text>
+  </g>
+  <text x="48" y="540" font-family="system-ui, sans-serif" font-size="14" fill="#334155">A selector a kind does not key is refused rather than dropped: config-home takes none, reports takes only --project, runs and live take only --run.</text>
+</svg>
