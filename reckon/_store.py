@@ -513,10 +513,18 @@ _SECTION_INSERTIONS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | No
     ContextVar("reckon_section_insertions", default=None)
 )
 
+#: Evidence appends are the same kind of write effect, but their destination is
+#: the plan's cumulative landing record rather than its own HTML. Kept in its own
+#: collection so an evidence beat never forces a plan-file write.
+_EVIDENCE_APPENDS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
+    ContextVar("reckon_evidence_appends", default=None)
+)
+
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
-    """Start an empty out-of-band effect collection for one op batch."""
+    """Start empty out-of-band effect collections for one op batch."""
     _SECTION_INSERTIONS.set((working, []))
+    _EVIDENCE_APPENDS.set((working, []))
 
 
 def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
@@ -533,6 +541,23 @@ def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
     if pending is None or pending[0] is not data:
         return []
     _SECTION_INSERTIONS.set(None)
+    return list(pending[1])
+
+
+def _queue_evidence_append(working: dict[str, Any], request: dict[str, str]) -> None:
+    """Attach one evidence-record append to the current batch."""
+    pending = _EVIDENCE_APPENDS.get()
+    if pending is None or pending[0] is not working:
+        raise OpError("append_evidence has no active write-effect collection")
+    pending[1].append(request)
+
+
+def _consume_evidence_appends(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return evidence appends produced by this exact state object, then clear."""
+    pending = _EVIDENCE_APPENDS.get()
+    if pending is None or pending[0] is not data:
+        return []
+    _EVIDENCE_APPENDS.set(None)
     return list(pending[1])
 
 
@@ -579,6 +604,144 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
         fragment += body.strip() + "\n"
     fragment += "\n" + indentation
     return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
+
+
+def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
+    """The cumulative landing record one plan's evidence appends land in."""
+    return docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
+
+
+def _evidence_plan_title(project: str, plan_slug: str, root: str | Path | None) -> str:
+    """The title an op-created landing record names, from the plan it documents."""
+    state, _ = read_plan(project, plan_slug, root)
+    title = str(state.get("title") or "").strip()
+    return title or plan_slug
+
+
+def _landed_record_shell(project: str, plan_slug: str, plan_title: str) -> str:
+    """The document a missing landing record is created as.
+
+    Delegates to the synthesis renderer with no runs or comments attached, so an
+    op-created record and a synthesized one are the same document with the same
+    metas — the anchored sections are what the two writers add afterwards.
+    """
+    from reckon import evidence
+
+    plan = {"slug": plan_slug, "title": plan_title, "comments": {}}
+    return evidence._render_document(project, plan, "", [], Path("."))
+
+
+def _evidence_section_html(request: dict[str, str]) -> str:
+    """One anchored section element carrying an append's authored content."""
+    from html import escape
+
+    from bs4 import BeautifulSoup
+
+    body = request["body"]
+    body_soup = BeautifulSoup(body, "html.parser")
+    if body_soup.find("h2") is not None:
+        raise OpError("append_evidence body must not contain another h2")
+    if body_soup.select_one("section[data-reckon]") is not None:
+        raise OpError("append_evidence body must not contain structured state")
+    if body_soup.select_one('meta[name^="plan-"]') is not None:
+        raise OpError("append_evidence body must not contain plan metadata")
+
+    anchor = escape(request["anchor"], quote=True)
+    parts = [f'  <section id="{anchor}">', f"    <h2>{escape(request['title'])}</h2>"]
+    if body.strip():
+        parts.append("    " + body.strip())
+    parts.append("  </section>")
+    return "\n".join(parts)
+
+
+def _append_evidence_to_text(html_text: str, request: dict[str, str]) -> str:
+    """Insert one anchored section before the record's closing main element."""
+    from bs4 import BeautifulSoup
+
+    anchor = request["anchor"]
+    if BeautifulSoup(html_text, "html.parser").find(id=anchor) is not None:
+        raise OpError(
+            f"evidence anchor {anchor!r} already exists in the landing record"
+        )
+    boundary = re.search(r"</main\s*>", html_text, re.IGNORECASE)
+    if boundary is None:
+        raise OpError(
+            "append_evidence requires a landing record with a closing main element"
+        )
+    fragment = _evidence_section_html(request) + "\n\n"
+    return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
+
+
+def _apply_evidence_appends(
+    docs_dir: Path,
+    project: str,
+    requests: list[dict[str, str]],
+    root: str | Path | None,
+) -> list[Path]:
+    """Validate every append, then write each landing record atomically.
+
+    The duplicate-anchor refusal runs over the whole batch before any file is
+    written, so a refused batch leaves every record untouched.
+    """
+    planned: list[tuple[Path, str]] = []
+    for request in requests:
+        path = _evidence_record_path(docs_dir, request["plan"])
+        if path.is_file():
+            current = path.read_text(encoding="utf-8", errors="replace")
+        else:
+            current = _landed_record_shell(
+                project,
+                request["plan"],
+                _evidence_plan_title(project, request["plan"], root),
+            )
+        planned.append((path, _append_evidence_to_text(current, request)))
+
+    written: list[Path] = []
+    for path, new_text in planned:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".html.tmp")
+        tmp.write_text(new_text, encoding="utf-8")
+        tmp.replace(path)
+        written.append(path)
+    return written
+
+
+def _apply_append_evidence(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Queue one anchored append to a plan's cumulative landing record."""
+    if is_index or str(working.get("type", "plan") or "plan") != "plan":
+        raise OpError("append_evidence op is plan-only")
+    plan = op.get("plan")
+    if not isinstance(plan, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]*", plan
+    ):
+        raise OpError(
+            "append_evidence op requires a 'plan' slug matching "
+            "[A-Za-z0-9][A-Za-z0-9._-]*"
+        )
+    anchor = op.get("anchor")
+    if not isinstance(anchor, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]*", anchor
+    ):
+        raise OpError(
+            "append_evidence op requires an 'anchor' id matching "
+            "[A-Za-z0-9][A-Za-z0-9._-]*"
+        )
+    title = op.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise OpError("append_evidence op requires a non-empty string 'title'")
+    body = op.get("body")
+    if not isinstance(body, str):
+        raise OpError("append_evidence op requires a string 'body'")
+    request = {
+        "plan": plan,
+        "anchor": anchor,
+        "title": title.strip(),
+        "body": body,
+    }
+    _evidence_section_html(request)  # refuse a malformed body before any write
+    _queue_evidence_append(working, request)
 
 
 def _plan_write_target(
@@ -736,6 +899,7 @@ def _write_state_locked(
     # Consume against the exact op-working object before a commutative comment
     # merge can replace ``data`` with a fresh mapping.
     section_insertions = _consume_section_insertions(data)
+    evidence_appends = _consume_evidence_appends(data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -782,6 +946,12 @@ def _write_state_locked(
             source_text = _insert_authored_section(source_text, request)
     except ValueError as exc:
         raise OpError(str(exc)) from exc
+    if evidence_appends:
+        if docs_dir is None:
+            raise OpError(
+                f"append_evidence: no docs dir for project {project!r}"
+            )
+        _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     authored_text_changed = source_text != text
     new_text = _plan_html.write_state(source_text, new_data)
 
@@ -2182,6 +2352,7 @@ _OP_DISPATCH = {
     "fail": _apply_gate_verdict,
     "retire_prose": _apply_retire_prose,
     "insert_section": _apply_insert_section,
+    "append_evidence": _apply_append_evidence,
     "move": _apply_move,
 }
 
