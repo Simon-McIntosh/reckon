@@ -12,25 +12,57 @@ from reckon import mcp as mcp_module
 from reckon.cli import main
 
 DECLARATIONS = {"s1": "done", "s2": "implementable"}
+CAPABILITY = {
+    "version": "1.0",
+    "class": "general",
+    "requirements": {
+        "reasoning": "standard",
+        "verification": "strict",
+        "risk": "low",
+    },
+}
 SECTION_RECORDS = [
     {
         "id": section_id,
         "effort_hours": 1.0,
-        "capability": {
-            "version": "1.0",
-            "class": "general",
-            "requirements": {
-                "reasoning": "standard",
-                "verification": "strict",
-                "risk": "low",
-            },
-        },
+        "capability": deepcopy(CAPABILITY),
         "attempts": 0,
         "status": status,
         "links": [],
     }
     for section_id, status in DECLARATIONS.items()
 ]
+
+
+def _insert_op(section_id: str, title: str, body: str) -> dict:
+    """An insert_section request carrying the typed record its contract requires."""
+    return {
+        "op": "insert_section",
+        "id": section_id,
+        "title": title,
+        "body": body,
+        "effort_hours": 1.25,
+        "capability": deepcopy(CAPABILITY),
+        "links": [],
+    }
+
+
+def _stale_batch_ops() -> list[dict]:
+    """A stale writer's batch: its own comment plus a queued section insertion."""
+    return [
+        {
+            "op": "append",
+            "target": "comments",
+            "section": "s2",
+            "item": {
+                "id": "stale-writer-comment",
+                "who": "stale-writer",
+                "when": "2026-09-25T01:01:00Z",
+                "body": "<p>Stale writer comment.</p>",
+            },
+        },
+        _insert_op("s3", "Third section", "<p>Inserted after comment merge.</p>"),
+    ]
 
 
 @pytest.fixture()
@@ -136,6 +168,42 @@ def test_unknown_declaration_value_is_refused_with_the_accepted_values(plan) -> 
 
 def test_insert_section_uses_the_structured_boundary_and_passes_audit(plan) -> None:
     checkout, path = plan
+    before = path.read_text(encoding="utf-8")
+    last_record_start = before.rindex('<section data-reckon="section"')
+    last_record_end = before.index("</section>", last_record_start) + len("</section>")
+
+    result = _edit(
+        checkout, path, _insert_op("s3", "Third section", "<p>Inserted body.</p>")
+    )
+
+    text = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(text)
+    inserted_heading = text.index('<h2 id="s3">')
+    inserted_record = text.index('<section data-reckon="section"', inserted_heading)
+    first_state_region = text.index('<section data-reckon="gates"')
+    assert result["ok"] is True, result
+    assert text.index('id="unrelated-prose"') < inserted_heading
+    assert last_record_end < inserted_heading < first_state_region
+    assert inserted_heading < inserted_record < first_state_region
+    assert state["section_declarations"] == {**DECLARATIONS, "s3": "implementable"}
+    assert state["sections"] == [
+        *SECTION_RECORDS,
+        {
+            "id": "s3",
+            "effort_hours": 1.25,
+            "capability": deepcopy(CAPABILITY),
+            "attempts": 0,
+            "status": "implementable",
+            "links": [],
+        },
+    ]
+    audit = CliRunner().invoke(main, ["audit-doc", str(path)])
+    assert audit.exit_code == 0, audit.output
+
+
+def test_insert_section_without_a_typed_record_is_refused(plan) -> None:
+    checkout, path = plan
+    before = path.read_text(encoding="utf-8")
 
     result = _edit(
         checkout,
@@ -148,61 +216,69 @@ def test_insert_section_uses_the_structured_boundary_and_passes_audit(plan) -> N
         },
     )
 
-    text = path.read_text(encoding="utf-8")
-    state = _plan_html.read_state(text)
-    last_record_start = text.rindex('<section data-reckon="section"')
-    last_record_end = text.index("</section>", last_record_start) + len("</section>")
-    inserted_heading = text.index('<h2 id="s3">')
-    first_state_region = text.index('<section data-reckon="gates"')
-    assert result["ok"] is True, result
-    assert text.index('id="unrelated-prose"') < inserted_heading
-    assert last_record_end < inserted_heading < first_state_region
-    assert state["section_declarations"] == DECLARATIONS
-    assert state["sections"] == SECTION_RECORDS
-    audit = CliRunner().invoke(main, ["audit-doc", str(path)])
-    assert audit.exit_code == 0, audit.output
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "effort_hours" in result["detail"]
+    assert "capability" in result["detail"]
+    assert "links" in result["detail"]
+    assert '"op": "append"' in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
 
 
 @pytest.mark.parametrize(
-    ("section_id", "body", "detail"),
+    ("section_id", "body", "refusal"),
     [
-        ("s2", "<p>Duplicate.</p>", "section id 's2' already exists"),
+        # The typed record joins `sections` before the authored fragment is
+        # inspected, so a duplicate id is refused by the state schema rather
+        # than by the heading scan.
+        (
+            "s2",
+            "<p>Duplicate.</p>",
+            {"error": "schema_validation", "names": "duplicate section 's2'"},
+        ),
         (
             "s3",
             "<h2>Nested heading</h2>",
-            "insert_section body must not contain another h2",
+            {
+                "error": "op_error",
+                "detail": "insert_section body must not contain another h2",
+            },
         ),
         (
             "s3",
             '<section data-reckon="comments"></section>',
-            "insert_section body must not contain structured plan state",
+            {
+                "error": "op_error",
+                "detail": "insert_section body must not contain structured plan state",
+            },
         ),
         (
             "s3",
             '<meta name="plan-status" content="done">',
-            "insert_section body must not contain plan metadata",
+            {
+                "error": "op_error",
+                "detail": "insert_section body must not contain plan metadata",
+            },
         ),
     ],
     ids=["duplicate-id", "nested-heading", "structured-state", "plan-metadata"],
 )
 def test_insert_section_refuses_unsafe_authored_fragments(
-    plan, section_id: str, body: str, detail: str
+    plan, section_id: str, body: str, refusal: dict
 ) -> None:
     checkout, path = plan
     before = path.read_text(encoding="utf-8")
 
-    result = _edit(
-        checkout,
-        path,
-        {
-            "op": "insert_section",
-            "id": section_id,
-            "title": "Refused section",
-            "body": body,
-        },
-    )
+    result = _edit(checkout, path, _insert_op(section_id, "Refused section", body))
 
-    assert result == {"ok": False, "error": "op_error", "detail": detail}
+    assert result["ok"] is False, result
+    assert result["error"] == refusal["error"]
+    if "detail" in refusal:
+        assert result["detail"] == refusal["detail"]
+    else:
+        assert any(
+            refusal["names"] in str(item) for item in result.get("details", [])
+        ), result
     assert path.read_text(encoding="utf-8") == before
 
 
@@ -272,32 +348,33 @@ def test_stale_comment_merge_keeps_the_queued_section_insertion(plan) -> None:
     stale_batch = deepcopy(stale_state)
     store_module.apply_ops(
         stale_batch,
-        [
-            {
-                "op": "append",
-                "target": "comments",
-                "section": "s2",
-                "item": {
-                    "id": "stale-writer-comment",
-                    "who": "stale-writer",
-                    "when": "2026-09-25T01:01:00Z",
-                    "body": "<p>Stale writer comment.</p>",
-                },
-            },
-            {
-                "op": "insert_section",
-                "id": "s3",
-                "title": "Third section",
-                "body": "<p>Inserted after comment merge.</p>",
-            },
-        ],
+        _stale_batch_ops(),
         is_index=False,
     )
+    # The insert carries the new section's typed record, so the two writers no
+    # longer agree about the document and the comment-only merge does not apply:
+    # the stale write is refused whole rather than half-applied.
+    peer_text = path.read_text(encoding="utf-8")
+    with pytest.raises(store_module.VersionConflict):
+        store_module.write_plan(
+            "sample",
+            "section-writes",
+            stale_batch,
+            expected_version=0,
+            root=checkout,
+            artifact_type="plan",
+        )
+    assert path.read_text(encoding="utf-8") == peer_text
+
+    # Rebased onto the revision the peer left, the queued insertion lands with
+    # both comments intact.
+    rebased = deepcopy(_plan_html.read_state(peer_text))
+    store_module.apply_ops(rebased, _stale_batch_ops(), is_index=False)
     version = store_module.write_plan(
         "sample",
         "section-writes",
-        stale_batch,
-        expected_version=0,
+        rebased,
+        expected_version=1,
         root=checkout,
         artifact_type="plan",
     )

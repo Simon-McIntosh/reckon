@@ -526,6 +526,187 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     stamps; the version-stamping edit_plan route was not used for this landing record.
     The coordinator owns integration, closure and the outstanding gate.</p>
   </section>
+
+  <section id="insert-section-typed-record">
+    <h2>The insert_section op writes the typed record — refusal receipts</h2>
+    <p>Commit <code>e4be85c957eff10856da81c36e81c9a88aa84415</code> closes the route the
+    record above named as a follow-on: <code>insert_section</code> queued an authored
+    <code>&lt;h2&gt;</code> with no typed record, so a new section could be created without
+    its effort and capability while the <code>append sections</code> target and the
+    text-mode check both refused one. The op now validates the same
+    <code>SectionRecord</code>, refuses before any bytes are written with the field named
+    and the worked append example attached, and registers the record with the plan state so
+    the heading reaches the file carrying its contract.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/creation-routes.svg"
+           alt="Three routes — the state append sections target, the state insert_section op, and a text edit introducing a numbered heading — converge on one SectionRecord validation that either writes the heading with its record or refuses before any bytes are written, naming the field and showing a valid append; a text edit that introduces no new section stays on the ordinary prose path.">
+      <figcaption>Every section-creation route reaches one validation. The op and the append
+      target share <code>_new_section_record()</code>, so the two state routes cannot
+      diverge.</figcaption>
+    </figure>
+    <h3>Refusal and write receipts</h3>
+    <p>Eleven new cases in <code>tests/test_section_contract_is_refused.py</code> pass at the
+    head through the same store boundary the append cases use: three parametrisations of the
+    missing-field refusal (each asserting the field is named, the plan bytes are unchanged,
+    and that the example the message carries can then be written), six off-enum cases
+    (<code>effort_hours</code> 0, 0.3 and <code>"1.25"</code>; an unknown capability class;
+    an unknown reasoning value; a malformed link), one write case asserting the heading, body,
+    typed record, declaration and ordering, and one case refusing an authored
+    <code>attempts</code> count. The in-scope file reads 52 passed against 41 at the base.</p>
+    <h3>The declared negative control</h3>
+    <p>The control named in advance was: <em>remove the section-contract check from the
+    insert_section op in <code>reckon/_store.py</code>; the insert_section refusal case must
+    fail.</em> Applied to a scratch archive of the head tree
+    (<code>/tmp/scci-nc</code>), the mutation is the replacement of the validate-and-register
+    block with a bare queue call. Under it the refusal cases fail with
+    <code>Failed: DID NOT RAISE OpError</code> — 11 failed, 41 deselected — so the refusal
+    cases are exercised by the removed check and not by something upstream. Full log:
+    <code>negative-control.log</code> in the run directory, whose first line is the declared
+    string verbatim; the mutated function is retained beside it as
+    <code>negative-control-mutated-function.py</code>.</p>
+    <h3>The gate does not pass by delta, and the delta is outside this change</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>adfc67150ecde2eae78812d03bb0cbd8c866e03c</code></td><td>5 failed, 2750 passed, 3 skipped</td></tr>
+        <tr><td>head</td><td><code>e4be85c957eff10856da81c36e81c9a88aa84415</code></td><td>10 failed, 2756 passed, 3 skipped</td></tr>
+      </tbody>
+    </table>
+    <p>Both arms run the same 78-file cohort — every test file importing
+    <code>reckon._store</code>, derived by AST rather than by grep — with
+    <code>-n 4 --timeout=90</code> and a per-arm <code>--basetemp</code>, each log naming its
+    revision, tree, command and imported module path. Base runs in a scratch archive at
+    <code>/tmp/scci-base</code> so the base arm imports the base tree rather than the shared
+    environment's editable install.</p>
+    <table>
+      <thead><tr><th>Added failure ID</th><th>Observed receipt</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_edit_plan_section_writes.py::test_insert_section_uses_the_structured_boundary_and_passes_audit</code></td><td><code>ValueError: substring not found</code> at <code>text.index('&lt;h2 id="s3"&gt;')</code> — the op no longer writes the heading this case reads back.</td></tr>
+        <tr><td><code>…::test_stale_comment_merge_keeps_the_queued_section_insertion</code></td><td>pydantic <code>missing</code> error from the refusal raised out of the stale batch's <code>insert_section</code> op.</td></tr>
+        <tr><td><code>…::test_insert_section_refuses_unsafe_authored_fragments[duplicate-id|nested-heading|structured-state|plan-metadata]</code></td><td><code>{'detail': '3 validation errors for SectionRecord…'} != {'detail': "&lt;that case's pinned detail&gt;"}</code> — refused, for the contract rather than the pinned reason.</td></tr>
+      </tbody>
+    </table>
+    <p>All six added failures are in one file outside this change's write scope: its cases
+    pin the pre-contract <code>insert_section</code> behaviour. They are reported for their
+    owner, with no repair, no rerun for a different result, and no causal claim beyond the
+    observed replacement of one refusal detail by another. One base failure
+    (<code>test_schema.py</code>, a cross-project conformance case) passes at the head and is
+    not attributed to this change. The required broader gate is therefore
+    <strong>blocked</strong>, and the repair — giving those cases' fixtures a contract so
+    they exercise the unsafe-fragment checks they name — is a follow-on for the file's
+    owner.</p>
+    <h3>Artifacts and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051130395922-insert-section-carries-its-contract/</code>.
+    It retains <code>gate-targets.json</code>, <code>baseline.log</code>,
+    <code>after.log</code>, <code>failure-delta.json</code>,
+    <code>added-failure-receipts.json</code>, <code>negative-control.log</code> and
+    <code>negative-control-mutated-function.py</code>. This anchor and the plan's landing
+    prose are append-only; plan declarations, status, implementation fraction, version and
+    modified date are unchanged, and the version-stamping <code>edit_plan</code> route was
+    not used. The coordinator owns integration, closure and the outstanding gate.</p>
+  </section>
+
+  <section id="section-writes-cases-carry-their-record">
+    <h2>The section-write cases carry the record they insert</h2>
+    <p>Commit <code>98c976c5e1db9bde6e82fd47c49955ca31fd0e2f</code> repairs the six cases the
+    record above reported. Once <code>insert_section</code> validates a
+    <code>SectionRecord</code>, a case that inserted a section carrying no effort, capability
+    or links reached the contract refusal in place of the check it names. Every insert in the
+    file now submits its record through the same op, so the authored-fragment and stale-batch
+    checks are reached rather than replaced.</p>
+    <h3>The defect reproduced before the repair</h3>
+    <p>At <code>3d7afe483b5943c616398c390d76b262339119f7</code>,
+    <code>tests/test_edit_plan_section_writes.py</code> reads <strong>6 failed, 4 passed</strong>
+    — the four <code>test_insert_section_refuses_unsafe_authored_fragments</code>
+    parametrisations (<code>duplicate-id</code>, <code>nested-heading</code>,
+    <code>structured-state</code>, <code>plan-metadata</code>), the structured-boundary case and
+    the stale-merge case. Each receipt is the comparison the case makes against the refusal it
+    received, for example <code>3 validation errors for SectionRecord … effort_hours /
+    capability / links Field required</code> followed by the worked append example. Log:
+    <code>repro-base.log</code>.</p>
+    <h3>What each case now asserts</h3>
+    <ul>
+      <li>The three body-check parametrisations keep their exact pinned detail
+      (<code>insert_section body must not contain another h2</code>, <code>… structured plan
+      state</code>, <code>… plan metadata</code>), now with a valid record present.</li>
+      <li><code>duplicate-id</code> is refused by the state schema instead:
+      <code>error: schema_validation</code> with <code>duplicate section 's2'</code> in the
+      details, asserted by substring because the payload embeds the pydantic version URL. The
+      record joins <code>sections</code> before the authored fragment is inspected, so the
+      duplicate is caught earlier than the heading scan; the plan bytes are unchanged either
+      way.</li>
+      <li>The structured-boundary case asserts the same insertion point as before (after the
+      records that existed, before the gates region) plus that the new section's own
+      <code>data-reckon="section"</code> record travels with its heading, and that
+      <code>audit-doc</code> exits 0.</li>
+      <li>The stale-batch case is refused whole by the comment-only merge — the batch now
+      moves <code>sections</code>, so the two writers no longer agree on the document — and
+      asserting the file is untouched; rebased onto the peer's revision the same batch lands
+      at version 2 with both comments and the inserted section present. The queued insertion
+      is not lost, it is refused rather than half-applied. The merge's own arms (a successful
+      commute and a refusal on disagreement) stay covered by
+      <code>tests/test_landing_append_is_commutative.py</code>.</li>
+      <li>One new case pins the refusal of a record-less insert: the
+      <code>effort_hours</code>, <code>capability</code> and <code>links</code> fields are
+      named, the message carries the worked append example, and no byte is written.</li>
+    </ul>
+    <h3>The declared negative control</h3>
+    <p>The control named in advance was: <em>remove the typed record from one rewritten
+    insert_section case; it must fail with the section-contract refusal.</em> Applied to a
+    scratch archive of the head tree (<code>/tmp/sw-nc</code>), the mutation strips the
+    record from the unsafe-fragment cases' request; under it the <code>nested-heading</code>
+    case fails on the comparison between its pinned detail and the refusal it receives, which
+    is the contract refusal naming <code>effort_hours</code>, <code>capability</code> and
+    <code>links</code> as missing. The committed test file is unchanged, and the mutated copy
+    is retained beside the log. The mutation script asserts it applied before the run: the
+    record keys are absent from the replacement request and the replaced call is gone.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/insert-op-stage-order.svg"
+           alt="A state-mode insert_section request passes five stages in order — authored fields, the typed-record validation, the queued write effect, the file scan for unsafe authored fragments, and the atomic versioned write — each annotated with the case that holds it; a stale batch ends at the queue whole and lands once rebased.">
+      <figcaption>The op's stage order, the case holding each stage, and the one path that ends
+      early.</figcaption>
+    </figure>
+    <h3>The cohort gate</h3>
+    <p>Both arms run the same 79-file cohort — the union of the 78 files the sibling
+    <code>insert-section-carries-its-contract</code> node published as its gate targets and the 40 files
+    this node derived by AST search for importers of the changed surface — as one
+    <code>pytest -p no:cacheprovider -q -n 4 --timeout=90</code> run with a per-arm
+    <code>--basetemp</code>, executed in place on the fleet allocation. Each log's first lines name its
+    revision, tree and command, then print <code>reckon.__file__</code> and the measurement cwd, so the
+    tree that actually served the run is checkable rather than assumed:
+    <code>module.__file__</code> resolves inside <code>/tmp/s22-sw-base</code> for the base arm and inside
+    this node's worktree for the head arm.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Duration</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>adfc6715</code> (the branch point of <code>3d7afe48</code>)</td><td>5 failed, 2755 passed, 3 skipped</td><td>366 s</td></tr>
+        <tr><td>head</td><td><code>98c976c5</code> (this node's test commit)</td><td>4 failed, 2768 passed, 3 skipped</td><td>389 s</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Added failure ids at the head: none.</strong> The head set is a strict subset of the base
+    set, so every failure the cohort shows at the head was already failing at the branch point. The four
+    survivors — two <code>test_capability</code> legacy-tier cases, one <code>test_ledger</code> read-view
+    budget case and one <code>test_schema</code> cross-project conformance case — fail identically in both
+    arms and are outside this node's write scope.</p>
+    <p>One base failure does not appear at the head:
+    <code>test_schema::test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>. It is reported
+    rather than claimed as a repair: the head arm passed it with 2768 passes against the base's 2755, and
+    this node changed no code that case reaches — the delta is 13 more tests passing than the base count
+    even after removing the one id, which is consistent with the reworked stale-merge case collecting its
+    parametrisations differently across the two revisions. The case is order- or population-sensitive
+    somewhere this node did not touch, and attributing it to the test-file change would be a guess.</p>
+    <p>The head arm measures the test commit <code>98c976c5</code>, which is the node's whole
+    source-affecting deliverable; the plan, evidence and figure changes that follow in this document's
+    commit carry no test surface and are not re-measured.</p>
+    <h3>Artifacts and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/</code>.
+    This anchor and the plan's landing prose are append-only; plan declarations, status,
+    implementation fraction, version and modified date are unchanged, and the version-stamping
+    <code>edit_plan</code> route was not used. The coordinator owns integration, closure and
+    the merged-head verification.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -989,6 +989,38 @@ def _section_contract_refusal(detail: str) -> str:
     return f"{detail}. Use edit_plan mode=state. Example: {json.dumps(example)}"
 
 
+def _new_section_record(working: dict, section: dict) -> dict:
+    """Validate a new section's typed record, refusing with the worked example."""
+    from pydantic import ValidationError
+
+    from reckon._schema import SectionRecord
+
+    fields = {"id", "title", "body", "effort_hours", "capability", "links"}
+    extra = section.keys() - fields
+    if extra:
+        raise OpError(
+            _section_contract_refusal(f"unsupported section fields: {sorted(extra)}")
+        )
+    declarations = working.get("section_declarations") or {}
+    record_fields = {
+        key: value for key, value in section.items() if key not in {"title", "body"}
+    }
+    try:
+        return SectionRecord.model_validate(
+            {
+                **record_fields,
+                "attempts": 0,
+                "status": (
+                    declarations.get(section["id"], "implementable")
+                    if isinstance(section.get("id"), str)
+                    else "implementable"
+                ),
+            }
+        ).model_dump(by_alias=True, exclude_none=True)
+    except ValidationError as exc:
+        raise OpError(_section_contract_refusal(str(exc))) from exc
+
+
 def _require_new_section_contracts(before_html: str, after_html: str) -> None:
     """Require records for newly introduced numbered plan headings only."""
     from bs4 import BeautifulSoup
@@ -1831,46 +1863,17 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
 
     # ── plan append ──
     if target == "sections":
-        from pydantic import ValidationError
-
-        from reckon._schema import SectionRecord
-
         if str(working.get("type", "plan") or "plan") != "plan":
             raise OpError("append sections is plan-only")
         if not isinstance(item, dict):
             raise OpError(
                 _section_contract_refusal("append sections requires an item object")
             )
-        fields = {"id", "title", "body", "effort_hours", "capability", "links"}
-        extra = item.keys() - fields
-        if extra:
-            raise OpError(
-                _section_contract_refusal(
-                    f"unsupported section fields: {sorted(extra)}"
-                )
-            )
-        declarations = working.get("section_declarations") or {}
-        record_fields = {
-            key: value for key, value in item.items() if key not in {"title", "body"}
-        }
-        try:
-            record = SectionRecord.model_validate(
-                {
-                    **record_fields,
-                    "attempts": 0,
-                    "status": (
-                        declarations.get(item["id"], "implementable")
-                        if isinstance(item.get("id"), str)
-                        else "implementable"
-                    ),
-                }
-            ).model_dump(by_alias=True, exclude_none=True)
-        except ValidationError as exc:
-            raise OpError(_section_contract_refusal(str(exc))) from exc
+        record = _new_section_record(working, item)
         sections = working.setdefault("sections", [])
         _refuse_duplicate_id(sections, target, record["id"])
         try:
-            _apply_insert_section(working, item, is_index, warnings)
+            _queue_authored_section(working, item)
         except OpError as exc:
             raise OpError(_section_contract_refusal(str(exc))) from exc
         sections.append(record)
@@ -2087,15 +2090,11 @@ def _apply_retire_prose(
         raise OpError("retire_prose op requires a non-empty string 'preimage'")
 
 
-def _apply_insert_section(
-    working: dict, op: dict, is_index: bool, warnings: list[str]
-) -> None:
-    """Queue one authored h2 block for the atomic HTML write."""
-    if is_index or str(working.get("type", "plan") or "plan") != "plan":
-        raise OpError("insert_section op is plan-only")
-    section_id = op.get("id")
-    title = op.get("title")
-    body = op.get("body")
+def _require_authored_section_fields(section: dict) -> None:
+    """Refuse an authored h2 request whose id, title or body is unusable."""
+    section_id = section.get("id")
+    title = section.get("title")
+    body = section.get("body")
     if not isinstance(section_id, str) or not re.fullmatch(
         r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id
     ):
@@ -2106,14 +2105,34 @@ def _apply_insert_section(
         raise OpError("insert_section op requires a non-empty string 'title'")
     if not isinstance(body, str):
         raise OpError("insert_section op requires a string 'body'")
+
+
+def _queue_authored_section(working: dict, section: dict) -> None:
+    """Queue one validated authored h2 block for the atomic HTML write."""
+    _require_authored_section_fields(section)
     _queue_section_insertion(
         working,
         {
-            "id": section_id,
-            "title": title.strip(),
-            "body": body,
+            "id": section["id"],
+            "title": section["title"].strip(),
+            "body": section["body"],
         },
     )
+
+
+def _apply_insert_section(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Insert one authored h2 block carrying its typed section record."""
+    if is_index or str(working.get("type", "plan") or "plan") != "plan":
+        raise OpError("insert_section op is plan-only")
+    _require_authored_section_fields(op)
+    record = _new_section_record(
+        working, {key: value for key, value in op.items() if key != "op"}
+    )
+    _queue_authored_section(working, op)
+    working.setdefault("sections", []).append(record)
+    working.setdefault("section_declarations", {})[record["id"]] = record["status"]
 
 
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:

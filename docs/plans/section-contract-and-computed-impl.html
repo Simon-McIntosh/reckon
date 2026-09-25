@@ -145,6 +145,62 @@
     failure identities and the write flow are in the
     <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#typed-section-write-boundary">typed-section write-boundary record</a>.</p>
 
+    <p><strong>The third route is closed; its pinned compatibility cases are not,
+    2026-09-25.</strong> Commit <code>e4be85c957eff10856da81c36e81c9a88aa84415</code>
+    makes the state-mode <code>insert_section</code> op validate the same
+    <code>SectionRecord</code> as the <code>append sections</code> target and refuse before
+    any byte is written, naming the missing or off-enum field and carrying the same worked
+    append example. The record validation is now one shared helper, so the two state routes
+    cannot drift; the authored h2 and its typed record reach the file in the one versioned
+    write that the append route already used. Removing the check makes the designated
+    refusal case fail with <code>DID NOT RAISE OpError</code>.</p>
+    <p>The wider gate does not pass by delta, and the delta is entirely outside this change's
+    write scope. Base <code>adfc6715</code> reports 5 failed, 2750 passed, 3 skipped over the
+    78-file cohort; head <code>e4be85c9</code> reports 10 failed, 2756 passed, 3 skipped.
+    All six added failures are in <code>tests/test_edit_plan_section_writes.py</code>, whose
+    cases pin the pre-contract <code>insert_section</code> behaviour: five call the op with
+    no <code>effort_hours</code>, <code>capability</code> or <code>links</code> and now reach
+    the contract refusal instead of the detail they assert, and one reads back a heading the
+    op no longer writes. They are reported for their owner without repair, rerunning for a
+    different result, or a causal claim beyond the observed replacement of one refusal
+    detail by another. One base failure (<code>test_schema.py</code>, a cross-project
+    conformance case) passes at the head and is not attributed to this change. Full failure
+    identities and receipts:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#insert-section-typed-record">the insert_section refusal record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/creation-routes.svg"
+           alt="Three routes — the state append sections target, the state insert_section op, and a text edit introducing a numbered heading — converge on one SectionRecord validation that either writes the heading with its record or refuses before any bytes are written, naming the field and showing a valid append; a text edit that introduces no new section stays on the ordinary prose path.">
+      <figcaption>One validation, reached by every route that creates a section. The
+      <code>insert_section</code> op now shares the append target's helper, so a new section
+      cannot enter the file without its effort and capability.</figcaption>
+    </figure>
+
+    <p><strong>The pinned cases carry their record, and the route's own checks are live again,
+    2026-09-25.</strong> Commit
+    <code>98c976c5e1db9bde6e82fd47c49955ca31fd0e2f</code> repairs the six cases that pinned the
+    pre-contract <code>insert_section</code> behaviour: each inserts through the same op and
+    carries a <code>SectionRecord</code> — effort, capability and links as §2's schema requires
+    — so the check each case names is the check that fires, not the contract refusal standing
+    in front of it. The defect was reproduced before repair: at the parent revision the file
+    reads <strong>6 failed, 4 passed</strong>, one failure per named case. Two refusals moved
+    rather than disappeared, and the movement follows from the record itself rather than from
+    a lost check. A duplicate id is now refused by the state schema, which sees the duplicate
+    record before the heading scan reaches the file; and a stale batch that appends a comment
+    and inserts a section is refused whole by the comment-only merge, which compares the
+    documents' other fields and no longer finds them equal — rebased onto the peer's revision
+    the same batch lands with both comments intact, so nothing is silently dropped. One new
+    case pins the refusal of a record-less insert, asserting the missing fields and the worked
+    example are named and that no byte is written. The op's authored-fragment checks are
+    exercised only here, so the repair keeps them reached rather than relaxing them.
+    Gate and control receipts:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#section-writes-cases-carry-their-record">the section-write cases record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/insert-op-stage-order.svg"
+           alt="A state-mode insert_section request passes five stages in order — authored fields, the typed-record validation, the queued write effect, the file scan for unsafe authored fragments, and the atomic versioned write. Each stage is annotated with the case that holds it: the record-less insert refusal, the four unsafe-fragment cases, and the structured-boundary case. A stale batch ends at the queue whole, refused by the comment-only merge, and lands with both comments once rebased.">
+      <figcaption>The op's stage order and the case holding each stage. A stale batch is the
+      one path that ends early, refused whole rather than half-applied.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the
