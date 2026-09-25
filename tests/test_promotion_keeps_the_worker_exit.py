@@ -1,11 +1,12 @@
 """Promotion copies the run directory's exit record onto the committed row.
 
 A CLI dispatch's supervisor writes ``exit.json`` beside the worker and the
-coordinator reaches promotion after the worker has ended. The run directory is
-released at promotion, so the ledger row is the only record that outlives the
-pointer and the run directory; the worker's exit must ride that row under
-``worker_exit``. A missing record leaves the key off the row entirely, because a
-present empty key reads as a supervisor that ran and recorded nothing.
+coordinator reaches promotion after the worker has ended. Promotion releases the
+run's live pointer and its worktree, but not the run directory: that survives,
+``exit.json`` with it, until ``crew gc`` prunes it on a retention window, so the
+ledger row is the durable copy once gc runs. The worker's exit must ride that row
+under ``worker_exit``. A missing record leaves the key off the row entirely,
+because a present empty key reads as a supervisor that ran and recorded nothing.
 """
 
 from __future__ import annotations

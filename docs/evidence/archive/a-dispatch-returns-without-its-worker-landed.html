@@ -533,6 +533,26 @@
       2 passed at the follow-up head. Comments only, no code line changed.
     </p>
 
+    <p>
+      <strong>The test module's docstring says the same (<code>a67f800a</code> base, working
+      tree).</strong> <code>tests/test_promotion_keeps_the_worker_exit.py</code>'s module docstring
+      carried the same overstatement as the repaired comment: that the run directory is released
+      at promotion, so the ledger row is the only record that outlives the run. It now states what
+      <code>_promoted_worker_exit</code> in <code>reckon/crew/promotion.py</code> says &mdash;
+      promotion releases the run's live pointer and its worktree, while the run directory and its
+      <code>exit.json</code> survive until <code>crew gc</code> prunes them on a retention window,
+      so the row is the durable copy once gc has run. Text only: no code line and no test body
+      changed. The check that could have failed is a grep of the file for
+      <code>released at promotion, so the ledger row is the only record that outlives the</code>.
+      It returns <strong>zero hits in the working tree</strong>; the same grep against
+      <code>HEAD</code>'s copy of the file <strong>returns the phrase at line 5</strong>, the
+      positive control proving the instrument sees the phrase when it is present. Logged
+      <code>grep-docstring.log</code>. <code>tests/test_promotion_keeps_the_worker_exit.py</code>:
+      2 passed, logged <code>test-run.log</code>. No negative control is declared: a
+      docstring-only change carries no behaviour a test could fail against, and the positive
+      control in the grep log is the check.
+    </p>
+
     <h2 id="s10">&sect;10 &mdash; The launch leaves through the allocation's batch step</h2>
     <p>
       The reckon half of the fleet launch. Node
