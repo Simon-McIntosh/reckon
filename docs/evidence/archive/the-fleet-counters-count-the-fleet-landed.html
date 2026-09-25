@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="Counter census, source paths, reproduction, verification, and retained limits">
   <meta name="plan-evidence-for" content="the-fleet-counters-count-the-fleet">
   <meta name="plan-verifies" content="the-fleet-counters-count-the-fleet#s2,the-fleet-counters-count-the-fleet#s9">
-  <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06,fcb44013ae9a535b346e243df38754c6449da85b,e79c5f210f845bb24fb9f51d9f0f051c65740e87">
-  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg,docs/research/follower-signal-audit.html,docs/figures/follower-signal-audit/noise-transition-timing.svg">
+  <meta name="plan-commits" content="858b83d34fc68e08a6bad069650b3cccd29a9a06,fcb44013ae9a535b346e243df38754c6449da85b,e79c5f210f845bb24fb9f51d9f0f051c65740e87,2bafddb13fd63058b1a575850b4310d5de06d217">
+  <meta name="plan-artifacts" content="docs/research/fleet-counters-against-the-fleet.html,docs/figures/the-fleet-counters-count-the-fleet/counter-census.svg,docs/research/follower-signal-audit.html,docs/figures/follower-signal-audit/noise-transition-timing.svg,docs/figures/the-fleet-counters-count-the-fleet/reload-guards.svg">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="isolated worktree with project root virtual environment">
@@ -194,6 +194,28 @@
         </tbody>
       </table>
       <p>The assertions that pinned the retired column are brought onto the new row. The transition, node-cell, measure and reason offset helpers in <code>tests/test_ticker_reads_cleanly.py</code>, <code>tests/test_ticker_node_names_keep_their_ends.py</code>, <code>tests/test_crew_ticker_layout.py</code>, <code>tests/test_crew_recovery.py</code>, <code>tests/test_ticker_reason_cut_at_a_word.py</code> and <code>tests/test_ticker_row_drops_unread_cells.py</code> drop the three retired columns. The attention-column assertion in <code>tests/test_ticker_reads_cleanly.py</code> and <code>tests/test_ticker_renders_wait_facts.py</code> becomes a no-mark assertion, and one clause-cut expectation in <code>tests/test_crew_ticker_layout.py</code> moves one word further because the clause now owns the retired columns. No assertion is deleted or loosened.</p>
+    </section>
+
+    <section id="follower-reload-is-guarded">
+      <h2>The follower reloads only onto code that changed and will import</h2>
+      <p>Commit <code>2bafddb1</code> lands the first two items of the follower-reliability followup. A follower re-executes itself into new code on every code-stamp change, and two independent defects followed from how that stamp was computed and how unconditionally the reload was performed. Both were measured live on 2026-09-25: a merge resolving in the shared checkout left conflict markers in <code>reckon/crew/dispatch.py</code> for about a second and every armed follower died at import with <code>SyntaxError</code>; separately, a module whose mtime moved between 16:49:51 and 16:49:52 with no content change reloaded the whole fleet for nothing.</p>
+      <p>The reload is now proven safe in a throwaway interpreter before the process image is replaced. Every module in the follower's package is compiled — the conflict-marker case is a syntax error, which compiling finds even where an import would not reach — and the entry modules are imported so an import-time failure is caught too. On a failed proof the current image is kept, one dim line says the reload was deferred and why, and the check repeats only when the code changes again; the deferred stamp is remembered so the line is not reprinted on every tick. The stamp itself is now keyed on each module's content, with the mtime and size kept only as a pre-check so an idle follower does not read every module on every tick.</p>
+      <figure>
+        <img src="/reckon/figures/the-fleet-counters-count-the-fleet/reload-guards.svg" alt="A decision flow: a code-stamp change is filtered first by a content-hash comparison, which suppresses a reload when only the mtime moved; the surviving change is then filtered by an import check in a throwaway interpreter, which either re-executes into the new image or defers the reload while keeping the current image.">
+        <figcaption>One outcome is protected: a load failure never replaces the running image, so the pane keeps its rows and the follower is not lost to code that will not parse.</figcaption>
+      </figure>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>The two guards at <code>2bafddb1</code></td><td>2 passed</td><td><code>tests/test_follower_reload_is_safe.py</code>, absolute project interpreter <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>, <code>-p no:cacheprovider</code>; log <code>gate-head.log</code> in the node run directory.</td></tr>
+          <tr><td>Both tests at the base revision <code>d8dc247d</code>, in a scratch tree</td><td>2 failed as required</td><td><code>base-arm.log</code>: the touched-module test fails because the mtime alone moved the stamp, and the syntax-error test fails because the follower reloaded into the broken image and never printed the deferred line.</td></tr>
+          <tr><td><code>re-execute a reloaded follower without first checking that the new image imports</code></td><td>failed as required</td><td><code>negative-control.log</code>; with the import check bypassed the deferral assertion never sees its line, because the follower re-executed into the syntax-error image and died.</td></tr>
+          <tr><td>Follow, watch, re-arm and freshness test files, added failures against base</td><td>0 added (8 failing either side)</td><td><code>suite-head.log</code> and <code>suite-base.log</code>: the same eight failure ids in both arms, so none is this change's.</td></tr>
+          <tr><td>Ruff on every edited Python file</td><td>no added findings</td><td>Baseline and head both 4 findings across <code>runs.py</code> and <code>cli.py</code>; the new test file is clean; <code>ruff format --check</code> accepts all three.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Retained limit.</strong> The import check compiles the follower's package and imports its entry modules; it cannot prove that every lazily imported submodule of a future change loads. The observed failure mode is a module that does not parse, and that is what the guard catches.</p>
     </section>
   </main>
 </body>
