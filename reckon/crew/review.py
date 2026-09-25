@@ -97,6 +97,31 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "call_sites",
 )
 
+# ── The plan rubrics ────────────────────────────────────────────────────────
+# A plan review reads a plan's authored content before it is built; a plan
+# design review reads that plan against the codebase it would extend. Each item
+# below is a check the reviewer must speak to, and each prompt file names the
+# same items in the same spelling, so the same mirror that holds the code-review
+# schema to its prompt holds these two. The rubrics are advisory: a finding is
+# scored on whether it would have changed the plan, so the items are the checks
+# a reviewer owes an answer to, not scores.
+PLAN_REVIEW_ITEMS: tuple[str, ...] = (
+    "wiring",
+    "done_when",
+    "single_goal",
+    "evidence_paths",
+    "anchors_resolve",
+    "naming",
+    "reasoning",
+)
+
+PLAN_DESIGN_REVIEW_ITEMS: tuple[str, ...] = (
+    "reuse_search",
+    "deep_module",
+    "thin_wrapper",
+    "duplicate_owner",
+)
+
 # ── The revision pair a review read ─────────────────────────────────────────
 # The store already carries these five spellings. Base spellings describe the
 # tree before the reviewed work; head spellings describe the landed work. A
@@ -122,6 +147,15 @@ _REVISION_LABELS = frozenset({"revision", *REVISION_FIELDS})
 # module, so editing it is a text change rather than a code change. It is read
 # from disk on every call: the module holds the path, not the text.
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "review.md"
+
+# The plan rubrics are the same shape: versioned, diffable files read from disk
+# on every call, so editing a rubric is a text change rather than a code change.
+_PLAN_REVIEW_PROMPT_PATH = (
+    Path(__file__).resolve().parent / "prompts" / "plan_review.md"
+)
+_PLAN_DESIGN_REVIEW_PROMPT_PATH = (
+    Path(__file__).resolve().parent / "prompts" / "plan_design_review.md"
+)
 
 
 def _sha_from(value: Any) -> str | None:
@@ -190,6 +224,16 @@ class ReviewScoreError(ValueError):
 def load_review_prompt() -> str:
     """Read the persisted review prompt from disk at call time."""
     return _PROMPT_PATH.read_text(encoding="utf-8")
+
+
+def load_plan_review_prompt() -> str:
+    """Read the plan-review rubric prompt from disk at call time."""
+    return _PLAN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+
+
+def load_plan_design_review_prompt() -> str:
+    """Read the plan-design-review rubric prompt from disk at call time."""
+    return _PLAN_DESIGN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 # ── The parser ──────────────────────────────────────────────────────────────

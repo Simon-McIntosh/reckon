@@ -98,7 +98,58 @@ FAILED tests/test_plan_review_store.py::test_metadata_only_edit_keeps_the_finger
     pre-mutation digest (<code>64c8bfcf&hellip;30a4b1</code>), and the gate re-run green.
     The red log's first line is the declared mutation verbatim:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/negative-control-plan-review-store.log</code>.</p>
+    <section id="plan-review-rubric-prompts">
+    <h2>&sect;2 &mdash; The rubric prompts and their loaders</h2>
+    <p><strong>Node:</strong> <code>plan-review-rubric-prompts</code>.</p>
+    <p><strong>What landed.</strong> Two rubric prompts held as diffable files rather than
+    strings in a module, each read from disk at call time. <code>reckon/crew/prompts/plan_review.md</code>
+    reads a plan's authored content for <code>wiring</code>, <code>done_when</code> (measurable,
+    with a declared negative control), <code>single_goal</code>, <code>evidence_paths</code>,
+    <code>anchors_resolve</code> and <code>naming</code>, and adds a <code>reasoning</code> check in
+    three parts: the stated root cause matches the cited evidence, each section's mechanism produces
+    its done-when, and the mechanism runs on the real code path with its caller named. The
+    <code>anchors_resolve</code> item resolves an href that names no file extension as
+    <code>&lt;path&gt;.html</code>, as the surface does (<code>docs/ui/plan.jsx</code> fetches
+    <code>/&lt;project&gt;/&lt;href&gt;.html</code>), before it reports a finding &mdash; the house
+    convention, per the pilot's own declined finding.
+    <code>reckon/crew/prompts/plan_design_review.md</code> carries four items:
+    <code>reuse_search</code>, <code>deep_module</code>, <code>thin_wrapper</code> and
+    <code>duplicate_owner</code>, the last requiring that a duplicate finding name the owning file.
+    Every finding in either prompt carries a <code>WOULD_CHANGE_THE_PLAN</code> verdict and a
+    one-line <code>REASON</code>, so a review is scored on whether it would have changed the plan
+    rather than on finding count.</p>
+    <p><strong>Loaders and mirror.</strong> <code>load_plan_review_prompt</code> and
+    <code>load_plan_design_review_prompt</code> live beside <code>load_review_prompt</code> in
+    <code>reckon/crew/review.py</code>, with the item constants <code>PLAN_REVIEW_ITEMS</code> and
+    <code>PLAN_DESIGN_REVIEW_ITEMS</code>. Each prompt carries its own <code>RUBRIC_ITEMS:</code>
+    line, and <code>tests/test_plan_review_prompt.py</code> holds the two together in both
+    directions for both prompts: every item the constant enumerates is named in the prompt, and the
+    prompt's own list equals the constant.</p>
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider
+    -q tests/test_plan_review_prompt.py</code> &rarr; <code>8 passed in 0.41s, exit 0</code>. Log:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/gate-plan-review-prompt.log</code>.
+    The change is additive &mdash; no existing symbol in <code>reckon/crew/review.py</code> is
+    altered &mdash; and <code>tests/test_review_scoring.py</code> (31 tests) stays green on the same
+    tree. Both new files are clean under <code>ruff check</code>.</p>
+    <h3>Negative control</h3>
+    <p><strong>Declared mutation:</strong> <em>delete one rubric item from plan_review.md; the
+    mirror test must fail</em>. Applied &mdash; <code>naming</code> removed from the
+    <code>RUBRIC_ITEMS:</code> line of <code>plan_review.md</code> &mdash; the mirror case fails, and
+    for that reason:</p>
+    <pre>E  AssertionError: the prompt's RUBRIC_ITEMS list disagrees with PLAN_REVIEW_ITEMS
+E  assert ['wiring', 'd..., 'reasoning'] == ['wiring', 'd...'naming', ...]
+FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_item_is_in_the_prompt[PLAN_REVIEW_ITEMS-...]
+1 failed, 7 passed in 0.53s</pre>
+    <p>The mutation was then reverted and the file's sha256 re-checked against its pre-mutation
+    digest (<code>4161e393&hellip;f830d0</code>), and the gate re-run green. The red log's first
+    line is the declared mutation verbatim:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/negative-control-mirror.log</code>.</p>
+    <p><strong>Scope note.</strong> <code>reckon/crew/review.py</code> is the module the build
+    contract names for the loader (&ldquo;a sibling of <code>load_review_prompt</code>&rdquo;) and is
+    claimed by no concurrent node; the change is additive only, so a later reconciliation is a
+    deletion of the added symbols rather than a merge. Commit <code>eb2fc40f</code>.</p>
   </section>
+</section>
 </main>
 </body>
 </html>
