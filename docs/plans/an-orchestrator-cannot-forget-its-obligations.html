@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 </head>
 <body>
   <main class="plan-doc">
@@ -129,7 +129,10 @@
     <div class="r-comment-body"><p><code>da226e1e</code> exposes the derivation as a crew MCP view. <code>crew(view="obligations", project, session)</code> returns <code>reckon.crew.obligations.obligations(project, session)</code> unchanged inside the <code>ok</code> envelope, refuses a missing session with <code>error: missing_session</code>, and joins the accepted-views list and the tool docstring. Two focused tests pass on a synthetic config home: the view's <code>obligations</code> and <code>summary</code> equal the function's own output, and the session-less call is refused. The view, vocabulary and response-budget tests pass unchanged; ruff on <code>reckon/mcp.py</code> is 18 findings before and after. The declared mutation, dropping the obligations branch, reds both tests. Full record: <a href="/reckon/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed#obligations-mcp-view">obligations MCP view evidence</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T080909323737-review-of-obligations-are-a-derived-view" data-who="reckon-build" data-when="2026-09-25T09:16:43.434Z">
-    <div class="r-comment-body"><p>review of obligations-are-a-derived-view at 7e881d73 scored 90/100: obligations() calls recovery.recover, which launches the review reflex, so the read is not pure; head-keying unasserted; other sessions&#x27; live reviews not counted; returned to the node&#x27;s session</p></div>
+    <div class="r-comment-body"><p>review of obligations-are-a-derived-view at 7e881d73 scored 90/100: obligations() calls recovery.recover, which launches the review reflex, so the read is not pure; head-keying unasserted; other sessions' live reviews not counted; returned to the node's session</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T085131732284-review-of-obligations-mcp-view" data-who="reckon-build" data-when="2026-09-25T09:50:51.366Z">
+    <div class="r-comment-body"><p>review of obligations-mcp-view at d1b632ce scored 98/100 with no findings</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
