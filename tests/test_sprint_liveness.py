@@ -16,6 +16,8 @@ import pytest
 
 from reckon import sprint_liveness as sl
 from reckon.crew.runs import list_live
+from reckon.project_state import create_project_state, write_resource
+from reckon.resources import read_sprint_record
 
 # A project name no test elsewhere uses, so the fleet watch-stream registry and
 # the live-pointer reader cannot pick up a peer's state.
@@ -114,6 +116,26 @@ def _seed(home: Path, docs: Path) -> None:
     )
 
 
+def _store_sprint(docs: Path, sprint_id: str, status: str) -> None:
+    """Publish one sprint resource through the project's own sprint writer.
+
+    A stored status is the field a reader trusts at its peril: it is present and
+    readable by the project's own reader, so a control that seeds one is testing a
+    marker that disagrees with the pointers rather than an absent input that
+    happens to default to some value.
+    """
+    create_project_state(docs, PROJECT)
+    write_resource(
+        docs,
+        PROJECT,
+        "sprint",
+        sprint_id,
+        {"status": status, "theme": f"{sprint_id} stored marker"},
+        0,
+        create=True,
+    )
+
+
 def _mtimes(*roots: Path) -> dict[str, int]:
     """Every file's mtime under the given roots, keyed by path."""
     seen: dict[str, int] = {}
@@ -173,3 +195,34 @@ def test_the_default_pointer_read_finds_the_synthetic_home(
 
     assert defaulted == explicit
     assert [sid for sid, row in defaulted.items() if row["live"]] == ["S100", "S101"]
+
+
+def test_a_stored_active_sprint_status_does_not_make_it_live(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stored sprint marker is not liveness, however active it reads.
+
+    The third sprint holds nothing but a terminal pointer, so no pointer on it is
+    live. Its stored status — published through the project's own sprint writer —
+    genuinely reads active. Liveness must still be false: a stored marker is a
+    scheduling record, and trusting it is the stale-marker defect this read
+    exists to remove. Without this case the gate cannot tell a pointers-only read
+    from one that ORs the stored marker into the verdict, because no sprint in
+    the fixture carried a stored status to disagree with its pointers.
+    """
+    home, docs = _fixture(tmp_path)
+    _seed(home, docs)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    _store_sprint(docs, "S102", "active")
+
+    # The premise the assertion rests on: the marker is present and readable by
+    # the project's own reader, not an absent field defaulting to a value.
+    assert read_sprint_record(docs, PROJECT, "S102").get("status") == "active"
+
+    before = _mtimes(home, docs)
+    result = sl.sprint_liveness(PROJECT, docs, list_live(project=PROJECT))
+    after = _mtimes(home, docs)
+
+    assert after == before, "the read changed a file's mtime"
+    assert result["S102"]["live"] is False
+    assert [sid for sid in result if result[sid]["live"]] == ["S100", "S101"]
