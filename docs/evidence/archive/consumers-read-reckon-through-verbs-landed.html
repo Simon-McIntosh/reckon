@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="Explicit interface readings, delivery order, and retained authority decisions">
   <meta name="plan-evidence-for" content="consumers-read-reckon-through-verbs">
   <meta name="plan-verifies" content="consumers-read-reckon-through-verbs#s2,consumers-read-reckon-through-verbs#s3,consumers-read-reckon-through-verbs#s4,consumers-read-reckon-through-verbs#s5,consumers-read-reckon-through-verbs#s6">
-  <meta name="plan-artifacts" content="docs/figures/consumers-read-reckon-through-verbs/implementation-order.svg,/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211605418631-settle-the-consumer-verbs-readings/audit-doc.log">
-  <meta name="plan-commits" content="1007ac44">
+  <meta name="plan-artifacts" content="docs/figures/consumers-read-reckon-through-verbs/implementation-order.svg,/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211605418631-settle-the-consumer-verbs-readings/audit-doc.log,docs/figures/consumers-read-reckon-through-verbs/storage-kinds-and-selectors.svg,/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235858664615-crew-path-prints-where-reckon-keeps-things/negative-control.log,/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011123601132-help-census-counts-the-path-verb/negative-control.log,/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011123601132-help-census-counts-the-path-verb/gate.log">
+  <meta name="plan-commits" content="1007ac44,548e3498,33def709">
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -63,6 +63,45 @@
             <td>Scope check</td>
             <td>passed</td>
             <td>No production code or test file changed; this record, the plan, and its sequence figure are the only repository artifacts.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="path-verb">
+      <h2>The path verb</h2>
+      <figure>
+        <img src="/reckon/figures/consumers-read-reckon-through-verbs/storage-kinds-and-selectors.svg" alt="The three-branch config-home precedence resolves the base directory, and below it each storage kind names one directory keyed by an optional project or run.">
+        <figcaption><code>config-home</code> prints the resolved home and takes no selector; the other kinds name one directory below it, and a selector a kind does not key is refused rather than dropped.</figcaption>
+      </figure>
+      <p>§2's verb landed as <code>reckon crew path</code>. It prints one newline-terminated
+      absolute path, never a JSON envelope, and resolves the home through
+      <code>_config_home()</code> unchanged &mdash; so <code>RECKON_HOME</code> still wins over an
+      existing <code>~/.config/reckon</code>, which still wins over the legacy
+      <code>~/docs-server</code>. Each other kind resolves through the crew store's own function
+      for that directory, so the printed path is the one the rest of the store uses.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Recorded evidence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>tests/test_crew_path_prints_the_resolved_home.py</code></td>
+            <td>5 passed</td>
+            <td>CliRunner under a synthetic home, all three precedence branches per kind and per selector form, every refused combination non-zero.</td>
+          </tr>
+          <tr>
+            <td>Declared negative control</td>
+            <td>red as declared</td>
+            <td>Hardcoding the default home in the verb fails the <code>RECKON_HOME</code> branch: 1 failed, 4 deselected, exit 1. The log at <code>crew/runs/r-20260924T235858664615-crew-path-prints-where-reckon-keeps-things/negative-control.log</code> opens with the declaration verbatim.</td>
+          </tr>
+          <tr>
+            <td>Existing crew CLI tests, delta against the base revision</td>
+            <td>one added failure, outside this section's write paths</td>
+            <td>Every file importing <code>reckon.cli</code> and naming crew passes except <code>tests/test_crew_help_names_its_state.py</code>, whose registry admits 27 verb help phrases and holds the new <code>path</code> verb out. Reported, not repaired here.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_crew_help_names_its_state.py</code></td>
+            <td>passed &mdash; the census admits the path verb</td>
+            <td>The closed registry now carries <code>("path",): "one kind of file"</code> and 28 phrases, matching the verb's first help line; both named tests pass together (9 passed, exit 0). The declared negative control is executed and logged: removing the entry fails the census's set comparison, naming <code>('path',)</code> as an uncovered leaf (1 failed, 3 passed, exit 1); the mutation was reverted to the committed state. Log: <code>crew/runs/r-20260925T011123601132-help-census-counts-the-path-verb/negative-control.log</code>.</td>
           </tr>
         </tbody>
       </table>
