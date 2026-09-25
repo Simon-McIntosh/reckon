@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -768,6 +768,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1025-liveness-gate-scope" data-who="" data-when="">
     <div class="r-comment-body"><p>Scope added to the liveness gate (c-20260925T092500-liveness-gate), which the lead made top priority at 10:17 on 2026-09-25 because the false rows are costing coordinator attention. The node <code>a-live-run-never-reads-dead</code> also covers the following, with line numbers cited at revision 77c20349 (re-resolve them at your head). (5) An orientation-only manifest reads <code>unreadable · repair</code>: a manifest carrying only the <code>orientation_*</code> block and no <code>status:</code> line is the normal early state of a live run, and it must classify as working. Seen on r-20260925T082101656238 at 10:22:20, one minute after dispatch, with the worker alive. (6) A vanished run reads <code>promoted</code> without a ledger row (recovery.py:4519–4524): promoted only when a ledger row exists, otherwise withdrawn. (7) A counter disagrees with its own row: an <code>unpromoted</code> row beside <code>0u</code>, and <code>blocked</code> rows beside <code>0b</code>, within one line (2026-09-24 23:03:50, 23:05:38, 23:06:19). The likely cause is a classification missing from the bucket vocabularies at recovery.py:4404–4413, read by <code>_fleet_counts</code> at 4416–4458. Done when every classification the producer can emit maps to exactly one bucket, asserted by a test that enumerates the emitted set. The ticker-side rendering of the same defects is <code>ticker-row-reads-cleanly</code> (s23-coord), which does not edit recovery.py.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1056-liveness-gate-phase" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two more cases for the liveness gate, both reported by s23-coord and s22-coord on 2026-09-25. (8) <b>Pointer phase stuck at <code>starting</code>.</b> Every run dispatched since about 08:05–08:10Z, 20 runs across S21–S23, keeps phase <code>starting</code> for its whole life, including r-20260925T080934765563, whose manifest reads complete. Runs dispatched before 08:00 advanced normally. The phase advance stopped around then, so the node checks what changed in the supervisor or pointer writer at that time and restores the advance. Stale phase in the other direction: sprint-liveness-from-live-crews keeps phase <code>blocked</code> while it classifies as <code>scoring</code>, which produces a phantom <code>1b</code> in the counter. (9) <b>A template-only manifest reads unreadable.</b> r-20260925T082122723925, three minutes in, still carried the unfilled 414-byte template, and its process was alive. So the misread is not only the first-commit branch: the common factor is the watcher snapshot's <code>process_alive</code> verdict, which the node targets directly. Done when the stub set includes a run whose pointer phase must advance from starting to working to complete, and a live run holding a template-only manifest.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>

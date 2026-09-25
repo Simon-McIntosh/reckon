@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -257,6 +257,11 @@
     <div class="r-fu-body"><p>Lead decision, 2026-09-25: allow shared-file writes, with coordination. Worktrees isolate in-flight work, and merging is the orchestrator's job. The measurement behind it: on 2026-09-25 all three reckon coordinators reported local-lane width bound by whole-file write claims on six to eleven hot modules (<code>dispatch.py</code>, <code>promotion.py</code>, <code>recovery.py</code>, <code>mcp.py</code>, <code>cli.py</code>, <code>roadmap.py</code>), with 15 running against a computed ceiling of 27 and a router gate of 36. The refused nodes would mostly edit different functions in those files.</p><p>The mechanism: a project declares shareable paths in <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>, a list of repository-relative files, each with a one-line reason. The live claim check in <code>reckon/crew/runs.py</code> (<code>_raise_live_scope_conflict</code>) still refuses any overlap, except when the candidate path and the live claim resolve to the same file named in that list. In that case it permits the claim and records the co-claimants, so <code>crew(view="scopes")</code> shows every live node sharing the file. A directory claim that contains a shared file still conflicts, and so does any path not in the list. With no list present, behaviour is unchanged.</p><p>Done when a test synthesizes a repository with a list naming one file and asserts four things: two nodes claiming that file both pass the check; a node claiming an unlisted file is refused against a live claim on it; a directory claim overlapping the shared file is refused; with the list absent, the shared file is refused. The negative control ignores the list, and the first case then fails. The list for reckon is committed with the six modules named above.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §1</pre>
     </article>
+<article class="r-fu" data-id="f-tllitd-readings-and-durability" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The published headroom carries readings, from a timer that outlives the allocation</h4>
+    <div class="r-fu-body"><p>The refresh timer landed on 2026-09-25 (r-20260925T072316842946, promoted 99a17d7c): two publishes 322 s apart, service Result=success. The review scored 83. Three gaps keep §5's lane-feedback gate open. (1) <b>Every account reads <code>state: unknown</code></b> in <code>~/public/reckon/paid-lanes.json</code>, with no window utilisation or burn for claude, codex, codex-luna or any other account. So the document refreshes but says nothing an orchestrator can decide on. Find why the gatherer produces no readings (no rate-limit events in recent streams, a wrong stream root, or a parse gap), and make each account with recent traffic publish its window figure. Done when a publish shows a non-unknown <code>five_hour</code> or <code>seven_day</code> reading for every account that ran a job in the last window, with a test that feeds a stream fixture carrying a <code>rate_limit_event</code>. (2) <b>The timer runs under the SLURM allocation's user manager</b> (XDG_RUNTIME_DIR=/tmp/39486-fleet), so it dies when the allocation ends. Install it under the login host's persistent user manager, or state which host owns it, and prove it survives an allocation boundary. (3) The review's two figure findings: in <code>refresh-timer-live.png</code> the y-axis labels are applied in reverse lane order, and the annotations overprint (<code>refresh_timer_figure.py</code> lines 34–38 and 79).</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §5</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T211841912909-review-of-paid-headroom-is-published" data-who="reckon-build" data-when="2026-09-24T22:06:40.930Z">
@@ -317,7 +322,7 @@
     <div class="r-comment-body"><p>paid-lanes --install-timer writes and enables a 5-minute user timer idempotently; idempotence negative control fails; review 90</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T072316842946-paid-lanes-timer-is-live" data-who="reckon-build" data-when="2026-09-25T07:52:53.886Z">
-    <div class="r-comment-body"><p>timer installed, two publishes 322 s apart; review 83 with two figure findings (y-axis labels in reverse lane order, overprinted annotations); open gaps: every account reads unknown, and the timer runs under the allocation&#x27;s user manager</p></div>
+    <div class="r-comment-body"><p>timer installed, two publishes 322 s apart; review 83 with two figure findings (y-axis labels in reverse lane order, overprinted annotations); open gaps: every account reads unknown, and the timer runs under the allocation's user manager</p></div>
 </div>
 </section>
 </main>
