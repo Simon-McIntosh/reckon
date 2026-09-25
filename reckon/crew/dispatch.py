@@ -6082,7 +6082,7 @@ def resume_plan(
             "state": "unchecked",
             "window_tokens": backend.get("usable_input_window"),
             "detail": (
-                "the resume request does not re-verify context fit; only "
+                "the resume request proceeds without re-verifying context fit; only "
                 "dispatch performs that check against the current repository"
             ),
         }
