@@ -7,11 +7,11 @@ Once the run completes, the record is durable evidence of how a plan was
 implemented — and plans are repo-local and committed, so their implementation
 record is too.
 
-The mechanism is already there: ``<config-home>/state/<project>`` is a symlink
-into ``<repo>/docs/state/<project>``, which is how ``index.json`` is
-server-written and git-committed. A ledger placed beside it inherits that
-property for free, and inherits the same version-paired write, so two
-orchestrators cannot clobber each other.
+The state directory ``<config-home>/state/<project>`` is a symlink into
+``<repo>/docs/state/<project>``. Each completed run owns a file under ``runs/``;
+exclusive creation keeps concurrent promotions independent and refuses a
+duplicate without rewriting history. Roster and hold edits use version-paired
+writes to their aggregate ledger.
 
 Two rules shape everything here.
 
@@ -21,7 +21,7 @@ a worktree path or a phase. Holds sit beside runs because they have no worker,
 worktree, commit or gate, and therefore must not enter worker-effort
 measurements. :func:`append_run` refuses a second record for a run id
 because a double promotion double-counts the very measurements
-``effort-calibration`` will read.
+the calibration readers consume.
 
 **A measurement is only falsifiable if it is captured at the moment it is
 knowable.** Wall-clock, the agent configuration that ran the node, the scoped
@@ -1798,20 +1798,18 @@ def per_run_budget(
     return result
 
 
-def _shadow_store_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
-    """Write one run to the queryable store, recording rather than raising.
+def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Update the rebuildable index after the authoritative file is written.
 
-    The store is a shadow nothing reads yet, so its failure must never turn a
-    committed file row into a failed promotion: any store exception is
-    returned on the payload rather than propagated, and ``append_run`` records
-    the outcome on both the committed row and the returned payload it hands to
-    promotion.
+    An index failure is returned to promotion without altering the run file or
+    failing its append. Index lag exposes missing rows until a reader rebuilds
+    the cache from the files.
     """
     from reckon import run_store
 
     try:
         run_store.append(project, dict(record))
-    except Exception as exc:  # noqa: BLE001 — a shadow failure is recorded, never raised
+    except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
         return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return {"status": "written"}
 
@@ -1924,25 +1922,31 @@ def append_run(
     attempts: int = 12,
     allow_create: bool = False,
 ) -> dict[str, Any]:
-    """Append one completed run, retrying when a concurrent write intervenes.
+    """Create one run file exclusively, then attempt one index update.
 
-    The retry is what makes two interleaved promotions both survive: the loser
-    re-reads the ledger the winner just wrote and appends to that, so neither
-    record is lost. A second record for the same run id is refused instead —
-    that is not concurrency, it is a double promotion, and it would double-count
-    the measurements the calibration loops read. An absent ledger is refused
-    only when git shows the path was once tracked: a committed ledger missing
-    from the working tree is a deletion to recover, since the independent run
-    store already holds each promoted run, while a path git has never recorded
-    is a genuinely new project and is initialised. Where git cannot answer, the
-    refusal stands, and ``allow_create=True`` remains the explicit way to
-    initialise a project outside a checkout.
+    Existing target paths and top-level aggregate rows refuse duplicate ids.
+    A byte scan avoids parsing the aggregate unless it contains this id; other
+    run files are never opened. The caller owns the commit. ``attempts`` remains
+    accepted for call compatibility, but independent files need no retry queue.
+    The returned ``version`` is None because no aggregate version is advanced.
+
+    An absent aggregate still needs the history guard: a tracked file missing
+    from the working tree can hold unsplit history that needs recovery. A path
+    never tracked can accept a run without creating an aggregate; where git
+    cannot answer, ``allow_create=True`` explicitly permits initialisation.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
         raise LedgerError("a run record must carry a run_id")
     ledger_root = _run_ledger_root(project, root)
     path = ledger_path(project, ledger_root)
+    target = run_path(project, run_id, ledger_root)
+    refusal = (
+        f"run {run_id!r} already exists at {target}; promoting it twice "
+        "would double-count its measurements"
+    )
+    if target.exists() or target.is_symlink():
+        raise LedgerError(refusal)
     if (
         not path.exists()
         and not allow_create
@@ -1955,68 +1959,65 @@ def append_run(
             "recover the ledger or initialise a genuinely new project with "
             "allow_create=True."
         )
-    stored_record = dict(record)
-    last: LedgerError | None = None
-    store_outcome: dict[str, Any] | None = None
-    for _attempt in range(max(1, attempts)):
-        data, version = load(project, ledger_root)
+    try:
+        aggregate_bytes = path.read_bytes()
+    except FileNotFoundError:
+        aggregate_bytes = b""
+    if run_id.encode("utf-8") in aggregate_bytes:
+        try:
+            envelope = json.loads(aggregate_bytes)
+            entries = envelope.get("data", {}).get("runs", [])
+        except (ValueError, AttributeError) as exc:
+            raise LedgerError(f"cannot check run {run_id!r} in {path}: {exc}") from exc
+        if not isinstance(entries, list):
+            raise LedgerError(
+                f"cannot check run {run_id!r} in {path}: runs must be a list"
+            )
         existing = next(
-            (item for item in data["runs"] if str(item.get("run_id")) == run_id), None
+            (
+                item
+                for item in entries
+                if isinstance(item, Mapping) and str(item.get("run_id")) == run_id
+            ),
+            None,
         )
         if existing is not None:
             raise LedgerError(
-                f"run {run_id!r} is already in the ledger for {project!r} "
+                f"run {run_id!r} is already in {path} "
                 f"(completed {existing.get('completed_at')!r}); promoting it twice "
                 "would double-count its measurements"
             )
-        if store_outcome is None:
-            # Attempt the shadow store write exactly once, before the file row
-            # commits, so its outcome can be recorded on the committed row
-            # itself. The store never raises here — a failure is reported on
-            # the row and the returned payload, never propagated — so a broken
-            # shadow cannot turn a promotion into a failed one.
-            store_outcome = _shadow_store_append(project, stored_record)
-            stored_record["store_write"] = dict(store_outcome)
-        data["runs"] = data["runs"] + [stored_record]
-        try:
-            new_version = write(project, data, version, ledger_root)
-        except LedgerError as exc:
-            last = exc
-            _retry_backoff(_attempt)
-            continue
-        return {
-            "path": str(ledger_path(project, ledger_root)),
-            "version": new_version,
-            "run": dict(stored_record),
-            "store": dict(store_outcome or {"status": "unknown"}),
-        }
-    raise LedgerError(
-        f"ledger for {project!r} was rewritten on every attempt — {last}"
-        if last
-        else f"ledger for {project!r} could not be written"
-    )
+
+    stored_record = dict(record)
+    stored_record.pop("store_write", None)
+    encoded = serialize_run(stored_record)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with target.open("x", encoding="utf-8") as stream:
+            stream.write(encoded)
+    except FileExistsError as exc:
+        raise LedgerError(refusal) from exc
+    store_outcome = _index_append(project, stored_record)
+    return {
+        "path": str(target),
+        "version": None,
+        "run": stored_record,
+        "store": store_outcome,
+    }
 
 
-def failed_store_write_count(
+def index_lag(
     project: str,
     root: str | Path | None = None,
-) -> int:
-    """Count committed rows whose shadow store write failed.
+) -> int | str:
+    """Count run filenames absent from the index without rebuilding that index."""
+    from reckon import run_store
 
-    A row carries ``store_write`` only once the shadow store exists, so rows
-    committed before then are neither failures nor successes — they are simply
-    not counted. The failing count is the durable, queryable record of how many
-    promotions have a store write that raised, independent of any command's
-    transient output.
-    """
-
-    data, _version = load(project, _run_ledger_root(project, root))
-    return sum(
-        1
-        for run in data["runs"]
-        if isinstance(run.get("store_write"), Mapping)
-        and str(run["store_write"].get("status") or "").strip() == "failed"
-    )
+    indexed = run_store.indexed_run_ids(project)
+    if indexed is None:
+        return "no index"
+    paths = _run_files(project, _run_ledger_root(project, root))
+    return len({path.stem for path in paths} - indexed)
 
 
 def runs(

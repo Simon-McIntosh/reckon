@@ -584,6 +584,28 @@ def append(project: str, record: Mapping[str, Any]) -> None:
         store.append(project, record)
 
 
+def indexed_run_ids(project: str) -> set[str] | None:
+    """Read current index membership without creating, migrating or rebuilding it.
+
+    None distinguishes a missing index from an existing empty one. A read-only
+    connection avoids RunStore's schema setup and reader-triggered refresh, so
+    observing lag cannot repair or conceal it.
+    """
+    path = store_path()
+    if not path.exists():
+        return None
+    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        return {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT run_id FROM runs WHERE project = ?", (project,)
+            )
+        }
+    finally:
+        connection.close()
+
+
 def import_ledger(
     project: str,
     *,
