@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -288,6 +288,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-20260925T-paid-lanes-refresh-timer" data-who="reckon-build" data-when="2026-09-25T06:40:00Z">
     <div class="r-comment-body"><p>paid-lanes-refresh-timer: <code>python -m reckon.crew.paid_lanes --install-timer</code> writes reckon-paid-lanes.service (oneshot, ExecStart = the running checkout's interpreter with <code>-m reckon.crew.paid_lanes --once</code>, WorkingDirectory = the checkout root) and reckon-paid-lanes.timer (OnBootSec=1min, OnUnitActiveSec=5min, Unit=reckon-paid-lanes.service) under XDG_CONFIG_HOME/systemd/user, then daemon-reload and enable --now. Idempotent: an unchanged definition writes nothing and issues no manager command; a changed interpreter rewrites and reloads. --help lists the flag. 8 new tests, 22 passed across both paid-lanes files; declared negative control (remove the unchanged-definition check) fails the idempotence assertion, logged. Nothing installed on this host. Commit 782ec81e. The node did not resolve its driving followup or set a terminal status.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T063740048096-review-of-paid-lanes-refresh-timer" data-who="reckon-build" data-when="2026-09-25T07:02:40.217Z">
+    <div class="r-comment-body"><p>review of paid-lanes-refresh-timer stored at 90</p></div>
 </div>
 </section>
 </main>
