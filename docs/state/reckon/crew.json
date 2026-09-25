@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T05:36:02",
+  "updated": "2026-09-25T05:36:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -383463,6 +383463,294 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T024928942140-landed-header-is-not-a-splice",
+        "plan": "the-audit-agrees-with-the-skill",
+        "section": "\u00a71",
+        "node": "landed-header-is-not-a-splice",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1000,
+                "cached_input_tokens": 624896,
+                "input_tokens": 625898,
+                "output_tokens": 922,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 626820,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/doccheck.py's header-duplicate check (near doccheck.py:638) skips a header whose parent is a section with class section-landed and still counts every other header; tests/test_doccheck_landed_header.py asserts a plan with three landed sections in the reckon-build SKILL.md 6b template produces no header-duplicate finding and a plan with a second top-level header still produces it; the declared mutation (the exemption removed) is applied and the three-landed-sections case observed to fail with its log recorded under the run directory; tests/test_doccheck.py passes unchanged; ruff --output-format=concise on reckon/doccheck.py reports no more findings than at base",
+          "estimated_hours": null,
+          "goal": "exempt a header that is the direct child of section.section-landed from the header-duplicate audit finding",
+          "id": "landed-header-is-not-a-splice",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T02:49:30Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 1,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 12,
+            "mean_context": 106667,
+            "observed_at": "2026-09-25T02:49:29Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024928942140-landed-header-is-not-a-splice/manifest.md",
+          "negative_control": "remove the section-landed exemption",
+          "plan": "the-audit-agrees-with-the-skill",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/doccheck.py",
+            "tests/test_doccheck_landed_header.py",
+            "docs/evidence/archive/the-audit-agrees-with-the-skill-landed.html",
+            "docs/figures/the-audit-agrees-with-the-skill",
+            "docs/plans/the-audit-agrees-with-the-skill.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-matrix-currency",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T02:49:51Z",
+        "completed_at": "2026-09-25T03:03:10.003Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 548,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 799,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "663cc0d2a6f3a4202239fc1b3088e3b9d2232245",
+        "commits": [
+          "6e1681526e79e254a8a401b426f3855830281b1d",
+          "17bb714238e7030f3c8087ce5884c0782705c510"
+        ],
+        "changed_lines": {
+          "added": 296,
+          "removed": 3,
+          "files": 5
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_doccheck.py tests/test_doccheck_structure.py tests/test_doccheck_landed_header.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024928942140-landed-header-is-not-a-splice/gate-focused.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024928942140-landed-header-is-not-a-splice/manifest.md",
+        "scope_changed": false,
+        "session_id": "d3195b49-4f29-4b4a-9113-dea46b9cd345",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4951880,
+            "input_tokens_cumulative": 4951880,
+            "output_tokens": 23801,
+            "output_tokens_cumulative": 23801,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T03:03:10.003Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 19,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 98
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4951880,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 555.292,
+          "generated_tokens": 23801,
+          "generation_seconds": 491.276,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 22.5,
+          "machine_seconds": 64.016,
+          "peak_input_tokens": 108098,
+          "tokens_per_second": 48.45,
+          "wall_tokens_per_second": 42.86
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/landed-header-is-not-a-splice",
+          "session_id": "d3195b49-4f29-4b4a-9113-dea46b9cd345",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T03:03:10.003Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T03:03:10Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T02:53:51Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T024928942140-landed-header-is-not-a-splice",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 2751,
+          "worker_pid": 2567310
+        },
+        "promoted_revision": "17bb714238e7030f3c8087ce5884c0782705c510",
+        "impl_move": {
+          "plan": "the-audit-agrees-with-the-skill",
+          "at_dispatch": null,
+          "at_complete": 0.33,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_doccheck_landed_header.py"
+          ],
+          "declaration": "remove the section-landed exemption",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024928942140-landed-header-is-not-a-splice/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T024928942140-landed-header-is-not-a-splice/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T03:19:30.526180+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T02:49:30Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 1,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 12,
+          "mean_context": 106667,
+          "observed_at": "2026-09-25T02:49:29Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 62.0,
+        "orientation_input_tokens": 1126816.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -383775,6 +384063,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2664
+    "_version": 2665
   }
 }
