@@ -1304,10 +1304,11 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
 
     <section id="slow-dispatch-tests-wait-on-events">
       <h2>Dispatch and arming cases await an observed event instead of a fixed sleep</h2>
-      <p class="landed-summary">Head <code>34e1b0d2</code> on fleet job <code>1277272</code>. Two test
+      <p class="landed-summary">Head <code>39072bc7</code> on fleet job <code>1277272</code>. Two test
       files changed; no <code>reckon/</code> file edited; no test skipped, xfailed, deleted or
-      weakened. Serial <code>--durations=0</code>: <strong>8 passed in 46.81 s</strong>. Under
-      <code>-n 4</code> with pytest's default basetemp: <strong>8 passed in 25.75 s</strong>.</p>
+      weakened. Serial <code>--durations=0</code>: <strong>8 passed in 39.91 s</strong>. Under
+      <code>-n 4</code> with pytest's default basetemp: <strong>8 passed</strong> in
+      <strong>19.50&ndash;20.66 s</strong> across three consecutive runs.</p>
 
       <h3>The event in place of the shim's sleep</h3>
       <p><code>tests/test_dispatch_returns_without_worker.py</code> no longer defines
@@ -1337,17 +1338,23 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       the arming case releases and still asserts <code>_ARMED_WITHIN_S</code>. Teardown releases any tree
       still held so the arming thread is never left blocked.</p>
 
-      <h3>Per-test duration, base <code>587adf48</code> to head <code>34e1b0d2</code></h3>
+      <h3>Per-test duration, base <code>587adf48</code> to head <code>39072bc7</code></h3>
       <table>
         <thead><tr><th>test</th><th>base (s)</th><th>head (s)</th><th>halved?</th></tr></thead>
         <tbody>
-          <tr><td><code>test_a_discarded_run_is_not_recreated</code></td><td>48.93</td><td>13.03</td><td>yes</td></tr>
-          <tr><td><code>test_a_delegated_launch_records_a_boundary_snapshot</code></td><td>43.15</td><td>7.05</td><td>yes</td></tr>
-          <tr><td><code>test_sigkill_to_the_worker_is_recorded</code></td><td>42.55</td><td>7.97</td><td>yes</td></tr>
-          <tr><td><code>test_sigkill_to_dispatch_leaves_the_worker_marker</code></td><td>39.30</td><td>8.11</td><td>yes</td></tr>
+          <tr><td><code>test_a_discarded_run_is_not_recreated</code></td><td>48.93</td><td>10.75</td><td>yes</td></tr>
+          <tr><td><code>test_a_delegated_launch_records_a_boundary_snapshot</code></td><td>43.15</td><td>6.57</td><td>yes</td></tr>
+          <tr><td><code>test_sigkill_to_the_worker_is_recorded</code></td><td>42.55</td><td>8.17</td><td>yes</td></tr>
+          <tr><td><code>test_sigkill_to_dispatch_leaves_the_worker_marker</code></td><td>39.30</td><td>5.39</td><td>yes</td></tr>
           <tr><td><code>test_every_tree_is_armed_within_the_bound</code></td><td>15.03</td><td>0.06</td><td>yes</td></tr>
         </tbody>
       </table>
+      <p><strong>The return bound is 8.0 s.</strong> Dispatch's own clock measured 2.5&ndash;3.2 s
+      serially and 2.8&ndash;3.7 s when the single case ran under <code>-n 4</code>, but 5.3 s when
+      the case ran beside the other seven tests across four workers &mdash; the same load sensitivity
+      that failed the base case. The bound sits above that contention and far below the roughly
+      thirty seconds the held scan lasts, so a dispatch that waited for the supervisor's scan still
+      blows it decisively.</p>
       <p><code>test_dispatch_returns_once_its_supervisor_runs</code> failed its wall bound at the base
       (6.53 s against 5.0 s, because the driver's interpreter startup was charged against dispatch's
       wait). It now passes: the wall bound attributes the driver's measured
@@ -1358,8 +1365,8 @@ env -C /tmp/other-reckon-surface PYTHONPATH= &lt;worktree&gt;/.venv/bin/python -
       <table>
         <thead><tr><th>mutation</th><th>observed</th></tr></thead>
         <tbody>
-          <tr><td>6 s sleep injected into a scratch copy of <code>reckon/crew/dispatch.py</code></td>
-            <td>return case fails on <code>DISPATCH_EXIT_BOUND</code>: exit 10.70 s vs 8.04 s allowed;
+          <tr><td>15 s sleep injected into a scratch copy of <code>reckon/crew/dispatch.py</code></td>
+            <td>return case fails on <code>DISPATCH_EXIT_BOUND</code>: exit 18.10 s vs 10.66 s allowed;
             log <code>logs/negative-control.log</code>, first line the declared control string</td></tr>
           <tr><td>every tree held open past the arming bound</td>
             <td>arming case fails: <q>only 0 of 3 trees were armed within 20.0 s</q>; log

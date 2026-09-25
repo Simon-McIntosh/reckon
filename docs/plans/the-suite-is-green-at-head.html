@@ -718,7 +718,7 @@
       <p><strong>Outcome &mdash; the four slowest dispatch cases and the server arming case
       await an observed event instead of a fixed sleep, and every bound they assert is still
       asserted.</strong> Both files pass serially and under <code>-n 4</code> with pytest's default
-      basetemp, at head <code>34e1b0d2</code>, with no <code>reckon/</code> file edited and no test
+      basetemp, at head <code>39072bc7</code>, with no <code>reckon/</code> file edited and no test
       skipped, xfailed, deleted or weakened.</p>
       <p><strong>The dispatch shim.</strong> The shim no longer sleeps one second per charged
       <code>git status</code> call (<code>SHIM_SLEEP_SECONDS</code> is gone). Instead, a call charged
@@ -739,19 +739,22 @@
       measures the port, so its answer is measured against a genuinely open arming window; the
       arming case releases and still asserts <code>_ARMED_WITHIN_S</code>.</p>
       <p><strong>Durations, serial <code>--durations=0</code>, base <code>587adf48</code> to head
-      <code>34e1b0d2</code>, each at least halved.</strong>
-      <code>test_a_discarded_run_is_not_recreated</code> 48.93&rarr;13.03 s;
-      <code>test_a_delegated_launch_records_a_boundary_snapshot</code> 43.15&rarr;7.05 s;
-      <code>test_sigkill_to_the_worker_is_recorded</code> 42.55&rarr;7.97 s;
-      <code>test_sigkill_to_dispatch_leaves_the_worker_marker</code> 39.30&rarr;8.11 s;
+      <code>39072bc7</code>, each at least halved.</strong>
+      <code>test_a_discarded_run_is_not_recreated</code> 48.93&rarr;10.75 s;
+      <code>test_a_delegated_launch_records_a_boundary_snapshot</code> 43.15&rarr;6.57 s;
+      <code>test_sigkill_to_the_worker_is_recorded</code> 42.55&rarr;8.17 s;
+      <code>test_sigkill_to_dispatch_leaves_the_worker_marker</code> 39.30&rarr;5.39 s;
       <code>test_every_tree_is_armed_within_the_bound</code> 15.03&rarr;0.06 s. The whole run is
-      <strong>8 passed in 46.81 s</strong> serial and <strong>8 passed in 25.75 s</strong> under
-      <code>-n 4</code>. <code>test_dispatch_returns_once_its_supervisor_runs</code>, which failed
-      its wall bound at the base (6.53 s against 5.0 s), now passes with its startup time attributed
-      out.</p>
-      <p><strong>Every bound still fails when violated.</strong> A 6 s sleep injected into a scratch
+      <strong>8 passed in 39.91 s</strong> serial and <strong>8 passed</strong> in
+      <strong>19.50&ndash;20.66 s</strong> across three consecutive <code>-n 4</code> runs.
+      <code>test_dispatch_returns_once_its_supervisor_runs</code>, which failed its wall bound at the
+      base (6.53 s against 5.0 s), now passes with its startup time attributed out.</p>
+      <p><strong>Return bound.</strong> Dispatch's own clock ran 2.5&ndash;3.2 s serially but 5.3 s
+      when the case ran beside seven siblings across four workers, so the bound is 8.0 s: still far
+      below the ~30 s held scan a waiting dispatch would take, and clear of ordinary contention.</p>
+      <p><strong>Every bound still fails when violated.</strong> A 15 s sleep injected into a scratch
       copy of <code>reckon/crew/dispatch.py</code> makes the rewritten return case fail on the bound
-      (exit 10.70 s against 8.04 s allowed); holding every tree open past
+      (exit 18.10 s against 10.66 s allowed); holding every tree open past
       <code>_ARMED_WITHIN_S</code> makes the arming case fail on the bound (0 of 3 trees armed within
       20.0 s). Figure
       <a href="/reckon/figures/the-suite-is-green-at-head/event-wait-durations.png">before and after

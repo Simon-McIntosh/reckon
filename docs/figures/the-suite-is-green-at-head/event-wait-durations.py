@@ -17,10 +17,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 CASES = [
-    ("discarded run\nnot recreated", 48.93, 13.03),
-    ("delegated launch\nboundary snapshot", 43.15, 7.05),
-    ("sigkill to the\nworker recorded", 42.55, 7.97),
-    ("sigkill to dispatch\nleaves marker", 39.30, 8.11),
+    ("discarded run\nnot recreated", 48.93, 10.75),
+    ("delegated launch\nboundary snapshot", 43.15, 6.57),
+    ("sigkill to the\nworker recorded", 42.55, 8.17),
+    ("sigkill to dispatch\nleaves marker", 39.30, 5.39),
     ("every tree armed\nwithin the bound", 15.03, 0.06),
 ]
 
@@ -98,10 +98,10 @@ def main() -> None:
         "\n".join(
             [
                 "dispatch return bound",
-                "  DISPATCH_EXIT_BOUND = 5.0 s",
-                "  a 6 s sleep injected in a scratch",
+                "  DISPATCH_EXIT_BOUND = 8.0 s",
+                "  a 15 s sleep injected in a scratch",
                 "  copy of the dispatch path trips it:",
-                "  exit_after 10.70 s vs 8.04 s allowed",
+                "  exit_after 18.10 s vs 10.66 s allowed",
                 "",
                 "arming bound",
                 "  _ARMED_WITHIN_S = 20.0 s",
