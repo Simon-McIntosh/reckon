@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="reckon-read-latency-profile">
+  <meta name="plan-title" content="Warm Reckon Read Latency Profile">
+  <meta name="plan-summary" content="Warm audit, roadmap, and discovery time is dominated by repeated full-plan parsing; existing stat-keyed memos can remove it.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="reckon-reads-answer-in-seconds">
+  <meta name="plan-source" content="cProfile receipts from clu-2058 at ac231ab23c991fc574799a28645ecaccd97cde24">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-25">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="performance,profiling,mcp">
+  <title>Warm Reckon Read Latency Profile | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input &middot; warm read profile</p>
+      <h1>Warm Reckon read latency profile</h1>
+      <p class="lead">All three slow reads still exceed the five-second bound. Repeated full-plan parsing dominates every profile; roadmap also pays a five-to-six-second live-run classification floor.</p>
+    </header>
+
+    <section id="finding">
+      <h2>Finding</h2>
+      <p>At revision <code>ac231ab23c991fc574799a28645ecaccd97cde24</code> on <code>98dci4-clu-2058</code>, fleet allocation <code>1277272</code>, the second call in each fresh process took <strong>88.554 s</strong> for <code>audit(project="reckon")</code>, <strong>19.872 s</strong> for <code>roadmap(project="reckon", view="summary")</code>, and <strong>27.547 s</strong> for discovery <code>read_plan(project="reckon")</code> under cProfile. Each call returned a successful structured result; the profiles saw 136,566,339, 32,525,621, and 46,322,712 calls respectively. The defect therefore reproduces, and the instrument demonstrably observed real work rather than an empty or failed result.</p>
+      <p>The literal cumulative rankings below exclude only the small profiling driver and public MCP envelope. Nested entries overlap: for example, <code>parse_plan</code> calls <code>read_state</code>, so their seconds must not be summed. No git subprocess appears in any top five. The warm git provenance caches were already doing their job; parsing, corpus walks, live-file reads, and derived computation remain.</p>
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg" alt="Horizontal latency plot. Audit profiles at 88.6 seconds with an estimated memo-hit residual near 4 seconds; roadmap profiles at 19.9 seconds with a residual near 1.2 seconds; discovery profiles at 27.5 seconds with a residual near 1.5 seconds. A vertical marker shows the five-second bound.">
+        <figcaption>The profile identifies enough reusable work to put all three expected warm latencies below five seconds. The residuals are Amdahl-style estimates, not post-change benchmarks.</figcaption>
+      </figure>
+    </section>
+
+    <section id="method">
+      <h2>Method and receipts</h2>
+      <p>Each public tool body ran in its own fresh Python process. The driver called it once without profiling to warm process-local discovery and file caches, then profiled the second call with <code>cProfile.Profile</code> and sorted <code>pstats</code> by cumulative time. The first line of every log records the revision, worktree, and command; the next two lines record <code>reckon.mcp.__file__</code> and the resolved working directory. A <code>MEASUREMENT</code> line records elapsed seconds, result keys and JSON size before the call table.</p>
+      <pre><code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python \
+  ~/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/profile_warm_reads.py \
+  &lt;audit|roadmap|discovery&gt; --profile \
+  ~/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/&lt;read&gt;.prof</code></pre>
+      <table>
+        <thead><tr><th>Read</th><th>Profile log</th><th>Profile data</th><th>Successful result</th></tr></thead>
+        <tbody>
+          <tr><td><code>audit(project="reckon")</code></td><td><code>audit-profile.log</code></td><td><code>audit.prof</code></td><td>824 JSON bytes; summary keys present</td></tr>
+          <tr><td><code>roadmap(project="reckon", view="summary")</code></td><td><code>roadmap-profile.log</code></td><td><code>roadmap.prof</code></td><td>953 JSON bytes; readiness and completion keys present</td></tr>
+          <tr><td><code>read_plan(project="reckon")</code></td><td><code>discovery-profile.log</code></td><td><code>discovery.prof</code></td><td>7,591 JSON bytes; resources and pagination keys present</td></tr>
+        </tbody>
+      </table>
+      <p>All receipt paths are relative to <code>~/.config/reckon/crew/runs/r-20260925T064039051367-read-latency-profile/</code>. cProfile instrumentation magnifies absolute wall time, especially inside Beautiful Soup. The rankings and residual calculations use one instrument consistently; the implementation gate must measure unprofiled latency three times as the plan requires.</p>
+    </section>
+
+    <section id="audit-profile">
+      <h2>Warm audit profile</h2>
+      <table>
+        <thead><tr><th>Rank</th><th>Cumulative</th><th>Calls</th><th>File:line and callable</th><th>Category</th><th>Existing memo that can carry it</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>59.365 s</td><td>625</td><td><code>reckon/_plan_html.py:349 read_state</code></td><td>parse</td><td><code>reckon.file_memo.memoized</code>, at the path-bearing callers</td></tr>
+          <tr><td>2</td><td>27.538 s</td><td>268</td><td><code>reckon/_plan_html.py:1269 parse_plan</code></td><td>parse</td><td><code>reckon.file_memo.memoized("parse_plan", path, ...)</code></td></tr>
+          <tr><td>3</td><td>19.683 s</td><td>1</td><td><code>reckon/doccheck.py:1277 audit_links</code></td><td>filesystem walk</td><td>The <code>a-page-load-reads-each-file-once</code> discovery tree memo for the corpus, plus <code>file_memo</code> for per-file anchors and links</td></tr>
+          <tr><td>4</td><td>16.279 s</td><td>1</td><td><code>reckon/doccheck.py:460 audit_lifecycle</code></td><td>filesystem walk</td><td>The discovery resource inventory plus <code>file_memo</code> for lifecycle state</td></tr>
+          <tr><td>5</td><td>16.119 s</td><td>178</td><td><code>reckon/doccheck.py:309 _read_lifecycle_state</code></td><td>parse</td><td><code>reckon.file_memo.memoized</code> keyed by the document stat identity</td></tr>
+        </tbody>
+      </table>
+      <p>The actionable branches are sequential even though their nested rows overlap: initial typed validation cost 15.991 s; link audit 19.683 s; lifecycle audit 16.279 s; question scan 14.011 s; and followup scan 13.880 s. Together they account for 79.844 of 88.554 profiled seconds. The remaining roadmap branch includes 5.011 s of live-run classification. Reusing parsed file state, the corpus walk, and unchanged live-run files leaves an expected warm residual of <strong>about 4.0 s</strong>.</p>
+    </section>
+
+    <section id="roadmap-profile">
+      <h2>Warm roadmap-summary profile</h2>
+      <table>
+        <thead><tr><th>Rank</th><th>Cumulative</th><th>Calls</th><th>File:line and callable</th><th>Category</th><th>Existing memo that can carry it</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>13.018 s</td><td>1</td><td><code>reckon/_store.py:1266 list_followups_across</code></td><td>parse</td><td>The discovery result already owns the inventory; <code>file_memo</code> can supply its full parsed plan records</td></tr>
+          <tr><td>2</td><td>12.927 s</td><td>134</td><td><code>reckon/_plan_html.py:1269 parse_plan</code></td><td>parse</td><td><code>reckon.file_memo.memoized("parse_plan", path, ...)</code></td></tr>
+          <tr><td>3</td><td>12.800 s</td><td>134</td><td><code>reckon/_plan_html.py:349 read_state</code></td><td>parse</td><td>The same stat-keyed <code>parse_plan</code> memo; this nested cost then disappears with its caller</td></tr>
+          <tr><td>4</td><td>5.911 s</td><td>1</td><td><code>reckon/roadmap.py:1336 build_roadmap</code></td><td>compute</td><td>The discovery memo for static graph inputs and <code>file_memo</code> for each live pointer, manifest and stream input</td></tr>
+          <tr><td>5</td><td>5.910 s</td><td>1</td><td><code>reckon/roadmap.py:1373 _build_roadmap</code></td><td>compute</td><td>The same split memo; this row is the nested implementation of rank 4</td></tr>
+        </tbody>
+      </table>
+      <p>Immediately below the literal top five, <code>reckon/mcp_views.py:1102 partition_live_runs</code> costs 5.666 s and <code>reckon/crew/recovery.py:3066 classify_pointer</code> costs 5.652 s across 17 live pointers. Plan parsing and live classification are disjoint branches. Removing 13.018 s through parsed-plan reuse and 5.666 s through stat-keyed reuse of unchanged run files leaves an expected warm residual of <strong>about 1.2 s</strong>.</p>
+    </section>
+
+    <section id="discovery-profile">
+      <h2>Warm discovery profile</h2>
+      <table>
+        <thead><tr><th>Rank</th><th>Cumulative</th><th>Calls</th><th>File:line and callable</th><th>Category</th><th>Existing memo that can carry it</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>26.020 s</td><td>268</td><td><code>reckon/_plan_html.py:1269 parse_plan</code></td><td>parse</td><td><code>reckon.file_memo.memoized("parse_plan", path, ...)</code></td></tr>
+          <tr><td>2</td><td>25.848 s</td><td>268</td><td><code>reckon/_plan_html.py:349 read_state</code></td><td>parse</td><td>The same path-level memo; this is nested under rank 1</td></tr>
+          <tr><td>3</td><td>13.511 s</td><td>1</td><td><code>reckon/_store.py:1308 list_questions_across</code></td><td>parse</td><td>The parsed-plan memo, shared with the followup scan</td></tr>
+          <tr><td>4</td><td>12.772 s</td><td>1</td><td><code>reckon/_store.py:1266 list_followups_across</code></td><td>parse</td><td>The parsed-plan memo, populated by whichever cross-plan scan runs first</td></tr>
+          <tr><td>5</td><td>1.929 s</td><td>268</td><td><code>reckon/_plan_html.py:298 _read_section_records</code></td><td>parse</td><td>The parsed-plan memo; this nested section extraction then runs only after a changed file</td></tr>
+        </tbody>
+      </table>
+      <p>The count is the mechanism: 134 live plans are parsed once for questions and again for followups, even though the existing discovery memo already proved the docs tree unchanged. Memoising the full parsed record makes the second scan hit immediately and makes later warm requests hit for both scans. Subtracting the 26.020 s parse branch from the 27.547 s total leaves an expected warm residual of <strong>about 1.5 s</strong>.</p>
+    </section>
+
+    <section id="implementation-boundary">
+      <h2>Implementation boundary</h2>
+      <p>The repair should extend the existing stat-identity contract, not add a second invalidation system. <code>parse_plan(path)</code>, lifecycle state, and link/anchor summaries are pure functions of one file and belong in <code>reckon.file_memo.memoized</code>. Cross-plan scans should consume those records. The discovery corpus/tree result remains owned by the memo introduced by <code>a-page-load-reads-each-file-once</code>. Live-run classification should memoise only file-derived results against each pointer, manifest, receipt, and stream stat identity; it must recompute when any of those files changes.</p>
+      <p>The projected values above are the expected warm latencies that set the next implementation measure: audit about 4.0 s, roadmap about 1.2 s, and discovery about 1.5 s on this host. They are deliberately below the declared five-second ceiling but are not acceptance evidence. The repair must measure each public read unprofiled three times at its landed revision and preserve invalidation tests for one changed plan and one changed live-run file.</p>
+    </section>
+  </main>
+</body>
+</html>
