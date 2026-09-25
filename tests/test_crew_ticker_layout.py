@@ -1176,30 +1176,34 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     assert counters(line).end() < len(line)
 
 
-# ── The measure cells: fixed widths, stable columns, absence vs zero ──────
+# ── The measure cell: one fixed-width column, absence vs zero ────────────
 #
-# After the fleet counters sit wall time and generation rate, the only two
-# spend figures the row carries — model seconds, charged tokens and the dollar
-# figure stay in the record, unrendered. Every cell is right-aligned to a
-# fixed width with a single space between cells, and an unmeasured fact renders
-# the dim absence marker rather than a zero — a zero asserts a measurement
-# that was never taken. Where a row state makes a figure noise (wall time
-# entering dispatched), the cell blanks instead of marking absence.
+# After the fleet counters sits the row's one measure: the run's elapsed time,
+# the only spend figure the row carries — model seconds, charged tokens, the
+# dollar figure and the generation rate stay in the record, unrendered. The
+# cell is right-aligned to a fixed width, so the column a reader scans for a run
+# over its budget stays put as the figure changes, and an unmeasured span
+# renders the dim absence marker rather than a zero — a zero asserts a
+# measurement that was never taken. Where a row state makes the figure noise
+# (elapsed time entering dispatched), the cell blanks instead of marking
+# absence: the marker already means unmeasured, and two facts must not share
+# one glyph.
 
 
-def _spend_columns(model_width: int) -> list[tuple[int, int]]:
-    """The (start, width) of the two measure cells on a plain rendered line.
+def _measure_column(model_width: int) -> tuple[int, int]:
+    """The (start, width) of the single measure cell on a plain rendered line.
 
     ``model_width`` is the grid's own model cell width — read from the grid
     under test — rather than the fixed default, so a config declaring a wider
-    alias moves these columns with the row it renders.
+    alias moves this column with the row it renders. A second measure cell
+    would be placed by the renderer after this one, taking the columns its own
+    width and its separating space spend.
     """
     prefix = (
-        ticker_module.CLOCK
-        + ticker_module.GAP
-        + ticker_module.ROLE
-        + ticker_module.GAP
-        + ticker_module.NODE
+        ticker_module.CLOCK + ticker_module.GAP + ticker_module.ROLE + ticker_module.GAP
+    )
+    prefix += (
+        ticker_module.NODE
         + ticker_module.STATE_REGION
         + model_width
         + ticker_module.PAIR_GAP
@@ -1207,11 +1211,7 @@ def _spend_columns(model_width: int) -> list[tuple[int, int]]:
     )
     prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
     prefix += ticker_module.SPEND_GAP
-    columns: list[tuple[int, int]] = []
-    for width in (ticker_module.WALL, ticker_module.RATE):
-        columns.append((prefix, width))
-        prefix += width + ticker_module.SPEND_GAP
-    return columns
+    return (prefix, ticker_module.WALL)
 
 
 def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes():
@@ -1241,8 +1241,14 @@ def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes()
             assert len(line) == width, (width, len(line))
 
 
-def test_the_two_measure_cells_render_measured_figures_in_their_own_cells():
-    """wall 7, rate 4, right-aligned; no cells for the figures the row cut."""
+def test_the_measure_cell_renders_the_elapsed_figure_alone():
+    """The elapsed span fills its own cell; no second reading reaches the row.
+
+    The record still carries the generation rate and the figures the row cut,
+    and the row renders the elapsed time and nothing else. A rate figure sitting
+    where a second cell used to be is the failure this asserts against, so the
+    row is rendered from an event that carries one.
+    """
     event = _event(
         spend_wall_seconds=6_422.0,
         spend_model_seconds=3_133.5,
@@ -1252,96 +1258,105 @@ def test_the_two_measure_cells_render_measured_figures_in_their_own_cells():
     )
     grid = ticker_module.Ticker(width=180)
     line = plain(grid.render(event))
-    wall, rate = _spend_columns(grid.model_width)
-    assert line[wall[0] : wall[0] + wall[1]] == "1:47:02"
-    assert line[rate[0] : rate[0] + rate[1]] == "  44"
+    start, width = _measure_column(grid.model_width)
+    assert line[start : start + width] == "1h47m".rjust(width)
+    # Nothing between the cell and the clause: the rate the record holds is not
+    # rendered anywhere on the row.
+    assert "44" not in line[start + width :]
     # The cut figures stay in the record, not on the row.
     assert "52:14" not in line
     assert "1.5M" not in line
     assert "0.12" not in line
 
 
-def test_the_two_measure_cells_occupy_the_same_columns_on_every_row():
+def test_the_clause_follows_the_row_s_one_measure_cell(grid):
+    """The measure block is one cell wide: the clause begins immediately after it.
+
+    The clause is the row's payload and takes the whole margin, so anything the
+    renderer placed between the elapsed cell and the clause spends columns the
+    clause needs. The clause's start is measured off the row against the cell's
+    own geometry, so a second measure cell restored beside the first moves the
+    clause and fails here.
+    """
+    line = plain(grid.render(_event(to_state="blocked", reason="x" * 400)))
+    start, width = _measure_column(grid.model_width)
+    assert line[start : start + width].strip() == ticker_module.DIM_MARKER
+    assert line.index("x") == start + width + ticker_module.GAP
+
+
+def test_the_measure_cell_occupies_one_column_on_every_row():
     """A resumed run, a redispatched run and a shadow line up by column.
 
-    A reader scans each figure down the pane; if a row's cells sat one column
-    to the side, the scan would re-find a moving column and the width read
-    would shift. The resume's measured figures and the shadow's absence markers
-    must land in the same two columns.
+    A reader scans the figure down the pane; if a row's cell sat one column to
+    the side, the scan would re-find a moving column and the reading would
+    shift. The measured spans and the shadow's absence marker must land in the
+    same cell, and the tokens grow with the figure rather than with the row.
     """
     rows = [
         _event(
             node="n-resumed",
             lineage={"kind": "resumed"},
             spend_wall_seconds=100.0,
-            spend_generation_rate=12.0,
         ),
         _event(
             node="n-redispatch",
             lineage={"kind": "redispatch", "root_run_id": "r-shadow"},
             spend_wall_seconds=3_600.0,
-            spend_generation_rate=44.0,
         ),
         _event(
             node="n-shadow",
             lineage={"kind": "shadow"},
             spend_wall_seconds=None,
-            spend_generation_rate=None,
         ),
     ]
-    expected = [
-        ["   1:40", "  12"],
-        ["1:00:00", "  44"],
-        ["      \N{EN DASH}", "   \N{EN DASH}"],
-    ]
     grid = ticker_module.Ticker(width=180)
-    columns = list(zip(("wall", "rate"), _spend_columns(grid.model_width), strict=True))
-    for event, cells in zip(rows, expected, strict=True):
+    start, width = _measure_column(grid.model_width)
+    expected = [
+        "1m".rjust(width),
+        "1h00m".rjust(width),
+        ticker_module.DIM_MARKER.rjust(width),
+    ]
+    for event, expected_cell in zip(rows, expected, strict=True):
         line = plain(grid.render(event))
-        for (name, (start, width)), expected_cell in zip(columns, cells, strict=True):
-            assert line[start : start + width] == expected_cell, (name, line)
+        assert line[start : start + width] == expected_cell, line
 
 
-def test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings():
-    """The absence marker must never read as a zero.
+def test_an_unmeasured_span_and_a_measured_zero_are_distinct_strings():
+    """The absence marker must never read as a measured zero.
 
-    The same row rendered once with measured facts and once without must
-    differ in both measure cells, and the unmeasured spelling is the marker —
-    never ``0`` or ``0:00``, which assert a measurement that was never taken.
+    The same row rendered once with a measured zero and once with no
+    measurement must differ in the cell, and the unmeasured spelling is the
+    marker — never a zero the renderer should not have asserted. A measured
+    zero is a figure and keeps its spelling: the elapsed time of a run that has
+    just started is real, and a blank there would hide a reading the record
+    took.
     """
-    zero = _event(
-        spend_wall_seconds=0.0,
-        spend_generation_rate=0.0,
-    )
-    unmeasured = _event(
-        spend_wall_seconds=None,
-        spend_generation_rate=None,
-    )
-    zero_line = plain(ticker_module.Ticker(width=180).render(zero))
-    marker_line = plain(ticker_module.Ticker(width=180).render(unmeasured))
-    for start, width in _spend_columns(ticker_module.Ticker(width=180).model_width):
-        zero_cell = zero_line[start : start + width]
-        marker_cell = marker_line[start : start + width]
-        assert zero_cell != marker_cell
-        assert marker_cell.strip() == "\N{EN DASH}"
-        assert zero_cell.strip() != "\N{EN DASH}"
-        assert any(character.isdigit() for character in zero_cell)
+    zero = _event(spend_wall_seconds=0.0)
+    unmeasured = _event(spend_wall_seconds=None)
+    grid = ticker_module.Ticker(width=180)
+    zero_line = plain(grid.render(zero))
+    marker_line = plain(grid.render(unmeasured))
+    start, width = _measure_column(grid.model_width)
+    zero_cell = zero_line[start : start + width]
+    marker_cell = marker_line[start : start + width]
+    assert zero_cell != marker_cell
+    assert marker_cell.strip() == ticker_module.DIM_MARKER
+    assert zero_cell.strip() != ticker_module.DIM_MARKER
+    assert any(character.isdigit() for character in zero_cell)
 
 
-def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
+def test_a_dispatched_row_renders_a_blank_measure_not_the_marker():
     """A figure the row state makes meaningless renders blank, not as absence.
 
-    A transition into dispatched is at time zero by definition, so its wall
-    cell is blank — and blank rather than the dim dash, because the dash
-    already means unmeasured and two different facts must not share one glyph.
-    The dash survives where a figure was genuinely unmeasured, on a state where
-    it would have been meaningful, and a measured figure keeps its cell against
-    both.
+    A transition into dispatched is at time zero by definition, so its cell is
+    blank — and blank rather than the dim dash, because the dash already means
+    unmeasured and two different facts must not share one glyph. The dash
+    survives where a span was genuinely unmeasured, on a state where it would
+    have been meaningful, and a measured figure keeps its cell against both.
     """
     grid = ticker_module.Ticker(width=180)
-    wall, rate = _spend_columns(grid.model_width)
-    wall_span = slice(wall[0], wall[0] + wall[1])
-    rate_span = slice(rate[0], rate[0] + rate[1])
+    start, width = _measure_column(grid.model_width)
+    span = slice(start, start + width)
 
     dispatched = plain(
         grid.render(
@@ -1349,12 +1364,10 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
                 from_state=None,
                 to_state="dispatched",
                 spend_wall_seconds=1_234.0,
-                spend_generation_rate=44.0,
             )
         )
     )
-    assert dispatched[wall_span] == " " * wall[1]
-    assert dispatched[rate_span] == "  44"
+    assert dispatched[span] == " " * width
 
     working = plain(
         grid.render(
@@ -1362,14 +1375,13 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
                 from_state="dispatched",
                 to_state="working",
                 spend_wall_seconds=None,
-                spend_generation_rate=44.0,
             )
         )
     )
-    assert working[wall_span].strip() == "\N{EN DASH}"
+    assert working[span].strip() == ticker_module.DIM_MARKER
     # Blank and marker are distinct on the same cell: one keeps no glyph, the
     # other is a glyph a reader can find.
-    assert working[wall_span] != dispatched[wall_span]
+    assert working[span] != dispatched[span]
 
     measured = plain(
         grid.render(
@@ -1377,11 +1389,10 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
                 from_state="dispatched",
                 to_state="working",
                 spend_wall_seconds=1_234.0,
-                spend_generation_rate=44.0,
             )
         )
     )
-    assert measured[wall_span] == "  20:34"
+    assert measured[span] == "20m".rjust(width)
 
 
 def test_calibration_consumes_an_observed_cut_position():
@@ -1428,21 +1439,21 @@ def test_the_measured_pane_width_leaves_the_reason_at_least_seventy_five_columns
     assert width - line.index("x") >= 75
 
 
-def test_the_fleet_counters_precede_the_measures():
-    """The always-populated columns lead; the optional measures follow.
+def test_the_fleet_counters_precede_the_measure():
+    """The always-populated columns lead; the optional measure follows.
 
     The grid reads clock, role, node, state pair, model, effort, then the fleet
-    counters, then wall and rate, then the reason last — the measures sit
-    behind the counters, both ahead of the free text a clipping pane is
-    allowed to cut.
+    counters, then the elapsed time, then the reason last — the measure sits
+    behind the counters, ahead of the free text a clipping pane is allowed to
+    cut.
     """
     grid = ticker_module.Ticker(width=180)
     line = plain(
         grid.render(_event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0))
     )
-    wall, _ = _spend_columns(grid.model_width)
-    assert counters(line).end() <= wall[0]
-    assert "1:47:02" in line[wall[0] :]
+    start, width = _measure_column(grid.model_width)
+    assert counters(line).end() <= start
+    assert "1h47m" in line[start : start + width]
 
 
 def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
