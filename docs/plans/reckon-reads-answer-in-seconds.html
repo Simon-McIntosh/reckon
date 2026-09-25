@@ -20,10 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="a-page-load-reads-each-file-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <title>Reckon Reads Answer In Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-commits" content="436c75f3,37c8988a">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -73,33 +77,30 @@
     <p><strong>Trigger:</strong> deferred until &sect;2's report names the call sites. The fix reuses the named memo, and its done-when is set from the report. The minimum is that the warm <code>audit(project="reckon")</code>, roadmap summary and discovery each answer under 5 s on this host, each measured three times and recorded.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
-      <h2><span class="sec">§</span> Evidence gates</h2>
-      <div class="r-gate" data-id="g-read-profile-landed" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
-        <h4 class="r-gate-measure">Each slow read's top call sites are named with their cost and a reuse candidate</h4>
-        <p class="r-gate-required-evidence">reckon-reads-answer-in-seconds#s2</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-read-profile-landed" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Each slow read&#x27;s top call sites are named with their cost and a reuse candidate</h4>
+    <p class="r-gate-required-evidence">reckon-reads-answer-in-seconds#s2</p>
+    <a class="r-gate-evidence" href="/reckon/research/reckon-read-latency-profile">Evidence</a>
+</div>
+</section>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-rraiss-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-25"
-               data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds §2"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Profile the slow reads</h4>
-        <div class="r-fu-body"><p>&sect;2 is an investigation, and &sect;3 waits on it.</p></div>
-        <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rraiss-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build reckon-reads-answer-in-seconds §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Profile the slow reads</h4>
+    <div class="r-fu-body"><p>§2 is an investigation, and §3 waits on it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build reckon-reads-answer-in-seconds §2</pre>
+    </article>
+</section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+<div class="r-comment" data-section="s2" data-id="c-20260925-profile-landed" data-who="reckon-build" data-when="2026-09-25T07:50:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20260925T064039051367-read-latency-profile</code> (codex sol5.6) landed, merged at <code>73fe3c82</code>.</p><p>Under cProfile, the warm reads took:</p><ul><li>audit: 88.6 s</li><li>roadmap summary: 19.9 s</li><li>discovery: 27.5 s</li></ul><p>In all three the time goes on re-parsing unchanged plan files: <code>read_state</code> ran 625 times and <code>parse_plan</code> 268 times. The roadmap adds 5.7 s classifying live pointers, and no git subprocess ranks.</p><p>A stat-keyed parse memo plus reuse of unchanged run files projects about 4.0 s, 1.2 s and 1.5 s. The MCP path does not share the serve-side discovery cache.</p><p>The independent review scored 82/100. It found that the ranking rule omits the third-party bs4 and soupsieve frames it excluded, and that <code>plan-commits</code> names only the first of the two commits.</p><p>Gate <code>g-read-profile-landed</code> passes. &sect;3 is now dispatchable once S22 releases <code>reckon/_plan_html.py</code> and <code>reckon/_store.py</code>.</p></div>
+</div>
+</section>
   </main>
 </body>
 </html>
