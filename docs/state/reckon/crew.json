@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T04:57:51",
+  "updated": "2026-09-25T05:12:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -427,11 +427,13 @@
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":1016576}": "e31266f4-e0ba-4283-bab6-b431368b185c",
           "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "4ce99073-076b-43bb-9d91-bae758c66b98",
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "a666440c-894e-415b-808f-d0991da703be"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "a666440c-894e-415b-808f-d0991da703be",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "6df3d89f-9978-4088-8d6a-48fdd16eae71"
         },
         "created": "2026-09-06",
         "session_owners": {
-          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "s23-coord"
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":480000}": "s23-coord",
+          "{\"alias\":\"dsv4.1-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4.1-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":480000}": "s22-coord"
         }
       },
       {
@@ -380536,6 +380538,458 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T020811336251-build-skill-keeps-its-pinned-rules",
+        "plan": "reckon-skill-overhaul",
+        "section": "\u00a73",
+        "node": "build-skill-keeps-its-pinned-rules",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 380,
+                "cached_input_tokens": 624396,
+                "input_tokens": 624780,
+                "output_tokens": 1229,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 626009,
+                "uncached_input_tokens": 4
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+            "session_id": "s22-coord"
+          },
+          "done_when": "(a) skills/reckon-build/SKILL.md again states the sentences pinned by the four [SKILL.md] params of tests/test_skill_contract_parity.py (landing requirement, narrowed prohibition, meta-line ban, closure limits) and by tests/test_crew_directory.py::test_ship_guidance_makes_cross_repository_findings_collaborative (crew(view=\"directory\")), restored from the base revision before 11348097 with tests left unchanged; (b) the member-registration instructions the review at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T005352374696-build-skill-review-findings-closed.json names are rewritten to the disposable-worker rule: SKILL.md line 79 ('register one'), and skills/reckon-build/references/sprint-orchestration.md lines 118, 129, 228 and 688; (c) the pin at tests/test_skill_contracts.py:543 asserting 'registers enough members to meet it' is replaced by an assertion that the skill states concurrency comes from existing members and that it contains no instruction to register a member, and the corresponding SKILL.md sentence is phrased plainly without that negated clause. At your head tests/test_skill_contract_parity.py, tests/test_crew_directory.py and tests/test_skill_contracts.py all pass, the fixed-read-set estimate stays under FIXED_READ_SET_TOKEN_BUDGET (before and after stated), and grep -rniE 'register (one|another member|a fresh roster member)|registering members|registered on demand' skills/ returns nothing, logged. The declared negative control is executed and logged: re-adding 'register one' to SKILL.md makes the rewritten pin fail. Your landing record is appended to docs/plans/reckon-skill-overhaul.html.",
+          "estimated_hours": null,
+          "goal": "The build skill carries every rule its contract tests pin and no instruction to register members for concurrency",
+          "id": "build-skill-keeps-its-pinned-rules",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T02:08:12Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 21,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 15,
+            "mean_context": 85000,
+            "observed_at": "2026-09-25T02:07:51Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020811336251-build-skill-keeps-its-pinned-rules/manifest.md",
+          "negative_control": "re-add the sentence ending 'register one.' at SKILL.md line 79; the rewritten no-registration pin in tests/test_skill_contracts.py must fail",
+          "plan": "reckon-skill-overhaul",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-build/SKILL.md",
+            "skills/reckon-build/references/sprint-orchestration.md",
+            "skills/reckon-build/references/conditional-guidance.md",
+            "tests/test_skill_contracts.py",
+            "docs/plans/reckon-skill-overhaul.html",
+            "docs/evidence/archive/reckon-skill-overhaul-landed.html",
+            "docs/figures/reckon-skill-overhaul"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T02:08:28Z",
+        "completed_at": "2026-09-25T02:47:01.721Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2067,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2313,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "59a6200456608296810145eb60b7c394f4cf3540",
+        "commits": [
+          "5acc405eaa80d0a49a2b72e716db10b7b6dcdddc",
+          "4c6de0f39e05067e1ac787012b45e3564684614f"
+        ],
+        "changed_lines": {
+          "added": 199,
+          "removed": 20,
+          "files": 6
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skill_contract_parity.py tests/test_crew_directory.py tests/test_skill_contracts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020811336251-build-skill-keeps-its-pinned-rules/gate-parity.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "build skill's pinned rules restored (parity 15, directory 7, contracts 55 passed); member-registration instructions retired across SKILL.md and sprint-orchestration.md; review 14-19: absence pin covers SKILL.md only, routed to a follow-up node",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020811336251-build-skill-keeps-its-pinned-rules/manifest.md",
+        "scope_changed": false,
+        "session_id": "6df3d89f-9978-4088-8d6a-48fdd16eae71",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11781965,
+            "input_tokens_cumulative": 11781965,
+            "output_tokens": 69204,
+            "output_tokens_cumulative": 69204,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T02:47:01.721Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1200,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 946,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2459,
+              "log_fresh": false,
+              "manifest_commits": [
+                "33def70958380e5e820ea4ac429c690e902942b8",
+                "e78321cd0284dd3696dddbafcdd58ab939975b8b"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "6bc91dd7373b6de9dcf3dc2a6454d93ac340a1c9fad9b5ff03e8410fe19bb01b",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011123601132-help-census-counts-the-path-verb/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan consumers-read-reckon-through-verbs --section '\u00a72' --role review --spec-level exact --node review-of-help-census-counts-the-path-verb --goal 'attach an independent review to run r-20260925T011123601132-help-census-counts-the-path-verb' --done-when 'the review for r-20260925T011123601132-help-census-counts-the-path-verb stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T011123601132-help-census-counts-the-path-verb.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T011123601132-help-census-counts-the-path-verb.at-e78321cd0284dd3696dddbafcdd58ab939975b8b.json --time-budget 20m --session s22-coord --allow-unreconciled-runs --backend clive",
+              "node": "help-census-counts-the-path-verb",
+              "phase": "starting",
+              "plan": "consumers-read-reckon-through-verbs",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T011123601132-help-census-counts-the-path-verb",
+              "session": "s22-coord",
+              "terminal_age_seconds": 2547,
+              "terminal_at": "2026-09-25T01:25:49Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/help-census-counts-the-path-verb"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "effective_phase": "complete",
+              "elapsed_seconds": 1577,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1494,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 the deliverable is the review record outside the repository; the worktree is clean at base sha 3ebb5ab26d61ccc52b38a19df0436e4bebdceb3b"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ca031eaf3ee1791216abdb661abbe990f7d13e4487f740ee6339c02cc19b7dff",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011657092227-review-of-ticker-tests-meet-the-single-measure-row/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-ticker-tests-meet-the-single-measure-row",
+              "phase": "complete",
+              "plan": "a-monitor-row-reads-at-a-glance",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T011657092227-review-of-ticker-tests-meet-the-single-measure-row",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1541,
+              "terminal_at": "2026-09-25T01:42:36Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/review-of-ticker-tests-meet-the-single-measure-row"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion; the run is the review it dispatched with, so the review it wrote is its deliverable and no review of this run is required",
+              "effective_phase": "stopped",
+              "elapsed_seconds": 1891,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1093,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 the deliverable is the review record outside the repository; the worktree is clean at base sha 3ebb5ab26d61ccc52b38a19df0436e4bebdceb3b"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "bdd9da36f5e94f5a077df93c654e450c7dfdbd2bf20f66b48a7839700ae88c7e",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011824411645-review-of-crew-path-prints-where-reckon-keeps-things/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "promote the completed review run once its verdict is read; the run is not itself reviewed",
+              "node": "review-of-crew-path-prints-where-reckon-keeps-things",
+              "phase": "stopped",
+              "plan": "consumers-read-reckon-through-verbs",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T011824411645-review-of-crew-path-prints-where-reckon-keeps-things",
+              "session": "s22-coord",
+              "terminal_age_seconds": 1402,
+              "terminal_at": "2026-09-25T01:44:56Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/review-of-crew-path-prints-where-reckon-keeps-things"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 19,
+            "fit": 18,
+            "goal_fidelity": 19,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 88
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11949152,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 2079.564,
+          "generated_tokens": 77023,
+          "generation_seconds": 1899.489,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 180.075,
+          "peak_input_tokens": 165887,
+          "tokens_per_second": 40.55,
+          "wall_tokens_per_second": 37.04
+        },
+        "follow_on_paths": [
+          "SKILL.md",
+          "14734/15000"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/build-skill-keeps-its-pinned-rules",
+          "session_id": "6df3d89f-9978-4088-8d6a-48fdd16eae71",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T02:47:01.721Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T02:47:02Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T02:12:18Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T020811336251-build-skill-keeps-its-pinned-rules",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 12257,
+          "worker_pid": 2415344
+        },
+        "promoted_revision": "4c6de0f39e05067e1ac787012b45e3564684614f",
+        "plan_impl_at_dispatch": 0.9,
+        "impl_move": {
+          "plan": "reckon-skill-overhaul",
+          "at_dispatch": 0.9,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "role-not-enforced:documentation"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_skill_contracts.py"
+          ],
+          "declaration": "re-add the sentence ending 'register one.' at SKILL.md line 79; the rewritten no-registration pin in tests/test_skill_contracts.py must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020811336251-build-skill-keeps-its-pinned-rules/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T020811336251-build-skill-keeps-its-pinned-rules/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T02:53:12.550246+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T02:08:12Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 21,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 15,
+          "mean_context": 85000,
+          "observed_at": "2026-09-25T02:07:51Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 109.0,
+        "orientation_input_tokens": 2564904.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -380848,6 +381302,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2649
+    "_version": 2651
   }
 }
