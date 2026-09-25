@@ -149,6 +149,71 @@ FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_
     claimed by no concurrent node; the change is additive only, so a later reconciliation is a
     deletion of the added symbols rather than a merge. Commit <code>eb2fc40f</code>.</p>
   </section>
+
+  <section id="plan-review-dispatch-gate">
+    <h2>&sect;2 &mdash; The dispatch gate</h2>
+    <p><strong>Node:</strong> <code>plan-review-dispatch-gate</code>. <strong>State:</strong>
+    implemented and committed; the compatibility fixture update is outstanding and is reported as a
+    scope request rather than taken, because those files lie outside this node's fence.</p>
+    <figure>
+      <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/dispatch-gate.svg"
+        alt="The gate's decision path: exempt role or recorded waiver admits immediately; otherwise the plan is fingerprinted and its review read by fingerprint, admitting when every finding is answered and refusing when no review matches or a finding is unanswered.">
+      <figcaption>The gate refuses on the review being absent or unread &mdash; never on the plan
+      saying something a reviewer disliked: an answered decline admits a node exactly as an
+      acceptance does.</figcaption>
+    </figure>
+    <p><strong>What landed.</strong> <code>require_plan_reviewed</code> sits beside
+    <code>require_plan_section_visible</code> in <code>reckon/crew/routing.py</code> and is called
+    from <code>plan_dispatch</code> immediately after the visibility check, so a plan that cannot be
+    read is refused for that reason before its review is considered. The join is by
+    <code>plan_review.plan_fingerprint</code>, so an impl or version bump neither demands a review
+    nor orphans one, while an authored edit demands a fresh one. <code>PlanReviewMissingError</code>
+    sits beside <code>PlanVisibilityError</code> in <code>reckon/crew/node.py</code> and renders
+    through one new family in <code>DISPATCH_REFUSAL_REMEDIES</code>, whose remedy names the composed
+    plan-review dispatch. Investigation, test and review roles are exempt through the same predicate
+    the promotion boundary uses to stop reviews of reviews, so the plan-review run itself, whose node
+    names the plan, can be dispatched. <code>--allow-unreviewed-plan</code> records
+    <code>unreviewed_plan_override</code> on the run pointer beside the unreconciled-runs waiver, in
+    both the dry-run and real dispatch paths, and reaches the operator as exit 4 with
+    <code>{"error": "plan-review-missing"}</code>.</p>
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_plan_review_gate.py</code> &rarr; <code>8 passed in 2.64s, exit 0</code>. Log:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/gate-final.log</code>.
+    The cases: an unreviewed implementation dispatch is refused naming the plan and its remedy; an
+    answered advisory finding admits it; <code>review</code>, <code>investigate</code> and
+    <code>test</code> roles are exempt; a node whose identity is the review of the fixture uses the
+    same exemption; a metadata-only plan edit leaves the stored review current; and the waiver is
+    recorded on the run pointer.</p>
+    <h3>Negative control</h3>
+    <p><strong>Declared mutation:</strong> <em>require_plan_reviewed returns reviewed
+    unconditionally; the refusal case must fail</em>. Applied as an early return at the top of the
+    function, the refusal case fails and for that reason:</p>
+    <pre>E  Failed: DID NOT RAISE PlanReviewMissingError
+1 failed in 1.08s</pre>
+    <p>The mutation was then reverted and the module re-read to prove the gate refuses again. The red
+    log's first line is the declared string verbatim:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
+    <h3>Outstanding: three fixtures encode the previous contract</h3>
+    <p>The compatibility gate &mdash; the dispatch-guard, routing-visibility and refusal-visibility
+    suites &mdash; goes from 49 passed at base to 20 failed and 29 passed. Every failure is the
+    intended refusal reaching a fixture that predates it, and each classifies as one of two causes.
+    Eighteen are implementation nodes dispatched against minimal plan fixtures carrying no stored
+    review, so the gate refuses them; those fixtures and this gate's own refusal case are
+    shape-identical (same project mount, same plan slug, implementation role, no review record), so no
+    predicate can refuse the one the specification requires be refused and admit the others. Two are
+    the refusal census, which enumerates the family set as <code>range(1, 23)</code> and asserts the
+    source calls the shared formatter only for families in that set, so a new family fails both of its
+    assertions until the census grows.</p>
+    <p>The fixture update &mdash; a stored answered review per fixture plan, or the waiver, plus the
+    new family id in <code>CONVERTED_REFUSAL_FAMILIES</code> &mdash; lands in
+    <code>tests/test_crew_dispatch_guard.py</code>,
+    <code>tests/test_crew_routing_visibility.py</code> and
+    <code>tests/test_crew_refusal_visibility.py</code>, none of which this node may write and none of
+    which any concurrent node claims. The detail, and the classification of all twenty failures, is
+    in the run manifest:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/manifest.md</code>.
+    Commit <code>557fb583</code>.</p>
+  </section>
 </section>
 </main>
 </body>
