@@ -654,6 +654,22 @@
     root-fix set. It recovers history and does not stop a recurrence, so it dispatches with
     general work.</p>
 
+    <div data-reckon="landing" data-node="ticker-fixture-reads-withdrawn" data-when="2026-09-25">
+      <h3>Landing record &mdash; ticker departure fixtures read the ledger</h3>
+      <p>The ticker fixtures now model both departure outcomes introduced by the liveness
+      gate. The completed <code>r-new</code> fixture writes its promotion row and still emits
+      <code>promoted</code>; the vanished <code>r-existing</code> fixture writes no row and emits
+      <code>withdrawn</code>. The blocked departure fixture also reads the ledger and expects
+      <code>withdrawn</code> while still clearing its stale explanation.</p>
+      <p>Commits <code>5f31e8fb</code> and <code>902dc899</code> add the ledger-row fixture and
+      update the two expectations. The named gate receipt recorded <strong>34 passed and 3
+      pre-existing colour-environment failures</strong> across
+      <code>tests/test_crew_ticker.py</code> and
+      <code>tests/test_a_live_run_never_reads_dead.py</code>; the declared forced-promotion
+      mutation is red in <code>negative-control.log</code>. Full record:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s10-ticker-fixture-reads-withdrawn</code>.</p>
+    </div>
+
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
