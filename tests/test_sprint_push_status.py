@@ -71,14 +71,14 @@ def test_sprint_resource_accepts_open_status(tmp_path: Path) -> None:
     assert data["status"] == "open"
 
 
-def test_push_demotes_the_previous_active_sprint_in_one_write(tmp_path: Path) -> None:
+def test_push_leaves_other_sprints_active(tmp_path: Path) -> None:
     docs = _docs(tmp_path)
     _write_sprint(docs, "S1", "active")
     assert _write_sprint(docs, "S2", "open") == 1
     _target, target_version = read_resource(docs, "sample", "sprint", "S2")
     result = push_sprint(docs, "sample", "S2", target_version)
-    assert result["demoted"] == ["S1"]
-    assert _statuses(docs, "S1", "S2") == {"S1": "open", "S2": "active"}
+    assert "demoted" not in result
+    assert _statuses(docs, "S1", "S2") == {"S1": "active", "S2": "active"}
 
 
 def test_push_on_a_stale_version_changes_neither_sprint(tmp_path: Path) -> None:
