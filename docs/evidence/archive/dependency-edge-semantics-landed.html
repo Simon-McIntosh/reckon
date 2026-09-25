@@ -265,6 +265,13 @@
       (<code>6277e533</code>): <strong>2 failed, 1 passed</strong>. The closure case failed
       on the served row's blocker list; the decision case failed because
       <code>decision-held</code> is not in the roadmap ready set.</p>
+      <figure>
+        <img src="/reckon/figures/dependency-edge-semantics/surfaces-agree.svg"
+             alt="A plan-terminal gate and a decision-lockable gate leave the execution blocker set through execution_gates, so the roadmap ready set, the served payload and the MCP blocking projection all report the plan as ready with no gate blocker, while an open decision with no transition edge still withholds readiness.">
+        <figcaption>The split, and its boundary. Both transition gate kinds leave the
+        blocker set that all three readers consume, so the three agree; an unanswered
+        decision carrying no transition edge is not part of the split and still blocks.</figcaption>
+      </figure>
       <p><strong>Repair.</strong> <code>reckon/roadmap.py</code> publishes the split it
       already used internally: <code>execution_gates(plan)</code>,
       <code>closure_blockers(plan)</code> and <code>unsettled_decisions(plan)</code>. A
