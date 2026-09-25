@@ -76,6 +76,28 @@ def pointer_path(run_id: str) -> Path:
     return live_dir() / f"{run_id}.json"
 
 
+def capture_run_session(record: dict[str, Any]) -> dict[str, Any] | None:
+    """Bind a captured session to this run's harness without writing a roster.
+
+    The caller persists the pointer under its lock. The agent's dialect also
+    travels through promotion, so a committed row retains the session's owner.
+    """
+    session_id = str(record.get("session_id") or "").strip()
+    if not session_id:
+        return None
+    agent = record.get("agent") or {}
+    harness = str(record.get("dialect") or agent.get("dialect") or "").strip()
+    record["session_harness"] = harness or None
+    record["session_model"] = agent.get("model")
+    return {
+        "captured": True,
+        "run_id": record.get("run_id"),
+        "session_id": session_id,
+        "harness": harness or None,
+        "detail": "session captured on its run",
+    }
+
+
 def _manifest_mtime_ns(path: str | Path) -> int:
     """Return the manifest generation visible before an attempt begins."""
     manifest = Path(str(path or ""))

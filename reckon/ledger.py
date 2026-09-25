@@ -129,6 +129,8 @@ RECORD_FIELDS = (
     "scope_changed",
     "scope_acceptances",
     "session_id",
+    "session_harness",
+    "session_model",
     "budget",
     "lane_receipt",
     "lineage",
@@ -1355,6 +1357,9 @@ def build_record(
         ),
         "review": None if review is None else dict(review),
     }
+    if session_id:
+        record["session_harness"] = stored_agent.get("dialect")
+        record["session_model"] = stored_agent.get("model")
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a
     # run generated at and the lane it was handed over to are measurements; a
