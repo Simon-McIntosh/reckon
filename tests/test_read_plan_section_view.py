@@ -80,10 +80,21 @@ def _write_plan(
                     "id": "later-comment",
                     "who": "reviewer",
                     "when": "2026-09-24",
-                    "body": "<p>This belongs to a different section.</p>",
+                    "body": "<p>Structured comment sentinel.</p>",
                 }
             ],
         },
+        "followups": [
+            {
+                "id": "structured-followup",
+                "status": "open",
+                "title": "Structured followup title",
+                "body": "<p>Structured followup sentinel.</p>",
+                "prompt": "Run the structured followup.",
+                "written_by": "reviewer",
+                "written_at": "2026-09-24",
+            }
+        ],
     }
     if sections is not None:
         state["sections"] = sections
@@ -178,6 +189,33 @@ def test_section_view_uses_adjacent_typed_record_without_leaking_it(mounted_docs
 
     assert result["section"]["record"] == record
     assert 'data-reckon="section"' not in result["section"]["html"]
+    assert "copper-orchid phrase" in result["section"]["text"]
+    assert (
+        "The copper-orchid phrase exists only in this authored body."
+        in result["section"]["html"]
+    )
+
+
+def test_terminal_authored_section_stops_before_structured_regions(mounted_docs):
+    docs_dir, project = mounted_docs
+    _write_plan(docs_dir, project, "terminal")
+
+    result = mcp_module._read_plan(
+        project=project,
+        slug="terminal",
+        view="section",
+        section="s4",
+    )
+
+    section = result["section"]
+    assert "This prose is beyond the selected boundary." in section["text"]
+    assert '<h2 id="s4">' in section["html"]
+    assert 'data-reckon="followups"' not in section["html"]
+    assert 'data-reckon="comments"' not in section["html"]
+    assert "Structured followup title" not in section["text"]
+    assert "Structured followup sentinel" not in section["text"]
+    assert "Structured comment sentinel" not in section["text"]
+    assert [comment["id"] for comment in section["comments"]] == ["later-comment"]
 
 
 def test_registered_read_tool_exposes_an_optional_section_selector():
