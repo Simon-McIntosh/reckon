@@ -146,7 +146,7 @@ from reckon.resources import (
     resource_map,
 )
 from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
-from reckon.serve import _resolve_plan_file, discover_plans
+from reckon.serve import _resolve_plan_file, discover_plans, edge_row
 
 # ── Server instance ────────────────────────────────────────────────────────
 
@@ -1495,8 +1495,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "blocking": list(item.get("blocking") or []),
                 "gates": list(item.get("gates") or []),
                 "followups": list(item.get("followups") or []),
-                "depends_on": list(item.get("depends_on") or []),
-                "blocks": list(item.get("blocks") or []),
+                **edge_row(item),
             }
         )
     return row
