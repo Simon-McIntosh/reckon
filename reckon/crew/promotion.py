@@ -597,12 +597,14 @@ def _require_gate_log_agrees(
 def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
     """The worker's exit record, read verbatim from the run directory.
 
-    A CLI dispatch's supervisor writes ``exit.json`` beside the worker it spawned,
-    and the run directory is released at promotion, so the ledger row is the only
-    record that outlives the run. The row carries this promotion's copy under
-    ``worker_exit`` when the file exists, and carries no such key when it does
-    not: an empty key would read as the supervisor having run and recorded
-    nothing, which is the opposite of a run whose supervisor never wrote a record.
+    A CLI dispatch's supervisor writes ``exit.json`` beside the worker it spawned.
+    Promotion releases the run's live pointer and its worktree, but not the run
+    directory: that survives, ``exit.json`` with it, until ``crew gc`` prunes it
+    on a retention window, so the ledger row is the durable copy once gc runs.
+    The row carries this promotion's copy under ``worker_exit`` when the file
+    exists, and carries no such key when it does not: an empty key would read as
+    the supervisor having run and recorded nothing, which is the opposite of a run
+    whose supervisor never wrote a record.
 
     A file that exists but cannot be read or parsed as a JSON object is treated
     as absent rather than propagated as a failure: a corrupt file is not

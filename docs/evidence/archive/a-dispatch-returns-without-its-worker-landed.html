@@ -440,11 +440,12 @@
 
     <h2 id="s7">&sect;7 &mdash; A promoted row carries the worker's exit record</h2>
     <p>
-      The run directory is released at promotion and the live pointer is deleted with it, so the
-      run directory's <code>exit.json</code> is the worker's exit record and it has exactly one
-      place left to live: the committed ledger row. <code>complete</code> in
-      <code>reckon/crew/promotion.py</code> reads the file once, before the release, and copies
-      the parsed object verbatim onto the row under <code>worker_exit</code>.
+      Promotion releases the run's live pointer and its worktree, but not the run directory:
+      that survives, <code>exit.json</code> with it, until <code>crew gc</code> prunes it on a
+      retention window. <code>complete</code> in <code>reckon/crew/promotion.py</code> reads the
+      file once and copies the parsed object verbatim onto the committed ledger row under
+      <code>worker_exit</code>, so the row is the durable copy of the worker's exit record once
+      gc has run.
     </p>
     <figure>
       <img src="/reckon/figures/a-dispatch-returns-without-its-worker/worker_exit_promotion_flow.png"
