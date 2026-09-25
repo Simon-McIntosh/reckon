@@ -127,48 +127,56 @@ class _CumulativeDiff:
     changed_lines: dict[str, Any]
 
 
-def _cumulative_diff(*, cwd: Path, base: str, head: str) -> _CumulativeDiff:
-    """Return paths and counts from one unfiltered base-to-tip diff."""
-    if not base:
+def _committed_scope(*, cwd: Path, commits: Sequence[str]) -> _CumulativeDiff:
+    """Return paths and counts from the cited commits' own diffs.
+
+    A tree diff from the first cited commit's parent to the run's tip is a diff
+    of a span, not of a run: a head that merged the integration branch carries
+    every path that branch changed, and the span charges them to the run. Each
+    cited commit is diffed against its own parent instead, and a cited merge is
+    skipped rather than resolved, because what a merge brought belongs to the
+    branch it came from — not to the run that merged it.
+    """
+    if not commits:
         return _CumulativeDiff((), {"available": False, "reason": "missing_base"})
-    for revision in (base, head):
-        resolved = subprocess.run(
+    merges = set(_merge_revisions(cwd, commits))
+    added = removed = 0
+    paths: list[str] = []
+    seen: set[str] = set()
+    for commit in commits:
+        if commit in merges:
+            continue
+        result = subprocess.run(
             [
                 "git",
-                "rev-parse",
-                "--verify",
-                "--quiet",
-                "--end-of-options",
-                f"{revision}^{{commit}}",
+                "diff",
+                "--numstat",
+                "--no-renames",
+                "-z",
+                f"{commit}^",
+                commit,
+                "--",
             ],
             cwd=cwd,
             capture_output=True,
             check=False,
         )
-        if resolved.returncode:
+        if result.returncode:
             return _CumulativeDiff(
-                (), {"available": False, "reason": "unresolvable_revision"}
+                (), {"available": False, "reason": "diff_unavailable"}
             )
-    result = subprocess.run(
-        ["git", "diff", "--numstat", "--no-renames", "-z", f"{base}..{head}", "--"],
-        cwd=cwd,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode:
-        return _CumulativeDiff((), {"available": False, "reason": "diff_unavailable"})
-    added = removed = files = 0
-    paths: list[str] = []
-    for raw_line in (item for item in result.stdout.split(b"\0") if item):
-        fields = raw_line.split(b"\t", 2)
-        if len(fields) != 3:
-            continue
-        files += 1
-        added += int(fields[0]) if fields[0].isdigit() else 0
-        removed += int(fields[1]) if fields[1].isdigit() else 0
-        paths.append(os.fsdecode(fields[2]))
+        for raw_line in (item for item in result.stdout.split(b"\0") if item):
+            fields = raw_line.split(b"\t", 2)
+            if len(fields) != 3:
+                continue
+            added += int(fields[0]) if fields[0].isdigit() else 0
+            removed += int(fields[1]) if fields[1].isdigit() else 0
+            path = os.fsdecode(fields[2])
+            if path not in seen:
+                seen.add(path)
+                paths.append(path)
     return _CumulativeDiff(
-        tuple(paths), {"added": added, "removed": removed, "files": files}
+        tuple(paths), {"added": added, "removed": removed, "files": len(paths)}
     )
 
 
@@ -3947,11 +3955,7 @@ def _complete_locked(
         changed_lines = _shadow_patch_stat(artifact, cwd=tree)
         shadow_patch = str(artifact)
     elif commit_list:
-        cumulative = _cumulative_diff(
-            cwd=tree,
-            base=f"{commit_list[0]}^",
-            head=commit_list[-1],
-        )
+        cumulative = _committed_scope(cwd=tree, commits=commit_list)
         if cumulative.changed_lines.get("available", True):
             if (
                 not role_may_write_repository_paths(str(record.get("role") or ""))
@@ -3972,23 +3976,6 @@ def _complete_locked(
                 tree=tree,
             )
             if outside:
-                # A merge's first-parent diff carries everything its other
-                # parent brought — the orchestrator's own plan edits included —
-                # so citing the merge attributes those to the worker. Same
-                # check, but the caller needs to know which of the two it is:
-                # a worker that exceeded its fence, or an orchestrator that
-                # named the wrong commit.
-                merges = _merge_revisions(tree, commit_list)
-                if merges:
-                    raise CrewError(
-                        f"run {run_id!r} cites merge commit "
-                        f"{', '.join(merges)}, whose diff includes everything "
-                        "its other parent brought — so these paths are outside "
-                        f"the node's write scope: {', '.join(outside)}. This is "
-                        "the wrong commit rather than a worker that exceeded "
-                        "its scope: cite the worker's own commit, which "
-                        "`reckon crew recover` reports as the run's next action"
-                    )
                 scope_acceptances = _accepted_scope_exceptions(
                     run_id,
                     outside,

@@ -400,6 +400,61 @@
       followup unchanged, using the previously announced direct-prose fallback.</p>
     </section>
 
+    <section id="promotion-scope">
+      <h2>§1 — The boundary check counts the run's own cited commits</h2>
+      <p><strong>Defect, reproduced at <code>971d4889</code> before repair.</strong> The boundary check
+      measured a run's out-of-scope paths as one tree diff from the first cited commit's parent to the
+      run's tip (<code>reckon/crew/promotion.py</code>, <code>_cumulative_diff(base=commit_list[0]^,
+      head=commit_list[-1])</code>). A run whose head sits on a merge from main therefore inherited every
+      path main changed: run <code>r-20260925T092209664940-active-sprint-follows-the-live-crew</code>
+      (base <code>be8f1330</code>) reported 152 paths outside its fence for its own three commits touching
+      seven, with no overlap, and <code>--accept-path</code> could not clear it because one path is
+      live-claimed by another run.</p>
+      <p>The synthesised reproduction
+      (<code>tests/test_promotion_scope_counts_only_the_runs_commits.py</code>) builds a temporary
+      repository where the run commits inside its fence, main advances with a peer commit touching another
+      path, the run merges main and commits again. Against the unfixed code the promotion was refused:</p>
+      <pre>reckon.crew.CrewError: run 'r-run-merges-main' cites merge commit
+2ae1507e08cb8544f8726d739c8b8cbda6d550f9, whose diff includes everything its other
+parent brought — so these paths are outside the node's write scope: peer.txt. This
+is the wrong commit rather than a worker that exceeded its scope: cite the
+worker's own commit, which `reckon crew recover` reports as the run's next action</pre>
+      <p><strong>Repair.</strong> <code>_cumulative_diff</code> is replaced by
+      <code>_committed_scope</code>: each cited commit is diffed against its own parent
+      (<code>git diff --numstat --no-renames -z &lt;c&gt;^ &lt;c&gt;</code>), a cited merge is skipped
+      rather than resolved, and the counted paths are the union over the cited commits with the line
+      counts summed per commit. The merge-attribution refusal that branch carried is removed with it:
+      once merges contribute no paths, a breach can only be the run's own work, and the single
+      out-of-scope refusal names it. <code>_merge_revisions</code> remains the merge detector
+      <code>_committed_scope</code> uses.</p>
+      <p><strong>After the repair.</strong> Both cases pass. The merged-main run lands, and its recorded
+      <code>changed_lines</code> is <code>{"added": 2, "removed": 0, "files": 2}</code> — its own two
+      files, with <code>peer.txt</code> counted nowhere. The sibling case, where the run's own last
+      commit writes a path no one declared, is still refused
+      (<code>outside.txt</code> named in the refusal, <code>peer.txt</code> absent from it), with no
+      ledger row written and the pointer retained. The operator's real config home carries no pointer
+      for either run id.</p>
+      <p><strong>Gate and negative control.</strong> The promotion cohort — 18 files matching
+      <code>tests/test_*promotion*.py</code> plus <code>tests/test_a_short_commit_list_is_reported.py</code>,
+      including the two new cases — reports 176 passed, 0 failed at the fixed worktree state, against
+      174 passed, 0 failed for the same cohort at <code>971d4889</code>: zero added failures, and no
+      failing ids on either side. The declared negative control, restoring the cumulative tree diff from
+      the first cited commit's parent to the last, fails both new cases (the merged-main case first) with
+      the declaration as the log's first line.</p>
+      <p><strong>Receipts</strong> under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T164939356407-promotion-scope-counts-only-the-runs-commits/</code>:
+      <code>base-arm-promotion-cohort.log</code>,
+      <code>repro-at-base-971d4889.log</code>, <code>fixed-new-test.log</code>,
+      <code>after-arm-promotion-cohort.log</code> and
+      <code>negative-control-restore-tree-diff.log</code>. Each log's first line names the revision, the
+      tree and the command. Runtimes: base arm 148.55 s, after arm 122.78 s, new cases 1.3–1.7 s.</p>
+      <p><strong>Boundary.</strong> No figure is recorded for this change: it moves a set membership
+      (which commits a span counted) rather than a spatial or sequential relationship, and the
+      membership reads unambiguously as prose. Independent merged verification, the worktree commit
+      (this node's shared git dir is mounted read-only, so the commit is pending), the live promotion
+      receipt and closure remain coordinator work; the section and the driving followup remain open.</p>
+    </section>
+
   </main>
 </body>
 </html>
