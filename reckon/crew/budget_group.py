@@ -14,11 +14,17 @@ figure a governor may hold on.  There is deliberately no per-backend position
 entry point: the only function returning a position takes a declared group
 identifier, so a caller cannot compute one lane's share of a shared wallet and
 report it as the wallet's own.
+
+The figures read the reports the crew's own reader publishes, in that reader's
+vocabulary: the provider's period names, and each utilisation as a fraction of
+its own window.  A wallet's pace, bar and reserve therefore come from the
+clocks a stream actually reported, never from a key this module guesses at —
+a reading carrying none yields no figure rather than a plausible one.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -26,17 +32,19 @@ from typing import Any
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
+from reckon.crew import window_reading
 
 OBSERVED = "observed"
 UNOBSERVED = "unobserved"
 
-# The figures a wallet's own pace, bar and reserve are read from: two clocks the
-# provider publishes, in percent of their own window, and the weekly reset that
-# places the wallet in its week. Named here rather than guessed from a lane's
-# payload, so a reading that carries neither clock yields no figure at all.
-FIVE_HOUR_PERCENT_KEY = "five_hour_used_percent"
-SEVEN_DAY_PERCENT_KEY = "seven_day_used_percent"
-SEVEN_DAY_RESET_KEY = "seven_day_reset_at"
+# The two metered clocks a wallet's figures read, under the period names the
+# provider's own streams carry and the reader publishes. The five-hour clock is
+# the window that fills, so the bar is drawn against it; the seven-day clock is
+# the week the allowance divides, and its reset stamp places the wallet within
+# that week. Each utilisation is a fraction of its own window, the unit the
+# stream reports — never a percentage this module would have to scale.
+FILL_CLOCK = "five_hour"
+WEEK_CLOCK = "seven_day"
 
 
 @dataclass(frozen=True)
@@ -211,7 +219,7 @@ class GroupFigures:
 def group_figures(
     group: str,
     config: Mapping[str, Any] | None,
-    readings: Mapping[str, Mapping[str, Any]] | None = None,
+    windows: Mapping[str, Any] | None = None,
     *,
     block: Mapping[str, Any] | None = None,
     now: datetime | None = None,
@@ -223,13 +231,22 @@ def group_figures(
     for here and an unknown identifier raises rather than answering with one
     lane's share of a shared allowance.
 
-    The figures are derived from the wallet's freshest member reading and
-    delegated to the module that owns each one: the allowance to
+    ``windows`` maps a backend name to its window reading — an already read
+    :class:`~reckon.crew.window_reading.WindowReading` or a stream source the
+    reader can open — the same vocabulary :func:`reckon.budget.group_pace`
+    consumes, so both surfaces read one shape rather than two.  The wallet
+    reads its freshest member's report once and each figure comes from that
+    report's own clocks: the fill from the five-hour utilisation, the allowance
+    from the seven-day utilisation together with its reset, the bar from the
+    fill.  Utilisations are fractions of their own window, the unit the stream
+    reports.
+
+    The figures are delegated to the module that owns each one: the allowance to
     :mod:`reckon.crew.pace`, the bar to :mod:`reckon.crew.bar` and the withheld
     fraction to :mod:`reckon.crew.reserve`.  A wallet whose reading carries no
-    week clock that can be placed reports no pace, and a reading with no figure
-    at all reports no fill and no bar — absent rather than zero, because a zero
-    fill would read as an empty window and admit everything.
+    week clock that can be placed reports no pace, and a reading carrying no
+    fill reports no bar — absent rather than zero, because a zero fill would
+    read as an empty window and admit everything.
     """
     groups = declared_groups(config)
     members = groups.get(group)
@@ -238,19 +255,21 @@ def group_figures(
         raise ValueError(
             f"{group!r} is not a declared budget group (declared groups: {declared})"
         )
-    moment = _fraction_moment(now)
-    position = group_position(group, config, readings or {}, now=moment)
-    reading = position.reading or {}
+    moment = _aware(now) if now is not None else datetime.now(UTC)
+    supplied = windows if isinstance(windows, Mapping) else {}
     budget_block = block if isinstance(block, Mapping) else (config or {}).get("budget")
 
-    fill = _percent_as_fraction(reading.get(FIVE_HOUR_PERCENT_KEY))
-    week = _percent_as_fraction(reading.get(SEVEN_DAY_PERCENT_KEY))
-    elapsed = _week_placement(reading.get(SEVEN_DAY_RESET_KEY), moment)
+    freshest = _freshest_member(members, supplied, moment=moment)
+    member = None if freshest is None else freshest[0]
+    reading = None if freshest is None else freshest[1]
+    fill = None if reading is None else reading.utilisation(FILL_CLOCK)
+    week = None if reading is None else reading.figure(WEEK_CLOCK)
+    elapsed = None if week is None else _week_placement(week.resets_at, moment)
     pace: Mapping[str, Any] | None = None
     if week is not None and elapsed is not None:
         pace = pace_module.allowance_for_group(
             pace_module.GroupReading(
-                group=group, utilisation=week, elapsed_hours=elapsed
+                group=group, utilisation=week.utilisation, elapsed_hours=elapsed
             ),
             config=config,
         ).as_dict()
@@ -258,8 +277,8 @@ def group_figures(
     return GroupFigures(
         group=group,
         members=tuple(members),
-        member=position.member,
-        state=position.state,
+        member=member,
+        state=UNOBSERVED if reading is None else OBSERVED,
         fill=fill,
         pace=pace,
         # The bar's threshold, which its own module draws from the fill alone:
@@ -269,6 +288,46 @@ def group_figures(
     )
 
 
+def _freshest_member(
+    members: Iterable[str],
+    windows: Mapping[str, Any],
+    *,
+    moment: datetime,
+) -> tuple[str, window_reading.WindowReading] | None:
+    """Return the member carrying the newest window reading, and that reading.
+
+    A wallet is read once, from its freshest member.  A member that supplied
+    nothing readable does not compete, and neither does a reading that cannot
+    be aged: an age-less figure cannot be told from a current one, so letting
+    it speak for the wallet would report an observation that was never made.
+    """
+    freshest: tuple[datetime, str, window_reading.WindowReading] | None = None
+    for member in members:
+        source = windows.get(member)
+        if source is None:
+            continue
+        reading = _reading_value(source, moment=moment)
+        if not reading.known or reading.observed_at is None:
+            continue
+        if freshest is None or reading.observed_at > freshest[0]:
+            freshest = (reading.observed_at, member, reading)
+    if freshest is None:
+        return None
+    return freshest[1], freshest[2]
+
+
+def _reading_value(source: object, *, moment: datetime) -> window_reading.WindowReading:
+    """Resolve one member's reading, opening a caller's stream source if given.
+
+    An already read :class:`~reckon.crew.window_reading.WindowReading` is taken
+    as it stands; anything else is handed to the reader, which reports its own
+    explicit unknown rather than raising when the source cannot be read.
+    """
+    if isinstance(source, window_reading.WindowReading):
+        return source
+    return window_reading.read_windows(source, now=moment)
+
+
 def _week_placement(stamp: object, moment: datetime) -> float | None:
     """Hours the wallet stands into its week, or ``None`` if it cannot be placed."""
     reset = _observed_moment(stamp)
@@ -276,17 +335,6 @@ def _week_placement(stamp: object, moment: datetime) -> float | None:
         return None
     remaining = (reset - moment).total_seconds() / 3600.0
     return max(0.0, pace_module.WEEK_HOURS - remaining)
-
-
-def _percent_as_fraction(value: object) -> float | None:
-    """Return a reported percentage as a fraction of its window, or ``None``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return min(max(float(value), 0.0), 100.0) / 100.0
-
-
-def _fraction_moment(now: datetime | None) -> datetime:
-    return _aware(now) if now is not None else datetime.now(UTC)
 
 
 def _declared_group_by_backend(

@@ -8,6 +8,12 @@ the run and compared afterwards: a test that read it would pass or fail with
 whatever that host happens to declare, and one that wrote it would make a peer
 session wrong.  Only the home's own files are hashed, because live sessions
 write the caches beneath it while this runs.
+
+The window readings are streams, not hand-written mappings: each lane's fixture
+is the provider's own event carrying ``unifiedWindows``, and the reading under
+test is produced from it by the crew's reader, exactly as production produces
+one.  A consumer reading a key nothing produces therefore resolves no figure
+here and fails, which is the failure this fixture is shaped to catch.
 """
 
 from __future__ import annotations
@@ -19,9 +25,10 @@ from pathlib import Path
 
 import pytest
 
-from reckon import flight
+from reckon import budget, flight
 from reckon._store import _config_home
 from reckon.crew import budget_group as bg
+from reckon.crew import window_reading
 from tests.conftest import test_temp_config_home as _temp_config_home
 
 SOL_FAMILY_LANES = ("codex", "codex-astra", "codex-terra", "codex-luna")
@@ -31,6 +38,11 @@ SOL_WALLET = "codex-sub"
 SPARK_WALLET = "spark-sub"
 
 NOW = datetime(2026, 9, 25, 12, 0, 0, tzinfo=UTC)
+
+# How far the week clock's reset stands from the observation, so the wallet's
+# placement in its week is arithmetic rather than a stroke of the clock.
+WEEK_RESET_IN_HOURS = 124.0
+FIVE_HOUR_RESET_IN_HOURS = 1.0
 
 # The declarations a host layer carries: four lanes on one subscription, one on
 # a second, and a lane declaring none.  No lane name reaches the assertions
@@ -86,24 +98,55 @@ def resolved(declared_home):
     return flight.resolve()
 
 
-def _reading(*, age: timedelta, five_hour: float, seven_day: float) -> dict:
-    return {
-        "observed_at": (NOW - age).isoformat(),
-        bg.FIVE_HOUR_PERCENT_KEY: five_hour,
-        bg.SEVEN_DAY_PERCENT_KEY: seven_day,
-        bg.SEVEN_DAY_RESET_KEY: (NOW + timedelta(hours=124.0)).isoformat(),
+def _report(
+    five_hour: float,
+    seven_day: float,
+    *,
+    observed_at: datetime,
+    dated: bool = True,
+    week_reset: bool = True,
+) -> dict:
+    """One stream's window-carrying report, in the provider's own vocabulary.
+
+    Built as a stream carries it: a ``rate_limit_event`` whose
+    ``unifiedWindows`` holds each period with its ``utilization`` as a fraction
+    of that window, beside the ``resetsAt`` the window itself publishes.  The
+    reading every assertion runs on is produced from this by the reader, so a
+    fixture cannot supply a key the stream never carries.
+    """
+    seven: dict = {"utilization": seven_day}
+    if week_reset:
+        seven["resetsAt"] = (
+            observed_at + timedelta(hours=WEEK_RESET_IN_HOURS)
+        ).isoformat()
+    event: dict = {
+        "type": "rate_limit_event",
+        "rate_limit_info": {
+            "unifiedWindows": {
+                "five_hour": {
+                    "utilization": five_hour,
+                    "resetsAt": (
+                        observed_at + timedelta(hours=FIVE_HOUR_RESET_IN_HOURS)
+                    ).isoformat(),
+                },
+                "seven_day": seven,
+            }
+        },
     }
+    if dated:
+        event["timestamp"] = observed_at.isoformat()
+    return event
 
 
-def _family_readings() -> dict[str, dict]:
-    """Four lanes reporting near-identical clocks, and one stale lane of its own."""
+def _family_readings() -> dict[str, list[dict]]:
+    """Four lanes' streams: three reporting alike, and one stale lane of its own."""
     readings = {
-        lane: _reading(age=timedelta(minutes=6), five_hour=14.0, seven_day=31.0)
+        lane: [_report(0.14, 0.31, observed_at=NOW - timedelta(minutes=6))]
         for lane in SOL_FAMILY_LANES[1:]
     }
-    readings[SOL_FAMILY_LANES[0]] = _reading(
-        age=timedelta(hours=2), five_hour=99.0, seven_day=31.0
-    )
+    readings[SOL_FAMILY_LANES[0]] = [
+        _report(0.99, 0.31, observed_at=NOW - timedelta(hours=2.0))
+    ]
     return readings
 
 
@@ -145,20 +188,68 @@ def test_a_wallets_figures_resolve_once_for_the_wallet(resolved):
     assert figures.group == SOL_WALLET
     assert sorted(figures.members) == sorted(SOL_FAMILY_LANES)
     assert not set(figures.members) & set(bg.ungrouped(resolved.config))
+    assert figures.state == bg.OBSERVED
+    # The stale lane reports 0.99 of its own window two hours ago; the wallet
+    # reads the lanes that observed six minutes ago, so the fresh 0.14 is the
+    # fill and the spent 0.99 is not.
+    assert figures.member in SOL_FAMILY_LANES[1:]
     assert figures.fill == pytest.approx(0.14)
-    assert figures.bar == pytest.approx(0.14 * 0.14 * (3.0 - 2.0 * 0.14))
+    assert figures.bar == pytest.approx(0.053312)
     assert figures.pace is not None
     assert figures.pace["group"] == SOL_WALLET
     assert figures.pace["utilisation"] == pytest.approx(0.31)
     assert figures.reserve_pct == 20.0
 
 
+def test_a_wallet_reads_the_same_clocks_the_preflight_publishes(resolved):
+    """The wallet's figures come from the reports the preflight publishes.
+
+    One vocabulary serves both surfaces: the same streams are handed to
+    :func:`reckon.budget.group_pace`, whose group entry is the published
+    reading, and to the wallet's own figures.  A consumer reading a key the
+    producer never writes resolves no figure here and fails.
+    """
+    streams = _family_readings()
+    published = next(
+        entry
+        for entry in budget.group_pace(resolved.config, windows=streams, now=NOW)
+        if entry["group"] == SOL_WALLET
+    )
+    figures = bg.group_figures(SOL_WALLET, resolved.config, streams, now=NOW)
+    clocks = published["clocks"]
+
+    assert published["state"] == budget.OBSERVED
+    assert clocks["five_hour"]["state"] == budget.OBSERVED
+    assert figures.member == published["member"]
+    assert figures.fill == pytest.approx(clocks["five_hour"]["utilisation"])
+    assert figures.pace is not None
+    assert figures.pace["utilisation"] == pytest.approx(
+        clocks["seven_day"]["utilisation"]
+    )
+
+
+def test_the_figures_read_the_readers_own_period_names(resolved):
+    """Both clocks are the reader's own periods, not keys this module invented."""
+    reading = window_reading.read_windows(
+        [_report(0.14, 0.31, observed_at=NOW - timedelta(minutes=6))], now=NOW
+    )
+    figures = bg.group_figures(
+        SOL_WALLET, resolved.config, {SOL_FAMILY_LANES[0]: reading}, now=NOW
+    )
+
+    assert bg.FILL_CLOCK in window_reading.PERIODS
+    assert bg.WEEK_CLOCK in window_reading.PERIODS
+    assert figures.fill == pytest.approx(reading.utilisation(bg.FILL_CLOCK))
+    assert figures.pace is not None
+    assert figures.pace["utilisation"] == pytest.approx(
+        reading.utilisation(bg.WEEK_CLOCK)
+    )
+
+
 def test_a_wallet_never_paces_on_another_wallets_reading(resolved):
     """One reading supplies the wallet that holds its lane, and no other."""
     readings = {
-        SEPARATE_LANE: _reading(
-            age=timedelta(minutes=1), five_hour=88.0, seven_day=54.0
-        )
+        SEPARATE_LANE: [_report(0.88, 0.54, observed_at=NOW - timedelta(minutes=1))]
     }
 
     spark = bg.group_figures(SPARK_WALLET, resolved.config, readings, now=NOW)
@@ -170,6 +261,41 @@ def test_a_wallet_never_paces_on_another_wallets_reading(resolved):
     assert spark.pace["utilisation"] == pytest.approx(0.54)
     assert sol.state == bg.UNOBSERVED
     assert sol.fill is None and sol.bar is None and sol.pace is None
+
+
+def test_a_reading_that_cannot_be_aged_does_not_supply_the_wallet(resolved):
+    """A window report nothing can date never speaks for the wallet.
+
+    The undated lane reports a full window, but no stamp places the report in
+    time, so it cannot be told from a current reading and does not compete with
+    the lane that can be aged.
+    """
+    readings = {
+        SOL_FAMILY_LANES[0]: [_report(1.0, 1.0, observed_at=NOW, dated=False)],
+        SOL_FAMILY_LANES[1]: [
+            _report(0.2, 0.4, observed_at=NOW - timedelta(minutes=3))
+        ],
+    }
+
+    figures = bg.group_figures(SOL_WALLET, resolved.config, readings, now=NOW)
+
+    assert figures.member == SOL_FAMILY_LANES[1]
+    assert figures.fill == pytest.approx(0.2)
+
+
+def test_a_week_clock_with_no_reset_reports_no_pace(resolved):
+    """A week that cannot be placed in the week yields no allowance, not a guess."""
+    readings = {
+        SOL_FAMILY_LANES[0]: [
+            _report(0.6, 0.4, observed_at=NOW - timedelta(minutes=2), week_reset=False)
+        ]
+    }
+
+    figures = bg.group_figures(SOL_WALLET, resolved.config, readings, now=NOW)
+
+    assert figures.fill == pytest.approx(0.6)
+    assert figures.bar is not None
+    assert figures.pace is None
 
 
 def test_an_unobserved_wallet_reports_no_figure_rather_than_a_zero(resolved):
