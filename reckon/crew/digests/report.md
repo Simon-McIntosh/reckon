@@ -250,11 +250,6 @@ where a flagged hit is CORRECT and must be kept:
 false positive.
 ## Parallel Agent Safety
 
-Every background worker gets its own detached worktree
-(`worktree_fleet.py` creates and conservatively cleans them); worktree
-isolation now carries most of the burden the shared-checkout fleet rules
-existed for. What remains binding:
-
 - One worker, one worktree, one exclusive write scope. No two concurrent
   workers write the same file even across worktrees — merging is the
   orchestrator's job, sequentially, after auditing each manifest and
@@ -263,28 +258,6 @@ existed for. What remains binding:
   primary branch, never merge/rebase/stash, and stage explicit paths only.
 - Durable delivery: every worker writes its manifest to an
   orchestrator-named file; the reply is a convenience, the file is the
-  delivery. Recovery order on a silent worker: manifest file → on-disk
-  logs → `reckon crew resume --run <id> --advice "<answer>"` → only then
-  redispatch.
-- **Never message a CLI-launched worker as a peer session.** It is listed
-  as `interactive` and the send returns success, and it has delivered
-  nothing in 3,949 worker streams on this workstation — against a positive
-  control of 11,939 deliveries in 244 interactive transcripts. The
-  recipient is a headless `-p` process with no user, so the approval its
-  permission mode requires can never be given and the message expires
-  silently. Resume answers a worker whose turn has ended; a worker still
-  mid-turn has no channel at all, so plan the node rather than expect to
-  steer it. Rationale and measurement:
-  `~/Code/reckon/docs/research/messages-to-workers-never-arrive.html`.
-- The orchestrator owns merges, pushes, plan/index state, and cleanup.
-  Cleanup never forces — a refused removal is a visible blocker with a
-  recoverable path.
-- The canonical dispatch contract (embed it verbatim in worker prompts)
-  lives in `~/.claude/skills/reckon-build/references/sprint-orchestration.md`
-  §6; do not restate plan content in prompts.
-- Session audits: `git stash list` at start (stashes are user-owned);
-  `git worktree list` before ending — no orphaned session trees left
-  behind.
 ### A Worker That Invents Its Own Manifest Status Slips The Review Guard
 
 **A manifest whose `status:` is outside the recognised set classifies as nothing, and a

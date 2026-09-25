@@ -812,15 +812,15 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
       <caption>Digest size against the canonical policy, byte-derived tokens (four bytes per token).</caption>
       <thead><tr><th>Role</th><th>Bytes</th><th>Tokens</th><th>Versus canonical (22,507)</th></tr></thead>
       <tbody>
-        <tr><td><code>report</code></td><td>32,394</td><td>8,099</td><td>64% smaller</td></tr>
-        <tr><td><code>review</code></td><td>36,363</td><td>9,091</td><td>60% smaller</td></tr>
-        <tr><td><code>implement</code></td><td>42,931</td><td>10,733</td><td>52% smaller</td></tr>
-        <tr><td><code>test</code></td><td>37,837</td><td>9,460</td><td>58% smaller</td></tr>
+        <tr><td><code>report</code></td><td>30,796</td><td>7,699</td><td>66% smaller</td></tr>
+        <tr><td><code>review</code></td><td>34,765</td><td>8,692</td><td>61% smaller</td></tr>
+        <tr><td><code>implement</code></td><td>41,333</td><td>10,334</td><td>54% smaller</td></tr>
+        <tr><td><code>test</code></td><td>36,239</td><td>9,060</td><td>60% smaller</td></tr>
       </tbody>
     </table>
 
     <figure>
-      <img src="/reckon/figures/the-local-lane-is-the-default/digest-sizes.png" alt="Four horizontal bars, one per role, each well under half the height of the dashed line marking the canonical 22,507-token policy: report 8,099 tokens, review 9,091, implement 10,733 and test 9,460, all far below the dotted line marking the 15,000-token bound.">
+      <img src="/reckon/figures/the-local-lane-is-the-default/digest-sizes.png" alt="Four horizontal bars, one per role, each well under half the height of the dashed line marking the canonical 22,507-token policy: report 7,699 tokens, review 8,692, implement 10,334 and test 9,060, all far below the dotted line marking the 15,000-token bound.">
       <figcaption>Every role keeps well over half the policy's cost off the first request,
       and the two roles that write no source save the most.</figcaption>
     </figure>
@@ -833,14 +833,22 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     <code>implement</code> role alone lacked the <em>Test Visibility</em> block. And the
     gate proved marker strings present without a per-role heading case or a case forbidding
     coordinator content, so neither defect reddened a case. The map now withholds the
-    coordinator-only blocks and re-admits the worker-binding lines from four excerpts
+    coordinator-only blocks and re-admits the worker-binding lines from five excerpts
     (<code>EXCERPTS</code>): the ban table, the commit-message and authorship rules, the
-    check-only hook policy, and the worktree rule. <code>FORBIDDEN_CONTENT</code> names the
+    check-only hook policy, the worktree rule, and the worker's own worktree and manifest
+    duties. <code>FORBIDDEN_CONTENT</code> names the
     withheld delivery instructions (<em>Always commit and push</em>, <em>Always commit to
-    the project's primary branch</em>), <code>missing_headings</code> names a role's own
+    the project's primary branch</em>, and the coordinator's own lines from the parallel
+    section: <em>The orchestrator owns merges, pushes, plan/index state, and cleanup</em>,
+    the canonical dispatch-contract pointer, the session audits, and the
+    never-message-a-worker rule), <code>missing_headings</code> names a role's own
     blocks, and <code>check_rules</code>, <code>check_headings</code> and
     <code>check_bound</code> all run at generation, so a map edit that re-admits the whole
-    policy is refused when it is generated rather than discovered at launch.</p>
+    policy is refused when it is generated rather than discovered at launch. A second
+    review found the parallel section's coordinator lines still retained whole; it is now
+    a fifth excerpt that keeps only the worker's own duties — one worktree and one write
+    scope, commit locally and never push or merge, and write the manifest to the named
+    file.</p>
 
     <p><strong>The negative control.</strong> The declared mutation is
     <em>drop the git-safety block from the section map; the git-safety marker assertion
@@ -853,17 +861,19 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     assertion is ordered first so the failure a reader sees is the one the mutation
     names.</p>
 
-    <p>Two further arms cover the repair. The declared mutation is <em>restore the whole
+    <p>Three further arms cover the repairs. The declared mutation is <em>restore the whole
     Commit Discipline chunk to the shared map; the no-coordinator-content case must fail
     naming 'Always commit and push'</em>: the arm adds that header back to every role's
     map, and the coordinator case fails with the marker named, exactly as the review
-    required. The third arm drops the <em>Test Visibility</em> block from the
-    <code>implement</code> map, and the per-role heading case fails naming
-    <code>## Test Visibility</code>. All three arms redden as declared.
+    required. The second arm restores the whole <em>Parallel Agent Safety</em> block to
+    every role's map in place of its excerpt, and the coordinator case fails naming
+    <em>The orchestrator owns merges</em>. The third arm drops the <em>Test
+    Visibility</em> block from the <code>implement</code> map, and the per-role heading
+    case fails naming <code>## Test Visibility</code>. All four arms redden as declared.
     Log: <code>negative_control_repair.log</code>.</p>
 
     <p><strong>The gate.</strong> <code>tests/test_worker_digest.py</code> passes
-    <code>20</code> cases. They assert the floor against a synthesised policy (portable to
+    <code>22</code> cases. They assert the floor against a synthesised policy (portable to
     any host) and against the canonical file, assert each role's own headings and the
     absence of coordinator content, assert order, determinism, the token bound, that a
     digest is smaller than its source, that regeneration writes only under the named

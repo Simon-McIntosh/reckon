@@ -18,8 +18,9 @@ A worker dispatches into its own worktree, commits locally, never pushes and
 never picks a branch, so those blocks are withheld, and where only part of a
 block is coordinator-only the whole block is withheld and the worker-binding
 lines are re-admitted from :data:`EXCERPTS` — the commit-message rules, the
-banned commands, the hook policy, and the worktree rule. A digest then states
-the worker's delivery authority once, not twice.
+banned commands, the hook policy, the worktree rule, and the worker's own
+worktree and manifest duties. A digest then states the worker's delivery
+authority once, not twice.
 
 A floor of rules binds every role, because a launch without them is not safe
 at any size: git safety, the commit and delivery rules (explicit-path
@@ -165,6 +166,24 @@ EXCERPTS: dict[str, Excerpt] = {
             ),
         ),
     ),
+    "worker-parallel-safety": Excerpt(
+        header="## Parallel Agent Safety",
+        note="the worker's own worktree and delivery duties, without the coordinator's",
+        spans=(
+            (
+                "- One worker, one worktree, one exclusive write scope.",
+                "`git show --stat` against the declared scope.",
+            ),
+            (
+                "- Workers commit locally (conventional subject AND a body), never push the",
+                "primary branch, never merge/rebase/stash, and stage explicit paths only.",
+            ),
+            (
+                "- Durable delivery: every worker writes its manifest to an",
+                "orchestrator-named file; the reply is a convenience, the file is the",
+            ),
+        ),
+    ),
 }
 
 # Blocks shared by every role: git safety and its worker commit and delivery
@@ -178,7 +197,7 @@ _GIT_SAFETY = (
     "worktree-isolation",
 )
 _WORKER_MANIFEST = (
-    "## Parallel Agent Safety",
+    "worker-parallel-safety",
     "### A Worker That Invents Its Own Manifest Status Slips The Review Guard",
     "## A Worker's Process Ends With Its Turn",
 )
@@ -279,11 +298,25 @@ REQUIRED_RULES: tuple[tuple[str, str], ...] = (
 )
 
 # Coordinator-only delivery instructions. A worker commits locally and never
-# pushes or picks a branch, so a digest carrying one of these contradicts the
-# worker contract the manifest section states.
+# pushes, never picks a branch, and never owns a merge, a plan edit or a
+# session audit, so a digest carrying one of these contradicts the worker
+# contract the manifest section states.
 FORBIDDEN_CONTENT: tuple[tuple[str, str], ...] = (
     ("push-on-commit", "Always commit and push"),
     ("branch-policy", "Always commit to the project's primary branch"),
+    (
+        "orchestrator-owns-cleanup",
+        "The orchestrator owns merges, pushes, plan/index state, and cleanup.",
+    ),
+    (
+        "dispatch-contract-pointer",
+        "The canonical dispatch contract (embed it verbatim in worker prompts)",
+    ),
+    ("session-audits", "Session audits: `git stash list` at start"),
+    (
+        "message-a-worker",
+        "Never message a CLI-launched worker as a peer session.",
+    ),
 )
 
 # The marker the declared negative control pins: dropping the git-safety block

@@ -216,6 +216,39 @@ def test_restoring_the_whole_commit_discipline_block_fails_the_coordinator_case(
         assert_no_coordinator_content("report", digest)
 
 
+def test_restoring_the_whole_parallel_safety_block_fails_the_coordinator_case():
+    policy = _synthetic_policy()
+    plain = wd.generate("report", policy)
+
+    assert_no_coordinator_content("report", plain)
+
+    mutated = {
+        role: tuple(
+            "## Parallel Agent Safety" if key == "worker-parallel-safety" else key
+            for key in keys
+        )
+        for role, keys in wd.SECTION_MAP.items()
+    }
+    digest = wd.generate("report", policy, section_map=mutated)
+
+    assert "The orchestrator owns merges" in digest
+    assert "Never message a CLI-launched worker as a peer session." in digest
+    with pytest.raises(wd.CoordinatorContentError, match="orchestrator owns merges"):
+        wd.check_rules("report", digest)
+    with pytest.raises(AssertionError, match="orchestrator owns merges"):
+        assert_no_coordinator_content("report", digest)
+
+
+def test_the_parallel_safety_excerpt_keeps_the_worker_duties():
+    policy = _synthetic_policy()
+
+    for role in wd.ROLES:
+        digest = wd.generate(role, policy)
+        assert "one exclusive write scope" in digest
+        assert "never push the" in digest
+        assert "Durable delivery" in digest
+
+
 def _committed_digest_hashes() -> dict[str, str]:
     return {
         path.name: hashlib.sha256(
