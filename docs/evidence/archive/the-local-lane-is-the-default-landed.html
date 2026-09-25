@@ -162,6 +162,93 @@ FAILED tests/test_paid_lanes_document.py::test_preflight_paces_from_the_document
       this node's focused commit.</li>
     </ul>
   </section>
+
+  <figure>
+    <img src="/reckon/figures/the-local-lane-is-the-default/help-argv-decision.png" alt="Two argv traces for python -m reckon.crew.paid_lanes --help. Before: the token is parsed as inert, so the run resolves the flight config, composes the document and writes it, the final write step marked in red as the defect. After: the token records a help request, usage is printed to stdout, the run returns 0, and the compose/write step is shown grey and unreached.">
+    <figcaption>One token, two outcomes: before the repair <code>--help</code> fell
+    through the publish path and wrote the document; now it prints usage and
+    returns before composing anything.</figcaption>
+  </figure>
+
+  <section id="help-prints-usage">
+    <h2>&sect;5 — <code>--help</code> prints usage instead of publishing</h2>
+
+    <p><strong>The defect.</strong> <code>--help</code> and <code>-h</code> were parsed as inert
+    tokens in <code>main</code>'s argv loop: the flag was recognised and discarded, and the run
+    continued to resolve the flight config, compose the document and write it. Asking what the
+    command does was therefore the same act as running it &mdash; a question about the document was
+    answered by writing the document, to the named <code>--path</code> or to the default location.</p>
+
+    <p><strong>Reproduction before the repair.</strong> Run with a scratch <code>HOME</code> and a
+    named temporary path, at the base revision:</p>
+
+    <pre><code>$ HOME=$T/home RECKON_HOME=$T/home PYTHONPATH="$PWD" \
+    ./.venv/bin/python -m reckon.crew.paid_lanes --help --path "$T/out/paid-lanes.json"
+wrote /tmp/&hellip;/out/paid-lanes.json: 1 account(s)
+EXIT=0   # the named path now exists, 985 bytes; usage was never printed</code></pre>
+
+    <p><strong>What landed.</strong> The argv loop records a help request when it sees
+    <code>--help</code> or <code>-h</code> in flag position, and <code>main</code> prints
+    <code>USAGE</code> to stdout and returns <code>0</code> before resolving any config, composing a
+    document or writing a file. The token is only recognised in flag position, so a
+    <code>--help</code> consumed as the value of <code>--path</code> is still read as that path
+    rather than as a request for usage. The behaviour of every other invocation is unchanged:
+    <code>python -m reckon.crew.paid_lanes --once --path &lt;file&gt;</code> still publishes exactly
+    where it was told.</p>
+
+    <table>
+      <caption>What the node asserted, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td><code>--help</code> run as a real process prints usage on stdout, exits 0, and writes neither the named temporary path nor the default document path</td><td><code>test_asking_for_help_prints_usage_and_publishes_nothing</code></td></tr>
+        <tr><td>The publishing path is untouched: <code>test_paid_lanes_document.py</code> otherwise passes unchanged (9 of its 10 cases pre-date this node)</td><td>the suite run at head, <code>10 passed</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p>The node's own gate, run at its head in this worktree, with the module under test resolving
+    to this worktree:</p>
+
+    <pre><code>PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest \
+    -p no:cacheprovider -q tests/test_paid_lanes_document.py
+# 10 passed in 1.23s   (module.__file__ = &lt;worktree&gt;/reckon/crew/paid_lanes.py)</code></pre>
+
+    <p><code>ruff check</code> and <code>ruff format --check</code> both pass on the two changed
+    paths with no new finding.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>treat --help as --once again; the
+    no-write assertion must fail</em> &mdash; the first line of the red log. The help branch was made
+    inert again (the pre-fix parse), so <code>--help</code> fell through to the publishing path. The
+    new case then failed at its no-write assertion, because the run had in fact written the named
+    path:</p>
+
+    <pre><code>&gt;       assert not named.exists()
+E       AssertionError: assert not True
+FAILED tests/test_paid_lanes_document.py::test_asking_for_help_prints_usage_and_publishes_nothing
+1 failed in 0.78s</code></pre>
+
+    <p><strong>Positive control:</strong> the same single-case selection at head is
+    <code>1 passed</code> (within the <code>10 passed</code> above), so the red is the mutation and
+    not the selection. Log:
+    <code>~/.cache/reckon-paid-lanes-help/negative-control.log</code>, alongside
+    <code>gate-final.log</code> and <code>gate-2a72458c.log</code>.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result is a separately dispatched node's job.</li>
+      <li><strong>The production callers still do not name the document.</strong>
+      <code>reckon/cli.py</code> and <code>reckon/mcp.py</code> pre-flight callers are out of this
+      node's scope and remain unwired; this node only changes what <code>--help</code> does at the
+      command seam.</li>
+      <li><strong>The five-minute refresh deployment is out of scope.</strong> Nothing in this node
+      schedules <code>paid_lanes</code>; the change is confined to the argv parse.</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>

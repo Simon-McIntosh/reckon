@@ -348,6 +348,47 @@ def test_the_module_run_as_a_process_publishes_where_it_was_told(
     assert not (home / "public" / "reckon" / "paid-lanes.json").exists()
 
 
+def test_asking_for_help_prints_usage_and_publishes_nothing(tmp_path: Path) -> None:
+    """``--help`` prints usage instead of composing and publishing.
+
+    Asking what the command does must not be the same act as running it, so a
+    ``--help`` run that fell through to the publishing path would answer a
+    question by writing the document the question was about. The invocation is a
+    real process because the defect lives in the argv parse, and the run is
+    given both a named path and a temporary home: neither may be written.
+    """
+    home = tmp_path / "home"
+    (home / "public" / "reckon").mkdir(parents=True, exist_ok=True)
+    named = tmp_path / "out" / "paid-lanes.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "reckon.crew.paid_lanes",
+            "--help",
+            "--path",
+            str(named),
+        ],
+        cwd=str(tmp_path),
+        env={
+            **os.environ,
+            "HOME": str(home),
+            "RECKON_HOME": str(home),
+            "PYTHONPATH": str(_REPO_ROOT),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert not named.exists()
+    assert not (home / "public" / "reckon" / "paid-lanes.json").exists()
+    assert "usage" in result.stdout.lower()
+    assert "--path" in result.stdout
+
+
 # ── The accounts are gathered from the three recorded homes ─────────────────
 
 
