@@ -74,7 +74,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 
 
 def _live_review_runs(project: str, session: str) -> set[str]:
-    """Snapshot source runs whose current revision already has a live review."""
+    """Snapshot session runs whose current revision has a review in any session."""
     in_flight: set[str] = set()
     for pointer in runs.list_live(project=project):
         if str(pointer.get("session") or "") != session:
@@ -83,6 +83,14 @@ def _live_review_runs(project: str, session: str) -> set[str]:
         if run_id and _current_review_in_flight(pointer):
             in_flight.add(run_id)
     return in_flight
+
+
+def _classified_rows(project: str) -> list[dict[str, Any]]:
+    """Classify current project pointers without observing or launching work."""
+    return [
+        recovery.classify_pointer(pointer)
+        for pointer in runs.list_live(project=project)
+    ]
 
 
 def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str, Any]:
@@ -178,10 +186,8 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         str((config.get("fences") or {}).get("unreconciled_run_grace") or "15m")
     )
     reviews_in_flight = _live_review_runs(project, session)
-    recovered = recovery.recover(project=project, config=config)
-
     items: list[dict[str, Any]] = []
-    for row in recovered.get("runs") or ():
+    for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
             continue
         classification = str(row.get("classification") or "")
