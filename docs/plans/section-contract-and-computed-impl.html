@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="22">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="23">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -398,6 +398,11 @@
     <h4 class="r-fu-title">Thread the inventoried checkout through every production caller of build_roadmap</h4>
     <div class="r-fu-body">Recorded by the findings node: reckon/mcp.py, reckon/serve.py and reckon/flight.py call build_roadmap without docs_dir, so on those surfaces the wiring scan still falls back to the registered mount and a worktree-scoped roadmap judges one tree's plans against another tree's declarations. Pass each caller's checkout path through, and pin one caller with a test that inventories a worktree carrying a declaration the mount lacks. The audit-message half of the fourth finding lives in reckon/_schema.py and reckon/cli.py and lands in the same node.</div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
+    </article>
+<article class="r-fu" data-id="f-scci-doccheck-comment-figure" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T08:55:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Strip the frozen followup-census figure from the doccheck comment</h4>
+    <div class="r-fu-body"><p>Review of audit-doc-reports-missing-section-contract (91) found that the comment near <code>reckon/doccheck.py:142</code> cites a count (1 of 468 open followups) that the delivery's own census contradicts. A frozen count in source is a fuse. Fold into the next node touching <code>reckon/doccheck.py</code> (section 6): state the mechanism, not the figure.</p></div>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §6 — include removing the census figure from the doccheck.py comment</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
