@@ -27,7 +27,7 @@
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-commits" content="436c75f3,37c8988a,f7f6fe29,057d8ad0,4784f497">
 <meta name="plan-impl" content="0.85">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 </head>
 <body>
   <main class="plan-doc">
@@ -149,6 +149,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260925T132422661661-read-state-and-live-runs-reuse" data-who="reckon-build" data-when="2026-09-25T13:54:48Z">
     <div class="r-comment-body"><p>read_state and live-run partitioning reuse the parse memo and recorded classification; roadmap met its latency bound; audit remains 8.01 s median against 5 s, carried by followup f-rraiss-mcp-validation-reads-through-memo; 148 passed with the two pre-existing test_store_concurrency failures of main and none added; review 86 found state and text paired from two reads, carried by f-rraiss-one-read-pairs-state-and-text</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T151551177733-read-pairs-state-and-text-from-one-read" data-who="reckon-build" data-when="2026-09-25T15:50:28.029Z">
+    <div class="r-comment-body"><p>a plan read takes its state and text from one read of the file, memoized as a pair; the replacement test is 2 failed at base and 3 passed at head; the regression set shows the same two pre-existing test_store_concurrency failures at base and head; review 90, whose mistyped commit sha in three places is corrected on main</p></div>
 </div>
 </section>
   </main>
