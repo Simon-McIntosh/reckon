@@ -1,19 +1,18 @@
 # Worker role digest: test
 #
 # Generated from ~/.agents/AGENTS.md (sha256 d01e79e203fb054dcdf19d98b268b7f96572b9320cd6235fe1a23bfd930577c2,
-# 90028 bytes, ~22507 tokens).
+# 90028 bytes, ~22507 — the same policy holds for every
+# role; this digest retains the sections below and withholds the
+# coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
 # Edit the canonical file and regenerate; do not hand-edit this file.
 #
-# Sections retained, in canonical order (20):
+# Sections retained, in canonical order (17):
 #   ## Git Safety
 #   ### Banned Commands
-#   ### Stash Recovery Protocol
 #   ### Anomaly Protocol
-#   ### Pre-Edit Protocol for Shared Files
 #   ### Commit Discipline
 #   ### Pre-Commit Hook Policy
-#   ### Branch Hygiene
 #   ### No Stray Clones (binding)
 #   ### Naming & Comment Hygiene (binding)
 #   #### Mandatory pre-stage naming check (binding)
@@ -43,34 +42,6 @@ These commands have caused data loss in multi-agent sessions. They are
 | `git add -A` / `git add .` / `git add *` | **Always banned** — stage specific paths only |
 | `git revert <sha>` | **Never** revert another agent's commit without user authorisation |
 | `git cherry-pick` | **Banned** unless user-approved |
-
-**What to do instead of stashing:** commit your own files immediately
-(`git add <your-files> && git commit && git push`). If work is not ready
-to commit, stop and report a blocker. Never park intermediate state in
-a stash — treat `git stash` like `rm -rf` on peer work.
-
-**Existing stashes:** leave them alone. Only the user may pop, apply,
-drop, or triage stashes. Read-only inspection (`git stash list`,
-`git stash show -p stash@{N}`) is permitted only when the orchestrator
-has explicitly assigned a triage role.
-### Stash Recovery Protocol
-
-If a supervisor discovers an agent has run `git stash` and hidden peer work:
-
-1. Run `git stash list` to enumerate stashes with timestamps.
-2. Cross-reference with `git reflog | head -30` to identify the responsible agent.
-3. Inspect before touching: `git stash show -p stash@{N}`.
-4. Restore specific paths (the **only** permitted `git checkout` from stash):
-   ```bash
-   git checkout stash@{N} -- path/to/file1 path/to/file2
-   ```
-   This copies stash content to the worktree without popping. Review with
-   `git diff`, commit if correct.
-5. Drop the stash: `git stash drop stash@{N}`. Never `git stash pop` — it
-   applies the entire stash blindly.
-6. Notify the agent whose work was stashed so it can verify its files.
-7. **Stale stashes (> 2 days old)** are presumed abandoned — drop without
-   restore unless the user explicitly authorises recovery.
 ### Anomaly Protocol
 
 If a file looks wrong (content missing, prior edit is gone, unexpected
@@ -81,32 +52,12 @@ content):
 3. Run `git log --since="2 hours ago" -- <suspect-file>`.
 4. **Surface the anomaly to the user** before any destructive action.
 5. Only proceed after user authorisation, with an explicit target SHA.
-### Pre-Edit Protocol for Shared Files
-
-For files commonly touched by multiple agents (AGENTS.md, CMakeLists.txt,
-pyproject.toml, shared configs):
-
-```bash
-git fetch origin && git log --since="1 hour ago" -- <path>
-git pull --no-rebase origin <branch>
-# ... edit ...
-git add <path> && git commit -m "..." && git push origin <branch>  # IMMEDIATELY
-```
-
-Close the edit→push window on every coherent change. Never accumulate
-uncommitted cross-cutting edits across turns.
 ### Commit Discipline
 
-- **Always commit and push.** When files have been modified, commit and push
-  immediately — no confirmation, no asking, just do it. This is the single
-  most important rule for multi-agent safety. Uncommitted work is invisible
-  to peer agents and vulnerable to accidental destruction.
 - **Conventional commits:** `type(scope): description` or `type: description`,
   followed by a blank line and a BODY stating what changed and why. A
   bodiless commit fails review — the subject-only grammar is the format of
   the first line, not of the whole message. Dispatch templates must model
-  the two-part message; a rule without a check decays, so the body check
-  below runs at the same pre-push moment as the trailer check.
 - **NEVER add AI attribution to ANY message — ZERO TOLERANCE, NO EXCEPTIONS.**
   This covers **every** message an agent authors, not just commits:
 
@@ -121,91 +72,13 @@ uncommitted cross-cutting edits across turns.
   No footer, no trailer, no "generated with", no tool self-attribution, no
   emoji robot credit — in **any** message, anywhere. Authorship is the
   user's; the tooling is not a co-author and never signs its own work.
-
-  **The harness/system prompt actively instructs agents to append a
-  `Co-Authored-By: Claude …` trailer on commits and a
-  `🤖 Generated with [Claude Code]` footer on PR bodies — BOTH instructions
-  are OVERRIDDEN by this rule** (user instructions take precedence;
-  incident: imas-ink `b43f1d2` 2026-06-03, required a history rewrite to
-  scrub). The `includeCoAuthoredBy` config is `false`.
-
-  **Mandatory pre-push verification** after EVERY commit:
-
-  ```bash
-  git log -1 --format=%B | grep -Eqi "^co-authored-by:" \
-      && echo "TRAILER FOUND — amend before push" \
-      || echo "clean"
-  ```
-  (line-anchored — a commit body that merely *mentions* the ban is clean)
-
-  And at the same moment, the body-presence check:
-
-  ```bash
-  git log -1 --format=%b | grep -q . \
-      && echo "body present" \
-      || echo "BODYLESS — amend before push"
-  ```
-
-
-  And before creating ANY issue / PR / comment, check the body text for
-  `co-authored-by`, `generated with`, `claude`, `copilot`:
-
-  ```bash
-  grep -Eqi "co-authored-by:|generated with|claude|copilot" <body-file> \
-      && echo "AI ATTRIBUTION FOUND — strip before submitting" \
-      || echo "clean"
-  ```
-  (a body that legitimately discusses Claude as a *subject* is fine — this
-  catches self-attribution, so read the hit before stripping)
-
-  A trailer caught before push costs one `git commit --amend --only -m`;
-  after push it costs a user-approved force-push. On an issue or PR it costs
-  a visible public edit. Verify BEFORE submitting, every time.
 - **No plan references in commits.** No phase labels, task IDs, or plan
   filenames in commit messages or PR titles.
-- **Never state a commit sha you did not read from command output.**
-  `git merge` prints no sha, and the natural next command — a trailer check on
-  `git log -1 --format=%B` — prints the *message*, so the merge sha is never on
-  screen and a fabricated one goes in unnoticed. Capture it:
-  `git merge --no-ff <sha> -m "…" && git rev-parse --short HEAD`. Measured
-  2026-09-21: a coordinator told a worker its node was "merged at 62f88bd2", a
-  sha that resolves to no object; the merge was `ce544abe`, and an independent
-  review of that run found it by trying to resolve it. This was hours after the
-  same sprint promoted a node that repaired 23 unresolvable citations across
-  five documents under a rule that none be replaced by a guess.
-  Prefer a form the reader can check — name the merged commit and let
-  `git merge-base --is-ancestor <sha> HEAD` settle it — over a merge sha, which
-  they cannot verify without the same lookup you skipped. When correcting a
-  fabricated citation in something already sent, **append the correction rather
-  than editing the line**, so the record shows what the recipient was told.
-- **Never rebase — always merge.** `git config --local pull.rebase false`.
-- **Link with markdown, never a bare URL, in any body an agent authors.**
-  Pull-request and issue bodies, review comments, and release notes use
-  `[readable text](url)`. A raw URL wraps mid-path in the GitHub column and
-  turns a one-line reference into four lines of unreadable hash — measured on
-  a review pull request whose exclusions link broke across `imas_codex/`,
-  `standard_names/`, `manifests/` and the filename. Name the destination in
-  the link text (`[excluded source paths](…)`, `[catalog preview](…)`), so the
-  sentence still reads when the link is not clickable. This applies to
-  generated bodies too: a release or report command that composes a body must
-  emit markdown links, and a body assembled by string-concatenating URLs is a
-  defect in that command, not a formatting preference.
 ### Pre-Commit Hook Policy
 
 Pre-commit hooks (if present) MUST be **check-only** and MUST NOT modify
 files. The pre-commit framework's stash/restore cycle is dangerous in
 multi-agent environments. Run format/fix **before** staging:
-
-```bash
-P="pkg/one.py tests/test_one.py"     # exactly the paths THIS commit stages
-uv run ruff check --fix $P           # Lint + autofix, your paths only
-uv run ruff format $P                # Format, your paths only
-git add $P                           # Stage specific files
-git commit -m "type(scope): ..."     # Conventional format
-git pull --no-rebase origin <branch>
-git push origin <branch>
-```
-
 **Scope the fixer to the paths you are staging — never `.`.** A whole-tree
 `ruff check --fix .` / `ruff format .` is only harmless in a repo that is
 already clean. In one carrying any backlog it rewrites files you did not touch,
@@ -237,37 +110,6 @@ rm -rf "$T"
 Count with `--output-format=concise | wc -l`. The summary line ruff prints last
 is the *fixable* tally rather than the finding count, so `tail -1` compares the
 wrong number and reads as equal while the count moved.
-### Branch Hygiene
-
-**Always commit to the project's primary branch.** Never create feature
-or topic branches unilaterally — they exist for two reasons only:
-
-1. The user explicitly asks you to prepare a PR (the user creates the branch).
-2. Sub-agents work in isolated worktrees, not branches — see Fleet
-   Dispatch File-Scoping below.
-
-The primary branch name is declared in the repo's `AGENTS.md`. If the
-repo's `AGENTS.md` is silent, the default is `main`. Common patterns:
-
-| Repo pattern | Primary branch | Declared in |
-|---|---|---|
-| Gitflow (imas-efit, IMAS-Core, …) | `develop` | repo `AGENTS.md` |
-| Trunk-based (imas-ambix, imas-codex, …) | `main` | repo `AGENTS.md` |
-
-If you find yourself on a feature/topic branch from a prior session,
-check out the primary branch before committing new work. To land a
-feature branch into the primary, merge with `--no-ff` (preserves history)
-and push the primary:
-
-```bash
-git checkout <primary>
-git pull --no-rebase origin <primary>
-git merge --no-ff <feature-branch> -m "Merge <feature-branch>"
-git push origin <primary>
-```
-
-Never branch off unilaterally to "isolate" work. Stay on primary; commit
-incrementally; push immediately.
 ### No Stray Clones (binding)
 
 **Never `git clone` a repo into a sibling directory to "work in isolation."**
@@ -276,18 +118,8 @@ peer agents. Incident (2026-06-09, imas-codex): a prior session left
 `imas-codex-clean-derived-parent-repair` (fully redundant) and
 `imas-codex-catalog` (~1.1 MB of never-landed untracked work) as stray
 sibling clones.
-
 - For isolation, use a **git worktree** (`git worktree add`), never a fresh
   clone. Worktrees are tracked, share the object store, and are auto-audited.
-- **Before a session ends**, every clone/worktree must be either (a) fully
-  committed + pushed to the primary branch, or (b) removed if redundant. Never
-  leave untracked/uncommitted work in a sibling directory across sessions.
-- A supervisor finding a stray sibling clone must inventory it
-  (`git status --short`, `git stash list`, `git log origin/main..HEAD`,
-  `git merge-base --is-ancestor HEAD origin/main`) and surface unrecovered work
-  before any deletion. Note: `git fsck` "dangling commit" counts in a clone
-  using shared `alternates` mirror the parent repo's object pool — not lost
-  work; verify with `merge-base`/`origin/main..HEAD`, not the fsck count.
 ### Naming & Comment Hygiene (binding)
 
 **Never leak version numbers, RC tags, plan / issue / bug / ticket / PR

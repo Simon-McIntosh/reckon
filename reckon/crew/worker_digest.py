@@ -12,13 +12,24 @@ declared here so a reader can see what a role does not receive as plainly as
 what it does. Blocks are emitted in canonical order so a digest reads as the
 source does and so two runs over the same source produce the same bytes.
 
+Some canonical blocks are written for a coordinator in a shared checkout: they
+instruct the reader to push, to pick a branch, or to arbitrate a peer's stash.
+A worker dispatches into its own worktree, commits locally, never pushes and
+never picks a branch, so those blocks are withheld, and where only part of a
+block is coordinator-only the whole block is withheld and the worker-binding
+lines are re-admitted from :data:`EXCERPTS` — the commit-message rules, the
+banned commands, the hook policy, and the worktree rule. A digest then states
+the worker's delivery authority once, not twice.
+
 A floor of rules binds every role, because a launch without them is not safe
 at any size: git safety, the commit and delivery rules (explicit-path
 staging, a commit body, no AI attribution), the naming checks, test
 application, the environment rules, and the worker manifest contract.
 :data:`REQUIRED_RULES` pairs each with a marker taken verbatim from the
-canonical file, and :func:`missing_rules` names any a digest does not carry. A
-role adds blocks on top of that floor; it never removes one.
+canonical file, and :func:`missing_rules` names any a digest does not carry.
+:data:`FORBIDDEN_CONTENT` names the coordinator-only delivery instructions a
+digest must not carry. A role adds blocks on top of that floor; it never
+removes one.
 
 The digests are generated artefacts committed under ``reckon/crew/digests/``.
 They are regenerated from the canonical file, not hand-edited, and
@@ -32,6 +43,7 @@ import argparse
 import hashlib
 import re
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 CANONICAL_SOURCE = "~/.agents/AGENTS.md"
@@ -60,22 +72,110 @@ class MissingRuleError(DigestError):
     """A digest does not carry a rule its role is required to retain."""
 
 
+class MissingHeadingError(DigestError):
+    """A digest does not carry a block its role is required to retain."""
+
+
+class CoordinatorContentError(DigestError):
+    """A digest carries coordinator-only delivery text a worker must not get."""
+
+
 class OverBoundError(DigestError):
     """A digest is larger than the stated token bound."""
 
 
-# Blocks shared by every role: git safety and its commit and delivery rules,
-# the worker manifest contract, the test gate, and the environment rules.
+# A sub-range of the canonical file, admitted in place of the whole block that
+# contains it. ``spans`` are inclusive and matched by line prefix, so a span is
+# declared by the words it opens and closes on rather than by a line number.
+Span = tuple[str, str]
+
+
+@dataclass(frozen=True)
+class Excerpt:
+    """The worker-binding part of one canonical block, by header text."""
+
+    header: str
+    note: str
+    spans: tuple[Span, ...]
+
+
+# Blocks whose coordinator-only delivery text is withheld from every worker
+# digest. Each entry is a canonical header; ``EXCERPTS`` re-admits part of one
+# of them, the rest is not retained by any role.
+DROPPED_BLOCKS: tuple[str, ...] = (
+    "### Branch Hygiene",
+    "### Stash Recovery Protocol",
+    "### Pre-Edit Protocol for Shared Files",
+)
+
+EXCERPTS: dict[str, Excerpt] = {
+    "banned-git-commands": Excerpt(
+        header="### Banned Commands",
+        note="the ban table, without the stash-recovery advice",
+        spans=(
+            (
+                "These commands have caused data loss in multi-agent sessions.",
+                "| `git cherry-pick` |",
+            ),
+        ),
+    ),
+    "commit-runtime-rules": Excerpt(
+        header="### Commit Discipline",
+        note="message grammar and authorship, without push timing or branch policy",
+        spans=(
+            (
+                "- **Conventional commits:**",
+                "the first line, not of the whole message.",
+            ),
+            (
+                "- **NEVER add AI attribution to ANY message",
+                "user's; the tooling is not a co-author and never signs its own work.",
+            ),
+            (
+                "- **No plan references in commits.**",
+                "filenames in commit messages or PR titles.",
+            ),
+        ),
+    ),
+    "pre-commit-hooks": Excerpt(
+        header="### Pre-Commit Hook Policy",
+        note="check-only hooks and scoped fixing, without the pull-and-push example",
+        spans=(
+            (
+                "Pre-commit hooks (if present) MUST be **check-only**",
+                "multi-agent environments. Run format/fix **before** staging:",
+            ),
+            (
+                "**Scope the fixer to the paths you are staging",
+                "wrong number and reads as equal while the count moved.",
+            ),
+        ),
+    ),
+    "worktree-isolation": Excerpt(
+        header="### No Stray Clones (binding)",
+        note="worktree isolation, without the end-of-session push inventory",
+        spans=(
+            (
+                "**Never `git clone` a repo into a sibling directory",
+                "sibling clones.",
+            ),
+            (
+                "- For isolation, use a **git worktree**",
+                "clone. Worktrees are tracked, share the object store, and are auto-audited.",
+            ),
+        ),
+    ),
+}
+
+# Blocks shared by every role: git safety and its worker commit and delivery
+# rules, the worker manifest contract, the test gate, and the environment rules.
 _GIT_SAFETY = (
     "## Git Safety",
-    "### Banned Commands",
-    "### Stash Recovery Protocol",
+    "banned-git-commands",
     "### Anomaly Protocol",
-    "### Pre-Edit Protocol for Shared Files",
-    "### Commit Discipline",
-    "### Pre-Commit Hook Policy",
-    "### Branch Hygiene",
-    "### No Stray Clones (binding)",
+    "commit-runtime-rules",
+    "pre-commit-hooks",
+    "worktree-isolation",
 )
 _WORKER_MANIFEST = (
     "## Parallel Agent Safety",
@@ -111,6 +211,7 @@ SECTION_MAP: dict[str, tuple[str, ...]] = {
         "## Compute Infrastructure (SDCC) — never heavy work on the login node (binding)",
         "### On the fleet allocation, run heavy work in place",
         "## Killing Processes On A Shared Login Node (binding)",
+        "## Test Visibility",
     ),
     "test": (
         "## Test Visibility",
@@ -118,6 +219,39 @@ SECTION_MAP: dict[str, tuple[str, ...]] = {
         *_CORE,
         "## Compute Infrastructure (SDCC) — never heavy work on the login node (binding)",
         "### On the fleet allocation, run heavy work in place",
+    ),
+}
+
+# Blocks every role keeps, named here so a case can require them per role.
+FLOOR_HEADINGS: tuple[str, ...] = (
+    "## Git Safety",
+    "### Banned Commands",
+    "### Anomaly Protocol",
+    "### Commit Discipline",
+    "### Pre-Commit Hook Policy",
+    "### No Stray Clones (binding)",
+    "### Naming & Comment Hygiene (binding)",
+    "#### Mandatory pre-stage naming check (binding)",
+    "## Parallel Agent Safety",
+    "## Test Execution Protocol",
+    "## Development Environment (binding, all repos)",
+)
+
+# Blocks a role must add to the floor for its own work.
+ROLE_HEADINGS: dict[str, tuple[str, ...]] = {
+    "report": ("## User-Facing Communication",),
+    "review": (
+        "## Reading a Fleet Monitor Without Being Misled",
+        "## Test Visibility",
+        "## Closing A Fail-Open Guard: Measure What The Suite Was Resting On",
+    ),
+    "implement": (
+        "## Bug and Failure Ownership",
+        "## Test Visibility",
+    ),
+    "test": (
+        "## Test Visibility",
+        "## Bug and Failure Ownership",
     ),
 }
 
@@ -131,7 +265,10 @@ REQUIRED_RULES: tuple[tuple[str, str], ...] = (
         "`git stash` (any form: push, pop, apply, branch, create, store)",
     ),
     ("explicit-path-staging", "stage specific paths only"),
-    ("commit-body", "body-presence check"),
+    (
+        "commit-body",
+        "followed by a blank line and a BODY stating what changed and why",
+    ),
     ("no-ai-attribution", "NEVER add AI attribution to ANY message"),
     ("naming-checks", "Mandatory pre-stage naming check"),
     ("naming-check-paths", "banned labels in the PATHS"),
@@ -141,9 +278,20 @@ REQUIRED_RULES: tuple[tuple[str, str], ...] = (
     ("manifest-contract", "Write the manifest with what you have, then start the wait"),
 )
 
+# Coordinator-only delivery instructions. A worker commits locally and never
+# pushes or picks a branch, so a digest carrying one of these contradicts the
+# worker contract the manifest section states.
+FORBIDDEN_CONTENT: tuple[tuple[str, str], ...] = (
+    ("push-on-commit", "Always commit and push"),
+    ("branch-policy", "Always commit to the project's primary branch"),
+)
+
 # The marker the declared negative control pins: dropping the git-safety block
 # from the map must fail this assertion first.
 GIT_SAFETY_RULE = "git-safety"
+
+# The rule the coordinator-content control pins.
+COORDINATOR_RULE = "push-on-commit"
 
 
 def canonical_path() -> Path:
@@ -178,24 +326,58 @@ def block_map(text: str) -> dict[str, str]:
     }
 
 
-def resolve(keys: Iterable[str], text: str) -> list[str]:
-    """Return the chunks for ``keys`` in canonical order, refusing an absent key."""
+def _line_index(lines: Sequence[str], prefix: str, start: int = 1) -> int:
+    """Index of the first line at or after ``start`` beginning with ``prefix``."""
+    for index in range(start, len(lines)):
+        if lines[index].strip().startswith(prefix):
+            return index
+    raise DigestError(
+        f"canonical source has no line at or after {start} for {prefix!r}"
+    )
+
+
+def _excerpt_chunk(name: str, blocks: Mapping[str, str]) -> str:
+    """The worker-binding spans of one excerpted block, with its header line."""
+    excerpt = EXCERPTS[name]
+    if excerpt.header not in blocks:
+        raise UnknownBlockError(f"canonical source has no block {excerpt.header!r}")
+    lines = blocks[excerpt.header].split("\n")
+    rendered: list[str] = []
+    for first, last in excerpt.spans:
+        start = _line_index(lines, first)
+        end = _line_index(lines, last, start=start + 1)
+        rendered.append("\n".join(lines[start : end + 1]))
+    return "\n".join([excerpt.header, "", *rendered]) + "\n"
+
+
+def select_blocks(keys: Iterable[str], text: str) -> list[tuple[str, str]]:
+    """(canonical header, rendered chunk) for each key, in canonical order.
+
+    A key is either a canonical header, kept whole, or the name of an excerpt
+    in :data:`EXCERPTS`, kept as the spans it declares. Both render under the
+    canonical header they came from, so the digest's list of retained sections
+    names the source block a reader can find.
+    """
     parsed = parse_blocks(text)
     order = {header: index for index, (header, _) in enumerate(parsed)}
-    chunks = block_map(text)
-    selected = []
+    blocks = block_map(text)
+    selected: list[tuple[int, str, str, str]] = []
     for key in keys:
-        if key not in chunks:
+        if key in EXCERPTS:
+            header = EXCERPTS[key].header
+            if header not in blocks:
+                raise UnknownBlockError(f"canonical source has no block {header!r}")
+            selected.append((order[header], key, header, _excerpt_chunk(key, blocks)))
+        elif key in blocks:
+            selected.append((order[key], key, key, blocks[key]))
+        else:
             raise UnknownBlockError(f"canonical source has no block {key!r}")
-        selected.append(key)
-    return [chunks[key] for key in sorted(selected, key=order.__getitem__)]
+    return [(header, chunk) for _, _, header, chunk in sorted(selected)]
 
 
 def retained_headers(keys: Iterable[str], text: str) -> list[str]:
-    """The headers ``keys`` names, in canonical order."""
-    order = {header: index for index, (header, _) in enumerate(parse_blocks(text))}
-    named = [key for key in keys if key in order]
-    return sorted(named, key=order.__getitem__)
+    """The canonical headers ``keys`` retains, in canonical order."""
+    return [header for header, _ in select_blocks(keys, text)]
 
 
 def estimate_tokens(text: str) -> int:
@@ -208,6 +390,18 @@ def missing_rules(digest_text: str) -> list[str]:
     return [name for name, marker in REQUIRED_RULES if marker not in digest_text]
 
 
+def forbidden_content(digest_text: str) -> list[str]:
+    """Coordinator-only markers a digest must not carry but does."""
+    return [marker for _, marker in FORBIDDEN_CONTENT if marker in digest_text]
+
+
+def missing_headings(role: str, digest_text: str) -> list[str]:
+    """Headings the floor and ``role`` require a digest to carry but it does not."""
+    present = {header for header, _ in parse_blocks(digest_text)}
+    required = (*FLOOR_HEADINGS, *ROLE_HEADINGS.get(role, ()))
+    return [header for header in required if header not in present]
+
+
 def generate(
     role: str,
     canonical_text: str,
@@ -218,11 +412,8 @@ def generate(
     mapping = SECTION_MAP if section_map is None else section_map
     if role not in mapping:
         raise KeyError(f"no section map for role {role!r}")
-    retained = retained_headers(mapping[role], canonical_text)
-    if len(retained) != len(set(mapping[role])):
-        absent = sorted(set(mapping[role]) - set(retained))
-        raise UnknownBlockError(f"canonical source has no block(s) {absent!r}")
-    chunks = resolve(mapping[role], canonical_text)
+    selected = select_blocks(mapping[role], canonical_text)
+    retained = [header for header, _ in selected]
     digest_hash = hashlib.sha256(canonical_text.encode("utf-8")).hexdigest()
     source_bytes = len(canonical_text.encode("utf-8"))
     source_tokens = estimate_tokens(canonical_text)
@@ -230,7 +421,9 @@ def generate(
         f"# Worker role digest: {role}",
         "#",
         f"# Generated from {CANONICAL_SOURCE} (sha256 {digest_hash},",
-        f"# {source_bytes} bytes, ~{source_tokens} tokens).",
+        f"# {source_bytes} bytes, ~{source_tokens} — the same policy holds for every",
+        "# role; this digest retains the sections below and withholds the",
+        "# coordinator-only delivery text.",
         "# Regenerate with: python -m reckon.crew.worker_digest",
         "# Edit the canonical file and regenerate; do not hand-edit this file.",
         "#",
@@ -239,7 +432,7 @@ def generate(
         "#",
         "",
     ]
-    return "\n".join(header) + "".join(chunks)
+    return "\n".join(header) + "".join(chunk for _, chunk in selected)
 
 
 def digest_path(role: str, out_dir: Path | None = None) -> Path:
@@ -252,6 +445,20 @@ def check_rules(role: str, digest_text: str) -> None:
     missing = missing_rules(digest_text)
     if missing:
         raise MissingRuleError(f"{role} digest is missing required rules: {missing}")
+    forbidden = forbidden_content(digest_text)
+    if forbidden:
+        raise CoordinatorContentError(
+            f"{role} digest carries coordinator-only content: {forbidden}"
+        )
+
+
+def check_headings(role: str, digest_text: str) -> None:
+    """Refuse a digest that does not carry every heading its role must retain."""
+    missing = missing_headings(role, digest_text)
+    if missing:
+        raise MissingHeadingError(
+            f"{role} digest is missing required blocks: {missing}"
+        )
 
 
 def check_bound(role: str, digest_text: str) -> None:
@@ -274,6 +481,7 @@ def regenerate_all(
     for role in roles:
         text = generate(role, canonical_text)
         check_rules(role, text)
+        check_headings(role, text)
         check_bound(role, text)
         path = digest_path(role, out_dir)
         path.parent.mkdir(parents=True, exist_ok=True)

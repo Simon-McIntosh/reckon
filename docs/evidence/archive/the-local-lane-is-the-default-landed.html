@@ -791,17 +791,17 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     generator never writes the canonical file; it reads it and writes only under
     <code>reckon/crew/digests/</code>.</p>
 
-    <p><strong>A floor binds every role.</strong> Four rules are retained by all of
-    <code>report</code>, <code>review</code>, <code>implement</code> and <code>test</code>,
+    <p><strong>A floor binds every role.</strong> A floor of rules is retained by all of
+    <code>report</code>, <code>review</code>, <code>implement</code>, <code>test</code>,
     because a launch without them is not safe at any size: git safety, the commit and
     delivery rules (explicit-path staging, a commit body, no AI attribution), the naming
     checks, test execution, the environment rules, and the worker manifest contract. Each
     is backed by a marker taken verbatim from the canonical file
     (<code>REQUIRED_RULES</code>), and <code>check_rules</code> refuses a digest missing
     one. The roles then differ by escalation: a review digest adds the fleet-monitor and
-    fail-open-guard blocks; an implementation digest adds the compute, IMAS and
-    bug-ownership blocks; a test digest adds the compute and test-visibility blocks; a
-    report digest adds the user-facing communication block.</p>
+    fail-open-guard blocks; an implementation digest adds the compute, IMAS,
+    bug-ownership and test-visibility blocks; a test digest adds the compute and
+    test-visibility blocks; a report digest adds the user-facing communication block.</p>
 
     <p><strong>Measured 2026-09-25.</strong> Each digest is under the stated
     <code>TOKEN_BOUND</code> of 15,000 and strictly below the source. The bound exists so
@@ -812,18 +812,35 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
       <caption>Digest size against the canonical policy, byte-derived tokens (four bytes per token).</caption>
       <thead><tr><th>Role</th><th>Bytes</th><th>Tokens</th><th>Versus canonical (22,507)</th></tr></thead>
       <tbody>
-        <tr><td><code>report</code></td><td>40,511</td><td>10,128</td><td>55% smaller</td></tr>
-        <tr><td><code>review</code></td><td>44,480</td><td>11,120</td><td>51% smaller</td></tr>
-        <tr><td><code>implement</code></td><td>50,146</td><td>12,537</td><td>44% smaller</td></tr>
-        <tr><td><code>test</code></td><td>45,954</td><td>11,489</td><td>49% smaller</td></tr>
+        <tr><td><code>report</code></td><td>32,394</td><td>8,099</td><td>64% smaller</td></tr>
+        <tr><td><code>review</code></td><td>36,363</td><td>9,091</td><td>60% smaller</td></tr>
+        <tr><td><code>implement</code></td><td>42,931</td><td>10,733</td><td>52% smaller</td></tr>
+        <tr><td><code>test</code></td><td>37,837</td><td>9,460</td><td>58% smaller</td></tr>
       </tbody>
     </table>
 
     <figure>
-      <img src="/reckon/figures/the-local-lane-is-the-default/digest-sizes.png" alt="Four horizontal bars, one per role, each a little over half the height of the dashed line marking the canonical 22,507-token policy: report 10,128 tokens, review 11,120, implement 12,537 and test 11,489, all well below the dotted line marking the 15,000-token bound.">
-      <figcaption>Every role keeps more than half the policy's cost off the first request,
+      <img src="/reckon/figures/the-local-lane-is-the-default/digest-sizes.png" alt="Four horizontal bars, one per role, each well under half the height of the dashed line marking the canonical 22,507-token policy: report 8,099 tokens, review 9,091, implement 10,733 and test 9,460, all far below the dotted line marking the 15,000-token bound.">
+      <figcaption>Every role keeps well over half the policy's cost off the first request,
       and the two roles that write no source save the most.</figcaption>
     </figure>
+
+    <p><strong>Repair after review (2026-09-25).</strong> An independent review at
+    <code>09edcdc2</code> found three defects. The shared map retained the whole
+    <em>Commit Discipline</em> and <em>Branch Hygiene</em> blocks, so every digest told a
+    worker to push and to adopt the project's branch policy before another block said it
+    never pushes &mdash; coordinator-only delivery text in every worker digest. The
+    <code>implement</code> role alone lacked the <em>Test Visibility</em> block. And the
+    gate proved marker strings present without a per-role heading case or a case forbidding
+    coordinator content, so neither defect reddened a case. The map now withholds the
+    coordinator-only blocks and re-admits the worker-binding lines from four excerpts
+    (<code>EXCERPTS</code>): the ban table, the commit-message and authorship rules, the
+    check-only hook policy, and the worktree rule. <code>FORBIDDEN_CONTENT</code> names the
+    withheld delivery instructions (<em>Always commit and push</em>, <em>Always commit to
+    the project's primary branch</em>), <code>missing_headings</code> names a role's own
+    blocks, and <code>check_rules</code>, <code>check_headings</code> and
+    <code>check_bound</code> all run at generation, so a map edit that re-admits the whole
+    policy is refused when it is generated rather than discovered at launch.</p>
 
     <p><strong>The negative control.</strong> The declared mutation is
     <em>drop the git-safety block from the section map; the git-safety marker assertion
@@ -836,19 +853,30 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
     assertion is ordered first so the failure a reader sees is the one the mutation
     names.</p>
 
+    <p>Two further arms cover the repair. The declared mutation is <em>restore the whole
+    Commit Discipline chunk to the shared map; the no-coordinator-content case must fail
+    naming 'Always commit and push'</em>: the arm adds that header back to every role's
+    map, and the coordinator case fails with the marker named, exactly as the review
+    required. The third arm drops the <em>Test Visibility</em> block from the
+    <code>implement</code> map, and the per-role heading case fails naming
+    <code>## Test Visibility</code>. All three arms redden as declared.
+    Log: <code>negative_control_repair.log</code>.</p>
+
     <p><strong>The gate.</strong> <code>tests/test_worker_digest.py</code> passes
-    <code>15</code> cases. They assert the floor against a synthesised policy (portable to
-    any host) and against the canonical file, assert order, determinism, the token bound,
-    that a digest is smaller than its source, that regeneration writes only under the
-    named directory, and that the canonical file is not written. One case compares the
-    committed digests against a fresh generation from the canonical file, so a digest that
-    drifts from the policy is caught rather than shipped. Against base
-    <code>56c466d2</code>, the crew test files show the same four pre-existing failures
+    <code>20</code> cases. They assert the floor against a synthesised policy (portable to
+    any host) and against the canonical file, assert each role's own headings and the
+    absence of coordinator content, assert order, determinism, the token bound, that a
+    digest is smaller than its source, that regeneration writes only under the named
+    directory, and that the canonical file is not written. One case compares the committed
+    digests against a fresh generation from the canonical file, so a digest that drifts
+    from the policy is caught rather than shipped. Against base <code>09edcdc2</code>, the
+    crew test files show the same four pre-existing failures
     (<code>test_crew_lane_agnostic_placement</code>, <code>test_crew_monitor_output</code>,
-    and two in <code>test_crew_placement</code>); head shows four failed and 1,037 passed,
-    each failing id reproduced at base, so this node adds none. Logs:
-    <code>gate.log</code>, <code>head_crew.log</code>, <code>base_ids.log</code>,
-    <code>negative_control.log</code> under
+    head shows four failed and 1,051 passed, and each failing id is reproduced at base, so
+    this node adds none. Logs: <code>gate.log</code>,
+    <code>gate_crew_head_repair.log</code>, <code>gate_crew_base_repair.log</code>,
+    <code>negative_control.log</code>, <code>negative_control_repair.log</code>,
+    <code>figure_repair.log</code> under
     <code>~/.config/reckon/crew/runs/r-20260925T121122479220-worker-digest-generator/</code>.</p>
 
     <p><strong>Open.</strong> The digest is generated and committed but nothing loads it
