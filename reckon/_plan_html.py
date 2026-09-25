@@ -618,6 +618,25 @@ def read_state_file(path: Path) -> dict:
     )
 
 
+def read_state_and_text_file(path: Path) -> tuple[dict, str]:
+    """Return a plan's semantic state and the exact text it was parsed from.
+
+    The state and the text are two halves of one read: ``read_state_file`` and
+    ``_read_plan_text`` are separate memoised lookups, each keyed on its own
+    stat of the file, so a write landing between them pairs one file's state
+    with another file's text. Callers that derive anything from both — the
+    unparsed-section diagnostics read the text against the parsed state — take
+    this pair instead, memoised together on one stat identity.
+    """
+    from reckon.file_memo import memoized
+
+    def compute() -> tuple[dict, str]:
+        text = _read_plan_text(path)
+        return read_state(text), text
+
+    return memoized("read_state_and_text", path, compute)
+
+
 # ── Render ───────────────────────────────────────────────────────────────--
 
 
