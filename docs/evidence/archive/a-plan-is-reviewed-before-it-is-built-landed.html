@@ -102,7 +102,7 @@
     </ul>
     <h3>Gate</h3>
     <p>The gate is <code>pytest -q tests/test_plan_review_store.py</code>, run in the
-    worktree at revision <code>98cbbaeb</code> with the root project interpreter. It reports
+    worktree at revision <code>20e687ae</code> with the root project interpreter. It reports
     <code>6 passed</code> (exit 0). Log:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/gate-plan-review-store.log</code>,
     whose header names the revision, the tree, the command and the imported
@@ -120,8 +120,11 @@ assert '3e7e6496d697...3691bf3c877f2' == '0fa3d0b6b200...08dbdd9a86223'
 FAILED tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it
 1 failed in 0.62s</pre>
     <p>The mutation was then reverted and the file's sha256 re-checked against its
-    pre-mutation digest (<code>6afdda30&hellip;04f5ec68</code>), and the gate re-run green.
-    The red log's first line is the declared mutation verbatim:
+    pre-mutation digest (<code>8df4befe&hellip;b61282d3</code>), and the gate re-run green.
+    The log carries both digests on its own <code># module sha256 before mutation</code> and
+    <code># module sha256 after revert</code> lines, so the restoration is checkable from the
+    artifact rather than from a claim about it. Its first line is the declared mutation
+    verbatim:
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/negative-control-plan-review-store.log</code>.</p>
     <p>The node's earlier control, whose red log is superseded by this one, declared
     <em>plan_fingerprint folds in the version meta, so the metadata-only case must fail</em>
