@@ -48,12 +48,14 @@ return in ``_check_consumer`` for a non-holder, and making ``acquire()`` record
 from __future__ import annotations
 
 import contextlib
+import fcntl
 import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -120,6 +122,13 @@ RELOAD_LAUNCHER_MARKER = "sys.path.insert"
 # prefix is also a comment, so the module parses with the change in place and a
 # reader that imports it mid-window is unaffected.
 _SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
+
+# The cases that force a source change edit one file on disk, and each restores
+# what it read before editing. Two of them running at once can therefore capture
+# and write back each other's edit, leaving the append behind in the tree and
+# comparing against a baseline neither of them set. One worker owns the group, so
+# the cases that touch the source run one at a time.
+SOURCE_CHANGE_GROUP = "follower-source-change"
 
 # The stub process stands for one arming session. It starts one follower and
 # then waits to be killed, so the follower's owner is a real parent the test can
@@ -568,6 +577,27 @@ def _wait_until_looping(home: Path, pid: int, *, tag: str) -> None:
     )
 
 
+@contextlib.contextmanager
+def _source_mutation_window():
+    """Hold the one window in which a case may edit the source the follower stamps.
+
+    The stamp is computed over the imported package, so every case that forces a
+    reload edits a path all pytest workers share. Two of them editing at once can
+    read each other's append as their own baseline and write it back after their
+    restore, which leaves the change in the tree and has the follower compared
+    against a stamp neither case set. The distributor does not keep these cases
+    apart on its own — spreading by load is its default — so the window is held
+    under an exclusive lock instead.
+    """
+    lock_path = Path(tempfile.gettempdir()) / "reckon-follower-source-change.lock"
+    with lock_path.open("a+") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 def _force_source_change() -> tuple[bytes, int, int]:
     """Advance the follower's source stamp with a real content change.
 
@@ -657,6 +687,7 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
     assert max(holder_elapsed, read_only_elapsed) <= EXIT_WITHIN_SECONDS
 
 
+@pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
 def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> None:
     """A follower that replaced its image still exits after the owner dies.
 
@@ -681,27 +712,32 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
     owner: subprocess.Popen | None = None
     follower_pid: int | None = None
     restore: tuple[bytes, int, int] | None = None
-    try:
-        owner, pid_path = _start_stub(home, home, "reload")
-        follower_pid = _follower_pid(pid_path, owner, "reload")
-        _wait_until_holder(
-            follower_pid, deadline=time.monotonic() + ARM_WITHIN_SECONDS, tag="reload"
-        )
+    with _source_mutation_window():
+        try:
+            owner, pid_path = _start_stub(home, home, "reload")
+            follower_pid = _follower_pid(pid_path, owner, "reload")
+            _wait_until_holder(
+                follower_pid,
+                deadline=time.monotonic() + ARM_WITHIN_SECONDS,
+                tag="reload",
+            )
 
-        _wait_until_looping(home, follower_pid, tag="reload")
+            _wait_until_looping(home, follower_pid, tag="reload")
 
-        restore = _force_source_change()
-        _observe_reload(follower_pid, tag="reload")
+            restore = _force_source_change()
+            _observe_reload(follower_pid, tag="reload")
 
-        _kill_and_reap(owner)
-        elapsed = _wait_until_left_after_reload(follower_pid, tag="reloaded follower")
-    finally:
-        if follower_pid is not None and not _exited(follower_pid):
-            with contextlib.suppress(ProcessLookupError):
-                os.kill(follower_pid, 9)
-        _kill(owner)
-        if restore is not None:
-            _restore_source_bytes(restore)
+            _kill_and_reap(owner)
+            elapsed = _wait_until_left_after_reload(
+                follower_pid, tag="reloaded follower"
+            )
+        finally:
+            if follower_pid is not None and not _exited(follower_pid):
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(follower_pid, 9)
+            _kill(owner)
+            if restore is not None:
+                _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "
@@ -710,6 +746,7 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
     assert elapsed <= RELOAD_EXIT_WITHIN_SECONDS
 
 
+@pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
 def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     """A follower re-parented to a live process still leaves on its dead owner.
 
@@ -738,44 +775,49 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     follower_pid: int | None = None
     stub_pid: int | None = None
     restore: tuple[bytes, int, int] | None = None
-    try:
-        subreaper, stub_pid_path, pid_path = _start_subreaper_stub(home, home, "orphan")
-        follower_pid = _follower_pid(pid_path, subreaper, "orphan")
-        _wait_until_holder(
-            follower_pid, deadline=time.monotonic() + ARM_WITHIN_SECONDS, tag="orphan"
-        )
-        _wait_until_looping(home, follower_pid, tag="orphan")
+    with _source_mutation_window():
+        try:
+            subreaper, stub_pid_path, pid_path = _start_subreaper_stub(
+                home, home, "orphan"
+            )
+            follower_pid = _follower_pid(pid_path, subreaper, "orphan")
+            _wait_until_holder(
+                follower_pid,
+                deadline=time.monotonic() + ARM_WITHIN_SECONDS,
+                tag="orphan",
+            )
+            _wait_until_looping(home, follower_pid, tag="orphan")
 
-        os.kill(follower_pid, SIGSTOP)
-        _wait_until_stopped(follower_pid, tag="orphan")
+            os.kill(follower_pid, SIGSTOP)
+            _wait_until_stopped(follower_pid, tag="orphan")
 
-        stub_pid = _read_pid(stub_pid_path, subreaper, "orphan")
-        os.kill(stub_pid, 9)
-        _wait_until_gone(stub_pid, tag="arming stub")
+            stub_pid = _read_pid(stub_pid_path, subreaper, "orphan")
+            os.kill(stub_pid, 9)
+            _wait_until_gone(stub_pid, tag="arming stub")
 
-        adopted_by = _process_ppid(follower_pid)
-        assert adopted_by == str(subreaper.pid), (
-            "the follower must be adopted by the live subreaper before it is "
-            f"resumed; its parent is {adopted_by!r}, not {subreaper.pid}"
-        )
+            adopted_by = _process_ppid(follower_pid)
+            assert adopted_by == str(subreaper.pid), (
+                "the follower must be adopted by the live subreaper before it is "
+                f"resumed; its parent is {adopted_by!r}, not {subreaper.pid}"
+            )
 
-        restore = _force_source_change()
-        time.sleep(SETTLE_SECONDS)
+            restore = _force_source_change()
+            time.sleep(SETTLE_SECONDS)
 
-        os.kill(follower_pid, SIGCONT)
-        saw_reload, elapsed = _wait_until_reloaded_then_exited(
-            follower_pid, tag="re-parented follower"
-        )
-    finally:
-        if follower_pid is not None and not _exited(follower_pid):
-            with contextlib.suppress(ProcessLookupError):
-                os.kill(follower_pid, 9)
-        if stub_pid is not None:
-            with contextlib.suppress(ProcessLookupError):
-                os.kill(stub_pid, 9)
-        _kill(subreaper)
-        if restore is not None:
-            _restore_source_bytes(restore)
+            os.kill(follower_pid, SIGCONT)
+            saw_reload, elapsed = _wait_until_reloaded_then_exited(
+                follower_pid, tag="re-parented follower"
+            )
+        finally:
+            if follower_pid is not None and not _exited(follower_pid):
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(follower_pid, 9)
+            if stub_pid is not None:
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(stub_pid, 9)
+            _kill(subreaper)
+            if restore is not None:
+                _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "
