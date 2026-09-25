@@ -22,6 +22,8 @@ CLOSURE_SLUG = "closure-held"
 DECISION_SLUG = "decision-held"
 OPEN_SLUG = "open-decision"
 
+DECISION_CHOICE = {"accept-outcome": {"title": "Accept the outcome?"}}
+
 CLOSURE_GATE = {
     "id": "outcome-gate",
     "section": "implementation",
@@ -61,26 +63,12 @@ def _plan_state(slug: str, gate: dict | None, decisions: dict | None = None) -> 
     return state
 
 
-@pytest.fixture()
-def project_tree(tmp_path, monkeypatch):
-    """One temporary project: a closure-held plan and a decision-held plan."""
+def _materialise_project(tmp_path, monkeypatch, fixtures: dict[str, dict]):
+    """Write one temporary project holding the named plans."""
 
     docs_dir = tmp_path / "docs"
     plans_dir = docs_dir / "plans"
     plans_dir.mkdir(parents=True)
-    fixtures = {
-        CLOSURE_SLUG: _plan_state(CLOSURE_SLUG, CLOSURE_GATE),
-        DECISION_SLUG: _plan_state(
-            DECISION_SLUG,
-            DECISION_GATE,
-            {"accept-outcome": {"title": "Accept the outcome?"}},
-        ),
-        # A decision with no transition edge is still unanswered work: nothing
-        # but the transition split may move it out of the blocked set.
-        OPEN_SLUG: _plan_state(
-            OPEN_SLUG, None, {"accept-outcome": {"title": "Accept?"}}
-        ),
-    }
     for slug, state in fixtures.items():
         (plans_dir / f"{slug}.html").write_text(
             write_state(new_plan_html(PROJECT, slug), state), encoding="utf-8"
@@ -99,6 +87,40 @@ def project_tree(tmp_path, monkeypatch):
         mcp_views, "partition_live_runs", lambda *args, **kwargs: ({}, {})
     )
     serve._DISC_CACHE.clear()
+    return docs_dir
+
+
+@pytest.fixture()
+def project_tree(tmp_path, monkeypatch):
+    """One temporary project: a closure-held plan and a decision-held plan."""
+
+    docs_dir = _materialise_project(
+        tmp_path,
+        monkeypatch,
+        {
+            CLOSURE_SLUG: _plan_state(CLOSURE_SLUG, CLOSURE_GATE),
+            DECISION_SLUG: _plan_state(DECISION_SLUG, DECISION_GATE, DECISION_CHOICE),
+            # A decision with no transition edge is still unanswered work:
+            # nothing but the transition split may move it out of the blocked
+            # set.
+            OPEN_SLUG: _plan_state(
+                OPEN_SLUG, None, {"accept-outcome": {"title": "Accept?"}}
+            ),
+        },
+    )
+    yield docs_dir
+    serve._DISC_CACHE.clear()
+
+
+@pytest.fixture()
+def gated_decision_tree(tmp_path, monkeypatch):
+    """One project whose only decision is held by a transition edge."""
+
+    docs_dir = _materialise_project(
+        tmp_path,
+        monkeypatch,
+        {DECISION_SLUG: _plan_state(DECISION_SLUG, DECISION_GATE, DECISION_CHOICE)},
+    )
     yield docs_dir
     serve._DISC_CACHE.clear()
 
@@ -196,3 +218,31 @@ def test_the_repair_is_scoped_to_the_transition_split(project_tree):
     assert OPEN_SLUG not in [row["slug"] for row in report["ready_now"]]
     row = next(row for row in report["pending_work"] if row["slug"] == OPEN_SLUG)
     assert [item["status"] for item in row["decision_blockers"]] == ["open"]
+
+
+def test_a_gated_decision_does_not_block_its_own_plan(gated_decision_tree):
+    """The row's effective status consumes open decisions, not held ones.
+
+    The gated decision stays reported in ``decision_blockers`` so the edge
+    remains visible; only its own plan's status must ignore it.
+    """
+
+    row = _roadmap_row(gated_decision_tree, DECISION_SLUG)
+
+    assert [item["status"] for item in row["decision_blockers"]] == ["gated"]
+    assert row["gate_blockers"] == []
+    assert row["effective_status"] == "active"
+
+
+def test_a_gated_decision_is_not_counted_open_in_the_payload(gated_decision_tree):
+    """The payload's decision tally counts open rows, not held ones.
+
+    The held decision is still reported as an unsettled blocker row, so the
+    open count is the only place the two are told apart.
+    """
+
+    report = _roadmap_report(gated_decision_tree)
+
+    assert [item["status"] for item in report["decision_blockers"]] == ["gated"]
+    assert report["decision_readiness"]["ready"] is False
+    assert report["decision_readiness"]["open"] == 0

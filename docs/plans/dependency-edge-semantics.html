@@ -265,6 +265,29 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <aside id="closure-split-narrowings-guarded">
+      <p><strong>Worker implementation, 2026-09-25:</strong> the two narrowings the review
+      of the split landing left unguarded now carry one case each, and no source changed.
+      Both are asserted on a project whose only decision is held by a pending
+      decision-lockable gate: the roadmap row's <code>effective_status</code> stays
+      <code>active</code> while the held row remains reported in
+      <code>decision_blockers</code>, and the payload's
+      <code>decision_readiness.open</code> reads zero while the same held row is still
+      counted among the payload's reported blockers.</p>
+      <p><strong>Declared negative control:</strong> restoring <code>decision_blockers</code>
+      in the <code>effective_status</code> list makes the first case fail
+      (<code>assert 'blocked' == 'active'</code>); restoring
+      <code>decision_blockers_report</code> in the decision tally makes the second fail
+      (<code>assert 1 == 0</code>). Each arm ran alone over the whole test file in a
+      scratch export of the head — <code>1 failed, 4 passed</code> per arm, with the
+      unmutated export at <code>5 passed</code> — so each mutation trips exactly its own
+      case. <strong>The gate:</strong>
+      <code>tests/test_transition_gates_read_alike.py</code> and
+      <code>tests/test_closure_gates.py</code> pass, 38 passed.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#closure-split-narrowings-guarded">guard evidence and both negative-control arms</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
