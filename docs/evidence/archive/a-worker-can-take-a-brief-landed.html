@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-can-take-a-brief-landed">
+  <meta name="plan-title" content="A Worker Can Take A Brief &mdash; landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
+  <meta name="plan-verifies" content="a-worker-can-take-a-brief#s3">
+  <meta name="plan-commits" content="488d3e92">
+  <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment on a fleet compute node (Python 3.14), real composition via reckon.crew.prompts.compose_prompt">
+  <meta name="plan-tags" content="crew,dispatch,prompt,brief,verification">
+  <title>A Worker Can Take A Brief &mdash; landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Worker Can Take A Brief &mdash; cumulative execution record</h1>
+    <p>
+      One anchor per landed node: the commit, the gate measure as executed, the tests, and anything
+      negative found on the way. The evergreen plan holds the design; this record holds what
+      happened.
+    </p>
+
+    <section id="s3">
+      <h2>&sect;3 &mdash; The prompt carries the brief where the plan section was</h2>
+      <p>
+        Commit <code>488d3e92</code> on the base revision <code>e731091f</code> makes
+        <code>compose_prompt</code> in <code>reckon/crew/prompts.py</code> take an optional
+        <code>brief</code>. When it is non-empty the composed prompt carries the brief text
+        verbatim where the plan-section read instruction sits &mdash; the task-authority slot that
+        otherwise reads <code>PLAN     &lt;project&gt;:&lt;plan&gt; &lt;section&gt;</code> &mdash;
+        and selects the brief landing contract, which sends the record to the run's own directory
+        rather than to a plan section. Every other slot is composed identically for both carriers:
+        the four fences, the durable-write and falsifiable-evidence contracts, the manifest key
+        list, the closure authority, the negative-control declaration, and the landing contract's
+        figure convention and meta-line ban.
+      </p>
+      <table>
+      <thead><tr><th>Prompt slot</th><th>Plan carrier (<code>--plan</code> + <code>--section</code>)</th><th>Brief carrier (<code>--brief</code>)</th></tr></thead>
+      <tbody>
+        <tr><td>Task authority</td><td><code>PLAN proj:plan-a s3</code></td><td><code>BRIEF</code> followed by the brief, verbatim</td></tr>
+        <tr><td>Landing destination</td><td>the plan's own section plus the cumulative evidence record</td><td>this run's own directory</td></tr>
+      </tbody>
+    </table>
+    <p>Every other slot is composed identically for both carriers: node and goal, role, done-when and budget, the contracts, the landing rules on figures and meta lines, the four fences, the manifest keys and the peer channel. With an empty brief the composed prompt is byte-identical to its output before the change.</p>
+      <h3>The gate measures, as executed</h3>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate <code>tests/test_brief_prompt.py</code> at <code>488d3e92</code></td>
+            <td><strong>11 passed</strong>, exit 0</td>
+          </tr>
+          <tr>
+            <td>Regression over the 16 prompt and manifest test modules</td>
+            <td><strong>129 passed</strong>, exit 0</td>
+          </tr>
+          <tr>
+            <td>Byte-identity of the plan prompt</td>
+            <td>an inline pre-change snapshot of the composed plan prompt, taken under a pinned
+            interpreter, compares the live composition byte for byte; with an empty brief the
+            composed plan prompt is byte-identical, differing at no byte</td>
+          </tr>
+          <tr>
+            <td>Negative control</td>
+            <td>with the brief branch also emitting the <code>PLAN</code> line:
+            <code>test_a_brief_prompt_carries_no_plan_section_read_instruction</code> fails, 10 of
+            11 pass, exit 1</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Scope of this measure.</strong> The gate measures this node's own change only.
+        Verifying the merged result belongs to a separately dispatched test node; a failure
+        outside the declared scope is reported as a follow-on rather than triaged here.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
