@@ -793,8 +793,8 @@ def test_a_followers_trailing_figures_count_only_the_session_it_was_given(
     )
     scoped = recovery.format_watch_transition(event, session="mine")
     unscoped = recovery.format_watch_transition(event)
-    assert " 1w· 0b· 0u" in scoped, scoped
-    assert " 2w· 1b· 0u" in unscoped, unscoped
+    assert " 1w 0b 0u" in scoped, scoped
+    assert " 2w 1b 0u" in unscoped, unscoped
     assert scoped != unscoped
 
 
