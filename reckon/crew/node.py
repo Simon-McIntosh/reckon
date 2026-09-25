@@ -646,10 +646,11 @@ def parse_duration(value: str) -> int:
 
 
 # A role that may not write repository source is refused the moment it declares
-# a path that resolves inside a repository — at dispatch, before any worktree
+# a path outside its own delivery roots — at dispatch, before any worktree
 # exists — rather than at promotion where the worker time is already spent. The
 # role's own dispatched default is its run directory, which lies outside the
-# repository, so only a scope that reaches into source is refused.
+# repository, so only a scope that reaches into source, or away from the
+# delivery roots entirely, is refused.
 REPOSITORY_WRITE_RESTRICTED_ROLES = frozenset({"test"})
 
 
@@ -667,35 +668,110 @@ def role_may_write_repository_paths(role: str) -> bool:
     return str(role or "").strip() not in REPOSITORY_WRITE_RESTRICTED_ROLES
 
 
-def _declared_repository_paths(
-    paths: Iterable[str], *, manifest_path: str = ""
-) -> list[str]:
-    """Return declared paths that resolve inside a repository.
+def _dispatch_repository() -> Path:
+    """Return the repository a dispatch-time scope check judges paths against.
 
-    A node's own delivery — its run directory, the manifest it documents, and
-    the shared reports root — are the only absolute paths that are provably
-    outside every repository, so those escape the reach of the worker's
-    checkout. A relative path has nowhere to resolve but inside the checkout,
-    which is the repository, and an absolute path outside the delivery paths
-    is refused rather than guessed at.
+    The check runs before any worktree exists, so the only checkout a caller's
+    paths can be compared with is the one its working directory belongs to —
+    and a linked worktree answers with the repository it was cut from, so two
+    spellings of one repository do not read as two.
+    """
+    working = Path.cwd()
+    return repository_identity(working) or working.resolve()
+
+
+def _delivery_write_roots(manifest_path: str = "") -> tuple[Path, ...]:
+    """Return the roots a restricted role's delivery may use outside the repository.
+
+    The node's own run directory, the shared reports root, and the manifest it
+    documents when that lies elsewhere are the paths a read-only role writes.
+    They are enumerated here so the refusal can name the list it matched a
+    declared path against rather than describe a conclusion drawn from it.
     """
     from reckon.crew.runs import reports_dir, runs_dir
 
-    delivery_paths: list[Path] = [runs_dir(), reports_dir()]
+    roots: list[Path] = [runs_dir(), reports_dir()]
     manifest = Path(str(manifest_path or "")).expanduser()
     if manifest.is_absolute():
-        delivery_paths.append(manifest)
-    delivery_roots = tuple(root.resolve() for root in delivery_paths)
+        roots.append(manifest)
+    return tuple(root.resolve() for root in roots)
+
+
+def _compose_write_scope_refusal(
+    role: str,
+    repository_paths: list[str],
+    outside_roots: list[str],
+    *,
+    repository: Path,
+    delivery_roots: tuple[Path, ...],
+) -> str:
+    """Compose the refusal for a declared scope a role may not write.
+
+    The two cases are separated because they call for opposite corrections. A
+    path inside the repository is a scope error only an implement node
+    resolves. A path outside every delivery root is a path to move under one of
+    the roots this role does have, which is not a repository path at all. Each
+    clause names the list it was matched against, so the message reports the
+    check that was made rather than a claim about where the path lives.
+    """
+    clauses: list[str] = []
+    if repository_paths:
+        verb = "resolves" if len(repository_paths) == 1 else "resolve"
+        clauses.append(
+            f"{', '.join(repository_paths)} {verb} inside the repository "
+            f"{repository}; a verifier writes only its manifest, report and "
+            "logs, which live outside it — dispatch an implement node for "
+            "source edits"
+        )
+    if outside_roots:
+        verb = "is" if len(outside_roots) == 1 else "are"
+        declared = ", ".join(outside_roots)
+        roots = ", ".join(str(root) for root in delivery_roots)
+        clauses.append(
+            f"{declared} {verb} outside the repository {repository} and "
+            f"outside every delivery root this role may write ({roots}); "
+            "declare the path under one of those roots, or dispatch an "
+            "implement node when the work changes the worktree"
+        )
+    return f"role {role!r} may not write repository paths — " + "; ".join(clauses)
+
+
+def write_scope_refusal(node: TaskNode) -> str | None:
+    """Return the refusal for a declared write scope a role may not hold.
+
+    A path admitted by the role's delivery roots is left alone. A repository
+    path and a path outside every delivery root are refused, and are kept apart
+    in the refusal because only the first of them is a path inside the
+    repository — a caller correcting a scratch path is not being asked to hand
+    source edits to an implement node.
+    """
+    repository = _dispatch_repository()
+    delivery_roots = _delivery_write_roots(node.manifest_path)
     repository_paths: list[str] = []
-    for raw in paths:
-        path = Path(str(raw)).expanduser()
-        if not path.is_absolute():
+    outside_roots: list[str] = []
+    for raw in node.write_paths:
+        declared = Path(str(raw)).expanduser()
+        if not declared.is_absolute():
+            # A relative path resolves against the worker's checkout and has
+            # nowhere else to go, so it is a repository path by construction.
             repository_paths.append(str(raw))
             continue
-        if any(path.resolve().is_relative_to(root) for root in delivery_roots):
+        resolved = declared.resolve()
+        if any(resolved.is_relative_to(root) for root in delivery_roots):
             continue
-        repository_paths.append(str(raw))
-    return repository_paths
+        if resolved.is_relative_to(repository):
+            repository_paths.append(str(raw))
+        else:
+            outside_roots.append(str(raw))
+    if not repository_paths and not outside_roots:
+        return None
+    return _compose_write_scope_refusal(
+        node.role,
+        repository_paths,
+        outside_roots,
+        repository=repository,
+        delivery_roots=delivery_roots,
+    )
 
 
 # ── A node that writes a check declares the mutation it fails against ───────
@@ -976,18 +1052,9 @@ def validate_node(
                     "serialise the nodes or split the file",
                 )
         if not role_may_write_repository_paths(node.role):
-            repository_paths = _declared_repository_paths(
-                node.write_paths, manifest_path=node.manifest_path
-            )
-            if repository_paths:
-                fail(
-                    "scoped",
-                    f"role {node.role!r} may not write repository paths, but "
-                    f"{', '.join(repository_paths)} resolve inside the "
-                    "repository; a verifier writes only its manifest, report "
-                    "and logs, which live outside it — dispatch an implement "
-                    "node for source edits",
-                )
+            refusal = write_scope_refusal(node)
+            if refusal is not None:
+                fail("scoped", refusal)
 
     if not node.time_budget:
         fail("bounded", "no time budget is set")
