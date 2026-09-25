@@ -64,7 +64,9 @@ def _reason_start(model_width: int) -> int:
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
     )
-    start += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
+    start += sum(3 for _ in ticker_module._MAX_CELLS) + (
+        len(ticker_module._MAX_CELLS) - 1
+    )
     return start + ticker_module.SPEND_GAP + ticker_module.WALL + ticker_module.GAP
 
 

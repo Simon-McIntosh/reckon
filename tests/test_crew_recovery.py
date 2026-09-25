@@ -2398,7 +2398,9 @@ def _spend_column(model_width: int) -> tuple[int, int]:
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
     )
-    prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
+    prefix += sum(3 for _ in ticker_module._MAX_CELLS) + (
+        len(ticker_module._MAX_CELLS) - 1
+    )
     prefix += ticker_module.SPEND_GAP
     return (prefix, ticker_module.WALL)
 

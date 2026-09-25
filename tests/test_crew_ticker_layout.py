@@ -247,23 +247,30 @@ def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it():
     assert ticker_module._DIM + " 0q" in line
 
 
-def test_the_baseline_marker_is_a_word_the_row_does_not_use_elsewhere(grid):
-    """The marker must say something no other cell repeats.
+def test_the_retired_baseline_marker_never_marks_a_row(grid):
+    """The inventory marker word is retired, and the state cell holds its column.
 
     A bullet at small size was read as a fresh dispatch, and a glyph the
     counters already separate their numbers with would put several
-    indistinguishable marks on one row. The word is what the record is.
+    indistinguishable marks on one row. The word that replaced the bullet is
+    itself gone: the state cell names the state, which is the fact a reader
+    scans for, and the column the marker cell once held is carried by the
+    state cell's own fixed width instead of by a cell ahead of it.
     """
     row = plain(grid.render(_event(event="baseline", to_state="working")))
-    assert row.count(ticker_module.BASELINE_MARKER) == 1
-    assert row.index(ticker_module.BASELINE_MARKER) < row.index("working")
+    transition = plain(grid.render(_event(to_state="working")))
+    # The retired word marks neither the inventory row nor a transition.
+    assert ticker_module.BASELINE_MARKER not in row
+    assert ticker_module.BASELINE_MARKER not in transition
+    assert not re.search(r"\bnow\b", row)
+    # The state cell lands on one screen column whether the record is inventory
+    # or news, so a reader scanning the state column finds it wherever the word
+    # once sat ahead of it.
+    assert row.index("working") == transition.index("working")
     # No glyph marks the record: not the arrow the transition used to carry,
     # and not the bullet the baseline used to.
     assert "→" not in row
     assert "\N{BULLET}" not in row
-    # And the marker is the baseline's alone.
-    transition = plain(grid.render(_event(to_state="working")))
-    assert ticker_module.BASELINE_MARKER not in transition
 
 
 def test_the_state_cell_holds_its_column_when_there_is_no_previous_state(grid):
@@ -1209,7 +1216,9 @@ def _measure_column(model_width: int) -> tuple[int, int]:
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
     )
-    prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
+    prefix += sum(3 for _ in ticker_module._MAX_CELLS) + (
+        len(ticker_module._MAX_CELLS) - 1
+    )
     prefix += ticker_module.SPEND_GAP
     return (prefix, ticker_module.WALL)
 
