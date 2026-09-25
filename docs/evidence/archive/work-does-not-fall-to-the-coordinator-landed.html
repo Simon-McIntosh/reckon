@@ -2344,6 +2344,79 @@ AGREE: False</code></pre>
     restore and the green re-run). No figure accompanies this record: the change is a declaration and the
     readings are quoted values, which a table carries and a drawing would not.</p>
   </section>
+
+  <section id="the-two-red-cases-were-already-repaired">
+    <h2>&sect;11 &mdash; The two red cases were already repaired before the node that named them</h2>
+    <p><strong>The recorded defect does not reproduce at the dispatch base, and the record says which
+    commit discharged it.</strong> Both ids fetch as passed at <code>c473be21</code>: each file whole is
+    <strong>7 passed</strong> and the declared cohort &mdash; <code>tests/test_crew_negative_control_header.py</code>,
+    <code>tests/test_crew_negative_control_interface.py</code>, <code>tests/test_crew_prompts.py</code>,
+    <code>tests/test_crew_promotion.py</code> &mdash; is <strong>80 passed, 0 failed</strong> at that same
+    base, so the cohort's added-failure set is empty by measurement rather than by silence. The repair is
+    <code>4e813fec</code> (2026-09-24 21:49), an ancestor of the base: the header fixture gained
+    <code>review_waiver=REVIEW_WAIVER</code>, the reason the run lands without a review, and the interface
+    case's assertions moved from the nickname <em>red log</em> to the discrimination the gloss carries.
+    The followup naming both cases was written 2026-09-22T21:35Z, two days before that commit, which is
+    the whole of the discrepancy: the followup was dispatched as open work against a base where it was
+    already discharged.</p>
+
+    <h3>Which side was wrong, measured rather than assumed</h3>
+    <p>Both repairs are test-side. The ordering that forced the fixture repair is deliberate: the review
+    gate runs in <code>complete</code> (<code>promotion.py:2581</code>, landed 2026-09-21 as
+    <code>2986f5d1</code>, before the followup's own base) and its refusal names its discharge
+    <code>--waive-unreviewed-promotion REASON</code>, while <code>_complete_locked</code> reaches
+    <code>_require_declared_negative_control</code> at <code>promotion.py:3904</code>. The template side is
+    not wrong either: the gloss at <code>prompts.py:391</code> has said <em>the log's first line repeats
+    the declared mutation verbatim, so a log that failed for any other reason is refused</em> &mdash; the
+    wording the refused case's input carries &mdash; since before the followup's base, so the assertion
+    was pinned to a nickname the template never used and the one-word decision the followup left open is
+    answered in favour of the template.</p>
+
+    <h3>The base arm, shown to see red</h3>
+    <table>
+      <thead><tr><th>Arm (tree: <code>git archive</code> of <code>c473be21</code> in <code>/tmp</code>)</th><th>Result</th><th>Failing ids</th></tr></thead>
+      <tbody>
+        <tr><td>pre-repair test files (<code>4e813fec^</code>) over dispatch-base source</td><td><strong>2 failed</strong></td><td>both named ids, and only those</td></tr>
+        <tr><td>dispatch-base test files over the same source</td><td><strong>2 passed</strong></td><td>none</td></tr>
+      </tbody>
+    </table>
+    <p>The two failures are the followup's two sentences reproduced. The header case meets the
+    unreviewed-run refusal &mdash; <em>run &hellip; is classified scoring because no complete independent
+    review is stored</em> &mdash; instead of the negative-control one, and the interface case fails on
+    <code>assert "red log" in gloss</code> against the sentence the gloss has carried throughout. Both
+    arms printed <code>reckon.__file__</code> under the scratch tree and the resolved working directory
+    beside it, so neither reading can have come from the main checkout. Losing the two test-file hunks and
+    nothing else is what turns the arm red, so the two hunks are the whole of the change.</p>
+
+    <h3>Falsified before trusting the green</h3>
+    <p>Each case is reddened by the sentence it measures being absent, on the current source. Removing
+    <em>with its first line repeating that mutation verbatim</em> from the refusal at
+    <code>promotion.py:3604</code> reddens <strong>1 failed</strong> &mdash; the header case alone, with its
+    sibling mismatch case still passing, because the mutation is aimed at the wording and not at the
+    guard. The source was restored from the copy taken before the mutation (<code>cmp</code> identical,
+    <code>git diff</code> empty at that path) and the case re-run green at the same revision. Deleting the
+    gloss sentence in memory &mdash; <code>reckon/crew/prompts.py</code> is outside this node's fence and
+    held by a live peer, so no file was written &mdash; turns all four assertions of the interface case
+    false against the composed string.</p>
+
+    <h3>What this node landed</h3>
+    <p>No source and no test file. Both cases pass at the base, the cohort adds no failure, and the
+    falsifications hold, so the deliverable is the measurement and these records: the followup's substance
+    is discharged by <code>4e813fec</code> and the plan's surface needs no further change. The control the
+    node was dispatched with declared the dispatch base red and the base log its control; that premise
+    does not hold, and it is recorded here as measured rather than as declared. Nothing outside the
+    declared fence was written; the two scratch trees live under <code>/tmp</code> and the receipts under
+    the run directory, listed below. Measured revision <code>c473be21</code>; no head revision of its own.
+    Receipts: <code>~/.config/reckon/crew/runs/r-20260925T065053546333-two-red-negative-control-cases-repaired/logs/</code>
+    &mdash; <code>cohort-base.log</code> (revision, tree and command on its header lines; 80 passed, no
+    <code>FAILED</code> line), <code>overlay-pre-repair-files.log</code> and
+    <code>overlay-current-files.log</code> (both naming the scratch tree, the imported module and the
+    resolved cwd), <code>refusal-wording-mutation.red.log</code> (the executed mutation on its first
+    line, the one failure, the restore and the green re-run), <code>gloss-mutation-in-memory.red.log</code>
+    and <code>restored-green.log</code>. No figure accompanies this record: the content is a red-to-green
+    transition over two file hunks and a pair of refusal messages, which the table and the quoted
+    assertions carry.</p>
+  </section>
   </main>
 </body>
 </html>

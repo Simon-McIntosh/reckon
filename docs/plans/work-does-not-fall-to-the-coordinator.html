@@ -882,6 +882,44 @@
     message does not cover. Full record:
     <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-schema-declares-the-measurement-keys">the cumulative evidence</a>.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-25 &mdash; the two cases named on this surface were
+    already green at the dispatch base, repaired two days before the followup was picked up.</strong> Both
+    fetch as passed at <code>c473be21</code> &mdash; each file whole is <strong>7 passed</strong> and the
+    prompts-and-negative-control cohort is <strong>80 passed, 0 failed</strong> &mdash; so the reported red
+    state does not reproduce there. The repair is <code>4e813fec</code> (2026-09-24), an ancestor of the
+    base and two days younger than the followup: the refusal case's fixture now states the reason the run
+    lands without a review, which is what the CLI takes as <code>--waive-unreviewed-promotion</code>, and
+    the template case asserts the discrimination the gloss actually carries rather than the nickname
+    <em>red log</em>.</p>
+
+    <p><strong>Which side was wrong, answered for both rather than assumed.</strong> Both repairs are
+    test-side, and the ordering that forced the fixture repair is correct, not the defect: the review gate
+    runs at <code>promotion.py:2581</code> inside <code>complete</code>, before
+    <code>_complete_locked</code> reaches the negative-control discharge at <code>promotion.py:3904</code>,
+    and its refusal names the discharge (<code>--waive-unreviewed-promotion REASON</code>) rather than
+    blocking the caller. The template side is not wrong either: the gloss has said <em>the log's first line
+    repeats the declared mutation verbatim, so a log that failed for any other reason is refused</em> since
+    before the followup's own base, so the assertion was pinned to a nickname the template never used.</p>
+
+    <p><strong>Shown red before being trusted green, at the dispatch base rather than at the followup's
+    revisions.</strong> The pre-repair forms of the two files (<code>4e813fec^</code>) over the dispatch
+    base's source redden <strong>exactly those two ids, 2 failed</strong>: the header case meets the
+    unreviewed-run refusal (<em>classified scoring because no complete independent review is stored</em>)
+    instead of the negative-control one, and the interface case fails on
+    <code>assert "red log" in gloss</code> against the sentence the gloss has carried throughout. The same
+    scratch tree with the current files is <strong>2 passed</strong>, so the two diff hunks are the whole
+    of the change. Each case is also falsified against the current source: removing the refusal's
+    <em>first line repeating that mutation verbatim</em> sentence reddens the header case alone
+    (<strong>1 failed, 1 passed</strong> on its sibling), and deleting the gloss sentence in memory reddens
+    all four assertions of the interface case with <code>reckon/crew/prompts.py</code> untouched, it being
+    outside this node's fence and held by a live peer.</p>
+
+    <p>No source or test file was changed by this node; the records are its deliverable, and the followup's
+    substance is discharged by <code>4e813fec</code> alone. The control this node was dispatched with &mdash;
+    a red dispatch base &mdash; does not hold, and it is reported as measured rather than as declared. Full
+    record:
+    <a href="/reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-two-red-cases-were-already-repaired">the cumulative evidence</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
