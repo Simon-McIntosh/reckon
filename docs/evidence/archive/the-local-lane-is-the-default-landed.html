@@ -1056,6 +1056,76 @@ E  reckon.crew.ScopeConflict: write scope 'pkg/hot.py' conflicts with live claim
     it does not claim the separately assembled merged head. The worker leaves the driving followup
     open and makes no terminal plan-state change for the coordinator to adjudicate.</p>
   </section>
+
+  <section id="lane-readers-share-the-gate-aware-headroom">
+    <h2>&sect;6 — Every production lane-document reader takes the admission-limited headroom
+    <a class="anchor" href="#lane-readers-share-the-gate-aware-headroom">#</a></h2>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/lane-readers-converge.png" alt="Two panels of reported headroom for one live lane document. Left, before: the flight probe and the dispatch carry each reported 12 from the top-level engine field while the gate-aware lanes reader reported 7. Right, after: all three readers report the same admission-limited figure of 7.">
+    </figure>
+
+    <p><strong>The reproduced defect.</strong> The review of the gate-aware reader found paired
+    readings of the live document minutes apart: the gate-aware reader reported <strong>7</strong>
+    while the flight probe and the dispatch carry each reported <strong>12</strong>. Both of the
+    latter parsed the document's top-level engine <code>headroom</code> themselves, so a document
+    whose router admission gate was full still read as free slots. The three readers are exercised
+    in the same case, so the divergence is reproduced by construction and the mutation control
+    below shows it directly.</p>
+
+    <p><strong>What landed.</strong> Commit <code>afa8389</code> routes both divergence sources
+    through <code>reckon.…crew.lane_document</code>. <code>flight._probe_lane_document</code> now
+    resolves its <code>lane_headroom</code> through the shared reader's
+    <code>headroom</code> (the minimum of engine and admission), and
+    <code>dispatch._lane_reading_carry</code> takes its <code>headroom</code> from the same reader.
+    Both fall back to the gate arithmetic when a document carries no <code>admission</code> block,
+    and to the engine figure when it carries no gate at all. The reader's admission reason now names
+    its verdict, so an open and a congested gate no longer return identical strings.</p>
+
+    <table>
+      <caption>Evidence that the guarded path ran.</caption>
+      <thead><tr><th>Check</th><th>Receipt</th></tr></thead>
+      <tbody>
+        <tr><td>Shared-headroom fixture</td><td>engine <code>headroom=6</code>, gate
+          <code>{width: 14, in_flight: 14, waiting: 3}</code>, published
+          <code>admission.headroom=-3</code>; all three readers report <code>-3</code>, none
+          the engine <code>6</code></td></tr>
+        <tr><td>Gate-arithmetic fallback</td><td>no <code>admission</code> block, gate
+          <code>{width: 8, in_flight: 6, waiting: 1}</code>; all three readers report
+          <code>1</code> against engine <code>6</code></td></tr>
+        <tr><td>No-gate regression</td><td>no gate block; all three readers report the engine
+          <code>40</code>, and the admission headroom stays <code>unknown</code></td></tr>
+        <tr><td>Distinct reasons</td><td>open gate reason differs from congested gate reason; each
+          names its verdict</td></tr>
+        <tr><td>Focused gate</td><td><strong>4 passed</strong></td></tr>
+        <tr><td>Gate plus named sibling suites</td><td>base <code>8f9ef4e3</code>:
+          <strong>120 passed, 2 skipped</strong> (five sibling files); head <code>8f9ef4e3</code>
+          tree + the change: <strong>124 passed, 2 skipped</strong> (the six files); zero added
+          failures</td></tr>
+        <tr><td>Lint delta</td><td>flight and dispatch carry the same pre-existing findings at base
+          and head; the new test adds none</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Negative control</h3>
+
+    <p>The red log begins with the declared mutation verbatim: <em>flight._probe_lane_document keeps
+    reading the top-level engine headroom field itself; the shared-headroom case must fail with
+    flight reporting the engine figure</em>. The mutation drops
+    <code>flight._lane_document_headroom</code> back to <code>payload.get("headroom")</code>; the
+    shared-headroom case then fails at <code>assert probe["lane_headroom"] == -3</code> with
+    <code>assert 6 == -3</code>, while the file reader and dispatch carry assertions above it still
+    pass. The log records <strong>1 failed</strong>, proving the green gate depends on the shared
+    resolver. Log:
+    <code>~/.config/reckon/crew/runs/r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom/negative-control.log</code>.</p>
+
+    <p>Other logs in the run directory: <code>gate-head.log</code> and <code>gate-base.log</code>.</p>
+
+    <p><strong>Boundary.</strong> This gate measures only this node's own change; verifying the
+    merged result belongs to a separately dispatched test node. The record proves this node's
+    commit and does not claim the assembled merged head. The worker leaves the driving followup
+    open and makes no terminal plan-state change for the coordinator to adjudicate.</p>
+  </section>
 </main>
 </body>
 </html>
