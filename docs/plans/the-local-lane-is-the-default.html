@@ -286,6 +286,9 @@
 <div class="r-comment" data-section="s5" data-id="c-20260925T082500-lead-refresh-timer" data-who="reckon-build s21-coord" data-when="2026-09-25T06:25:00Z">
     <div class="r-comment-body">Lead decision, 2026-09-25: the five-minute refresh is a systemd user timer installed by reckon, the same way the crew watch unit is. `python -m reckon.crew.paid_lanes --install-timer` writes a oneshot service running `python -m reckon.crew.paid_lanes --once` with the checkout's interpreter, plus a timer at OnUnitActiveSec=5min and OnBootSec=1min, under the user's systemd directory, then enables and starts the timer. It is idempotent: re-running with an unchanged definition changes nothing. The node's test uses a temporary XDG_CONFIG_HOME and a stub systemctl, never the real user manager. Installing it on this host is a separate step after the merge.</div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-20260925T-paid-lanes-refresh-timer" data-who="reckon-build" data-when="2026-09-25T06:40:00Z">
+    <div class="r-comment-body"><p>paid-lanes-refresh-timer: <code>python -m reckon.crew.paid_lanes --install-timer</code> writes reckon-paid-lanes.service (oneshot, ExecStart = the running checkout's interpreter with <code>-m reckon.crew.paid_lanes --once</code>, WorkingDirectory = the checkout root) and reckon-paid-lanes.timer (OnBootSec=1min, OnUnitActiveSec=5min, Unit=reckon-paid-lanes.service) under XDG_CONFIG_HOME/systemd/user, then daemon-reload and enable --now. Idempotent: an unchanged definition writes nothing and issues no manager command; a changed interpreter rewrites and reloads. --help lists the flag. 8 new tests, 22 passed across both paid-lanes files; declared negative control (remove the unchanged-definition check) fails the idempotence assertion, logged. Nothing installed on this host. Commit 782ec81e. The node did not resolve its driving followup or set a terminal status.</p></div>
+</div>
 </section>
 </main>
 </body>

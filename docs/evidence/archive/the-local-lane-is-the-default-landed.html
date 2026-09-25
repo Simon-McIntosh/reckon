@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; the base revision was extracted read-only with git archive into a scratch directory, so no second checkout, worktree or branch was created">
-  <meta name="plan-commits" content="db50a1e3,ca43ac53,1928299d">
-  <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,reckon/cli.py,reckon/mcp.py,tests/test_paid_lanes_document.py,tests/test_preflight_reads_the_published_document.py,docs/figures/the-local-lane-is-the-default/headroom-document.png,docs/figures/the-local-lane-is-the-default/preflight-merge.png">
+  <meta name="plan-commits" content="db50a1e3,ca43ac53,1928299d,782ec81e">
+  <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,reckon/cli.py,reckon/mcp.py,tests/test_paid_lanes_document.py,tests/test_preflight_reads_the_published_document.py,tests/test_paid_lanes_timer.py,docs/figures/the-local-lane-is-the-default/headroom-document.png,docs/figures/the-local-lane-is-the-default/preflight-merge.png">
   <title>The Local Lane Is The Default — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -555,6 +555,84 @@ FAILED tests/test_preflight_reads_the_published_document.py::test_a_document_und
       <code>paid_lanes</code>.</li>
       <li><strong>No figure is added.</strong> The change is one setup assertion in one test; a diagram
       would show no spatial or sequential relationship the prose above does not.</li>
+    </ul>
+  </section>
+
+  <section id="the-refresh-timer-is-installed">
+    <h2>&sect;5 — The refresh deployment installs a user service and timer</h2>
+
+    <p><strong>The gap.</strong> The document is composed and read, but nothing republished it on a
+    clock: it was only as fresh as the last dispatch or pre-flight that happened to run. §5's own
+    record named the five-minute refresh as the remaining step, and the lead fixed the design — a
+    systemd <em>user</em> timer, installed by reckon the same way the crew watch unit is.</p>
+
+    <p><strong>What landed.</strong> <code>python -m reckon.crew.paid_lanes --install-timer</code> now
+    writes two units under the user's systemd directory (<code>XDG_CONFIG_HOME/systemd/user</code>,
+    defaulting to <code>~/.config/systemd/user</code>) and brings the timer up. The service is a
+    <code>Type=oneshot</code> whose <code>ExecStart</code> is the running checkout's interpreter with
+    <code>-m reckon.crew.paid_lanes --once</code> and whose <code>WorkingDirectory</code> is the
+    checkout root, so the unit runs the tree it was installed from even where the package is not
+    installed into the interpreter's environment. The timer activates that service
+    (<code>Unit=reckon-paid-lanes.service</code>) at <code>OnBootSec=1min</code> and
+    <code>OnUnitActiveSec=5min</code>. The command then runs <code>systemctl --user daemon-reload</code>
+    and <code>systemctl --user enable --now reckon-paid-lanes.timer</code>.</p>
+
+    <p><strong>Idempotence is the property the definition is compared on.</strong> Each unit is written
+    only when its rendered bytes differ from what is on disk, and the manager calls are made only when
+    something changed — so a re-run with an unchanged definition writes nothing and issues no manager
+    command, which is what keeps a live timer from being restarted. A changed definition (in practice,
+    a different interpreter path) rewrites the units and reloads. <code>--help</code> now lists
+    <code>--install-timer</code>, and the flag itself installs then exits without publishing.</p>
+
+    <h3>Gate</h3>
+
+    <p>The gate runs this node's two test files in full, from the shared environment with the worktree
+    pinned on <code>PYTHONPATH</code>:</p>
+
+    <pre><code># head (782ec81e, this worktree)
+module.__file__ = &lt;worktree&gt;/reckon/crew/paid_lanes.py
+cwd = &lt;worktree&gt;
+tests/test_paid_lanes_timer.py + tests/test_paid_lanes_document.py  →  22 passed in 6.43s</code></pre>
+
+    <p>Eight of the tests are this node's. They exercise the unit contents (the
+    <code>ExecStart</code> argv, <code>OnBootSec</code>, <code>OnUnitActiveSec</code>,
+    <code>Unit=</code>, <code>WantedBy=timers.target</code>), the manager calls, idempotence on a second
+    run, the rewrite-plus-reload when the interpreter changes, the CLI flag, <code>--help</code>, the
+    forwarding of <code>RECKON_HOME</code> into the unit, and the module entry point run as
+    <code>python -m</code> under a temporary config home. Every one runs against a temporary
+    <code>XDG_CONFIG_HOME</code> and a stub <code>systemctl</code> first on <code>PATH</code>, so no
+    test reaches the operator's systemd directory, and nothing is installed on this host.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>remove the unchanged-definition check so
+    every run rewrites and restarts; the idempotence assertion must fail</em> — the first line of the
+    red log. The content comparison was removed from the write helper, so it wrote on every call and
+    reported every run as changed. The idempotence case then failed on its second run reporting a
+    change:</p>
+
+    <pre><code>remove the unchanged-definition check so every run rewrites and restarts; the idempotence assertion must fail
+&gt;       assert second["changed"] is False
+E       assert True is False
+FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_and_calls_nothing
+1 failed in 0.91s</code></pre>
+
+    <p><strong>Positive control:</strong> the same case in the unmutated tree is <code>1 passed</code>,
+    so the red is the mutation and not the selection. The mutation was reverted and both files re-run
+    green at the head named above.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result belongs to a separately dispatched test
+      node.</li>
+      <li><strong>Nothing is installed on this host.</strong> The units describe what
+      <code>--install-timer</code> writes; installing them on the operator's account is a separate step
+      after the merge.</li>
+      <li><strong>No figure is added.</strong> A systemd unit and a timer interval are a file listing and
+      a cadence, which the code blocks above state exactly; a diagram would be an image of what is
+      naturally a table.</li>
     </ul>
   </section>
 </main>

@@ -35,6 +35,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shlex
 import sys
 import tempfile
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -76,6 +77,47 @@ RECKON_HOME_ENV = "RECKON_HOME"
 #: can point every reader at one document without editing code.
 DOCUMENT_ENV = "RECKON_PAID_LANES_DOCUMENT"
 
+#: The user units the refresh deployment installs. The service publishes the
+#: document once; the timer activates that service on its own clock so no
+#: dispatch or pre-flight has to be the thing that refreshes it.
+SERVICE_NAME = "reckon-paid-lanes.service"
+TIMER_NAME = "reckon-paid-lanes.timer"
+
+#: The environment variable naming the user's config root, per the XDG base
+#: directory specification. ``systemd`` resolves user units under this when it
+#: is set, so the installer must resolve the same directory it would.
+XDG_CONFIG_HOME_ENV = "XDG_CONFIG_HOME"
+
+#: The refresh cadence, expressed in the timer's own directives so the document
+#: is republished a minute after boot and every five minutes of timer activity.
+BOOT_DELAY = "1min"
+REFRESH_INTERVAL = "5min"
+
+SERVICE_TEMPLATE = """\
+[Unit]
+Description=publish the metered-backend headroom document
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={working_directory}
+{environment}\
+ExecStart={exec_start}
+"""
+
+TIMER_TEMPLATE = """\
+[Unit]
+Description=republish the metered-backend headroom document every five minutes
+
+[Timer]
+OnBootSec={boot_delay}
+OnUnitActiveSec={interval}
+Unit={service}
+
+[Install]
+WantedBy=timers.target
+"""
+
 OBSERVED = "observed"
 UNKNOWN = "unknown"
 
@@ -83,7 +125,7 @@ UNKNOWN = "unknown"
 #: the same act as running it, so the text is emitted and the run stops here.
 USAGE = """\
 usage: python -m reckon.crew.paid_lanes [--once] [--path PATH]
-       [--project PROJECT] [--checkout-path PATH]
+       [--project PROJECT] [--checkout-path PATH] [--install-timer]
 
 Compose the metered-backend headroom document, one entry per account, and
 write it atomically. The document is what the pre-flight reads between
@@ -94,6 +136,8 @@ options:
   --path PATH            write to PATH instead of the default location
   --project PROJECT      read accounts from PROJECT's resolved flight config
   --checkout-path PATH   resolve PROJECT's config relative to PATH
+  --install-timer        install the user timer that republishes the document
+                         every five minutes, then exit without publishing
   -h, --help             print this message and exit without publishing
 """
 
@@ -515,6 +559,118 @@ def gather_sources(
     return by_account
 
 
+def systemd_user_dir() -> Path:
+    """The directory the user's systemd units are read from.
+
+    Resolved the way systemd itself resolves it: ``XDG_CONFIG_HOME`` when the
+    user set one, otherwise ``~/.config``. The installer writes here so the
+    units land where the manager looks for them, and a caller that isolates
+    ``XDG_CONFIG_HOME`` runs against its own directory rather than the
+    operator's -- which is what lets a test exercise the install without ever
+    reaching the real user manager.
+    """
+    base = os.environ.get(XDG_CONFIG_HOME_ENV)
+    root = Path(base).expanduser() if base else Path.home() / ".config"
+    return root / "systemd" / "user"
+
+
+def checkout_root() -> Path:
+    """The checkout the running module is imported from.
+
+    Derived from this file's own location rather than the interpreter's, so a
+    unit installed from a worktree still names the tree whose code it will run.
+    """
+    return Path(__file__).resolve().parents[2]
+
+
+def render_service_unit(
+    executable: str | Path | None = None,
+    *,
+    root: str | Path | None = None,
+    environment: Mapping[str, str] | None = None,
+) -> str:
+    """Render the oneshot service that publishes the document one time.
+
+    ``ExecStart`` is the interpreter that ran the install with ``-m
+    reckon.crew.paid_lanes --once``, so the timer runs the checkout's own code
+    under the environment the command was invoked from. ``WorkingDirectory`` is
+    the checkout root, which puts that tree on the module search path even
+    where the package is not installed into the interpreter's environment.
+    """
+    interpreter = str(executable or sys.executable)
+    working_directory = str(root or checkout_root())
+    argv = [interpreter, "-m", "reckon.crew.paid_lanes", "--once"]
+    forwarded = dict(environment or {})
+    home = os.environ.get(RECKON_HOME_ENV)
+    if home:
+        forwarded.setdefault(RECKON_HOME_ENV, str(Path(home).expanduser().resolve()))
+    override = "".join(
+        f'Environment="{name}={value}"\n' for name, value in sorted(forwarded.items())
+    )
+    return SERVICE_TEMPLATE.format(
+        working_directory=working_directory,
+        environment=override,
+        exec_start=" ".join(shlex.quote(part) for part in argv),
+    )
+
+
+def render_timer_unit(*, service: str = SERVICE_NAME) -> str:
+    """Render the timer that activates the publish service on its own clock."""
+    return TIMER_TEMPLATE.format(
+        boot_delay=BOOT_DELAY, interval=REFRESH_INTERVAL, service=service
+    )
+
+
+def _write_if_changed(path: Path, content: str) -> bool:
+    """Write ``content`` to ``path`` only when it differs; report whether it did.
+
+    The deployment is idempotent: an unchanged definition is left untouched, so
+    a re-run neither rewrites the file nor gives the manager a reason to reload.
+    The comparison is on the rendered bytes, which is what systemd reads.
+    """
+    if path.is_file() and path.read_text(encoding="utf-8") == content:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return True
+
+
+def install_timer(
+    executable: str | Path | None = None,
+    *,
+    directory: str | Path | None = None,
+    run: Callable[[Sequence[str]], Any] | None = None,
+) -> dict[str, Any]:
+    """Install the refresh service and timer, then bring the timer up.
+
+    Two units are written under the user's systemd directory and, only when the
+    definition actually changed, the manager is reloaded and the timer enabled
+    and started. An unchanged re-run writes nothing and calls nothing, so
+    installing repeatedly is free and leaves a running timer untouched. The
+    manager is reached through ``systemctl --user`` on PATH, so a caller can
+    substitute a stub by putting one earlier on PATH.
+    """
+    from reckon import service
+
+    target = Path(directory) if directory is not None else systemd_user_dir()
+    service_path = target / SERVICE_NAME
+    timer_path = target / TIMER_NAME
+    changed = _write_if_changed(service_path, render_service_unit(executable))
+    changed = _write_if_changed(timer_path, render_timer_unit()) or changed
+    commands: list[list[str]] = []
+    if changed:
+        command = run or (lambda args: service.systemctl(*args))
+        for args in (("daemon-reload",), ("enable", "--now", TIMER_NAME)):
+            command(list(args))
+            commands.append(list(args))
+    return {
+        "changed": changed,
+        "service": service_path,
+        "timer": timer_path,
+        "commands": commands,
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Compose and publish the document; ``--once`` writes it a single time.
 
@@ -531,6 +687,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     project: str | None = None
     root: str | None = None
     help_requested = False
+    install_requested = False
     index = 0
     while index < len(args):
         flag = args[index]
@@ -545,6 +702,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 root = value
         elif flag in ("--help", "-h"):
             help_requested = True
+        elif flag == "--install-timer":
+            install_requested = True
         elif flag == "--once":
             pass
         else:
@@ -553,6 +712,20 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if help_requested:
         sys.stdout.write(USAGE)
+        return 0
+
+    if install_requested:
+        from reckon import service
+
+        try:
+            result = install_timer()
+        except service.ServiceError as exc:
+            print(f"could not install the refresh timer: {exc}")
+            return 1
+        if result["changed"]:
+            print(f"installed {result['timer']}")
+        else:
+            print(f"{result['timer']} is already current")
         return 0
 
     from reckon import flight
