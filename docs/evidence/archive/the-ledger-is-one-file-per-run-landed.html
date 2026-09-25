@@ -200,6 +200,40 @@
       pre-existing findings, with zero added. Gate logs name the revision, tree and command.
       The committed-marker receipt verifies exclusive creation and the new lag API directly
       from the committed source.</p>
+      <h3>Expanded-scope expectation repair</h3>
+      <p><strong>2026-09-25.</strong> The write fence was extended to
+      <code>tests/test_ledger.py</code> and
+      <code>tests/test_a_promotion_never_creates_a_ledger.py</code>. Their assertions now
+      require canonical per-run files, preserved aggregate bytes and versions, exact
+      singleton promotion commit contents, one index attempt after reading the complete
+      file, missing-index reporting and lag that survives observation until a rebuild.
+      Historical backfill fixtures explicitly seed unsplit rows; all their preview,
+      timestamp, missing-stream and idempotence checks remain.</p>
+      <p>The two files retain their 96 and nine test functions with no skips or xfails.
+      Assertion counts increase from 417 to 448 and from 30 to 41. The focused gate
+      reports <strong>43 passed in 25.91 seconds</strong>. The full six-module gate reports
+      <strong>23 failed, 241 passed in 205.91 seconds</strong>, against the retained
+      dispatch-base result of 247 passed and zero failures. Nineteen of the original
+      42 failing cases are repaired. The two test files retain the same 11 pre-existing
+      lint findings with none added.</p>
+      <p><strong>The remaining failures are a production dependency.</strong> Twenty-two
+      tests fail inside <code>crew.complete</code> with a landing-commit refusal:
+      <code>nothing added to commit but untracked files present</code>, naming
+      <code>docs/state/proj/runs/</code>. The CLI completion case fails to decode the same
+      refusal as JSON. The unchanged production call still passes
+      <code>ledger.ledger_path(project, ledger_root)</code> to the commit helper.
+      No test mocks that helper, skips promotion, or substitutes success. Consequently
+      the zero-added-failures gate remains blocked until the companion stager is integrated.</p>
+      <p><strong>Traceability:</strong> <code>repair-test-clause-map.json</code> maps every
+      original failure id and three additional historical-fixture consumers to its §1
+      clause, replacement assertion or retained production dependency. The same 45
+      mappings appear directly in the manifest. Receipts in the run directory are
+      <code>repair-focused.log</code>, <code>repaired.log</code>,
+      <code>repaired-command.json</code>, <code>test-repair.patch</code>,
+      <code>promotion-dependency.log</code>, <code>repair-lint-before.log</code> and
+      <code>repair-lint-after.log</code>. The patch digest in the gate header identifies
+      the measured test contents. No promotion source, plan lifecycle metadata or
+      driving followup was changed.</p>
     </section>
 
   </main>

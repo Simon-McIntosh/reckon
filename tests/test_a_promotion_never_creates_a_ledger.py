@@ -1,4 +1,4 @@
-"""A promotion creates a ledger only where git says none ever existed."""
+"""Appending a run preserves aggregate history and writes only its own file."""
 
 from __future__ import annotations
 
@@ -149,6 +149,17 @@ def _record(run_id: str = "r-first") -> dict[str, str]:
     return {"run_id": run_id, "gate": "passed"}
 
 
+def _assert_appended_file(root: Path, result: dict) -> None:
+    """A fresh append writes the canonical run without creating an aggregate."""
+    path = root / "docs" / "state" / PROJECT / "runs" / "r-first.json"
+    assert result["path"] == str(path)
+    assert path.read_text() == ledger.serialize_run(_record())
+    assert result["version"] is None
+    assert result["store"] == {"status": "written"}
+    assert ledger.index_lag(PROJECT, root) == 0
+    assert not ledger.ledger_path(PROJECT, root).exists()
+
+
 def _commit_then_remove_ledger(root: Path) -> Path:
     """Reproduce the incident shape: the ledger is committed, then unlinked."""
     path = _write_ledger(root, [{"run_id": "r-prior"}])
@@ -180,9 +191,10 @@ def test_a_promotion_initialises_a_ledger_git_never_tracked(repository: Path) ->
     result = ledger.append_run(PROJECT, _record(), root=repository)
 
     stored, version = ledger.load(PROJECT, repository)
-    assert result["version"] == version == 1
+    _assert_appended_file(repository, result)
+    assert version == 0
     assert [row["run_id"] for row in stored["runs"]] == ["r-first"]
-    assert path.exists()
+    assert not path.exists()
 
 
 def test_a_shallow_clone_refuses_a_ledger_deleted_before_its_boundary(
@@ -220,9 +232,10 @@ def test_a_full_clone_never_tracking_the_ledger_initialises_it(tmp_path: Path) -
     result = ledger.append_run(PROJECT, _record(), root=clone)
 
     stored, version = ledger.load(PROJECT, clone)
-    assert result["version"] == version == 1
+    _assert_appended_file(clone, result)
+    assert version == 0
     assert [row["run_id"] for row in stored["runs"]] == ["r-first"]
-    assert path.exists()
+    assert not path.exists()
 
 
 def test_a_partial_clone_does_not_initialise_a_ledger(tmp_path: Path) -> None:
@@ -297,15 +310,16 @@ def test_a_ledger_outside_a_checkout_still_requires_explicit_initialisation(
 
     result = ledger.append_run(PROJECT, _record(), root=root, allow_create=True)
     stored, version = ledger.load(PROJECT, root)
-    assert result["version"] == version == 1
+    _assert_appended_file(root, result)
+    assert version == 0
     assert [row["run_id"] for row in stored["runs"]] == ["r-first"]
 
 
 @pytest.mark.parametrize("key", ["members", "runs"])
-def test_a_malformed_ledger_collection_is_not_an_empty_project(
+def test_append_scan_miss_preserves_an_unrelated_malformed_collection(
     repository: Path, key: str
 ) -> None:
-    """A malformed collection cannot collapse into a fresh-start promotion."""
+    """A byte-scan miss leaves unrelated aggregate content untouched."""
     path = ledger.ledger_path(PROJECT, repository)
     path.write_text(
         json.dumps(
@@ -322,5 +336,17 @@ def test_a_malformed_ledger_collection_is_not_an_empty_project(
         )
     )
 
+    before = path.read_bytes()
+    assert _record()["run_id"].encode() not in before
     with pytest.raises(ledger.LedgerError, match=rf"{key} must be list-valued"):
-        ledger.append_run(PROJECT, _record(), root=repository)
+        ledger.load(PROJECT, repository)
+
+    result = ledger.append_run(PROJECT, _record(), root=repository)
+
+    target = ledger.run_path(PROJECT, "r-first", repository)
+    assert result["path"] == str(target)
+    assert target.read_text() == ledger.serialize_run(_record())
+    assert result["store"] == {"status": "written"}
+    assert path.read_bytes() == before
+    with pytest.raises(ledger.LedgerError, match=rf"{key} must be list-valued"):
+        ledger.load(PROJECT, repository)

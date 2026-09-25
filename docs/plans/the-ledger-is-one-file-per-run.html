@@ -124,6 +124,14 @@
         <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#append-writer">the append evidence</a>.
         The zero-added-failures measure remains unmet. Promotion staging, integrated verification,
         and section closure remain separate coordinator-owned work.</p>
+        <p><strong>Expanded test scope, 2026-09-25.</strong> Existing test expectations now
+        check canonical per-run files, unchanged aggregate bytes and versions, one index
+        attempt after the file, and observable index lag. The focused repair gate passes
+        43 cases; the full six-module remeasurement reports 241 passed and 23 failed,
+        reducing the earlier 42 failures by 19. The remaining 23 reach the unchanged
+        production promotion stager, which still selects <code>crew.json</code> and leaves
+        the run file untracked. All tests and their substantive assertions remain enabled;
+        the node still requires the separately owned promotion change.</p>
       </aside>
     </section>
 
