@@ -17,11 +17,15 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
   a file that already exists.
 * A merge happens only under ``write=True``, into the path the caller names
   (the user-scope ``~/.claude/settings.json`` when the caller names none). The
-  merge preserves every existing key and every existing hook group, and appends
-  the fragment's entries.
-* An install refuses when a command it would add already exists anywhere in the
-  target's hooks, naming the event and the command it found. The refusal is
-  raised before anything is written, so it leaves the file byte-identical.
+  merge preserves every existing key and every existing hook group, and adds the
+  fragment's entries.
+* An entry already registered under its own event is skipped, not duplicated:
+  the existing entry keeps its bytes exactly as the operator wrote it, and every
+  other entry is still added. So installing over a settings file that already
+  carries one hook of the fragment — the worker stop hook, say — still binds the
+  rest, and a second install of the whole fragment changes nothing at all. The
+  result names both lists, so a caller can report what it did without comparing
+  documents itself.
 * The write is atomic: the new document is composed inside the target's
   directory and moved into place, and a settings file that changed between the
   read and the write is not overwritten.
@@ -38,6 +42,7 @@ import os
 import shlex
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
 
@@ -60,6 +65,21 @@ STOP_EVENT = "Stop"
 
 class HookInstallError(RuntimeError):
     """Raised when a settings file cannot carry the hook fragment."""
+
+
+@dataclass(frozen=True)
+class HookInstallResult:
+    """What an install composed, and what it did to each entry.
+
+    ``document`` is the JSON that was printed and, when anything was added,
+    written. ``added`` and ``skipped`` name each entry as ``"<event>: <command>"``.
+    A dry run reports every entry as one a merge would add: it reads no file, so
+    it cannot know of an entry already installed.
+    """
+
+    document: dict[str, Any]
+    added: tuple[str, ...]
+    skipped: tuple[str, ...]
 
 
 def hook_script_path() -> Path:
@@ -99,27 +119,39 @@ def install_hook_settings(
     write: bool = False,
     script_path: Path | str | None = None,
     stream: IO[str] | None = None,
-) -> dict[str, Any]:
-    """Print and return the hook fragment, merging it only when asked to write.
+) -> HookInstallResult:
+    """Print the hook fragment, merging it only when asked to write.
 
     A dry run — ``write=False``, the default — prints the fragment it would
-    merge and opens no file. A merge reads ``settings_path`` (the user-scope
-    settings file when none is named), refuses a duplicate command, and writes
-    atomically, preserving every other key.
+    merge and opens no file, so it cannot tell an entry already installed from
+    one that is not and reports every entry as one a merge would add.
 
-    The return value is always the document that was printed, so a caller can
-    report on the merge without re-reading the file.
+    A merge reads ``settings_path`` (the user-scope settings file when none is
+    named), appends every entry not already registered under its own event, and
+    writes atomically, preserving every other key. A merge with nothing to add
+    writes nothing at all, leaving the file's bytes and its mode exactly as
+    they were.
+
+    The result carries the document that was printed and the two entry lists,
+    so a caller can report what the merge did without comparing documents.
     """
     snippet = build_hook_snippet(script_path)
     if not write:
         _print(snippet, stream)
-        return snippet
+        return HookInstallResult(
+            document=snippet, added=tuple(_entry_labels(snippet)), skipped=()
+        )
     target = _settings_target(settings_path)
     original = _read_bytes(target)
-    merged = _merge_settings(_parse_settings(original, target), snippet, target)
-    _write_settings(target, merged, original)
+    merged, added, skipped = _merge_settings(
+        _parse_settings(original, target), snippet, target
+    )
+    if added:
+        _write_settings(target, merged, original)
     _print(merged, stream)
-    return merged
+    return HookInstallResult(
+        document=merged, added=tuple(added), skipped=tuple(skipped)
+    )
 
 
 def _settings_target(settings_path: Path | str | None) -> Path:
@@ -165,15 +197,14 @@ def _parse_settings(original: bytes | None, path: Path) -> dict[str, Any]:
 
 def _merge_settings(
     settings: dict[str, Any], snippet: dict[str, Any], path: Path
-) -> dict[str, Any]:
-    """Return ``settings`` plus the fragment; refuse a command already present."""
-    conflict = _conflict(settings, snippet)
-    if conflict is not None:
-        event, command = conflict
-        raise HookInstallError(
-            f"refusing to install the obligations hook into {path}: "
-            f"{event} already carries the command {command!r}"
-        )
+) -> tuple[dict[str, Any], list[str], list[str]]:
+    """Return ``settings``, the entries added and the entries skipped.
+
+    An entry is skipped when every command it carries is already registered
+    under the same event: the groups already holding them are left exactly as
+    they are, and only the entries the file lacks are appended. An event the
+    fragment does not name is untouched, whatever it holds.
+    """
     existing = settings.get("hooks")
     hooks = {} if existing is None else existing
     if not isinstance(hooks, dict):
@@ -181,6 +212,8 @@ def _merge_settings(
             f"cannot update harness settings {path}: hooks must be an object"
         )
     updated = dict(hooks)
+    added: list[str] = []
+    skipped: list[str] = []
     for event, groups in snippet["hooks"].items():
         current = updated.get(event)
         if current is None:
@@ -189,33 +222,33 @@ def _merge_settings(
             raise HookInstallError(
                 f"cannot update harness settings {path}: {event} must be a list"
             )
-        updated[event] = [*current, *groups]
+        registered = _registered_commands(current)
+        kept = list(current)
+        for group in groups:
+            commands = _group_commands(group)
+            labels = [f"{event}: {command}" for command in commands]
+            if commands and all(command in registered for command in commands):
+                skipped.extend(labels)
+                continue
+            kept.append(group)
+            added.extend(labels)
+        updated[event] = kept
     merged = dict(settings)
     merged["hooks"] = updated
-    return merged
+    return merged, added, skipped
 
 
-def _conflict(
-    settings: dict[str, Any], snippet: dict[str, Any]
-) -> tuple[str, str] | None:
-    """Return the event and command already carrying a snippet command, or None."""
-    hooks = settings.get("hooks")
-    if not isinstance(hooks, dict):
-        return None
-    wanted = {
-        command
-        for groups in snippet["hooks"].values()
-        for group in groups
-        for command in _group_commands(group)
-    }
-    for event, groups in hooks.items():
-        if not isinstance(groups, list):
-            continue
+def _entry_labels(snippet: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    for event, groups in snippet["hooks"].items():
         for group in groups:
-            for command in _group_commands(group):
-                if command in wanted:
-                    return event, command
-    return None
+            labels.extend(f"{event}: {command}" for command in _group_commands(group))
+    return labels
+
+
+def _registered_commands(groups: list[Any]) -> set[str]:
+    """Return every command already registered under one event."""
+    return {command for group in groups for command in _group_commands(group)}
 
 
 def _group_commands(group: Any) -> list[str]:
