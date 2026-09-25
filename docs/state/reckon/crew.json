@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T13:06:42",
+  "updated": "2026-09-25T13:08:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -423945,6 +423945,373 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T075119261016-stop-before-spawn-spawns-nothing",
+        "plan": "a-dispatch-returns-without-its-worker",
+        "section": "\u00a73",
+        "node": "stop-before-spawn-spawns-nothing",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 808,
+                "cached_input_tokens": 188949,
+                "input_tokens": 189759,
+                "output_tokens": 824,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 190583,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "the test named in f-adrwiw-stop-before-spawn holds the supervisor in a stubbed pre-spawn snapshot, sends the stop, releases the snapshot and asserts no worker.json and no child; its declared negative control (ignore SIGTERM during the snapshot; the assertion fails) is executed and logged; the gate adds no failures over the dispatch and supervisor test files against base; and the evidence record carries an anchor for the landing",
+          "estimated_hours": null,
+          "goal": "implement followup f-adrwiw-stop-before-spawn as written on the plan: a crew stop delivered to the per-run supervisor at any point before it spawns the worker means no worker is ever spawned for that run",
+          "id": "stop-before-spawn-spawns-nothing",
+          "lane_declaration": {
+            "backend": "clive",
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T07:51:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 25,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 13,
+            "mean_context": 105000,
+            "observed_at": "2026-09-25T07:50:54Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075119261016-stop-before-spawn-spawns-nothing/manifest.md",
+          "negative_control": "ignore SIGTERM while the supervisor is inside the pre-spawn snapshot; the no-worker assertion must fail",
+          "plan": "a-dispatch-returns-without-its-worker",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_stop_before_spawn_spawns_nothing.py",
+            "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+            "docs/figures/a-dispatch-returns-without-its-worker",
+            "docs/plans/a-dispatch-returns-without-its-worker.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T07:51:32Z",
+        "completed_at": "2026-09-25T09:25:12.205Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5586,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5620,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "6daecfc17f00ad90153ea988761b6dfd54150145",
+        "commits": [
+          "d47c6a70002fc8919619a50c0b08e73fe6dd4d41",
+          "ccf6d34aa1b106d46e846e0b49f2edb3f4c7415c",
+          "99b75c647a4120ac34b4f51bc67e852450db1516"
+        ],
+        "changed_lines": {
+          "added": 630,
+          "removed": 13,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_stop_before_spawn_spawns_nothing.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075119261016-stop-before-spawn-spawns-nothing/after-suite-rerun.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075119261016-stop-before-spawn-spawns-nothing/manifest.md",
+        "scope_changed": false,
+        "session_id": "5f2d3a6e-a89f-46bd-8a4a-d938522bf58d",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14293848,
+            "input_tokens_cumulative": 14293848,
+            "output_tokens": 85667,
+            "output_tokens_cumulative": 85667,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T09:25:12.205Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "blocked",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports blocked: the fence refuses to launch any worker on this host. At base 51d80b95; with ~/.gitconfig the only symlink among the thirteen named protected paths at this home; both dispatched nodes died in bubblewrap before a harness process existed (stream.jsonl 0 bytes; empty harness and codex-home; no session_id). Reproduce with `bwrap --dev-bind / / --ro-bind ~/.gitconfig ~/.gitconfig -- /bin/true`; which exits 1 with the same message; with no reckon process involved.",
+              "effective_phase": "starting",
+              "elapsed_seconds": 2962,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:13:38Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:25:55Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 21822,
+                "worker_pid": 3666579
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 2263,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4088c1ae05ee2de968547377ea80cb013d3de7ee"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "a61eba31d7f454aff87081f11b6395ac935d9c2d36dd62a2952dd3f537a24ea1",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "blocked",
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T062408975588-fenced-workers-smoke/manifest.md; resolve the blocker before resuming the run",
+              "node": "fenced-workers-smoke",
+              "phase": "starting",
+              "plan": "a-worker-cannot-write-your-home",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "decide",
+              "recovery_classification": "blocked",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+              "session": "s21-coord",
+              "session_resolution": {
+                "consulted": [
+                  "pointer",
+                  "stream",
+                  "ledger"
+                ],
+                "resolved": true,
+                "run_id": "r-20260925T062408975588-fenced-workers-smoke",
+                "session_id": "eb46c4e0-0ac6-4891-b9b6-6fd5fb4773e4",
+                "source": "stream"
+              },
+              "terminal_age_seconds": 2301,
+              "terminal_at": "2026-09-25T07:13:01Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/fenced-workers-smoke"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 14461566,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5595.147,
+          "generated_tokens": 91454,
+          "generation_seconds": 5382.878,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.7,
+          "machine_seconds": 212.269,
+          "peak_input_tokens": 166418,
+          "tokens_per_second": 16.99,
+          "wall_tokens_per_second": 16.35
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/stop-before-spawn-spawns-nothing",
+          "session_id": "5f2d3a6e-a89f-46bd-8a4a-d938522bf58d",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T09:25:12.205Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T09:25:12Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T07:51:54Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T075119261016-stop-before-spawn-spawns-nothing",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 13701,
+          "worker_pid": 4032650
+        },
+        "promoted_revision": "99b75c647a4120ac34b4f51bc67e852450db1516",
+        "plan_impl_at_dispatch": 0.56,
+        "impl_move": {
+          "plan": "a-dispatch-returns-without-its-worker",
+          "at_dispatch": 0.56,
+          "at_complete": 0.68,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_stop_before_spawn_spawns_nothing.py"
+          ],
+          "declaration": "ignore SIGTERM while the supervisor is inside the pre-spawn snapshot; the no-worker assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075119261016-stop-before-spawn-spawns-nothing/negative-control-pre-spawn-stop.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T075119261016-stop-before-spawn-spawns-nothing/negative-control-pre-spawn-stop.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T08:51:19.901446+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": "clive",
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T07:51:19Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 25,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 13,
+          "mean_context": 105000,
+          "observed_at": "2026-09-25T07:50:54Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 123.0,
+        "orientation_input_tokens": 2070352.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -424257,6 +424624,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2787
+    "_version": 2788
   }
 }
