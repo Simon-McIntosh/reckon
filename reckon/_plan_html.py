@@ -135,6 +135,7 @@ _SCALARS = (
 _LIST_SCALARS = (
     "depends_on",
     "blocks",
+    "after",
     "informs",
     "evidence_for",
     "verifies",
@@ -163,6 +164,7 @@ _PLAN_ONLY_METAS = (
     "plan-capability-risk",
     "plan-depends-on",
     "plan-blocks",
+    "plan-after",
     "plan-standalone",
     "plan-impl",
     "plan-section-declarations",
@@ -1256,6 +1258,7 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     rec["commits"] = rec.get("commits") or []
     rec["artifacts"] = rec.get("artifacts") or []
     rec["depends_on"] = rec.get("depends_on") or []
+    rec["after"] = rec.get("after") or []
     rec["dec_open"] = count_open_decisions(text)
     rec["impl"] = float(rec.get("impl", 0) or 0)
     rec["version"] = int(rec.get("version", 0) or 0)
@@ -1298,6 +1301,7 @@ def parse_plan(path: Path, slug: str | None = None) -> dict:
     rec["questions"] = st.get("questions") or []
     rec["research"] = st.get("research") or []
     rec["depends_on"] = st.get("depends_on") or []
+    rec["after"] = st.get("after") or []
     rec["blocks"] = st.get("blocks") or []
     rec["dec_open"] = sum(
         1

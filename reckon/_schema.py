@@ -203,8 +203,8 @@ def _is_safe_resource_segment(value: str) -> bool:
 
 # ── Cross-project plan references ────────────────────────────────────────────
 #
-# Every link-list field (depends_on, blocks, informs, evidence_for, verifies,
-# supersedes) holds PLAN REFS with one grammar:
+# Every link-list field (depends_on, blocks, after, informs, evidence_for,
+# verifies, supersedes) holds PLAN REFS with one grammar:
 #
 #     ref     :=  [ project ":" ] slug [ "#" stage ]
 #     project :=  a key in mounts.json          (e.g. "nova", "norma")
@@ -239,6 +239,7 @@ _META_CONTENT_RE = re.compile(r"""content\s*=\s*["']([^"']*)["']""", re.IGNORECA
 LINK_LIST_FIELDS = (
     "depends_on",
     "blocks",
+    "after",
     "informs",
     "evidence_for",
     "verifies",
@@ -885,6 +886,16 @@ class PlanState(BaseModel):
             "'slug' = same-project; 'project:slug' = external; optional '#stage'."
         ),
     )
+    after: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Soft sequencing refs: this plan would rather start after them, and "
+            "must not be held when they have not shipped. Same grammar as "
+            "depends_on: bare 'slug' = same-project; 'project:slug' = external; "
+            "optional '#stage'. Unlike depends_on it never blocks: the roadmap "
+            "orders and annotates ready work with it."
+        ),
+    )
     informs: list[str] = Field(default_factory=list)  # research-only
     evidence_for: list[str] = Field(default_factory=list)  # evidence-only
     verifies: list[str] = Field(default_factory=list)  # evidence-only stage refs
@@ -1020,6 +1031,7 @@ class PlanState(BaseModel):
                 "tier",
                 "depends_on",
                 "blocks",
+                "after",
                 "impl",
                 "section_declarations",
                 "sections",
@@ -1123,6 +1135,7 @@ class PlanState(BaseModel):
                 "impl": (0, 0.0, None),
                 "depends_on": ([],),
                 "blocks": ([],),
+                "after": ([],),
                 "section_declarations": ({},),
                 "sections": ([],),
                 "standalone": ("", None),
