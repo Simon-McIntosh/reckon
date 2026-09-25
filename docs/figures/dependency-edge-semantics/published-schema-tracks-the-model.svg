@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-labelledby="title desc">
+<title id="title">The published schema is derived from the model</title>
+<desc id="desc">Two rows over one derivation chain. The model declares the after relation and the generator emits it. In the first row the committed artifact is stale, lacking after, so the equality check fails. In the second row the artifact was regenerated and the equality check passes.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#245878"/></marker></defs>
+<g font-family="sans-serif" font-size="17" fill="#172d3d">
+<text x="25" y="28" font-weight="bold">One source of truth, one committed artifact, one equality check</text>
+<text x="25" y="52" font-size="14" fill="#4a5b66">The published schema is generated from the model and committed beside it; only a failing check reveals the divergence.</text>
+
+<text x="25" y="78" font-weight="bold" font-size="15" fill="#9b2c25">Stale artifact — the state this node found</text>
+<rect x="25" y="88" width="205" height="66" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="40" y="116">PlanState model</text>
+<text x="40" y="140" font-size="14">declares after</text>
+<path d="M240 121 H285" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="290" y="88" width="200" height="66" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="305" y="116">write_json_schema()</text>
+<text x="305" y="140" font-size="14">emits after</text>
+<path d="M500 121 H545" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="550" y="88" width="210" height="66" rx="4" fill="#f9f2df" stroke="#9b7825"/>
+<text x="565" y="116">plan.schema.json</text>
+<text x="565" y="140" font-size="14">no after property</text>
+<text x="780" y="116" font-weight="bold" fill="#9b2c25">&#10007; unequal</text>
+<text x="780" y="140" font-size="14" fill="#9b2c25">check fails</text>
+
+<text x="25" y="182" font-weight="bold" font-size="15" fill="#1f6b3a">Regenerated artifact — the state this node lands</text>
+<rect x="25" y="192" width="205" height="66" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="40" y="220">PlanState model</text>
+<text x="40" y="244" font-size="14">declares after</text>
+<path d="M240 225 H285" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="290" y="192" width="200" height="66" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="305" y="220">write_json_schema()</text>
+<text x="305" y="244" font-size="14">emits after</text>
+<path d="M500 225 H545" stroke="#245878" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="550" y="192" width="210" height="66" rx="4" fill="#eef6fa" stroke="#245878"/>
+<text x="565" y="220">plan.schema.json</text>
+<text x="565" y="244" font-size="14">after property present</text>
+<text x="780" y="220" font-weight="bold" fill="#1f6b3a">&#10003; equal</text>
+<text x="780" y="244" font-size="14" fill="#1f6b3a">check passes</text>
+</g></svg>

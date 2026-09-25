@@ -502,6 +502,24 @@ def fleet(pretty):
     _emit({"ok": True, "view": "fleet", "projects": rows}, pretty)
 
 
+@main.command(name="paste")
+@click.option(
+    "--no-fleet",
+    is_flag=True,
+    help="Keep an image on this host; do not copy it to the live fleet node.",
+)
+def paste_command(no_fleet):
+    """Paste the terminal client's clipboard: an image's path, or the text.
+
+    An image is written to /tmp here and, when a fleet allocation is running,
+    at the same path on its node, so the printed path is valid in a fleet
+    session too. `pi` is this command.
+    """
+    from reckon.paste import paste
+
+    sys.exit(paste(fleet=not no_fleet))
+
+
 @main.command(name="badge")
 @click.option("--project", required=True, help="Mounted project whose badge to render.")
 @click.option(
@@ -1906,6 +1924,57 @@ def _follower_end_event(
     }
 
 
+def _follow_resume_plan(
+    project: str,
+    session: str | None,
+    *,
+    stream_path: Path,
+    resume_state: Mapping[str, Any],
+) -> tuple[str, int, dict[str, str]]:
+    """Decide how a follower starts against the stream it is about to read.
+
+    Three modes, one per kind of place an arming can begin from:
+
+    ``baseline`` — a first attachment, which emits the fleet report as it is
+    derived. ``continue`` — the stream has only advanced since the recorded
+    place, so the recorded offset is the boundary to seek to and nothing before
+    it is replayed. ``restart`` — the stream was replaced or truncated, so its
+    recorded offset no longer names a boundary: the file is re-read from its
+    start and filtered to the runs whose state differs from the checkpoint's.
+
+    The recorded state travels back with the mode either way, so a continuation
+    delivers only what changed rather than re-announcing the fleet.
+    """
+    from reckon.crew import follow_checkpoint
+
+    if resume_state:
+        # A checkpoint handed across an in-place reload: the same image is
+        # continuing, so the stream path it recorded still governs.
+        offset = resume_state.get("offset")
+        recorded = {
+            str(run_id): str(state)
+            for run_id, state in dict(resume_state.get("reported") or {}).items()
+        }
+        if (
+            isinstance(offset, int)
+            and not isinstance(offset, bool)
+            and resume_state.get("stream_path") == str(stream_path)
+        ):
+            return "continue", max(0, offset), recorded
+        return "baseline", 0, recorded
+
+    record = follow_checkpoint.read(project, session)
+    if not record:
+        return "baseline", 0, {}
+    recorded = {
+        str(run_id): str(state)
+        for run_id, state in dict(record.get("reported") or {}).items()
+    }
+    if follow_checkpoint.continues(record, stream_path):
+        return "continue", max(0, int(record["offset"])), recorded
+    return "restart", 0, recorded
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -2017,6 +2086,28 @@ def _follow_watch_lines(
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
+    def _record_checkpoint(stream_path: Path, offset: int) -> None:
+        """Persist this follower's place, so its next arming continues here.
+
+        Written as lines are delivered, so the place advances with the stream
+        rather than with the arming's end: an arming that dies without reaching
+        its own teardown has still left behind everything it delivered. A
+        checkpoint that cannot be written costs a later re-arm its place and
+        must never cost this arming its stream, so it is not allowed to raise.
+        """
+        from reckon.crew import follow_checkpoint
+
+        try:
+            follow_checkpoint.write(
+                project,
+                session,
+                stream_path=stream_path,
+                offset=offset,
+                reported=reported,
+            )
+        except OSError:
+            return
+
     def _tick(*, stream_path: Path | None = None, offset: int = 0) -> None:
         """Run the caller's per-wait work — reclaiming a registration, say."""
         if on_poll is not None:
@@ -2027,6 +2118,8 @@ def _follow_watch_lines(
                     "offset": offset,
                 }
             )
+        if stream_path is not None:
+            _record_checkpoint(stream_path, offset)
         _check_lifetime()
         _check_consumer()
 
@@ -2082,16 +2175,26 @@ def _follow_watch_lines(
         # stream — a reader wants worker transitions and the fleet posture, not
         # two streams interleaved into one pane.
         stream_path = Path(cursor["stream_path"])
-        resume_matches = resume_state.get("stream_path") == str(
-            stream_path
-        ) and isinstance(resume_state.get("offset"), int)
-        if resume_matches:
-            cursor["offset"] = max(0, int(resume_state["offset"]))
-        else:
+        mode, offset, recorded = _follow_resume_plan(
+            project,
+            session,
+            stream_path=stream_path,
+            resume_state=resume_state,
+        )
+        if mode == "baseline":
             for event in cursor["baseline"]:
                 selected = _emit(event)
                 if selected is not None:
                     yield selected
+        else:
+            # A continuation picks the stream up where the previous arming left
+            # it: at the recorded boundary for a file that has only advanced, or
+            # at the file's own start when it was replaced or truncated — with
+            # the runs already reported sitting in ``reported`` either way, so
+            # only what moved is delivered and nothing is re-announced.
+            cursor["offset"] = offset
+            reported.clear()
+            reported.update(recorded)
         resume_state = {}
 
         while not stream_path.exists() and not consumer_gone:
@@ -2910,6 +3013,72 @@ def crew_check_manifest(run_id, pretty):
 # already writing against it.
 WIDENABLE_PHASE = "blocked"
 
+# The statuses a run's own manifest can report that leave no scope decision to
+# widen for: the work has ended, so a wider fence is not what the run awaits.
+WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
+
+
+def _manifest_reported_status(record: Mapping[str, Any]) -> str:
+    """The status a run's own manifest reports, or "" when none can be read.
+
+    A run launched through a backend folds its phase from its stream's terminal
+    event, so a worker that writes ``status: blocked`` and ends its turn folds
+    to ``complete`` and the one place the block is stated -- the delivery the
+    worker wrote -- is never consulted. This reads that file, because it is the
+    authority whose mirror the folded phase is. A manifest that is absent,
+    unreadable, older than the attempt that is reading it, or still carrying the
+    dispatch contract's unsubstituted status choice reports no status rather
+    than a wrong one, and eligibility then rests on the phase alone.
+    """
+    from reckon.crew.reports import (
+        ManifestParseError,
+        manifest_status_is_template,
+        parse_manifest,
+    )
+
+    path = str(record.get("manifest_path") or "").strip()
+    if not path:
+        return ""
+    crew_module, _ = _crew_modules()
+    if not crew_module._manifest_freshness(record)[1]:
+        # A resumed attempt points at the same delivery path, so a terminal
+        # status left there by the attempt before it is not this attempt's
+        # verdict. Only a manifest written after the attempt began is read.
+        return ""
+    try:
+        delivered = parse_manifest(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ManifestParseError):
+        return ""
+    status = str(delivered.get("status") or "").strip().lower()
+    return "" if manifest_status_is_template(status) else status
+
+
+def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The state refusing this run's fence, and the status its manifest reports.
+
+    The first value is the state that refuses a widening, or ``""`` when the
+    fence may move; the second is the manifest's own reported status, so the
+    answer can name which of the two accounts authorised the write.
+
+    Two sources state whether a run has stopped on a blocked fence: the folded
+    phase, and the manifest the run delivered. A run is wideniable when either
+    reports ``blocked``, because a run launched through a backend folds its
+    phase from a terminal stream event and a worker that writes ``status:
+    blocked`` before ending its turn leaves the two disagreeing. A manifest
+    reporting complete or failed refuses on its own -- a finished run has no
+    scope decision outstanding, and a wider fence would be granted to work that
+    has already ended. Every other state is refused, since only a run that has
+    stopped and stated a block has a boundary that can move without a live
+    process writing against it.
+    """
+    phase = str(record.get("phase") or "")
+    reported = _manifest_reported_status(record)
+    if reported in WIDEN_REFUSING_MANIFEST_STATUSES:
+        return f"{reported!r} in its own manifest", reported
+    if WIDENABLE_PHASE in (phase, reported):
+        return "", reported
+    return repr(phase or "unphased"), reported
+
 
 @crew.command(name="widen")
 @click.option("--run", "run_id", required=True, help="Run whose fence to widen.")
@@ -2937,13 +3106,20 @@ def crew_widen(run_id, write_paths, pretty):
     session with its own work intact. The field written is the one promotion
     reads, so a scope granted here is the scope the promotion validator honours.
 
-    The run must be blocked. A working run's fence is the boundary it is
-    currently writing against, so widening one would move that boundary under a
-    live process that already read it. A run whose phase is not ``blocked`` is
-    refused and its pointer is left untouched. The phase is checked twice: once
-    on the pointer as it stands and again on the record read under the per-run
-    lock, so a run that leaves the blocked phase between those two reads is
-    refused rather than widened in place.
+    The run must be blocked, read from two sources rather than from the folded
+    phase alone: the phase, and the status the run's own manifest reports. A run
+    whose manifest reports ``blocked`` is wideniable even when its phase has
+    folded to ``complete``, because a run launched through a backend folds its
+    phase from its stream's terminal event -- so a worker that ends its turn
+    after writing ``status: blocked`` folds to ``complete``, and its own
+    delivery is the only place the block is stated. A manifest reporting
+    ``complete`` or ``failed`` is refused, because a finished run has no scope
+    decision outstanding. Every other state is refused too: a working run's
+    fence is the boundary it is currently writing against, so widening one would
+    move that boundary under a live process that already read it. Eligibility is
+    read twice -- once on the pointer as it stands and again on the record read
+    under the per-run lock -- so a run that reaches either read in a
+    non-wideniable state is refused rather than widened in place.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -2951,10 +3127,10 @@ def crew_widen(run_id, write_paths, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    phase = str(record.get("phase") or "")
-    if phase != WIDENABLE_PHASE:
+    state, manifest_status = _widen_eligibility(record)
+    if state:
         raise click.ClickException(
-            f"run {run_id!r} is {phase or 'unphased'}, not {WIDENABLE_PHASE!r}: only a "
+            f"run {run_id!r} reads {state}, not {WIDENABLE_PHASE!r}: only a "
             "blocked run's fence is widened, because a working run is already "
             "writing against the boundary this would move"
         )
@@ -2967,18 +3143,18 @@ def crew_widen(run_id, write_paths, pretty):
     added: list[str] = []
 
     def widen(pointer: dict[str, Any]) -> dict[str, Any]:
-        # The phase above was read before the per-run lock, so it is a claim about
-        # the pointer as it was, not as it is. Re-check it on the record this
+        # The eligibility above was read before the per-run lock, so it is a claim
+        # about the pointer as it was, not as it is. Re-check it on the record this
         # mutation read under the lock: between the two reads a run can leave the
-        # blocked phase and start writing against its boundary, and widening there
-        # would move that boundary under a live process. Raising before the write
-        # leaves the pointer as this mutation found it.
-        locked_phase = str(pointer.get("phase") or "")
-        if locked_phase != WIDENABLE_PHASE:
+        # wideniable state and start writing against its boundary, and widening
+        # there would move that boundary under a live process. Raising before the
+        # write leaves the pointer as this mutation found it.
+        locked_state, _ = _widen_eligibility(pointer)
+        if locked_state:
             raise click.ClickException(
-                f"run {run_id!r} became {locked_phase or 'unphased'} before the widening "
-                f"reached the pointer: only a {WIDENABLE_PHASE!r} run's fence is widened, "
-                "and nothing was written"
+                f"run {run_id!r} reads {locked_state} at the pointer write, not "
+                f"{WIDENABLE_PHASE!r}: only a blocked run's fence is widened, and "
+                "nothing was written"
             )
         node = dict(pointer.get("node") or {})
         declared = [str(path) for path in node.get("write_paths") or ()]
@@ -2996,6 +3172,11 @@ def crew_widen(run_id, write_paths, pretty):
             "ok": True,
             "run_id": run_id,
             "phase": str(updated.get("phase") or ""),
+            # The status the run's own manifest reported. It is carried because
+            # the phase alone can read complete here: a widening authorised by
+            # the manifest would otherwise look, in this very output, like a
+            # widening of a finished run.
+            "manifest_status": manifest_status,
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
             "added": added,

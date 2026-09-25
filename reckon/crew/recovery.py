@@ -2566,31 +2566,21 @@ STREAM_RESULT_RECORD_TYPE = "result"
 
 # The tail a last-record read takes from a stream. The answer is one line, and
 # the watcher asks this per run per snapshot, so the whole file — megabytes on a
-# long run — is never read for it.
+# long run — is never read for it. It is a floor rather than a limit: a final
+# record taller than the window leaves the window inside that one record with no
+# line boundary in it, and the read then reaches further back until one is in.
 _STREAM_TAIL_BYTES = 64 * 1024
 
 
-def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
-    """The type of a run's newest stream's last complete record.
+def _last_record_type_in(chunk: bytes) -> str | None:
+    """The type of the last complete record in a chunk of a stream.
 
-    None answers "no last record to read": no stream, one that cannot be read,
-    or one whose tail holds no complete record. A trailing partial write is
-    skipped rather than parsed — an engine appending a record is not evidence
-    that the record completed — and a caller therefore never reads "could not
-    tell" as a particular type.
+    Lines are read backwards, so the answer is the record the file ends on
+    rather than the one it starts with. A line that does not parse is passed
+    over: a trailing partial write is not evidence that a record completed, and
+    a reader that took it for one would name an end the run never reached.
     """
-    found = _record_newest_stream(record)
-    if found is None:
-        return None
-    try:
-        with found[0].open("rb") as handle:
-            handle.seek(0, os.SEEK_END)
-            size = handle.tell()
-            handle.seek(max(0, size - _STREAM_TAIL_BYTES))
-            tail = handle.read()
-    except OSError:
-        return None
-    for raw in reversed(tail.splitlines()):
+    for raw in reversed(chunk.splitlines()):
         text = raw.strip()
         if not text:
             continue
@@ -2604,6 +2594,52 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
         if isinstance(record_type, str) and record_type:
             return record_type
     return None
+
+
+def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
+    """The type of a run's newest stream's last complete record.
+
+    None answers "no last record to read": no stream, one that cannot be read,
+    or one whose tail holds no complete record. A trailing partial write is
+    skipped rather than parsed — an engine appending a record is not evidence
+    that the record completed — and a caller therefore never reads "could not
+    tell" as a particular type.
+
+    The window is a floor because a record can be taller than it. A chunk that
+    begins inside a record holds only a fragment of the file's last record when
+    that record is taller than the window, and a fragment parses as nothing, so
+    the read reaches further back until the chunk begins where a record begins
+    and the record ending the file is read whole. One window answers the common
+    case — a last record of a few hundred bytes behind any length of stream —
+    because such a chunk holds that record entire and the read stops there.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return None
+    try:
+        with found[0].open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            window = _STREAM_TAIL_BYTES
+            while True:
+                start = max(0, size - window)
+                handle.seek(start)
+                chunk = handle.read()
+                record_type = _last_record_type_in(chunk)
+                if record_type is not None or start == 0:
+                    return record_type
+                # Nothing in the chunk read as a record. A chunk beginning at a
+                # record boundary holds only complete lines, so the stream has
+                # no record to read here and reaching further back would answer
+                # the same; a chunk beginning inside one is the tail of a
+                # record larger than the window, which the next read must
+                # contain.
+                handle.seek(start - 1)
+                if handle.read(1) == b"\n":
+                    return None
+                window *= 4
+    except OSError:
+        return None
 
 
 def _process_exit_reason(record: Mapping[str, Any], last_record_type: str) -> str:

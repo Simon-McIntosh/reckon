@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="22">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="25">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -201,6 +201,44 @@
       one path that ends early, refused whole rather than half-applied.</figcaption>
     </figure>
 
+    <p><strong>The audit half is live, and it carries both severities the done-when asks for,
+    2026-09-25.</strong> Commit <code>c84c7323931581c6e9f74caaaeb908ecda2c04d0</code> adds the two
+    audit findings. An implementable section carrying no typed record is reported at
+    <strong>error</strong> once the plan already holds a record to compare against, and at
+    <strong>warning</strong> while the plan still predates the contract, so converting plans one at a
+    time is visible work rather than a fleet-wide stop on the day the rule lands. The finding names the
+    section id and carries the same worked append example the write boundary refuses with, imported from
+    that refusal builder rather than copied, so the two messages cannot drift apart. A followup whose
+    body enumerates more than one deliverable is reported at <strong>warning</strong> as section-sized
+    work. Only <code>error</code> moves the audit's exit code, so a pre-contract repository audits
+    clean.</p>
+    <p><strong>Sizing followup work had no field to read, so the corpus was measured first.</strong>
+    Of the repository's 365 authored followups, none carries an effort field, and of the 127 still
+    open only 2 state an hour figure in prose, so "above the stated effort threshold" cannot be read
+    literally off the documents. Described work is sized instead by its enumerated deliverables
+    against a named constant — 7 open followups currently reach it. The alternative hour-based
+    reading would find almost nothing today and is recorded in the evidence so the coordinator can
+    redirect it cheaply.</p>
+    <p>A malformed typed record used to abort the whole audit — the state reader raises a pydantic
+    <code>ValidationError</code> and it propagated out of <code>audit_html</code>, so one partial record
+    suppressed every other finding in the file. It is now reported as
+    <code>section-record-invalid</code> and the remaining checks run; typed records are also no longer
+    mistaken for empty reckon sections. Receipts: the focused cohort reads <strong>73 passed, 0
+    failed</strong> at base <code>c473be21</code> and <strong>82 passed, 0 failed</strong> at the head
+    — zero added failures, the nine new cases being the audit's own; deleting the section-contract
+    check makes the error-severity case fail (4 of 9 red under the mutation); and
+    <code>audit-doc</code> over three live plans reports warnings naming
+    <code>s2</code>–<code>s7</code> here, <code>s1</code>–<code>s11</code> on crew-effort-routing, and
+    <code>s1</code>, <code>s2</code>, <code>s4</code>, <code>s5</code> on north-star-orientation, all at
+    exit 0. Full receipts and the failure identities:
+    <a href="/reckon/evidence/archive/section-contract-and-computed-impl-landed#audit-section-contract-findings">the audit findings record</a>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/audit-contract-decisions.svg"
+           alt="Two arms. An implementable section with no typed record is an error once the plan already carries a typed record to compare against, and a warning while the plan still predates the contract. An open followup whose body enumerates more than one deliverable is a warning; one deliverable or none stays silent. Only errors move the audit's exit code.">
+      <figcaption>Severity follows the plan's own state, and the followup arm measures what it can read:
+      enumerated deliverables, because no followup states an effort.</figcaption>
+    </figure>
+
     <h2 id="s3">§3 — impl is computed from section effort, never authored</h2>
     <p>impl becomes the sum of effort over sections whose status is done, divided by that sum plus the predicted
     effort of every remaining implementable section; deferred sections are outside the denominator, as the
@@ -361,6 +399,11 @@
     <div class="r-fu-body">Recorded by the findings node: reckon/mcp.py, reckon/serve.py and reckon/flight.py call build_roadmap without docs_dir, so on those surfaces the wiring scan still falls back to the registered mount and a worktree-scoped roadmap judges one tree's plans against another tree's declarations. Pass each caller's checkout path through, and pin one caller with a test that inventories a worktree carrying a declaration the mount lacks. The audit-message half of the fourth finding lives in reckon/_schema.py and reckon/cli.py and lands in the same node.</div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
     </article>
+<article class="r-fu" data-id="f-scci-doccheck-comment-figure" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T08:55:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Strip the frozen followup-census figure from the doccheck comment</h4>
+    <div class="r-fu-body"><p>Review of audit-doc-reports-missing-section-contract (91) found that the comment near <code>reckon/doccheck.py:142</code> cites a count (1 of 468 open followups) that the delivery's own census contradicts. A frozen count in source is a fuse. Fold into the next node touching <code>reckon/doccheck.py</code> (section 6): state the mechanism, not the figure.</p></div>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §6 — include removing the census figure from the doccheck.py comment</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-scci-wiring-reviewed" data-who="" data-when="">
@@ -416,6 +459,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T062033628406-review-of-section-writes-tests-carry-a-contract" data-who="reckon-build" data-when="2026-09-25T06:43:19.940Z">
     <div class="r-comment-body"><p>review stored: evidence-accuracy findings only, no code defect</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T064946090143-audit-doc-reports-missing-section-contract" data-who="reckon-build" data-when="2026-09-25T07:35:46.502Z">
+    <div class="r-comment-body"><p>audit-doc reports untyped implementable sections (error on contract plans, warning on pre-contract) and section-sized followups; review 91, frozen comment figure routed to f-scci-doccheck-comment-figure</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T075217778053-review-of-audit-doc-reports-missing-section-contract" data-who="reckon-build" data-when="2026-09-25T08:53:21.865Z">
+    <div class="r-comment-body"><p>review stored: 91, one comment-accuracy finding routed to a followup</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it-landed">
+  <meta name="plan-title" content="A Sprint Is Live While A Crew Works It — landed record">
+  <meta name="plan-summary" content="Liveness is derived at read time from a project&#x27;s live crew pointers (§2), the sprint push op no longer demotes other sprints (§4), and the sprint skill teaches that definition (§5).">
+  <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
+  <meta name="plan-verifies" content="a-sprint-is-live-while-a-crew-works-it#s2,a-sprint-is-live-while-a-crew-works-it#s4,a-sprint-is-live-while-a-crew-works-it#s5">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="6c92861d,0ad5a171,21077dfa">
+  <title>A Sprint Is Live While A Crew Works It — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A Sprint Is Live While A Crew Works It — landed record</h1>
+    <p>Execution record for <a href="/reckon/plans/a-sprint-is-live-while-a-crew-works-it">a-sprint-is-live-while-a-crew-works-it</a> §2 and §4. Liveness is derived at read time from a project's live crew pointers: a pointer working or dispatched makes its sprint live, a blocked or unpromoted pointer is held. Nothing is written back to a sprint resource.</p>
+
+    <section id="s2">
+      <h2>§2 — Liveness is derived from live crews</h2>
+      <p>Added <code>reckon/sprint_liveness.py</code>, exposing
+        <code>sprint_liveness(project, docs_dir, live_records)</code>. The read
+        composes machinery that already existed rather than rebuilding it:
+        <code>classify_pointer</code> and the watch state mapping from
+        <code>reckon/crew/recovery.py</code> decide each pointer's state, and
+        <code>list_live</code> from <code>reckon/crew/runs.py</code> supplies the
+        record set when the caller omits one.</p>
+
+      <p>Each sprint a pointer serves yields one row carrying <code>live</code>,
+        <code>live_runs</code>, <code>live_sessions</code>,
+        <code>last_activity_at</code> and <code>held_runs</code>. A sprint is live
+        when at least one of its pointers reads <code>working</code> or
+        <code>dispatched</code>; a pointer that is <code>blocked</code>, or a
+        completion nobody has promoted, counts as held, not live. A terminal
+        pointer on a sprint makes that sprint read <code>live: false</code>. The
+        sprint's stored status is never consulted, so a sprint's stored status
+        cannot disagree with what is running.</p>
+
+      <p>No file is written: the read is computed from the pointers and the plan
+        meta the pointers name. The plan → sprint join reads the pointer's own
+        <code>node.plan</code> and that plan's <code>plan-sprint</code> meta.</p>
+
+      <figure>
+        <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/pointer-to-sprint-liveness.png"
+             alt="Live pointers flow through classify_pointer and the watch state mapping to a per-sprint liveness row">
+        <figcaption>Pointer → classification → sprint row. The stored sprint
+          status is not on the path.</figcaption>
+      </figure>
+
+      <h3>Measure</h3>
+      <p><code>tests/test_sprint_liveness.py</code> builds a synthetic config home
+        and docs tree and asserts the row fields directly. The fixture holds a
+        working pointer and a blocked pointer on one plan, a working pointer on a
+        second plan, and a terminal pointer on a third. The gate is green and the
+        declared mutation is red.</p>
+
+      <table>
+        <thead>
+          <tr><th>Sprint</th><th><code>live</code></th><th><code>live_runs</code></th><th><code>live_sessions</code></th><th><code>held_runs</code></th></tr>
+        </thead>
+        <tbody>
+          <tr><td>S100 (working + blocked)</td><td>true</td><td>1</td><td>1</td><td>1</td></tr>
+          <tr><td>S101 (working)</td><td>true</td><td>1</td><td>1</td><td>0</td></tr>
+          <tr><td>S102 (terminal)</td><td>false</td><td>0</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <p>The test also asserts that no file under the synthetic docs tree or the
+        synthetic config home changes mtime across the read — the pointers'
+        evidence, not a promise in prose — so a future change that starts writing
+        sprint state from this read fails the gate rather than passing quietly.</p>
+
+      <h3>Evidence that could have failed</h3>
+      <ul>
+        <li>Gate: <code>2 passed</code> at
+          <code>4079c4d2</code> with
+          <code>tests/test_sprint_liveness.py</code>, log at
+          <code>~/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/gate.log</code>.</li>
+        <li>Declared mutation — <em>derive liveness from the stored sprint
+          status</em> — applied to the module source in a scratch tree, never to
+          the tested file: both tests fail with
+          <code>assert [] == ['S100', 'S101']</code>, exit 1. Log at
+          <code>.../negative-control.log</code>.</li>
+        <li>The mtime assertion proves the read is read-only rather than merely
+          claiming it; the mutated run reaching the liveness assertion (not a
+          collection error, not the mtime assertion) shows the test is testing
+          the derivation.</li>
+      </ul>
+
+      <p>Commit <code>6c92861d</code> adds <code>reckon/sprint_liveness.py</code>
+        and <code>tests/test_sprint_liveness.py</code>. No existing file is
+        edited.</p>
+    </section>
+    <section id="s4">
+    <h2 id="s4">§4 — The one-active cap, push no longer demotes</h2>
+
+    <p><code>push_sprint</code> in <code>reckon/project_state.py</code> no longer
+    treats <code>active</code> as an exclusive slot. It writes <code>active</code> on its
+    target alone — under the same single resource lock and recovery journal the op used
+    before — leaves every other sprint's stored status untouched, and returns only
+    <code>new_version</code>. The <code>push</code> branch of the apply op no longer emits
+    demotion warnings. The change landed in <code>0ad5a171</code>.</p>
+
+    <h3 id="s4-measure">The measure — push S2 while S1 is active, both stay active</h3>
+
+    <p>The defect is that a push wrote a second sprint file to demote the previous holder of the
+    slot. Reproduced at the base revision before the repair: pushing S2 while S1 was active
+    returned <code>demoted=['S1']</code> and left S1 at <code>open</code>; the same script
+    against the repaired module returns no <code>demoted</code> key and leaves both at
+    <code>active</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/push-sprint-before-after.png"
+           alt="Two panels: under the retired one-active cap, pushing S2 demotes S1 to open; under the current hint semantics, pushing S2 leaves S1 active.">
+      <figcaption>Pushing S2 while S1 is active. Left: the retired cap, which wrote S1 to
+      <code>open</code>. Right: the current behaviour, where the push writes only its target and
+      S1 is untouched.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Base reproduction — <code>push_sprint</code> demotes the prior active sprint</td>
+          <td><code>demoted=['S1']</code>, S1 <code>open</code> — the defect present</td></tr>
+        <tr><td>Repaired — push returns no demoted list, both stay active</td>
+          <td>S1 <code>active</code>, S2 <code>active</code></td></tr>
+        <tr><td>Gate — <code>tests/test_sprint_push_status.py</code></td>
+          <td>11 passed, exit 0</td></tr>
+        <tr><td>Declared mutation — restore the demote loop</td>
+          <td><code>test_push_leaves_other_sprints_active</code> FAILED
+          (<code>{'S1': 'open'}</code> != <code>{'S1': 'active'}</code>), 1 failed / 10 passed</td></tr>
+        <tr><td>Scoped ruff — <code>reckon/project_state.py</code>,
+          <code>tests/test_sprint_push_status.py</code></td>
+          <td>11 findings before, 11 after; identical finding set — no new findings</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="s4-tests-changed">Tests changed in this commit</h3>
+
+    <ul>
+      <li><code>test_push_demotes_the_previous_active_sprint_in_one_write</code> is replaced by
+      <code>test_push_leaves_other_sprints_active</code>: it pushes S2 while S1 is active and
+      asserts no <code>demoted</code> key is returned and <code>{S1: active, S2: active}</code>.
+      The old name asserted the retired invariant and would now be false.</li>
+      <li><code>test_push_on_a_stale_version_changes_neither_sprint</code> is unchanged and still
+      passes.</li>
+    </ul>
+
+    <p><strong>The negative control.</strong> Restoring the demote loop — re-reading the other
+    active sprints and writing each to <code>open</code> after the target write — makes exactly
+    <code>test_push_leaves_other_sprints_active</code> fail with
+    <code>{'S1': 'open', 'S2': 'active'}</code> against the both-active expectation. Removing the
+    mutation restores 11 passed.</p>
+
+    <h3 id="s4-scope-notes">Scope notes</h3>
+
+    <ul>
+      <li>This node does not touch <code>reckon/mcp.py</code>. The <code>multiple-active-sprints</code>
+      audit finding and the push op description at <code>reckon/mcp.py:1315</code> still state the
+      retired invariant and still back the audit test; retiring them belongs to the node that owns
+      <code>reckon/mcp.py</code>.</li>
+      <li>The remaining §4 work — <code>active_sprint_id</code> following the live sprint beside a
+      derived <code>live_sprint_ids</code> list — is a read-side derivation, not a write-side
+      change, and is outside this node's write scope.</li>
+    </ul>
+    </section>
+    <section id="s5">
+      <h2>&sect;5 &mdash; The skill teaches liveness, not the marker</h2>
+      <p>The skill now teaches the crew-derived definition: a pointer&#x27;s own classification decides its sprint&#x27;s live state, and the stored marker is only a scheduling hint.</p>
+      <ul>
+        <li>Section landed in <code>21077dfa</code>: one file, 46 insertions, 33 deletions.</li>
+        <li>Retired-invariant grep at that revision: no output, exit 1.</li>
+        <li>The same grep at the base revision: five statements, SKILL.md lines 50, 65, 137, 190, 192.</li>
+        <li>Skill contract tests at the edited revision: 71 passed, exit 0.</li>
+        <li>Required statements present: all ten, with whole lines reporting the retired word zero.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

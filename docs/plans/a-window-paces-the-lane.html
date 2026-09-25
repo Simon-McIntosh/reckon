@@ -23,9 +23,9 @@
   <title>A Window Paces The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="86">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="89">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.99">
 </head>
@@ -676,6 +676,82 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     that would refuse a wave on this hold is rewired by the sections that consume it, so the module is
     proven while the call site a reader reaches is unchanged. Commit
     <code>3094ce26</code>.</p>
+
+    <h3 id="s7-hold-requeries-a-stale-reading">Landing &mdash; the re-query is proven from a receipt on disk</h3>
+
+    <p><strong>Landed 2026-09-25.</strong> The rule above already stood in <code>hold.py</code> at
+    this node's base &mdash; <code>hold_from_position</code> resolves a group's position through
+    <code>staleness.resolve_configured_reading</code> before anything is held. What nothing asserted
+    is that it holds <em>end to end from a receipt recorded on disk</em>: the landed case passed the
+    shelf life in as a literal and drove the reader directly, so a hold path that stopped resolving
+    through the reader &mdash; or a process that resolved a different configuration home &mdash; would
+    have kept its green. This node's deliverable is therefore the missing measure rather than a second
+    implementation of a working guard, and it is stated that way because the alternative is the
+    repository's most frequently recorded defect: a mechanism proven while the path a reader reaches
+    is not.</p>
+
+    <p><strong>The measure drives the real path, with the shelf life read from a home rather than
+    passed in.</strong> A receipt for the lane (<code>99.0 %</code>, observed 2 h 24 min before now)
+    is written into a temporary configuration home the process is pointed at, whose flight declaration
+    sets <code>budget.evidence_shelf_life_minutes: 60</code>; the suite first asserts that the shelf
+    life in force <em>is</em> 60, so the staleness below is a fact about resolved configuration. The
+    home is temporary on purpose &mdash; a suite must never digest the operator's own configuration
+    &mdash; and the home it displaces is given a shelf life of 100 000 minutes, wide enough to trust
+    the very same receipt: a run resolving the wrong home could neither re-query nor carry the figure
+    the assertions require, so the displacement is a falsifier rather than decoration.</p>
+
+    <p><strong>What lands is one property asserted three ways.</strong> A reading past its shelf life
+    is re-queried, the probe is called exactly once, and the hold carries the probe's figure
+    (<code>97.0</code>) and age (30 s) rather than the receipt's <code>99.0</code> &mdash; asserted as
+    the hold's figure being the probe's and not the receipt's, so a hold resting on the figure that
+    provoked the question cannot pass. A failed re-query &mdash; a transport that raises, an answer
+    carrying no figure &mdash; leaves the state <code>unknown</code> and produces no hold, and the
+    reader's <code>unknown</code> is asserted on the same input first, so the refusal cannot be
+    passing for an unrelated reason. A figure the probe observed from a pool the held group does not
+    declare never becomes that group's position however fresh it is, and the same probe answering from
+    the group's own pool is held &mdash; so the pool decides, not freshness and not distance above the
+    ceiling. The displaced home is digested before and after the run and required byte-identical,
+    because an isolated read does not prove an isolated write.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/hold-requeries-a-stale-receipt.svg" alt="One
+      stale receipt resolved to a hold. A receipt for the lane carrying 99.0 % used, observed 2 h
+      24 min before now, exceeds the 60-minute shelf life the temporary configuration home declares, so
+      the lane's own probe is asked; a reading inside its shelf life would never be. Two outcomes
+      follow. The probe answers with 97.0 % at an age of 30 s, and the hold carries the probe's figure
+      and the probe's age, never the receipt's 99.0 -- asserted as the hold's figure being 97.0 and not
+      99.0, with the probe called exactly once and the figure owned by the group's own pool. The probe
+      cannot answer, so the old figure is kept with the age that disqualifies it and marked unknown,
+      and no hold is produced: a missed hold costs some quota while a false hold costs the lane. The
+      displaced home, whose shelf life is 100 000 minutes, is digested before and after the run and
+      required to match.">
+      <figcaption>The re-query is bounded &mdash; a fresh reading never disturbs the probe &mdash;
+      and it is not optional: a figure past its shelf life cannot be held on directly, and an
+      unanswerable probe yields <code>unknown</code> rather than the figure that asked.</figcaption>
+    </figure>
+
+    <p><strong>Evidence.</strong> Gate <code>pytest -q
+    tests/test_hold_requeries_a_stale_reading.py tests/test_hold.py tests/test_staleness.py</code>
+    &mdash; <strong>24 passed</strong> at <code>827123ae</code> (the new file alone: 3 passed; the two
+    pre-existing files are unchanged and add zero failures against the dispatch base). The declared
+    mutation &mdash; returning the stored figure from
+    <code>resolve_configured_reading</code> without re-querying, so the hold holds on a reading past
+    its shelf life &mdash; applied to a scratch copy built from <code>git archive HEAD</code> reddens
+    the named test on the declared observable: the hold carrying the receipt's <code>99.0</code> where
+    the probe's <code>97.0</code> was required. The mutated package is shown to be the one imported
+    (the scratch paths print in the log), which is the difference between a control and a green that
+    means nothing. Full record:
+    <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed#s7-hold-requeries-a-stale-reading">the
+    landed evidence record</a>.</p>
+
+    <p><strong>Not in this node, and named rather than papered over.</strong> Nothing still calls
+    <code>hold.py</code>, so the dispatch refusal it will justify remains the consuming sections'
+    residual. One semantic gap is recorded for those sections: <code>hold.py</code> reads a reading's
+    <code>source</code> as the <em>pool</em> a figure was observed from and requires it to equal the
+    held group, while the evidence-side rows carry <code>source</code> as a <em>provenance kind</em>
+    (<code>receipt</code> / <code>probe</code>). Both readings are deliberate in their own layer; what
+    is not yet decided is the mapping between them, and a consumer passing a row straight through
+    would refuse every real hold as borrowed. Commit <code>827123ae</code>.</p>
 
     <h2 id="s8">&sect;8 &mdash; The pattern that is not blocked</h2>
 
@@ -1538,6 +1614,12 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260921T154058487265-second-read-of-a-hold-carries-the-evidence" data-who="reckon-ship" data-when="2026-09-21T16:10:40.253Z">
     <div class="r-comment-body"><p>second read of the hold-evidence node after the first review was abandoned in the minute the project state file went missing; total 94 with one P3 found by measurement rather than reading — the module's docstring says a borrowed figure is refused before anything else is asked of it, while the borrow test runs on the resolved reading, so a borrowed reading past its shelf life probes first. The refusal still holds and the outcome is unchanged; the stated ordering is not the actual ordering, which becomes load-bearing the moment a caller relies on never probing for a borrowed lane.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T082135945791-hold-holds-only-on-a-fresh-figure" data-who="reckon-build" data-when="2026-09-25T10:37:10.637Z">
+    <div class="r-comment-body"><p>the pacing hold re-queries a stale reading before holding, now pinned by a test; review 95, no findings</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T103133884720-review-of-hold-holds-only-on-a-fresh-figure" data-who="reckon-build" data-when="2026-09-25T11:25:36.000Z">
+    <div class="r-comment-body"><p>review stored: 95, no findings</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260921T210816288596-review-of-the-preflight-pace-fresh-session" data-who="reckon-ship" data-when="2026-09-21T21:20:47.347Z">
     <div class="r-comment-body"><p>independent review of the pre-flight pace landing stored at total 87 of 100 with three findings: two production readers pass no windows, the control log's declared mutation is a paraphrase of the dispatch's, and the manifest's sha256 for the red log matches no file</p></div>

@@ -25,6 +25,8 @@
   <title>A Worker Can Take A Brief | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -67,6 +69,65 @@
       <li>The plan prompt is byte-identical to its output before the change.</li>
     </ul>
 
+    <h3 id="s3-landed">Landed &mdash; node <code>brief-prompt-composition</code></h3>
+    <p>
+      <code>compose_prompt</code> in <code>reckon/crew/prompts.py</code> now takes an optional
+      <code>brief</code>. When it is non-empty the prompt carries the brief text verbatim in the
+      task-authority slot where the plan-section read instruction sits, and the landing contract
+      sends the record to the run's own directory rather than to a plan section. Every other slot
+      is composed for both carriers: the four fences, the durable-write and falsifiable-evidence
+      contracts, the manifest key list, the closure authority, the negative-control declaration,
+      and the landing contract's figure convention and meta-line ban. The two carriers differ at
+      exactly two slots.
+    </p>
+    <table>
+      <thead><tr><th>Prompt slot</th><th>Plan carrier (<code>--plan</code> + <code>--section</code>)</th><th>Brief carrier (<code>--brief</code>)</th></tr></thead>
+      <tbody>
+        <tr><td>Task authority</td><td><code>PLAN proj:plan-a s3</code></td><td><code>BRIEF</code> followed by the brief, verbatim</td></tr>
+        <tr><td>Landing destination</td><td>the plan's own section plus the cumulative evidence record</td><td>this run's own directory</td></tr>
+      </tbody>
+    </table>
+    <p>Every other slot is composed identically for both carriers: node and goal, role, done-when and budget, the contracts, the landing rules on figures and meta lines, the four fences, the manifest keys and the peer channel. With an empty brief the composed prompt is byte-identical to its output before the change.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Gate <code>tests/test_brief_prompt.py</code></td>
+          <td><strong>11 passed</strong>, exit 0 (<code>488d3e92</code>, base
+          <code>e731091f</code>)</td>
+        </tr>
+        <tr>
+          <td>Regression over the 16 prompt and manifest test modules</td>
+          <td><strong>129 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>Plan prompt byte-identity, with an empty brief</td>
+          <td>the live composition equals an inline pre-change snapshot byte for byte, both taken
+          under a pinned interpreter</td>
+        </tr>
+        <tr>
+          <td>Declared negative control &mdash; keep the plan-section read instruction for a brief</td>
+          <td><code>test_a_brief_prompt_carries_no_plan_section_read_instruction</code> fails, 10 of
+          11 pass, exit 1; source restored and confirmed identical</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Landing record and evidence anchor: <code>docs/evidence/archive/a-worker-can-take-a-brief-landed.html</code>.
+      This gate measures this node's own change; verifying the merged result belongs to a
+      separately dispatched test node.
+    </p>
+    <p>
+      <strong>Correction.</strong> Independent review found the first brief landing contract
+      untrue: it sent the record to this run's own directory and then said both go into the final
+      commit, but that directory lies outside the worktree and git refuses a path under it.
+      Commit <code>e4d70125</code> states where the record goes, that it is never committed, that
+      the node commits only the repository files it changes, and that the manifest carries the
+      record's absolute path; the figure convention, the meta-line ban and the plan contract are
+      untouched. The gate now passes <strong>13</strong> tests at exit 0, and the declared
+      mutation &mdash; restoring the commit instruction &mdash; fails both new tests at exit 1.
+    </p>
+
     <h2 id="s4">&sect;4 &mdash; Promotion records a brief run's owner</h2>
     <p><code>reckon/crew/promotion.py</code> promotes a brief run with <code>plan: null</code> and the brief digest on its ledger row, and skips the impl-move guard. An implement-role brief run is refused unless <code>--plan-link</code> or <code>--unplanned-reason</code> is given. The refusal names both discharges.</p>
     <p><strong>Done when:</strong></p>
@@ -87,33 +148,31 @@
     </ul>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="implement-role-briefs" data-choice="allowed-with-owner" data-by="lead directive, 2026-09-25" data-when="2026-09-25">
-        <p class="r-dec-q">May an implement-role worker take a brief instead of a plan?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="allowed-with-owner">Allowed; promotion names a plan link or an unplanned reason</button>
-          <button class="r-opt" data-value="read-only-only">Only read-only roles may take a brief</button>
-        </p>
-        <p class="r-dec-rat">The lead asked for the committed-plan requirement to be lifted for background work generally. Requiring a stated owner at promotion keeps every product change traceable without forcing a plan edit before the work starts.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="implement-role-briefs" data-choice="allowed-with-owner" data-by="lead directive, 2026-09-25" data-when="2026-09-25">
+    <p class="r-dec-q">May an implement-role worker take a brief instead of a plan?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="allowed-with-owner">Allowed; promotion names a plan link or an unplanned reason</button>
+      <button class="r-opt" data-value="read-only-only">Only read-only roles may take a brief</button>
+      </p>
+    <p class="r-dec-rat">The lead asked for the committed-plan requirement to be lifted for background work generally. Requiring a stated owner at promotion keeps every product change traceable without forcing a plan edit before the work starts.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-awctab-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-25"
-               data-recommends-skill="/reckon-build a-worker-can-take-a-brief"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Land &sect;2&ndash;&sect;5</h4>
-        <div class="r-fu-body"><p>&sect;2 comes first. &sect;3 and &sect;4 can then run in parallel, and &sect;5 follows once they have landed.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-worker-can-take-a-brief</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awctab-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-worker-can-take-a-brief" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §2–§5</h4>
+    <div class="r-fu-body"><p>§2 comes first. §3 and §4 can then run in parallel, and §5 follows once they have landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-can-take-a-brief</pre>
+    </article>
+</section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T093823071746-review-of-brief-prompt-composition" data-who="reckon-build" data-when="2026-09-25T10:31:14.149Z">
+    <div class="r-comment-body"><p>review of brief-prompt-composition at ba1fe43c scored 89/100: BRIEF_LANDING_CONTRACT sends the record to the run directory, outside the worktree, yet says both go into the final commit, which git refuses; returned to the node&#x27;s session</p></div>
+</div>
+</section>
   </main>
 </body>
 </html>

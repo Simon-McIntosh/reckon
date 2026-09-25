@@ -409,6 +409,79 @@ def _blocking_row(plan: dict[str, Any], ref: str) -> dict[str, Any] | None:
     return None
 
 
+def _after_edges(
+    project: str,
+    plan: dict[str, Any],
+    all_plans: Mapping[str, dict[str, Any]],
+    artifacts: Mapping[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Resolve a plan's soft ``after`` refs into annotation rows.
+
+    An after edge expresses *start after X lands if you can, do not wait*: it
+    orders work and never holds it. Each row records what the ref resolved to
+    so the ready set can name the targets it is sequenced behind. ``satisfied``
+    is ``True`` for a target recorded complete, ``False`` for one observed
+    in-project and still open, and ``None`` where nothing could be observed —
+    an unresolvable ref, or a cross-project one the inventory reader does not
+    follow for soft edges. ``None`` ranks nothing: an unobserved target is not
+    evidence that it has not shipped.
+    """
+    rows: list[dict[str, Any]] = []
+    for ref in plan.get("after") or []:
+        parsed = parse_plan_ref(ref)
+        if parsed is None:
+            rows.append(
+                {"ref": ref, "scope": "invalid", "found": False, "satisfied": None}
+            )
+            continue
+        if parsed.is_external(project):
+            row = {
+                "ref": ref,
+                "scope": "external",
+                "project": parsed.project,
+                "slug": parsed.slug,
+                "found": True,
+                "satisfied": None,
+            }
+            if parsed.stage:
+                row["stage"] = parsed.stage
+            rows.append(row)
+            continue
+        target = all_plans.get(parsed.slug)
+        if target is None:
+            rows.append(
+                {
+                    "ref": ref,
+                    "scope": "local",
+                    "slug": parsed.slug,
+                    "found": False,
+                    "artifact_types": [
+                        item.get("type", "plan")
+                        for item in artifacts.get(parsed.slug, [])
+                        if item.get("type", "plan") != "plan"
+                    ],
+                }
+            )
+            continue
+        target_status = _status(target)
+        row = {
+            "ref": ref,
+            "scope": "local",
+            "slug": parsed.slug,
+            "found": True,
+            "status": target_status,
+        }
+        if parsed.stage:
+            found_section = parsed.stage in plan_section_anchors(target)
+            row["stage"] = parsed.stage
+            row["section_found"] = found_section
+            row["satisfied"] = found_section and _section_satisfied(target, parsed.stage)
+        else:
+            row["satisfied"] = target_status in COMPLETED_STATUSES
+        rows.append(row)
+    return rows
+
+
 def _finding(
     code: str,
     severity: str,
@@ -1415,6 +1488,7 @@ def _build_roadmap(
     live_runs, interrupted_runs = partition_live_runs(project)
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
     north_stars = [
@@ -1681,6 +1755,26 @@ def _build_roadmap(
                         )
                     )
 
+        # Soft sequencing: resolved here, ranked below, and deliberately kept
+        # out of every blocker list — an after target that has not shipped
+        # orders the plan later without ever holding it.
+        after_rows[slug] = _after_edges(project, plan, all_plans, artifacts)
+        for row in after_rows[slug]:
+            if row.get("found"):
+                continue
+            findings.append(
+                _finding(
+                    "unresolved-after-edge",
+                    "warn",
+                    (
+                        f"{slug}: after edge {row['ref']!r} resolves to no live "
+                        "plan — the edge orders nothing and holds nothing"
+                    ),
+                    slug=slug,
+                    extra={"ref": row["ref"]},
+                )
+            )
+
         if len(membership.get(slug, [])) > 1:
             findings.append(
                 _finding(
@@ -1884,6 +1978,12 @@ def _build_roadmap(
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)
+        # A soft after edge whose target is observed open ranks the plan later
+        # without removing it from the ready set; an unobserved target (external
+        # or unresolvable) ranks nothing.
+        after_hold = any(
+            record.get("satisfied") is False for record in after_rows.get(slug, [])
+        )
         authorised = status in _AUTHORISED_STATUSES
         is_ready = (
             dispatchable
@@ -1943,6 +2043,13 @@ def _build_roadmap(
             "remaining_effort_hours": _remaining_effort_hours(plan),
             "remaining_wall_hours": _remaining_wall_hours(plan),
             "depends_on": dependency_rows.get(slug, []),
+            "after": after_rows.get(slug, []),
+            "came_after": [
+                after_row["ref"]
+                for after_row in after_rows.get(slug, [])
+                if after_row.get("found") and after_row.get("satisfied") is not True
+            ],
+            "after_hold": after_hold,
             "explicit_blockers": explicit_blockers,
             "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
@@ -2086,6 +2193,11 @@ def _build_roadmap(
     def priority(row: dict[str, Any]) -> tuple[Any, ...]:
         sprint_position = sprint_order.get(str(row.get("sprint") or ""), 10**6)
         return (
+            # Soft-sequenced work yields the front of a tie: a plan that has
+            # deliberately deferred to something unshipped should not be the
+            # first thing a reader starts, though it stays ready and ranked
+            # ahead of nothing — the edge never holds it.
+            1 if row.get("after_hold") else 0,
             0 if row["slug"] in critical_members else 1,
             sprint_position,
             _ROI_ORDER.get(str(row.get("roi") or "mid").lower(), 1),
@@ -2121,7 +2233,9 @@ def _build_roadmap(
             "schedule_behind_sprint": row["schedule_behind_sprint"],
             "endpoint_closures": endpoint_memberships.get(row["slug"], []),
             "reason": (
-                "critical path"
+                f"ready — sequenced after {', '.join(row['came_after'])}"
+                if row.get("came_after")
+                else "critical path"
                 if row["slug"] in critical_members
                 else "ready with all hard prerequisites satisfied"
             ),

@@ -52,7 +52,7 @@ import subprocess
 import tempfile
 import threading
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
 from http import HTTPStatus
@@ -1443,6 +1443,18 @@ def _attach_discovery_provenance(result: dict, docs_dir: Path) -> dict:
     return result
 
 
+#: Relation edges ``build_roadmap`` reads off an inventory row. Every row
+#: builder takes these keys from one tuple: an edge a plan declares but a row
+#: omits leaves the roadmap blind to it while nothing errors, which is how two
+#: hand-maintained key lists drift apart.
+EDGE_ROW_FIELDS = ("depends_on", "after", "blocks")
+
+
+def edge_row(rec: Mapping[str, object]) -> dict[str, list]:
+    """Return the roadmap relation edges one plan record declares, as lists."""
+    return {field: list(rec.get(field) or []) for field in EDGE_ROW_FIELDS}
+
+
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
     """Return {inventory, sprints, milestones} by scanning HTML doc pages.
 
@@ -1561,8 +1573,7 @@ def _discover_plans_uncached(
                     "followups": followups,
                     "blockers": rec["blockers"],
                     "gates": gates,
-                    "depends_on": rec.get("depends_on", []),
-                    "blocks": rec.get("blocks", []),
+                    **edge_row(rec),
                 }
             )
             if rec.get("north_star"):

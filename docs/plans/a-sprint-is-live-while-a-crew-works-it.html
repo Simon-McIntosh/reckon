@@ -20,12 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-standalone" content="Replaces a stored scheduling marker with a derived signal; nothing upstream must land first. It supersedes the one-active invariant work-scheduling-surface holds, recorded as a lead directive rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Sprint Is Live While A Crew Works It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="8">
+<meta name="plan-commits" content="6c92861d,0ad5a171">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -92,6 +94,34 @@
       <li>Every existing sprint test that asserted demotion is updated to the new contract in the same commit. Each such change is named in the landing record.</li>
     </ul>
 
+    <h3 id="s4-landed">Landed &mdash; push no longer demotes</h3>
+    <p><code>push_sprint</code> in <code>reckon/project_state.py</code> writes <code>active</code>
+    on its target alone under one resource lock and a recovery journal, leaves every other sprint's
+    stored status untouched, and returns only <code>new_version</code>; the <code>push</code> branch
+    of the apply op no longer emits demotion warnings. Landed in <code>0ad5a171</code>.</p>
+    <p>Reproduced at the base revision first: pushing S2 while S1 was active returned
+    <code>demoted=['S1']</code> and left S1 at <code>open</code>. Repaired, it returns no
+    <code>demoted</code> key and both stay <code>active</code>. The gate
+    <code>tests/test_sprint_push_status.py</code> is 11 passed; the declared mutation restoring the
+    demote loop makes <code>test_push_leaves_other_sprints_active</code> fail
+    (<code>{'S1': 'open'}</code> != <code>{'S1': 'active'}</code>) and nothing else. The audit
+    finding and <code>reckon/mcp.py</code> are untouched here, so
+    <code>multiple-active-sprints</code> remains live and is retired by the node that owns
+    <code>reckon/mcp.py</code>.</p>
+    <figure>
+      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/push-sprint-before-after.png"
+           alt="Two panels: under the retired one-active cap, pushing S2 demotes S1 to open; under the current hint semantics, pushing S2 leaves S1 active.">
+      <figcaption>Pushing S2 while S1 is active: the retired cap demoted S1; the current behaviour
+      leaves it active.</figcaption>
+    </figure>
+    <p>Tests changed in the same commit:
+    <code>test_push_demotes_the_previous_active_sprint_in_one_write</code> is replaced by
+    <code>test_push_leaves_other_sprints_active</code> (pushes S2 after S1, asserts no
+    <code>demoted</code> key and both <code>active</code>);
+    <code>test_push_on_a_stale_version_changes_neither_sprint</code> is unchanged and still passes.
+    Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">execution
+    record</a>.</p>
+
     <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
     <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
     <p><strong>Done when:</strong></p>
@@ -99,6 +129,27 @@
       <li><code>grep -rn "exactly one sprint\|one active sprint\|demotes" skills/</code> returns no line that states the retired invariant.</li>
       <li>Every test that greps <code>skills/</code> passes.</li>
     </ul>
+
+    <div class="r-note" data-reckon="landed" data-node="sprint-skill-teaches-liveness" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the skill teaches the crew definition.</strong> Commit
+      <code>21077dfa</code>. The section once titled "One pushed sprint" now states that a
+      sprint is live when at least one live run pointer in its project serves a plan whose
+      <code>plan-sprint</code> is that sprint and the pointer is classified working, starting
+      or dispatched; a blocked or unpromoted pointer is held, not live; liveness is derived
+      at read time from the same classification the live crew view uses and is never stored.
+      <code>push</code> is taught as a scheduling hint that leaves every other sprint's
+      status alone, several sprints may be active or live at once, and
+      <code>active_sprint_id</code> is a compatibility field following the most recently
+      active live sprint.</p>
+      <p><strong>Measured.</strong> The retired-invariant grep returns no line at the edited
+      revision (exit 1), against five at the base (SKILL.md lines 50, 65, 137, 190, 192; the
+      fifth is a plan-membership line reworded to "a single sprint" and disclosed in the
+      evidence record, since the grep cannot distinguish the two uses).
+      <code>tests/test_skill_contracts.py</code> and
+      <code>tests/test_skill_contract_parity.py</code>: 71 passed, exit 0. No file outside
+      <code>skills/</code> was changed by the code commit. Evidence:
+      <code>docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html</code>.</p>
+    </div>
 
     
 
@@ -117,6 +168,24 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T070815532216-review-of-s24-reuse-map" data-who="reckon-build" data-when="2026-09-25T07:27:24.068Z">
     <div class="r-comment-body"><p>review of s24-reuse-map stored</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T072403409541-sprint-liveness-from-live-crews" data-who="reckon-build" data-when="2026-09-25T07:53:42.071Z">
+    <div class="r-comment-body"><p>§2 implemented. <code>reckon/sprint_liveness.py</code> exposes <code>sprint_liveness(project, docs_dir, live_records)</code>, which derives one row per sprint from the project's live pointers: <code>live</code>, <code>live_runs</code>, <code>live_sessions</code>, <code>last_activity_at</code> and <code>held_runs</code>. It composes <code>classify_pointer</code> and the fleet watch state mapping (<code>working</code>/<code>dispatched</code> → live; blocked or unpromoted → held) and <code>list_live</code> for the default pointer read; the sprint's stored status is never consulted.</p><p>Gate <code>tests/test_sprint_liveness.py</code> seeds two sprints with live pointers (one also holding a blocked pointer) and a third whose only pointer is terminal: the two read live with the right run/session counts, the third reads false, and no file under the synthetic docs tree or config home changes mtime across the read — <strong>2 passed</strong>. The declared mutation (derive liveness from the stored status) is red: <strong>2 failed</strong>, <code>assert [] == ['S100', 'S101']</code>. Commit <code>6c92861d</code> adds the module and its test; no existing file is edited.</p><p>Evidence: <a href="/plan/reckon/a-sprint-is-live-while-a-crew-works-it-landed#s2">the landed record</a>. §2 is complete; §3–§5 remain, and the driving followup is left open for the coordinator to close.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T075630410443-review-of-sprint-liveness-from-live-crews" data-who="reckon-build" data-when="2026-09-25T09:18:51.981Z">
+    <div class="r-comment-body"><p>review of sprint-liveness-from-live-crews at d92277ef scored 84/100: the fixture seeds no stored sprint status, so a read that ORs the stored marker into liveness passes; returned to the node's session to add a stored-active, no-pointer case</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T100726894378-re-review-of-sprint-liveness-from-live-crews" data-who="reckon-build" data-when="2026-09-25T10:50:30.700Z">
+    <div class="r-comment-body"><p>re-review of sprint-liveness-from-live-crews at 739175ed scored 89/100 with no findings; the stored-marker gap is closed</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T075521833231-sprint-push-keeps-other-sprints" data-who="reckon-build" data-when="2026-09-25T08:13:35.306Z">
+    <div class="r-comment-body"><p>push sets its target active as a scheduling hint and leaves every other sprint untouched; the demotion test now asserts both stay active and the restored demote loop trips it; 11 passed; review 94 (push description and multiple-active-sprints audit left to the mcp.py node; op-level push path unasserted)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T081516890344-review-of-sprint-push-keeps-other-sprints" data-who="reckon-build" data-when="2026-09-25T09:22:15.463Z">
+    <div class="r-comment-body"><p>review of sprint-push-keeps-other-sprints at e8a67fc7 scored 94/100: push description and multiple-active-sprints audit are mcp.py follow-ons; op-level push path unasserted, folded into active-sprint-follows-the-live-crew</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T090127451654-review-of-sprint-skill-teaches-liveness" data-who="reckon-build" data-when="2026-09-25T09:55:12.317Z">
+    <div class="r-comment-body"><p>review of sprint-skill-teaches-liveness at a29717dd scored 77/100: the skill teaches live_sprint_ids and a liveness-derived active_sprint_id before either exists in code (closed by active-sprint-follows-the-live-crew); the push contradiction is resolved on main; the manifest's base sha is truncated and two changed_paths are misnamed</p></div>
 </div>
 </section>
   </main>

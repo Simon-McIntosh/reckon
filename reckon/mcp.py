@@ -103,6 +103,7 @@ from reckon.capability import (
     map_legacy_capabilities,
     validate_capability,
 )
+from reckon.crew import obligations as obligations_module
 from reckon.crew.directory import DirectoryError
 from reckon.crew.directory import directory as crew_directory
 from reckon.crew.query import RunQueryError, project_live_rows
@@ -146,7 +147,7 @@ from reckon.resources import (
     resource_map,
 )
 from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
-from reckon.serve import _resolve_plan_file, discover_plans
+from reckon.serve import _resolve_plan_file, discover_plans, edge_row
 
 # ── Server instance ────────────────────────────────────────────────────────
 
@@ -1500,8 +1501,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "blocking": list(item.get("blocking") or []),
                 "gates": list(item.get("gates") or []),
                 "followups": list(item.get("followups") or []),
-                "depends_on": list(item.get("depends_on") or []),
-                "blocks": list(item.get("blocks") or []),
+                **edge_row(item),
             }
         )
     return row
@@ -3432,6 +3432,9 @@ def _crew(
     and how much of each five-hour and weekly quota window remains. Consult it
     before choosing a lane; it reports availability only and never selects,
     ranks, or recommends one.
+    ``obligations`` derives the duties one coordinator session still owes — each
+    with its kind, run, age and next command — from the live pointers, the
+    review store and the ledger, and needs ``session``.
 
     Pass ``session`` — the same id given to ``reckon crew dispatch`` — on
     ``live``: every run row gains ``mine``, and the watcher block reports
@@ -3510,18 +3513,35 @@ def _crew(
         "directory",
         "fleet",
         "runs",
+        "obligations",
     ):
         return {
             "ok": False,
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger or budget; lanes is the endpoint quota view, "
-                "routing is the cross-ledger cost view, runs is the compact "
-                "joined view, and fleet is the cross-project view"
+                "records, ledger, budget or obligations; lanes is the endpoint "
+                "quota view, routing is the cross-ledger cost view, runs is the "
+                "compact joined view, and fleet is the cross-project view"
             ),
         }
     try:
+        if view == "obligations":
+            if not session:
+                return {
+                    "ok": False,
+                    "error": "missing_session",
+                    "project": project,
+                    "detail": (
+                        "obligations are derived for one coordinator session; "
+                        "pass the session id given to crew dispatch"
+                    ),
+                }
+            return {
+                "ok": True,
+                "view": view,
+                **obligations_module.obligations(project, session),
+            }
         if view == "runs":
             return crew_runs_view(
                 project,

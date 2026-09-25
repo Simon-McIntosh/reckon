@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="95">
+  <meta name="plan-version" content="102">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.56">
+<meta name="plan-impl" content="0.68">
 </head>
 <body>
   <main class="plan-doc">
@@ -368,6 +368,58 @@
       the inline snapshot and the case fails on <code>isinstance(None, dict)</code>, naming the
       absent <code>tree-snapshot.json</code>; the overlay's own <code>package_root</code> is
       reported so the control is known to have measured the mutated copy.
+    </p>
+
+    <h3 id="s3-landed-stop-before-spawn">Landed &mdash; node <code>stop-before-spawn-spawns-nothing</code></h3>
+    <p>
+      <strong>A stop delivered before the spawn spawns no worker.</strong> The per-run
+      supervisor leads its own process group and installed <code>SIG_IGN</code> for SIGTERM
+      and SIGHUP, so that a <code>crew stop</code> &mdash; a signal to that group, which must
+      also take the worker down &mdash; would not take the supervisor down before it recorded
+      the exit the stop caused. Inside the pre-spawn tree snapshot the ignore discarded the
+      stop instead: the supervisor survived, the snapshot finished, and a stop that read as
+      done spawned its worker anyway. The supervisor now records a stop in a handler and reads
+      the flag once the snapshot returns. A stop that arrived before the worker existed
+      abandons the launch and writes the one launch-failure
+      <code>exit.json</code> (<code>worker_pid: null</code>, <code>ended_during: launch</code>);
+      a stop delivered after the spawn still ends the worker while the supervisor survives to
+      record it.
+    </p>
+    <p>
+      <strong>Gate.</strong> <code>tests/test_stop_before_spawn_spawns_nothing.py</code>, one
+      case, <strong>1 passed in 2.17 s</strong> at revision <code>d47c6a70</code>, with the
+      project interpreter <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> in a
+      scratch tree cut from that revision. The case holds the supervisor inside a stubbed
+      snapshot: a <code>git</code> shim first on the child processes' <code>PATH</code> signals
+      a marker and waits for a release file on its first charged <code>git status</code> under
+      the worktree root, so the supervisor is provably inside the pre-spawn window rather than
+      merely slow. It then sends exactly what <code>crew stop</code> sends &mdash; SIGTERM to
+      the run's process group &mdash; releases the snapshot, and requires no
+      <code>worker.json</code>, no stub worker pid, a dead supervisor, and an
+      <code>exit.json</code> reading <code>worker_pid: null</code> and
+      <code>ended_during: launch</code>. The repository and the configuration home are
+      throwaway, and the real live-pointer directory is asserted unchanged.
+    </p>
+    <p>
+      <strong>Ignoring SIGTERM inside the pre-spawn snapshot makes the no-worker assertion
+      fail.</strong> A scratch tree at the same revision, with the handler replaced by
+      <code>signal.SIG_IGN</code> in both places, fails the gate on
+      <code>assert not (run_directory / "worker.json").exists()</code> with a worker spawned
+      after the stop. The mutated copy is a full package and test tree and the gate reports the
+      <code>reckon_file</code> it measured under the scratch root, so the control is known to
+      have measured the mutated copy.</p>
+    <p>
+      <strong>No failures added over the dispatch and supervisor test files.</strong>
+      <code>tests/test_dispatch_returns_without_worker.py</code> and
+      <code>tests/test_fleet_supervisor.py</code> are the same 10 passed at base
+      <code>6daecfc1</code> and, with this gate's case added, 11 passed at head
+      <code>d47c6a70</code>. One <code>test_fleet_supervisor</code> session case failed once at
+      head in the first pass and did not reproduce: 6 of 6 isolated runs passed, 3 at each
+      revision. That case reads the zellij stub's log after the reader's own log line rather
+      than after the stub's write, so the read can precede the write; the failure is a timing
+      flake in that test, not a failure added over base. Logs
+      <code>base-suite.log</code>, <code>after-suite-rerun.log</code>, <code>gate-head.log</code>
+      and <code>negative-control-pre-spawn-stop.log</code> in the run directory.
     </p>
 
     <h2 id="s4">&sect;4 &mdash; The skill stops telling coordinators to background a dispatch</h2>
@@ -862,6 +914,82 @@
     <p>The mechanism, the five cases and the controls are recorded in
     <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
 
+    <h3 id="s10-headless-tabs-landed">Landed &mdash; node <code>headless-tabs-survive-attach</code>, a headless session keeps its tabs</h3>
+    <p>Node <code>headless-tabs-survive-attach</code> landed the sizing client in the
+    <code>session</code> verb of <code>reckon/crew/fleet_supervisor.py</code>. A session is
+    still created exactly as before &mdash; <code>attach --create-background --create
+    &lt;name&gt;</code> with its layout &mdash; and then one short-lived client is attached on a
+    pty whose size is set to a fixed 200 columns by 50 rows with
+    <code>TIOCSWINSZ</code>, and taken off again once <code>zellij action
+    query-tab-names</code> reports the layout's tabs. The verb returns only after that. The
+    workaround is commented as removable once a zellij release carries the upstream fix for
+    per-client tab sizing (<code>zellij-org/zellij#5612</code>); 0.45.1 is the newest release
+    and still needs it.</p>
+    <p><strong>Why it is needed.</strong> zellij 0.45 sizes each tab from the client that
+    created it rather than from the terminal a later client brings. A session created with
+    <code>--create-background</code> has no client at all, so the tabs its layout asks for are
+    applied with no size to lay them out in and are left broken, and the next client to attach
+    to one of them panics the server. Giving every tab a size from one client at creation time
+    is enough; the client does not have to be the one that will use the session.</p>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/headless_tab_sizing.svg"
+           alt="Two panic-free timelines of the same four-tab session. Left, without the sized client: tabs 1 to 3 are applied with no size and each logs 'Not enough room for panes', the first client attaches and survives, and the second client's attach panics with 'failed to attach client 2 to tab with index 3'. Right, with the sized client: a client on a 200 by 50 pty attaches during creation, tabs 1 to 4 are applied at that size, query-tab-names lists all four, the sized client detaches and a second client attaches for five seconds with no pane error and no attach failure.">
+      <figcaption>
+        The same four-tab layout twice. The tabs are only sized for a client if one is present
+        while the layout is applied; after that, any client's terminal size does.
+      </figcaption>
+    </figure>
+    <p><strong>The measure that could have failed, and the reproduction it rests on.</strong>
+    The defect was reproduced from this node's own zellij server log before the repair was
+    written, verbatim: at 2026-09-25 02:51:58.781 a headless session spawned tab 1
+    (<code>PtyInstruction::NewTab: spawning terminals for tab 1</code>, immediately followed by
+    <code>ScreenInstruction::ApplyLayout: applying layout for tab 1</code>) and the screen thread
+    answered <code>ERROR ... Failed to apply layout: Not enough room for panes</code>; tabs 2 and
+    3 repeated it at 02:52:00.328 and 02:52:01.869; the first real client started at
+    02:52:03.540, the second at 02:52:05.656, and at 02:52:05.667 the server panicked with
+    <code>failed to attach client 2 to tab with index 3</code>. The tabs were created before any
+    client existed, which is the headless path this node repairs.</p>
+    <p>After the repair, an on-node check drives the verb against the real
+    <code>zellij 0.45.1</code> with a throwaway socket directory, config directory and session
+    name (<code>s21-headless-probe&lt;pid&gt;</code>), creates a four-tab layout headless, attaches
+    a second client for five seconds under <code>timeout</code>, and removes only that one
+    session by its exact name with <code>zellij delete-session --force</code>. It reports
+    <code>query-tab-names</code> as all four tabs, and zero <code>Not enough room for
+    panes</code> and zero <code>failed to attach client</code> lines in the bytes the shared
+    server log gained while the session lived. That window is bounded and the shared log is
+    written by every session on the uid, so an absence in it is only evidence if the same
+    reading can be shown finding the strings elsewhere: the same whole-log reading returns the
+    eight pane errors and two attach failures recorded earlier, so the check is looking at
+    something it can see. The log is
+    <code>.../crew/reports/reckon/s21-coord/headless-tabs-survive-attach/on-node.log</code>,
+    <code>RESULT: PASS</code>.</p>
+    <p><strong>The negative control this node declared.</strong> With the sized-client attach
+    removed from the session verb, the test's ordering assertion must fail. It does: the
+    declared red run's first line reads <em>remove the sized-client attach from the session
+    verb; the ordering assertion must fail</em>, and its recorded failure is the ordering
+    assertion on <code>'attach demo'</code>, over an invocation log holding only
+    <code>list-sessions --no-formatting</code> and <code>--layout fleet attach
+    --create-background --create demo</code>. Removing the line makes the ordering assertion
+    fail, not some earlier timeout.</p>
+    <p><strong>After review.</strong> Three properties the first draft rested on without
+    measuring are now measured, each with its own executed control. The tab list must be
+    non-empty and <em>unchanged for a settle window</em> longer than the ~1.5&nbsp;s spacing the
+    recorded application shows before the client is taken off, so a slow layout cannot be called
+    complete after its first tab; the pty's size is read back from the kernel after it is set, so
+    the size the log reports is the one the tabs were laid out in rather than the one that was
+    requested; and the detach line carries the client's own exit status, read after the wait, so
+    it reports that the process ended rather than that it was asked to. Deleting the ioctl,
+    deleting the detach, or shortening the settle window each turns a case red &mdash; the driver
+    is <code>negative_controls.sh</code> in the node's reports directory, with
+    <code>negative_control_wait.log</code>, <code>negative_control_pty_size.log</code> and
+    <code>negative_control_detach.log</code> beside it.</p>
+    <p><strong>What this node does not take.</strong> Nothing outside the verb: the
+    <code>spawn</code> and <code>reload</code> verbs, the reader loop and its runtime directory
+    are untouched, and no caller changes. The workaround costs one throwaway client per session
+    start and is deleted when the upstream fix is released.</p>
+    <p>The mechanism, the ordering case and its control are recorded in
+    <code>docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html</code>&nbsp;&sect;10.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-adrwiw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker" data-resolved-at="" data-resolved-by="">
@@ -889,10 +1017,16 @@
     <div class="r-fu-body"><p>A worker's early orientation manifest carries <code>status: in-progress</code>. The follower renders that run as <code>unreadable</code> with a <q>repair: the manifest at …</q> remedy, which looks like a delivery defect when it is a healthy checkpoint. Observed on <code>r-20260924T190042181732-delivery-tests-read-the-scoring-state</code> at 21:02:30 and 21:02:52 (local), 1:44 into the run. It sits beside <code>f-adrwiw-launch-flicker</code>: both are live states the display misclassifies within the first minutes of a run.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
     </article>
-<article class="r-fu" data-id="f-adrwiw-stop-before-spawn" data-status="open" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T21:30:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-stop-before-spawn" data-status="resolved" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T21:30:00Z" data-recommends-skill="" data-resolved-at="2026-09-25T11:08:26+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A stop during the pre-spawn snapshot is ignored, and the worker spawns anyway</h4>
     <div class="r-fu-body"><p>Measured by s22-coord and relayed through reckon-ee on 2026-09-24. Runs <code>r-20260924T210848317887-row-drops-unread-cells</code> (supervisor pid 1265809) and <code>r-20260924T210913887464-manifest-names-the-tree-it-imported</code> (supervisor pid 1268007) were each stopped with <code>crew stop</code> during the supervisor's pre-spawn tree snapshot. Stop printed <q>SIGTERM sent to process group</q> and the follower read <q>stopped</q>. About 60 s later each supervisor spawned its clive worker anyway (children 1272399 and 1274866), and only a second stop ended them. So the supervisor does not act on SIGTERM while it is inside the snapshot, and it spawns after the stop was reported as done. Done when a stop delivered at any point before the spawn means no worker is ever spawned for that run. A test holds the supervisor in a stubbed snapshot, sends the stop, releases the snapshot and asserts no <code>worker.json</code> and no child. The negative control ignores SIGTERM during the snapshot, and the assertion then fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker</pre>
+    <p class="r-fu-outcome">Landed as stop-before-spawn-spawns-nothing (d47c6a70, ccf6d34a, 99b75c64), merged at 425d0520, review 93. Three residual findings are carried in f-adrwiw-stop-window.</p>
+    </article>
+<article class="r-fu" data-id="f-adrwiw-stop-window" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-dispatch-returns-without-its-worker §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the stop flag&#x27;s read-to-fork window and test the post-spawn stop</h4>
+    <div class="r-fu-body"><p>Residual findings from the review (93) of stop-before-spawn-spawns-nothing, merged at 425d0520. (1) The stop flag is read once, near dispatch.py:5415, and never again before the fork, so a stop delivered in that microsecond window still spawns a worker. Re-check the flag under the same signal mask immediately before the fork, or block SIGTERM across the check-and-fork. (2) No test delivers a group stop to a live supervisor after its worker spawns, so a supervisor that exits instead of recording the stop's exit status would pass. Add that case with a stub worker, and assert the recorded exit. (3) One docstring phrase, "It used to be ignored", is changelog prose, which the naming rule bans; restate it as the invariant. Each change carries a negative control.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -971,6 +1105,12 @@
 <div class="r-comment" data-section="s3" data-id="c-20260924T213000-launch-flicker-evidence" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">More evidence for f-adrwiw-launch-flicker. Every one of the 11 dispatches s21-coord made between 22:04 and 23:20, six implement and five review, read abandoned 3-17 s after dispatch and working 1:57 to 9:04 later. The 9:04 case was the-fleet-supervisor-lives-in-reckon, launched together with five siblings. reckon-ee's r-20260924T204759725667-s23-reuse-map read abandoned at 0:14 while its supervisor (pid 1165048) was alive and supervisor.json still carried pid null. r-20260924T204832636912-fleet-counter-census read abandoned at 0:13. Throughout, the trailing counter read 2w, so the row and the counter disagreed about the same run.</div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T075119261016-stop-before-spawn-spawns-nothing" data-who="reckon-build" data-when="2026-09-25T09:25:12.205Z">
+    <div class="r-comment-body"><p>a stop delivered before the spawn abandons the launch; review 93; merged 425d0520</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260925T092058131570-review-of-stop-before-spawn-spawns-nothing" data-who="reckon-build" data-when="2026-09-25T11:19:37.154Z">
+    <div class="r-comment-body"><p>review stored; findings routed to the implementer or carried as a followup</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T131048752851-refusal-leaves-no-trace" data-who="reckon-ship" data-when="2026-09-23T14:39:02.322Z">
     <div class="r-comment-body"><p>every refusal after worktree creation begins is shown to leave no pointer, worktree or watch row; two paths that did were repaired (merged 4248cbaf); review 94: the record counts the watcher-required refusal as in the tested set although it raises before worktree creation, the evidence table has three pre-pointer rows not four, and the gate log header names the base revision; correction appended to the landed record, gate re-verified at merged main</p></div>
 </div>
@@ -1012,6 +1152,15 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T083000-pane-env-allow-list" data-who="reckon-build s21-coord" data-when="2026-09-25T06:30:00Z">
     <div class="r-comment-body">A finding from imas-ambix-a8, relayed by reckon-ee on 2026-09-25, queued as the next supervisor node after headless-tabs-survive-attach, which writes the same file. Every fleet pane inherited the tool-shell variables of the Claude Code session that submitted the job: AI_AGENT, GIT_EDITOR=true, COREPACK_ENABLE_AUTO_PIN=0 and NoDefaultCurrentDirectoryInExePath=1, plus SLURM's ENVIRONMENT=BATCH. The supervisor strips only CLAUDE*, ZELLIJ* and CX_* names. With GIT_EDITOR=true, a `git commit` without -m in a fleet pane silently takes the default message. The dotfiles supervisor now unsets all five (dotfiles 6a375a1). reckon.crew.fleet_supervisor builds a pane's and a spawned child's environment from an allow-list of the variables a session needs (HOME, USER, LOGNAME, PATH, SHELL, TERM, LANG, LC_*, TMPDIR, XDG_*, SLURM_JOB_ID and the step variables a worker reads), not from a deny-list, so the next tool-shell variable cannot leak the same way. The test asserts a planted unknown variable is absent from a spawned child and every allow-listed one present, and a negative control reverts to the deny-list.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260925T070932944734-review-of-headless-tabs-survive-attach" data-who="reckon-build" data-when="2026-09-25T07:50:45.752Z">
+    <div class="r-comment-body"><p>review stored: 81/100 (durability 12), 4 findings (tab-wait stability window vs 1.5 s tab spacing, winsize and detach assertions not falsifiable, one misquoted timestamp); the implement run was resumed to repair all four</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260925T062456932626-headless-tabs-survive-attach" data-who="reckon-build" data-when="2026-09-25T08:20:04.641Z">
+    <div class="r-comment-body"><p>headless zellij tabs sized by a brief 200x50 client held until the tab list is quiet; re-review 90; merged 967de482</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260925T082508731096-re-review-of-headless-tabs-survive-attach" data-who="reckon-build" data-when="2026-09-25T09:47:03.001Z">
+    <div class="r-comment-body"><p>re-review 90 at ce399498; prior four findings closed</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260924T213000-discard-leaves-worktree" data-who="reckon-build s21-coord" data-when="2026-09-24T21:30:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24 23:19. crew discard of r-20260924T211759945494-review-of-the-fleet-supervisor-lives-in-reckon removed its pointer but left its worktree, which was clean and at an integrated head. So redispatching the same node id was refused with 'worktree creation failed: worktree path already exists'. The coordinator removed the worktree by hand with a plain `git worktree remove`. The follower then labelled the discarded run 'promoted'. That label is owned by the-fleet-counters-count-the-fleet §3. The discarded run was itself a review-reflex launch with launch in-harness, backend native and pid null in a Claude Code coordinator session that never asked for in-harness. Nothing would ever have run it, yet it held the review's scope claim.</div>

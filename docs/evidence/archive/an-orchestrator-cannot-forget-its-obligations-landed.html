@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations-landed">
+  <meta name="plan-title" content="Coordinator Obligations Execution Record">
+  <meta name="plan-summary" content="Derived coordinator duties, review-head freshness, focused verification, and mutation evidence">
+  <meta name="plan-evidence-for" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="an-orchestrator-cannot-forget-its-obligations#s2">
+  <meta name="plan-commits" content="66d08fa6caad67f2b0a762f1c09aac2a0c723a42,9f7ea716ef16db2eb834fdb35e8f5248d56f5f4c">
+  <meta name="plan-artifacts" content="reckon/crew/obligations.py,tests/test_crew_obligations.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="fleet allocation with the project root virtual environment">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>Coordinator Obligations Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; cumulative record</p>
+      <h1>Coordinator obligations execution record</h1>
+      <p class="lead">The first derived obligations function now turns recovery classifications, promoted-worktree evidence and the session drain into identity-bearing duties with their age and exact next command. The focused census produced six obligations while excluding a healthy working run and a reconciled promoted run.</p>
+    </header>
+
+    <section id="obligations-derived-view">
+      <h2>Derived obligations view</h2>
+      <p>Commit <code>66d08fa6caad67f2b0a762f1c09aac2a0c723a42</code> adds <code>reckon/crew/obligations.py</code> and <code>tests/test_crew_obligations.py</code>. The implementation imports recovery rather than defining another live-run classifier: recovery rows supply the state and exact remedy, the resolved unreconciled-run grace distinguishes a recent review-ready delivery from a stale promotion, and the ledger plus Git registry identify promoted runs whose worktrees remain held.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-derived-view.svg" alt="Recovery rows and promoted worktree evidence flow into session-filtered obligations and a closure summary.">
+        <figcaption>The derived view combines three existing authorities without persisting another copy of obligation state.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Recovery or durable evidence</th><th>Obligation</th><th>Tested age</th><th>Next action retained</th></tr></thead>
+        <tbody>
+          <tr><td><code>scoring</code>, no current-head review in flight</td><td><code>review-missing</code></td><td>100 s</td><td>Composed review dispatch</td></tr>
+          <tr><td>recent <code>promotable</code></td><td><code>review-ready</code></td><td>200 s</td><td>Recovery promotion command</td></tr>
+          <tr><td>complete escape-hatch question</td><td><code>needs-help</code></td><td>300 s</td><td>Resume with an answer</td></tr>
+          <tr><td>process ended before terminal manifest</td><td><code>turn-ended-early</code></td><td>400 s</td><td>Recovery-provided resume remedy</td></tr>
+          <tr><td><code>promotable</code> beyond the 900 s grace</td><td><code>promotable-stale</code></td><td>1,000 s</td><td>Recovery promotion command</td></tr>
+          <tr><td>promoted ledger row with registered worktree</td><td><code>worktree-held</code></td><td>1,500 s</td><td>Conservative crew garbage collection</td></tr>
+        </tbody>
+      </table>
+      <p>The summary reports <code>count: 6</code>, <code>oldest_age_seconds: 1500</code>, and the drain view's measured <code>unreconciled_runs: 7</code>. The synthetic working run and the promoted row with no registered worktree are absent. Separate assertions preserve distinct <code>blocked</code> and <code>needs-help</code> kinds and suppress <code>review-missing</code> while a review of the current head is already live.</p>
+    </section>
+
+    <section id="review-head-freshness">
+      <h2>Review-head freshness</h2>
+      <p>The recovery classifier already selects review evidence by the revision it read. The new obligations layer consumes that verdict. A synthetic run moved from its previously reviewed base to a new head; the older stored review remained on disk, and the derived duty was <code>review-missing</code>, not <code>review-ready</code>.</p>
+      <p>The declared mutant replaced the head-keyed lookup with the newest review for the run id. The focused freshness assertion then failed because recovery returned <code>promotable</code> instead of <code>scoring</code>. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/negative-review-freshness.log</code>; its first line records the declared mutation verbatim.</p>
+    </section>
+
+    <section id="obligations-reads-are-pure">
+      <h2>Obligation reads are side-effect free</h2>
+      <p>Repair commit <code>9f7ea716ef16db2eb834fdb35e8f5248d56f5f4c</code> replaced the call to the orchestration action <code>recovery.recover</code> with a read of <code>runs.list_live(project=project)</code> classified one pointer at a time by the pure <code>recovery.classify_pointer</code>. An obligations read therefore neither observes a run through <code>dispatch.observe</code> nor launches the project-wide review reflex. Current-head review suppression also reads live reviews from every coordinator session, while an older-head review remains ineligible.</p>
+      <p>The focused gate passed <strong>8 tests</strong>. Its positive purity control held a scoring run with no review in a synthetic config home, replaced both <code>reckon.crew.dispatch.dispatch</code> and <code>reckon.crew.dispatch.observe</code> with raising sentinels, returned <code>review-missing</code>, and confirmed that every file under the synthetic config home and docs tree retained its exact nanosecond mtime. The same gate covers a legacy-only stored review, an older-head live review, and a current-head review owned by another coordinator session.</p>
+      <p>The declared mutation restored the <code>recovery.recover</code> call. The selected purity test failed immediately when the mutant reached the forbidden <code>dispatch.observe</code> entry point. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/negative-pure-read.log</code>; its first line records the mutation verbatim.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest -q tests/test_crew_obligations.py</code></td><td>passed</td><td>5 tests passed; six obligations appeared with exact kind, identity, age and next command.</td></tr>
+          <tr><td>Declared review-freshness mutation</td><td>failed as required</td><td>1 selected test failed: the stale review changed the classifier from <code>scoring</code> to <code>promotable</code>.</td></tr>
+          <tr><td><code>ruff check --output-format=concise</code></td><td>passed</td><td>No findings in the new module or its focused test.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope retained:</strong> this node adds no CLI or MCP surface. Independent verification at the merged head remains coordinator-owned.</p>
+    </section>
+
+    <section id="obligations-mcp-view">
+      <h2>Obligations as a crew MCP view</h2>
+      <p>Commit <code>da226e1e</code> exposes the derivation through the crew tool. <code>reckon/mcp.py</code> accepts <code>view="obligations"</code>, requires <code>project</code> and <code>session</code>, and returns <code>reckon.crew.obligations.obligations(project, session)</code> unchanged inside the <code>ok</code> envelope — the dispatcher adds only <code>ok</code> and <code>view</code> and does not reshape the payload. A missing session is refused with the named error <code>missing_session</code> rather than guessed. The view name joins the accepted-views list and the tool docstring in one clause.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view.svg" alt="The crew tool validates the session, calls the derived obligations function unchanged, and wraps it in the ok envelope.">
+        <figcaption>The MCP view is a thin router: the derivation, its ordering and its closure summary are read from the function, not re-expressed at the surface.</figcaption>
+      </figure>
+      <p><strong>Done when:</strong> <code>reckon/mcp.py</code>'s crew dispatcher accepts <code>view="obligations"</code> with project and session and returns <code>reckon.crew.obligations.obligations(project, session)</code> unchanged inside the ok envelope; a missing session is refused with a named error; the existing view, vocabulary and response-budget tests pass unchanged, including the 24 KiB schema budget; and the declared mutation, dropping the obligations branch, is observed to fail with its log recorded.</p>
+      <p>Result: <strong>passed</strong>. <code>tests/test_mcp_crew_obligations.py</code> drives both directions on a synthetic config home: the view's <code>obligations</code> and <code>summary</code> equal the function's own output for two classified rows, and a session-less call returns <code>ok: false</code>, <code>error: missing_session</code>. Two tests passed. The gate also ran <code>tests/test_mcp_views.py</code> (48 passed), <code>tests/test_mcp_vocabulary_is_complete.py</code> and <code>tests/test_mcp_response_budget.py</code> unchanged.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><code>pytest -q tests/test_mcp_crew_obligations.py</code></td><td>passed</td><td>2 tests; view equals function output; missing session refused.</td></tr>
+          <tr><td><code>ruff check --output-format=concise reckon/mcp.py</code></td><td>no new findings</td><td>18 findings at base, 18 after — identical codes, shifted line numbers only.</td></tr>
+          <tr><td>Declared mutation: drop the obligations branch</td><td>failed as required</td><td>Both focused tests red; both failures trace to the removed branch.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Known pre-existing failure.</strong> <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> — the read_plan <code>schema</code> view measures 24,938 characters against the 24 KiB budget. It fails identically at the node's base revision <code>d8f13a61</code> (same 24,938), so the growth is not this node's; the read_plan schema is not in this node's write scope.</p>
+    </section>
+
+    <section id="worker-stop-binds-the-manifest">
+      <h2>A worker's stop binds to its manifest</h2>
+      <p>Commit <code>ce87d4caa1539ebeb3b18d41d9e2073ba89a727e</code> adds <code>reckon/hooks/worker_stop.py</code> and <code>tests/test_worker_stop_hook.py</code>. The Stop hook reads the harness payload on stdin and resolves the run manifest from <code>RECKON_MANIFEST</code>, else from the live pointer whose worktree resolves to the payload's cwd. With no run resolved the hook writes nothing and exits 0, so a coordinator or interactive session is untouched. With one, it refuses the turn end while the manifest is absent or its <code>status:</code> line is not <code>complete</code>, <code>blocked</code> or <code>failed</code>; the reason names the manifest path and the gap, and the refusal stops after three blocks for one run.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/worker-stop-gate.svg" alt="A Stop payload resolves a manifest; no run exits silently, a terminal status allows the stop, an unfinished manifest is refused up to three times and the fourth stop is allowed.">
+        <figcaption>Resolution failure is a silent allow, so only a resolved worker run is ever refused.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Payload or manifest state</th><th>Hook outcome</th><th>Tested</th></tr></thead>
+        <tbody>
+          <tr><td>no run resolves</td><td>exit 0, empty output</td><td>yes</td></tr>
+          <tr><td>manifest absent</td><td>block, reason names the path</td><td>yes</td></tr>
+          <tr><td><code>status: in-progress</code></td><td>block</td><td>yes</td></tr>
+          <tr><td><code>status: complete</code> / <code>blocked</code> / <code>failed</code></td><td>exit 0</td><td>yes</td></tr>
+          <tr><td>fourth stop after three blocks</td><td>exit 0</td><td>yes</td></tr>
+        </tbody>
+      </table>
+      <p>An end-to-end test wires the hook through a temporary <code>settings.json</code> exactly as the install snippet would and executes the registered command as a subprocess: the in-progress manifest is refused, the completed manifest is allowed, and a control settings file with no hook lets the same payload through. The real <code>~/.claude/settings.json</code> bytes and mtime are read before and after and asserted unchanged.</p>
+    </section>
+
+    <section id="worker-stop-mutation-and-snippet">
+      <h2>Negative control and install snippet</h2>
+      <p>The declared mutation — the Stop hook ignores manifest status — was applied to <code>worker_stop.py</code> and reverted after capture. Four selected tests failed as required: <code>test_absent_manifest_is_blocked</code> and <code>test_in_progress_manifest_is_blocked</code> each saw <code>blocked is True</code> become <code>False</code>, the fourth-stop sequence read all-allowed, and the end-to-end registration saw no <code>block</code> decision. The red receipt is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/negative-control.log</code>; its first line repeats the declared mutation verbatim.</p>
+      <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "&lt;installed&gt;/reckon/hooks/worker_stop.py" }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+      <p><strong>Awaiting lead approval.</strong> This node wrote nothing under the real <code>~/.claude</code>; its tests only executed a temporary settings file. The entry above is the shape the user-scope installer should register, with the command set to the resolved path of <code>reckon/hooks/worker_stop.py</code> in the installed package.</p>
+    </section>
+
+    <section id="worker-stop-binds-the-manifest-revision">
+      <h2>Revision: the capped stop records itself</h2>
+      <p>Commit <code>231ddeb6309295e225cede8cccaf5c4b91310eb0</code> revises the hook three ways. The stop allowed once the refusal cap is reached writes the terminal record itself: the manifest's top-level status is set to <code>blocked</code> and the blocker line <code>turn ended without a terminal manifest after 3 refusals</code> is appended, every other line preserved, created when absent, and written atomically through a temp file in the same directory — so a capped run never reads as an ordinary stop. Run resolution now matches a working directory inside the worktree as well as equal to it. The manifest status is read only from a top-level line, so a nested <code>status:</code> key cannot stand in for the manifest's own.</p>
+      <p>The declared mutation for the revision — the final allowed stop leaving the manifest unchanged — was applied and reverted. The fourth-stop test and the missing-manifest creation test both failed; the receipt <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/negative-control.log</code> records it, first line verbatim. Twelve focused tests pass, including a subdirectory cwd and an indented nested status. The install snippet above is unchanged: the command's target and shape are the same.</p>
+    </section>
+
+    <section id="obligations-mcp-view-gate-at-head">
+      <h2>The MCP view's own gate at the integrated head</h2>
+      <p>The gate runs the named command in a tree at exactly <code>f97cd292</code>: <code>pytest -p no:cacheprovider -q tests/test_mcp_crew_obligations.py</code>. Result: <strong>1 failed, 1 passed</strong>, exit 1. The failure is <code>test_obligations_view_returns_the_derived_items_unchanged</code> — <code>AssertionError: assert [] == ['review-ready', 'review-missing']</code> at <code>tests/test_mcp_crew_obligations.py:116</code>.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-gate.svg" alt="The test line and the code line meet at the purity-fix merge: the identical test file is green where obligations() calls recover and red where classify_pointer replaced it.">
+        <figcaption>The recover patch stops sitting on the call path at the purity fix, not at the merge — the same test file is green on the base arm and red at the head.</figcaption>
+      </figure>
+      <p>The test still patches <code>recovery.recover</code> (the <code>derived</code> fixture, lines 68&#8211;89), and that patch is <strong>inert</strong>: <code>obligations()</code> reaches classification through <code>_classified_rows</code> (<code>reckon/crew/obligations.py:88-93</code>), which calls <code>recovery.classify_pointer</code>; <code>recover</code> is not on the path. Both sides of the view equality are then computed from the real classifier against a synthetic home with no live pointers, so the equality holds vacuously at <code>[] == []</code> and only the kinds assertion fires. The failing run is its own positive control that the inertness is specific to one symbol: <code>summary.unreconciled_runs</code> reads <code>2</code> — the value only the <code>runs.drain</code> stub supplies — so the drain patch is still live while the recover patch is not.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Test file</th><th><code>obligations()</code> calls</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>base</td><td><code>7c4be2b6</code> (merge first parent)</td><td>identical to head</td><td><code>recovery.recover</code></td><td>2 passed, exit 0</td></tr>
+          <tr><td>head</td><td><code>f97cd292</code></td><td>&#8212;</td><td><code>recovery.classify_pointer</code></td><td>1 failed, 1 passed, exit 1</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="hook-installer-prints-before-it-writes">
+      <h2>The installer prints by default and merges only on request</h2>
+      <p>Commit <code>fbf1bca147dc2c3bfc924cbcfb98d9f8df8d1997</code> adds <code>reckon/hooks/install.py</code> and <code>tests/test_hook_installer.py</code>. The module builds the settings fragment that binds <code>reckon/hooks/coordinator_obligations.py</code> under <code>UserPromptSubmit</code> and <code>SessionStart</code> in prompt mode and under <code>Stop</code> in stop mode. Its default call prints the fragment as JSON and returns it without opening the settings file; only an explicit write merges it, into the path the caller names and into the user-scope settings file when the caller names none.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/hook-install-default-and-write.svg" alt="The default call prints the fragment and opens no file; the write call refuses a duplicate command, merges while preserving existing keys, and composes the replacement beside the target.">
+        <figcaption>One call, two paths, and the receipt each one leaves behind.</figcaption>
+      </figure>
+      <p>The merge keeps every other key and every existing hook group, and refuses when a command it would add is already present anywhere in the target's hooks, naming the event and the command it found. The refusal is raised before the document is written, so it leaves the file byte-identical. The write itself is atomic: the document is composed inside the target's directory and moved into place, and a settings file that changed between the read and the write is not overwritten.</p>
+      <table>
+        <thead><tr><th>Case</th><th>Observed</th></tr></thead>
+        <tbody>
+          <tr><td>Dry run over a file that exists</td><td>Printed the fragment, not a merged document; the file kept its bytes and its mtime.</td></tr>
+          <tr><td>Dry run over a file its owner cannot read</td><td>Still printed: the default call opens nothing at all, so a mode-000 settings file changes nothing.</td></tr>
+          <tr><td>Write merge</td><td>Three entries appended; a pre-existing <code>PreToolUse</code> guard, a pre-existing <code>Stop</code> command, and unrelated keys (<code>model</code>, <code>permissions</code>) all survived, in the returned document and on disk.</td></tr>
+          <tr><td>Second write</td><td>Refused, naming <code>UserPromptSubmit</code> and the command already carrying it; the file was unchanged after the refusal.</td></tr>
+          <tr><td>Real user settings file</td><td>mtime, size and digest identical before and after the run: <code>1790169285 4965 6bafa8d7&#8230;</code> at both ends.</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Hook test files at the dispatch base</td><td>33 passed, 0 failed</td><td>Base log, scratch tree at <code>d8f13a61</code>; the log records the imported module resolving inside that tree.</td></tr>
+          <tr><td>Hook test files at the worktree head</td><td>43 passed, 0 failed</td><td>After log; the same four files plus the installer's ten tests. Added failures: 0.</td></tr>
+          <tr><td>Declared mutation: the default call writes instead of printing</td><td>failed as required</td><td>3 failed, 7 passed, the byte-identical dry-run case among the failures. Run in a scratch mutant tree with an isolated home; the log's first line is the declared mutation verbatim.</td></tr>
+          <tr><td><code>ruff check</code> and <code>ruff format --check</code></td><td>passed</td><td>No findings in the module or its test file.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Scope retained:</strong> the CLI verb that calls this module is another node's, and independent verification at the merged head remains coordinator-owned.</p>
+    </section>
+
+    <section id="worker-stop-binds-the-manifest-per-chain">
+      <h2>Revision: refusals count per stop chain</h2>
+      <p>Commit <code>df9c79d9f48d8861236ac1593a58f7f2f97c25d1</code> answers the review finding that the refusal counter lived in the run directory with nothing to reset it: a run resumed after its predecessor exhausted the cap inherited the spent counter, so its first non-terminal stop was rewritten to <code>blocked</code> with no refusal at all — the cap recreating the silent stop the plan exists to remove, one run later. Refusals now count per <em>stop chain</em>, delimited by the Stop payload's <code>stop_hook_active</code> flag: a fresh stop (<code>false</code>) resets the count to zero before deciding, a forced continuation (<code>true</code>) increments as before. The cap of three and the terminal record written on the final allowed stop are unchanged.</p>
+      <p>The new test <code>test_a_fresh_stop_resets_the_refusal_count</code> exhausts a chain, sees the manifest recorded as <code>blocked</code>, reopens it to an in-progress status as a resumed run would, and stops afresh: the stop is refused again, the manifest is left in-progress rather than rewritten, and the counter reads one — the resumed run's own first refusal, not its predecessor's spent cap. The three-refusals-then-record sequence is exercised within one chain (<code>_chain</code>), a fresh stop with <code>stop_hook_active</code> false followed by forced continuations. Thirteen focused tests pass.</p>
+      <p>Each declared mutation is captured in its own receipt, first line the declared string verbatim, applied to <code>worker_stop.py</code> and reverted. <strong>The Stop hook ignores manifest status</strong> — <code>negative-control-ignores-status.log</code>: eight tests fail. <strong>The final allowed stop leaving the manifest unchanged</strong> — <code>negative-control-cap-record.log</code>: three tests fail. <strong>Ignore <code>stop_hook_active</code></strong> — <code>negative-control-stop-hook-active.log</code>: exactly the new test fails, twelve pass. All three sit in the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/</code>.</p>
+      <p><strong>Supersession.</strong> The two paragraphs above cite a receipt named <code>negative-control.log</code>, written before this revision; that file is retained on disk but is superseded by <code>negative-control-cap-record.log</code>, which reprints the same declared mutation at the current head. The earlier failure counts (four, then two) reflect the smaller test set at those heads; the reprinted receipts show eight and three against the thirteen-test file. The install snippet is unchanged.</p>
+    </section>
+
+    <section id="obligations-mcp-view-reseeded">
+      <h2>The MCP view test seeds real duties again</h2>
+      <p>Commit <code>c78ffabd3eba11ae5607dcd6879feebc579c0287</code> rewrites <code>tests/test_mcp_crew_obligations.py</code>. The prior fixture stubbed <code>reckon.crew.recovery.recover</code>, but the derivation reads <code>runs.list_live(project)</code> and classifies each pointer through <code>recovery.classify_pointer</code>; the stub was never on that path, so both sides of the view equality were computed from the real classifier against an empty synthetic home. The fixture now seeds two dead runs whose manifests report completion — one with a stored review of its head (<code>review-ready</code>) and one without (<code>review-missing</code>) — into a synthetic configuration home.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-mcp-view-seeded.svg" alt="Before: a stub on recovery.recover was never read and the derivation returned no duties. After: seeded pointers and manifests classified through recovery.classify_pointer yield a review-ready and a review-missing duty, and the view equals the function.">
+        <figcaption>The reseed restores a measurement: the stub read nothing, while seeded pointers classify to the two seeded duties.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>gate</td><td><code>c78ffabd</code></td><td>2 passed, exit 0</td><td><code>runs/r-20260925T103032479587-mcp-obligations-test-seeds-real-pointers/gate.log</code></td></tr>
+          <tr><td>mutation: drop the obligations branch in <code>reckon/mcp.py</code></td><td><code>72bb6a5a</code></td><td>2 failed, exit 1</td><td><code>&#8230;/negative-control-drop-obligations-branch.log</code></td></tr>
+          <tr><td>mutation: re-add the inert recover patch, seed no pointers</td><td><code>72bb6a5a</code></td><td>1 failed, 1 passed, exit 1</td><td><code>&#8230;/negative-control-inert-recover-patch.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The fixture reuses the census module's seeding helpers (<code>_git</code>, <code>_write_pointer</code>, <code>_store_complete_review</code>, <code>_file_mtimes</code>) and its <code>PROJECT</code> and <code>SESSION</code> vocabulary rather than defining a second copy. The test first asserts the derivation's item kinds are exactly the two seeded and non-empty, then asserts the view's <code>obligations</code> and <code>summary</code> equal the function's own output; the missing-session test is unchanged. Both declarations are restored byte-identically and the working tree is clean after each.</p>
+    </section>
+  </main>
+</body>
+</html>

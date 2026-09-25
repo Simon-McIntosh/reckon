@@ -36,13 +36,19 @@ machine's own state.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
+import pty
 import re
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
+import termios
+import threading
+import time
 from collections.abc import Mapping, MutableMapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -62,6 +68,33 @@ SUPERVISOR_STDERR_NAME = "supervisor.stderr.log"
 START_LOG_NAME = "zellij-start.log"
 
 START_MODE = "start"
+
+# A session created with ``--create-background`` applies its layout with no
+# client's size to lay it out in, and zellij 0.45 sizes each tab from the
+# client that created it rather than from the terminal a later client brings.
+# The tabs that the background creation cannot fit are left broken, and the
+# next client to attach to one panics the server. One client on a pty of a
+# fixed size is enough to give every tab a size, so it is attached while the
+# tabs are created and taken off again once they exist.
+#
+# Removable once a zellij release carries the upstream fix for per-client tab
+# sizing (zellij-org/zellij#5612), which sizes a tab from the client that will
+# attach to it rather than from the one that created the session; 0.45.1 is the
+# newest release and still needs this.
+SIZED_CLIENT_COLUMNS = 200
+SIZED_CLIENT_ROWS = 50
+# A layout's tabs do not all appear at once: the recorded application on this
+# machine created tab 1 at 02:51:58.781 and tab 3 at 02:52:01.869, roughly 1.5 s
+# apart. Two equal reads one poll apart would therefore call a layout complete
+# after its first tab, detach the client, and leave the remaining tabs applied
+# with no client attached — the defect this sizing client exists to prevent. The
+# tab list is held unchanged for a settle window longer than that spacing
+# instead, and the whole wait is still bounded so a layout whose tabs never
+# appear cannot hold the batch step's reader open.
+TAB_POLL_SECONDS = 0.05
+TAB_SETTLE_SECONDS = 2.5
+TAB_WAIT_SECONDS = 30.0
+DETACH_GRACE_SECONDS = 5.0
 
 # A session name and a layout name both reach a process argument, and the layout
 # name is used as a path under the zellij configuration directory. Both are
@@ -207,6 +240,162 @@ def session_running(name: str, environ: Mapping[str, str] | None = None) -> bool
     return False
 
 
+def tab_names(name: str, environ: Mapping[str, str] | None = None) -> list[str]:
+    """The names of a session's tabs, read without attaching a client.
+
+    ``zellij action`` targets the session named by ``ZELLIJ_SESSION_NAME``, so
+    this runs from the batch step where no client exists to inherit a session
+    from. An unreadable or absent answer is an empty list rather than an error:
+    the caller waits on the names appearing, and a probe that cannot see them
+    is the same reading as a session that has none yet.
+    """
+    child_environ = dict(os.environ if environ is None else environ)
+    child_environ["ZELLIJ_SESSION_NAME"] = name
+    try:
+        result = subprocess.run(
+            ["zellij", "action", "query-tab-names"],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=child_environ,
+        )
+    except OSError:
+        return []
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def _wait_for_tab_names(
+    name: str,
+    environ: Mapping[str, str] | None = None,
+    *,
+    settle: float = TAB_SETTLE_SECONDS,
+    timeout: float = TAB_WAIT_SECONDS,
+) -> list[str]:
+    """Wait until the tab list has been quiet for a settle window.
+
+    A layout's tabs appear one at a time, roughly 1.5 s apart on the recording
+    this behaviour is drawn from, so a list read twice one poll apart can be
+    equal while the layout still has tabs to create. The list must therefore be
+    non-empty and unchanged for a settle window longer than that spacing before
+    the layout is treated as applied. The whole wait is bounded, so a layout
+    whose tabs never appear cannot hold the batch step's reader open.
+    """
+    deadline = time.monotonic() + timeout
+    settled_at: float | None = None
+    previous: list[str] = []
+    while True:
+        names = tab_names(name, environ)
+        now = time.monotonic()
+        if names != previous:
+            previous = names
+            settled_at = now if names else None
+        elif settled_at is not None and now - settled_at >= settle:
+            return names
+        if now >= deadline:
+            return names
+        time.sleep(TAB_POLL_SECONDS)
+
+
+def _drain_pty(fd: int) -> None:
+    """Discard what the sized client writes, so a full pty buffer cannot block it."""
+    with suppress(OSError):
+        while os.read(fd, 65536):
+            pass
+
+
+def _set_pty_size(fd: int, columns: int, rows: int) -> tuple[int, int]:
+    """Set a pty's window size and read it back, so the applied size is known.
+
+    The read-back is what the kernel holds for the terminal the client will use,
+    which is what the sizing depends on. Reporting the numbers that were asked
+    for would state the size this meant to set whether or not it took effect.
+    """
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, columns, 0, 0))
+    applied_rows, applied_columns = struct.unpack(
+        "HHHH", fcntl.ioctl(fd, termios.TIOCGWINSZ, bytes(8))
+    )[:2]
+    return applied_columns, applied_rows
+
+
+def _detach_client(
+    client: subprocess.Popen, *, grace: float = DETACH_GRACE_SECONDS
+) -> int | None:
+    """Take the sized client off the session, and report how it ended.
+
+    The status is read after the wait rather than inferred from having called
+    this function, so a caller reports that the client has gone rather than that
+    it was asked to go. It is ``None`` only if the client outlived both the
+    terminate and the kill, which a caller should treat as a detach that did not
+    happen.
+    """
+    if client.poll() is None:
+        client.terminate()
+        try:
+            client.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            client.kill()
+            with suppress(subprocess.TimeoutExpired):
+                client.wait(timeout=grace)
+    return client.poll()
+
+
+def size_tabs_with_a_client(
+    name: str,
+    environ: Mapping[str, str] | None = None,
+    *,
+    columns: int = SIZED_CLIENT_COLUMNS,
+    rows: int = SIZED_CLIENT_ROWS,
+) -> list[str]:
+    """Give a headless session's tabs a size by attaching one client briefly.
+
+    zellij 0.45 sizes every tab from the client that created it, so a session
+    created with ``attach --create-background`` and a multi-tab layout has tabs
+    it cannot lay out: the server logs "Not enough room for panes" for each one,
+    and the first client to attach afterwards panics it. Attaching one client on
+    a pty of a fixed size while the layout's tabs are created gives every tab a
+    size, and detaching it leaves the session headless again. The tab names are
+    read back through a second channel, so a caller learns what the session
+    holds without holding a client open on it.
+
+    The client's own terminal is a pty this function owns, so its detach is its
+    termination rather than a keystroke the session's keybindings would have to
+    be trusted to honour. The pty's size is read back after it is set, so what
+    the log reports is the size the tabs were laid out in.
+    """
+    child_environ = dict(os.environ if environ is None else environ)
+    child_environ.pop("ZELLIJ_SESSION_NAME", None)
+    master, slave = pty.openpty()
+    columns, rows = _set_pty_size(slave, columns, rows)
+    try:
+        client = subprocess.Popen(
+            ["zellij", "attach", name],
+            stdin=slave,
+            stdout=slave,
+            stderr=slave,
+            start_new_session=True,
+            env=child_environ,
+        )
+    except BaseException:
+        os.close(slave)
+        os.close(master)
+        raise
+    os.close(slave)
+    threading.Thread(target=_drain_pty, args=(master,), daemon=True).start()
+    log(f"sized client attached to {name} on a {columns}x{rows} pty")
+    names: list[str] = []
+    status: int | None = None
+    try:
+        names = _wait_for_tab_names(name, child_environ)
+    finally:
+        status = _detach_client(client)
+        with suppress(OSError):
+            os.close(master)
+    log(f"sized client detached from {name} (exit {status}); {len(names)} tabs")
+    return names
+
+
 def start_session(
     name: str,
     layout: str,
@@ -241,6 +430,7 @@ def start_session(
     if result.returncode != 0:
         log(f"zellij start failed for {name}")
         return 1
+    size_tabs_with_a_client(name, environ)
     return 0
 
 

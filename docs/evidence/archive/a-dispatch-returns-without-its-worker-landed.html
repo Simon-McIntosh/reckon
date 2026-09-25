@@ -767,6 +767,163 @@ bypass detected by the gate: True</pre>
       batch step that work dispatches into.
     </p>
 
+    <h2 id="s10-headless-tabs">&sect;10 &mdash; A headless session keeps every tab its layout names</h2>
+    <p>
+      Node <code>headless-tabs-survive-attach</code>. Landed
+      <code>reckon/crew/fleet_supervisor.py</code> and
+      <code>tests/test_fleet_supervisor.py</code>: the <code>session</code> verb creates the
+      session exactly as before, then attaches one short-lived client on a pty sized to a
+      fixed 200&nbsp;&times;&nbsp;50 with <code>TIOCSWINSZ</code>, waits for
+      <code>zellij action query-tab-names</code> to report the layout's tabs, and detaches it.
+      The line of a session start returns only once the tabs exist. The workaround is
+      commented as removable when a zellij release carries the upstream per-client tab sizing
+      fix (zellij-org/zellij#5612); 0.45.1 is the newest release and still needs it.
+    </p>
+    <p>
+      <strong>The reproduction, quoted from this node before the repair.</strong> The per-uid
+      server log <code>/tmp/zellij-39486/zellij-log/zellij.log</code>, 2026-09-25
+      02:51:58.781 to 02:52:05.667 &mdash; a session whose tabs were made before any client
+      existed:
+    </p>
+    <pre><code>02:51:58.781  PtyInstruction::NewTab: spawning terminals for tab 1
+02:51:58.784  ScreenInstruction::ApplyLayout: applying layout for tab 1
+02:51:58.784  ERROR  Failed to apply layout: Not enough room for panes
+02:52:00.328  ERROR  Failed to apply layout: Not enough room for panes   (tab 2)
+02:52:01.869  ERROR  Failed to apply layout: Not enough room for panes   (tab 3)
+02:52:03.540  Starting Zellij client!        (client 1 &mdash; survived)
+02:52:05.656  Starting Zellij client!        (client 2)
+02:52:05.667  Panic occurred: thread: screen
+              Caused by: failed to attach client 2 to tab with index 3</code></pre>
+    <p>
+      The tabs were applied before any client attached, which is the headless path this node
+      repairs. The same reading run over the whole log returns eight
+      <code>Not enough room for panes</code> and two <code>failed to attach client</code>
+      lines, so the window under test is read by an instrument that can see the strings.
+    </p>
+    <table>
+      <thead><tr><th>Measure</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>unit gate, <code>tests/test_fleet_supervisor.py</code></td><td><code>8 passed</code>; run at the worktree head with the root environment's interpreter</td></tr>
+        <tr><td>stub invocation order</td><td><code>--layout fleet attach --create-background --create demo</code> &rarr; <code>attach demo</code> &rarr; <code>action query-tab-names</code>, matched as increasing positions in one invocation log</td></tr>
+        <tr><td>the sized client's pty</td><td>200&nbsp;columns &times; 50&nbsp;rows, and the size is read back from the kernel after it is set, so the value the log reports is the size the tabs were laid out in rather than the one that was requested</td></tr>
+        <tr><td>the tab wait</td><td>the tab list must be non-empty and unchanged for a settle window of 2.5&nbsp;s, longer than the ~1.5&nbsp;s spacing the recorded application shows, and the whole wait is bounded at 30&nbsp;s</td></tr>
+        <tr><td>detach</td><td>logged <code>sized client detached from demo (exit -15); 4 tabs</code> &mdash; the status is the client's own exit code, read after the wait, so the line reports that the process ended rather than that it was asked to</td></tr>
+        <tr><td>on-node check, real zellij 0.45.1</td><td><code>query-tab-names</code> = <code>['one', 'two', 'three', 'four']</code>; window 3780 bytes; 0 pane errors, 0 attach failures; 8 <code>ApplyLayout</code> markers, so the window is shown to carry this session's own layout work</td></tr>
+        <tr><td>on-node second client</td><td>attached for 5&nbsp;s under <code>timeout</code>, exit 124 (timed out as intended), empty stderr, no panic</td></tr>
+        <tr><td>on-node cleanup</td><td><code>zellij delete-session --force s21-headless-probe&lt;pid&gt;</code> &mdash; the one session by its exact name: <code>Session: &hellip; successfully deleted.</code></td></tr>
+        <tr><td>positive control</td><td>whole-log read: 8 pane errors, 2 attach failures &mdash; the absence check is not blind</td></tr>
+        <tr><td>declared negative control</td><td><code>remove the sized-client attach from the session verb; the ordering assertion must fail</code> &mdash; it fails at the ordering assertion for <code>'attach demo'</code>: <code>invocations=['list-sessions --no-formatting', '--layout fleet attach --create-background --create demo']</code></td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/a-dispatch-returns-without-its-worker/headless_tab_sizing.svg"
+           alt="Two timelines of the same four-tab session. Left, without the sized client: tabs 1 to 3 log 'Not enough room for panes', the first client attaches and survives, and the second client's attach panics with 'failed to attach client 2 to tab with index 3'. Right, with the sized client: a client on a 200 by 50 pty attaches during creation, tabs 1 to 4 are applied, query-tab-names lists all four, the sized client detaches and a second client attaches for five seconds with no pane error and no attach failure.">
+      <figcaption>
+        A tab is sized by the client present while the layout is applied, and only afterwards by
+        whoever attaches. The recorded failure is on the left; the on-node check after the
+        repair is on the right.
+      </figcaption>
+    </figure>
+    <p>
+      <strong>What the control establishes.</strong> The red run is a full copy of the package
+      <em>and</em> the test tree at the worktree head with the single line
+      <code>size_tabs_with_a_client(name, environ)</code> removed, so the ordering assertion is
+      the thing that fails and not an earlier timeout: the test waits on the invocation log
+      settling rather than on the detach line, which is what makes the mutation land on the
+      assertion the node declared. Log first line and recorded failure are at
+      <code>.../crew/reports/reckon/s21-coord/headless-tabs-survive-attach/negative_control.log</code>.
+    </p>
+    <p>
+      <strong>Three controls added with the repair, one per property the gate rested on and
+      did not measure.</strong> Driver
+      <code>.../crew/reports/reckon/s21-coord/headless-tabs-survive-attach/negative_controls.sh</code>,
+      one scratch tree per control, each the worktree's HEAD plus the two files as they stand,
+      with the resolved module path printed so a run against the wrong tree is visible:
+    </p>
+    <ul>
+      <li><strong>the wait shortened</strong> (<code>TAB_SETTLE_SECONDS</code> 2.5&nbsp;&rarr;
+      0.0, which restores the reviewed stop rule of any two equal reads) &mdash;
+      <code>negative_control_wait.log</code>: <code>AssertionError: ['tab1']</code>, the layout
+      called complete after its first tab, exactly the defect the settle window removes.</li>
+      <li><strong>the pty's sizing ioctl deleted</strong> &mdash;
+      <code>negative_control_pty_size.log</code>: the pty-size case fails reading the kernel
+      (<code>(0, 0) == (200, 50)</code>) and the reader's log reads
+      <code>sized client attached to demo on a 0x0 pty</code>.</li>
+      <li><strong>the detach call deleted</strong> (<code>status = client.poll()</code> in its
+      place) &mdash; <code>negative_control_detach.log</code>: the stub's attach blocks, so
+      nothing ended it and the log reads <code>(exit None)</code>, which the detach assertion
+      rejects. No process survives a control: the stub's <code>sleep</code> is bounded and the
+      control that leaks one reaps it by pid.</li>
+    </ul>
+    <p>
+      <strong>An earlier draft's two assertions were satisfied by the code's own message.</strong>
+      The pty assertion read a line composed from the same <code>columns</code> and
+      <code>rows</code> handed to the ioctl, and the detach assertion read a line written after
+      <code>_detach_client</code> returned, so deleting the ioctl or the detach left the case
+      green. Both now read a value the code cannot compose: the kernel's read-back of the
+      window size, and the client's own exit status.
+    </p>
+    <p>
+      <strong>What this node does not take.</strong> Nothing outside the <code>session</code>
+      verb: <code>spawn</code>, <code>reload</code>, the reader loop and its runtime directory
+      are untouched, and no caller changes. The sized-client workaround is one throwaway client
+      per session start, deleted when the upstream fix ships.
+    </p>
+
+  <h2 id="s3-stop-before-spawn">&sect;3 &mdash; A stop delivered before the spawn spawns no worker</h2>
+  <p>
+    Node <code>stop-before-spawn-spawns-nothing</code>, measured at revision
+    <code>d47c6a70</code> on 2026-09-25. The per-run supervisor leads its own process group and
+    held <code>SIG_IGN</code> for SIGTERM and SIGHUP, so that a <code>crew stop</code> &mdash;
+    a signal to that group, which must also take the worker down &mdash; could not take the
+    supervisor down before it recorded the exit the stop caused. Inside the pre-spawn tree
+    snapshot the ignore discarded the stop instead: the supervisor survived, finished its
+    snapshot, and spawned the worker of a stop already reported as done. The supervisor now
+    records a stop in a handler and reads the flag once the snapshot returns, abandoning the
+    launch when it is set; a stop delivered after the spawn still ends the worker while the
+    supervisor survives to record it.
+  </p>
+  <p>
+    <strong>Gate.</strong> <code>tests/test_stop_before_spawn_spawns_nothing.py</code>, one case,
+    <strong>1 passed in 2.17 s</strong>, run with
+    <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> in a scratch tree cut from
+    <code>d47c6a70</code>, whose driver reported
+    <code>reckon_file=/tmp/stop-gate-head/reckon/__init__.py</code>. The case holds the
+    supervisor inside a stubbed snapshot &mdash; a <code>git</code> shim first on the child
+    processes' <code>PATH</code> signals a marker and waits for a release file on its first
+    charged <code>git status</code> under the worktree root &mdash; then sends exactly what
+    <code>crew stop</code> sends, SIGTERM to the run's process group, releases the snapshot, and
+    requires no <code>worker.json</code> and no stub worker pid. The captured outcome carries
+    <code>snapshot_held: true</code>, <code>stop_sent: true</code>, <code>worker_pid: null</code>,
+    <code>ended_during: "launch"</code>,
+    <code>detail: "crew stop arrived before the worker was spawned"</code>, and
+    <code>real_live_dir_unchanged: true</code>.
+  </p>
+  <p>
+    <strong>Negative control, executed and failing as declared.</strong> Replacing the handler
+    with <code>signal.SIG_IGN</code> for SIGTERM and SIGHUP in a copy of the package and test
+    tree at the same revision makes the gate fail on
+    <code>assert not (run_directory / "worker.json").exists()</code> &mdash; a worker is spawned
+    after the stop. The control's scratch tree reports the <code>reckon_file</code> it measured,
+    so the mutated copy is known to be the tree under test. Log
+    <code>negative-control-pre-spawn-stop.log</code>, whose first line is the declared mutation,
+    in the run directory.
+  </p>
+  <p>
+    <strong>No failures added over the dispatch and supervisor test files.</strong>
+    <code>tests/test_dispatch_returns_without_worker.py</code> and
+    <code>tests/test_fleet_supervisor.py</code> are the same 10 passed at base
+    <code>6daecfc1</code> and, with this gate's case added, 11 passed at head
+    <code>d47c6a70</code>. One <code>test_fleet_supervisor</code> session case failed once at
+    head in the first pass and did not reproduce: 6 of 6 isolated runs passed, 11 passed on the
+    full rerun. Logs <code>base-suite.log</code>, <code>after-suite.log</code>,
+    <code>after-suite-rerun.log</code>, <code>gate-head.log</code> in the run directory.
+  </p>
+  <p>
+    Landing record: <a href="/reckon/plans/a-dispatch-returns-without-its-worker#s3-landed-stop-before-spawn">&sect;3
+    of the plan</a>.
+  </p>
+
   </main>
 </body>
 </html>

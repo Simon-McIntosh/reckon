@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-09-25">
-  <meta name="plan-version" content="24">
+  <meta name="plan-version" content="27">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <meta name="plan-informs" content="a-review-dies-where-nobody-is-looking">
   <title>A Stalled Row Says Whether The Worker Lives | reckon</title>
@@ -138,6 +138,30 @@
     the run (<code>assert 0 == 1</code>). The existing recovery-importing suites pass at this head
     (63 files, 933 passed, 0 failed). Landing record and figure in
     <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s2">&sect;2
+    of the landed evidence record</a>.</p>
+
+    <h3 id="s2-tail-window">Landed &mdash; node <code>death-row-reads-any-final-record</code></h3>
+    <p><strong>Landed</strong> (<code>c5b2e184</code>). The last-record read above took one fixed
+    64 KiB window from the end of the stream, which answers only while the record the stream ends with
+    fits inside it. A worker killed mid-turn whose final record is larger left that window entirely
+    inside the single record, so no line in it parsed and the reader answered "no last record": the row
+    stayed in the working column carrying no death clause, which is the stale row &sect;2 exists to
+    remove. The window is now a floor rather than a limit — the read reaches further back in geometric
+    steps until the chunk begins where a record begins, and a chunk beginning at a record boundary
+    holds only complete lines, so a scan that finds nothing in it is the stream's answer and the read
+    stops rather than reaching further back. One window still answers the common case, where the last
+    record is a few hundred bytes behind any length of stream.</p>
+    <p><strong>Evidence:</strong> <code>tests/test_death_row_reads_any_final_record.py</code>
+    (5 passed) drives a killed worker with a non-terminal manifest whose final record is padded to
+    about 1 KiB, 64.5 KiB, 65.5 KiB and 512 KiB, and requires every size to yield the record's type
+    and the death clause naming it; the two middle sizes are asserted to straddle the window. A further
+    case measures the bytes the file handle returned, and is first shown reading a multi-megabyte
+    stream whole before requiring the reader's own read to stay within one window. The declared
+    negative control was executed and logged: with the single fixed window restored, the 65.5 KiB and
+    512 KiB cases fail at <code>assert None == 'assistant'</code>. Every test file referencing
+    <code>reckon.crew.recovery</code> passes at this head (1440 passed, 4 skipped, 0 failed, exit 0),
+    so the added-failure delta against the dispatch base is zero. Figure and measurements in
+    <a href="/reckon/evidence/archive/a-stalled-row-says-whether-the-worker-lives-landed#s2-tail-window">&sect;2
     of the landed evidence record</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; A stalled row says alive or gone</h2>
@@ -271,10 +295,11 @@
     <div class="r-fu-body"><p>§2, §3 and §5 all edit <code>reckon/crew/recovery.py</code> and run in order. §4 is independent. §6 waits on the stall census.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives</pre>
     </article>
-<article class="r-fu" data-id="f-asrswtwl-tail-window" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T06:56:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asrswtwl-tail-window" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T06:56:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives §2" data-resolved-at="2026-09-25T09:01:47+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The death row misses a worker whose final stream record exceeds the 64 KiB tail window</h4>
     <div class="r-fu-body"><p>The independent review of §2 (score 90) measured the landed reader at head <code>e63245d1</code>: the tail read in <code>reckon/crew/recovery.py</code> is bounded to the last 64 KiB, so a worker killed mid-turn whose final stream record is larger reads as having no last record — <code>last_record_type</code> None, row state <code>working</code>, no death clause — which is exactly the stale working column §2 replaces. A 64.5 KiB final record fires; 65.5 KiB and 512 KiB do not; the small-record control fires. Repair: the tail read must return the last complete record however large it is (extend backwards until a record boundary is found), with a test at each of those three sizes.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-stalled-row-says-whether-the-worker-lives §2 — make the death row read the last stream record whatever its size</pre>
+    <p class="r-fu-outcome">done — the tail reader extends backwards to the last complete record whatever its size (c5b2e184, 7db40838, merged at ece4fa95); review 96; its one test-docstring finding forwarded to the liveness node on recovery.py</p>
     </article>
 <article class="r-fu" data-id="f-asrswtwl-live-worker-read-dead" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T07:20:00Z" data-recommends-skill="/reckon-build a-stalled-row-says-whether-the-worker-lives" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The watcher read two live workers as dead with retained work</h4>
@@ -303,6 +328,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260925T054120540088-watch-reports-death-at-once" data-who="reckon-build" data-when="2026-09-25T06:18:14.483Z">
     <div class="r-comment-body"><p>a dead worker is a row within one poll; review 90; the 64 KiB tail-window gap is followup f-asrswtwl-tail-window</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T070159296467-death-row-reads-any-final-record" data-who="reckon-build" data-when="2026-09-25T07:37:15.551Z">
+    <div class="r-comment-body"><p>death row reads the last stream record however large; review 96; test-docstring finding forwarded to the liveness node</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T075206755994-review-of-death-row-reads-any-final-record" data-who="reckon-build" data-when="2026-09-25T09:02:06.754Z">
+    <div class="r-comment-body"><p>review stored: 96, one test-docstring finding forwarded</p></div>
 </div>
 </section>
 </main>

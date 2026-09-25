@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="51">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="57">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -295,6 +295,34 @@
     <code>a-dispatch-returns-without-its-worker</code> &sect;3 and after S19's
     <code>the-boundary-check-reads-two-trees</code> &sect;1, which reduces the set of trees
     read. This section's invocation count is then measured on that reduced set.</p>
+
+    <div data-reckon="landing" data-node="promotion-releases-its-worktree" data-when="2026-09-25">
+      <h3>Landing record &mdash; promotion reclaims only an integrated, clean, unclaimed tree</h3>
+      <p><code>reckon/crew/promotion.py</code> now filters the promoted run from the live claim
+      set, retains blocked and failed worktrees, and persists the release outcome on the same
+      landing commit's ledger row. A clean integrated tree is removed with plain
+      <code>git worktree remove</code>; dirty, unintegrated, live-referenced, and failed cases
+      remain with their reason recorded. The gate is
+      <code>tests/test_promotion_releases_its_worktree.py</code>, and the worker manifest names
+      the exact local commits and logs.</p>
+      <p>The five-case gate passed, the base promotion files passed 54 tests, and the after suite
+      passed 55 with no added failure. The declared live-pointer mutation produced a red gate
+      whose first line repeats the declaration verbatim. Cumulative evidence:
+      <code>a-crew-process-ends-with-its-owner-landed.html#s4-promotion-releases-its-worktree</code>.</p>
+      <p>Review repairs landed in commits <code>ed020ee5</code> and <code>c35d6f7e</code>.
+      Resume retention now yields to cleanup for a complete passing or review-node
+      <code>not-run</code> promotion even when its session is resolvable from the pointer and
+      stream; the added real-session case passes and its unconditional-retention mutation is
+      red. Failed and blocked promotions retain the tree but still signal a live terminal
+      writer and include <code>worktree_audit</code>; the no-terminal-manifest control stays
+      alive. The repaired gate is 4 passed, while the reviewed base is 3 failed and 1 passed.
+      The three legacy assertions in <code>tests/test_crew_promotion.py</code> were updated to
+      preserve their intent under the new rule: integrated complete work is released,
+      unintegrated work remains for its own artifact reason, and incomplete session work remains
+      resumable. The peer-population audit now uses an incomplete manifest and still proves that
+      promotion inspects only its own worktree. All promotion files pass: 59 at head versus 54
+      at base, with zero added failures.</p>
+    </div>
 
     <h2 id="s5">&sect;5 &mdash; Every storage read has a deadline</h2>
     <p>The MCP server is the interface and stays the interface. What failed was that its
@@ -720,6 +748,12 @@
     <div class="r-fu-body"><p>Reported by suite-green-at-head on 2026-09-24 and recorded here as its owning plan. Three runs had a follower row reading <q>blocked — resume: the worker process is gone with no recorded exit and the worktree carries 1 commit</q>: <code>promotion-tests-meet-the-review-and-checkout-guards</code> (21:16:15 local), <code>promotion-fixtures-initialise-the-ledger</code> (21:19:43) and <code>python-surface-contracts-match</code> (21:19:56). Each came right after the worker's first commit. At that moment <code>crew(view=live)</code> read the process alive with a fresh log. The coordinator had to read the stream and the worktree to rule out a real death. This is the mid-run twin of the launch flicker recorded on a-dispatch-returns-without-its-worker (f-adrwiw-launch-flicker). The follower's transition text and the live classifier disagree about one run's liveness. Done when a run whose recorded pid is alive never emits a process-gone transition, whatever its commit count. A test commits in a stub worker's worktree while the stub stays alive and asserts no blocked-resume row.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
     </article>
+<article class="r-fu" data-id="f-acpewio-release-at-promotion" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §4" data-resolved-at="2026-09-25T11:33:09+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Promotion releases the worktree it integrated</h4>
+    <div class="r-fu-body"><p>Gate for a wider fleet release, part of §4's reclaim (lead, 2026-09-25). Stale worktrees are the root of the pre-spawn snapshot cost: reckon went from 344 to 74 registered trees after a gc on 2026-09-25, and a worker's time from dispatch to <code>worker.json</code> fell from 2–12 min to 39 s. So <code>crew complete</code> should release the run's worktree in the same beat that proves it integrated. After a passing promotion, when the run's head is reachable from the primary branch, <code>git status --porcelain</code> is empty, and no live pointer other than the run being promoted names that worktree (including a <code>review-of-&lt;node&gt;</code> run reading it), promotion removes it with plain <code>git worktree remove</code> (no <code>--force</code>) and records the removal on the ledger row. Any other state leaves the tree and records why. A blocked or failed run keeps its tree, because a resume needs it. Promotion prints what it removed and what it kept. Done when a test drives promotion over five synthesized cases: integrated and clean (removed); dirty (kept); unintegrated (kept); another live pointer naming the tree (kept); failed gate (kept). Each asserts the on-disk state and the recorded reason. The negative control removes the live-pointer check, and the kept case then fails. File scope: <code>reckon/crew/promotion.py</code> and a new test module.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
+    <p class="r-fu-outcome">Landed as promotion-releases-its-worktree on codex-luna (c676b011, ed020ee5, c35d6f7e, 5069a24d, ad2cc9ad, b08b27ca), merged at f45260c4. The dsv4.1 review scored 86 and found the release unreachable for runs holding a live session, plus a dropped failed-promotion signal; both were repaired and the re-review scored 95. Three legacy retention tests were updated to the new rule, with no added failures.</p>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T062557423973-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T06:45:20.039Z">
@@ -761,6 +795,12 @@
 <div class="r-comment" data-section="_top" data-id="c-20260924T191527642860" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>A live producer is also expensive while it has work, and neither §3 nor §4 covers it.</strong> This was measured on 2026-09-24 at about 21:15 on the fleet node (clu-2058, job 1277272). One <code>reckon crew watch --project reckon</code> producer (pid 853019), serving one follower and nine clive workers, held <strong>60–66% of a core continuously for more than 13 minutes</strong>. The rest of the node was idle. It was not an orphan: its follower was live, so §3's lease would not have ended it.</p><p>A 10-second py-spy sample attributes the time as follows:</p><ul><li>51.5% to <code>parse_events ← observe_stream ← observe_log</code>;</li><li>26.8% to <code>crew_watch</code> itself;</li><li>9.6% to <code>parse_events ← crew_watch</code>.</li></ul><p>Each poll re-parses every live run's whole <code>stream.jsonl</code> from the start. These are 1–2 MB each and growing, so a poll's cost grows with every worker's transcript. An 8-second strace counted 43,302 <code>read</code>, 4,314 <code>openat</code>, 1,500 <code>getdents64</code> and 16 subprocesses. About one <code>git rev-list --count</code> runs per second, and each walks about ten EasyBuild <code>PATH</code> entries before it finds git.</p><p>The fix belongs beside §4's rule, <em>read what changed</em>, applied to streams. The producer keeps a byte offset per stream and parses only the lines appended since the last poll, carrying the running observation forward. It re-reads a stream from zero only when the stream is truncated or replaced. The <code>rev-list</code> count is cached per head sha. <strong>Done when</strong> a producer watching nine runs whose streams grow by 2 MB holds its per-poll parse cost flat. The measure is the bytes parsed per poll, recorded in its registration. A mutation that restores the whole-file parse must turn that test red.</p><p><strong>Status on the same day:</strong> §3's lease has not landed. The review of the producer-lease run promoted as not-run (<code>cdc62a25</code>), and <code>tests/test_producer_holds_a_lease.py</code> does not exist. Only §2 and §5 have landed. The login node carried no producer or follower tail at the time: load 1.7, no D-state tasks, and only two interactive MCP servers.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1025-liveness-gate-scope" data-who="" data-when="">
+    <div class="r-comment-body"><p>Scope added to the liveness gate (c-20260925T092500-liveness-gate), which the lead made top priority at 10:17 on 2026-09-25 because the false rows are costing coordinator attention. The node <code>a-live-run-never-reads-dead</code> also covers the following, with line numbers cited at revision 77c20349 (re-resolve them at your head). (5) An orientation-only manifest reads <code>unreadable · repair</code>: a manifest carrying only the <code>orientation_*</code> block and no <code>status:</code> line is the normal early state of a live run, and it must classify as working. Seen on r-20260925T082101656238 at 10:22:20, one minute after dispatch, with the worker alive. (6) A vanished run reads <code>promoted</code> without a ledger row (recovery.py:4519–4524): promoted only when a ledger row exists, otherwise withdrawn. (7) A counter disagrees with its own row: an <code>unpromoted</code> row beside <code>0u</code>, and <code>blocked</code> rows beside <code>0b</code>, within one line (2026-09-24 23:03:50, 23:05:38, 23:06:19). The likely cause is a classification missing from the bucket vocabularies at recovery.py:4404–4413, read by <code>_fleet_counts</code> at 4416–4458. Done when every classification the producer can emit maps to exactly one bucket, asserted by a test that enumerates the emitted set. The ticker-side rendering of the same defects is <code>ticker-row-reads-cleanly</code> (s23-coord), which does not edit recovery.py.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1056-liveness-gate-phase" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two more cases for the liveness gate, both reported by s23-coord and s22-coord on 2026-09-25. (8) <b>Pointer phase stuck at <code>starting</code>.</b> Every run dispatched since about 08:05–08:10Z, 20 runs across S21–S23, keeps phase <code>starting</code> for its whole life, including r-20260925T080934765563, whose manifest reads complete. Runs dispatched before 08:00 advanced normally. The phase advance stopped around then, so the node checks what changed in the supervisor or pointer writer at that time and restores the advance. Stale phase in the other direction: sprint-liveness-from-live-crews keeps phase <code>blocked</code> while it classifies as <code>scoring</code>, which produces a phantom <code>1b</code> in the counter. (9) <b>A template-only manifest reads unreadable.</b> r-20260925T082122723925, three minutes in, still carried the unfilled 414-byte template, and its process was alive. So the misread is not only the first-commit branch: the common factor is the watcher snapshot's <code>process_alive</code> verdict, which the node targets directly. Done when the stub set includes a run whose pointer phase must advance from starting to working to complete, and a live run holding a template-only manifest.</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
 </div>
@@ -775,6 +815,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925T012000-owner-scoped-reclaim" data-who="reckon-build s21-coord" data-when="2026-09-24T23:20:00Z">
     <div class="r-comment-body">Evidence for back-pressure, and the reclaim it needs, 2026-09-24/25 on the fleet node. Registered reckon worktrees rose from 232 (19:30Z) to 287 (23:10Z). Time from dispatch to worker start rose with them: 1:57–3:40 at 20:05Z, 9:04 for one of six simultaneous launches, and 12:07 for a review launched at 22:58Z. That is the supervisor's pre-spawn snapshot walking every tree. A dry run of `crew gc --project reckon` reported 214 reclaimable (205 integrated, 35 dirty, 13 unintegrated, 24 live-referenced). gc has no session or owner scope, so `--apply` also removes other coordinators' retained worktrees, and no coordinator can run it safely. s21-coord and s23-coord each removed only their own clean, integrated, pointer-free worktrees by path, taking the repository to 270. The back-pressure this section adds needs an owner-scoped reclaim beside it: `crew gc --session S` (or by the run record's owner), which removes only that session's integrated, non-live worktrees. That lets each coordinator reclaim its share in its landing beat before dispatch refuses on retained count.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T081530112694-review-of-promotion-releases-its-worktree" data-who="reckon-build" data-when="2026-09-25T10:26:36.753Z">
+    <div class="r-comment-body"><p>review stored: 86/100; two findings (release unreachable for runs with a live session; failed-promotion cleanup signal dropped) repaired by the implementer in ed020ee5 and c35d6f7e</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T075055787676-promotion-releases-its-worktree" data-who="reckon-build" data-when="2026-09-25T11:30:15Z">
+    <div class="r-comment-body"><p>a passing promotion of a complete run releases its integrated, clean, unreferenced worktree; re-review 95; merged f45260c4</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T092500-liveness-gate" data-who="reckon-build s21-coord" data-when="2026-09-25T07:25:00Z">
     <div class="r-comment-body">Gate for a wider fleet release (lead, 2026-09-25): no live run reads as dead or finished. One node on reckon/crew/recovery.py, dispatched when S22's tail-window run frees the file, covers three misreads that share the classifier. (1) f-acpewio-first-commit-gone, and its duplicate f-asrswtwl-live-worker-read-dead on a-stalled-row-says-whether-the-worker-lives: a live worker reads 'process gone, worktree carries N commits' after its first commit. It hit every implement run on 2026-09-24/25 across S21, S22 and S23, clive and codex alike. At 09:13–09:17 the producer (pid 853019, same host as the workers) classified two live workers as dead-pid-with-retained-work while crew(view=live) read them alive. The interruption branch fires only once commits_beyond_base is nonzero and the stored or probed liveness reads false. So the defect is in how the producer derives process_alive for a run whose pointer pid is the supervisor while the worker's pid lives in worker.json; the node finds which. (2) f-adrwiw-launch-flicker: a run whose supervisor is alive but has not yet spawned (no worker.json) reads 'abandoned'. (3) A resumed run inherits its previous manifest's complete status and reads 'unpromoted' while the resume process is alive and working. Seen on every S21 resume. Done when one test module drives the producer's classification over four stub runs and asserts none reads abandoned, dead or unpromoted: a live supervisor with no worker.json yet; a live worker with commits beyond base; a resumed run whose resume process is alive and whose old manifest reads complete; and a codex run whose pid is a wrapper process. A genuinely dead worker with commits still reads dead-pid-with-retained-work. A negative control per case is executed and logged.</div>

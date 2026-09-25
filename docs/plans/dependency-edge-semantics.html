@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="21">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.97">
+<meta name="plan-version" content="28">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -308,6 +308,75 @@
       <code>after</code> as <code>depends_on</code>, makes the stays-ready case fail. The write paths
       are <code>reckon/roadmap.py</code>, <code>reckon/_plan_html.py</code>,
       <code>reckon/_schema.py</code>, <code>skills/reckon-create/SKILL.md</code> and that test.</p>
+    <p><strong>Landed</strong> <code>4ce2d39b</code>. <code>plan-after</code> is parsed and written with
+      the other relation metas, declared on the plan schema beside <code>depends_on</code>, and resolved
+      by the roadmap into per-plan <code>after</code> rows with <code>came_after</code> hints; the edge
+      appears in no blocker list, so an unshipped target leaves the carrier in <code>ready_now</code>,
+      sorts it below the unsequenced work, and names the targets it is sequenced behind. An unresolvable
+      ref produces a <code>warn</code> wiring finding rather than a blocker, and a landed target neither
+      ranks nor hints. The reckon-create checklist carries the fourth question and the litmus. Gate:
+      <code>tests/test_after_edge_orders_without_blocking.py</code> (8 passed) plus the relation-and-schema
+      subset run at both arms — one new failure, <code>docs/_shared/plan.schema.json</code> needing
+      regeneration for the added field, which lies outside this node's write scope and is recorded as a
+      follow-on. Negative control: treating the edge as a blocker removes the carrier from the ready set
+      and fails the stays-ready case first, at
+      <code>assert 'aa-consumer' in ['mm-unshipped', 'zz-ready']</code>.
+      Evidence and logs: <code>docs/evidence/archive/dependency-edge-semantics-landed.html#s7</code>.</p>
+    <figure>
+      <img src="/reckon/figures/dependency-edge-semantics/after-edge-sequencing.svg"
+           alt="Three panels over one unshipped target: depends_on holds the carrier out of the ready set, after keeps it ready and sorts it behind the rest with a hint naming the target, informs leaves it untouched.">
+      <figcaption>One target, three relations. Only <code>depends_on</code> withholds
+      dispatchability; <code>after</code> changes the order and the annotation.</figcaption>
+    </figure>
+
+    <aside id="published-schema-regenerated">
+      <p><strong>Worker implementation, 2026-09-25:</strong> the stale published schema recorded above
+      as this section's follow-on is regenerated. Reproduced at base <code>4a87503f</code>:
+      <code>test_committed_schema_matches_generated</code> fails with
+      <em>plan.schema.json is stale — regenerate with write_json_schema()</em>. The command the
+      check names — <code>from reckon._schema import write_json_schema;
+      write_json_schema()</code> — run from this worktree, changes exactly one file: the whole diff
+      is the single <code>after</code> property, 8 insertions, no other key moved. Both named gates
+      pass at head <code>4a1d7a15</code> (<strong>9 passed</strong>:
+      <code>tests/test_schema.py::test_committed_schema_matches_generated</code> plus
+      <code>tests/test_after_edge_orders_without_blocking.py</code>).</p>
+      <p><strong>Declared negative control:</strong> restoring the base revision's
+      <code>docs/_shared/plan.schema.json</code> in a scratch export of the head fails
+      <code>test_committed_schema_matches_generated</code> — <code>1 failed</code> — while the
+      unmutated head passes, so the artifact is what the check reads and not the export.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#published-schema-regenerated">reproduction, gate and mutation logs</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
+    <aside id="after-edge-reaches-every-reader">
+      <p><strong>Worker implementation, 2026-09-25:</strong> a plan carrying the <code>after</code> edge
+      above orders the HTTP roadmap, but only where the edge survives the inventory row the roadmap reads
+      it off. It did not. Both builders between the parser and the readers — the discovery scan in
+      <code>reckon/serve.py</code> and the MCP inventory normaliser in <code>reckon/mcp.py</code> — each
+      named the relation keys it carried (<code>depends_on</code>, <code>blocks</code>) and dropped
+      <code>after</code>, so an authored edge reached no reader while both call paths looked healthy.
+      Reproduced at base <code>29df6835</code> over a synthesised docs tree: the discovery row carried
+      <code>['blocks', 'depends_on']</code>, the roadmap built over it reported
+      <code>after: [] came_after: [] after_hold: False</code>, and the MCP inventory row reported
+      <code>after: False</code>. Both builders now take the edge keys from one tuple
+      (<code>EDGE_ROW_FIELDS</code>) through one helper (<code>edge_row</code>), so the three keys cannot
+      land in one builder and be missed by the other.</p>
+      <p><strong>Gate:</strong> <code>tests/test_after_edge_reaches_every_reader.py</code> drives each
+      real path from a synthesised docs tree rather than hand-built rows — <strong>2 failed</strong> at
+      base, each at <code>KeyError: 'after'</code> on its own builder's row, <strong>2 passed</strong> at
+      head. The cohort of non-browser files importing <code>reckon.serve</code> or <code>reckon.mcp</code>
+      (59 files) ran in a bound slice at both arms: <strong>2 failed / 1147 passed / 1 skipped</strong>
+      either side, the same two pre-existing ids, so zero added failures.
+      <code>tests/test_after_edge_orders_without_blocking.py</code> stays green at head; the one
+      <code>tests/test_schema.py</code> failure at head fails identically at base from an external
+      imas-ambix evidence record.</p>
+      <p><strong>Declared negative control:</strong> removing the after key from the <code>mcp.py</code>
+      inventory row in a scratch export of the head fails the MCP-path case of the new test while the
+      discovery-path case passes — <code>1 failed, 1 passed</code> — so the red belongs to that row and
+      not to the export.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#after-edge-reaches-every-reader">reproduction, cohort gate, negative control and figure</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
 
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
@@ -399,10 +468,11 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §6</pre>
     <p class="r-fu-outcome">§6 landed: surfaces-read-the-closure-split (merged 40e10a80) makes the served view and MCP projection read the roadmap's execution/closure split and stops a decision-transition gate idling its plan; closure-split-narrowings-are-guarded (merged 0bbeb7ec) pins both narrowings against revert, review 20/20.</p>
     </article>
-<article class="r-fu" data-id="f-des-005" data-status="open" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T06:15:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-005" data-status="resolved" data-written-by="reckon-build s22-coord" data-written-at="2026-09-25T06:15:00+02:00" data-recommends-skill="/reckon-build dependency-edge-semantics §7" data-resolved-at="2026-09-25T08:03:52+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the soft after edge</h4>
     <div class="r-fu-body"><p>§7 is the continuation: an after edge that orders the ready set and never blocks it.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §7</pre>
+    <p class="r-fu-outcome">done — the soft after edge landed and reaches every reader: roadmap ordering and came-after hints (4ce2d39b, 4a87503f), the published schema field (4a1d7a15, 29df6835), and both inventory row builders through one shared edge_row helper (5bdf633b, 5aa30835); merged at acdfa75b; reviews 86, 98, 94. The two open followups on source-section dependencies and section-scoped decisions remain as new scope.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -450,6 +520,24 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260925T035427851253-review-of-closure-split-narrowings-are-guarded" data-who="reckon-build" data-when="2026-09-25T04:14:38.311Z">
     <div class="r-comment-body"><p>review of closure-split-narrowings-are-guarded stored: 20/20, no findings</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T054157064642-after-edge-orders-without-blocking" data-who="reckon-build" data-when="2026-09-25T06:18:43.020Z">
+    <div class="r-comment-body"><p>soft after edge orders the roadmap without blocking; manifest status repaired blocked-&gt;complete because its one blocker (schema regeneration) was discharged by plan-schema-carries-the-after-edge, as-delivered copy kept; review 86, its reader-gap finding fixed by after-edge-reaches-every-roadmap-reader</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T062128479468-plan-schema-carries-the-after-edge" data-who="reckon-build" data-when="2026-09-25T06:34:27.556Z">
+    <div class="r-comment-body"><p>published plan schema carries the after field; review 98</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T065159936340-after-edge-reaches-every-roadmap-reader" data-who="reckon-build" data-when="2026-09-25T07:43:39.655Z">
+    <div class="r-comment-body"><p>after edge reaches HTTP, ready-set, portfolio and MCP readers through one edge_row helper; review 94</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T063249732623-review-of-after-edge-orders-without-blocking" data-who="reckon-build" data-when="2026-09-25T06:56:19.909Z">
+    <div class="r-comment-body"><p>review stored and read by coordinator</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T063258506733-review-of-plan-schema-carries-the-after-edge" data-who="reckon-build" data-when="2026-09-25T06:51:35.722Z">
+    <div class="r-comment-body"><p>review stored and read by coordinator</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260925T074445613913-review-of-after-edge-reaches-every-roadmap-reader" data-who="reckon-build" data-when="2026-09-25T08:07:15.569Z">
+    <div class="r-comment-body"><p>review stored and read by coordinator</p></div>
 </div>
 </section>
 </main>

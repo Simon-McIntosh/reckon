@@ -635,6 +635,141 @@ FAILED tests/test_paid_lanes_timer.py::test_unchanged_definition_writes_nothing_
       naturally a table.</li>
     </ul>
   </section>
+
+  <section id="paid-lanes-timer-is-live">
+    <h2>&sect;5 — The five-minute refresh is installed on this host and refreshing the document</h2>
+
+    <p><strong>The step.</strong> The document, its readers and the production pre-flight callers had
+    landed; what remained was a deployment that republishes it on a clock rather than only at a
+    pre-flight. <code>python -m reckon.crew.paid_lanes --install-timer</code> writes two user units
+    under <code>~/.config/systemd/user</code> and brings the timer up. This node ran it once on this
+    host, from the main checkout at <code>HEAD</code>, and observed the unit file, the timer's next
+    elapse, the first publish, and the timer's own second publish.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/refresh-timer-live.png" alt="A three-lane timeline over eleven minutes: the install lane starts at 07:38:12.6Z and writes both unit files by 07:38:14.2Z; the document lane carries two publishes, observed_at 07:38:15.086Z and 07:43:37.517Z, 322.4 seconds apart against the 300-second floor; the timer lane shows the next elapse at 07:43:14Z, the second service run at 07:43:37Z, and the following elapse at 07:48:37Z.">
+      <figcaption>The install, the publish it triggered immediately, and the timer's own second
+      elapse: the two publishes are 322.4 s apart, past the five-minute floor the deployment
+      exists to meet. The 23 s between the 07:43:14Z elapse and the 07:43:37Z run is the
+      manager's own scheduling, not a shorter cadence.</figcaption>
+    </figure>
+
+    <h3>What was observed</h3>
+
+    <table>
+      <thead><tr><th>Check</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>Install, run 1</td><td><code>installed ~/.config/systemd/user/reckon-paid-lanes.timer</code>, exit 0, at 07:38:12.6Z; units render <code>WorkingDirectory=/home/ITER/mcintos/Code/reckon</code> and <code>ExecStart=&lt;checkout venv python&gt; -m reckon.crew.paid_lanes --once</code></td></tr>
+        <tr><td>Timer listed with a next elapse</td><td><code>NEXT Fri 2026-09-25 09:43:14 CEST</code> (07:43:14Z); after the second run, <code>NEXT 09:48:37 CEST</code></td></tr>
+        <tr><td>Service's last run</td><td><code>Result=success</code>, <code>ExecMainStatus=0</code>, real <code>ExecMainStartTimestamp</code>/<code>ExecMainExitTimestamp</code> (09:38:14 and 09:43:37 CEST), <code>NRestarts=0</code></td></tr>
+        <tr><td>Publish, newer than the install moment</td><td><code>observed_at 2026-09-25T07:38:15.086428Z</code>, 2.5 s after the install start</td></tr>
+        <tr><td>Second publish, at least five minutes later</td><td><code>observed_at 2026-09-25T07:43:37.516938Z</code>, delta 322.4 s, on the timer's own elapse (no manual start)</td></tr>
+        <tr><td>One entry per backend</td><td><code>accounts</code> carries <code>clive</code>, <code>codex</code> and <code>claude</code> among ten accounts</td></tr>
+        <tr><td>Idempotence</td><td>Run 2 prints <code>... is already current</code>, exit 0; service sha256 <code>bd470326…</code> and timer sha256 <code>1cc28fdb…</code> identical before and after; both mtimes unchanged</td></tr>
+        <tr><td>Nothing else changed</td><td><code>git status --porcelain</code> of the main checkout identical before and after the install, bar the peer work already dirty at the start; no repository file edited</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>Readings are entries, not positions.</strong> Each backend's entry is present; all
+      three currently read <code>state=unknown</code>, because no fresh receipt or stream window
+      resolved them at publish time; §5's document semantics, not this deployment, own that.</li>
+      <li><strong>The journal was not read.</strong> <code>journalctl --user -u
+      reckon-paid-lanes.service</code> refuses this shell's context (<q>No journal files were opened
+      due to insufficient permissions</q>), so the success claim rests on the manager's own
+      <code>Result</code>/<code>ExecMainStatus</code> stamps and on the document's advancing
+      <code>observed_at</code>, not on journal lines.</li>
+      <li><strong>Durability across the allocation was not measured.</strong> The timer lives in the
+      user manager reachable from this compute node's fleet runtime directory; whether that manager
+      outlives the allocation is a property of the host, not of the install.</li>
+    </ul>
+  </section>
+
+  <section id="the-local-lane-at-width">
+    <h2>&sect;1 — The local lane holds its prefix cache but degrades in throughput above about 30 running
+    <a class="anchor" href="#the-local-lane-at-width">#</a></h2>
+
+    <p><strong>The measure.</strong> While coordinators ramped concurrent local workers, a sampler
+    read <code>~/public/imas-ambix/lane.json</code> every 30 s over a 55-minute window and
+    recorded running, the derived ceiling, headroom, waiting, KV occupancy, the prefix hit rate, the
+    router gate's in-flight count and width, and the count of process-alive local crew runs. It
+    appended every serving-telemetry row the router published, and every fifth tick scanned each
+    live crew pointer for the stall signature <code>~/.agents/AGENTS.md</code> names: a stream
+    silent for more than 900 s while its process is alive. 110 ticks were recorded, from
+    08:05Z to 08:59Z. The sample JSONL, the reducer and the figure live under the run's
+    <code>docs/research/local-lane-at-width.html</code>.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Observed</th><th>Collapse signature recorded 2026-09-23</th></tr></thead>
+      <tbody>
+        <tr><td>Peak running</td><td>36 at 08:41Z</td><td>33 and 36 running at the collapse</td></tr>
+        <tr><td>Derived ceiling</td><td>21 to 34</td><td>n/a</td></tr>
+        <tr><td>Router gate waiting</td><td>2</td><td>1 queued at the collapse</td></tr>
+        <tr><td>KV occupancy peak</td><td>0.63</td><td>0.88 at the collapse</td></tr>
+        <tr><td>Prefix hit rate</td><td>mean 0.9697, min 0.1579</td><td>falls with cold prompts</td></tr>
+        <tr><td>Mean TTFT</td><td>mean 1.72 s, max 4.7 s</td><td>3.0 s at the collapse</td></tr>
+        <tr><td>Mean TTFT, running &ge; 30</td><td>2.94 s</td><td>3.0 s at the collapse</td></tr>
+        <tr><td>Aggregate output</td><td>366.6 tok/s</td><td>98 tok/s at the collapse</td></tr>
+        <tr><td>Per-stream output, running &ge; 30</td><td>9.64 tok/s</td><td>14.5 tok/s at the collapse</td></tr>
+        <tr><td>Stalls over the window</td><td>none</td><td>none reported</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <img src="/reckon/figures/local-lane-at-width/ramp.svg" alt="Two panels against wall time. Top: running requests rising to a peak of 36, the derived ceiling stepped between 21 and 34, and a dotted width-30 reference line. Bottom: KV occupancy rising to 0.63 and mean TTFT rising to several seconds as running passes 30.">
+      <figcaption>Running, the ceiling and KV occupancy against wall time over the ramp.</figcaption>
+    </figure>
+
+    <p><strong>What this record does not claim.</strong> Peak running is set by what coordinator
+    sessions hold in flight, so the window locates the degradation's onset at about 30 running and
+    does not establish the lane's ceiling. The degradation is a throughput band, not prefix
+    eviction: KV occupancy never exceeded 0.63, against the 0.88 recorded at the earlier
+    collapse. The prefix hit rate is the lane document's own derived field; on the ticks where it
+    reads exactly 0.0 its neighbours 30 s either side read above 0.1579, but three of those
+    readings fall in a row across the peak, so both readings are reported rather than calling it a
+    publication artefact. The serving telemetry never populated
+    <code>cached_prompt_tokens</code>, so the hit rate has no independent counter
+    in this window, and aggregate output is counted from completions landing inside each tick's
+    trailing window, which undercounts a tick whose long requests are still in flight.</p>
+  </section>
+
+  <section id="review-node-utility">
+    <h2>Review-node utility measurement</h2>
+    <p>Read 2026-09-25 from the cross-project crew review store and run streams. The research
+    record <code>/reckon/research/review-node-utility</code> and the report directory contain
+    the exact script, row output and grouped output. The pinned manifest hashes 5,169 JSON
+    files; 847 pass the five-score/reviewed-run filter, 167 byte-identical files and one
+    semantic re-store collapse, leaving 679 distinct records across five projects. Of these,
+    589 carry findings (86.7%); 58 have an observable repair (9.8%), defined by a later
+    distinct review with a different head or findings, or a post-reviewed-head commit. The
+    old rule gave 186 repair credits and the corrected rule removes 128. The strict
+    clean-review-then-later-finding proxy has zero observed cases, but verify-gate failures,
+    added suite failures and re-cuts are not fully joined in the review store, so this is not a
+    zero missed-defect claim.</p>
+    <p>The timestamped joins give median review wall 1,743 s, 100 review turns and 52 tool
+    steps, versus 3,510 s and 158 turns for the implement runs reviewed; median completion to
+    review start is 677 s. Source-change nodes show 86.1% findings and 12.9% repairs among
+    finding reviews; docs/evidence-only nodes show 86.6% and 2.4%; no test-only node is
+    classified. Deepseek-v4.1-flash contributes 301 records, 272 with findings, 31 repairs and
+    59 median tool steps. No record is labelled gpt-5.6-luna; the observed gpt-5.6-sol label is
+    retained as a separate 16-record comparator with 43 median tool steps where present.</p>
+    <p>The pinned file list and content hashes are
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/corpus-manifest.json</code>;
+    the script's complete output is
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/review-node-utility/measurement.log</code>,
+    captured at <code>2026-09-25T12:23:05.713099+02:00</code>; their SHA-256 digests are
+    <code>75a20f1fe03f2cc186965ac7ee41625df0e5f6c4d5d9fba403dc47734be1ecb5</code> and
+    <code>53514dddac3cec75960d6346291656ed00f6c58ebd07a05e61044ac4f2ff27fd</code> respectively.
+    Both are part of the receipt for the figures above.</p>
+    <p><strong>Positive control.</strong> The paid-headroom document review stored four findings
+    at score 75, returned them to the implement node, and the cumulative landing record names
+    repair commits <code>db50a1e3</code>, <code>559e9fe7</code> and <code>d1ae179c</code>
+    before merged head <code>a953e4d7</code>; its re-review scored 87. This traces finding,
+    repair, re-review and promotion as separate receipts rather than treating a green gate as
+    proof of repair.</p>
+  </section>
 </main>
 </body>
 </html>

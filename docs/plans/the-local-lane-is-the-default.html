@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="30">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -44,6 +44,21 @@
         <tr><td>The local lane took over an hour per node for nova, which argues for pacing escalation rather than forbidding it.</td><td>nova-08</td></tr>
       </tbody>
     </table>
+
+    <p><strong>Measured 2026-09-25: review-node-utility, corrected capture.</strong> The pinned
+    corpus hashes 5,169 JSON files, selects 847 review-shaped files, collapses 167
+    byte-identical duplicates and one semantic re-store, and leaves 679 distinct review
+    records. Of those, 589 carry findings (86.7%) and 58 have an observable repair (9.8%);
+    the old file-level rule gave 186 repair credits, so 128 credits were removed. The
+    timestamped joins measured a median review wall of 1,743 s and 100 assistant turns,
+    against 3,510 s and 158 turns for the implement runs reviewed; the completion-to-review
+    median was 677 s over 154 joins. Source-change nodes had 86.1% finding share and 12.9%
+    repair share; docs/evidence-only nodes had 86.6% and 2.4%; no test-only node was present
+    in the classified corpus. The requested gpt-5.6-luna cohort is absent from the store (0
+    records), so the observed gpt-5.6-sol label is retained without relabelling. Full method,
+    model/tool-step breakdown, score bands, figures and the positive control are in
+    <code>docs/research/review-node-utility.html</code>; the hash manifest and complete
+    measurement log are in the worker report directory.</p>
 
     <h2 id="s2">&sect;2 &mdash; Route by backend and model, not by per-model lane</h2>
     <p><strong>The lead's routing model.</strong> A <em>backend</em> is a provider:
@@ -163,6 +178,22 @@
     (the same document named explicitly) and the isolation assertion (the resolved path is not the
     planted one) are unchanged. The five-minute refresh deployment remains open.</p>
 
+    <p><strong>Landed (2026-09-25):</strong> the five-minute refresh is deployed on this host. From
+    the main checkout, <code>python -m reckon.crew.paid_lanes --install-timer</code> wrote
+    <code>reckon-paid-lanes.service</code> (oneshot, <code>WorkingDirectory</code> the checkout root,
+    <code>ExecStart</code> the checkout's interpreter with <code>-m reckon.crew.paid_lanes
+    --once</code>) and <code>reckon-paid-lanes.timer</code> (<code>OnBootSec=1min</code>,
+    <code>OnUnitActiveSec=5min</code>, <code>Unit=reckon-paid-lanes.service</code>) under
+    <code>~/.config/systemd/user</code>, reloaded the manager and enabled the timer. The unit took
+    its first run at 07:38:14Z and published <code>~/public/reckon/paid-lanes.json</code>
+    (<code>observed_at</code> 07:38:15.086Z) with an entry for each of clive, codex and claude; the
+    timer's own second elapse followed at 07:43:37Z and published again, 322 s after the first. A
+    second <code>--install-timer</code> run reported the timer already current and left both unit
+    files byte-identical (sha256 and mtimes unchanged). The service's last run reads
+    <code>Result=success</code> with a real start and exit stamp, <code>ExecMainStatus=0</code>, and
+    the install edited no repository file. Evidence:
+    <code>~/.config/reckon/crew/reports/reckon/s21-coord/paid-lanes-timer-live/install.log</code>.</p>
+
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
     <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or
@@ -236,6 +267,16 @@
     <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §9</pre>
     <p class="r-fu-outcome">done — no followup. Both ids are green at 42bfc207 after s22-coord's reckon-skill-overhaul landings (build-skill-sheds-reference-material, build-skill-keeps-its-pinned-rules): tests/test_skill_contracts.py 55 passed, test_skill_contract_parity.py 15 passed, test_crew_directory.py 7 passed.</p>
     </article>
+<article class="r-fu" data-id="f-tllitd-shared-claims" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A declared hot file can be claimed by more than one live node</h4>
+    <div class="r-fu-body"><p>Lead decision, 2026-09-25: allow shared-file writes, with coordination. Worktrees isolate in-flight work, and merging is the orchestrator's job. The measurement behind it: on 2026-09-25 all three reckon coordinators reported local-lane width bound by whole-file write claims on six to eleven hot modules (<code>dispatch.py</code>, <code>promotion.py</code>, <code>recovery.py</code>, <code>mcp.py</code>, <code>cli.py</code>, <code>roadmap.py</code>), with 15 running against a computed ceiling of 27 and a router gate of 36. The refused nodes would mostly edit different functions in those files.</p><p>The mechanism: a project declares shareable paths in <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>, a list of repository-relative files, each with a one-line reason. The live claim check in <code>reckon/crew/runs.py</code> (<code>_raise_live_scope_conflict</code>) still refuses any overlap, except when the candidate path and the live claim resolve to the same file named in that list. In that case it permits the claim and records the co-claimants, so <code>crew(view="scopes")</code> shows every live node sharing the file. A directory claim that contains a shared file still conflicts, and so does any path not in the list. With no list present, behaviour is unchanged.</p><p>Done when a test synthesizes a repository with a list naming one file and asserts four things: two nodes claiming that file both pass the check; a node claiming an unlisted file is refused against a live claim on it; a directory claim overlapping the shared file is refused; with the list absent, the shared file is refused. The negative control ignores the list, and the first case then fails. The list for reckon is committed with the six modules named above.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §1</pre>
+    </article>
+<article class="r-fu" data-id="f-tllitd-readings-and-durability" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build the-local-lane-is-the-default §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The published headroom carries readings, from a timer that outlives the allocation</h4>
+    <div class="r-fu-body"><p>The refresh timer landed on 2026-09-25 (r-20260925T072316842946, promoted 99a17d7c): two publishes 322 s apart, service Result=success. The review scored 83. Three gaps keep §5's lane-feedback gate open. (1) <b>Every account reads <code>state: unknown</code></b> in <code>~/public/reckon/paid-lanes.json</code>, with no window utilisation or burn for claude, codex, codex-luna or any other account. So the document refreshes but says nothing an orchestrator can decide on. Find why the gatherer produces no readings (no rate-limit events in recent streams, a wrong stream root, or a parse gap), and make each account with recent traffic publish its window figure. Done when a publish shows a non-unknown <code>five_hour</code> or <code>seven_day</code> reading for every account that ran a job in the last window, with a test that feeds a stream fixture carrying a <code>rate_limit_event</code>. (2) <b>The timer runs under the SLURM allocation's user manager</b> (XDG_RUNTIME_DIR=/tmp/39486-fleet), so it dies when the allocation ends. Install it under the login host's persistent user manager, or state which host owns it, and prove it survives an allocation boundary. (3) The review's two figure findings: in <code>refresh-timer-live.png</code> the y-axis labels are applied in reverse lane order, and the annotations overprint (<code>refresh_timer_figure.py</code> lines 34–38 and 79).</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-local-lane-is-the-default §5</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260924T211841912909-review-of-paid-headroom-is-published" data-who="reckon-build" data-when="2026-09-24T22:06:40.930Z">
@@ -294,6 +335,30 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T062507246668-paid-lanes-refresh-timer" data-who="reckon-build" data-when="2026-09-25T06:38:16.583Z">
     <div class="r-comment-body"><p>paid-lanes --install-timer writes and enables a 5-minute user timer idempotently; idempotence negative control fails; review 90</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T072316842946-paid-lanes-timer-is-live" data-who="reckon-build" data-when="2026-09-25T07:52:53.886Z">
+    <div class="r-comment-body"><p>timer installed, two publishes 322 s apart; review 83 with two figure findings (y-axis labels in reverse lane order, overprinted annotations); open gaps: every account reads unknown, and the timer runs under the allocation's user manager</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260925T075348533563-review-of-paid-lanes-timer-is-live" data-who="reckon-build" data-when="2026-09-25T09:04:09.890Z">
+    <div class="r-comment-body"><p>review stored: 83/100 (durability 10), two figure findings recorded in f-tllitd-readings-and-durability</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20260925T0920-s1-local-lane-at-width-landed" data-who="reckon-build s21-coord" data-when="2026-09-25T09:20:00Z">
+    <div class="r-comment-body">A research record now measures this lane at width. docs/research/local-lane-at-width.html and /reckon/figures/local-lane-at-width/ramp.svg landed at 1211952b: a sampler read the lane document, the router serving telemetry and the live crew pointers every 30 s across a 55-minute coordinator ramp, and the reducer and figure sit beside it. 110 ticks were recorded, from 08:05Z to 08:59Z; running peaked at 36 at 08:41Z, and 25 ticks sat at or above 30. The cold-prompt prefill collapse did not reproduce: the prefix hit rate held a mean 0.97 with no sustained fall, KV occupancy never passed 0.63 against 0.88 at the recorded collapse, and no live worker's stream stalled for the declared signature. What did appear is a throughput band above about 30 running: per-stream output fell to a mean 9.64 tok/s against 25.31 tok/s at the 15-running positive control, mean TTFT rose from 0.94 s to 2.94 s, and the router gate queued up to 2 requests. Aggregate output over the window was 366.6 tok/s, and per-stream at the peak tick was 9.47 tok/s. The declared positive control is the 08:05:21Z tick, where the lane document's running count of 15 equals the 15 process-alive local crew runs. The window bounds the degradation's onset at about 30 running but does not establish the lane's ceiling, which is set by what coordinator sessions hold in flight; the serving telemetry never populated cached_prompt_tokens, so the hit rate has no independent counter, and the ticks where the lane document reports it as exactly 0.0 are reported as both a publication artefact and a possible cold-prefix moment rather than resolved. This node closes its own record only: it sets no terminal status and resolves no followup.</div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T075522000409-local-lane-at-width" data-who="reckon-build" data-when="2026-09-25T09:56:35.203Z">
+    <div class="r-comment-body"><p>local lane measured to a peak of 36 concurrent: degradation as per-stream slowdown from about 30, no prefill-limit binding, width set by coordinator dispatch; headline figures independently reproduced by the receipts curve in imas-ambix local-lane-admission-control §14</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T091558920329-review-of-review-node-utility" data-who="reckon-build" data-when="2026-09-25T10:16:29.845Z">
+    <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T091140376368-review-of-shared-claims-on-declared-hot-files" data-who="reckon-build" data-when="2026-09-25T10:18:15.375Z">
+    <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260925T075602082989-review-node-utility" data-who="reckon-build" data-when="2026-09-25T10:29:36Z">
+    <div class="r-comment-body"><p>review utility over 679 distinct review records (duplicates collapsed after the 84 review): 86.7% carry findings, 9.8% observable repair (source 12.9%, docs-only 2.4%); corpus pinned with hashes</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1206-shared-claims-live-path" data-who="" data-when="">
+    <div class="r-comment-body"><p>Correction to f-tllitd-shared-claims, which was the coordinator's spec error. The followup named <code>_raise_live_scope_conflict</code> in <code>reckon/crew/runs.py</code> as the live claim check, but that function has had no caller since aaf15fd0 (2026-08-24). A real <code>crew dispatch</code> refuses through <code>_raise_repository_scope_conflict</code> (<code>reckon/crew/dispatch.py</code>, defined near line 1253, called near line 3689), which never reads <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>. The review of r-20260925T080400553758 (score 88) found this. The node's exemption is therefore correct but unreachable. The repair node <code>shared-claims-reach-the-live-check</code> builds on that run's head 26b2f499 and does two things. It applies the shared-path exemption inside <code>_raise_repository_scope_conflict</code>, through the same list reader. It also either deletes the dead <code>runs.py</code> function or makes it delegate, so the codebase has one claim check. Done when the four-case test drives a real <code>crew dispatch</code> through the CLI entry against a synthesized repository (not the helper), and two dispatches claiming a listed file both launch, while an unlisted file and a directory still refuse. The negative control ignores the list inside the dispatch path, and the co-claim case must then refuse. This is also a worked example of what the plan-review pilot's reasoning check targets: a mechanism aimed at code that does not run.</p></div>
 </div>
 </section>
 </main>

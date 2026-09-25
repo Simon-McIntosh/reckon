@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#1a1a1a">A hold re-queries a reading past its shelf life, and holds only on what comes back</text>
+  <text x="24" y="57" font-size="12.5" fill="#5a5a5a">The shelf life is the flight key budget.evidence_shelf_life_minutes, read from the configuration home the process resolves — a temporary home here,</text>
+  <text x="24" y="75" font-size="12.5" fill="#5a5a5a">and the home it displaces declares 100 000 minutes, so a run resolving the wrong home could neither re-query nor produce the figure asserted below.</text>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6"/>
+    </marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d9c6d"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8706a"/>
+    </marker>
+  </defs>
+
+  <!-- column: the reading on disk, the staleness gate, the probe -->
+  <rect x="24" y="104" width="250" height="92" rx="8" fill="#fdf6e6" stroke="#d8b871"/>
+  <text x="38" y="128" font-size="12.5" font-weight="600" fill="#6b4e10">a receipt on disk</text>
+  <text x="38" y="150" font-size="11.5" fill="#6b4e10">receipts/lane.json: 99.0 % used,</text>
+  <text x="38" y="168" font-size="11.5" fill="#6b4e10">observed 2 h 24 min before now</text>
+  <text x="38" y="186" font-size="11.5" fill="#8a7648">the figure that provoked the question</text>
+
+  <line x1="149" y1="196" x2="149" y2="222" stroke="#8a94a6" stroke-width="1.4" marker-end="url(#ah)"/>
+
+  <rect x="24" y="226" width="250" height="92" rx="8" fill="#fdf0ef" stroke="#c98b84"/>
+  <text x="38" y="250" font-size="12.5" font-weight="600" fill="#6d2f28">past its configured shelf life?</text>
+  <text x="38" y="272" font-size="11.5" fill="#6d2f28">144 min &gt; the 60 min this home declares</text>
+  <text x="38" y="290" font-size="11.5" fill="#6d2f28">→ the lane's own probe is asked</text>
+  <text x="38" y="308" font-size="11.5" fill="#8a5b55">inside it: the probe is never asked at all</text>
+
+  <line x1="149" y1="318" x2="149" y2="344" stroke="#8a94a6" stroke-width="1.4" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="24" y="348" width="250" height="92" rx="8" fill="#eef2fa" stroke="#9db0d4"/>
+  <text x="38" y="372" font-size="12.5" font-weight="600" fill="#1f3350">the lane's probe is asked</text>
+  <text x="38" y="394" font-size="11.5" fill="#2f4460">the stale figure is not a position: the</text>
+  <text x="38" y="412" font-size="11.5" fill="#2f4460">five-hour window it measures may have</text>
+  <text x="38" y="430" font-size="11.5" fill="#2f4460">rolled over inside the interval</text>
+
+  <!-- the two outcomes -->
+  <line x1="274" y1="378" x2="322" y2="240" stroke="#6d9c6d" stroke-width="1.4" marker-end="url(#ahg)"/>
+  <line x1="274" y1="390" x2="322" y2="384" stroke="#b8706a" stroke-width="1.4" marker-end="url(#ahr)"/>
+
+  <rect x="330" y="176" width="626" height="124" rx="8" fill="#eef6ee" stroke="#9dc39d"/>
+  <text x="344" y="200" font-size="12.5" font-weight="600" fill="#1f4a1f">the probe answers: the hold carries the probe's figure</text>
+  <text x="344" y="224" font-size="11.5" fill="#2f5a2f">figure 97.0 % at an age of 30 s — the hold's figure is the probe's, and never the receipt's 99.0</text>
+  <text x="344" y="244" font-size="11.5" fill="#2f5a2f">so the hold rests on a position rather than on a snapshot that provoked the question</text>
+  <text x="344" y="268" font-size="11.5" fill="#5e7d5e">asserted: hold.figure is 97.0 and not 99.0, the probe was called exactly once, the pool is the group's own</text>
+  <text x="344" y="288" font-size="11.5" fill="#5e7d5e">the hold's age is the probe's 30 s, so the figure and its age belong to the same observation</text>
+
+  <rect x="330" y="322" width="626" height="124" rx="8" fill="#fdf0ef" stroke="#c98b84"/>
+  <text x="344" y="346" font-size="12.5" font-weight="600" fill="#6d2f28">the probe cannot answer: the state is unknown, and unknown does not hold</text>
+  <text x="344" y="370" font-size="11.5" fill="#6d2f28">a transport that raises, or an answer carrying no figure, has not answered</text>
+  <text x="344" y="390" font-size="11.5" fill="#6d2f28">the old figure is kept, with the age that disqualifies it, and marked unknown</text>
+  <text x="344" y="414" font-size="11.5" fill="#8a5b55">the plan's asymmetry: a missed hold costs some quota, a false hold costs the lane — so unknown is</text>
+  <text x="344" y="434" font-size="11.5" fill="#8a5b55">neither exhaustion nor headroom, and no hold is produced from it</text>
+
+  <text x="24" y="460" font-size="11.5" fill="#7a8397">Neither home is written: the displaced home is digested before and after the run and required to match, because an isolated read does not prove an isolated write.</text>
+</svg>

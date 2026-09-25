@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 540" role="img" aria-labelledby="title description">
+  <title id="title">The obligations hook installer prints by default and merges only when asked to write</title>
+  <desc id="description">One call builds the fragment binding the obligations script under three harness events. The default call prints the fragment and opens no file; the write call merges it, refusing a duplicate command and replacing the file atomically. Measured receipts sit beside each path.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60758a"/>
+    </marker>
+    <style>
+      .box { fill: #f7fafc; stroke: #60758a; stroke-width: 2; rx: 12; }
+      .accent { fill: #e7f4ef; stroke: #277a62; stroke-width: 2.5; rx: 12; }
+      .warn { fill: #fff4dc; stroke: #9b6a13; stroke-width: 2; rx: 12; }
+      .label { fill: #1e2933; font: 600 18px system-ui, sans-serif; }
+      .body { fill: #34495e; font: 15px system-ui, sans-serif; }
+      .code { fill: #1e2933; font: 14px ui-monospace, SFMono-Regular, monospace; }
+      .arrow { fill: none; stroke: #60758a; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="box" x="30" y="40" width="330" height="130"/>
+  <text class="label" x="55" y="75">install_hook_settings(path)</text>
+  <text class="body" x="55" y="110">builds the fragment for both</text>
+  <text class="body" x="55" y="132">hook modes, then chooses:</text>
+  <text class="code" x="55" y="157">write=False (default)</text>
+
+  <rect class="accent" x="30" y="215" width="330" height="150"/>
+  <text class="label" x="55" y="250">Default: print it</text>
+  <text class="body" x="55" y="283">Prints the fragment as JSON</text>
+  <text class="body" x="55" y="305">and returns the same object.</text>
+  <text class="body" x="55" y="332">Opens no file: a mode-000</text>
+  <text class="body" x="55" y="351">settings file still prints.</text>
+
+  <rect class="warn" x="30" y="400" width="330" height="110"/>
+  <text class="label" x="55" y="435">Declared mutation</text>
+  <text class="body" y="468" x="55">default writes instead of printing</text>
+  <text class="code" x="55" y="493">3 failed, 7 passed &#8212; the byte-</text>
+  <text class="code" x="55" y="513">identical case among them</text>
+
+  <rect class="box" x="440" y="40" width="360" height="215"/>
+  <text class="label" x="465" y="75">The fragment: three events</text>
+  <text class="code" x="465" y="112">UserPromptSubmit</text>
+  <text class="code" x="465" y="137">SessionStart</text>
+  <text class="code" x="465" y="162">Stop</text>
+  <text class="code" x="465" y="200">coordinator_obligations.py</text>
+  <text class="code" x="465" y="222">--hook prompt | --hook stop</text>
+  <text class="body" x="465" y="248">one command per event, no matcher</text>
+
+  <rect class="box" x="440" y="290" width="360" height="220"/>
+  <text class="label" x="465" y="325">Write: merge it</text>
+  <text class="body" x="465" y="357">1. read the target settings file</text>
+  <text class="body" x="465" y="379">2. refuse a command already</text>
+  <text class="body" x="465" y="400">   present, naming its event</text>
+  <text class="body" x="465" y="422">3. keep every other key and</text>
+  <text class="body" x="465" y="443">   every existing hook group</text>
+  <text class="body" x="465" y="465">4. compose beside the target and</text>
+  <text class="body" x="465" y="486">   move it into place, re-reading first</text>
+
+  <rect class="accent" x="840" y="40" width="290" height="215"/>
+  <text class="label" x="865" y="75">Gate receipt</text>
+  <text class="body" x="865" y="110">hooks test files, base arm</text>
+  <text class="code" x="865" y="135">33 passed, 0 failed</text>
+  <text class="body" x="865" y="170">with the installer's tests</text>
+  <text class="code" x="865" y="195">43 passed, 0 failed</text>
+  <text class="body" x="865" y="230">added failures: 0</text>
+
+  <rect class="accent" x="840" y="290" width="290" height="220"/>
+  <text class="label" x="865" y="325">Dry run left alone</text>
+  <text class="code" x="865" y="362">mtime 1790169285</text>
+  <text class="code" x="865" y="386">size 4965</text>
+  <text class="code" x="865" y="410">sha256 6bafa8d7&#8230;</text>
+  <text class="body" x="865" y="445">identical before and after</text>
+  <text class="body" x="865" y="467">both arms, on the real</text>
+  <text class="code" x="865" y="492">~/.claude/settings.json</text>
+
+  <path class="arrow" d="M 360 105 L 440 130"/>
+  <path class="arrow" d="M 360 268 L 400 268 L 400 300 L 430 300"/>
+  <path class="arrow" d="M 195 170 L 195 215"/>
+  <path class="arrow" d="M 195 365 L 195 400"/>
+</svg>
