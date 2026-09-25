@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360" font-family="monospace" font-size="13">
+  <rect width="880" height="360" fill="#fbfbfd"/>
+  <text x="20" y="30" font-size="16" font-weight="bold">FENCE_WORKERS gates the fence; a fenced test opts in</text>
+
+  <rect x="20" y="55" width="250" height="70" rx="6" fill="#eef2ff" stroke="#5566aa"/>
+  <text x="34" y="80">dispatch.FENCE_WORKERS</text>
+  <text x="34" y="100">= False (worker default)</text>
+  <text x="34" y="118">passed to launch_plan(fence=...)</text>
+
+  <line x1="270" y1="90" x2="360" y2="90" stroke="#333" marker-end="url(#a)"/>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="#333"/>
+    </marker>
+  </defs>
+
+  <rect x="360" y="55" width="230" height="70" rx="6" fill="#f4f4f4" stroke="#888"/>
+  <text x="374" y="80">fence=False</text>
+  <text x="374" y="100">no bwrap, operator home</text>
+  <text x="374" y="118">no CLAUDE_CONFIG_DIR / CODEX_HOME</text>
+
+  <rect x="640" y="55" width="220" height="70" rx="6" fill="#eef7ee" stroke="#4a8a4a"/>
+  <text x="654" y="80">fence=True (opt-in)</text>
+  <text x="654" y="100">argv[0] = bwrap</text>
+  <text x="654" y="118">run owns its harness home</text>
+
+  <line x1="360" y1="150" x2="230" y2="215" stroke="#333" marker-end="url(#a)"/>
+  <line x1="360" y1="150" x2="750" y2="215" stroke="#333" marker-end="url(#a)"/>
+
+  <rect x="20" y="215" width="420" height="125" rx="6" fill="#fff" stroke="#888"/>
+  <text x="34" y="238" font-weight="bold">unfenced cases (asserted as unfenced)</text>
+  <text x="34" y="260">plan(dialect, fence=False)</text>
+  <text x="34" y="278">  no CODEX_HOME; no home seeded; argv[0] != bwrap</text>
+  <text x="34" y="296">  no CLAUDE_CONFIG_DIR; no harness dir; argv[0] != bwrap</text>
+  <text x="34" y="314">run record env: declared keys alone</text>
+
+  <rect x="460" y="215" width="400" height="125" rx="6" fill="#fff" stroke="#4a8a4a"/>
+  <text x="474" y="238" font-weight="bold">fenced cases (opt in explicitly)</text>
+  <text x="474" y="260">monkeypatch.setattr(dispatch_module,</text>
+  <text x="474" y="278">                    "FENCE_WORKERS", True)</text>
+  <text x="474" y="300">or launch_plan(fence=True)</text>
+  <text x="474" y="322">CLAUDE_CONFIG_DIR / CODEX_HOME under the run</text>
+</svg>

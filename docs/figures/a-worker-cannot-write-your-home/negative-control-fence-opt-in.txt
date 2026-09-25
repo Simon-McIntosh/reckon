@@ -1,0 +1,40 @@
+remove the FENCE_WORKERS opt-in from the fenced clive resume case; it must fail again with the unfenced argv
+# tree=/tmp/fence-nc
+module.__file__: /tmp/fence-nc/reckon/__init__.py
+cwd: /tmp/fence-nc
+# command: python -m pytest tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_clive_resume_reaches_the_clive_harness
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_a_fenced_clive_resume_reaches_the_clive_harness _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11044/test_a_fenced_clive_resume_rea0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fea80c47230>
+
+    def test_a_fenced_clive_resume_reaches_the_clive_harness(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """The resumed inner command is the harness, and the fence is composed once.
+    
+        On the defect the inner command is the fence binary itself: bubblewrap is
+        handed the harness's own ``-p`` and refuses it, so the resumed run produces
+        no turn. Naming the inner command is the whole difference between a resumed
+        turn and a dead one.
+        """
+        fixture = Fixture(tmp_path, "clive")
+        fixture.isolate(monkeypatch)
+        record, plan = fixture.resume(fence=True)
+        argv = list(plan.argv)
+    
+        positions = _fence_positions(argv)
+>       assert positions == [0], argv[:1]
+E       AssertionError: ['/work/projects/imas_gpu/agents/clive']
+E       assert [] == [0]
+E         
+E         Right contains one more item: 0
+E         Use -v to get more diff
+
+tests/test_fenced_resume_reaches_its_harness.py:167: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_clive_resume_reaches_the_clive_harness
+1 failed in 0.45s
+EXIT=1

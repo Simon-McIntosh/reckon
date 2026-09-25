@@ -684,6 +684,64 @@ exit: 0</pre>
     <code>gate-fenced-resume-base.txt</code>, <code>gate-fenced-resume-head.txt</code>, figure
     <code>/reckon/figures/a-worker-cannot-write-your-home/fence-resume-repaired.svg</code>.</p>
   </section>
+  <section id="s2-fence-opt-in" data-reckon="section">
+    <h2>&sect;2 follow-up &mdash; the fenced tests state the fence they test</h2>
+
+    <p><strong>The defect reproduced at base <code>39fd7a28</code>.</strong> That commit made the
+    fence opt-in: workers launch unfenced through <code>dispatch.FENCE_WORKERS = False</code>, and a
+    run adopts its own harness home only when fenced. Six tests asserted fenced behaviour without
+    opting in, so each measured the unfenced path it was not written for. Five failed at base
+    <code>39fd7a28</code> on the unfenced composition
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-fence-opt-in-base.txt</code>): four in
+    <code>tests/test_fenced_resume_reaches_its_harness.py</code> and
+    <code>test_run_record_agent_configuration_excludes_environment</code>. The sixth,
+    <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code>, failed on its last clause
+    instead &mdash; it asserted that an unfenced claude launch <em>adopts</em> the run's harness
+    home, which is exactly the behaviour <code>39fd7a28</code> removed.</p>
+
+    <p><strong>The repair: each case states its fence.</strong> A fenced case now sets
+    <code>dispatch.FENCE_WORKERS = True</code> by monkeypatch before it resumes, the same switch a
+    real dispatch reads; an unfenced case passes <code>fence=False</code> and asserts the operator
+    home is kept. The sixth case's last clause is rewritten from the removed rule to the rule that
+    replaced it: an unfenced launch of either dialect sets neither <code>CLAUDE_CONFIG_DIR</code>
+    nor <code>CODEX_HOME</code>, seeds no home, and names no fence as <code>argv[0]</code>. No
+    product code changed; <code>git diff 39fd7a28 HEAD</code> touches three files, all under
+    <code>tests/</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/fence-opt-in.svg"
+           alt="A gate box for dispatch.FENCE_WORKERS feeding launch_plan, splitting into an unfenced arm with no harness home and a fenced arm whose argv[0] is bwrap, with the two test clauses under each arm.">
+      <figcaption>The switch and the two clauses. The launcher default is unfenced; a test of fenced
+      behaviour sets <code>FENCE_WORKERS</code> true, and a test of unfenced behaviour asserts the
+      operator home is kept.</figcaption>
+    </figure>
+
+    <p><strong>Measure.</strong> Five files &mdash; the three repaired, plus
+    <code>tests/test_backends.py</code> and <code>tests/test_every_attempt_is_supervised.py</code>
+    &mdash; each arm run from its own tree so the <code>reckon</code> imported is the tree under
+    test (base module <code>/tmp/fence-base-39fd7a28/reckon/__init__.py</code>, head module under
+    the worktree root, both named on the log headers): base <code>39fd7a28</code>
+    <code>6 failed, 59 passed</code>, head <code>8fc68320</code> <code>65 passed</code>. The six
+    base failures are exactly the six named ids, so this change repairs all six and adds none
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-fence-opt-in-base.txt</code>,
+    <code>gate-fence-opt-in-head.txt</code>).</p>
+
+    <p><strong>Declared negative control, executed and logged.</strong> <em>remove the FENCE_WORKERS
+    opt-in from the fenced clive resume case; it must fail again with the unfenced argv.</em> Applied
+    to a copy of the repaired file, exactly that one line removed, the clive case fails on
+    <code>assert positions == [0], argv[:1]</code> because the resume composes no fence: the argv it
+    reports is <code>['/work/projects/imas_gpu/agents/clive']</code>, the bare harness with no
+    <code>bwrap</code> element
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-fence-opt-in.txt</code>).
+    Without the control the opt-in would not be the reason the clive case passes.</p>
+
+    <p><strong>Lint and format delta, measured on complete trees.</strong> The three repaired files
+    carry 5 lint findings at base and 5 at head, and the whole tree 466&nbsp;&rarr;&nbsp;466, so this
+    change adds none; all three are formatted. Commit <code>8fc68320</code>. Evidence:
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-fence-opt-in-base.txt</code>,
+    <code>gate-fence-opt-in-head.txt</code>, <code>negative-control-fence-opt-in.txt</code>, figure
+    <code>/reckon/figures/a-worker-cannot-write-your-home/fence-opt-in.svg</code>.</p>
+  </section>
 </main>
 </body>
 </html>

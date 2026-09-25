@@ -1,0 +1,230 @@
+# revision=39fd7a28 base arm; tree=/tmp/fence-base-39fd7a28
+# command: python -m pytest tests/test_each_run_owns_its_harness_home.py tests/test_backend_environment.py tests/test_fenced_resume_reaches_its_harness.py tests/test_backends.py tests/test_every_attempt_is_supervised.py
+module.__file__: /tmp/fence-base-39fd7a28/reckon/__init__.py
+cwd: /tmp/fence-base-39fd7a28
+...F........FFFFF................................................        [100%]
+=================================== FAILURES ===================================
+____________ test_an_unfenced_codex_launch_keeps_the_operators_home ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_an_unfenced_codex_launch_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6aa02586b0>
+
+    @requires_bwrap
+    def test_an_unfenced_codex_launch_keeps_the_operators_home(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No fence means no home to answer, so the operator's own is kept.
+    
+        The run's codex home exists to survive the fence, which seals the
+        operator's ``~/.codex`` read-only and exposes the login into the run. With
+        no fence there is neither a seal to answer nor a login bound in, so a
+        CODEX_HOME pointed at an empty run home would displace the operator's login
+        with nothing. The unfenced launch therefore sets no CODEX_HOME and seeds no
+        home, while the fenced launch beside it does both.
+        """
+        fixture = Fixture(tmp_path)
+        fixture.isolate(monkeypatch)
+        # The run directory is live for both launches, so the absence below is the
+        # fence's doing rather than a manifest directory that names no run.
+        assert fixture.manifest.parent.is_dir()
+    
+        unfenced = fixture.plan(dialect="codex", fence=False)
+        assert "CODEX_HOME" not in unfenced.environment
+        assert unfenced.argv[0] != _backends.FENCE_BINARY
+        assert not (fixture.run / "codex-home").exists()
+    
+        fenced = fixture.plan(dialect="codex")
+        codified = fixture.run / "codex-home"
+        assert fenced.environment["CODEX_HOME"] == str(codified)
+        assert codified.is_dir()
+        assert [
+            str(fixture.codex / "auth.json"),
+            str(codified / "auth.json"),
+        ] in _bind_pairs(fenced.argv, "--ro-bind")
+    
+        # The claude-shaped harness still adopts its home unfenced: a transcript
+        # must land in the run whichever way the worker was launched, and only the
+        # codex home is a fence artefact.
+        claude_unfenced = fixture.plan(fence=False)
+>       assert claude_unfenced.environment["CLAUDE_CONFIG_DIR"] == str(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            fixture.run / "harness"
+        )
+E       KeyError: 'CLAUDE_CONFIG_DIR'
+
+tests/test_each_run_owns_its_harness_home.py:493: KeyError
+___________ test_run_record_agent_configuration_excludes_environment ___________
+
+home = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_run_record_agent_configur0/config')
+repo = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_run_record_agent_configur0/repo')
+
+    def test_run_record_agent_configuration_excludes_environment(home, repo) -> None:
+        launched: dict[str, object] = {}
+        config = copy.deepcopy(CONFIG)
+        config["backends"]["alpha"]["environment"] = {"API_TOKEN": "must-not-enter-ledger"}
+    
+        def launcher(plan, *, log_path, stderr_path, prompt_path):
+            launched["plan"] = plan
+            log_path.write_text("")
+            return 4242
+    
+        record = crew.dispatch(
+            node=_node(manifest_path=""),
+            project="proj",
+            repo=repo,
+            config=config,
+            session="sess",
+            launcher=launcher,
+        )
+    
+        # The plan's environment carries every declared entry whole and, beside
+        # them, only the harness home the run owns for itself: nothing declared is
+        # dropped, and nothing undeclared is invented. The record below carries
+        # neither, so the comparison is exact on both the key set and the value.
+        environment = launched["plan"].environment
+        assert environment["API_TOKEN"] == "must-not-enter-ledger"
+>       assert set(environment) == {"API_TOKEN", "CODEX_HOME"}
+E       AssertionError: assert {'API_TOKEN'} == {'API_TOKEN', 'CODEX_HOME'}
+E         
+E         Extra items in the right set:
+E         'CODEX_HOME'
+E         Use -v to get more diff
+
+tests/test_backend_environment.py:242: AssertionError
+_____________ test_a_fenced_clive_resume_reaches_the_clive_harness _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_a_fenced_clive_resume_rea0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6a9ea54c50>
+
+    def test_a_fenced_clive_resume_reaches_the_clive_harness(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """The resumed inner command is the harness, and the fence is composed once.
+    
+        On the defect the inner command is the fence binary itself: bubblewrap is
+        handed the harness's own ``-p`` and refuses it, so the resumed run produces
+        no turn. Naming the inner command is the whole difference between a resumed
+        turn and a dead one.
+        """
+        fixture = Fixture(tmp_path, "clive")
+        fixture.isolate(monkeypatch)
+        record, plan = fixture.resume(fence=True)
+        argv = list(plan.argv)
+    
+        positions = _fence_positions(argv)
+>       assert positions == [0], argv[:1]
+E       AssertionError: ['/work/projects/imas_gpu/agents/clive']
+E       assert [] == [0]
+E         
+E         Right contains one more item: 0
+E         Use -v to get more diff
+
+tests/test_fenced_resume_reaches_its_harness.py:163: AssertionError
+____________ test_a_fenced_codex_resume_finds_the_runs_own_rollout _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_a_fenced_codex_resume_fin0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6a9ea0bc20>
+
+    def test_a_fenced_codex_resume_finds_the_runs_own_rollout(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """CODEX_HOME points at the run's own home and the inner command is codex.
+    
+        A codex session rollout lives under its home, so a resume that pointed the
+        home anywhere else would reach no session. The home is the fence artefact
+        seeded from the run's manifest directory, and the resumed argv must name the
+        ``resume`` subcommand with the recorded session id.
+        """
+        fixture = Fixture(tmp_path, "codex")
+        fixture.isolate(monkeypatch)
+        _, plan = fixture.resume(fence=True)
+        argv = list(plan.argv)
+    
+        home = plan.environment.get("CODEX_HOME")
+>       assert home, plan.environment
+E       AssertionError: {'RECKON_RUN_ID': 'r-fenced-codex', 'RECKON_MANIFEST': '/tmp/pytest-of-mcintos/pytest-11043/test_a_fenced_codex_resume_fin0/config/runs/r-fenced-codex/manifest.md', 'RECKON_ATTEMPT_STARTED_AT': '2026-09-25T20:20:50Z'}
+E       assert None
+
+tests/test_fenced_resume_reaches_its_harness.py:194: AssertionError
+___________ test_a_placed_records_command_field_is_still_the_harness ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_a_placed_records_command_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6a9ea0be30>
+
+    def test_a_placed_records_command_field_is_still_the_harness(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """A record whose command field names a harness keeps its meaning.
+    
+        The refusal only fires on a command that names the fence. A placed launch
+        records the harness in the field before the scheduler is wrapped onto the
+        argv, so the field is the only place the harness survives — a reader taking
+        the first word of that argv would translate the scheduler. This is the case
+        the refusal must leave alone.
+        """
+        fixture = Fixture(tmp_path, "clive")
+        fixture.isolate(monkeypatch)
+        record = fixture.record(fence=False)
+        record["argv"] = ["srun", "--job-name", fixture.run_id, *record["argv"]]
+        assert Path(record["command"]).name == "clive"
+        crew._write_json(crew.pointer_path(fixture.run_id), record)
+    
+        plan = crew.resume_plan(fixture.run_id, "continue", config=CONFIG)
+        argv = list(plan.argv)
+    
+        positions = _fence_positions(argv)
+>       assert len(positions) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_fenced_resume_reaches_its_harness.py:235: AssertionError
+__________ test_the_negative_control_reads_the_command_field_as_today __________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-11043/test_the_negative_control_read0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6aa0142ad0>
+
+    def test_the_negative_control_reads_the_command_field_as_today(
+        tmp_path: Path, monkeypatch
+    ) -> None:
+        """The declared mutation: the recorded field is taken as the harness.
+    
+        Before the fence became the default this was the whole rule, so removing the
+        fence refusal restores it. The fenced clive case must then yield the fence
+        as the inner command: if it did not, the refusal would not be the reason the
+        inner command is the harness.
+        """
+        fixture = Fixture(tmp_path, "clive")
+        fixture.isolate(monkeypatch)
+        monkeypatch.setattr(dispatch_module, "_names_the_fence", lambda command: False)
+    
+        _, plan = fixture.resume(fence=True)
+        argv = list(plan.argv)
+        positions = _fence_positions(argv)
+>       inner = _inner(argv, positions[0])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_fenced_resume_reaches_its_harness.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_fenced_resume_reaches_its_harness.py:144: in _inner
+    return argv[_separator(argv, fence_index) + 1 :]
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+argv = ['/usr/bin/bwrap', '-p', '--output-format', 'stream-json', '--verbose', '--resume', ...]
+fence_index = 0
+
+    def _separator(argv: list[str], fence_index: int) -> int:
+>       return argv.index("--", fence_index)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: list.index(x): x not in list
+
+tests/test_fenced_resume_reaches_its_harness.py:140: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_each_run_owns_its_harness_home.py::test_an_unfenced_codex_launch_keeps_the_operators_home
+FAILED tests/test_backend_environment.py::test_run_record_agent_configuration_excludes_environment
+FAILED tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_clive_resume_reaches_the_clive_harness
+FAILED tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_codex_resume_finds_the_runs_own_rollout
+FAILED tests/test_fenced_resume_reaches_its_harness.py::test_a_placed_records_command_field_is_still_the_harness
+FAILED tests/test_fenced_resume_reaches_its_harness.py::test_the_negative_control_reads_the_command_field_as_today
+6 failed, 59 passed in 12.75s
+EXIT=1

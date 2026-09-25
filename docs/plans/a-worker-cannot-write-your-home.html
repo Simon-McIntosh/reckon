@@ -327,6 +327,44 @@
         figures under <code>/reckon/figures/a-worker-cannot-write-your-home/</code>. This unblocks
         the section's owed real-worker falsifier, which this node did not run.</p></div>
       </div>
+
+      <div class="r-comment" data-section="s2" data-id="c-20260925T2110-fence-opt-in" data-who="node fence-tests-opt-into-the-fence" data-when="2026-09-25T21:10:00+00:00">
+        <div class="r-comment-body"><p><strong>The six tests the unfenced default turned red
+        now state the fence they test.</strong> Since the launcher stopped composing the fence,
+        a test of fenced behaviour has to opt in rather than lean on a default, and a test of an
+        unfenced launch must assert the operator's home is kept. Five of the six resumed or
+        dispatched through <code>dispatch.FENCE_WORKERS</code> and so measured the unfenced path;
+        each now sets that constant true by monkeypatch before it acts. The sixth,
+        <code>test_an_unfenced_codex_launch_keeps_the_operators_home</code>, asserted that an
+        unfenced claude launch <em>adopts</em> the run's harness home &mdash; the rule this change
+        removed &mdash; so its last clause now asserts the rule that replaced it: an unfenced
+        launch of either dialect sets neither <code>CLAUDE_CONFIG_DIR</code> nor
+        <code>CODEX_HOME</code>, seeds no home, and names no fence as <code>argv[0]</code>. The
+        resume file's own negative-control report sets the same constant by hand, since it runs
+        without pytest's <code>monkeypatch</code>, so it still demonstrates its declared mutation.
+        No product code changed.</p>
+
+        <p><strong>Measure.</strong> Five files &mdash; the three repaired plus
+        <code>tests/test_backends.py</code> and <code>tests/test_every_attempt_is_supervised.py</code>
+        &mdash; each arm run from its own tree so the <code>reckon</code> imported is the tree under
+        test: base <code>39fd7a28</code> <code>6 failed, 59 passed</code>, head <code>8fc68320</code>
+        <code>65 passed</code>. The six base failures are exactly the six named ids, so the change
+        repairs all six and adds none
+        (<code>docs/figures/a-worker-cannot-write-your-home/gate-fence-opt-in-base.txt</code>,
+        <code>gate-fence-opt-in-head.txt</code>).</p>
+
+        <p><strong>Declared negative control, executed and logged.</strong> <em>remove the
+        FENCE_WORKERS opt-in from the fenced clive resume case; it must fail again with the unfenced
+        argv</em> &mdash; applied to a copy with exactly that one line removed, the clive case fails
+        on the unfenced argv <code>['/work/projects/imas_gpu/agents/clive']</code>, with no
+        <code>bwrap</code> element
+        (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-fence-opt-in.txt</code>).
+        Lint on complete trees is unchanged (the three files 5&nbsp;&rarr;&nbsp;5, whole tree
+        466&nbsp;&rarr;&nbsp;466) and all three are formatted. Commit <code>8fc68320</code>.
+        Evidence:
+        <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-fence-opt-in</code>,
+        figure <code>/reckon/figures/a-worker-cannot-write-your-home/fence-opt-in.svg</code>.</p></div>
+      </div>
     </section>
 
     <p><strong>Smoke: the fence does not start a worker on this host.</strong>
