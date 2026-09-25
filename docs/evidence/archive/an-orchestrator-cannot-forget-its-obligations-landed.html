@@ -184,6 +184,15 @@
       </table>
       <p><strong>Scope retained:</strong> the CLI verb that calls this module is another node's, and independent verification at the merged head remains coordinator-owned.</p>
     </section>
+
+    <section id="worker-stop-binds-the-manifest-per-chain">
+      <h2>Revision: refusals count per stop chain</h2>
+      <p>Commit <code>df9c79d9f48d8861236ac1593a58f7f2f97c25d1</code> answers the review finding that the refusal counter lived in the run directory with nothing to reset it: a run resumed after its predecessor exhausted the cap inherited the spent counter, so its first non-terminal stop was rewritten to <code>blocked</code> with no refusal at all — the cap recreating the silent stop the plan exists to remove, one run later. Refusals now count per <em>stop chain</em>, delimited by the Stop payload's <code>stop_hook_active</code> flag: a fresh stop (<code>false</code>) resets the count to zero before deciding, a forced continuation (<code>true</code>) increments as before. The cap of three and the terminal record written on the final allowed stop are unchanged.</p>
+      <p>The new test <code>test_a_fresh_stop_resets_the_refusal_count</code> exhausts a chain, sees the manifest recorded as <code>blocked</code>, reopens it to an in-progress status as a resumed run would, and stops afresh: the stop is refused again, the manifest is left in-progress rather than rewritten, and the counter reads one — the resumed run's own first refusal, not its predecessor's spent cap. The three-refusals-then-record sequence is exercised within one chain (<code>_chain</code>), a fresh stop with <code>stop_hook_active</code> false followed by forced continuations. Thirteen focused tests pass.</p>
+      <p>Each declared mutation is captured in its own receipt, first line the declared string verbatim, applied to <code>worker_stop.py</code> and reverted. <strong>The Stop hook ignores manifest status</strong> — <code>negative-control-ignores-status.log</code>: eight tests fail. <strong>The final allowed stop leaving the manifest unchanged</strong> — <code>negative-control-cap-record.log</code>: three tests fail. <strong>Ignore <code>stop_hook_active</code></strong> — <code>negative-control-stop-hook-active.log</code>: exactly the new test fails, twelve pass. All three sit in the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/</code>.</p>
+      <p><strong>Supersession.</strong> The two paragraphs above cite a receipt named <code>negative-control.log</code>, written before this revision; that file is retained on disk but is superseded by <code>negative-control-cap-record.log</code>, which reprints the same declared mutation at the current head. The earlier failure counts (four, then two) reflect the smaller test set at those heads; the reprinted receipts show eight and three against the thirteen-test file. The install snippet is unchanged.</p>
+    </section>
+
   </main>
 </body>
 </html>

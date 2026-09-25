@@ -28,14 +28,19 @@ def _write_manifest(run: Path, status: str | None) -> Path:
     return manifest
 
 
-def _stop_payload(cwd: Path) -> dict:
+def _stop_payload(cwd: Path, active: bool = False) -> dict:
     return {
         "hook_event_name": "Stop",
         "session_id": "s-test",
         "transcript_path": str(cwd / "transcript.jsonl"),
         "cwd": str(cwd),
-        "stop_hook_active": False,
+        "stop_hook_active": active,
     }
+
+
+def _chain(cwd: Path, length: int) -> list[dict]:
+    """A stop chain: one fresh stop, then its forced continuations."""
+    return [_stop_payload(cwd, active=index > 0) for index in range(length)]
 
 
 def _bind(monkeypatch, manifest: Path, home: Path) -> None:
@@ -107,7 +112,7 @@ def test_fourth_stop_is_allowed_after_three_blocks(tmp_path, monkeypatch) -> Non
     manifest = _write_manifest(run, "in-progress")
     _bind(monkeypatch, manifest, tmp_path / "config")
 
-    decisions = [hook.decide(_stop_payload(run))[0] for _ in range(4)]
+    decisions = [hook.decide(payload)[0] for payload in _chain(run, 4)]
 
     assert decisions == [True, True, True, False]
     assert (run / hook.COUNTER_NAME).read_text().strip() == "3"
@@ -234,7 +239,7 @@ def test_capped_stop_creates_a_missing_manifest_with_the_record(
     manifest = run / "manifest.md"
     _bind(monkeypatch, manifest, tmp_path / "config")
 
-    decisions = [hook.decide(_stop_payload(run))[0] for _ in range(4)]
+    decisions = [hook.decide(payload)[0] for payload in _chain(run, 4)]
 
     assert decisions == [True, True, True, False]
     assert manifest.is_file()
@@ -243,6 +248,27 @@ def test_capped_stop_creates_a_missing_manifest_with_the_record(
         "blocker: turn ended without a terminal manifest after 3 refusals"
         in manifest.read_text()
     )
+
+
+def test_a_fresh_stop_resets_the_refusal_count(tmp_path, monkeypatch) -> None:
+    """A resumed run gets its own refusals, not its predecessor's spent cap."""
+    run = _run_dir(tmp_path)
+    manifest = _write_manifest(run, "in-progress")
+    _bind(monkeypatch, manifest, tmp_path / "config")
+
+    [hook.decide(payload) for payload in _chain(run, 4)]
+    assert hook.read_status(manifest) == "blocked"
+
+    # The resumed run reopens the manifest and stops afresh: stop_hook_active
+    # False, so the count resets and this stop is refused like any first stop:
+    # not silently rewritten to blocked on the predecessor's spent counter.
+    _write_manifest(run, "in-progress")
+    blocked, reason = hook.decide(_stop_payload(run))
+
+    assert blocked is True
+    assert str(manifest) in (reason or "")
+    assert hook.read_status(manifest) == "in-progress"
+    assert (run / hook.COUNTER_NAME).read_text().strip() == "1"
 
 
 def test_indented_status_is_not_the_manifest_status(tmp_path, monkeypatch) -> None:
