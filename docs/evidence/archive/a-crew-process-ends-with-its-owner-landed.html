@@ -333,6 +333,60 @@
         Implementation commits: <code>5f31e8fb</code> and <code>902dc899</code>.</p>
       </section>
     </section>
+    <section id="producer-classifier-verdict">
+      <h2>Producer and classifier share one fleet verdict</h2>
+      <p>Implementation <code>7bcd27ac</code>, measured on fleet compute node
+      <code>98dci4-clu-2058</code> under allocation <code>1277272</code>, against base
+      <code>c1c1f7e9c2ec9da90f75f634ae6e80d0bbce0f14</code>. Only
+      <code>reckon/crew/recovery.py</code> and
+      <code>tests/test_producer_shares_the_classifier_verdict.py</code> change executable code.</p>
+      <p><strong>Reproduction before repair.</strong> The recorded live-worker defect did
+      not reproduce at this base: an actual supervisor exited, its child stayed alive,
+      and a temporary repository held one commit beyond base. The receipt reads
+      <code>supervisor_alive=False worker_alive=True commits=1 classifier=running snapshot=working transition=working</code>.
+      The parity check over the existing liveness stubs did fail on
+      <code>('r-ended-without-manifest', 'ended-without-manifest', 'running')</code>:
+      the producer independently derived a fleet recovery verdict after the classifier returned.</p>
+      <figure>
+        <img src="/reckon/figures/a-crew-process-ends-with-its-owner/producer_classifier_verdict.svg"
+             alt="Run evidence enters classify_pointer once; its lifecycle and fleet verdict flow to MCP readers and through the producer snapshot to transition emission.">
+      </figure>
+      <p><strong>Change.</strong> <code>classify_pointer</code> now owns the complete
+      <code>fleet_verdict</code> alongside its existing lifecycle fields. Its internal
+      <code>_watch_verdict</code> reducer consumes the classifier's liveness, then evaluates
+      stream progress and fleet recovery vocabulary. <code>_watch_snapshot</code> only
+      projects this result. <code>_watch_transition</code> carries the lifecycle classification,
+      <code>process_alive</code> and <code>liveness_proven</code> without probing again.</p>
+      <p><strong>Compatibility boundary.</strong> Lifecycle classification and fleet attention
+      state remain different vocabularies. For example, a retained completed turn can keep
+      the legacy lifecycle <code>running</code> while its classifier-returned
+      <code>fleet_verdict</code> says <code>blocked / ended-without-manifest / resume</code>.
+      Both facts now come from the same classifier call; this change does not redefine
+      existing MCP lifecycle fields or silently weaken the stream-stall rule.</p>
+      <table>
+        <thead><tr><th>Check</th><th>Measured result</th></tr></thead>
+        <tbody>
+          <tr><td>Exited supervisor, live worker, one retained commit</td><td>Snapshot and transition emit working; classifier liveness is true; blocked count is zero.</td></tr>
+          <tr><td>Every pointer-bearing liveness test</td><td>10 parametrized cases replay the existing stubs, including phase changes, retained dead work, template/orientation, wrapper, resume and completed-turn cases. Lifecycle, liveness, fleet state and recovery verdicts agree through emission.</td></tr>
+          <tr><td>No second evidence derivation</td><td>A supplied classifier result is consumed exactly once; process and stream probes are armed to fail if the producer calls them.</td></tr>
+          <tr><td>New test module</td><td>12 passed in the committed-head gate.</td></tr>
+          <tr><td>Scoped regression delta</td><td>Base: 179 passed / 8 failed. Committed implementation: 191 passed / the same 8 failed in 10.51 s. Added failures: 0.</td></tr>
+          <tr><td>Declared negative control</td><td>Restore the snapshot's own pid probe: the live-worker snapshot becomes blocked and the intended assertion fails, exit 1.</td></tr>
+          <tr><td>Lint delta</td><td>Recovery retains the same 8 pre-existing findings; the new test module has no findings.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Receipts.</strong> All logs live under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T130023465633-producer-shares-the-classifier-verdict/</code>:
+      <code>reproduction.log</code>, <code>baseline.log</code>, <code>committed-head.log</code>,
+      <code>committed-head.json</code> and <code>negative-control.log</code>.
+      The red log begins with the declared mutation verbatim and names the tested commit.</p>
+      <p><strong>Remaining.</strong> Eight pre-existing failures remain visible in ticker colour,
+      record-liveness policy, recovery typing and completed-turn coverage; their exact ids
+      are recorded in the manifest. Their files are outside this node's write fence.
+      Integration, review and the merged-head check are separate coordinator work.
+      A long-lived producer must load the integrated code before this result describes its
+      live output; this worker did not restart any shared service or close the followup.</p>
+    </section>
   </main>
 </body>
 </html>
