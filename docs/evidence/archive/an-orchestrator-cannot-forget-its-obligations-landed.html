@@ -384,6 +384,27 @@
       <p><strong>The declared mutation was observed to fail.</strong> With the coordinator command built as the bare script path and no interpreter, in the scratch mutant tree with <code>HOME</code> isolated, the run is 9 failed, 7 passed and <code>test_the_coordinator_commands_name_the_repository_interpreter</code> is among the failures, its diff naming the missing interpreter prefix. The mutant's own receipt prints the command the mutated module built (<code>mutated-first-token</code> = the script), so the run cannot pass because the mutation silently did nothing. The real user-scope settings file is byte-identical before and after that run: mtime, size and SHA-256 all unchanged (<code>9ff12e7a0eca1456c1c278d912789111cc1908ed0bacb99fd3ef7aefd0539920</code>, 5775 bytes).</p>
       <p>The receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T141024960946-installer-runs-the-hook-with-reckons-python/logs/</code>. The first line of the mutation receipt repeats its declared mutation verbatim. The installer's own dry run and merge behaviour, and the CLI verb that drives them, are unchanged by this node; the merged result belongs to a separately dispatched verification node.</p>
     </section>
+
+    <section id="obligations-collapse-shared-commands">
+      <h2>A shared remedy is counted once</h2>
+      <p>The checklist opens every coordinator turn, so its length is a budget. Commit <code>cadf874b</code> makes the renderer collapse obligations that share both a kind and a next command into one line carrying the kind, the count, the oldest age and the command once; every other item keeps its own line and its run id. Many <code>worktree-held</code> items answer to one <code>reckon crew gc</code> command, so a session retaining twenty-five trees printed that command twenty-five times and pushed the items needing a decision off the opening lines.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/obligations-collapse-one-line.svg" alt="Twenty-five worktree-held items sharing one gc command become a single counted line, while two blocked runs keep a line each with their run id, and the whole checklist is six lines.">
+        <figcaption>The collapse keys on the kind and command pair; two blocked remedies name their own manifests, so they stay distinct lines.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Arm</th><th>Tree and revision</th><th>Gate</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>gate, base arm</td><td>scratch export of <code>8f9ef4e3</code></td><td>35 passed, 0 failed, exit 0</td><td><code>runs/r-20260925T140950374131-obligations-checklist-stays-short/base-hooks.log</code></td></tr>
+          <tr><td>gate, head arm</td><td>worktree at <code>cadf874b</code></td><td>36 passed, 0 failed, exit 0</td><td><code>runs/r-20260925T140950374131-obligations-checklist-stays-short/head-hooks.log</code></td></tr>
+          <tr><td>declared mutation</td><td>scratch export of <code>cadf874b</code> with the collapse branch disabled</td><td>1 failed, 7 passed, exit 1</td><td><code>runs/r-20260925T140950374131-obligations-checklist-stays-short/mutant-no-collapsing.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The new case, <code>test_items_sharing_a_command_collapse_to_one_counted_line</code>, builds its fixture through the producer's own path: twenty-five worktrees registered under a session-named parent with a ledger record each, beside two live blocked runs. It asserts the collapsed line exactly, both blocked lines with their run ids, the header count of twenty-seven, the authority line last, and the size bounds of eight lines and two thousand characters; the rendered checklist is six lines.</p>
+      <p><strong>The declared mutation was observed to fail.</strong> The collapse branch's condition was replaced with <code>False</code> in a scratch export of the head, so every obligation rendered on its own line. The run is 1 failed, 7 passed, and the failing assertion is the collapsed-line comparison, the failing line printing <code>held-run-00</code> per item in place of the counted line. The log's first line repeats the declared mutation verbatim.</p>
+      <p><strong>An earlier mutation attempt is recorded rather than discarded.</strong> The first edit of the scratch copy silently matched nothing and the run came back green (8 passed); the replacement count is asserted in the log header before the run, that assertion read zero, and the mutation was reapplied and re-run to the red above. A mutation that never applied is not a negative control.</p>
+      <p><strong>Scope retained:</strong> the authority line and the stop-mode block path are unchanged, and the pre-existing cases asserting the block, the continuation silence and the untouched real settings and config home all pass at this head. Verification at the merged head belongs to a separately dispatched test node.</p>
+    </section>
   </main>
 </body>
 </html>
