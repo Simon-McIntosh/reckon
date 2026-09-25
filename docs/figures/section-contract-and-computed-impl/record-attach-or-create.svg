@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="430" viewBox="0 0 980 430" role="img" aria-labelledby="t d">
+  <title id="t">One append item, two write paths, one record validation</title>
+  <desc id="d">A state-mode append of a section item is validated as a typed record first. An item carrying a body then authors the heading and its prose, which is the create route. An item carrying only the record attaches that record beside the h2 the file already holds, leaving the heading, its attributes and the surrounding prose byte-identical. An id with no authored h2 is refused before any byte is written, naming the id and showing a worked append example.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+  <style>
+    .box { fill: #f7fafc; stroke: #4a5568; stroke-width: 1.5; rx: 6; }
+    .rec { fill: #ebf8ff; stroke: #2b6cb0; stroke-width: 1.5; rx: 6; }
+    .ref { fill: #fff5f5; stroke: #c53030; stroke-width: 1.5; rx: 6; }
+    .lbl { font: 14px sans-serif; fill: #1a202c; }
+    .small { font: 12px sans-serif; fill: #4a5568; }
+    .mono { font: 12px monospace; fill: #1a202c; }
+    .ln { stroke: #4a5568; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+  </style>
+
+  <rect class="box" x="20" y="150" width="210" height="120"/>
+  <text class="lbl" x="32" y="176">append target</text>
+  <text class="mono" x="32" y="196">sections</text>
+  <text class="small" x="32" y="222">item: id, effort_hours,</text>
+  <text class="small" x="32" y="240">capability, links</text>
+  <text class="small" x="32" y="258">body present or absent</text>
+
+  <rect class="rec" x="290" y="170" width="200" height="80"/>
+  <text class="lbl" x="302" y="198">SectionRecord</text>
+  <text class="small" x="302" y="220">validated before</text>
+  <text class="small" x="302" y="238">any byte is written</text>
+
+  <line class="ln" x1="230" y1="210" x2="288" y2="210"/>
+
+  <line class="ln" x1="490" y1="196" x2="600" y2="96"/>
+  <line class="ln" x1="490" y1="210" x2="600" y2="210"/>
+  <line class="ln" x1="490" y1="224" x2="600" y2="330"/>
+
+  <text class="small" x="500" y="130">body present</text>
+  <text class="small" x="500" y="204">body absent</text>
+  <text class="small" x="500" y="290">no h2 with that id</text>
+
+  <rect class="box" x="608" y="30" width="350" height="96"/>
+  <text class="lbl" x="620" y="56">Create route</text>
+  <text class="small" x="620" y="78">authors the h2 and its prose, then</text>
+  <text class="small" x="620" y="96">writes the typed record beside them;</text>
+  <text class="small" x="620" y="114">unchanged by this landing.</text>
+
+  <rect class="box" x="608" y="150" width="350" height="120"/>
+  <text class="lbl" x="620" y="176">Attach route</text>
+  <text class="small" x="620" y="198">writes only the record, on the line</text>
+  <text class="small" x="620" y="216">after the h2 the file already holds;</text>
+  <text class="small" x="620" y="234">the heading, its attributes and the</text>
+  <text class="small" x="620" y="252">surrounding prose stay byte-identical.</text>
+
+  <rect class="ref" x="608" y="300" width="350" height="110"/>
+  <text class="lbl" x="620" y="326">Refused at the write boundary</text>
+  <text class="small" x="620" y="348">names the id with no authored h2 and</text>
+  <text class="small" x="620" y="366">carries the worked append example,</text>
+  <text class="small" x="620" y="384">so the caller sees the create shape it</text>
+  <text class="small" x="620" y="402">needed rather than a splice error.</text>
+</svg>

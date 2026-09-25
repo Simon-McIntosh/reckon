@@ -802,6 +802,67 @@ Use edit_plan mode=state. Example: {"op": "append", "target": "sections", "item"
     route was not used. Section closure and the driving followup remain with the coordinator, as does
     the merged-head verification.</p>
   </section>
+
+  <section id="record-attaches-to-existing-heading">
+    <h2>The typed record attaches to a heading the file already carries</h2>
+    <p>Commit <code>25baddea8ad92a0f82b787851b4221201762559d</code>. A plan written before the
+    contract carries its <code>&lt;h2 id&gt;</code> headings and no typed record, and the only
+    state route that could give it one was <code>insert_section</code>, which authors a fresh
+    heading — so the conversion of an existing plan rewrote the heading it already had. The
+    <code>append</code> target <code>sections</code> now discriminates on the item: one carrying a
+    <code>body</code> authors the heading and its prose exactly as before, and one carrying only
+    the record writes that record beside the heading the file already holds and nothing else. The
+    span written is one <code>data-reckon="section"</code> element on the line after the heading,
+    which is the place the reader recovers it from.</p>
+    <p>An id with no authored heading is refused at the write boundary naming that id and carrying
+    the worked append example, so the caller is shown the create shape it needed rather than the
+    splice's internal <em>expected exactly one matching h2</em>. A second record for an id that
+    already carries one stays refused as a duplicate. The op vocabulary names
+    <code>effort_hours</code>, <code>capability</code> and <code>links</code> as required on both
+    state write routes.</p>
+    <h3>The cohort and the declared negative control</h3>
+    <table>
+      <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base, worktree before the change (12 files)</td><td><code>185ba385</code></td><td>1 failed, 188 passed</td></tr>
+        <tr><td>head, worktree (the same 12 plus the attach cases)</td><td><code>25baddea</code></td><td>1 failed, 195 passed</td></tr>
+        <tr><td>head with the attach route requiring a body</td><td>scratch tree of <code>25baddea</code>, mutated</td><td>5 failed, 2 passed</td></tr>
+        <tr><td>the new file alone, at the head</td><td><code>185ba385</code> tree + working changes</td><td>7 passed, 0 failed</td></tr>
+      </tbody>
+    </table>
+    <p>The single failure in both cohort arms is
+    <code>test_op_vocab_names_every_dispatchable_op</code> asserting <code>_OP_VOCAB omits
+    dispatchable ops ['append_evidence']</code>; it is present at the base and unchanged at the
+    head, so the added failures are zero. It belongs to the <code>append_evidence</code> work and
+    is reported for its owner without repair. The declared control is
+    <em>make the attach route require a body as insert_section does; the existing-heading attach
+    case in tests/test_record_attaches_to_existing_section.py must fail</em>. The mutation inserts
+    that body requirement ahead of the attach branch in <code>reckon/_store.py</code> in a scratch
+    tree extracted from the commit, and the first failure in the summary is
+    <code>test_attach_writes_the_record_and_leaves_the_heading_and_prose_alone</code>, at
+    <code>assert _append(root, _item()) == 1</code> — the attach case the control names. Four
+    sibling cases that also attach fail with it, and the two that survive are exactly the create
+    route, whose item carries a body, and the vocabulary wording, which the mutation does not
+    touch. Both arms printed the module they imported and the working directory they ran in
+    (<code>/tmp/attach-nc-25baddea/reckon/__init__.py</code>), so neither measured the shared
+    environment's editable install by accident. Logs: <code>logs/base-gate.log</code>,
+    <code>logs/head-gate.log</code>, <code>logs/new-file.log</code>,
+    <code>logs/negative-control.log</code>.</p>
+    <figure>
+      <img src="/reckon/figures/section-contract-and-computed-impl/record-attach-or-create.svg"
+           alt="A state-mode append of a section item is validated as a typed record first. An item carrying a body then authors the heading and its prose, which is the create route. An item carrying only the record attaches that record beside the h2 the file already holds, leaving the heading, its attributes and the surrounding prose byte-identical. An id with no authored h2 is refused before any byte is written, naming the id and showing a worked append example.">
+      <figcaption>One append target, two write paths, one record validation. The body is the
+      discriminator between authored work entering the file and the record for a heading that is
+      already there.</figcaption>
+    </figure>
+    <h3>Artifacts and integrity</h3>
+    <p>The durable run directory is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122936016435-a-record-attaches-to-an-existing-section/</code>.
+    This anchor and the plan's landing prose are append-only; on the plan, declarations, status,
+    implementation fraction, version and modified date are unchanged, and the version-stamping
+    <code>edit_plan</code> route was not used for the documents. Section closure, the driving
+    followup and the merged-head verification remain with the coordinator.</p>
+  </section>
 </main>
 </body>
 </html>
