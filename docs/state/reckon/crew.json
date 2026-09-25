@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T02:37:48",
+  "updated": "2026-09-25T02:38:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -365694,6 +365694,357 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T230901653418-crew-runs-reads-one-run",
+        "plan": "the-mcp-answers-within-its-ceiling",
+        "section": "\u00a75",
+        "node": "crew-runs-reads-one-run",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 402,
+                "cached_input_tokens": 440481,
+                "input_tokens": 440885,
+                "output_tokens": 1891,
+                "reasoning_output_tokens": 360,
+                "total_tokens": 442776,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/crew/query.py runs_view accepts run_id and, when given, reads only that run's live pointer and its ledger row before any full walk (reuse map Node A4 at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s23-coord/s23-reuse-map/reuse-map.md: runs_view query.py:234 lacks run_id, the full walk at query.py:277-322, _run_row in reckon/crew/directory.py:65); tests/test_crew_runs_by_run_id.py builds a synthetic ledger of 2000 rows and asserts runs_view(project, run_id=X) returns exactly X's row and opens no more than a stated fixed number of files, counted by patching open; the declared mutation (the run_id short-circuit removed) is applied and the file-count test observed to fail with the log recorded; a recorded timing of runs_view(project='reckon', run_id='r-20260924T204759725667-s23-reuse-map') at the worktree head is under 2 s; reckon/mcp.py is not changed by this node",
+          "estimated_hours": null,
+          "goal": "let runs_view take a run_id that reads only that run's pointer and ledger row",
+          "id": "crew-runs-reads-one-run",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T23:09:02Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 17,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 8,
+            "mean_context": 85333,
+            "observed_at": "2026-09-24T23:08:45Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/manifest.md",
+          "negative_control": "remove the run_id short-circuit so the full walk runs",
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/query.py",
+            "tests/test_crew_runs_by_run_id.py",
+            "docs/evidence/archive/the-mcp-answers-within-its-ceiling-landed.html",
+            "docs/figures/the-mcp-answers-within-its-ceiling",
+            "docs/plans/the-mcp-answers-within-its-ceiling.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-midflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T23:09:18Z",
+        "completed_at": "2026-09-24T23:41:25.865Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1835,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1927,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "6e7afb6ea9db39d226de75b2ad45b90525501fbf",
+        "commits": [
+          "c8eab4195070ee163aefc25101a4e78b1a67dfd1",
+          "0c021526ff09a826e198a3dda227166422367598"
+        ],
+        "changed_lines": {
+          "added": 328,
+          "removed": 12,
+          "files": 5
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_runs_by_run_id.py tests/test_crew_runs_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/gate-green.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/manifest.md",
+        "scope_changed": false,
+        "session_id": "abd53c99-ef76-4da2-8225-bda159134b6f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9830342,
+            "input_tokens_cumulative": 9830342,
+            "output_tokens": 43832,
+            "output_tokens_cumulative": 43832,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-24T23:41:25.865Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3108,
+              "budget_seconds": 2100,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "starting",
+              "elapsed_seconds": 5208,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1413,
+              "log_fresh": false,
+              "manifest_commits": [
+                "bf1725d6",
+                "2700bda6",
+                "a4bbb242",
+                "f2810b50"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "06c13e8eab18db0a43a8c47a8df8d8687c70d64d7c00c618cd701bf2728a448f",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T211828681310-host-facts-probe/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-worker-knows-it-is-on-compute --section '\u00a72' --role review --spec-level exact --node review-of-host-facts-probe --goal 'attach an independent review to run r-20260924T211828681310-host-facts-probe' --done-when 'the review for r-20260924T211828681310-host-facts-probe stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211828681310-host-facts-probe.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T211828681310-host-facts-probe.at-f2810b50f59ca3d1840ac6a8bd5981aaa6d208fd.json --time-budget 35m --session s23-coord --allow-unreconciled-runs --backend clive",
+              "node": "host-facts-probe",
+              "phase": "starting",
+              "plan": "a-worker-knows-it-is-on-compute",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T211828681310-host-facts-probe",
+              "session": "s23-coord",
+              "terminal_age_seconds": 1537,
+              "terminal_at": "2026-09-24T22:43:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/host-facts-probe"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 16,
+            "fit": 16,
+            "goal_fidelity": 19,
+            "scope_discipline": 18
+          },
+          "absent": [],
+          "total": 87
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9830342,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 1847.639,
+          "generated_tokens": 43832,
+          "generation_seconds": 1600.191,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 30.5,
+          "machine_seconds": 247.448,
+          "peak_input_tokens": 146310,
+          "tokens_per_second": 27.39,
+          "wall_tokens_per_second": 23.72
+        },
+        "follow_on_paths": [
+          "tests/test_crew_runs_scope.py::test_runs_scope_joins_every_configured_project_without_reading_fallback_home",
+          "reckon/ledger.py",
+          "tests/test_crew_recovery.py::{test_refusal_recovery_remedy_survives_promotion",
+          "reckon/crew/ticker.py.",
+          "reckon/mcp.py",
+          "mcp.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/crew-runs-reads-one-run",
+          "session_id": "abd53c99-ef76-4da2-8225-bda159134b6f",
+          "session_source": "pointer",
+          "retained_at": "2026-09-24T23:41:25.865Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-24T23:41:26Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-24T23:10:35Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T230901653418-crew-runs-reads-one-run",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 5574,
+          "worker_pid": 1675561
+        },
+        "promoted_revision": "0c021526ff09a826e198a3dda227166422367598",
+        "plan_impl_at_dispatch": 0.33,
+        "impl_move": {
+          "plan": "the-mcp-answers-within-its-ceiling",
+          "at_dispatch": 0.33,
+          "at_complete": 0.5,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_crew_runs_by_run_id.py"
+          ],
+          "declaration": "remove the run_id short-circuit so the full walk runs",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T230901653418-crew-runs-reads-one-run/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-24T23:54:02.053109+00:00",
+          "horizon_seconds": 2700,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T23:09:02Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 17,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 8,
+          "mean_context": 85333,
+          "observed_at": "2026-09-24T23:08:45Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 100.0,
+        "orientation_input_tokens": 1641193.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -366006,6 +366357,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2579
+    "_version": 2580
   }
 }
