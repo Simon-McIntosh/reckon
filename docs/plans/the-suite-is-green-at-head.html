@@ -714,6 +714,31 @@
       at ~118 ms and is the other sizeable target.</p>
     </div>
 
+    <div class="r-note" data-reckon="landed" data-node="resumed-runs-line-reads-the-elapsed-cell" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; the resumed-run rendering test reads the row's single measure
+      cell.</strong> Commit <code>41737d3e</code> <em>fix(tests): read the row's single measure cell in
+      the resumed-run test</em>. The helper <code>_spend_columns</code> computed its assertion
+      column by iterating the measure block's cells &mdash; naming <code>ticker.RATE</code> for the
+      second &mdash; but the generation-rate cell left the row, and the constant that named it went
+      with it. So the helper raised <code>AttributeError</code> before any assertion ran, and the
+      test failed for a reason unrelated to what it measures. This is the same value the shipped
+      elapsed cell carries: the row renders the elapsed span in hours and minutes, right-aligned in
+      a fixed six-column cell, so <code>7,200</code> seconds render <code>2h00m</code> and an
+      unmeasured chain renders the absence marker in the same cell.</p>
+      <p><strong>Measured.</strong> Base <code>de965e07</code>: the named id fails with
+      <code>AttributeError: module 'reckon.crew.ticker' has no attribute 'RATE'</code> at the
+      helper's cell loop. Head: the file passes 92 of 92. Declared negative control &mdash;
+      <em>restore the ticker.RATE reference and observe the AttributeError return</em> &mdash;
+      satisfied: the mutation re-raises the same <code>AttributeError</code> at
+      <code>tests/test_crew_recovery.py:2403</code>. No test is skipped, xfailed, deleted or
+      weakened; the helper and one assertion's expected value and docstring are what changed.
+      Logs in the run record; figure
+      <a href="/reckon/figures/the-suite-is-green-at-head/resumed-runs-measure-cell.svg">the row's
+      one measure cell and the removed rate cell the test used to read</a>. Anchor:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-resumed-runs-line-reads-the-elapsed-cell">resumed-runs-line-reads-the-elapsed-cell</a>.</p>
+      <p><strong>Follow-ons.</strong> None.</p>
+    </div>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">
