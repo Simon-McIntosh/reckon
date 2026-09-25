@@ -167,6 +167,43 @@
       foreign plan's outcome appears in the roadmap's decision blockers with its gating plan
       named.</p>
 
+    <aside id="closure-gates-scope-hold">
+      <p><strong>Worker checkpoint, 2026-09-25:</strong> the closure-gate defect reproduces
+      at base <code>c924a2446aca0078438a59ea05a18b1ae3978072</code>. Every terminal-status
+      write succeeds without a verdict; the seven refusal cases report
+      <code>DID NOT RAISE OpError</code>. An open closure gate also removes the plan from
+      <code>ready_now</code>, and a decision blocker does not name its foreign outcome.</p>
+      <p>Implementation is held for a scope extension: adding transition fields to the
+      typed gate model requires regenerating <code>docs/_shared/plan.schema.json</code>,
+      which is outside this worker's assigned paths. The existing schema-equality test
+      requires that artifact. Regression assertions and the reproduction are preserved;
+      no implementation or section closure is claimed. See the
+      <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#closure-gates-scope-hold">reproduction and scope hold</a>.</p>
+    </aside>
+
+    <aside id="closure-gates-delivered">
+      <p><strong>Worker implementation, 2026-09-25:</strong> the scope hold above was
+      cleared by explicit authorization to regenerate the published schema. Commit
+      <code>3fb14fb27fc63a7f2040f6ebfc03b28e03ce80e7</code> adds one gate representation
+      carrying <code>transition</code>, <code>gating_plan</code>, and an optional
+      <code>decision</code> key. It preserves <code>gated_sections</code> and the existing
+      gate/pass/fail operations. Closure gates leave execution ready and guard terminal
+      writes; foreign-outcome decision gates name their source and refuse a choice until
+      a verdict is recorded.</p>
+      <p>The focused checks passed 35 cases. Disabling the terminal-refusal branch
+      caused all seven guarded-write tests to fail with <code>DID NOT RAISE OpError</code>.
+      A failed outcome also releases the transition: the gate requires a recorded
+      verdict, while the terminal status or decision remains an explicit choice.
+      See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#closure-gates-delivered">implementation and verification record</a>.
+      Typed legacy serialization and schema-response size compatibility were
+      repaired in <code>e1d2c312d682c7239bddb041712a193a471f769d</code>.
+      Generic MCP/served-plan blocker summaries need a separate consistency repair
+      outside this node's fence; roadmap and the store boundary are covered here.
+      Final importer comparison: base 2,747 passed / 8 failed; head 2,784 passed /
+      7 failed, with 3 skipped in each arm and zero added failure IDs.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <h2 id="s5">§5 — What this plan deliberately does not own</h2>
     <p>
       Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout

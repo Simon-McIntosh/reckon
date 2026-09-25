@@ -63,6 +63,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_serializer,
     model_validator,
 )
 
@@ -688,24 +689,72 @@ class Comment(BaseModel):
     body: str = ""
 
 
-class Gate(BaseModel):
-    """An evidence gate (``.r-gate`` element).
+GATE_TRANSITIONS = ("plan-terminal", "decision-lockable")
 
-    ``passed`` is a read-only projection of ``verdict``. The renderer ignores
-    it, so semantic HTML carries only the authoritative verdict.
+
+def pending_transition_gates(
+    gates: list[dict[str, Any]], transition: str
+) -> list[dict[str, Any]]:
+    """Return transition edges still awaiting a recorded outcome.
+
+    A failed outcome is evidence too: the transition waits for a verdict,
+    while the eventual status or decision remains an explicit choice.
     """
+    return [
+        gate
+        for gate in gates
+        if isinstance(gate, dict)
+        and gate.get("transition") == transition
+        and str(gate.get("verdict") or "").strip().lower() not in {"passed", "failed"}
+    ]
+
+
+class Gate(BaseModel):
+    """An evidence or transition gate; passed derives from verdict."""
 
     model_config = ConfigDict(extra="ignore")
 
     id: str = ""
     section: str = ""
     gated_sections: list[str] = Field(default_factory=list)
+    transition: str = Field("", json_schema_extra={"enum": ["", *GATE_TRANSITIONS]})
+    gating_plan: str = Field("", description="Outcome source: [project:]slug[#section]")
+    decision: str = Field("", description="Decision key for a decision-lockable edge")
     status: str = ""
     measure: str
     required_evidence: str = ""
     verdict: str = ""
     evidence: str = ""
     passed: bool = Field(False, json_schema_extra={"readOnly": True})
+
+    @model_serializer(mode="wrap")
+    def _serialize_authored_transition(self, handler: Any) -> dict[str, Any]:
+        """Keep unauthored transition fields absent on legacy gate records."""
+        data = handler(self)
+        for field in ("transition", "gating_plan", "decision"):
+            if field not in self.model_fields_set:
+                data.pop(field, None)
+        return data
+
+    def validate_for_write(self) -> Gate:
+        """Validate transition wiring without changing lenient legacy reads."""
+        if not self.transition and not self.gating_plan and not self.decision:
+            return self
+        if self.transition not in GATE_TRANSITIONS:
+            raise ValueError(
+                f"gate {self.id!r}: unknown transition {self.transition!r}"
+            )
+        if not self.gating_plan or parse_plan_ref(self.gating_plan) is None:
+            raise ValueError(
+                f"gate {self.id!r}: gating_plan must name [project:]slug[#section]"
+            )
+        if self.transition == "decision-lockable" and not self.decision.strip():
+            raise ValueError(
+                f"gate {self.id!r}: decision-lockable requires a decision key"
+            )
+        if self.transition == "plan-terminal" and self.decision:
+            raise ValueError(f"gate {self.id!r}: plan-terminal cannot name a decision")
+        return self
 
     @model_validator(mode="after")
     def _derive_passed(self) -> "Gate":
@@ -1118,6 +1167,13 @@ class PlanState(BaseModel):
                         fu.capability.model_dump(by_alias=True)
                     )
                 )
+        for gate in self.gates:
+            try:
+                gate.validate_for_write()
+            except ValueError as exc:
+                errors.append(str(exc))
+            if gate.decision and gate.decision not in self.decisions:
+                errors.append(f"gate {gate.id!r}: unknown decision {gate.decision!r}")
         if errors:
             raise ValueError(
                 "PlanState.validate_for_write failed:\n  - " + "\n  - ".join(errors)
@@ -1125,7 +1181,7 @@ class PlanState(BaseModel):
         return self
 
 
-# ── IndexState (index.json envelope — modelled, not written by this agent) ──
+# ── IndexState (index.json envelope) ────────────────────────────────────────
 
 
 class _TolerantIndexModel(BaseModel):
