@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
+  <title id="title">Worker attempt attribution and manifest freshness flow</title>
+  <desc id="desc">Dispatch and resume converge on a runtime environment carrying run, manifest and attempt start. Claude launches append attribution headers while Codex removes them. The Stop hook compares manifest modification time with the attempt start before accepting terminal status.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#718096"/>
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #4a5568; stroke-width: 2; rx: 12; }
+      .runtime { fill: #ebf8ff; stroke: #2b6cb0; }
+      .allow { fill: #f0fff4; stroke: #2f855a; }
+      .refuse { fill: #fff5f5; stroke: #c53030; }
+      .label { font: 600 18px system-ui, sans-serif; fill: #1a202c; }
+      .detail { font: 14px system-ui, sans-serif; fill: #4a5568; }
+      .arrow { stroke: #718096; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .decision { fill: #fffaf0; stroke: #b7791f; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect class="box" x="30" y="60" width="185" height="90"/>
+  <text class="label" x="122" y="93" text-anchor="middle">Fresh dispatch</text>
+  <text class="detail" x="122" y="120" text-anchor="middle">new run pointer</text>
+
+  <rect class="box" x="30" y="250" width="185" height="90"/>
+  <text class="label" x="122" y="283" text-anchor="middle">Resume</text>
+  <text class="detail" x="122" y="310" text-anchor="middle">same run, new attempt</text>
+
+  <path class="arrow" d="M215 105 H300"/>
+  <path class="arrow" d="M215 295 H260 Q300 295 300 255 V190"/>
+
+  <rect class="box runtime" x="300" y="95" width="300" height="150"/>
+  <text class="label" x="450" y="128" text-anchor="middle">Runtime-only worker environment</text>
+  <text class="detail" x="325" y="160">RECKON_RUN_ID</text>
+  <text class="detail" x="325" y="187">RECKON_MANIFEST</text>
+  <text class="detail" x="325" y="214">RECKON_ATTEMPT_STARTED_AT (UTC)</text>
+
+  <path class="arrow" d="M600 135 H680"/>
+  <path class="arrow" d="M600 205 H680"/>
+
+  <rect class="box" x="680" y="60" width="250" height="120"/>
+  <text class="label" x="805" y="93" text-anchor="middle">Claude / clive</text>
+  <text class="detail" x="705" y="122">append X-Reckon-Run-Id</text>
+  <text class="detail" x="705" y="148">append X-Reckon-Session</text>
+
+  <rect class="box" x="680" y="220" width="250" height="90"/>
+  <text class="label" x="805" y="253" text-anchor="middle">Codex</text>
+  <text class="detail" x="705" y="282">no Anthropic headers</text>
+
+  <path class="arrow" d="M450 245 V335 H680"/>
+  <rect class="decision" x="680" y="330" width="210" height="65" rx="12"/>
+  <text class="label" x="785" y="357" text-anchor="middle">Manifest mtime</text>
+  <text class="detail" x="785" y="382" text-anchor="middle">before attempt start?</text>
+
+  <path class="arrow" d="M890 347 H950"/>
+  <path class="arrow" d="M890 379 H950"/>
+  <rect class="box refuse" x="950" y="315" width="140" height="52"/>
+  <text class="label" x="1020" y="348" text-anchor="middle">Refuse Stop</text>
+  <rect class="box allow" x="950" y="375" width="140" height="35"/>
+  <text class="detail" x="1020" y="398" text-anchor="middle">allow if current</text>
+</svg>
