@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T13:55:46",
+  "updated": "2026-09-25T14:03:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -432155,6 +432155,513 @@
             ]
           }
         }
+      },
+      {
+        "run_id": "r-20260925T082101656238-worker-stop-binds-the-manifest",
+        "plan": "an-orchestrator-cannot-forget-its-obligations",
+        "section": "\u00a77",
+        "node": "worker-stop-binds-the-manifest",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1083,
+                "cached_input_tokens": 165222,
+                "input_tokens": 166307,
+                "output_tokens": 1057,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 167364,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "e6394022-d8bc-4bba-bd9a-ea5d9895a410",
+            "session_id": "s23-coord"
+          },
+          "done_when": "reckon/hooks/worker_stop.py is a Stop hook reading the hook JSON on stdin: it resolves the run manifest from RECKON_MANIFEST, else from the live crew pointer whose worktree equals the payload's cwd, and when neither resolves it exits 0 with no output so a coordinator or interactive session is never affected; in worker mode it emits decision block with a reason naming the manifest path and what is missing while the manifest is absent or its status is not complete, blocked or failed, and it blocks at most three times per run, counting in a file inside that run's own directory, then allows the stop; tests/test_worker_stop_hook.py drives it with recorded Stop payloads and asserts: missing manifest blocked, in-progress blocked, complete allowed, blocked allowed, the fourth stop allowed after three blocks, and no resolvable run allowed with empty output; an end-to-end test builds a temporary HOME holding a settings.json that registers the hook exactly as the install snippet would, executes that registered command as a subprocess with a text-only Stop payload, and asserts it is refused while the manifest is in-progress and allowed once it is complete, while a negative-control settings file without the hook lets the same payload through; the test records the real ~/.claude/settings.json bytes and mtime before and asserts both unchanged after; the declared mutation (the Stop hook ignores manifest status) is applied and observed to fail with its log recorded; the exact settings.json snippet for the real install is written into the evidence record as a code block marked awaiting lead approval, and nothing under the real ~/.claude is written; ruff on the new files reports no findings",
+          "estimated_hours": null,
+          "goal": "a Claude Code Stop hook refuses a worker's stop until its run manifest is terminal",
+          "id": "worker-stop-binds-the-manifest",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T08:21:02Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 1,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 7,
+            "mean_context": 76190,
+            "observed_at": "2026-09-25T08:21:01Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/manifest.md",
+          "negative_control": "the Stop hook ignores manifest status",
+          "plan": "an-orchestrator-cannot-forget-its-obligations",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/hooks/worker_stop.py",
+            "tests/test_worker_stop_hook.py",
+            "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+            "docs/figures/an-orchestrator-cannot-forget-its-obligations",
+            "docs/plans/an-orchestrator-cannot-forget-its-obligations.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-both-reasons",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T08:21:14Z",
+        "completed_at": "2026-09-25T11:43:07.308Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12076,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12113,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+        "commits": [
+          "ce87d4caa1539ebeb3b18d41d9e2073ba89a727e",
+          "edb6167a1e6275c81b59d9bd966b04151ff5f5ed",
+          "0724cfdd580c103105d6f9678d228d1db583cbf5",
+          "231ddeb6309295e225cede8cccaf5c4b91310eb0",
+          "ce967ef1aad5f24589d92d4a138ea9e8738573ee",
+          "df9c79d9f48d8861236ac1593a58f7f2f97c25d1",
+          "b656dfd7d6a0d595ae1dd91e64c85b2f4fb398fe",
+          "3842fad83e972fc323e89720c7afb036c8fa0615"
+        ],
+        "changed_lines": {
+          "added": 631,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_worker_stop_hook.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/tests.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/manifest.md",
+        "scope_changed": false,
+        "session_id": "c3d1c7f6-46fb-4007-b526-931c8366bc32",
+        "session_harness": "claude",
+        "session_model": "deepseek-v4.1-flash",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1253303,
+            "input_tokens_cumulative": 1253303,
+            "output_tokens": 4630,
+            "output_tokens_cumulative": 4630,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T11:43:07.308Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "promotable",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+              "effective_phase": "complete",
+              "elapsed_seconds": 1233,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T06:33:27Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T06:19:07Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 4917,
+                "worker_pid": 3635779
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3344,
+              "log_fresh": false,
+              "manifest_commits": [
+                "3fc05501",
+                "23350901",
+                "3b3a048e",
+                "7b1db1b1"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "1fdadb49bd04ce82d435c841d3bbba96bbf94bbee160fb172c5ec88ea7286d71",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T061717238455-op-vocabulary-names-every-op/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260925T061717238455-op-vocabulary-names-every-op --gate <verdict> --commit 3fc05501c33068af98aa605b389833a779bc0cca --commit 233509014e3612960757c5679b2e2cbb66c6e1d8 --commit 3b3a048ebd664546fe47997103ca5c56068aee75 --commit 7b1db1b1fbb7a894d26b49cc71433983d0b1dce8",
+              "node": "op-vocabulary-names-every-op",
+              "phase": "complete",
+              "plan": "the-mcp-answers-within-its-ceiling",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "promote",
+              "recovery_classification": "promotable",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed",
+              "run_id": "r-20260925T061717238455-op-vocabulary-names-every-op",
+              "session": "s23-coord",
+              "terminal_age_seconds": 3386,
+              "terminal_at": "2026-09-25T07:24:36Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/op-vocabulary-names-every-op"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "blocked",
+              "elapsed_seconds": 1879,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T07:55:39Z",
+                "last_record_type": "result",
+                "launched_at": "2026-09-25T07:25:56Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 10415,
+                "worker_pid": 3951679
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1526,
+              "log_fresh": false,
+              "manifest_commits": [
+                "6c92861d feat(crew): derive sprint liveness from live pointers \u2014 adds reckon/sprint_liveness.py and tests/test_sprint_liveness.py",
+                "d92277ef docs(plan): record the sprint-liveness landing with its evidence \u2014 adds the evidence record and figure, anchors the plan \u00a72 landing comment"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "e4dcbf167f91626c3e26018e566a98be28b5447c90aa568cead6e6ac3391182e",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072403409541-sprint-liveness-from-live-crews/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-sprint-is-live-while-a-crew-works-it --section '\u00a72' --role review --spec-level exact --node review-of-sprint-liveness-from-live-crews --goal 'attach an independent review to run r-20260925T072403409541-sprint-liveness-from-live-crews' --done-when 'the review for r-20260925T072403409541-sprint-liveness-from-live-crews stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T072403409541-sprint-liveness-from-live-crews.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T072403409541-sprint-liveness-from-live-crews.at-d92277ef04ecc16b9414eaf80c138f9d9a3aaf0b.json --time-budget 40m --session s23-coord --allow-unreconciled-runs --backend clive",
+              "node": "sprint-liveness-from-live-crews",
+              "phase": "blocked",
+              "plan": "a-sprint-is-live-while-a-crew-works-it",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T072403409541-sprint-liveness-from-live-crews",
+              "session": "s23-coord",
+              "terminal_age_seconds": 1551,
+              "terminal_at": "2026-09-25T07:55:14Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/sprint-liveness-from-live-crews"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "complete",
+              "elapsed_seconds": 1131,
+              "exit_record": {
+                "ended_during": "working",
+                "exit_code": 0,
+                "exited_at": "2026-09-25T08:05:21Z",
+                "last_record_type": "turn.completed",
+                "launched_at": "2026-09-25T07:46:51Z",
+                "recorded_by": "supervisor",
+                "run_id": "r-20260925T074613380785-obligations-are-a-derived-view",
+                "signal": null,
+                "signal_name": null,
+                "stream_records_seen": 368,
+                "worker_pid": 4012204
+              },
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 945,
+              "log_fresh": false,
+              "manifest_commits": [
+                "66d08fa6caad67f2b0a762f1c09aac2a0c723a42",
+                "7e881d73cd4cb66e8c9e4f46a8736853ac47ec06"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "057f43eb94dab34ab2db1242927106a3633b49f79f18159874d9c13a9ce3b68d",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T074613380785-obligations-are-a-derived-view/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan an-orchestrator-cannot-forget-its-obligations --section '\u00a72' --role review --spec-level exact --node review-of-obligations-are-a-derived-view --goal 'attach an independent review to run r-20260925T074613380785-obligations-are-a-derived-view' --done-when 'the review for r-20260925T074613380785-obligations-are-a-derived-view stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T074613380785-obligations-are-a-derived-view.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T074613380785-obligations-are-a-derived-view.at-7e881d73cd4cb66e8c9e4f46a8736853ac47ec06.json --time-budget 50m --session s23-coord --allow-unreconciled-runs --backend codex",
+              "node": "obligations-are-a-derived-view",
+              "phase": "complete",
+              "plan": "an-orchestrator-cannot-forget-its-obligations",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T074613380785-obligations-are-a-derived-view",
+              "session": "s23-coord",
+              "terminal_age_seconds": 989,
+              "terminal_at": "2026-09-25T08:04:36Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/obligations-are-a-derived-view"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 17834199,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 319.435,
+          "generated_tokens": 100571,
+          "generation_seconds": 316.737,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 24.3,
+          "machine_seconds": 2.698,
+          "peak_input_tokens": 116739,
+          "tokens_per_second": 317.52,
+          "wall_tokens_per_second": 314.84
+        },
+        "follow_on_paths": [
+          "reckon/crew/dispatch.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T09:30:27Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T08:21:41Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T082101656238-worker-stop-binds-the-manifest",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 7873,
+          "worker_pid": 4143747
+        },
+        "promoted_revision": "3842fad83e972fc323e89720c7afb036c8fa0615",
+        "impl_move": {
+          "plan": "an-orchestrator-cannot-forget-its-obligations",
+          "at_dispatch": null,
+          "at_complete": null,
+          "verdict": "exempt",
+          "reason": "no-impl-recorded-at-dispatch"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_worker_stop_hook.py"
+          ],
+          "declaration": "the Stop hook ignores manifest status",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/negative-control-ignores-status.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/negative-control-ignores-status.log"
+        },
+        "review_waiver": {
+          "reason": "the head 3842fad8 differs from the reviewed head b656dfd7 (re-review 90/100) only by a one-line evidence-note correction the reviewer itself requested; the hook code and tests are unchanged"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T09:01:02.254110+00:00",
+          "horizon_seconds": 2400,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T08:21:02Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 1,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 7,
+          "mean_context": 76190,
+          "observed_at": "2026-09-25T08:21:01Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 89.0,
+        "orientation_input_tokens": 1239810.0,
+        "store_write": {
+          "status": "written"
+        },
+        "release": {
+          "worktree_released": true,
+          "process_signalled": false,
+          "process_withheld": "process is not alive",
+          "worktree_audit": {
+            "counts": {
+              "dirty": 0,
+              "disposable": 0,
+              "integrated": 0,
+              "live-referenced": 0,
+              "retained-for-resume": 0,
+              "unintegrated": 0
+            },
+            "worktrees": [
+              {
+                "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/worker-stop-binds-the-manifest",
+                "available": false,
+                "detail": "tree is no longer available"
+              }
+            ]
+          }
+        }
       }
     ],
     "holds": [
@@ -432467,6 +432974,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2820
+    "_version": 2822
   }
 }
