@@ -170,6 +170,25 @@
     <p><strong>Trigger:</strong> this section is deferred until no live run claims <code>reckon/crew/dispatch.py</code> or <code>reckon/crew/prompts.py</code>. Today the S21 coordinator claims the first, and the S22 coordinator's next wave claims the second. The contract wording is shared with followup <code>f-tllitd-worker-turn-endings</code> on <code>the-local-lane-is-the-default</code>, and is landed with its owner rather than beside it.</p>
     <p><strong>Done when:</strong> a dispatch test inside a fixture allocation shows the shim directory first on the worker's <code>PATH</code> and the host line in the composed prompt. The same test outside an allocation shows neither.</p>
 
+    <h3>Landing record</h3>
+    <p>At product commit <code>a690ab92</code>,
+    <code>reckon.crew.dispatch.launch_search_path()</code> places
+    <code>reckon/host_shims</code> ahead of every inherited entry only when the
+    dispatcher's fixture <code>host_facts().in_allocation</code> is true. The
+    supervisor launch environment and an in-harness directive carry that path;
+    outside an allocation the inherited path is unchanged. The same host reading
+    adds one prompt line naming the node, job, node-local <code>/tmp</code>, the
+    prohibition on <code>srun</code>/<code>sbatch</code>/<code>salloc</code>, and
+    the run directory as the home for logs a later reader needs.</p>
+    <p>The focused gate passes <strong>47 tests</strong> in 6.15 s, including
+    both fixture placements and the unchanged launch and prompt suites. The
+    declared mutation, <q>remove the shim-directory PATH prepend</q>, makes the
+    inside-allocation assertion fail while the fake real <code>srun</code> remains
+    resolvable after the shim directory is removed. Ruff findings are unchanged
+    at 7 for <code>dispatch.py</code> and 2 for <code>prompts.py</code>; the new
+    test has none. Full record:
+    <a href="/reckon/evidence/archive/a-worker-knows-it-is-on-compute-landed#s4">&sect;4 landed evidence</a>.</p>
+
     <h2 id="s5">&sect;5 &mdash; The suite carries its own bounds</h2>
     <p><code>pyproject.toml</code> should declare <code>pytest-timeout</code> and <code>pytest-xdist</code> as development dependencies, with a default per-test timeout of 300 s in the pytest configuration. Then:</p>
     <ul>
