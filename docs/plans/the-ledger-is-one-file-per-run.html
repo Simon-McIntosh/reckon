@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -290,6 +290,11 @@
     <h4 class="r-fu-title">A promotion never amends its own commit</h4>
     <div class="r-fu-body"><p><code>crew complete</code> writes the promote commit, then amends it to add the release outcome (<code>reckon/crew/promotion.py:3103</code>, <code>git commit --amend</code>, introduced with the worktree release in c676b011). In a shared checkout, any session's push between those two steps publishes the pre-amend commit, and the amend then diverges main from origin. Observed 2026-09-25 13:53: 005f5bab (pushed) and ab0643dc (amended) promoted the same run, and the next pull conflicted on <code>crew.json</code> and a plan file while another session's promotion was reading <code>crew.json</code>, which failed with CorruptEnvelopeError. The reflog shows commit-then-amend on every promotion. Measure: the release outcome is written before the one promote commit, or as a second commit, and never by amend. A test drives a promotion whose release step runs and asserts the promote commit's sha is unchanged after <code>crew complete</code> returns.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run §1 — the promotion commit is never amended</pre>
+    </article>
+<article class="r-fu" data-id="f-tlioefpr-promotion-scope-counts-main" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-25T16:46:00Z" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Promotion scope counts main&#x27;s own history when a run&#x27;s head sits on a merge from main</h4>
+    <div class="r-fu-body"><p>Reported by the s23 coordinator. <code>crew complete</code> measures a run's out-of-scope paths as a tree diff from its recorded base, so a run whose head sits on top of a merge from main inherits every path main changed. Run r-20260925T092209664940-active-sprint-follows-the-live-crew (base be8f1330) reported 152 paths outside its fence, while its own three commits (bec9f24a, efbefca7, d4b764ea) touch 7 paths, with no overlap. <code>--accept-path</code> cannot get round it, because one path is live-claimed by another run. Measure: scope is the set of paths changed by commits reachable from the head but not from the integration branch at promotion time (<code>git log main..head</code>, or a diff from <code>merge-base(head, main)</code>). A test builds a run whose head merges main after a peer commit and asserts only the run's own paths are counted.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run §1 — promotion scope counts only the run&#x27;s own commits</pre>
     </article>
 </section>
 
