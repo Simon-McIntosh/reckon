@@ -1358,6 +1358,31 @@ class IndexState(_TolerantIndexModel):
 # ── JSON Schema generation (Pydantic derives it) ────────────────────────────
 
 
+def _drop_derived_titles(node: Any) -> None:
+    """Strip pydantic's auto-derived ``title`` annotations, in place.
+
+    A field's generated title only restates the property name it sits beside
+    ("After" for ``after``), so the annotations add ~2.3 KB to the published
+    schema while carrying nothing the key does not already give. The schema is
+    served inside the schema view's response budget, where that space competes
+    with the descriptions that hold the semantics. A ``properties`` mapping
+    holds field names rather than schema keywords, so its keys are never
+    touched and a field named ``title`` keeps its own schema.
+    """
+    if isinstance(node, dict):
+        if isinstance(node.get("title"), str):
+            del node["title"]
+        for key, value in node.items():
+            if key == "properties" and isinstance(value, dict):
+                for field_schema in value.values():
+                    _drop_derived_titles(field_schema)
+            else:
+                _drop_derived_titles(value)
+    elif isinstance(node, list):
+        for item in node:
+            _drop_derived_titles(item)
+
+
 def gen_json_schema() -> dict:
     """Return the derived JSON Schema for :class:`PlanState`, with the reckon
     schema id + version embedded. This is THE published contract."""
@@ -1365,6 +1390,7 @@ def gen_json_schema() -> dict:
     schema.setdefault("$defs", {})["ResourceIdentity"] = (
         ResourceIdentity.model_json_schema()
     )
+    _drop_derived_titles(schema)
     schema["$id"] = SCHEMA_ID
     schema["schemaVersion"] = SCHEMA_VERSION
     schema["title"] = "reckon PlanState"

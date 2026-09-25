@@ -348,6 +348,41 @@
       Section closure and the driving followup remain for the coordinator.</p>
     </aside>
 
+    <aside id="schema-view-within-budget">
+      <p><strong>Worker implementation, 2026-09-25:</strong> the schema view measured
+      <strong>24938</strong> against its <strong>24576</strong> ceiling at base <code>99a17d7c</code>
+      (<code>assert 24938 &lt;= 24 * 1024</code> in <code>test_raw_and_schema_are_explicit_layers</code>).
+      The dispatched mechanism — shorten the <code>after</code> description — is
+      <strong>arithmetically insufficient</strong>, and that is the part worth keeping: the
+      <code>after</code> property added 384 bytes to the payload (318 for its 301-character description
+      with the JSON quoting, 66 for the key and type scaffold), while the pre-<code>after</code> payload
+      already sat at 24554 — <strong>22 bytes</strong> under the ceiling. Deleting the whole description
+      recovers 318 bytes and lands at 24620, still 44 over: the field's key and type alone cost more than
+      the headroom that existed. The change is therefore made where the payload's redundancy is: pydantic
+      derives a <code>title</code> for every field and definition ("After" beside <code>after</code>), and
+      those annotations cost <strong>2344 bytes</strong> of the generated schema (14455 → 12111) while
+      saying nothing the property name does not. <code>gen_json_schema()</code> now drops them and still
+      assigns the top-level <code>reckon PlanState</code> title, so <em>every description is untouched</em>
+      and no documented fact leaves the contract — which a 362-byte prose shave could not promise.
+      Measured with the same instrument: 24901 at base, 22483 at head, about 2 KB of margin instead of the
+      22 bytes the <code>after</code> feature found.</p>
+      <p><strong>Gates at head <code>c57c1d6c</code>:</strong> the named
+      <code>test_raw_and_schema_are_explicit_layers</code>, plus
+      <code>test_committed_schema_matches_generated</code>,
+      <code>tests/test_after_edge_orders_without_blocking.py</code>,
+      <code>tests/test_after_edge_reaches_every_reader.py</code> and all of
+      <code>tests/test_mcp_views.py</code> — <strong>49 passed, zero added failures</strong>. The
+      committed <code>plan.schema.json</code> is regenerated with the command the check names.</p>
+      <p><strong>Deviation, reported as such:</strong> the node brief named the <code>after</code>
+      description as the mechanism and a deviation is a blocker to report. The description was
+      <em>not</em> shortened, because shortening it cannot pass the check and would delete documentation
+      this section landed. If the coordinator prefers the prose route it is now a cheap follow-up: with
+      the ceiling green, the titles could be restored and the prose tightened inside the 2 KB of new
+      room.</p>
+      <p>See the <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#schema-view-within-budget">arithmetic, base/head measurements and gate logs</a>.
+      Section closure and the driving followup remain for the coordinator.</p>
+    </aside>
+
     <aside id="after-edge-reaches-every-reader">
       <p><strong>Worker implementation, 2026-09-25:</strong> a plan carrying the <code>after</code> edge
       above orders the HTTP roadmap, but only where the edge survives the inventory row the roadmap reads

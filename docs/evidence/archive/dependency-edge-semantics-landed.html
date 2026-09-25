@@ -568,6 +568,72 @@
     the coordinator.</p>
   </section>
 
+  <section id="schema-view-within-budget">
+    <h2>The schema view returns under its response budget, with its documentation intact</h2>
+
+    <p><strong>Reproduction at the dispatch base (<code>99a17d7c</code>).</strong>
+    <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code> fails:
+    <code>assert 24938 &lt;= (24 * 1024)</code> — the schema view is 362 bytes over the 24576 ceiling
+    (<code>logs/base-budget-test.log</code>). An independent size driver built to the same fixture
+    (<code>logs/schema_view_size.py</code>, <code>logs/base-size.log</code>) reads 24901 for the same
+    payload at its shorter tmp root, a 37-byte offset that is exactly the
+    <code>provenance.checkout</code> path length; it is used only for before/after comparison, against
+    its own base reading. Payload breakdown at base: <code>storage_schema</code> 14998,
+    <code>response_schemas</code> 5236, <code>op_vocab</code> 1824, <code>dos_donts</code> 1704,
+    <code>response_schema</code> 763.</p>
+
+    <p><strong>Why the dispatched mechanism cannot reach the ceiling, measured rather than argued.</strong>
+    The <code>after</code> feature's whole payload footprint is one property entry of 384 bytes: 318 for
+    its 301-character description plus the JSON quoting, 66 for the key, type and property scaffold.
+    The payload without that entry is 24554 — 22 bytes of headroom existed before the feature. Deleting
+    the entire description recovers 318 bytes and lands at 24620, <strong>still 44 bytes over</strong>, so
+    no rewrite of the <code>after</code> description, however ruthless, can pass the check. The
+    <code>after-edge</code> commit <code>4ce2d39b</code> added no other payload text to
+    <code>reckon/_schema.py</code> (its remaining hunks are a comment and two code tuples), so the
+    362-byte deficit could not come from that feature's text at all.</p>
+
+    <p><strong>The change.</strong> The recommended payload redundancy is pydantic's auto-derived
+    <code>title</code> annotations — every field and definition carries one, and each restates the
+    property name beside it ("After" beside <code>after</code>). Measured in isolation: generated schema
+    14455 → 12111, a saving of 2344 bytes against the 362 required.
+    <code>gen_json_schema()</code> now drops them with a recursive strip
+    (<code>reckon/_schema.py</code>) that never touches <code>properties</code> mapping keys — a field
+    named <code>title</code> keeps its own schema — and assigns the top-level
+    <code>title: reckon PlanState</code> as before, which is the title the view's own test asserts.
+    <strong>All descriptions are unchanged</strong>: the pages of documented facts in the contract cost
+    nothing here, and the 2.3 KB of annotations that carried no facts, ~10% of the view's budget, is
+    dropped.</p>
+
+    <p><strong>Measured at head <code>c57c1d6c</code>.</strong> The same driver reads 22483
+    (<code>logs/head-size.log</code>, payload at <code>logs/payload-head.json</code>) — 2418 lower than
+    its own base reading, leaving about 2 KB of margin under the ceiling. The committed
+    <code>docs/_shared/plan.schema.json</code> is regenerated with the command the check names,
+    <code>from reckon._schema import write_json_schema; write_json_schema()</code>; its diff is 151
+    removals against 50 insertions, all of it title lines plus the new strip helper.</p>
+
+    <p><strong>Gates at head.</strong> In one run: the named
+    <code>test_raw_and_schema_are_explicit_layers</code>,
+    <code>tests/test_schema.py::test_committed_schema_matches_generated</code>,
+    <code>tests/test_after_edge_orders_without_blocking.py</code>,
+    <code>tests/test_after_edge_reaches_every_reader.py</code> and the whole of
+    <code>tests/test_mcp_views.py</code> — <strong>49 passed</strong>, zero failures, and the base
+    carries the one failure this change removes.</p>
+
+    <p><strong>Declared negative control.</strong> none: the existing budget assertion in
+    <code>tests/test_mcp_views.py</code> is the check and is red at the dispatch base, which the base log
+    records.</p>
+
+    <p><strong>Deviation from the node brief, recorded on the node as one.</strong> The brief named the
+    <code>after</code> description as the mechanism; this record shows that mechanism to be
+    insufficient by 44 bytes even at its limit. The description is left exactly as §7 landed it, and the
+    coordinator may prefer the prose route instead — with the ceiling now green, restoring the titles and
+    tightening prose is a decidable follow-up rather than a blocker. <strong>Nothing was raised in the
+    budget and no test was edited.</strong></p>
+
+    <p>Commit in the node: <code>c57c1d6c</code>. Section closure and the driving followup remain with
+    the coordinator.</p>
+  </section>
+
   </main>
 </body>
 </html>

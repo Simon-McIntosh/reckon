@@ -7,7 +7,6 @@
         "version": {
           "const": "1.0",
           "default": "1.0",
-          "title": "Version",
           "type": "string"
         },
         "class": {
@@ -17,14 +16,12 @@
             "general",
             "orchestrator"
           ],
-          "title": "Class",
           "type": "string"
         },
         "requirements": {
           "$ref": "#/$defs/CapabilityRequirements"
         }
       },
-      "title": "CapabilityRequest",
       "type": "object"
     },
     "CapabilityRequirements": {
@@ -45,8 +42,7 @@
             "standard",
             "deep",
             null
-          ],
-          "title": "Reasoning"
+          ]
         },
         "context": {
           "anyOf": [
@@ -62,8 +58,7 @@
             "standard",
             "extended",
             null
-          ],
-          "title": "Context"
+          ]
         },
         "tool_autonomy": {
           "anyOf": [
@@ -79,8 +74,7 @@
             "guided",
             "autonomous",
             null
-          ],
-          "title": "Tool Autonomy"
+          ]
         },
         "verification": {
           "anyOf": [
@@ -96,8 +90,7 @@
             "standard",
             "strict",
             null
-          ],
-          "title": "Verification"
+          ]
         },
         "risk": {
           "anyOf": [
@@ -115,11 +108,9 @@
             "elevated",
             "critical",
             null
-          ],
-          "title": "Risk"
+          ]
         }
       },
-      "title": "CapabilityRequirements",
       "type": "object"
     },
     "Comment": {
@@ -127,17 +118,14 @@
       "properties": {
         "id": {
           "default": "",
-          "title": "Id",
           "type": "string"
         },
         "who": {
           "default": "",
-          "title": "Who",
           "type": "string"
         },
         "when": {
           "default": "",
-          "title": "When",
           "type": "string"
         },
         "quote": {
@@ -149,16 +137,13 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Quote"
+          "default": null
         },
         "body": {
           "default": "",
-          "title": "Body",
           "type": "string"
         }
       },
-      "title": "Comment",
       "type": "object"
     },
     "Decision": {
@@ -166,50 +151,41 @@
       "properties": {
         "title": {
           "default": "",
-          "title": "Title",
           "type": "string"
         },
         "context": {
           "default": "",
-          "title": "Context",
           "type": "string"
         },
         "choices": {
           "items": {
             "type": "string"
           },
-          "title": "Choices",
           "type": "array"
         },
         "option_labels": {
           "additionalProperties": {
             "type": "string"
           },
-          "title": "Option Labels",
           "type": "object"
         },
         "choice": {
           "default": "",
-          "title": "Choice",
           "type": "string"
         },
         "rationale": {
           "default": "",
-          "title": "Rationale",
           "type": "string"
         },
         "when": {
           "default": "",
-          "title": "When",
           "type": "string"
         },
         "by": {
           "default": "",
-          "title": "By",
           "type": "string"
         }
       },
-      "title": "Decision",
       "type": "object"
     },
     "Followup": {
@@ -217,12 +193,10 @@
       "properties": {
         "id": {
           "default": "",
-          "title": "Id",
           "type": "string"
         },
         "status": {
           "default": "open",
-          "title": "Status",
           "type": "string"
         },
         "capability": {
@@ -240,37 +214,30 @@
           "default": "",
           "deprecated": true,
           "description": "Deprecated compatibility input; use capability",
-          "title": "Tier",
           "type": "string"
         },
         "written_by": {
           "default": "",
-          "title": "Written By",
           "type": "string"
         },
         "written_at": {
           "default": "",
-          "title": "Written At",
           "type": "string"
         },
         "recommends_skill": {
           "default": "",
-          "title": "Recommends Skill",
           "type": "string"
         },
         "title": {
           "default": "",
-          "title": "Title",
           "type": "string"
         },
         "body": {
           "default": "",
-          "title": "Body",
           "type": "string"
         },
         "prompt": {
           "default": "",
-          "title": "Prompt",
           "type": "string"
         },
         "resolved_at": {
@@ -282,8 +249,7 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resolved At"
+          "default": null
         },
         "resolved_by": {
           "anyOf": [
@@ -294,8 +260,7 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resolved By"
+          "default": null
         },
         "outcome": {
           "anyOf": [
@@ -306,11 +271,9 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Outcome"
+          "default": null
         }
       },
-      "title": "Followup",
       "type": "object"
     },
     "Gate": {
@@ -318,19 +281,16 @@
       "properties": {
         "id": {
           "default": "",
-          "title": "Id",
           "type": "string"
         },
         "section": {
           "default": "",
-          "title": "Section",
           "type": "string"
         },
         "gated_sections": {
           "items": {
             "type": "string"
           },
-          "title": "Gated Sections",
           "type": "array"
         },
         "transition": {
@@ -340,56 +300,46 @@
             "plan-terminal",
             "decision-lockable"
           ],
-          "title": "Transition",
           "type": "string"
         },
         "gating_plan": {
           "default": "",
           "description": "Outcome source: [project:]slug[#section]",
-          "title": "Gating Plan",
           "type": "string"
         },
         "decision": {
           "default": "",
           "description": "Decision key for a decision-lockable edge",
-          "title": "Decision",
           "type": "string"
         },
         "status": {
           "default": "",
-          "title": "Status",
           "type": "string"
         },
         "measure": {
-          "title": "Measure",
           "type": "string"
         },
         "required_evidence": {
           "default": "",
-          "title": "Required Evidence",
           "type": "string"
         },
         "verdict": {
           "default": "",
-          "title": "Verdict",
           "type": "string"
         },
         "evidence": {
           "default": "",
-          "title": "Evidence",
           "type": "string"
         },
         "passed": {
           "default": false,
           "readOnly": true,
-          "title": "Passed",
           "type": "boolean"
         }
       },
       "required": [
         "measure"
       ],
-      "title": "Gate",
       "type": "object"
     },
     "Question": {
@@ -397,27 +347,22 @@
       "properties": {
         "id": {
           "default": "",
-          "title": "Id",
           "type": "string"
         },
         "section": {
           "default": "",
-          "title": "Section",
           "type": "string"
         },
         "opened_by": {
           "default": "",
-          "title": "Opened By",
           "type": "string"
         },
         "opened_at": {
           "default": "",
-          "title": "Opened At",
           "type": "string"
         },
         "body": {
           "default": "",
-          "title": "Body",
           "type": "string"
         },
         "resolution": {
@@ -429,8 +374,7 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resolution"
+          "default": null
         },
         "resolved_at": {
           "anyOf": [
@@ -441,8 +385,7 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resolved At"
+          "default": null
         },
         "resolved_by": {
           "anyOf": [
@@ -453,11 +396,9 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resolved By"
+          "default": null
         }
       },
-      "title": "Question",
       "type": "object"
     },
     "ResearchItem": {
@@ -465,32 +406,26 @@
       "properties": {
         "id": {
           "default": "",
-          "title": "Id",
           "type": "string"
         },
         "type": {
           "default": "",
-          "title": "Type",
           "type": "string"
         },
         "title": {
           "default": "",
-          "title": "Title",
           "type": "string"
         },
         "source": {
           "default": "",
-          "title": "Source",
           "type": "string"
         },
         "added_by": {
           "default": "",
-          "title": "Added By",
           "type": "string"
         },
         "when": {
           "default": "",
-          "title": "When",
           "type": "string"
         },
         "url": {
@@ -502,11 +437,9 @@
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Url"
+          "default": null
         }
       },
-      "title": "ResearchItem",
       "type": "object"
     },
     "SectionRecord": {
@@ -515,13 +448,11 @@
       "properties": {
         "id": {
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
-          "title": "Id",
           "type": "string"
         },
         "effort_hours": {
           "exclusiveMinimum": 0,
           "multipleOf": 0.25,
-          "title": "Effort Hours",
           "type": "number"
         },
         "capability": {
@@ -560,7 +491,6 @@
         "attempts": {
           "description": "Tool-owned launch count",
           "minimum": 0,
-          "title": "Attempts",
           "type": "integer"
         },
         "status": {
@@ -569,7 +499,6 @@
             "deferred",
             "done"
           ],
-          "title": "Status",
           "type": "string"
         },
         "links": {
@@ -578,7 +507,6 @@
             "pattern": "^\\s*(?:[A-Za-z0-9][A-Za-z0-9_-]*:)?[A-Za-z0-9][A-Za-z0-9._-]*(?:#[A-Za-z0-9][A-Za-z0-9._-]*)?\\s*$",
             "type": "string"
           },
-          "title": "Links",
           "type": "array"
         }
       },
@@ -590,14 +518,12 @@
         "status",
         "links"
       ],
-      "title": "SectionRecord",
       "type": "object"
     },
     "ResourceIdentity": {
       "description": "Stable identity for one typed HTML resource.",
       "properties": {
         "project": {
-          "title": "Project",
           "type": "string"
         },
         "type": {
@@ -611,16 +537,13 @@
             "timeline",
             "project"
           ],
-          "title": "Type",
           "type": "string"
         },
         "slug": {
-          "title": "Slug",
           "type": "string"
         },
         "archived": {
           "default": false,
-          "title": "Archived",
           "type": "boolean"
         }
       },
@@ -629,7 +552,6 @@
         "type",
         "slug"
       ],
-      "title": "ResourceIdentity",
       "type": "object"
     }
   },
@@ -638,7 +560,6 @@
     "project": {
       "default": "",
       "description": "docs-project meta; required-on-write",
-      "title": "Project",
       "type": "string"
     },
     "type": {
@@ -648,22 +569,18 @@
         "research",
         "evidence"
       ],
-      "title": "Type",
       "type": "string"
     },
     "slug": {
       "default": "",
-      "title": "Slug",
       "type": "string"
     },
     "title": {
       "default": "",
-      "title": "Title",
       "type": "string"
     },
     "summary": {
       "default": "",
-      "title": "Summary",
       "type": "string"
     },
     "status": {
@@ -682,7 +599,6 @@
         "historical",
         "reference"
       ],
-      "title": "Status",
       "type": "string"
     },
     "roi": {
@@ -692,7 +608,6 @@
         "mid",
         "low"
       ],
-      "title": "Roi",
       "type": "string"
     },
     "effort_hours": {
@@ -707,8 +622,7 @@
         }
       ],
       "default": null,
-      "description": "Neutral worker-hours from the plan-effort-hours meta",
-      "title": "Effort Hours"
+      "description": "Neutral worker-hours from the plan-effort-hours meta"
     },
     "wall_clock_hours": {
       "anyOf": [
@@ -722,8 +636,7 @@
         }
       ],
       "default": null,
-      "description": "Elapsed hours from the plan-wall-clock-hours meta, assuming the maximum parallelism the plan itself supports. Never exceeds effort_hours; equals it for strictly sequential work.",
-      "title": "Wall Clock Hours"
+      "description": "Elapsed hours from the plan-wall-clock-hours meta, assuming the maximum parallelism the plan itself supports. Never exceeds effort_hours; equals it for strictly sequential work."
     },
     "effort_calibrated": {
       "anyOf": [
@@ -736,8 +649,7 @@
       ],
       "default": null,
       "description": "Whether worker-hours were authored rather than mapped from a letter",
-      "readOnly": true,
-      "title": "Effort Calibrated"
+      "readOnly": true
     },
     "effort": {
       "default": "M",
@@ -749,14 +661,12 @@
         "L",
         "XL"
       ],
-      "title": "Effort",
       "type": "string"
     },
     "milestone": {
       "default": "",
       "description": "Milestone identifier, or empty when unassigned",
       "pattern": "^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$",
-      "title": "Milestone",
       "type": "string"
     },
     "sprint": {
@@ -769,8 +679,7 @@
         }
       ],
       "default": null,
-      "description": "Sprint ref this plan belongs to. Bare 'id' = same-project; 'project:id' = external (cross-project).",
-      "title": "Sprint"
+      "description": "Sprint ref this plan belongs to. Bare 'id' = same-project; 'project:id' = external (cross-project)."
     },
     "graph_handle": {
       "anyOf": [
@@ -783,8 +692,7 @@
       ],
       "default": null,
       "description": "Stable ship-target handle carried by this endpoint plan. Membership is always derived from depends_on and is never stored.",
-      "pattern": "^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$",
-      "title": "Graph Handle"
+      "pattern": "^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$"
     },
     "north_star": {
       "anyOf": [
@@ -795,8 +703,7 @@
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "North Star"
+      "default": null
     },
     "capability": {
       "anyOf": [
@@ -813,12 +720,10 @@
       "default": "",
       "deprecated": true,
       "description": "Deprecated compatibility input; use capability",
-      "title": "Tier",
       "type": "string"
     },
     "owner": {
       "default": "",
-      "title": "Owner",
       "type": "string"
     },
     "section_declarations": {
@@ -831,7 +736,6 @@
         "type": "string"
       },
       "description": "DAG-build classification keyed by authored section identity; only implementable entries form the executable denominator",
-      "title": "Section Declarations",
       "type": "object"
     },
     "sections": {
@@ -839,7 +743,6 @@
       "items": {
         "$ref": "#/$defs/SectionRecord"
       },
-      "title": "Sections",
       "type": "array"
     },
     "archived": {
@@ -851,8 +754,7 @@
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Archived"
+      "default": null
     },
     "read": {
       "anyOf": [
@@ -863,37 +765,30 @@
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Read"
+      "default": null
     },
     "reviewed_at": {
       "default": "",
-      "title": "Reviewed At",
       "type": "string"
     },
     "recorded_at": {
       "default": "",
-      "title": "Recorded At",
       "type": "string"
     },
     "verdict": {
       "default": "",
-      "title": "Verdict",
       "type": "string"
     },
     "environment": {
       "default": "",
-      "title": "Environment",
       "type": "string"
     },
     "source": {
       "default": "",
-      "title": "Source",
       "type": "string"
     },
     "source_quality": {
       "default": "",
-      "title": "Source Quality",
       "type": "string"
     },
     "depends_on": {
@@ -901,7 +796,6 @@
       "items": {
         "type": "string"
       },
-      "title": "Depends On",
       "type": "array"
     },
     "blocks": {
@@ -909,7 +803,6 @@
       "items": {
         "type": "string"
       },
-      "title": "Blocks",
       "type": "array"
     },
     "after": {
@@ -917,49 +810,42 @@
       "items": {
         "type": "string"
       },
-      "title": "After",
       "type": "array"
     },
     "informs": {
       "items": {
         "type": "string"
       },
-      "title": "Informs",
       "type": "array"
     },
     "evidence_for": {
       "items": {
         "type": "string"
       },
-      "title": "Evidence For",
       "type": "array"
     },
     "verifies": {
       "items": {
         "type": "string"
       },
-      "title": "Verifies",
       "type": "array"
     },
     "supersedes": {
       "items": {
         "type": "string"
       },
-      "title": "Supersedes",
       "type": "array"
     },
     "commits": {
       "items": {
         "type": "string"
       },
-      "title": "Commits",
       "type": "array"
     },
     "artifacts": {
       "items": {
         "type": "string"
       },
-      "title": "Artifacts",
       "type": "array"
     },
     "tags": {
@@ -967,7 +853,6 @@
       "items": {
         "type": "string"
       },
-      "title": "Tags",
       "type": "array"
     },
     "standalone": {
@@ -980,22 +865,18 @@
         }
       ],
       "default": null,
-      "description": "One-sentence reason this plan genuinely stands alone \u2014 it waits on no other plan and feeds none. Persisted as <meta name=\"plan-standalone\">. Absent means the plan must declare depends_on, blocks, informs or a gate.",
-      "title": "Standalone"
+      "description": "One-sentence reason this plan genuinely stands alone \u2014 it waits on no other plan and feeds none. Persisted as <meta name=\"plan-standalone\">. Absent means the plan must declare depends_on, blocks, informs or a gate."
     },
     "modified": {
       "default": "",
-      "title": "Modified",
       "type": "string"
     },
     "impl": {
       "default": 0.0,
-      "title": "Impl",
       "type": "number"
     },
     "version": {
       "default": 0,
-      "title": "Version",
       "type": "integer"
     },
     "compatibility_warnings": {
@@ -1003,7 +884,6 @@
         "type": "string"
       },
       "readOnly": true,
-      "title": "Compatibility Warnings",
       "type": "array"
     },
     "validation_diagnostics": {
@@ -1014,42 +894,36 @@
         "type": "object"
       },
       "readOnly": true,
-      "title": "Validation Diagnostics",
       "type": "array"
     },
     "gates": {
       "items": {
         "$ref": "#/$defs/Gate"
       },
-      "title": "Gates",
       "type": "array"
     },
     "decisions": {
       "additionalProperties": {
         "$ref": "#/$defs/Decision"
       },
-      "title": "Decisions",
       "type": "object"
     },
     "followups": {
       "items": {
         "$ref": "#/$defs/Followup"
       },
-      "title": "Followups",
       "type": "array"
     },
     "questions": {
       "items": {
         "$ref": "#/$defs/Question"
       },
-      "title": "Questions",
       "type": "array"
     },
     "research": {
       "items": {
         "$ref": "#/$defs/ResearchItem"
       },
-      "title": "Research",
       "type": "array"
     },
     "comments": {
@@ -1059,12 +933,11 @@
         },
         "type": "array"
       },
-      "title": "Comments",
       "type": "object"
     }
   },
-  "title": "reckon PlanState",
   "type": "object",
   "$id": "https://reckon/schema/plan/3.0/plan.schema.json",
-  "schemaVersion": "3.0"
+  "schemaVersion": "3.0",
+  "title": "reckon PlanState"
 }
