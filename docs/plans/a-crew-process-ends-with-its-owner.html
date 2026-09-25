@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-impl" content="0.33">
 </head>
 <body>
@@ -842,6 +842,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260925T1505-post-restart-cases" data-who="" data-when="">
     <div class="r-comment-body"><p>Two more false rows on the new producer (armed 12:57:55Z), reported by s23-coord. They belong to f-acpewio-producer-shares-the-verdict, and its repair or follow-on must cover both. (a) <b>A codex or cli-launched run has no reckon supervisor.</b> r-…-ticker-row-is-one-aligned-transition (backend codex, launch cli) went from dispatched to abandoned 8 s after launch, because the guard "a live supervisor with no worker.json is not abandoned" never applies when there is no supervisor. Liveness for a cli launch must come from the pointer's own pid (the codex exec process), with a launch grace for the first seconds. (b) <b>A redispatched run reads a stale exit record.</b> r-20260925T124323355400-follower-signal-audit was lane-changed from clive to codex-luna at 14:46. At 15:02:12 it rendered "the worker process is gone with no recorded exit …", although its pointer pid 819989 (codex exec) was alive and lane-change-2.jsonl was written at 15:02:58. Its run directory still held exit.json from the abandoned local attempt (14:46:45). After a redispatch, liveness must follow the pointer's current attempt and ignore exit records and worker.json from earlier attempts. Done when stub cases for both pass and the parity test includes them, each with a negative control.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1512-resume-reads-stale-complete" data-who="" data-when="">
+    <div class="r-comment-body"><p>A dangerous instance of the unsupervised-attempt gap (f-acpewio-every-attempt-is-supervised), reported by s22-coord on the new producer. installer-carries-the-worker-stop-hook (r-20260925T114234476907) was resumed at 14:41. Its resume worker (pid 801965, a <code>claude --settings …</code> process that is the pointer pid) was alive, and resume-1.jsonl had been written 9 s earlier, with the repair uncommitted in the worktree. Yet at 15:08 the row read <code>complete · promote</code>, because the previous turn's manifest still said <code>status: complete</code>. Acting on that row would promote the old head and drop the uncommitted repair. The review reflex has the same exposure on resumed heads. Required of the supervised-attempt fix and the parity node: a live attempt process always classifies as running, whatever an earlier attempt's manifest says. A manifest counts only when written after the current attempt started; the dispatch or resume stamp is the reference. The review reflex fires only on a manifest newer than the current attempt. Done when a stub resumed run has a live resume process, an old complete manifest and a dirty worktree, and it classifies as running, is not promotable and gets no reflex review. The negative control reads the manifest without the attempt-time check, and it must fail.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>

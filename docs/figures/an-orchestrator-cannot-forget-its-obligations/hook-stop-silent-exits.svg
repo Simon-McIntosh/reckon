@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 600" width="980" height="600" role="img" aria-labelledby="title desc">
+  <title id="title">Coordinator obligations hook, stop mode: where it speaks and where it is silent</title>
+  <desc id="desc">The stop mode walks four checks. A missing mount, a missing follower registration, no outstanding duties, and an already-continued turn each exit silently with code 0 and no output. Only the last case, duties remaining on a fresh stop, emits a decision block.</desc>
+
+  <rect x="0" y="0" width="980" height="600" fill="#ffffff"/>
+  <text x="30" y="34" font-family="sans-serif" font-size="19" font-weight="bold" fill="#1f2933">Coordinator obligations hook &#8212; stop mode: silence is the default</text>
+  <text x="30" y="56" font-family="sans-serif" font-size="13" fill="#52606d">Every path exits 0. Four of the five outcomes print nothing at all; only a fresh stop over outstanding duties blocks the turn.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="strokeWidth" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7b8794"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="86" width="330" height="44" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="114" font-family="sans-serif" font-size="14" fill="#1f2933">hook JSON on stdin (stop mode)</text>
+
+  <line x1="205" y1="130" x2="205" y2="150" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="152" width="330" height="46" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="172" font-family="sans-serif" font-size="14" fill="#1f2933">project resolved from cwd</text>
+  <text x="60" y="189" font-family="sans-serif" font-size="13" fill="#52606d">through the mounts file</text>
+
+  <line x1="205" y1="198" x2="205" y2="218" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="220" width="330" height="46" rx="8" fill="#fff6d6" stroke="#b8860b" stroke-width="2"/>
+  <text x="60" y="240" font-family="sans-serif" font-size="14" fill="#1f2933">crew session resolved from the</text>
+  <text x="60" y="257" font-family="sans-serif" font-size="14" fill="#1f2933">follower registrations</text>
+
+  <line x1="205" y1="266" x2="205" y2="286" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="288" width="330" height="46" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="308" font-family="sans-serif" font-size="14" fill="#1f2933">unacknowledged duties derived</text>
+  <text x="60" y="325" font-family="sans-serif" font-size="13" fill="#52606d">for that session at this moment</text>
+
+  <line x1="205" y1="334" x2="205" y2="354" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="356" width="330" height="46" rx="8" fill="#eef2f7" stroke="#4a5b6b" stroke-width="1.5"/>
+  <text x="60" y="376" font-family="sans-serif" font-size="14" fill="#1f2933">stop_hook_active already true?</text>
+  <text x="60" y="393" font-family="sans-serif" font-size="13" fill="#52606d">a turn that already continued on this reason</text>
+
+  <line x1="205" y1="402" x2="205" y2="424" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="40" y="426" width="330" height="52" rx="8" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+  <text x="60" y="447" font-family="sans-serif" font-size="14" fill="#1f2933">emit the decision block</text>
+  <text x="60" y="466" font-family="monospace" font-size="13" fill="#7b2d26">{"decision": "block", "reason": &lt;checklist&gt;}</text>
+
+  <line x1="370" y1="175" x2="560" y2="175" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="370" y1="243" x2="560" y2="243" stroke="#b8860b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="370" y1="311" x2="560" y2="311" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="370" y1="379" x2="560" y2="379" stroke="#7b8794" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="565" y="152" width="385" height="46" rx="8" fill="#f2f6f3" stroke="#2f6b4f" stroke-width="1.5"/>
+  <text x="583" y="172" font-family="sans-serif" font-size="14" fill="#1f2933">no mount: silence</text>
+  <text x="583" y="189" font-family="sans-serif" font-size="13" fill="#52606d">exit 0, empty stdout and stderr</text>
+
+  <rect x="565" y="220" width="385" height="46" rx="8" fill="#fff6d6" stroke="#b8860b" stroke-width="2"/>
+  <text x="583" y="240" font-family="sans-serif" font-size="14" fill="#1f2933">no follower registration: silence</text>
+  <text x="583" y="257" font-family="sans-serif" font-size="13" fill="#52606d">asserted for prompt and stop alike</text>
+
+  <rect x="565" y="288" width="385" height="46" rx="8" fill="#f2f6f3" stroke="#2f6b4f" stroke-width="1.5"/>
+  <text x="583" y="308" font-family="sans-serif" font-size="14" fill="#1f2933">no duties: silence</text>
+  <text x="583" y="325" font-family="sans-serif" font-size="13" fill="#52606d">exit 0, empty stdout and stderr</text>
+
+  <line x1="370" y1="452" x2="560" y2="452" stroke="#c0392b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="583" y="447" font-family="sans-serif" font-size="14" fill="#7b2d26">the turn cannot end into</text>
+  <text x="583" y="466" font-family="sans-serif" font-size="14" fill="#7b2d26">forgotten work</text>
+
+  <rect x="565" y="356" width="385" height="46" rx="8" fill="#f2f6f3" stroke="#2f6b4f" stroke-width="1.5"/>
+  <text x="583" y="376" font-family="sans-serif" font-size="14" fill="#1f2933">already continued: silence</text>
+  <text x="583" y="393" font-family="sans-serif" font-size="13" fill="#52606d">the block fires at most once per list</text>
+
+  <rect x="40" y="500" width="910" height="76" rx="8" fill="#f7f9fb" stroke="#9aa5b1" stroke-width="1.5"/>
+  <text x="58" y="524" font-family="sans-serif" font-size="13.5" fill="#1f2933">The highlighted check is the one this record adds: a session with a live blocked run but no follower armed must be quiet in both modes.</text>
+  <text x="58" y="546" font-family="sans-serif" font-size="13.5" fill="#1f2933">Its mutation, a block emitted in place of the no-follower early return, fails that case's stop assertion while every other assertion holds.</text>
+  <text x="58" y="568" font-family="sans-serif" font-size="13" fill="#52606d">Source: reckon/hooks/coordinator_obligations.py; case: tests/test_coordinator_obligations_hook.py::test_no_follower_leaves_the_hook_silent</text>
+</svg>

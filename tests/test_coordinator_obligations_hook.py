@@ -184,6 +184,7 @@ def test_prompt_mode_injects_the_checklist_for_a_coordinating_session(
     assert completed.stderr == ""
     emitted = json.loads(completed.stdout)
     checklist = emitted["hookSpecificOutput"]["additionalContext"]
+    assert checklist.strip(), "an obligations payload must inject a non-empty checklist"
     assert set(emitted["hookSpecificOutput"]) == {
         "hookEventName",
         "additionalContext",
@@ -301,8 +302,19 @@ def test_the_real_settings_home_is_never_read_or_written(
 
 
 def test_no_follower_leaves_the_hook_silent(repository: Path, tmp_path: Path) -> None:
-    _blocked_run(repository, tmp_path)
-    completed = _hook("prompt", _prompt_payload(repository, "harness-session"))
+    """A session that armed no follower is not coordinating, so both modes are quiet.
 
-    assert completed.returncode == 0
-    assert completed.stdout == ""
+    The recorded run is live and blocked, so the silence is the missing
+    registration rather than an empty fleet: with a follower the same payload
+    blocks in stop mode.
+    """
+    _blocked_run(repository, tmp_path)
+    prompting = _hook("prompt", _prompt_payload(repository, "harness-session"))
+    stopping = _hook("stop", _stop_payload(repository, "harness-session"))
+
+    assert prompting.returncode == 0
+    assert prompting.stdout == ""
+    assert prompting.stderr == ""
+    assert stopping.returncode == 0
+    assert stopping.stdout == ""
+    assert stopping.stderr == ""

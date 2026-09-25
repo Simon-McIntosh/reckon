@@ -19,6 +19,8 @@
   <title>Coordinator Obligations Execution Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-commits" content="2848d5b960f066eb79660b91bfbb6d65dbe39f96">
+<meta name="plan-artifacts" content="tests/test_coordinator_obligations_hook.py,docs/figures/an-orchestrator-cannot-forget-its-obligations/hook-stop-silent-exits.svg">
 </head>
 <body>
   <main class="plan-doc">
@@ -246,5 +248,26 @@
   </section>
 
 </main>
+<section id="obligations-hook-stop-silence">
+      <h2>Revision: the no-follower case drives the stop mode too</h2>
+      <p>The hook section above records the no-follower case as a prompt-mode row &mdash; <em>duty present, no registration, nothing, exit 0</em>. Only prompt mode was driven, so the stop mode's silence on a session that armed no follower was asserted nowhere. That is the mode that matters most for this rule: a stop verdict is acted on by the harness, so a block emitted where no coordinator exists would reach a plain Claude session doing unrelated work. Commit <code>2848d5b960f066eb79660b91bfbb6d65dbe39f96</code> closes the gap.</p>
+      <p><code>test_no_follower_leaves_the_hook_silent</code> now records a live blocked run and drives both modes over one fixture: mounted working directory, duty present, no follower registration. Each mode must exit 0 with empty stdout and empty stderr. The run is recorded live and blocked on purpose, so the asserted silence is the missing registration rather than a suppression flag or an empty fleet: the stop-block case in the same file arms the follower and sees the identical payload return <code>{"decision": "block"}</code> with the checklist as its reason. The prompt-with-obligations case additionally asserts the injected checklist is non-empty before its exact comparison, so a hook emitting a vacuous empty context cannot pass.</p>
+      <figure>
+        <img src="/reckon/figures/an-orchestrator-cannot-forget-its-obligations/hook-stop-silent-exits.svg" alt="The stop mode's five outcomes: no mount, no follower registration, no duties and an already-continued turn each exit silently with code 0 and no output, while a fresh stop over outstanding duties emits the decision block.">
+        <figcaption>Four silent exits and one block; the highlighted branch is the one this revision adds to the asserted set.</figcaption>
+      </figure>
+      <table>
+        <thead><tr><th>Arm</th><th>Tree and revision</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>gate, base arm</td><td>worktree at <code>0c84ab3e</code>, pre-edit file</td><td>7 passed, exit 0</td><td><code>runs/r-20260925T114150436644-hook-stop-mode-silent-without-follower/gate-base.log</code></td></tr>
+          <tr><td>gate, head arm</td><td>worktree, extended file</td><td>7 passed, exit 0</td><td><code>runs/r-20260925T114150436644-hook-stop-mode-silent-without-follower/gate-head.log</code></td></tr>
+          <tr><td>declared mutation</td><td>scratch copy of <code>0c84ab3e</code> with the extended file</td><td>1 failed, 6 deselected, exit 1</td><td><code>runs/r-20260925T114150436644-hook-stop-mode-silent-without-follower/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p><strong>The declared mutation:</strong> a stop-mode decision block was inserted in place of the resolved-is-None early return in a scratch tree, and the extended no-follower case was run against it. It fails exactly as declared &mdash; the new stop assertion <code>assert stopping.stdout == ""</code> is the failing line, with the mutant's <code>{"decision": "block", "reason": "mutant"}</code> on stdout, while the prompt-mode assertions above it hold. One failure, six deselected, exit 1. The receipt's first line repeats the declared string verbatim.</p>
+      <p>The scratch tree's fidelity is pinned rather than assumed: a source-only diff against the worktree shows the mutated hook as the sole difference, with the collected test file byte-identical, and the run's probe (run with the scratch tree as the working directory and on <code>PYTHONPATH</code>) prints the scratch hook as the imported module. The mutant's own reason string is the marker that could only come from the mutated copy.</p>
+      <p><strong>No defect was exposed in the hook script.</strong> The unmutated stop mode already returns before emission on that path, so <code>reckon/hooks/coordinator_obligations.py</code> is unchanged by this revision; the committed diff is the test file, this record and the figure.</p>
+    </section>
+  </main>
 </body>
 </html>
