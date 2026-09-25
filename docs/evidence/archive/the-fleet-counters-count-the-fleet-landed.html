@@ -233,6 +233,44 @@
       </table>
       <p><strong>Retained limit.</strong> The import check compiles the follower's package and imports its entry modules; it cannot prove that every lazily imported submodule of a future change loads. The observed failure mode is a module that does not parse, and that is what the guard catches.</p>
     </section>
+
+    <section id="ticker-row-prints-only-real-transitions">
+      <h2>The row prints only real transitions</h2>
+      <p>Commit <code>a36a2d80</code> stops the renderer printing a transition where both sides are the same state. The suppression had compared only the state the pane remembered for a run, so a run seen for the first time — the pane has no memory of it, and a re-armed follower starts with an empty map — fell through to the event's own <code>from_state</code> as its left half. When the producer emitted the state the run was already in, the row read <code>unpromoted → unpromoted</code>: an arrow and two identical words where nothing moved. A live re-arm on 2026-09-25 printed exactly that.</p>
+      <p>The comparison is now against the <em>effective</em> previous state — the remembered one when the pane has seen the run, the event's <code>from_state</code> otherwise — so a run seen for the first time after it moved still keeps its left word and its arrow, and only a row whose two sides are one state is dropped. Only rows that arrived on the stream are subject to it: an event carrying no event kind is a render probe, not a transition claim, so the geometry fixtures that supply a bare <code>from_state</code> equal to <code>to_state</code> keep drawing the row their caller asked for. The collision is display-depth as well as value-depth: <code>completed_unpromoted</code> and <code>unpromoted</code> are two states that render as one word, so both directions of that pair are suppressed too.</p>
+<pre>base, first sighting of a run that did not move:
+14:00:00  gpt-sol     high     implement      row                                               unpromoted → unpromoted                   0m   1w· 0b· 0u· 0q
+
+head, the same event — no row is printed:
+(nothing)
+
+head, a first sighting that did move keeps its left word and its arrow:
+14:00:00  gpt-sol     high     implement      row                                               dispatched → working                      0m   1w· 0b· 0u· 0q</pre>
+      <p>The two rows above are renderer output captured from a base tree (<code>git archive</code> of <code>d8dc247d</code>) and from the head, not composed by hand.</p>
+      <h3>Width budget</h3>
+      <p>The reason clause begins at column 159 on every width — the sum of the cells before it, <code>MIN_WIDTH</code> — so the columns left for it are the pane width less 159. Measured at the default model cell width of ten, at the head:</p>
+      <table>
+        <thead><tr><th>Pane width</th><th>Reason starts</th><th>Reason columns</th><th>Clause held</th></tr></thead>
+        <tbody>
+          <tr><td>180 (<code>DEFAULT_WIDTH</code>)</td><td>159</td><td>21</td><td>19 characters, cut at a word</td></tr>
+          <tr><td>208 (the workstation pane)</td><td>159</td><td>49</td><td>49 characters</td></tr>
+          <tr><td>180, a twelve-wide configured alias</td><td>159</td><td>19</td><td>17 characters</td></tr>
+        </tbody>
+      </table>
+      <p>Each column a longer configured alias forces onto the model cell comes straight off these figures, so the 180 figure is the binding one. The one cell that could fund a wider clause is the node cell at 36: its cut already survives its own middle-elision, so 28 is a defensible cell and would hand eight columns to the reason. The transition's two state halves are not fundable — each is exactly the longest word the classifier emits (<code>ended-without-manifest</code>, twenty-two), so narrowing either one elides a state a reader needs whole. The comment beside <code>MIN_WIDTH</code> now states these measured figures rather than the budget it previously promised.</p>
+      <h3>Verification</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Assigned ticker, watch and recovery files at <code>a36a2d80</code></td><td>259 passed, from 257 at base</td><td><code>suite-after.log</code> and <code>suite-base.log</code>; absolute project interpreter, <code>-p no:cacheprovider</code>, each run pinned with <code>env -C</code> to its own tree and its <code>module.__file__</code> recorded in the header.</td></tr>
+          <tr><td><code>tests/test_ticker_row_is_one_transition.py</code> at the head</td><td>7 passed</td><td><code>gate-after.log</code>.</td></tr>
+          <tr><td>The same test file against base source</td><td>3 failed, 4 passed</td><td><code>gate-base.log</code>; the two new tests and the repaired property both fail at base.</td></tr>
+          <tr><td>Every classifier state pair, none-to-state, three node-name widths, seven elapsed boundaries, queued and not</td><td>34,104 cases: 782 pairs (32,844 cases) measure the model, node, arrow and counter starts on the rendered row; the 30 same-state and display-collision pairs (1,260 cases) assert no row at all</td><td><code>tests/test_ticker_row_is_one_transition.py</code>. The previous form read a column back from the expression that placed it and fed every iteration the same constants, so neither assertion could fail.</td></tr>
+          <tr><td><code>print a first-seen same-state row</code></td><td>failed as required (3 failed, 4 passed)</td><td><code>negative-control.log</code>; restoring the remembered-only comparison made the property grid, the no-row test and the arrow test fail.</td></tr>
+          <tr><td>Ruff on the two edited files</td><td>1 finding, unchanged from base</td><td>The retained <code>FURB162</code> in <code>ticker.py</code> is pre-existing (line 471 at base, 478 at head); <code>ruff format --check</code> accepts both files.</td></tr>
+        </tbody>
+      </table>
+    </section>
   </main>
 </body>
 </html>

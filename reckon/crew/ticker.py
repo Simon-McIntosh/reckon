@@ -332,11 +332,18 @@ STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CEL
 # counters and the elapsed cell in full. The waiting counter's spelled word is
 # five columns wider than the single letter it replaced, so this floor carries
 # that much and the reason's share of a fixed pane carries it too. Against the
-# 180-column DEFAULT_WIDTH budget that still leaves more than 60 for the reason,
-# and more than 80 on the 208-column pane this workstation measures (its
-# observed cut, read directly with no inset subtracted) — both clear the
-# 12-column floor below which a clause is not worth reading, and the 180-column
-# figure is what a later added column spends first.
+# 180-column DEFAULT_WIDTH budget this leaves 21 columns for the reason — 49 on
+# the 208-column pane this workstation measures (its observed cut, read directly
+# with no inset subtracted) — measured at the default model cell width of ten,
+# and each column a longer configured alias adds to that cell comes straight off
+# both figures. 21 clears the 12-column floor below which a clause is not worth
+# reading and no more — it holds a nineteen-character clause, measured — and 180
+# is what a later added column spends first. The one cell that could fund a
+# wider reason is the node cell at 36: its cut already survives its own
+# middle-elision, so 28 is a defensible cell and would hand eight columns to the
+# clause. The transition's two state halves are not fundable — each is exactly
+# the longest word the classifier emits (ended-without-manifest, twenty-two), so
+# narrowing either one elides a state a reader needs whole.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -994,11 +1001,22 @@ class Ticker:
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         reported = self._reported.get(run_id) if stream_event else None
-        if reported == to_state:
-            return ""
+        # The previous state a reader is shown is the remembered one when this
+        # grid has seen the run, and the event's own ``from_state`` otherwise.
+        # The fallback is what lets a row survive a re-arm that starts with no
+        # memory. It is also what makes the suppression below a comparison
+        # against the *effective* previous state rather than the remembered one
+        # alone: a run seen for the first time after it moved arrives carrying
+        # the state it left, and printing ``X → X`` when that equals the state
+        # it entered claims a transition that never happened. Only a row that
+        # arrived on the stream is suppressed: an event carrying no kind is a
+        # render probe rather than a transition claim, so it draws the row its
+        # caller asked for.
         from_state = reported
         if from_state is None:
             from_state = _display_state(event.get("from_state"))
+        if stream_event and from_state == to_state:
+            return ""
         if stream_event:
             self._reported[run_id] = to_state
 
