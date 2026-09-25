@@ -1924,6 +1924,57 @@ def _follower_end_event(
     }
 
 
+def _follow_resume_plan(
+    project: str,
+    session: str | None,
+    *,
+    stream_path: Path,
+    resume_state: Mapping[str, Any],
+) -> tuple[str, int, dict[str, str]]:
+    """Decide how a follower starts against the stream it is about to read.
+
+    Three modes, one per kind of place an arming can begin from:
+
+    ``baseline`` — a first attachment, which emits the fleet report as it is
+    derived. ``continue`` — the stream has only advanced since the recorded
+    place, so the recorded offset is the boundary to seek to and nothing before
+    it is replayed. ``restart`` — the stream was replaced or truncated, so its
+    recorded offset no longer names a boundary: the file is re-read from its
+    start and filtered to the runs whose state differs from the checkpoint's.
+
+    The recorded state travels back with the mode either way, so a continuation
+    delivers only what changed rather than re-announcing the fleet.
+    """
+    from reckon.crew import follow_checkpoint
+
+    if resume_state:
+        # A checkpoint handed across an in-place reload: the same image is
+        # continuing, so the stream path it recorded still governs.
+        offset = resume_state.get("offset")
+        recorded = {
+            str(run_id): str(state)
+            for run_id, state in dict(resume_state.get("reported") or {}).items()
+        }
+        if (
+            isinstance(offset, int)
+            and not isinstance(offset, bool)
+            and resume_state.get("stream_path") == str(stream_path)
+        ):
+            return "continue", max(0, offset), recorded
+        return "baseline", 0, recorded
+
+    record = follow_checkpoint.read(project, session)
+    if not record:
+        return "baseline", 0, {}
+    recorded = {
+        str(run_id): str(state)
+        for run_id, state in dict(record.get("reported") or {}).items()
+    }
+    if follow_checkpoint.continues(record, stream_path):
+        return "continue", max(0, int(record["offset"])), recorded
+    return "restart", 0, recorded
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -2035,6 +2086,28 @@ def _follow_watch_lines(
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
+    def _record_checkpoint(stream_path: Path, offset: int) -> None:
+        """Persist this follower's place, so its next arming continues here.
+
+        Written as lines are delivered, so the place advances with the stream
+        rather than with the arming's end: an arming that dies without reaching
+        its own teardown has still left behind everything it delivered. A
+        checkpoint that cannot be written costs a later re-arm its place and
+        must never cost this arming its stream, so it is not allowed to raise.
+        """
+        from reckon.crew import follow_checkpoint
+
+        try:
+            follow_checkpoint.write(
+                project,
+                session,
+                stream_path=stream_path,
+                offset=offset,
+                reported=reported,
+            )
+        except OSError:
+            return
+
     def _tick(*, stream_path: Path | None = None, offset: int = 0) -> None:
         """Run the caller's per-wait work — reclaiming a registration, say."""
         if on_poll is not None:
@@ -2045,6 +2118,8 @@ def _follow_watch_lines(
                     "offset": offset,
                 }
             )
+        if stream_path is not None:
+            _record_checkpoint(stream_path, offset)
         _check_lifetime()
         _check_consumer()
 
@@ -2100,16 +2175,26 @@ def _follow_watch_lines(
         # stream — a reader wants worker transitions and the fleet posture, not
         # two streams interleaved into one pane.
         stream_path = Path(cursor["stream_path"])
-        resume_matches = resume_state.get("stream_path") == str(
-            stream_path
-        ) and isinstance(resume_state.get("offset"), int)
-        if resume_matches:
-            cursor["offset"] = max(0, int(resume_state["offset"]))
-        else:
+        mode, offset, recorded = _follow_resume_plan(
+            project,
+            session,
+            stream_path=stream_path,
+            resume_state=resume_state,
+        )
+        if mode == "baseline":
             for event in cursor["baseline"]:
                 selected = _emit(event)
                 if selected is not None:
                     yield selected
+        else:
+            # A continuation picks the stream up where the previous arming left
+            # it: at the recorded boundary for a file that has only advanced, or
+            # at the file's own start when it was replaced or truncated — with
+            # the runs already reported sitting in ``reported`` either way, so
+            # only what moved is delivered and nothing is re-announced.
+            cursor["offset"] = offset
+            reported.clear()
+            reported.update(recorded)
         resume_state = {}
 
         while not stream_path.exists() and not consumer_gone:
