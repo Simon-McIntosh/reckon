@@ -29,8 +29,10 @@ import json
 import os
 import socket
 import subprocess
+import time
 
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -253,7 +255,7 @@ def _pointer(
         "session": "s21-coord",
         "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
         "phase": phase,
-        "created_at": "2026-09-25T09:00:00Z",
+        "created_at": datetime.now(tz=UTC).isoformat(),
         "manifest_path": str(manifest),
         "log_path": str(stream),
         "stderr_path": str(tmp_path / f"{run_id}.stderr.log"),
@@ -266,7 +268,7 @@ def _pointer(
     }
 
 
-MOMENT = 1_800_000_000.0
+MOMENT = time.time()
 
 
 def _classify(pointer: dict) -> dict:
@@ -461,7 +463,11 @@ def test_a_pointer_phase_advances_from_starting_to_working_to_complete(
         started = _pointer(
             tmp_path, run_id, pid=_absent_pid(), phase="starting", write_stream=False
         )
+        started_row = _classify(started)
+        started_snapshot = _snapshot(started)
         working = _pointer(tmp_path, run_id, pid=_absent_pid(), phase="starting")
+        working_row = _classify(working)
+        working_snapshot = _snapshot(working)
         _write_exit_record(run_id)
         complete = _pointer(
             tmp_path,
@@ -470,15 +476,17 @@ def test_a_pointer_phase_advances_from_starting_to_working_to_complete(
             phase="starting",
             manifest_body=COMPLETE_BODY,
         )
+        complete_row = _classify(complete)
+        complete_snapshot = _snapshot(complete)
         phases = (
-            _classify(started)["effective_phase"],
-            _classify(working)["effective_phase"],
-            _classify(complete)["effective_phase"],
+            started_row["effective_phase"],
+            working_row["effective_phase"],
+            complete_row["effective_phase"],
         )
         states = (
-            _snapshot(started)["state"],
-            _snapshot(working)["state"],
-            _snapshot(complete)["state"],
+            started_snapshot["state"],
+            working_snapshot["state"],
+            complete_snapshot["state"],
         )
 
     assert phases == ("starting", "working", "complete")
@@ -595,10 +603,14 @@ def test_every_emitted_word_maps_to_exactly_one_bucket(
         ]
         for stub in stubs:
             emitted.add(_snapshot(stub)["state"])
-    emitted |= set(recovery.RECOVERY_VERBS)
-    emitted |= set(recovery.NEEDS_ACTION)
-    emitted |= set(recovery.WAITING_STATES)
-    emitted |= set(recovery.RECOVERY_CLASSIFICATIONS)
+    # These are the producer's row states, not the separate recovery verbs
+    # carried beside them. A ticker bucket accepts the row state and consults
+    # the recovery classification only for the special held reading.
+    emitted |= set(recovery.FLEET_WORKING_STATES)
+    emitted |= set(recovery.FLEET_UNPROMOTED_STATES)
+    emitted |= set(recovery.FLEET_WAITING_STATES)
+    emitted |= set(recovery.FLEET_BLOCKED_STATES)
+    emitted |= {"ended-without-manifest", "refused-at-admission"}
 
     missing = sorted(word for word in emitted if _bucket(word) is None)
     assert missing == [], f"words with no bucket: {missing}"
