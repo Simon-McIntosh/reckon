@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="reckon-reads-answer-in-seconds-landed">
+  <meta name="plan-title" content="Reckon Reads Answer In Seconds — Landing Record">
+  <meta name="plan-summary" content="Cumulative evidence for profiling and reducing the latency of routine Reckon reads.">
+  <meta name="plan-evidence-for" content="reckon-reads-answer-in-seconds">
+  <meta name="plan-verifies" content="reckon-reads-answer-in-seconds#s2">
+  <meta name="plan-commits" content="436c75f32d918cad81349350ff423c86f53378e4">
+  <meta name="plan-artifacts" content="docs/research/reckon-read-latency-profile.html,docs/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg">
+  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="fleet allocation 1277272 on clu-2058; reckon project virtual environment">
+  <meta name="plan-tags" content="performance,profiling,mcp">
+  <title>Reckon Reads Answer In Seconds — Landing Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; cumulative record</p>
+      <h1>Reckon Reads Answer In Seconds — Landing Record</h1>
+      <p class="lead">The investigation names each warm read's cumulative-time leaders and the existing invalidation contract that can carry them.</p>
+    </header>
+
+    <section id="read-latency-profile">
+      <h2>Warm audit, roadmap, and discovery profile</h2>
+      <p><strong>The defect reproduced.</strong> At <code>ac231ab23c991fc574799a28645ecaccd97cde24</code>, after one unprofiled warm-up call in each fresh process, cProfile measured the second call at 88.554 s for audit, 19.872 s for roadmap summary, and 27.547 s for discovery. Those are all above the declared five-second bound. The calls returned 824, 953, and 7,591 JSON bytes and the profiler saw 136,566,339, 32,525,621, and 46,322,712 calls, so the result is not an empty or failed instrument.</p>
+
+      <figure>
+        <img src="/reckon/figures/reckon-reads-answer-in-seconds/warm-profile-and-residual.svg" alt="Horizontal latency plot. Audit profiles at 88.6 seconds with an estimated memo-hit residual near 4 seconds; roadmap profiles at 19.9 seconds with a residual near 1.2 seconds; discovery profiles at 27.5 seconds with a residual near 1.5 seconds. A vertical marker shows the five-second bound.">
+        <figcaption>Repeated full-plan parsing is the common removable cost; roadmap also needs stat-keyed reuse for unchanged live-run files.</figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Read</th><th>Top cumulative branch</th><th>Measured cost</th><th>Reuse route</th><th>Expected warm residual</th></tr></thead>
+        <tbody>
+          <tr><td>Audit</td><td><code>_plan_html.py:349 read_state</code>, 625 calls</td><td>59.365 s</td><td><code>file_memo.memoized</code> for path-pure state plus the existing discovery corpus memo</td><td>about 4.0 s</td></tr>
+          <tr><td>Roadmap summary</td><td><code>_store.py:1266 list_followups_across</code></td><td>13.018 s</td><td>full parsed-plan memo plus stat-keyed live-run inputs</td><td>about 1.2 s</td></tr>
+          <tr><td>Discovery</td><td><code>_plan_html.py:1269 parse_plan</code>, 268 calls for 134 plans</td><td>26.020 s</td><td>one full parsed record reused by question and followup scans</td><td>about 1.5 s</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Full ranked evidence.</strong> <a href="/reckon/research/reckon-read-latency-profile">The research record</a> tabulates the top five call sites of every read with cumulative seconds, revision-stable file and line, parse/walk/compute category, and the existing memo candidate. It records the profiling command and receipt paths. No product file changed.</p>
+      <p><strong>Qualification retained.</strong> cProfile inflates absolute wall time; the residual values are Amdahl-style expectations from the consistently instrumented profiles, not post-change benchmarks. The implementation still owes three unprofiled warm measurements for each public read and invalidation checks for one changed plan and one changed live-run file.</p>
+    </section>
+  </main>
+</body>
+</html>
