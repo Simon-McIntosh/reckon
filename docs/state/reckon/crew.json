@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T02:53:14",
+  "updated": "2026-09-25T02:53:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -366643,6 +366643,351 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260924T235919418112-paid-lanes-help-prints-usage",
+        "plan": "the-local-lane-is-the-default",
+        "section": "\u00a75",
+        "node": "paid-lanes-help-prints-usage",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 864,
+                "cached_input_tokens": 549838,
+                "input_tokens": 550704,
+                "output_tokens": 2131,
+                "reasoning_output_tokens": 843,
+                "total_tokens": 552835,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3955c8d2-c817-48fc-81bf-8a29bb14c6cc",
+            "session_id": "s21-coord"
+          },
+          "done_when": "In reckon/crew/paid_lanes.py main, --help and -h print usage to stdout and return 0 without composing or writing any document. tests/test_paid_lanes_document.py gains a case that runs the module as a subprocess with --help and --path pointing at a temporary file, and asserts usage text on stdout, exit 0, and that neither the temporary path nor the default path was written. The declared negative control is executed and logged: with --help treated as --once again, the case fails. tests/test_paid_lanes_document.py otherwise passes unchanged.",
+          "estimated_hours": null,
+          "goal": "python -m reckon.crew.paid_lanes --help prints usage and publishes nothing",
+          "id": "paid-lanes-help-prints-usage",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-24T23:59:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 24,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 10,
+            "mean_context": 97778,
+            "observed_at": "2026-09-24T23:58:55Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/manifest.md",
+          "negative_control": "treat --help as --once again; the no-write assertion must fail",
+          "plan": "the-local-lane-is-the-default",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/paid_lanes.py",
+            "tests/test_paid_lanes_document.py",
+            "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+            "docs/figures/the-local-lane-is-the-default",
+            "docs/plans/the-local-lane-is-the-default.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "pace-hold",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-24T23:59:29Z",
+        "completed_at": "2026-09-25T00:17:22.186Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 974,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1073,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "2a72458cad5f7843fc2b7637719b8510d0151788",
+        "commits": [
+          "4e13061a6234114691dcd5845ef6aee044c600c2",
+          "08a8733dcbb8a05db8306535416548e8d79b3b9e"
+        ],
+        "changed_lines": {
+          "added": 169,
+          "removed": 5,
+          "files": 5
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_paid_lanes_document.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/test_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/manifest.md",
+        "scope_changed": false,
+        "session_id": "97abe22b-1d08-486b-9c06-f6358850c07e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5558060,
+            "input_tokens_cumulative": 5558060,
+            "output_tokens": 22966,
+            "output_tokens_cumulative": 22966,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T00:17:22.186Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3600,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 2157,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3690,
+              "log_fresh": false,
+              "manifest_commits": [
+                "770abccf (module + test)",
+                "a55aff86 (landing record",
+                "evidence anchor",
+                "figure)",
+                "025ba057 (the two assertions and the records corrected to match)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "bcb1f8c4359b872f92c3efb3c478bd8692b82fc24c573ea767954d20e37c8476",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-dispatch-returns-without-its-worker --section '\u00a710' --role review --spec-level exact --node review-of-the-fleet-supervisor-lives-in-reckon --goal 'attach an independent review to run r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon' --done-when 'the review for r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon.at-025ba05783e45fa9915007359efcea7367a91d49.json --time-budget 60m --session s21-coord --allow-unreconciled-runs --backend clive",
+              "node": "the-fleet-supervisor-lives-in-reckon",
+              "phase": "working",
+              "plan": "a-dispatch-returns-without-its-worker",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260924T200623600012-the-fleet-supervisor-lives-in-reckon",
+              "session": "s21-coord",
+              "terminal_age_seconds": 4199,
+              "terminal_at": "2026-09-24T22:49:23Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/the-fleet-supervisor-lives-in-reckon"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5558060,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 981.716,
+          "generated_tokens": 22966,
+          "generation_seconds": 959.703,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 23.8,
+          "machine_seconds": 22.013,
+          "peak_input_tokens": 114256,
+          "tokens_per_second": 23.93,
+          "wall_tokens_per_second": 23.39
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-coord/paid-lanes-help-prints-usage",
+          "session_id": "97abe22b-1d08-486b-9c06-f6358850c07e",
+          "session_source": "stream",
+          "retained_at": "2026-09-25T00:17:22.186Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T00:17:22Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T00:00:57Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260924T235919418112-paid-lanes-help-prints-usage",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 2300,
+          "worker_pid": 1942342
+        },
+        "promoted_revision": "08a8733dcbb8a05db8306535416548e8d79b3b9e",
+        "plan_impl_at_dispatch": 0.22,
+        "impl_move": {
+          "plan": "the-local-lane-is-the-default",
+          "at_dispatch": 0.22,
+          "at_complete": 0.25,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_paid_lanes_document.py"
+          ],
+          "declaration": "treat --help as --once again; the no-write assertion must fail",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/negative_control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T235919418112-paid-lanes-help-prints-usage/negative_control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T00:29:19.970534+00:00",
+          "horizon_seconds": 1800,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-24T23:59:19Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 24,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 10,
+          "mean_context": 97778,
+          "observed_at": "2026-09-24T23:58:55Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 60.0,
+        "orientation_input_tokens": 1154560.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -366955,6 +367300,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2585
+    "_version": 2586
   }
 }
