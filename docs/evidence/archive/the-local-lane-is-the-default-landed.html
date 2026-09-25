@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-24">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; the node ran in a detached worktree with the main checkout&#x27;s environment reached through PYTHONPATH and pytest -p no:cacheprovider; the base revision was extracted read-only with git archive into a scratch directory, so no second checkout, worktree or branch was created">
-  <meta name="plan-commits" content="db50a1e3">
-  <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,tests/test_paid_lanes_document.py,docs/figures/the-local-lane-is-the-default/headroom-document.png">
+  <meta name="plan-commits" content="db50a1e3,ca43ac53">
+  <meta name="plan-artifacts" content="reckon/crew/paid_lanes.py,reckon/budget.py,reckon/cli.py,reckon/mcp.py,tests/test_paid_lanes_document.py,tests/test_preflight_reads_the_published_document.py,docs/figures/the-local-lane-is-the-default/headroom-document.png,docs/figures/the-local-lane-is-the-default/preflight-merge.png">
   <title>The Local Lane Is The Default — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -247,6 +247,111 @@ FAILED tests/test_paid_lanes_document.py::test_asking_for_help_prints_usage_and_
       command seam.</li>
       <li><strong>The five-minute refresh deployment is out of scope.</strong> Nothing in this node
       schedules <code>paid_lanes</code>; the change is confined to the argv parse.</li>
+    </ul>
+  </section>
+
+  <section id="production-preflight-reads-the-published-document">
+    <h2>&sect;5 — The production pre-flight reads the published document, falling back per backend</h2>
+
+    <p><strong>The defect.</strong> <code>budget.preflight</code> had a document arm, but it ran
+    only when the caller injected no reading of its own
+    (<code>windows is None and (document or document_path) is not None</code>). Both production
+    callers — <code>reckon crew preflight</code> and the MCP <code>budget</code> view — always build
+    a reading from <code>recorded_windows</code> and passed it as <code>windows</code>, so the arm
+    never executed for either. The published document was reachable only from a caller that named it
+    <em>and</em> injected nothing, which no production path did: the document the whole section
+    exists to publish was inert in the two places that run.</p>
+
+    <p><strong>What landed.</strong> The two callers now name the document at its default path
+    (<code>paid_lanes.document_path()</code>, resolved through the environment override then the
+    reader's home), and <code>budget.preflight</code> merges the document and the caller's recorded
+    reading <strong>per backend</strong>. A backend the document carries a fresh reading for is paced
+    from the document; every other backend keeps the reading the caller recorded. A backend therefore
+    falls back for itself alone when the document is absent, unreadable, silent about it, or holds
+    only a stale figure for it.</p>
+
+    <p><strong>Per-backend, not per-document.</strong> One stale account must not drag a fresh
+    sibling down with it, and one fresh account must not vouch for a stale one. Each backend's newest
+    document observation is judged against the document's staleness horizon on its own, so the
+    fallback is scoped to the backend it applies to.</p>
+
+    <figure>
+      <img src="/reckon/figures/the-local-lane-is-the-default/preflight-merge.png" alt="Both production callers name the document and inject recorded windows; for each backend, a fresh document reading is paced from the document and any other backend from its recorded window; the one report names the source per backend. A worked example shows codex paced from the document at a fresh 0.77 and claude from its recorded window because its 0.66 document figure is stale.">
+      <figcaption>One merge, resolved per backend: the document speaks where it is fresh, the
+      recorded windows speak everywhere else, and the report names which spoke.</figcaption>
+    </figure>
+
+    <p>Only the fields a reading actually produced are named. When the document and the records both
+    miss every backend, the report carries no <code>window_sources</code> block and no group grows a
+    <code>source</code>, so a reader sees an addition only where something was read; this is also
+    what keeps the pre-flight's existing field set unchanged for a report with no reading at all.</p>
+
+    <table>
+      <caption>What the node asserted, and where the assertion is made.</caption>
+      <thead><tr><th>Property</th><th>Asserted in</th></tr></thead>
+      <tbody>
+        <tr><td>A fresh document reading wins over a recorded window the caller injected</td><td><code>test_a_fresh_document_reading_wins_over_the_recorded_window</code></td></tr>
+        <tr><td>An absent document leaves every figure equal to the recorded-window result, per backend</td><td><code>test_an_absent_document_leaves_every_figure_as_recorded</code></td></tr>
+        <tr><td>A stale reading falls back for that backend alone while a fresh sibling stays on the document</td><td><code>test_a_stale_reading_falls_back_for_that_backend_alone</code></td></tr>
+        <tr><td><code>crew preflight</code> and MCP <code>budget</code> agree on every per-backend figure and source</td><td><code>test_the_cli_and_mcp_paths_agree_on_every_backend</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Gate</h3>
+
+    <p>The gate ran over the files that import <code>reckon.budget</code>, <code>reckon.cli</code>
+    or <code>reckon.mcp</code> and reach the changed surface, at this worktree's head and against the
+    base revision extracted read-only with <code>git archive</code> (no second checkout, worktree or
+    branch). The base arm's module under test resolved to the scratch tree, named on its header:</p>
+
+    <pre><code># head (this worktree, uncommitted changes)
+module.__file__ = &lt;worktree&gt;/reckon/budget.py
+command: python -m pytest -q &lt;16 test files&gt;
+278 passed in 100.23s   EXIT=0     (includes the 4 new cases)
+
+# base (git archive HEAD → /tmp/reckon-base-loSv)
+module.__file__ = /tmp/reckon-base-loSv/reckon/budget.py
+command: same selection minus the new file
+274 passed in 95.95s    EXIT=0</code></pre>
+
+    <p>Zero added failures: 278 = 274 + the 4 new cases. <code>ruff check</code> adds no finding on
+    the four changed paths (base 6/4/20 findings on
+    <code>budget.py</code>/<code>cli.py</code>/<code>mcp.py</code> against head 6/4/20), and the new
+    test file is clean and formatted.</p>
+
+    <h3>Negative control</h3>
+
+    <p><strong>The declared mutation, verbatim:</strong> <em>remove the per-backend fallback so an
+    absent document yields no figures; the absent-document test must fail</em> — the first line of the
+    red log. The <code>else</code> branch that keeps the caller's recorded reading was dropped from
+    <code>_merge_windows</code>, so a backend the document did not cover produced no entry at all.
+    The absent-document case then failed at its first assertion, because the documented-named call
+    paced the group to <code>None</code> while the baseline — the same call with no document — still
+    returned the recorded figure:</p>
+
+    <pre><code>&gt;           assert _clock_utilisation(with_absent, group) is not None, name
+E           AssertionError: codex
+E           assert None is not None
+FAILED tests/test_preflight_reads_the_published_document.py::test_an_absent_document_leaves_every_figure_as_recorded
+1 failed in 3.57s</code></pre>
+
+    <p><strong>Positive control:</strong> the same selection at head is <code>4 passed</code>, so the
+    red is the mutation and not the selection. Log:
+    <code>~/.config/reckon/crew/runs/r-20260925T015518138129-production-preflight-reads-the-published-document/negative-control.log</code>,
+    alongside <code>~/.cache/reckon-preflight-gate/head.log</code> and
+    <code>~/.cache/reckon-preflight-gate/base.log</code>.</p>
+
+    <h3>What this record does not claim</h3>
+
+    <ul>
+      <li><strong>The merged-head result is not this node's.</strong> The gate measures this node's
+      change at its own head; verifying the merged result is a separately dispatched test node's job.</li>
+      <li><strong>The five-minute refresh deployment is out of scope.</strong> Nothing in this node
+      schedules <code>paid_lanes</code>. Until it runs, <code>~/public/reckon/paid-lanes.json</code>
+      is stale and the per-backend fallback is what the production callers pace from — which is the
+      recorded-window result they reported before this node.</li>
+      <li><strong>No new crew verb is registered.</strong> The change rides the existing
+      <code>crew preflight</code> command and the existing MCP <code>budget</code> view.</li>
     </ul>
   </section>
 </main>

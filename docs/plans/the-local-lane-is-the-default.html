@@ -137,6 +137,16 @@
     is unchanged. The construction node is done; the production pre-flight callers and the
     five-minute refresh deployment remain open, as recorded above.</p>
 
+    <p><strong>Landed (2026-09-25):</strong> the production pre-flight callers now name the
+    published document. <code>reckon crew preflight</code> and the MCP <code>budget</code> view
+    each pass <code>paid_lanes.document_path()</code>, and <code>budget.preflight</code> merges the
+    two sources per backend rather than all-or-nothing: the document wins for a backend it carries a
+    fresh reading for, and every other backend keeps the reading the caller recorded, so an absent,
+    unreadable, silent or stale document entry falls back for that backend alone. The report's
+    <code>window_sources</code> names which source supplied each backend's figures, and each group
+    block carries the same for the member that spoke for it. The five-minute refresh deployment
+    remains open; until it runs, the default document is stale and the recorded windows speak.</p>
+
     <h2 id="s6">&sect;6 &mdash; A warning comes early enough to change the decision</h2>
     <p>Today's codex hold was the first signal, arriving at 100%. The published state is graded:
     <em>open</em>; <em>pace</em>, when projected exhaustion falls before the window resets, or
