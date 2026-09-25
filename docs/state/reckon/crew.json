@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T06:02:02",
+  "updated": "2026-09-25T06:03:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -384846,6 +384846,350 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260925T021111262413-slow-dispatch-tests-wait-on-events",
+        "plan": "the-suite-is-green-at-head",
+        "section": "\u00a73",
+        "node": "slow-dispatch-tests-wait-on-events",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 735,
+                "cached_input_tokens": 758477,
+                "input_tokens": 759214,
+                "output_tokens": 1367,
+                "reasoning_output_tokens": 380,
+                "total_tokens": 760581,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "0d0d70e3-b7cb-4ea4-8096-629c3a5077d0",
+            "session_id": "suite-green-at-head"
+          },
+          "done_when": "per the attribution report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/suite-green-at-head/suite-time-is-attributed/report.md: the git shim in tests/test_dispatch_returns_without_worker.py (SHIM_SLEEP_SECONDS at line 77, shim line 240) and its _wait_for poll (lines 602-611) no longer spend about 40 s per test, the shim instead signalling that the charged scan is in progress and the test awaiting that signal under a bound, and tests/test_server_listens_before_it_watches.py line 124 no longer sleeps 5.0 s per tree, its slow_watch signalling the open arming window; every bound these tests assert (DISPATCH_EXIT_BOUND and the arming bound) is still asserted and still fails when violated; the durations of test_a_discarded_run_is_not_recreated, test_a_delegated_launch_records_a_boundary_snapshot, test_sigkill_to_the_worker_is_recorded, test_sigkill_to_dispatch_leaves_the_worker_marker and test_every_tree_is_armed_within_the_bound are recorded before and after with --durations, each at least halved; both files pass serially and under -n 4 with pytest's default basetemp, logs recorded; no reckon/ file is edited and no test is skipped, xfailed, deleted or weakened",
+          "estimated_hours": null,
+          "goal": "The four slowest dispatch tests and the server arming test wait on an observed event instead of fixed sleeps",
+          "id": "slow-dispatch-tests-wait-on-events",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-25T02:11:12Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 21,
+            "binding_observed": "unknown",
+            "detail": "",
+            "headroom": 12,
+            "mean_context": 105000,
+            "observed_at": "2026-09-25T02:10:51Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 45
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/manifest.md",
+          "negative_control": "make the code under test exceed DISPATCH_EXIT_BOUND (for example by a sleep injected in a scratch copy of the dispatch path) and observe the rewritten test still fail on the bound",
+          "plan": "the-suite-is-green-at-head",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_dispatch_returns_without_worker.py",
+            "tests/test_server_listens_before_it_watches.py",
+            "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+            "docs/figures/the-suite-is-green-at-head",
+            "docs/plans/the-suite-is-green-at-head.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "suite-green-e",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-25T02:11:30Z",
+        "completed_at": "2026-09-25T03:10:54.251Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3319,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3564,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "587adf4877d8bee4138d00b9a25d5596ba0dbf42",
+        "commits": [
+          "f972ac68db3bb5b91a2c2fb3034499b1eedbc54f"
+        ],
+        "changed_lines": {
+          "added": 39,
+          "removed": 29,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_returns_without_worker.py tests/test_server_listens_before_it_watches.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/manifest.md",
+        "scope_changed": false,
+        "session_id": "b02fb389-c877-45e7-9ec7-07617f6abfff",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 15378719,
+            "input_tokens_cumulative": 15378719,
+            "output_tokens": 99847,
+            "output_tokens_cumulative": 99847,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-25T03:10:54.251Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 750,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "effective_phase": "working",
+              "elapsed_seconds": 3450,
+              "external_wait": null,
+              "interruption": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1454,
+              "log_fresh": false,
+              "manifest_commits": [
+                "6d00c88d",
+                "6d813b38"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "cffed32746f3e75b961a6c678fd04344306aae89b1781bfcc79c0dcc28a91d07",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T000001970735-no-watch-producer-outlives-the-suite/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan the-suite-is-green-at-head --section '\u00a73' --role review --spec-level exact --node review-of-no-watch-producer-outlives-the-suite --goal 'attach an independent review to run r-20260925T000001970735-no-watch-producer-outlives-the-suite' --done-when 'the review for r-20260925T000001970735-no-watch-producer-outlives-the-suite stores a parsed record scoring all 5 dimensions in the range 0..20; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T000001970735-no-watch-producer-outlives-the-suite.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T000001970735-no-watch-producer-outlives-the-suite.at-6d813b38781758043c1d1c6eec591a14df76a9b4.json --time-budget 45m --session suite-green-at-head --allow-unreconciled-runs --backend clive",
+              "node": "no-watch-producer-outlives-the-suite",
+              "phase": "working",
+              "plan": "the-suite-is-green-at-head",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260925T000001970735-no-watch-producer-outlives-the-suite",
+              "session": "suite-green-at-head",
+              "terminal_age_seconds": 1508,
+              "terminal_at": "2026-09-25T01:46:08Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_key_defect": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/no-watch-producer-outlives-the-suite"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 17,
+            "evidence": 19,
+            "fit": 20,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 96
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 15541913,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3325.664,
+          "generated_tokens": 108845,
+          "generation_seconds": 2599.1,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.7,
+          "machine_seconds": 726.564,
+          "peak_input_tokens": 161894,
+          "tokens_per_second": 41.88,
+          "wall_tokens_per_second": 32.73
+        },
+        "follow_on_paths": [
+          "10.75"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/suite-green-at-head/slow-dispatch-tests-wait-on-events",
+          "session_id": "b02fb389-c877-45e7-9ec7-07617f6abfff",
+          "session_source": "pointer",
+          "retained_at": "2026-09-25T03:10:54.251Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "worker_exit": {
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-09-25T03:10:54Z",
+          "last_record_type": "result",
+          "launched_at": "2026-09-25T02:15:25Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20260925T021111262413-slow-dispatch-tests-wait-on-events",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 18344,
+          "worker_pid": 2423622
+        },
+        "promoted_revision": "f972ac68db3bb5b91a2c2fb3034499b1eedbc54f",
+        "plan_impl_at_dispatch": 0.75,
+        "impl_move": {
+          "plan": "the-suite-is-green-at-head",
+          "at_dispatch": 0.75,
+          "at_complete": 0.8,
+          "verdict": "moved"
+        },
+        "negative_control": {
+          "verdict": "matched",
+          "test_paths": [
+            "tests/test_dispatch_returns_without_worker.py",
+            "tests/test_server_listens_before_it_watches.py"
+          ],
+          "declaration": "make the code under test exceed DISPATCH_EXIT_BOUND (for example by a sleep injected in a scratch copy of the dispatch path) and observe the rewritten test still fail on the bound",
+          "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/logs/negative-control.log",
+          "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T021111262413-slow-dispatch-tests-wait-on-events/logs/negative-control.log"
+        },
+        "lane_advisory": {
+          "backend": "clive",
+          "burn_multiple": null,
+          "cheaper_lane": {
+            "detail": "",
+            "lane": null,
+            "state": "not_evaluated"
+          },
+          "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+          "horizon_ends_at": "2026-09-25T03:11:12.617606+00:00",
+          "horizon_seconds": 3600,
+          "metered": false,
+          "observed_at": null,
+          "precedes_horizon": null,
+          "projected_exhaustion_at": null,
+          "resets_at": null,
+          "seconds_until_reset": null,
+          "state": "quiet",
+          "utilisation_pct": null
+        },
+        "lane_declaration": {
+          "backend": null,
+          "headroom": null,
+          "metered": false,
+          "observed_at": null,
+          "read_at": "2026-09-25T02:11:12Z",
+          "resolved_backend": "clive",
+          "utilisation_pct": null
+        },
+        "lane_reading": {
+          "age_seconds": 21,
+          "binding_observed": "unknown",
+          "detail": "",
+          "headroom": 12,
+          "mean_context": 105000,
+          "observed_at": "2026-09-25T02:10:51Z",
+          "state": "fresh",
+          "suggested_shelf_life_seconds": 45
+        },
+        "tool_steps": 141.0,
+        "orientation_input_tokens": 3436265.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -385158,6 +385502,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 2669
+    "_version": 2670
   }
 }
