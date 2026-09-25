@@ -509,6 +509,36 @@
       fallback base vs head</a>.</p>
     </div>
 
+
+    <div class="r-note" data-reckon="landed" data-node="launch-failed-wakes-a-follower" data-when="2026-09-25">
+      <p><strong>Outcome &mdash; a launch-failed run is an attention state a follower wakes on.</strong>
+      Commit <code>70c1c3df</code> <em>fix(crew): wake a follower on a failed launch</em>.
+      <code>WATCH_ATTENTION_STATES</code> in <code>reckon/crew/runs.py</code> omitted
+      <code>launch-failed</code>, which <code>recovery.RECOVERY_VERBS</code> maps to
+      <code>resume</code> and <code>recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS</code> lists, so
+      the state sat in the blocked fleet bucket &mdash; <code>FLEET_BLOCKED_STATES</code> derives
+      from <code>ticker.NEEDS_ACTION</code> minus the waiting family, and that set names
+      <code>launch-failed</code> &mdash; while the watch vocabulary did not, so a coordinator reading
+      the watch surface had no route to the run. The repair moves the vocabulary onto the shipped
+      classifier: one entry added, nothing else changed, and no test file was touched.</p>
+      <p><strong>Measured.</strong> <code>tests/test_crew.py::test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code>
+      fails at base <code>cce1f3a8</code> (<code>Extra items in the left set: 'launch-failed'</code>) and
+      passes at head. The declared negative control is executed and logged: with <code>launch-failed</code>
+      removed from the tuple the same test fails identically. The fifty test files importing
+      <code>reckon.crew.runs</code> were run at both revisions: base 6 failed / 579 passed, head 7 failed /
+      578 passed. One id moved pass&rarr;fail,
+      <code>tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>,
+      whose assertion is a wall-clock bound (<code>elapsed &lt; 2.0</code>, observed 3.99s): it passes 5/5
+      in isolation and 2/2 under 28-way CPU contention at the head, and passes 2/2 under the same
+      contention at the base, where the same assertion also sits near its ceiling. It is a load-sensitive
+      timing bound in a file this node may not write, named under follow_ons rather than triaged.
+      <code>tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set</code>
+      did not move &mdash; it is not in the failing set at either revision. Full record, figure and logs:
+      <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-launch-failed-wakes-a-follower">landed
+      evidence</a>.</p>
+    </div>
+
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sgh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="" data-resolved-at="2026-09-24T18:59:01+00:00" data-resolved-by="">

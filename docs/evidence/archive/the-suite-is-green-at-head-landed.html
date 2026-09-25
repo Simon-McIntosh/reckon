@@ -1027,6 +1027,63 @@ docs/state/proj/crew.json; commit or discard that roster write before retrying</
       is likewise red at base and at head under the same selection, and belongs to the
       <code>test_ledger</code> node.</p>
     </section>
+  <section id="node-launch-failed-wakes-a-follower">
+      <h2>launch-failed-wakes-a-follower &mdash; the watch vocabulary catches up to the classifier</h2>
+      <p>Node <code>launch-failed-wakes-a-follower</code>, commit <code>70c1c3df</code>, base
+      <code>cce1f3a8</code>. One product defect, in <code>reckon/crew/runs.py</code>:
+      <code>WATCH_ATTENTION_STATES</code> omitted <code>launch-failed</code>. No test file was touched and
+      no behaviour outside the vocabulary changed.</p>
+      <figure>
+        <img src="/reckon/figures/the-suite-is-green-at-head/launch-failed-attention-route.png"
+             alt="Four vocabularies in order — the recovery verbs, the actionable classifications, the ticker action set, and the blocked fleet bucket — each naming launch-failed; the final box, the watch attention set, did not, and the repaired edge from the blocked bucket into it is marked red.">
+        <figcaption>A state the fleet counts as blocked but the watch vocabulary does not name has no
+        route from the watch surface.</figcaption>
+      </figure>
+      <p><strong>The route, in order.</strong> <code>recovery.RECOVERY_VERBS</code> maps
+      <code>launch-failed</code> to <code>resume</code>;
+      <code>recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS</code> lists it, with the comment that a launch
+      which never reached a model wants a person to repair a command or a PATH;
+      <code>ticker.NEEDS_ACTION</code> names it; and <code>recovery.FLEET_BLOCKED_STATES</code> is derived
+      from that set minus the waiting family, so the fleet counter already counted it. Only the watch
+      vocabulary &mdash; the one a coordinator reads to decide what to act on &mdash; did not name it.</p>
+      <h3>Measure</h3>
+      <table>
+        <thead><tr><th>Arm</th><th>Command</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>cce1f3a8</code></td>
+            <td><code>pytest -q --timeout=600 tests/test_crew.py::test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code></td>
+            <td>1 failed &mdash; <code>Extra items in the left set: 'launch-failed'</code></td></tr>
+          <tr><td>Head</td><td>same</td><td>1 passed</td></tr>
+          <tr><td>Negative control</td>
+            <td><code>launch-failed</code> removed from <code>WATCH_ATTENTION_STATES</code>, then same</td>
+            <td>1 failed, identically</td></tr>
+        </tbody>
+      </table>
+      <h3>Import-wide delta</h3>
+      <p>The fifty test files importing <code>reckon.crew.runs</code> were run at both revisions on fleet
+      job <code>1277272</code> (<code>98dci4-clu-2058</code>), one pytest process per arm:
+      <strong>base 6 failed / 579 passed</strong>, <strong>head 7 failed / 578 passed</strong>. Six ids are
+      red at both revisions and belong to other nodes. One id moved pass&rarr;fail:
+      <code>tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>,
+      whose assertion is the wall-clock bound <code>elapsed &lt; 2.0</code>, observed at this arm as
+      <code>3.9987283698283136</code>. Timed in isolation at the head it passes <strong>5/5</strong>; under
+      28-way CPU contention it passes <strong>2/2 at the head and 2/2 at the base</strong>, the base arm
+      also sitting within a few hundred milliseconds of the same ceiling. It is a load-sensitive timing
+      assertion in a file this node may not write, and is named under <code>follow_ons</code> rather than
+      triaged here. <code>tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set</code>
+      is not in the failing set at either revision &mdash; it did not move.</p>
+      <h3>Logs</h3>
+      <ul>
+        <li><code>logs/base-named-test.log</code>, <code>logs/head-named-test.log</code> &mdash; the named
+        test at each arm.</li>
+        <li><code>logs/negative-control.log</code> &mdash; the declared mutation, its first line the
+        declared string.</li>
+        <li><code>logs/base-import-set.log</code>, <code>logs/head-import-set.log</code> &mdash; the
+        fifty-file arms, each header naming the revision, the tree, the imported module path and the
+        resolved working directory.</li>
+      </ul>
+    </section>
+
   </main>
 </body>
 </html>
