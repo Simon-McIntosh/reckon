@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-impl" content="0.45">
 </head>
 <body>
@@ -167,6 +167,11 @@
     <h4 class="r-fu-title">Close the three review findings on the worker environment export</h4>
     <div class="r-fu-body"><p>From the review of worker-env-carries-its-run (88) at 3fa5dcde.</p><ul><li><code>reckon/hooks/worker_stop.py</code>, module docstring: it still says the hook blocks only while the manifest is absent or not terminal. Since this change, the hook also refuses a terminal manifest that is older than the attempt (line 173). State that case.</li><li><code>reckon/crew/dispatch.py</code>, around line 6782: the in-harness lane-change branch rebuilds the run directive without an environment key, so a run re-pointed in-harness loses the attempt identity (<code>RECKON_RUN_ID</code>, <code>RECKON_MANIFEST</code>, <code>RECKON_ATTEMPT_STARTED_AT</code>) that the launch path attaches around line 4080. It is latent today, because the only reader, <code>native_agent_guard.py:148</code>, reads <code>attach_with</code> alone. Carry the same environment, and assert it in a test.</li><li><code>reckon/crew/dispatch.py</code>, around line 4770: a docstring reads "absent, the launch own environment is used". Restore the possessive.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations f-aocfio-worker-env-review</pre>
+    </article>
+<article class="r-fu" data-id="f-aocfio-review-recognition-figure-as-text" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The review-recognition figure becomes a list</h4>
+    <div class="r-fu-body"><p><code>docs/figures/an-orchestrator-cannot-forget-its-obligations/review-recognition-and-lane.svg</code> draws two ordered lists as sentences in boxes: the three ways a standing review is recognised, and the order in which a printed review command chooses its lane. Content that is naturally a list must be real text, not an image. Replace the figure in the evidence record with two HTML ordered lists that carry the same content, delete the SVG, and confirm that <code>reckon audit-doc</code> passes on the evidence record.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-orchestrator-cannot-forget-its-obligations f-aocfio-review-recognition-figure-as-text</pre>
     </article>
 </section>
 
