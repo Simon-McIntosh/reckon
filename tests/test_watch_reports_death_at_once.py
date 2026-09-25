@@ -240,7 +240,14 @@ def test_a_stream_that_ended_in_a_result_record_is_not_a_death(
             _kill(worker)
 
     assert STREAM_TAIL_CLAUSE not in str(ended.get("detail") or "")
-    assert ended.get("state") != interrupted.get("state")
+    # Both ends are stops, so the compatibility lifecycle state groups them as
+    # blocked; the reading that separates a concluded turn from a mid-turn
+    # death is the typed recovery classification, which is what a reader acts
+    # on and what the ticker's state cell spells.
+    assert ended.get("recovery_classification") == "ended-without-manifest"
+    assert interrupted.get("recovery_classification") == recovery.INTERRUPTED_RUN_PHASE
+    assert ended.get("recovery") == "resume"
+    assert interrupted.get("recovery") == "redispatch"
     assert STREAM_TAIL_CLAUSE in str(interrupted.get("detail") or "")
     assert all(
         STREAM_TAIL_CLAUSE not in str(event.get("detail") or "") for event in published
