@@ -60,6 +60,17 @@ def _append(root, *items):
     return store.write_plan("sample", "sample", working, version, root=root)
 
 
+def _insert(root, item):
+    working, version = store.read_plan("sample", "sample", root=root)
+    store.apply_ops(
+        working,
+        [{"op": "insert_section", **item}],
+        is_index=False,
+    )
+    PlanState.model_validate(working).validate_for_write()
+    return store.write_plan("sample", "sample", working, version, root=root)
+
+
 def _text(root, replacement, preimage="<p>Existing prose.</p>"):
     _, version = store.read_plan("sample", "sample", root=root)
     return store.replace_plan_text(
@@ -309,4 +320,89 @@ def test_append_cannot_smuggle_untyped_work_or_state_in_its_body(plan, body):
     original = path.read_bytes()
     with pytest.raises(store.OpError, match="body must not contain"):
         _append(root, _item(body=body))
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("field", ["effort_hours", "capability", "links"])
+def test_insert_section_refuses_missing_contract_field_with_worked_example(plan, field):
+    root, path = plan
+    item = _item()
+    del item[field]
+    original = path.read_bytes()
+    with pytest.raises(store.OpError) as caught:
+        _insert(root, item)
+    assert field in str(caught.value)
+    assert path.read_bytes() == original
+    _assert_example_can_be_written(root, str(caught.value))
+
+
+@pytest.mark.parametrize(
+    ("updates", "field"),
+    [
+        ({"effort_hours": 0}, "effort_hours"),
+        ({"effort_hours": 0.3}, "effort_hours"),
+        ({"effort_hours": "1.25"}, "effort_hours"),
+        (
+            {
+                "capability": {
+                    "version": "1.0",
+                    "class": "unknown",
+                    "requirements": {
+                        "reasoning": "standard",
+                        "verification": "strict",
+                        "risk": "low",
+                    },
+                }
+            },
+            "class",
+        ),
+        (
+            {
+                "capability": {
+                    "version": "1.0",
+                    "class": "general",
+                    "requirements": {
+                        "reasoning": "unknown",
+                        "verification": "strict",
+                        "risk": "low",
+                    },
+                }
+            },
+            "reasoning",
+        ),
+        ({"links": ["not::a-ref"]}, "links"),
+    ],
+)
+def test_insert_section_refuses_off_enum_contract_field(plan, updates, field):
+    root, path = plan
+    original = path.read_bytes()
+    with pytest.raises(store.OpError) as caught:
+        _insert(root, _item(**updates))
+    assert field in str(caught.value)
+    assert path.read_bytes() == original
+    _assert_example_can_be_written(root, str(caught.value))
+
+
+def test_insert_section_writes_heading_body_and_typed_record(plan):
+    root, path = plan
+    item = _item()
+    assert _insert(root, item) == 1
+    state, version = store.read_plan("sample", "sample", root=root)
+    assert version == 1
+    expected = {key: item[key] for key in ("id", "effort_hours", "capability", "links")}
+    assert state["sections"] == [{**expected, "attempts": 0, "status": "implementable"}]
+    assert state["section_declarations"] == {"s2": "implementable"}
+    html = path.read_text()
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.find("h2", id="s2").get_text() == item["title"]
+    assert soup.select_one('[data-reckon="section"][data-id="s2"]') is not None
+    assert item["body"] in html
+    assert html.index('id="s2"') < html.index(item["body"])
+
+
+def test_insert_section_rejects_authored_attempt_count(plan):
+    root, path = plan
+    original = path.read_bytes()
+    with pytest.raises(store.OpError, match="attempts"):
+        _insert(root, _item(attempts=4))
     assert path.read_bytes() == original
