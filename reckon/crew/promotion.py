@@ -2916,6 +2916,8 @@ def _release_run_workspace(
     retention: Mapping[str, str] | None = None,
     *,
     process_already_ended: bool = False,
+    release_worktree: bool = True,
+    worktree_withheld: str = "",
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree and, if still alive, its process.
 
@@ -2934,7 +2936,11 @@ def _release_run_workspace(
     repo_value = str(record.get("repo") or "")
     worktree = Path(worktree_value) if worktree_value else None
     repo = Path(repo_value) if repo_value else None
-    if retention is not None:
+    if not release_worktree:
+        result["worktree_withheld"] = worktree_withheld or (
+            "promotion did not pass; worktree retained for recovery"
+        )
+    elif retention is not None:
         result["worktree_withheld"] = (
             "retained as the working directory of recoverable session "
             f"{retention['session_id']}"
@@ -3023,14 +3029,23 @@ def _release_after_promotion(
     """
     verdict = str(gate).strip().lower()
     if verdict in {"blocked", "failed"}:
-        return {
-            "worktree_released": False,
-            "process_signalled": False,
-            "worktree_withheld": (
-                f"gate verdict {verdict!r} is not passing; worktree retained "
-                "for recovery"
-            ),
-        }
+        try:
+            return _release_run_workspace(
+                record,
+                retention,
+                process_already_ended=process_already_ended,
+                release_worktree=False,
+                worktree_withheld=(
+                    f"gate verdict {verdict!r} is not passing; worktree retained "
+                    "for recovery"
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
+            return {
+                "worktree_released": False,
+                "process_signalled": False,
+                "worktree_withheld": f"run {run_id!r} release step raised: {exc}",
+            }
     try:
         return _release_run_workspace(
             record, retention, process_already_ended=process_already_ended

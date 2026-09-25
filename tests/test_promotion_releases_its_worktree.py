@@ -5,13 +5,20 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
 
 from reckon import _plan_html, crew, ledger
 from reckon.crew import promotion
-from reckon.crew.runs import _write_json, pointer_path
+from reckon.crew.runs import (
+    _process_start_time,
+    _write_json,
+    pointer_path,
+    process_alive,
+)
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -101,6 +108,8 @@ def _pointer(
     status: str = "complete",
     session_id: str = "",
     stream: bool = False,
+    pid: int | None = None,
+    pid_start_time: str | None = None,
 ) -> None:
     manifest = root / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -133,6 +142,9 @@ def _pointer(
         stream_path.write_bytes(STREAM_FIXTURE.read_bytes())
         record["argv"] = ["claude", "-p"]
         record["log_path"] = str(stream_path)
+    if pid is not None:
+        record["pid"] = pid
+        record["pid_start_time"] = pid_start_time
     _write_json(
         pointer_path(run_id),
         record,
@@ -189,6 +201,86 @@ def test_complete_run_with_a_resolvable_session_releases_its_worktree(
     assert not worktree.exists()
     assert promoted["record"].get("worktree_retention") is None
     assert _stored_run(repository, run_id)["release"]["worktree_released"] is True
+
+
+def _stub_process() -> subprocess.Popen:
+    return subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+        start_new_session=True,
+    )
+
+
+def test_failed_promotion_signals_a_leftover_writer_and_audits_the_tree(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260925T071100000000-failed-writer"
+    worktree = _worktree(repository, tmp_path, "failed-writer")
+    process = _stub_process()
+    try:
+        _pointer(
+            repository,
+            tmp_path,
+            run_id,
+            worktree,
+            pid=process.pid,
+            pid_start_time=_process_start_time(process.pid),
+        )
+        promoted = crew.complete(
+            run_id,
+            gate="failed",
+            failure_classification="negative-result",
+            outcome="the gate failed and the writer still needs signalling",
+            root=repository,
+        )
+
+        release = promoted["release"]
+        assert release["worktree_released"] is False
+        assert worktree.is_dir()
+        assert release["process_signalled"] is True
+        assert "worktree_audit" in release
+        assert release["worktree_audit"]["worktrees"]
+
+        deadline = time.monotonic() + 5
+        while process_alive(process.pid) is True and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert process_alive(process.pid) is not True
+    finally:
+        if process_alive(process.pid) is True:
+            process.kill()
+        process.wait(timeout=5)
+
+
+def test_failed_promotion_without_a_terminal_manifest_keeps_the_writer(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260925T071200000000-failed-no-manifest"
+    worktree = _worktree(repository, tmp_path, "failed-no-manifest")
+    process = _stub_process()
+    try:
+        manifest = tmp_path / "manifests" / f"{run_id}.md"
+        _pointer(
+            repository,
+            tmp_path,
+            run_id,
+            worktree,
+            pid=process.pid,
+            pid_start_time=_process_start_time(process.pid),
+        )
+        manifest.unlink()
+        promoted = crew.complete(
+            run_id,
+            gate="failed",
+            failure_classification="negative-result",
+            outcome="the failed run has no terminal manifest",
+            root=repository,
+        )
+
+        assert promoted["release"]["process_signalled"] is False
+        assert process_alive(process.pid) is True
+    finally:
+        if process_alive(process.pid) is True:
+            process.kill()
+        process.wait(timeout=5)
 
 
 def test_promotion_releases_only_the_integrated_clean_case(
