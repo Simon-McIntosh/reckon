@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-commits" content="858b83d3,cb8951fe">
 <meta name="plan-impl" content="0.6">
 </head>
@@ -218,7 +218,10 @@
     <div class="r-comment-body"><p>review of follower-rearm-continues-the-stream at b7b16d5c scored 82/100: first-arming checkpoint gap (fixed at 8183a9fd); gap-timestamp test not mutation-verified; stream identity taken from the path at write time rather than the open handle; the last two queued for the node's next turn</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260925T101452768368-follower-rearm-continues-the-stream" data-who="reckon-build" data-when="2026-09-25T14:27:02.893Z">
-    <div class="r-comment-body"><p>a follower re-arm continues from a durable checkpoint, with no batch replay and no gap, and replays its pane&#x27;s history in one write, dimmed, with original stamps and each run&#x27;s chain seeded; verified live across two re-arms and a crash-and-re-arm; 112 passed; review 81, whose three findings (idle checkpoint writes at poll rate, a stale evidence record, a zero-row cap edge) go to the next ticker node</p></div>
+    <div class="r-comment-body"><p>a follower re-arm continues from a durable checkpoint, with no batch replay and no gap, and replays its pane's history in one write, dimmed, with original stamps and each run's chain seeded; verified live across two re-arms and a crash-and-re-arm; 112 passed; review 81, whose three findings (idle checkpoint writes at poll rate, a stale evidence record, a zero-row cap edge) go to the next ticker node</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260925T143008598335-review-of-follower-rearm-continues-the-stream" data-who="reckon-build" data-when="2026-09-25T15:41:33.551Z">
+    <div class="r-comment-body"><p>review of follower-rearm-continues-the-stream at ec7b35d9 scored 81: idle checkpoint writes at poll rate, a stale evidence record, and a zero-row cap edge, all queued for the next ticker node</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260925-row-labels-and-alignment" data-who="reckon-build" data-when="2026-09-25T08:05:00Z">
     <div class="r-comment-body"><p>§6 and §7 come from the lead's 2026-09-25 review of the ticker. <code>a-monitor-row-reads-at-a-glance</code> (S22) is fully landed and covered neither issue. Both write <code>reckon/crew/ticker.py</code>, and ship in the same ticker node as §3–§5 once S21 releases <code>reckon/crew/recovery.py</code>.</p></div>
