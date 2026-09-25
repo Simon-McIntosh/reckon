@@ -63,6 +63,14 @@ from typing import IO, Any
 COORDINATOR_HOOK_SCRIPT_NAME = "coordinator_obligations.py"
 WORKER_STOP_SCRIPT_NAME = "worker_stop.py"
 
+# The worker git guard, which the fragment binds only when a caller asks for it.
+# It is a PreToolUse Bash entry rather than one command in the fragment above,
+# because it carries a matcher: it must see every Bash call, and it names itself
+# apart from the entries that run on an event with no matcher. Installing it is
+# a separate decision from installing the obligations and stop hooks, so it is
+# opt-in here and the fragment is unchanged when the caller does not ask.
+WORKER_GIT_GUARD_SCRIPT_NAME = "worker_git_guard.py"
+
 # The obligations hook's two modes and the harness events each one serves.
 # Prompt mode opens every turn with the current duties; stop mode holds the turn
 # open while unacknowledged duties remain. The worker stop hook takes no mode:
@@ -107,6 +115,11 @@ def worker_stop_script_path() -> Path:
     return Path(__file__).resolve().with_name(WORKER_STOP_SCRIPT_NAME)
 
 
+def worker_git_guard_script_path() -> Path:
+    """Return the worker git guard script shipped beside this module."""
+    return Path(__file__).resolve().with_name(WORKER_GIT_GUARD_SCRIPT_NAME)
+
+
 def interpreter_path() -> Path:
     """Return the interpreter the coordinator hook commands run under.
 
@@ -123,8 +136,16 @@ def user_settings_path() -> Path:
     return Path("~/.claude/settings.json").expanduser()
 
 
-def build_hook_snippet(script_path: Path | str | None = None) -> dict[str, Any]:
-    """Return the settings fragment, as it would be merged, for every hook script."""
+def build_hook_snippet(
+    script_path: Path | str | None = None, *, include_git_guard: bool = False
+) -> dict[str, Any]:
+    """Return the settings fragment, as it would be merged, for every hook script.
+
+    ``include_git_guard`` adds the PreToolUse Bash entry that binds the worker
+    git guard. It is off by default, so the fragment a caller composes without
+    asking for the guard is byte-identical to the one before the guard existed;
+    a caller opts in when the guard is to be installed.
+    """
     script = Path(script_path) if script_path is not None else hook_script_path()
     interpreter = str(interpreter_path())
     prompt_command = shlex.join([interpreter, str(script), "--hook", PROMPT_MODE])
@@ -137,6 +158,8 @@ def build_hook_snippet(script_path: Path | str | None = None) -> dict[str, Any]:
         _command_group(stop_command),
         _command_group(worker_stop_command),
     ]
+    if include_git_guard:
+        entries["PreToolUse"] = [_git_guard_group()]
     return {"hooks": entries}
 
 
@@ -146,6 +169,7 @@ def install_hook_settings(
     write: bool = False,
     script_path: Path | str | None = None,
     stream: IO[str] | None = None,
+    include_git_guard: bool = False,
 ) -> HookInstallResult:
     """Print the hook fragment, merging it only when asked to write.
 
@@ -162,7 +186,7 @@ def install_hook_settings(
     The result carries the document that was printed and the two entry lists,
     so a caller can report what the merge did without comparing documents.
     """
-    snippet = build_hook_snippet(script_path)
+    snippet = build_hook_snippet(script_path, include_git_guard=include_git_guard)
     if not write:
         _print(snippet, stream)
         return HookInstallResult(
@@ -188,6 +212,23 @@ def _settings_target(settings_path: Path | str | None) -> Path:
 
 def _command_group(command: str) -> dict[str, Any]:
     return {"hooks": [{"type": "command", "command": command}]}
+
+
+def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
+    """Return the PreToolUse Bash group that binds the worker git guard.
+
+    The matcher is ``Bash``: the guard reads a Bash command's text, so it has
+    nothing to say about any other tool and is not asked about one. The
+    command is the guard script alone — the guard is standard-library only, so
+    it needs no interpreter of this package, unlike the obligations hook.
+    """
+    script = (
+        worker_git_guard_script_path() if script_path is None else Path(script_path)
+    )
+    return {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": shlex.join([str(script)])}],
+    }
 
 
 def _print(payload: dict[str, Any], stream: IO[str] | None) -> None:

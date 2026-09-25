@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 660" width="940" height="660" role="img" aria-label="Decision flow of the worker git guard">
+  <style>
+    .box { fill:#f7f9fc; stroke:#3a4a5a; stroke-width:1.5; }
+    .deny { fill:#fdecec; stroke:#a33; stroke-width:1.5; }
+    .allo { fill:#eef7ee; stroke:#3a7a3a; stroke-width:1.5; }
+    .t { font-family:monospace; font-size:13px; fill:#1a2330; }
+    .h { font-family:monospace; font-size:13px; font-weight:bold; fill:#1a2330; }
+    .e { stroke:#3a4a5a; stroke-width:1.5; fill:none; marker-end:url(#a); }
+    .lbl { font-family:monospace; font-size:12px; fill:#3a4a5a; }
+    .title { font-family:monospace; font-size:16px; font-weight:bold; fill:#1a2330; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a4a5a"/>
+    </marker>
+  </defs>
+
+  <text class="title" x="20" y="30">worker_git_guard.py — a Bash command, and where the answer comes from</text>
+
+  <rect class="box" x="330" y="50" width="280" height="44" rx="6"/>
+  <text class="t" x="346" y="70">PreToolUse payload, tool_name = Bash</text>
+  <text class="t" x="346" y="86">tool_input.command = the shell text</text>
+
+  <path class="e" d="M 470 94 L 470 118"/>
+
+  <rect class="box" x="330" y="118" width="280" height="40" rx="6"/>
+  <text class="t" x="346" y="143">RECKON_RUN_ID set?</text>
+  <path class="e" d="M 610 138 L 700 138"/>
+  <text class="lbl" x="622" y="130">no</text>
+  <rect class="allo" x="700" y="118" width="220" height="40" rx="6"/>
+  <text class="t" x="716" y="136">coordinator: allow</text>
+  <text class="t" x="716" y="152">every command</text>
+
+  <path class="e" d="M 470 158 L 470 182"/>
+  <text class="lbl" x="478" y="176">yes</text>
+
+  <rect class="box" x="330" y="182" width="280" height="58" rx="6"/>
+  <text class="t" x="346" y="203">read the run's worktree from</text>
+  <text class="t" x="346" y="219">&lt;RECKON_HOME&gt;/crew/live/&lt;run&gt;.json</text>
+  <text class="t" x="346" y="235">worktree field</text>
+
+  <path class="e" d="M 470 240 L 470 264"/>
+
+  <rect class="box" x="330" y="264" width="280" height="58" rx="6"/>
+  <text class="t" x="346" y="285">tokenise, then split at ; &amp; | ( )</text>
+  <text class="t" x="346" y="301">tracking cd so a later segment's cwd</text>
+  <text class="t" x="346" y="317">is the one cd left behind</text>
+
+  <path class="e" d="M 470 322 L 470 346"/>
+
+  <rect class="box" x="270" y="346" width="400" height="74" rx="6"/>
+  <text class="t" x="286" y="367">for each segment running git, resolve the target:</text>
+  <text class="t" x="286" y="385">-C / --git-dir / --work-tree, both separated and</text>
+  <text class="t" x="286" y="401">attached forms; otherwise the segment's cwd</text>
+
+  <path class="e" d="M 470 420 L 470 444"/>
+
+  <rect class="box" x="270" y="444" width="400" height="52" rx="6"/>
+  <text class="t" x="286" y="465">verb in {checkout, restore, reset, clean, stash,</text>
+  <text class="t" x="286" y="481">commit, merge, rebase, pull, push, add, rm, mv,</text>
+  <text class="t" x="286" y="497">switch, cherry-pick, revert, am, apply}?</text>
+
+  <path class="e" d="M 470 496 L 470 520"/>
+  <text class="lbl" x="478" y="514">yes</text>
+  <path class="e" d="M 270 470 L 150 470 L 150 590 L 200 590"/>
+  <text class="lbl" x="160" y="462">no</text>
+  <rect class="allo" x="200" y="570" width="150" height="40" rx="6"/>
+  <text class="t" x="216" y="595">allow</text>
+
+  <rect class="deny" x="330" y="520" width="280" height="52" rx="6"/>
+  <text class="t" x="346" y="541">target inside the run's own worktree?</text>
+  <text class="t" x="346" y="559">no: deny, naming run, worktree, target</text>
+
+  <path class="e" d="M 610 546 L 700 546"/>
+  <text class="lbl" x="622" y="538">yes</text>
+  <rect class="allo" x="700" y="526" width="150" height="40" rx="6"/>
+  <text class="t" x="716" y="551">allow</text>
+</svg>
