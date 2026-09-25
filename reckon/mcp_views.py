@@ -1536,10 +1536,14 @@ def _relations(data: dict[str, Any]) -> dict[str, list[Any]]:
 
 
 def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
+    from reckon.roadmap import execution_gates
+
     explicit = data.get("blocked_by")
     result = list(explicit) if isinstance(explicit, list) else []
     result.extend(unresolved_dependencies(deps))
-    result.extend(unpassed_gate_blockers(data.get("gates") or []))
+    # Transition gates hold a closure or a choice, not execution, so the
+    # roadmap's execution split governs what counts as blocking here too.
+    result.extend(unpassed_gate_blockers(execution_gates(data)))
     return result
 
 
@@ -1683,7 +1687,7 @@ def _summary(
             "Use view='detail' with include_prompts=true.",
         )
     blocking = _blocking(data, deps)
-    return {
+    result = {
         "resource": selector.as_dict(),
         "version": version,
         "view": "summary",
@@ -1698,6 +1702,12 @@ def _summary(
         "next": _next_action(data, include_prompts=False),
         "warnings": list(data.get("compatibility_warnings") or []),
     }
+    if selector.type == "plan":
+        from reckon.roadmap import closure_blockers, unsettled_decisions
+
+        result["closure_blockers"] = closure_blockers(data)
+        result["decision_blockers"] = unsettled_decisions(data)
+    return result
 
 
 def _detail(
@@ -1829,6 +1839,8 @@ def _response_schema(
             },
         }
     if selector.type == "plan" and view not in {"schema", "version"}:
+        common["properties"]["closure_blockers"] = {"type": "array"}
+        common["properties"]["decision_blockers"] = {"type": "array"}
         common["properties"]["in_flight"] = {
             "type": "array",
             "items": {

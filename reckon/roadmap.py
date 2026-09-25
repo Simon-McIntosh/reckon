@@ -269,8 +269,14 @@ def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
     )
 
 
-def _execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
-    """Transition gates hold closure or a choice, leaving execution available."""
+def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Plan gates whose verdict holds execution.
+
+    A transition gate holds a closure or a choice instead, so it never leaves
+    the plan itself blocked; the split is what every surface reading readiness
+    must share.
+    """
+
     return [
         gate
         for gate in plan.get("gates") or []
@@ -278,7 +284,9 @@ def _execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def _closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
+def closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Name the pending plan-terminal gates holding a plan's closure."""
+
     return [
         {"kind": "gate", "plan": plan.get("slug", ""), **gate}
         for gate in pending_transition_gates(plan.get("gates") or [], "plan-terminal")
@@ -286,7 +294,7 @@ def _closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
-    gates = _execution_gates(plan)
+    gates = execution_gates(plan)
     if not gates:
         return True, []
 
@@ -325,8 +333,8 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
             )
             if gate.get("decision") == key
         ]
-        if transition_gates:
-            status = "open"
+        if transition_gates and not choice:
+            status = "gated"
         rows.append(
             {
                 "kind": "decision",
@@ -349,6 +357,16 @@ def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def unsettled_decisions(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Decisions awaiting a choice, whether open or held by a transition edge.
+
+    A gated decision is held rather than blocking: readiness consumes only the
+    open rows, while a reported set keeps both so the edge stays visible.
+    """
+
+    return [row for row in _decision_rows(plan) if row["status"] in ("open", "gated")]
 
 
 def _authorisation_age(
@@ -1057,8 +1075,8 @@ def resolve_graph_target(
         for row in report["pending_work"]:
             schedule_rows[(project, str(row["slug"]))] = row
 
-    decision_blockers: list[dict[str, Any]] = []
-    closure_blockers: list[dict[str, Any]] = []
+    decision_blocker_rows: list[dict[str, Any]] = []
+    closure_blocker_rows: list[dict[str, Any]] = []
     ready: list[str] = []
     for key in member_keys:
         plan = plans[key]
@@ -1066,8 +1084,8 @@ def resolve_graph_target(
             continue
         decisions = _decision_rows(plan)
         open_decisions = [row for row in decisions if row["status"] == "open"]
-        decision_blockers.extend(open_decisions)
-        closure_blockers.extend(_closure_blockers(plan))
+        decision_blocker_rows.extend(unsettled_decisions(plan))
+        closure_blocker_rows.extend(closure_blockers(plan))
         dependencies_complete = all(
             _status(plans[dependency]) in COMPLETED_STATUSES
             for dependency in plan_blocking_graph[key]
@@ -1080,7 +1098,7 @@ def resolve_graph_target(
         if (
             dependencies_complete
             and not blockers
-            and not unpassed_gate_blockers(_execution_gates(plan))
+            and not unpassed_gate_blockers(execution_gates(plan))
             and not open_decisions
             and _status(plan) in _AUTHORISED_STATUSES
             and _dispatchability(plan)[0]
@@ -1119,9 +1137,9 @@ def resolve_graph_target(
         "critical_path": {"plans": critical_refs, "depth": depth},
         "average_width": round(total / depth, 3) if depth else 0.0,
         "ready": sorted(ready),
-        "decision_blockers": decision_blockers,
-        "closure_blockers": closure_blockers,
-        "ship_ready": not decision_blockers and not closure_blockers,
+        "decision_blockers": decision_blocker_rows,
+        "closure_blockers": closure_blocker_rows,
+        "ship_ready": not decision_blocker_rows and not closure_blocker_rows,
         "schedule_override": {
             "required": bool(deferred_members),
             "deferred": len(deferred_members),
@@ -1815,6 +1833,7 @@ def _build_roadmap(
     deferred: list[dict[str, Any]] = []
     schedule_deferred: list[dict[str, Any]] = []
     decision_blockers_report: list[dict[str, Any]] = []
+    open_decisions_report: list[dict[str, Any]] = []
     deferred_decisions_report: list[dict[str, Any]] = []
     unauthorised: list[dict[str, Any]] = []
     for slug, plan in plans.items():
@@ -1840,10 +1859,17 @@ def _build_roadmap(
             for row in plan.get("blocking") or []
             if isinstance(row, dict) and row.get("kind") == "held"
         ]
-        gate_blockers = unpassed_gate_blockers(_execution_gates(plan))
+        gate_blockers = unpassed_gate_blockers(execution_gates(plan))
         decisions = _decision_rows(plan)
-        decision_blockers = [
+        open_decisions = [
             decision for decision in decisions if decision["status"] == "open"
+        ]
+        # A gated decision is held by a transition edge: unsettled, so it stays
+        # reported, but the edge never blocks the plan's own execution.
+        decision_blockers = [
+            decision
+            for decision in decisions
+            if decision["status"] in ("open", "gated")
         ]
         deferred_decisions = [
             decision for decision in decisions if decision["status"] == "deferred"
@@ -1854,7 +1880,7 @@ def _build_roadmap(
             and not held_blockers
             and not plan_dependency_blockers
             and not gate_blockers
-            and not decision_blockers
+            and not open_decisions
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)
@@ -1866,7 +1892,7 @@ def _build_roadmap(
             and not explicit_blockers
             and not held_blockers
             and not gate_blockers
-            and not decision_blockers
+            and not open_decisions
             and slug not in cycle_members
         )
         is_blocked = bool(
@@ -1874,7 +1900,7 @@ def _build_roadmap(
             or explicit_blockers
             or held_blockers
             or gate_blockers
-            or decision_blockers
+            or open_decisions
             or slug in cycle_members
         )
         readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
@@ -1904,7 +1930,7 @@ def _build_roadmap(
                     *explicit_blockers,
                     *held_blockers,
                     *gate_blockers,
-                    *decision_blockers,
+                    *open_decisions,
                 ],
             ),
             "sprint": plan_sprint,
@@ -1920,7 +1946,7 @@ def _build_roadmap(
             "explicit_blockers": explicit_blockers,
             "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
-            "closure_blockers": _closure_blockers(plan),
+            "closure_blockers": closure_blockers(plan),
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
             "decisions": decisions,
@@ -1994,6 +2020,7 @@ def _build_roadmap(
         if is_schedule_deferred:
             schedule_deferred.append(row)
         decision_blockers_report.extend(decision_blockers)
+        open_decisions_report.extend(open_decisions)
         deferred_decisions_report.extend(deferred_decisions)
 
     def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
@@ -2288,7 +2315,7 @@ def _build_roadmap(
         "deferred_decisions": deferred_decisions_report,
         "decision_readiness": {
             "ready": not decision_blockers_report,
-            "open": len(decision_blockers_report),
+            "open": len(open_decisions_report),
             "deferred": len(deferred_decisions_report),
         },
         "authorisation": {
