@@ -615,6 +615,76 @@ exit: 0</pre>
     <code>dispatch-codex.json</code>, <code>verify-clive.json</code>, <code>verify-codex.json</code>,
     <code>resume.json</code>, <code>cleanup.json</code>, and the four run directories under
     <code>~/.config/reckon/crew/reports/reckon/s21-coord/fenced-workers-smoke/artifacts/</code>.</p>
+
+    <h3 id="s2-worktree-git-roots">The worktree's own git metadata, measured: a fenced worker can commit and the main checkout stays sealed</h3>
+
+    <p><strong>Node:</strong> <code>a-fenced-worker-can-commit</code>. <strong>Defect.</strong>
+    A linked worktree keeps its HEAD, index and reflog under the main checkout's
+    <code>.git/worktrees/&lt;name&gt;</code> and writes its objects into that repository's shared
+    store, and every checkout under the code root is a read-only overlay. So a fenced worker found
+    its own working tree writable and its own git metadata read-only: the fence that protects the
+    operator's home took the worker's deliverable. Measured on the real worktree of
+    <code>watcher-seat-survives-other-hosts</code> with <code>fence_argv</code> around a
+    <code>test -w</code> probe: the worktree itself writable, while
+    <code>reckon/.git/worktrees/watcher-seat-survives-other-hosts</code> (HEAD, index, logs),
+    <code>reckon/.git/objects</code> and <code>reckon/.git/refs/heads</code> were all read-only.</p>
+
+    <p><strong>What landed.</strong> <code>reckon._backends.worktree_git_write_roots</code> returns a
+    linked worktree's own git directory (as <code>git rev-parse --absolute-git-dir</code> reports
+    it) and the <code>objects</code> directory under <code>--git-common-dir</code>, and
+    <code>fence_argv</code> adds both to its write roots, so the existing containment test re-opens
+    exactly them inside the sealed main checkout. Only the object store is named from the common
+    directory, never the common directory itself, because objects are content-addressed and
+    append-only: granting them cannot rewrite another tree's history, while
+    <code>refs/heads</code>, the main checkout's index and its working tree stay sealed. A path
+    whose git directory resolves to the common directory — the main checkout itself — grants
+    nothing, and a path git cannot resolve grants nothing rather than refusing a launch. A
+    detached-HEAD commit needs exactly those two roots, which is what the fence now supplies.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-worker-cannot-write-your-home/git-write-roots.svg"
+           alt="Left column: the fence argv in order — dev-bind of the whole filesystem, read-only overlay of the main checkout, then writable binds of the worktree git directory, the shared object store and the working tree. Right column: refs/heads, the main index and the main working tree are refused, while the worktree git directory, the object store and the working tree are writable, so a commit succeeds.">
+      <figcaption>The two green grants sit below the red overlay in argv order, so bubblewrap re-opens
+      them after sealing the checkout; nothing else under the main checkout moves.</figcaption>
+    </figure>
+
+    <p><strong>The measure, executed.</strong>
+    <code>tests/test_a_fenced_worker_can_commit.py</code> builds a synthetic repository with a
+    detached linked worktree under a synthetic code root and runs the argv <code>fence_argv</code>
+    composes for that worktree under a real bubblewrap fence, never touching a real checkout. Inside
+    the fence <code>git commit --allow-empty</code> succeeds, the worktree HEAD moves, and the new
+    commit is reachable from it (<code>cat-file -e</code> plus
+    <code>merge-base --is-ancestor</code>); the worktree itself is writable; and writes to the main
+    checkout's index, its <code>refs/heads</code> and a file in its working tree are each refused.
+    The test skips with a stated reason only when bubblewrap is unavailable.</p>
+
+    <p><strong>Declared negative control</strong> — <em>leave the worktree git dir and object store
+    out of the write roots as today; the fenced commit must fail with a read-only file system
+    error</em> — is applied at the one place the roots enter the argv and logged
+    (<code>docs/figures/a-worker-cannot-write-your-home/negative-control-git-roots.txt</code>). The log's first line repeats the mutation verbatim, then
+    records <code>commit=fail</code> with
+    <code>fatal: Unable to create '.../worktrees/wt/index.lock': Read-only file system</code>, the
+    worktree still writable, all three main-checkout probes refused, and the HEAD unchanged. So the
+    commit's success rests on the two new grants rather than on a fence that allowed the write
+    anyway.</p>
+
+    <p><strong>Gate.</strong> <code>tests/test_a_fenced_worker_can_commit.py</code> plus the three
+    named fixture files (<code>test_launch_plan_fences_the_home.py</code>,
+    <code>test_each_run_owns_its_harness_home.py</code>,
+    <code>test_harness_home_carries_the_operator_config.py</code>): base <code>f01992d3</code>
+    <code>25 passed</code> over the three, head <code>a13d1cc2</code> <code>27 passed</code> over all
+    four, zero added failures
+    (<code>docs/figures/a-worker-cannot-write-your-home/gate-git-roots-base.txt</code>,
+    <code>docs/figures/a-worker-cannot-write-your-home/gate-git-roots-head.txt</code>). Lint over
+    the touched paths adds nothing: <code>reckon/_backends.py</code> 6 findings in both arms with
+    zero in the new function, the test file zero, both formatted, measured on a complete
+    <code>git archive</code> of each revision
+    (<code>docs/figures/a-worker-cannot-write-your-home/lint-git-roots.txt</code>). Commit
+    <code>a13d1cc2</code>. Evidence:
+    <code>docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s2-worktree-git-roots</code>,
+    figure <code>/reckon/figures/a-worker-cannot-write-your-home/git-write-roots.svg</code>. This
+    gate measures only this node's own change; verifying the merged result belongs to a separately
+    dispatched test node.</p>
   </section>
   <section id="s2-fenced-resume" data-reckon="section">
     <h2>&sect;2 follow-up &mdash; a fenced resume reaches its harness</h2>
