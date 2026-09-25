@@ -1,0 +1,56 @@
+resolve a run-scoped plan write with no checkout path to the mounted main checkout
+mutation: reckon/mcp.py _run_scoped_checkout returns (None, None) before reading RECKON_RUN_ID
+tree=/tmp/pwsitw-neg as of dc0c6f3476d362fdd8ba27bd7ba58996a90f4f3e plus the mutation above
+command: env -u RECKON_RUN_ID PYTHONPATH=<tree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_write_stays_in_the_worktree.py
+module.__file__ /tmp/pwsitw-neg/reckon/__init__.py
+cwd /tmp/pwsitw-neg
+FF..                                                                     [100%]
+=================================== FAILURES ===================================
+____ test_run_scoped_write_lands_in_the_worktree_and_leaves_main_identical _____
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_run_scoped_write_lands_in0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_run_scoped_write_lands_in0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_run_scoped_write_lands_in_the_worktree_and_leaves_main_identical(
+        run_scoped,
+    ):
+        fixture = run_scoped
+        before = _sha(fixture["main_plan"])
+        start_version = _version(fixture["worktree"], PROJECT, SLUG)
+    
+        result = _edit(
+            project=PROJECT,
+            title="written by the worker",
+            expected_version=start_version,
+        )
+    
+        assert result["ok"] is True, result
+        written = Path(result["path"])
+>       assert fixture["worktree"] in written.parents
+E       AssertionError: assert PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_run_scoped_write_lands_in0/worktree') in <PosixPath.parents>
+E        +  where <PosixPath.parents> = PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_run_scoped_write_lands_in0/main/docs/plans/sample-plan.html').parents
+
+tests/test_plan_write_stays_in_the_worktree.py:124: AssertionError
+________________ test_write_to_another_projects_plan_is_refused ________________
+
+run_scoped = {'main': PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_write_to_another_projects0/main'), 'worktree': PosixPath(...PosixPath('/tmp/pytest-of-mcintos/pytest-11129/test_write_to_another_projects0/main/docs/plans/sample-plan.html'), ...}
+
+    def test_write_to_another_projects_plan_is_refused(run_scoped):
+        fixture = run_scoped
+        before = _sha(fixture["other_plan"])
+    
+        result = _edit(
+            project=OTHER_PROJECT,
+            title="cross-project write",
+            expected_version=_version(fixture["other_repo"], OTHER_PROJECT, SLUG),
+        )
+    
+>       assert result["ok"] is False, result
+E       AssertionError: {'ok': True, 'message': 'Updated plan cross-project write to version 1.', 'operation': 'edit', 'resource': {'project': 'other', 'type': 'plan', 'id': 'sample-plan', 'archived': False, ...}, ...}
+E       assert True is False
+
+tests/test_plan_write_stays_in_the_worktree.py:141: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_write_stays_in_the_worktree.py::test_run_scoped_write_lands_in_the_worktree_and_leaves_main_identical
+FAILED tests/test_plan_write_stays_in_the_worktree.py::test_write_to_another_projects_plan_is_refused
+2 failed, 2 passed in 1.60s
+EXIT=1
