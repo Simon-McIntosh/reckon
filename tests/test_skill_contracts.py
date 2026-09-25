@@ -541,17 +541,64 @@ def test_ship_refills_members_without_crossing_unverified_dependencies() -> None
     assert "There is no slot pool and no numeric worker cap anywhere in Reckon" in ship
     assert "free members are the only ceiling" in ship
     assert "concurrency comes from the members a project already has" in ship
-    assert not re.search(
-        r"\bregister(?:ing|ed)?\s+(?:one|a|an|another|more|new|fresh|enough)\b",
-        ship,
-    ), (
-        "the skill must not instruct anyone to register a member: concurrency "
-        "comes from the members a project already has"
-    )
     assert "redispatch each member as soon as its finished node is verified" in ship
     assert "no dependent node builds on unverified work" in ship
     assert "Do not wait for the slowest active node" in ship
     assert "independent refill may start" in reference
+
+
+# No skill file may tell a session to register a roster member: every dispatch
+# gets a disposable worker, and concurrency comes from the members a project
+# already has. The pattern carries the verb forms and objects that instruction
+# takes, and the spellings below pin it to each phrasing it has to keep
+# detecting. "registers a" and the participle "registered members" stay outside
+# it: the harness reference describes the CLI registering a descriptor, and the
+# roster tally counts members already registered — neither instructs a session.
+RETIRED_MEMBER_REGISTRATION_PHRASES = (
+    "register one",
+    "register another member",
+    "register a fresh roster member",
+    "registering members",
+    "registered on demand",
+    "registers enough members",
+)
+MEMBER_REGISTRATION_INSTRUCTION = re.compile(
+    r"\bregister(?:ing|ed)?\s+(?:one|a|an|another|more|new|fresh|enough)\b"
+    r"|\bregisters\s+(?:one|an|another|more|new|fresh|enough)\b"
+    r"|\bregister(?:s|ing)?\s+members?\b"
+    r"|\bregistered\s+on\s+demand\b",
+    re.IGNORECASE,
+)
+
+
+def test_no_build_skill_file_instructs_member_registration() -> None:
+    """The census reads every file in the fixed read set, not just SKILL.md.
+
+    A member-registration instruction rewritten into a reference file is
+    inside the read set the orchestrator loads, so the absence check has to
+    read the same set. The pattern is checked against each phrasing before the
+    census runs, so a weakened pattern fails loudly here rather than passing
+    the census by matching nothing.
+    """
+    root = ROOT / "skills" / "reckon-build"
+    paths = [
+        root / "SKILL.md",
+        *(path for path in sorted((root / "references").rglob("*")) if path.is_file()),
+    ]
+
+    for phrase in RETIRED_MEMBER_REGISTRATION_PHRASES:
+        assert MEMBER_REGISTRATION_INSTRUCTION.search(phrase), (
+            f"the census pattern no longer detects {phrase!r}, so the check "
+            "below would pass without testing for it"
+        )
+    for path in paths:
+        text = normalized(path.read_text(encoding="utf-8", errors="replace"))
+        match = MEMBER_REGISTRATION_INSTRUCTION.search(text)
+        assert match is None, (
+            f"{path.relative_to(ROOT)} instructs member registration "
+            f"({match.group(0)!r}): every dispatch gets a disposable worker, "
+            "and concurrency comes from the members a project already has"
+        )
 
 
 def test_ship_has_one_advisory_fleet_size_table() -> None:
