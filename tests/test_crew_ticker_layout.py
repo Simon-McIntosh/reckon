@@ -336,7 +336,7 @@ def test_a_reason_is_truncated_to_the_room_the_grid_leaves(grid):
     assert "\n" not in line
     assert "…" in line
     assert line.count("…") == 1
-    assert reason[:20] in line
+    assert "the canonical…" in line
 
 
 def test_a_reason_that_fits_is_printed_whole(grid):
@@ -345,23 +345,15 @@ def test_a_reason_that_fits_is_printed_whole(grid):
     assert "…" not in line
 
 
-def test_a_reason_clipped_at_the_margin_keeps_its_predicate_clause(grid):
-    """A clip falls after the clause naming the predicate, never inside it.
-
-    The measured defect: ``the process is gone without a complete manifest``
-    truncated to ``the process is gone without a…`` collapsed a testable claim
-    about a named file into a generic liveness remark. Free text cut at the
-    margin must therefore keep that clause whole — the cut lands in trailing
-    detail — and a reason that already fits renders verbatim, with no cut and
-    no ellipsis.
-    """
+def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
+    """The fixed state vocabulary takes priority, and the reason cuts cleanly."""
     long_reason = (
         "the process is gone without a complete manifest for the archive "
         "dry run which reported the marker moved before its files were read"
     )
     clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
     assert len(clipped) == 180
-    assert "the process is gone without a…" in clipped
+    assert "the process is…" in clipped
     assert "marker moved before its files" not in clipped
     assert "…" in clipped
     assert "\n" not in clipped

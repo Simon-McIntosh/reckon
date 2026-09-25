@@ -89,6 +89,8 @@ def _attention_expected(state: str) -> bool:
 
 def test_every_classifier_transition_keeps_one_grid() -> None:
     """Every input extreme preserves each column and every two-space gutter."""
+    assert set(CLASSIFIER_STATES) == ticker_module.CLASSIFIER_STATE_WORDS
+    assert max(map(len, CLASSIFIER_STATES)) == ticker_module.STATE_WORD
     columns = _columns(ticker_module.MODEL)
     observed = {
         name: set() for name in ("attention", "arrow", "elapsed", "counters", "reason")

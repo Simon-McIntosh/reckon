@@ -171,12 +171,29 @@ STATE_HUE = {
     },
 }
 
+# Every state word the producer or recovery classifier can put on either side
+# of the transition. The recovery module imports this renderer, so the display
+# vocabulary cannot import its tuple without a cycle; the exhaustive property
+# test binds this set to that classifier vocabulary.
+CLASSIFIER_STATE_WORDS = frozenset(STATE_HUE["light"]) | frozenset(
+    {
+        "completed_unpromoted",
+        "ended-without-manifest",
+        "interrupted",
+        "paused",
+        "promotable",
+        "ready",
+        "refused-at-admission",
+        "scoring",
+    }
+)
+
 # A transition is two state words around one arrow. The previous word is
 # right-aligned and the destination is left-aligned, which pins the arrow to one
 # screen column even when either word changes length. A first sighting has no
 # previous word, so the left half and arrow are blank while the destination
 # keeps its column.
-STATE_WORD = max(len(word) for word in STATE_HUE["light"])
+STATE_WORD = max(len(word) for word in CLASSIFIER_STATE_WORDS)
 ARROW = "→"
 ARROW_GAP = 1
 STATE = STATE_WORD + ARROW_GAP + len(ARROW) + ARROW_GAP + STATE_WORD
